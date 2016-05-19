@@ -2,3 +2,5 @@
 */*~
 *.project
 *.cproject
+*.o
+test_sta
