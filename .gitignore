@@ -4,3 +4,5 @@
 *.cproject
 *.o
 test_sta
+.autotools
+gmon.out

@@ -28,6 +28,9 @@
 #include <limits.h>
 #include <float.h>
 
+#include "fitsio.h"
+
+#include "relutility.h"
 
 /*********** DEFINE STATEMENTS *********/
 
@@ -38,7 +41,7 @@
 #define version_build 0
 
 /** path to all RELXILL tables */
-#define RELXILL_TABLE_PATH ""
+#define RELXILL_TABLE_PATH "/home/thomas/data/relline_tables/"
 
 /** dimensions of the RELLINE table */
 #define RELTABLE_NA 30
@@ -80,10 +83,10 @@ typedef struct{
 
 /** the RELLINE table structure */
 typedef struct{
-	float* a; // spin
+	double* a; // spin
 	int n_a;
 
-	float* mu0; // inclination
+	double* mu0; // inclination
 	int n_mu0;
 
 	relDat*** arr; // relline data array
@@ -95,11 +98,11 @@ typedef struct{
 }relTable;
 
 
-
 /****** FUNCTION DEFINITIONS ******/
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
 void relbase(const double* ener, const int n_ener, double* photar, const relParam* param, int* status);
+
 
 
 #endif /* RELBASE_H_ */

@@ -15,35 +15,20 @@
 
     Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
 */
+#ifndef RELTABLE_H_
+#define RELTABLE_H_
 
 #include "relbase.h"
+#include "relutility.h"
+
+/* create a new relline table structure */
+relTable* new_relTable(int n_a, int n_mu0, int n_r, int n_g, int* status);
+
+/* destroy the relline table structure */
+void free_relTable(relTable* tab);
+
+/* routine to read the RELLINE table */
+void read_relline_table(char* filename, relTable** tab, int* status);
 
 
-/** global parameters, which can be used for several calls of the model */
-relParam* cached_rel_param=NULL;
-relTable* relline_table=NULL;
-
-
-/* the relbase function calculating the basic relativistic line shape for a given parameter setup
- * input: ener(n_ener), param
- * output: photar(n_ener)     */
-void relbase(const double* ener, const int n_ener, double* photar, const relParam* param, int* status){
-
-	// initialize parameter values
-
-	// load tables
-	if (relline_table==NULL){
-		read_relline_table(RELTABLE_FILENAME,&relline_table,status);
-		CHECK_STATUS_VOID(*status);
-
-	}
-
-
-	free_relTable(relline_table);
-	// get line shape
-
-	// [...]
-
-}
-
-
+#endif /* RELTABLE_H_ */
