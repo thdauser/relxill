@@ -21,6 +21,36 @@
 #include "relbase.h"
 #include "relutility.h"
 
+
+
+/** a single element in the RELLINE table array */
+typedef struct{
+	float* r;
+	float* gmin;
+	float* gmax;
+	float** trff1;
+	float** trff2;
+	float** cosne1;
+	float** cosne2;
+}relDat;
+
+/** the RELLINE table structure */
+typedef struct{
+	float* a; // spin
+	int n_a;
+
+	float* mu0; // inclination
+	int n_mu0;
+
+	relDat*** arr; // relline data array
+
+	// dimensions of relline array
+	int n_r;
+	int n_g;
+
+}relTable;
+
+
 /* create a new relline table structure */
 relTable* new_relTable(int n_a, int n_mu0, int n_r, int n_g, int* status);
 

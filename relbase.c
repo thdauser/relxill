@@ -39,7 +39,6 @@ void relbase(const double* ener, const int n_ener, double* photar, const relPara
 	}
 
 
-	free_relTable(relline_table);
 	// get line shape
 
 	// [...]
@@ -47,3 +46,6 @@ void relbase(const double* ener, const int n_ener, double* photar, const relPara
 }
 
 
+void free_cached_tables(void){
+	free_relTable(relline_table);
+}

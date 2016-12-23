@@ -86,7 +86,7 @@ relTable* new_relTable(int n_a, int n_mu0, int n_r, int n_g, int* status){
 }
 
 /** read one axis of the rel table from the FITS file   */
-static void get_reltable_axis(int nrows, double** val, char* extname, char* colname, fitsfile* fptr, int* status){
+static void get_reltable_axis(int nrows, float** val, char* extname, char* colname, fitsfile* fptr, int* status){
 
 	int extver = 0;
 	fits_movnam_hdu(fptr, BINARY_TBL, extname, extver ,status);
@@ -108,13 +108,13 @@ static void get_reltable_axis(int nrows, double** val, char* extname, char* coln
 	}
 
 	// allocate memory for the array
-	*val=(double*)malloc(n*sizeof(double));
+	*val=(float*)malloc(n*sizeof(float));
 	CHECK_MALLOC_VOID_STATUS(*val,status);
 
     int anynul=0;
     double nullval=0.0;
     LONGLONG nelem = (LONGLONG) n;
-    fits_read_col(fptr, TDOUBLE, colnum, 1, 1, nelem ,&nullval,*val, &anynul, status);
+    fits_read_col(fptr, TFLOAT, colnum, 1, 1, nelem ,&nullval,*val, &anynul, status);
 
 	return;
 }

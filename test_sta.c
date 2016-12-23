@@ -21,6 +21,7 @@
 #include "relutility.h"
 #include "reltable.h"
 
+
 #define LIMIT_PREC 1e-8
 
 static void set_std_param_relline(double* inp_par, int* status){
@@ -38,7 +39,7 @@ static void set_std_param_relline(double* inp_par, int* status){
 /** standard evaluation of the relline model **/
 static void std_eval_relline(int* status){
 
-	printf("\n *** Testing RELLINE MODEL \n");
+	printf("\n *** Evaluating RELLINE MODEL \n");
 	/* set the parameters */
 	int n_param = NUM_PARAM_RELLINE;
 	double inp_par[NUM_PARAM_RELLINE];
@@ -56,7 +57,8 @@ static void std_eval_relline(int* status){
 
 }
 
-/** test the currently implemented relline table*/
+/** test the currently implemented relline table
+ ** [current version used: rel_table_v0.4e]   */
 void test_relline_table(int* status){
 
 	printf("\n *** Testing RELLINE TABLE (%s) \n",RELTABLE_FILENAME);
@@ -68,18 +70,20 @@ void test_relline_table(int* status){
 		CHECK_RELXILL_ERROR("loading the rel table failed",status);
 
 		// test certain values
+		assert(tab!=NULL);
 		assert(tab->arr!=NULL);
 
 		double aref_val = 0.98605162;
-		if ( abs(tab->a[RELTABLE_NA-2] - aref_val) > LIMIT_PREC ){
-			printf(" testing spin: expecting value of %f, but found %f\n",aref_val,tab->a[RELTABLE_NA-1]);
+		if ( fabs(tab->a[RELTABLE_NA-2] - aref_val) > LIMIT_PREC ){
+			printf(" testing spin: expecting value of %f, but found %f\n",
+					aref_val,tab->a[RELTABLE_NA-2]);
 			RELXILL_ERROR("values in rel table not correct",status);
 			break;
 		}
 
-		double mu0ref_val = 0.98480862;
-		if ( abs(tab->mu0[1] - mu0ref_val) > LIMIT_PREC ){
-			printf(" testing mu0: expecting value of %f, but found %f\n",mu0ref_val,tab->mu0[RELTABLE_NA-1]);
+		double mu0ref_val = 9.7182781e-02;
+		if ( fabs(tab->mu0[1] - mu0ref_val) > LIMIT_PREC ){
+			printf(" testing mu0: expecting value of %f, but found %f\n",mu0ref_val,tab->mu0[1]);
 			RELXILL_ERROR("values in rel table not correct",status);
 			break;
 		}
@@ -100,6 +104,7 @@ void test_relline_table(int* status){
 				break;
 			}
 		}
+		printf("  ### all values of the relline table as expected\n");
 
 	} while(0);
 
@@ -128,6 +133,9 @@ int main(void){
 		printf("     ---> successful \n");
 
 	} while(0);
+
+	// free tables
+	free_cached_tables();
 
 	if(status!=EXIT_SUCCESS){
 		printf(" *** TESTING NOT SUCCESSFUL \n");

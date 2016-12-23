@@ -31,6 +31,8 @@
 #include "fitsio.h"
 
 #include "relutility.h"
+#include "reltable.h"
+
 
 /*********** DEFINE STATEMENTS *********/
 
@@ -70,32 +72,6 @@ typedef struct{
 } relParam;
 
 
-/** a single element in the RELLINE table array */
-typedef struct{
-	float* r;
-	float* gmin;
-	float* gmax;
-	float** trff1;
-	float** trff2;
-	float** cosne1;
-	float** cosne2;
-}relDat;
-
-/** the RELLINE table structure */
-typedef struct{
-	double* a; // spin
-	int n_a;
-
-	double* mu0; // inclination
-	int n_mu0;
-
-	relDat*** arr; // relline data array
-
-	// dimensions of relline array
-	int n_r;
-	int n_g;
-
-}relTable;
 
 
 /****** FUNCTION DEFINITIONS ******/
@@ -103,6 +79,7 @@ typedef struct{
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
 void relbase(const double* ener, const int n_ener, double* photar, const relParam* param, int* status);
 
+void free_cached_tables(void );
 
 
 #endif /* RELBASE_H_ */

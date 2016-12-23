@@ -1,8 +1,8 @@
 # -*- mode: Make -*-
 
-CFLAGS = -g -ansi -std=c99 -O2 -Wall -Wstrict-prototypes -pedantic -pg
+CFLAGS = -g -ansi -std=c99 -O2 -Wall -Wstrict-prototypes -pedantic
 LIBS = -L${HEADAS}/lib
-LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio_3.37 -pg
+LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
 COMPILE.c = gcc
 
