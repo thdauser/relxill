@@ -18,6 +18,40 @@
 
 #include "relmodels.h"
 
+
+static void check_negative_radii(double* r, double a){
+	if (*r<0){
+		*r = -1.0*(*r)*kerr_rms(a);
+	}
+}
+
+int warned_rms = 0;
+static void check_parameter_bounds(relParam* param, int* status){
+
+	// first set the Radii to positive value
+	check_negative_radii(&(param->rin), param->a);
+	check_negative_radii(&(param->rout), param->a);
+	check_negative_radii(&(param->rbr), param->a);
+
+	if (param->rout<=param->rin){
+		printf(" *** error : Rin >= Rout not possible, please set the parameters  \n");
+		*status=EXIT_FAILURE;
+	}
+
+	double rms = kerr_rms(param->a);
+	if (param->rin < rms){
+		if (!warned_rms){
+			printf(" *** warning : Rin < ISCO, resetting Rin=ISCO; please set your limits properly \n");
+		}
+		param->rin = rms;
+	}
+
+
+	// TODO: also check Rbreak here
+
+}
+
+
 void init_par_relline(relParam* param, const double* inp_par, const int n_parameter, int* status){
 
 	assert(n_parameter == NUM_PARAM_RELLINE);
@@ -27,10 +61,12 @@ void init_par_relline(relParam* param, const double* inp_par, const int n_parame
 	param->emis2 = inp_par[2];
 	param->rbr   = inp_par[3];
 	param->a     = inp_par[4];
-	param->incl  = inp_par[5];
+	param->incl  = inp_par[5]*M_PI/180;
 	param->rin   = inp_par[6];
 	param->rout  = inp_par[7];
 	param->z     = inp_par[8];
+
+	check_parameter_bounds(param,status);
 }
 
 void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
@@ -72,6 +108,7 @@ relParam* new_relParam(int model_type, int* status){
 
 	return param;
 }
+
 
 /* free relbase parameter */
 void free_relParam(relParam* param){

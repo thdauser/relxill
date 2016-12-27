@@ -52,6 +52,16 @@
   if (EXIT_SUCCESS!=status) return(retval);
 
 
+/**************************/
+/** Function Definitions **/
+/**************************/
+
+/** linear interpolation in 1 dimension **/
+double interp_lin_1d(double ifac_r, double rlo, double rhi);
+
+/** linear interpolation in 2 dimensions **/
+double interp_lin_2d(double ifac1, double r1lo, double r1hi, double ifac2, double r2lo, double r2hi);
+double interp_lin_2d_float(double ifac1, double ifac2, float r11, float r12, float r21, float r22);
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax);
@@ -64,5 +74,20 @@ void relxill_error(const char* const func, const char* const msg, int* status);
 
 /* check and print relxill error message */
 void check_relxill_error(const char* const func, const char* const msg, int* status);
+
+/* check and print relxill error message */
+void check_relxill_error(const char* const func, const char* const msg, int* status);
+
+/* inverse binary search */
+int inv_binary_search(double* arr,int n,double val);
+
+/* inverse binary search */
+int inv_binary_search_float(float* arr,int n,float val);
+
+/* binary search */
+int binary_search_float(float* arr,int n,float val);
+
+/* calculate the radius of marginal stability */
+double kerr_rms(double a);
 
 #endif /* RELUTILITY_H_ */

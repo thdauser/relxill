@@ -29,10 +29,10 @@ static void set_std_param_relline(double* inp_par, int* status){
 	inp_par[1] = 3.0;
 	inp_par[2] = 3.0;
 	inp_par[3] = 5.0;
-	inp_par[4] = 0.9;
-	inp_par[5] = 30.;
+	inp_par[4] = 0.992;
+	inp_par[5] = 60.;
 	inp_par[6] = -1.;
-	inp_par[7] = 400.;
+	inp_par[7] = 1000.;
 	inp_par[8] = 0.0;
 }
 
@@ -114,6 +114,42 @@ void test_relline_table(int* status){
 	return;
 }
 
+static void test_interp(int* status){
+
+	printf("\n *** Testing INTERPOLATION Routines \n");
+
+	double ifac = 0.2;
+	double rlo = 1.0;
+	double rhi = 2.0;
+	double val_1d = 1.2;
+	if (fabs(interp_lin_1d(ifac,rlo,rhi)-val_1d) > LIMIT_PREC){
+		RELXILL_ERROR(" TEST-ERROR: 1d interpolation does not produce the expected result",status);
+	}
+
+
+	double ifac1 = 0.4;
+	double ifac2 = 0.8;
+	double r11 = 1.0;
+	double r12 = 2.0;
+	double r21 = 2.0;
+	double r22 = 4.0;
+	double val_2d = 2.52;
+	if (fabs(interp_lin_2d(ifac1,ifac2,r11,r12,r21,r22)-val_2d) > LIMIT_PREC){
+		RELXILL_ERROR(" TEST-ERROR: 2d interpolation does not produce the expected result",status);
+		printf(" VALUE=%e instead of %e \n",interp_lin_2d(ifac1,ifac2,r11,r12,r21,r22),val_2d);
+	}
+
+	float rf11 = 1.0;
+	float rf12 = 2.0;
+	float rf21 = 2.0;
+	float rf22 = 4.0;
+	if (fabs(interp_lin_2d_float(ifac1,ifac2,rf11,rf12,rf21,rf22)-val_2d) > LIMIT_PREC){
+		RELXILL_ERROR(" TEST-ERROR: 2d interpolation (float) does not produce the expected result",status);
+	}
+
+
+}
+
 int main(void){
 	char *buf;
 	int status = EXIT_SUCCESS;
@@ -124,6 +160,11 @@ int main(void){
 		free(buf);
 
 		test_relline_table(&status);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n");
+
+
+		test_interp(&status);
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n");
 

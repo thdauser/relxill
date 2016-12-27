@@ -1,6 +1,6 @@
 # -*- mode: Make -*-
 
-CFLAGS = -g -ansi -std=c99 -O2 -Wall -Wstrict-prototypes -pedantic
+CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic #-O2 #-pg
 LIBS = -L${HEADAS}/lib
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 

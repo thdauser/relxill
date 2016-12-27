@@ -50,8 +50,11 @@
 #define RELTABLE_NMU0 22
 #define RELTABLE_NR 100
 #define RELTABLE_NG 20
+#define RELTABLE_MAX_R 1000.0
 #define RELTABLE_FILENAME "rel_table_v0.4e.fits"
 
+/** parameters for interpolation an interagration **/
+#define N_FRAD 1000      // values of radial bins (from rmin to rmax)
 
 
 /****** TYPE DEFINITIONS ******/
@@ -72,14 +75,29 @@ typedef struct{
 } relParam;
 
 
+typedef struct{
+	int nr;
+	int ng;
 
+	double* re;
+	double* gmin;
+	double* gmax;
+	double* gstar;
+
+	double*** trff;
+	double*** cosne;
+} relSysPar;
 
 /****** FUNCTION DEFINITIONS ******/
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
-void relbase(const double* ener, const int n_ener, double* photar, const relParam* param, int* status);
+void relbase(const double* ener, const int n_ener, double* photar, relParam* param, int* status);
 
 void free_cached_tables(void );
+
+relSysPar* new_relSysPar(int nr, int ng, int* status);
+
+void free_relSysPar(relSysPar* sysPar);
 
 
 #endif /* RELBASE_H_ */
