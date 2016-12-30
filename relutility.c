@@ -60,7 +60,7 @@ void get_version_number(char** vstr, int* status){
 	}
 }
 
-/**  search for value "val" in array "arr" (sorted ASCENDING!) with length n and
+/**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
 int binary_search_float(float* arr,int n,float val){
 
@@ -78,7 +78,26 @@ int binary_search_float(float* arr,int n,float val){
 	return klo;
 }
 
-/**  search for value "val" in array "arr" (sorted DESCENDING!) with length n and
+/**  search for value "val" in array "arr" (sorted ASCENDING!) with length n and
+ 	 return bin k for which arr[k]<=val<arr[k+1] **/
+int binary_search(double* arr,int n,double val){
+
+	int klo=0;
+	int khi=n-1;
+	int k=-1;
+	while ( (khi-klo) > 1 ){
+		k=(khi+klo)/2;
+		if(arr[k]>val){
+			khi=k;
+		} else {
+			klo=k;
+		}
+	}
+	return klo;
+}
+
+
+/**  FLOAT search for value "val" in array "arr" (sorted DESCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
 int inv_binary_search_float(float* arr,int n,float val){
 
@@ -115,6 +134,47 @@ int inv_binary_search(double* arr,int n,double val){
 	return klo;
 }
 
+/** test if it is a (rel)xill flavour model **/
+int is_xill_model(int model_type){
+	if (model_type < 0){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+/** trapez integration around a single bin **/
+double trapez_integ_single(double re, int ii, int nr){
+	if (ii==0){
+		return 1.0/re[ii+1] - 1.0/re[ii];
+	} else if (ii==nr-1){
+        return 1.0/re[ii] - 1.0/re[ii-1];
+	} else {
+        return 1.0/re[ii+1] - 1.0/re[ii-1];
+	}
+}
+
+/** convert gstar to energy */
+double gstar2ener(double g, double gmin, double gmax, double ener){
+	return (g*(gmax-gmin) + gmin)*ener;
+}
+
+/** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
+double* get_rzone_grid(double rmin, double rmax, int nzones, int* status){
+
+	// rgrid has length nzones+1
+	double* rgrid = (double*) malloc( (nzones+1)*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(rgrid,status,NULL);
+
+	if (nzones==1){
+		rgrid[0] = rmin;
+		rgrid[1] = rmax;
+	} else {
+		printf(" *** Warning: A radial zones grid is not yet implemented \n");
+	}
+	return rgrid;
+}
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax){

@@ -52,7 +52,11 @@ static void check_parameter_bounds(relParam* param, int* status){
 }
 
 
-void init_par_relline(relParam* param, const double* inp_par, const int n_parameter, int* status){
+relParam* init_par_relline(const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELLINE,EMIS_TYPE_BKN,status);
+	CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_RELLINE);
 
@@ -67,15 +71,15 @@ void init_par_relline(relParam* param, const double* inp_par, const int n_parame
 	param->z     = inp_par[8];
 
 	check_parameter_bounds(param,status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	return param;
 }
 
 void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
-	// fill in parameters
-	relParam* param_struct = new_relParam(n_parameter,status);
-	CHECK_STATUS_VOID(*status);
 
-	init_par_relline(param_struct,parameter,n_parameter,status);
+	relParam* param_struct = init_par_relline(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
 
 	// call the function which calculates the line
@@ -86,13 +90,14 @@ void relline(const double* ener, const int n_ener, double* photar, const double*
 }
 
 /* get a new relbase parameter structure and initialize it */
-relParam* new_relParam(int model_type, int* status){
+relParam* new_relParam(int model_type, int emis_type, int* status){
 	relParam* param = (relParam*) malloc(sizeof(relParam));
 	if (param==NULL){
 		RELXILL_ERROR("memory allocation failed",status);
 		return NULL;
 	}
 	param->model_type = model_type;
+	param->emis_type  = emis_type;
 
 	param->a = PARAM_DEFAULT;
 	param->incl = PARAM_DEFAULT;

@@ -25,9 +25,9 @@ static relDat* new_relDat(int nr, int ng, int* status){
 	dat->r = (float*) malloc( sizeof(float) * nr);
 	CHECK_MALLOC_RET_STATUS(dat->r,status,dat);
 	dat->gmin = (float*) malloc( sizeof(float) * nr);
-	CHECK_MALLOC_RET_STATUS(dat->r,status,dat);
+	CHECK_MALLOC_RET_STATUS(dat->gmin,status,dat);
 	dat->gmax = (float*) malloc( sizeof(float) * nr);
-	CHECK_MALLOC_RET_STATUS(dat->r,status,dat);
+	CHECK_MALLOC_RET_STATUS(dat->gmax,status,dat);
 
 	dat->cosne1 = (float**) malloc( sizeof(float*) * nr);
 	CHECK_MALLOC_RET_STATUS(dat->cosne1,status,dat);
@@ -216,7 +216,7 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 		tab = new_relTable(RELTABLE_NA,RELTABLE_NMU0,RELTABLE_NR,RELTABLE_NG,status);
 		CHECK_STATUS_BREAK(*status);
 
-		// should be set by previou s routine
+		// should be set by previous routine
 		assert(tab!=NULL);
 		assert(tab->arr!=NULL);
 
@@ -278,7 +278,8 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 
 static void free_relDat(relDat* dat, int nr){
 	if (dat!=NULL){
-		for (int ii=0; ii<nr; ii++){
+		int ii;
+		for (ii=0; ii<nr; ii++){
 			free(dat->cosne1[ii]);
 			free(dat->cosne2[ii]);
 			free(dat->trff1[ii]);
@@ -292,17 +293,19 @@ static void free_relDat(relDat* dat, int nr){
 		free(dat->r);
 		free(dat->gmin);
 		free(dat->gmax);
-		free(dat);
 	}
 }
 
 void free_relTable(relTable* tab){
 	if(tab!=NULL){
 		if (tab->arr!=NULL){
-			for (int ii=0; ii<tab->n_a; ii++){
+			int ii;
+			for (ii=0; ii<tab->n_a; ii++){
 				if (tab->arr[ii] !=NULL){
-					for (int jj=0; jj<tab->n_mu0; jj++){
+					int jj;
+					for (jj=0; jj<tab->n_mu0; jj++){
 						free_relDat(tab->arr[ii][jj],tab->n_r);
+						free(tab->arr[ii][jj]);
 					}
 					free(tab->arr[ii]);
 				}
@@ -311,6 +314,6 @@ void free_relTable(relTable* tab){
 		}
 		free(tab->a);
 		free(tab->mu0);
+		free(tab);
 	}
-	free(tab);
 }

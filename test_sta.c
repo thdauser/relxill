@@ -159,9 +159,9 @@ int main(void){
 		printf("\n *** Starting RELXILL Version %s *** \n\n",buf);
 		free(buf);
 
-		test_relline_table(&status);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+//		test_relline_table(&status);
+//		CHECK_STATUS_BREAK(status);
+//		printf("     ---> successful \n");
 
 
 		test_interp(&status);
@@ -173,13 +173,16 @@ int main(void){
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n");
 
-	} while(0);
+		printf( "\n *** Cleaning up and freeing cached structures\n");
+		free_cached_tables();
 
-	// free tables
-	free_cached_tables();
+	} while(0);
 
 	if(status!=EXIT_SUCCESS){
 		printf(" *** TESTING NOT SUCCESSFUL \n");
+		// free tables
+		printf( "\n *** Cleaning up and freeing cached structures\n");
+		free_cached_tables();
 	}
 
 }

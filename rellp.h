@@ -15,29 +15,14 @@
 
     Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
 */
-#ifndef MODELS_H_
-#define MODELS_H_
+#ifndef RELLP_H_
+#define RELLP_H_
 
+#include "common.h"
 #include "relbase.h"
 #include "relutility.h"
 
-/**** DEFINES **/
-#define MOD_TYPE_RELLINE 1
 
-#define NUM_PARAM_RELLINE 9
+void calc_emis_profile(relParam* param,relSysPar* sysPar, int* status);
 
-/****  TYPE DEFINITIONS ****/
-
-
-/**** FUNCTION DEFINITIONS ****/
-relParam* init_par_relline(const double* inp_par, const int n_parameter, int* status);
-
-void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
-
-/* get a new relbase parameter structure and initialize it */
-relParam* new_relParam(int model_type, int emis_type, int* status);
-
-/* free relbase parameter */
-void free_relParam(relParam*);
-
-#endif /* MODELS_H_ */
+#endif /* RELLP_H_ */

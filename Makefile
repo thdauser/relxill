@@ -1,15 +1,16 @@
 # -*- mode: Make -*-
 
-CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic #-O2 #-pg
-LIBS = -L${HEADAS}/lib
+CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O2
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
+
+LIBS = -L${HEADAS}/lib
 
 COMPILE.c = gcc
 
 INCLUDES = -I${HEADAS}/include
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o
-headers = relbase.h  relmodels.h relutility.h reltable.h
+objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o
+headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h
 
 LINK_TARGET = test_sta
 
@@ -18,6 +19,7 @@ all:
 	make test_sta
 
 $(LINK_TARGET): $(objects)
+	echo $(CFLAGS)
 	gcc -o $@ $^ $(LDFLAGS) 
 
 %.o: %.c %.h
@@ -31,10 +33,18 @@ clean:
 
 
 .PHONY: valgrind, gdb
-valgrind: 
-	make test_sta
-	valgrind --leak-check=full ./test_sta	
+valgrind:
+	make clean
+	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
+	valgrind --tool=memcheck --leak-check=full ./test_sta	
 
 gdb:
-	make test_sta
+	make clean
+	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
 	gdb --args ./test_sta
+
+gprof:
+	make clean
+	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
+	./test_sta
+	gprof -b -p test_sta

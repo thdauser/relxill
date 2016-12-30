@@ -87,7 +87,22 @@ int inv_binary_search_float(float* arr,int n,float val);
 /* binary search */
 int binary_search_float(float* arr,int n,float val);
 
+int binary_search(double* arr,int n,double val);
+
+/** trapez integration around a single bin **/
+double trapez_integ_single(double re, int ii, int nr);
+
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);
+
+/** test if it is a (rel)xill flavour model **/
+int is_xill_model(int model_type);
+
+/** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
+double* get_rzone_grid(double rmin, double rmax, int nzones, int* status);
+
+/** convert gstar to energy */
+double gstar2ener(double g, double gmin, double gmax, double ener);
+
 
 #endif /* RELUTILITY_H_ */
