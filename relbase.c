@@ -143,28 +143,12 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 	double ifac_mu0 = (mu0-tab->mu0[ind_mu0])/
 				   (tab->mu0[ind_mu0+1]-tab->mu0[ind_mu0]);
 
-	// TODO: check if we need R_DIFF !!!!!!!
-//	double r_diff = rms - ((1.0-ifac_a)*kerr_rms(tab->a[ind_a])
-//	       + (ifac_a)*kerr_rms(tab->a[ind_a+1]) );
-	double r_diff = rms - interp_lin_1d(ifac_a,
-					kerr_rms(tab->a[ind_a]),kerr_rms(tab->a[ind_a+1]));
-	/**printf(" R_DIFF %e %e %e %e %e\n",r_diff,kerr_rms(tab->a[ind_a]),kerr_rms(tab->a[ind_a+1]),
-			interp_lin_1d(ifac_a,
-								kerr_rms(tab->a[ind_a]),kerr_rms(tab->a[ind_a+1])),
-								ifac_a); **/
-    //printf(" RMS=%e\n",rms);
-
-//	printf(" rms:%.3f, rdiff:%.3e -- %.3e\n",rms,r_diff,tab->arr[ind_a][ind_mu0]->r[tab->n_r-1]);
-//	printf(" ind_a:%i ind_mu0:%i \n",ind_a,ind_mu0);
-
 	/** get the radial grid (the radial grid only changes with A by the table definition) **/
 	assert(fabs(tab->arr[ind_a][ind_mu0]->r[tab->n_r-1]
 			    - tab->arr[ind_a][ind_mu0]->r[tab->n_r-1]) < 1e-6);
 	for (int ii=0; ii < tab->n_r; ii++){
 		cached_tab_sysPar->re[ii] = interp_lin_1d(ifac_a,
-				tab->arr[ind_a][ind_mu0]->r[ii],tab->arr[ind_a+1][ind_mu0]->r[ii])+r_diff;
-		//printf("%i %e %e %e --> %e\n",ii,cached_tab_sysPar->re[ii],r_diff,rms,cached_tab_sysPar->re[ii]+r_diff);
-		//printf(" -- %e %e -- \n",tab->arr[ind_a][ind_mu0]->r[ii],tab->arr[ind_a+1][ind_mu0]->r[ii]);
+				tab->arr[ind_a][ind_mu0]->r[ii],tab->arr[ind_a+1][ind_mu0]->r[ii]);
 	}
 
 	// get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
