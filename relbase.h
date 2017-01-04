@@ -70,7 +70,7 @@ typedef struct{
 
 
 	double cache_rad_relb_fun;
-	double cache_val_relb_func;
+	double cache_val_relb_func[2];
 
 	double cache_bin_ener;
 	int cached_relbf;
@@ -91,10 +91,10 @@ typedef struct{
 /****** FUNCTION DEFINITIONS ******/
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
-void relbase(const double* ener, const int n_ener, double* photar, relParam* param, int* status);
+void relbase(double* ener, const int n_ener, double* photar, relParam* param, int* status);
 
 /** calculate the relline profile(s) for all given zones **/
-void relline_profile(rel_spec* spec, relSysPar* sysPar, double line_ener, int* status);
+void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status);
 
 void free_cached_tables(void );
 

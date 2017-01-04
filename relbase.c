@@ -95,11 +95,11 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
 /*  get the fine radial grid */
 static void get_fine_radial_grid(double rin, double rout, relSysPar* sysPar){
 
-	double r1=1.0/sqrt(rout);
-	double r2=1.0/sqrt(rin);
+	double r1=1.0/rout;
+	double r2=1.0/rin;
 	for (int ii=0; ii<sysPar->nr; ii++){
-		sysPar->re[ii] = ((double) (ii) )*(r2-r1)/sysPar->nr+r1;
-		sysPar->re[ii] = 1.0/(sysPar->re[ii]*sysPar->re[ii]);
+		sysPar->re[ii] = ((double) (ii) )*(r2-r1)/(sysPar->nr-1)+r1;
+		sysPar->re[ii] = 1.0/(sysPar->re[ii]);
 		assert(sysPar->re[ii]>1.0);
 	}
 	return;
@@ -143,9 +143,16 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 	double ifac_mu0 = (mu0-tab->mu0[ind_mu0])/
 				   (tab->mu0[ind_mu0+1]-tab->mu0[ind_mu0]);
 
-	/** TODO: check if we need R_DIFF
-	double r_diff = rms - ((1.0-ifac_a)*kerr_rms(tab->a[ind_a])
-	       + (ifac_a)*kerr_rms(tab->a[ind_a+1]) ); **/
+	// TODO: check if we need R_DIFF !!!!!!!
+//	double r_diff = rms - ((1.0-ifac_a)*kerr_rms(tab->a[ind_a])
+//	       + (ifac_a)*kerr_rms(tab->a[ind_a+1]) );
+	double r_diff = rms - interp_lin_1d(ifac_a,
+					kerr_rms(tab->a[ind_a]),kerr_rms(tab->a[ind_a+1]));
+	/**printf(" R_DIFF %e %e %e %e %e\n",r_diff,kerr_rms(tab->a[ind_a]),kerr_rms(tab->a[ind_a+1]),
+			interp_lin_1d(ifac_a,
+								kerr_rms(tab->a[ind_a]),kerr_rms(tab->a[ind_a+1])),
+								ifac_a); **/
+    //printf(" RMS=%e\n",rms);
 
 //	printf(" rms:%.3f, rdiff:%.3e -- %.3e\n",rms,r_diff,tab->arr[ind_a][ind_mu0]->r[tab->n_r-1]);
 //	printf(" ind_a:%i ind_mu0:%i \n",ind_a,ind_mu0);
@@ -155,17 +162,19 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 			    - tab->arr[ind_a][ind_mu0]->r[tab->n_r-1]) < 1e-6);
 	for (int ii=0; ii < tab->n_r; ii++){
 		cached_tab_sysPar->re[ii] = interp_lin_1d(ifac_a,
-				tab->arr[ind_a][ind_mu0]->r[ii],tab->arr[ind_a+1][ind_mu0]->r[ii]);
+				tab->arr[ind_a][ind_mu0]->r[ii],tab->arr[ind_a+1][ind_mu0]->r[ii])+r_diff;
+		//printf("%i %e %e %e --> %e\n",ii,cached_tab_sysPar->re[ii],r_diff,rms,cached_tab_sysPar->re[ii]+r_diff);
+		//printf(" -- %e %e -- \n",tab->arr[ind_a][ind_mu0]->r[ii],tab->arr[ind_a+1][ind_mu0]->r[ii]);
 	}
 
-	// get the extent of the disk (indices are defined such that tab->r[ind] <= r < tab->r[ind+1]
+	// get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
 	int ind_rmin = inv_binary_search(cached_tab_sysPar->re,tab->n_r,rin);
 	int ind_rmax = inv_binary_search(cached_tab_sysPar->re,tab->n_r,rout);
 
 	for (int ii=0; ii < tab->n_r; ii++){
 		// TODO: SHOULD WE ONLY INTERPOLATE ONLY THE VALUES WE NEED??? //
-		// only interpolate values where we need them
-		if (ii>=ind_rmin || ii<=ind_rmax+1){
+		// only interpolate values where we need them (radius is defined invers!)
+		if (ii<=ind_rmin || ii>=ind_rmax+1){
 			interpol_a_mu0(ii, ifac_a, ifac_mu0, ind_a, ind_mu0, cached_tab_sysPar,tab);
 		} else {  // set everything we won't need to 0 (just to be sure)
 			cached_tab_sysPar->gmin[ii]=0.0;
@@ -193,9 +202,11 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 
 	// let's try to be as efficient as possible here (not that "r" DEcreases)
 	assert(ind_rmin>0); // as defined inverse, re[ind_rmin+1] is the lowest value
-	assert((cached_tab_sysPar->re[ind_rmin+1]<=rin));
+	printf("%e %e %e\n",cached_tab_sysPar->re[ind_rmin+1],rin,rms);
+	// assert((cached_tab_sysPar->re[ind_rmin+1]<=rin));
 	assert((cached_tab_sysPar->re[ind_rmin]>=rin));
-	assert((cached_tab_sysPar->re[ind_rmax]<=rout));
+	assert((cached_tab_sysPar->re[ind_rmax+1]<=rout));
+	assert((cached_tab_sysPar->re[ind_rmax]>=rout));
 	assert(ind_rmax <= ind_rmin);
 	assert(rout<=1000.0);
 
@@ -220,7 +231,7 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 
 		ifac_r = (sysPar->re[ii]- cached_tab_sysPar->re[ind_tabr+1])
 				/(cached_tab_sysPar->re[ind_tabr] - cached_tab_sysPar->re[ind_tabr+1]);
-		assert(ifac_r>=0.0);
+		// assert(ifac_r>=0.0);
 
 		// we only allow extrapolation (i.e. ifac_r < 0) for the last bin
 		if (ifac_r >1.0 && ind_tabr>0){
@@ -229,10 +240,6 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 					sysPar->re[ii],cached_tab_sysPar->re[ind_tabr+1],cached_tab_sysPar->re[ind_tabr]);
 			CHECK_STATUS_VOID(*status);
 		}
-
-/**		printf("[%03i] rad: %.4e  <= %.4e  < %.4e [ifac_r=%.4e]\n",
-				ii,cached_tab_sysPar->re[ind_tabr+1],sysPar->re[ii],
-				cached_tab_sysPar->re[ind_tabr],ifac_r); **/
 
 		int jj; int kk;
 		for (jj=0; jj<sysPar->ng; jj++){
@@ -249,6 +256,7 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 		}
  		sysPar->gmin[ii] =
  			interp_lin_1d(ifac_r,cached_tab_sysPar->gmin[ind_tabr+1],cached_tab_sysPar->gmin[ind_tabr]);
+
  		sysPar->gmax[ii] =
  			interp_lin_1d(ifac_r,cached_tab_sysPar->gmax[ind_tabr+1],cached_tab_sysPar->gmax[ind_tabr]);
 
@@ -280,6 +288,7 @@ static relSysPar* get_system_parameters(relParam* param, int* status){
 /** get new structure to store the relline spectrum (possibly for several zones)
     important note: ener has n_ener+1 number of bins **/
 static rel_spec* new_rel_spec(int nzones, const int n_ener, int*status){
+
 	rel_spec* spec = (rel_spec*) malloc(sizeof(rel_spec));
 	CHECK_MALLOC_RET_STATUS(spec,status,NULL);
 
@@ -291,7 +300,8 @@ static rel_spec* new_rel_spec(int nzones, const int n_ener, int*status){
 	CHECK_MALLOC_RET_STATUS(spec->flux,status,spec);
 
 	int ii;
-	for (ii=0; ii<spec->n_ener; ii++){
+
+	for (ii=0; ii<spec->n_zones; ii++){
 		spec->flux[ii] = (double*) malloc ( n_ener * sizeof(double) );
 		CHECK_MALLOC_RET_STATUS(spec,status,spec);
 	}
@@ -314,17 +324,18 @@ static int get_num_zones(int model_type){
 
 
 /** initialize the rel_spec structure **/
-static void init_rel_spec(rel_spec** spec, relParam* param, const double* ener, const int n_ener, int* status ){
+static void init_rel_spec(rel_spec** spec, relParam* param, double** pt_ener, const int n_ener, int* status ){
 
 	int nzones = get_num_zones(param->model_type);
+
 	if ((*spec)==NULL){
 		(*spec) = new_rel_spec(nzones,n_ener,status);
 	}
-	double* r_grid = get_rzone_grid(param->rin, param->rout, nzones, status);
-	CHECK_STATUS_VOID(*status);
-	(*spec)->ener = &ener;
-	(*spec)->rgrid = r_grid;
 
+	(*spec)->rgrid = get_rzone_grid(param->rin, param->rout, nzones, status);
+	CHECK_STATUS_VOID(*status);
+
+	(*spec)->ener = (*pt_ener);
 	return;
 }
 
@@ -338,71 +349,18 @@ static void zero_rel_spec_flux(rel_spec* spec){
 }
 
 
-/** Romberg Integration Routine **/
-static double RombergIntegral(a,b,str_relb_func* str, int k){
-  const double prec = 0.05;
-  double obtprec;
-  const int itermin = 0;
-  const int itermax = 0;
-  const int maxiter = 6;
-  double t[maxiter+1][maxiter+1];
-
-  if (itermax>maxiter) {
-	  itermax=maxiter;
-  }
-
-  // check if this value has already been calculated
-  double r;
-  if (str->cached_relbf) {
-     r = str->cache_val_relb_func[k];
-  } else {
-     r = RELB_FUNC(a,k);
-  }
-
-  str->cache_val_relb_func[k] = RELB_FUNC(b,k);
-  str->cache_rad_relb_fun = str->re;
-  // rb(k) = RELB_FUNC(b,k);
-
-  int ii;
-
-  double ta = (r + str->cache_val_relb_func[k]) / 2.0;
-  double niter = 0;
-  double pas=b-a;
-  double pasm=1.0;
-  t[0][0]=ta*pas;
-  while ( ( niter<itermin) && ( obtprec < prec) && ( niter <= itermax)) {
-	  niter++;
-	  pas=pas/2.0;
-	  pasm=pasm/2.0;
-	  double s=ta;
-	  for (ii=0; ii<niter*niter-1; ii++) {
-		  s += RELB_FUNC(a+pas*ii,k);
-	  }
-  t[0][niter]=s*pas;
-  r=1.0;
-  for (ii=0; ii<niter; ii++){
-     r *= 4.0;
-     int jj=niter-ii;
-     t[ii][jj] = (r*t[ii-1][jj+1] - t[ii-1][jj])/(r-1.0);
-  }
-   obtprec = fabs(t[niter][0] - t[niter-1][0])/t[niter][0];
-  }
-
-  return t[niter][0];
-}
-
-
+/** relat. transfer function, which we will need to integrate over the energy bin then **/
 static str_relb_func* new_str_relb_func(relSysPar* sysPar, int* status){
 	str_relb_func* str = (str_relb_func*) malloc(sizeof(str_relb_func));
-	CHECK_MALLOC_RET(str,status,NULL);
+	CHECK_MALLOC_RET_STATUS(str,status,NULL);
 
 	str->gstar = sysPar->gstar;
 	str->ng = sysPar->ng;
 
+	//str->cache_val_relb_func = (double*) malloc(2*sizeof(double));
+	//CHECK_MALLOC_RET_STATUS(str->cache_val_relb_func,status,str);
+
 	return str;
-}
-static free_str_relb_func(str_relb_func* str){
-	free(str);
 }
 
 /** relat. function which we want to integrate **/
@@ -415,14 +373,15 @@ static double relb_func(double e, int k, str_relb_func* str, double line_energy)
   // find the indices in the original g-grid, but check first if they have already been calculated
   int ind;
   if (!((egstar>=str->gstar[str->save_g_ind])&&(egstar<str->gstar[str->save_g_ind+1]))){
-	  str->save_g_ind  = binary_search(egstar,str->gstar,str->ng);
+	  str->save_g_ind  = binary_search(str->gstar,str->ng,egstar);
   }
   ind = str->save_g_ind;
 
-  double inte = (egstar -gstar(ind))/(gstar[ind+1] - gstar[ind]);
+  double inte = (egstar - str->gstar[ind])/(str->gstar[ind+1] - str->gstar[ind]);
   double inte1=1.0-inte;
-  double ftrf = inte*str->trff[ind,k] + inte1*str->trff[ind+1,k];
-  double fmu0 = inte*str->cosne[ind,k] + inte1*str->cosne[ind+1,k];
+  double ftrf = inte*str->trff[ind][k] + inte1*str->trff[ind+1][k];
+
+  // double fmu0 = inte*str->cosne[ind,k] + inte1*str->cosne[ind+1,k];
 
   /** isotropic limb law by default (see Svoboda (2009))
   limb = 1.D0
@@ -436,11 +395,76 @@ static double relb_func(double e, int k, str_relb_func* str, double line_energy)
  return pow((eg*str->re),3)/((str->gmax-str->gmin)*sqrt(egstar - egstar*egstar))*ftrf*str->emis;
 }
 
+/** Romberg Integration Routine **/
+static double RombergIntegral(double a,double b,int k, str_relb_func* str, double line_ener){
+  const double prec = 0.05;
+  double obtprec = 1.0;
+  const int itermin = 0;
+  int itermax = 5;
+  const int maxiter = 6;
+  double t[maxiter+1][maxiter+1];
+
+  int niter = 0;
+
+  if (itermax>maxiter) {
+	  itermax=maxiter;
+  }
+
+  // check if this value has already been calculated
+  double r;
+  if (str->cached_relbf) {
+     r = str->cache_val_relb_func[k];
+  } else {
+     r = relb_func(a,k,str,line_ener);
+  }
+
+  str->cache_val_relb_func[k] = relb_func(b,k,str,line_ener);
+  str->cache_rad_relb_fun = str->re;
+  // rb(k) = RELB_FUNC(b,k);
+
+
+  int ii;
+
+  double ta = (r + str->cache_val_relb_func[k]) / 2.0;
+  double pas=b-a;
+  double pasm=1.0;
+  double s=ta;
+  t[0][0]=ta*pas;
+  while ( (niter<itermin) || ((obtprec > prec) && (niter <= itermax) )) {
+	  niter++;
+	  pas=pas/2.0;
+	  pasm=pasm/2.0;
+	  s=ta;
+	  for (ii=1; ii<=pow(2,niter)-1; ii++) {
+		  s += relb_func(a+pas*ii,k,str,line_ener);
+	  }
+	  t[0][niter]=s*pas;
+	  r=1.0;
+	  for (ii=1; ii<=niter; ii++){
+		  r *= 4.0;
+		  int jj=niter-ii;
+		  t[ii][jj] = (r*t[ii-1][jj+1] - t[ii-1][jj])/(r-1.0);
+	  }
+	  obtprec = fabs(t[niter][0] - t[niter-1][0])/t[niter][0];
+ }
+
+  return t[niter][0];
+}
+
+
+static void free_str_relb_func(str_relb_func* str){
+	if (str!=NULL){
+//		free(str->cache_val_relb_func);
+		free(str);
+	}
+}
+
+
 /** function which makes an approximated integration for gstar->0/1
     this is only done within gstar=[0,H] and gstar[H,1-H]
     input:   bin_lo and bin_hi
     output:  area of the bin (= luminosity = E/dt/bin) )  **/
-static double int_edge(blo,bhi,h,str_relb_func* str, line_energy){
+static double int_edge(double blo, double bhi, double h, str_relb_func* str, double line_energy){
 
 
   // get the value of the Luminosity on the point closest to the ones to be approximated ("H")
@@ -467,7 +491,7 @@ static double int_edge(blo,bhi,h,str_relb_func* str, line_energy){
   int k=0;
   double norm = 0.0;
   for (k=0; k<2; k++) {
-    norm = norm + relb_func(gstar2ener(hex,str->gmin,str->gmax,line_energy),k);
+    norm = norm + relb_func(gstar2ener(hex,str->gmin,str->gmax,line_energy),k,str,line_energy);
   }
 
 
@@ -492,11 +516,11 @@ static double int_romb(double lo, double hi, str_relb_func* str, double line_ene
 	int k;
 	if (lo>=line_energy){
 		for (k=0;k<2;k++){
-			flu += RombergIntegral(lo,hi,k);
+			flu += RombergIntegral(lo,hi,k,str,line_energy);
 		}
 	} else {
 		for (k=0;k<2;k++){
-			flu += relb_func((hi+lo)/2.0,k)*(hi-lo);
+			flu += relb_func((hi+lo)/2.0,k,str,line_energy)*(hi-lo);
 		}
 	}
 
@@ -504,18 +528,19 @@ static double int_romb(double lo, double hi, str_relb_func* str, double line_ene
 }
 
 /** integrate the flux bin (see Dauser+2010, MNRAS for details) **/
-static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0, double line_ener){
+static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0){
 
+	double line_ener = 1.0;
 	double flu=0.0;
 
-	int gblo = (rlo0/line_ener - str->gmin)*str->del_g;
+	double gblo = (rlo0/line_ener - str->gmin)*str->del_g;
 	if (gblo<0.0) {
 		gblo=0.0;
 	} else if (gblo>1.0){
 		gblo = 1.0;
 	}
 
-	int gbhi = (rhi0/line_ener - str->gmin)*str->del_g;
+	double gbhi = (rhi0/line_ener - str->gmin)*str->del_g;
 	if (gbhi<0.0) {
 		gbhi=0.0;
 	} else if (gbhi>1.0){
@@ -525,8 +550,8 @@ static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0, do
 		return 0.0;
 	}
 
-	int rlo = rlo0;
-	int rhi = rhi0;
+	double rlo = rlo0;
+	double rhi = rhi0;
 
 	double hlo; double hhi;
 	// #1: low approx. integration
@@ -564,7 +589,6 @@ static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0, do
 		flu = flu + int_edge(hlo,hhi,GFAC_H,str,line_ener);
 	}
 
-	int calc=0;
 	// #3: real integration (only if necessary)
 	if ((rhi>=0) && (rlo>=0)) {
 
@@ -578,6 +602,7 @@ static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0, do
 		flu = flu  + int_romb(rlo,rhi,str,line_ener);
 	}
 
+
 	return flu;
 }
 
@@ -586,18 +611,22 @@ static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gma
 	str->gmin = gmin;
 	str->gmax = gmax;
 	str->del_g = 1./(gmax-gmin);
-	str->emis;
+	str->emis = emis;
 
 	str->trff = trff;
 	str->cosne = cosne;
 
 	str->cache_bin_ener = -1.0;
 	str->cached_relbf = 0;
+
+	str->save_g_ind = 0;
 }
 
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func* cached_str_relb_func = NULL;
-void relline_profile(rel_spec* spec, relSysPar* sysPar, double line_ener, int* status){
+void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
+
+	double line_ener=1.0;
 
 	// very important: set all fluxes to zero
 	zero_rel_spec_flux(spec);
@@ -608,7 +637,6 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, double line_ener, int* s
 
 	int ii; int jj;
 	for (ii=0; ii<sysPar->nr; ii++){
-
 	     // gstar in [0,1] + corresponding energies (see gstar2ener for full formula)
 	     double egmin = sysPar->gmin[ii]*line_ener;
 	     double egmax = sysPar->gmax[ii]*line_ener;
@@ -642,20 +670,51 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, double line_ener, int* s
 	       			sysPar->re[ii], sysPar->gmin[ii],sysPar->gmax[ii],
 	       			sysPar->trff[ii],sysPar->cosne[ii],
 					sysPar->emis[ii]);
+
 	        // lastly, loop over the energies
 	        for (jj=ielo; jj<=iehi; jj++){
-	           spec->flux[izone,jj] +=
-	        	integ_relline_bin(cached_str_relb_func,spec->ener[jj],spec->ener[jj+1],line_ener)*weight;
+	        	double tmp_var =integ_relline_bin(cached_str_relb_func,spec->ener[jj],spec->ener[jj+1]);
+	           spec->flux[izone][jj] +=     	tmp_var*weight;
+
+/**		       printf("[%i,%i] %.4f in [%.6f, %.6f] \n",
+		       			ii+1,jj+1,
+		       			tmp_var,
+						spec->ener[jj],spec->ener[jj+1]); **/
 	     	 }
-	     }
+		}
 	}
 
+	// normalize to 'cts/bin'
+	double sum = 0.0;
+	for (ii=0; ii<spec->n_zones; ii++){
+		for (jj=0; jj<spec->n_ener; jj++){
+			spec->flux[ii][jj] /= 0.5*( spec->ener[jj] + spec->ener[jj+1] );
+			sum += spec->flux[ii][jj];
+		}
+	}
+	for (ii=0; ii<spec->n_zones; ii++){
+		for (jj=0; jj<spec->n_ener; jj++){
+			spec->flux[ii][jj] /= sum;
+		}
+	}
+}
+
+/** print the relline profile   **/
+static void save_relline_profile(rel_spec* spec){
+
+	FILE* fp =  fopen ( "test_reline_profile.dat","w+" );
+	int ii;
+	for (ii=0; ii<spec->n_ener; ii++){
+		fprintf(fp, " %e \t %e \t %e \n",spec->ener[ii],spec->ener[ii+1],spec->flux[0][ii]);
+	}
+	if (fclose(fp)) exit(1);
 }
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup
+ * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
  * output: photar(n_ener)     */
-void relbase(const double* ener, const int n_ener, double* photar, relParam* param, int* status){
+void relbase(double* ener, const int n_ener, double* photar, relParam* param, int* status){
 
 	// check caching here?? -> free values we need to re-alloc!
 
@@ -668,23 +727,25 @@ void relbase(const double* ener, const int n_ener, double* photar, relParam* par
 	CHECK_STATUS_VOID(*status);
 
 	// init the spectra where we store the flux
-	init_rel_spec(&cached_rel_spec, param, ener, n_ener, status);
+	init_rel_spec(&cached_rel_spec, param, &ener, n_ener, status);
 	CHECK_STATUS_VOID(*status);
 
 	// calculate line profile
-	relline_profile(cached_rel_spec, sysPar, param->lineE, status);
+	relline_profile(cached_rel_spec, sysPar, status);
+	CHECK_STATUS_VOID(*status);
 
-
+	save_relline_profile(cached_rel_spec);
 	// cache everything once we've calculated all the stuff
 	// cached_params (!!!)
 }
 
-static free_rel_spec(rel_spec* spec){
+static void free_rel_spec(rel_spec* spec){
 	if (spec!=NULL){
 		free(spec->ener);
+		free(spec->rgrid);
 		if (spec->flux!=NULL){
 			int ii;
-			for (ii=0; ii<spec; ii++){
+			for (ii=0; ii<spec->n_zones; ii++){
 				free(spec->flux[ii]);
 			}
 		}

@@ -15,7 +15,6 @@
 
     Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
 */
-
 #include "relbase.h"
 #include "relmodels.h"
 #include "relutility.h"
@@ -28,11 +27,11 @@ static void set_std_param_relline(double* inp_par, int* status){
 	inp_par[0] = 6.4;
 	inp_par[1] = 3.0;
 	inp_par[2] = 3.0;
-	inp_par[3] = 5.0;
-	inp_par[4] = 0.992;
-	inp_par[5] = 60.;
+	inp_par[3] = 15.0;
+	inp_par[4] = 0.998;
+	inp_par[5] = 60.0;
 	inp_par[6] = -1.;
-	inp_par[7] = 1000.;
+	inp_par[7] = 400.;
 	inp_par[8] = 0.0;
 }
 
@@ -47,9 +46,9 @@ static void std_eval_relline(int* status){
 	CHECK_STATUS_VOID(*status);
 
 	/* create an energy grid */
-	int n_ener = 1000;
-	double ener[n_ener];
-	get_log_grid(ener,n_ener,0.1,10);
+	int n_ener = 300;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.1,1.5);
 
 	/* call the relline model */
 	double photar[n_ener];

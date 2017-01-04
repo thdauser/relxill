@@ -73,17 +73,38 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
 
+	param->z += param->lineE-1;
+
+
 	return param;
 }
 
-void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+/** shift the spectrum such that we can calculate the line for 1 keV **/
+static double* shift_energ_spec_1keV(const double* ener, const int n_ener, double line_energ, double z,int* status){
 
+	double* ener1keV = (double*) malloc((n_ener+1)*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(ener1keV,status,NULL);
+
+	int ii;
+	for (ii=0; ii<=n_ener; ii++){
+		ener1keV[ii] = ener[ii];
+//		ener1keV[ii] = ener[ii]*(z + line_energ);
+	}
+	return ener1keV;
+}
+
+/** XSPEC RELLINE MODEL FUNCTION **/
+void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relline(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
 
-	// call the function which calculates the line
-	relbase(ener, n_ener, photar, param_struct,status);
+	// shift the spectrum such that we can calculate the line for 1 keV
+	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
+	 CHECK_STATUS_VOID(*status);
+
+	// call the function which calculates the line (assumes a line at 1keV!)
+	relbase(ener1keV, n_ener, photar, param_struct,status);
 	CHECK_STATUS_VOID(*status);
 
 	free_relParam(param_struct);

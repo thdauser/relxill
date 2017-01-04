@@ -22,6 +22,7 @@
 static void get_emis_bkn(double* emis, double* re,int nr,
 		double index1, double index2, double rbr){
 
+	// TODO: make it independent of rbr (maybe 1 at r=1rg?)
 	double alpha;
 	int ii;
 	for (ii=0; ii<nr; ii++){

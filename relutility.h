@@ -66,6 +66,9 @@ double interp_lin_2d_float(double ifac1, double ifac2, float r11, float r12, flo
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax);
 
+/* get a logarithmic grid from emin to emax with n_ener bins  */
+void get_lin_grid(double* ener, int n_ener, double emin, double emax);
+
 /* get the current version number */
 void get_version_number(char** vstr, int* status);
 
@@ -90,7 +93,7 @@ int binary_search_float(float* arr,int n,float val);
 int binary_search(double* arr,int n,double val);
 
 /** trapez integration around a single bin **/
-double trapez_integ_single(double re, int ii, int nr);
+double trapez_integ_single(double* re, int ii, int nr);
 
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);

@@ -43,6 +43,10 @@ gdb:
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
 	gdb --args ./test_sta
 
+ddd:
+	echo "exit" | make gdb 
+	ddd test_sta &
+
 gprof:
 	make clean
 	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 

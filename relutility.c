@@ -145,7 +145,7 @@ int is_xill_model(int model_type){
 
 
 /** trapez integration around a single bin **/
-double trapez_integ_single(double re, int ii, int nr){
+double trapez_integ_single(double* re, int ii, int nr){
 	if (ii==0){
 		return 1.0/re[ii+1] - 1.0/re[ii];
 	} else if (ii==nr-1){
@@ -183,6 +183,15 @@ void get_log_grid(double* ener, int n_ener, double emin, double emax){
 		ener[ii] = exp(ener[ii]);
 	}
 }
+
+
+/* get a logarithmic grid from emin to emax with n_ener bins  */
+void get_lin_grid(double* ener, int n_ener, double emin, double emax){
+	for (int ii=0; ii<n_ener; ii++){
+		ener[ii] = 1.0*ii / (n_ener-1) * ( emax - emin) + emin;
+	}
+}
+
 
 /* get RMS (ISCO) for the Kerr Case */
 double kerr_rms(double a){
