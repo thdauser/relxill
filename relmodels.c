@@ -73,11 +73,32 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
 
-	param->z += param->lineE-1;
+	return param;
+}
 
+relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELLINELP,EMIS_TYPE_LP,status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	assert(n_parameter == NUM_PARAM_RELLINELP);
+
+	param->lineE  = inp_par[0];
+	param->height = inp_par[1];
+	param->a      = inp_par[2];
+	param->incl   = inp_par[3]*M_PI/180;
+	param->rin    = inp_par[4];
+	param->rout   = inp_par[5];
+	param->z      = inp_par[6];
+	param->gamma  = inp_par[7];
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_RET(*status,NULL);
 
 	return param;
 }
+
 
 /** shift the spectrum such that we can calculate the line for 1 keV **/
 static double* shift_energ_spec_1keV(const double* ener, const int n_ener, double line_energ, double z,int* status){
@@ -87,8 +108,8 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 
 	int ii;
 	for (ii=0; ii<=n_ener; ii++){
-		ener1keV[ii] = ener[ii];
-//		ener1keV[ii] = ener[ii]*(z + line_energ);
+		// ener1keV[ii] = ener[ii];
+		ener1keV[ii] = ener[ii]*(z + line_energ); //TODO: need to test this
 	}
 	return ener1keV;
 }
@@ -109,6 +130,24 @@ void relline(const double* ener, const int n_ener, double* photar, const double*
 
 	free_relParam(param_struct);
 }
+
+/** XSPEC RELLINELP MODEL FUNCTION **/
+void rellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	relParam* param_struct = init_par_relline_lp(parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+	// shift the spectrum such that we can calculate the line for 1 keV
+	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
+	 CHECK_STATUS_VOID(*status);
+
+	// call the function which calculates the line (assumes a line at 1keV!)
+	relbase(ener1keV, n_ener, photar, param_struct,status);
+	CHECK_STATUS_VOID(*status);
+
+	free_relParam(param_struct);
+}
+
 
 /* get a new relbase parameter structure and initialize it */
 relParam* new_relParam(int model_type, int emis_type, int* status){

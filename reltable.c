@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 #include "reltable.h"
@@ -48,6 +48,35 @@ static relDat* new_relDat(int nr, int ng, int* status){
 		CHECK_MALLOC_RET_STATUS(dat->trff1,status,dat);
 		dat->trff2[ii] = (float*) malloc( sizeof(float) * ng);
 		CHECK_MALLOC_RET_STATUS(dat->trff2,status,dat);
+	}
+	return dat;
+}
+
+/* create a new LP table structure*/
+static lpDat* new_lpDat(int n_h, int n_rad, int* status){
+	lpDat* dat = (lpDat*) malloc(sizeof(lpDat)*n_h);
+	CHECK_MALLOC_RET_STATUS(dat,status,NULL);
+
+	dat->h = (float*) malloc (sizeof(float)*n_h);
+	CHECK_MALLOC_RET_STATUS(dat->h,status,dat);
+	dat->rad = (float*) malloc (sizeof(float)*n_rad);
+	CHECK_MALLOC_RET_STATUS(dat->rad,status,dat);
+
+	dat->intens = (float**) malloc (sizeof(float*)*n_h);
+	CHECK_MALLOC_RET_STATUS(dat->intens,status,dat);
+	dat->del = (float**) malloc (sizeof(float*)*n_h);
+	CHECK_MALLOC_RET_STATUS(dat->del,status,dat);
+	dat->del_inc = (float**) malloc (sizeof(float*)*n_h);
+	CHECK_MALLOC_RET_STATUS(dat->del_inc,status,dat);
+
+	int ii;
+	for (ii=0;ii<n_h;ii++){
+		dat->intens[ii] = (float*) malloc (sizeof(float)*n_rad);
+		CHECK_MALLOC_RET_STATUS(dat->intens[ii],status,dat);
+		dat->del[ii] = (float*) malloc (sizeof(float)*n_rad);
+		CHECK_MALLOC_RET_STATUS(dat->del[ii],status,dat);
+		dat->del_inc[ii] = (float*) malloc (sizeof(float)*n_rad);
+		CHECK_MALLOC_RET_STATUS(dat->del_inc[ii],status,dat);
 	}
 	return dat;
 }
@@ -274,16 +303,151 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 	return;
 }
 
+lpDat* load_single_lpDat(fitsfile* fptr, int n_h, int n_rad, int rownum, int* status){
+	lpDat* dat = new_lpDat(n_h,n_rad,status);
+	CHECK_MALLOC_RET_STATUS(dat,status,NULL);
 
+	int colnum_r;
+	int colnum_hgrid;
+	int colnum_h;
+	int colnum_del;
+	int colnum_del_inc;
+
+
+	char* colname_h=NULL;
+	char* colname_del=NULL;
+	char* colname_del_inc=NULL;
+
+	LONGLONG nelem;
+    int anynul=0;
+    double nullval=0.0;
+
+
+	if(fits_get_colnum(fptr, CASEINSEN, "r", &colnum_r, status)) return NULL;
+	if(fits_get_colnum(fptr, CASEINSEN, "hgrid", &colnum_hgrid, status)) return NULL;
+
+
+	nelem = (LONGLONG) n_h;
+    fits_read_col(fptr, TFLOAT, colnum_hgrid, rownum, 1, nelem ,&nullval,dat->h, &anynul, status);
+
+    nelem = (LONGLONG) n_rad;
+    fits_read_col(fptr, TFLOAT, colnum_r, rownum, 1, nelem ,&nullval,dat->rad, &anynul, status);
+    CHECK_STATUS_RET(*status,NULL);
+
+
+	int ii;
+    nelem = (LONGLONG) n_rad;
+	for (ii=0; ii<n_h; ii++){
+
+		if (asprintf(&colname_h, "h%i", ii+1) == -1){
+			RELXILL_ERROR("failed to construct colname of the lp table",status);
+			return NULL;
+		}
+		if(fits_get_colnum(fptr, CASEINSEN, colname_h, &colnum_h, status)) return NULL;
+		free(colname_h);
+
+		if (asprintf(&colname_del, "del%i", ii+1) == -1){
+			RELXILL_ERROR("failed to construct colname of the lp table",status);
+			return NULL;
+		}
+		if(fits_get_colnum(fptr, CASEINSEN, colname_del, &colnum_del, status)) return NULL;
+		free(colname_del);
+
+		if (asprintf(&colname_del_inc, "del_inc%i", ii+1) == -1){
+			RELXILL_ERROR("failed to construct colname of the lp table",status);
+			return NULL;
+		}
+		if(fits_get_colnum(fptr, CASEINSEN, colname_del_inc, &colnum_del_inc, status)) return NULL;
+		free(colname_del_inc);
+
+	    fits_read_col(fptr, TFLOAT, colnum_h, rownum, 1, nelem ,&nullval,dat->intens[ii], &anynul, status);
+	    fits_read_col(fptr, TFLOAT, colnum_del, rownum, 1, nelem ,&nullval,dat->del[ii], &anynul, status);
+	    fits_read_col(fptr, TFLOAT, colnum_del_inc, rownum, 1, nelem ,&nullval,dat->del_inc[ii], &anynul, status);
+
+	    CHECK_STATUS_RET(*status,NULL);
+	}
+
+
+	return dat;
+}
+
+
+/** load the complete relline table */
+void read_lp_table(char* filename, lpTable** inp_tab, int* status){
+
+	lpTable* tab = (*inp_tab);
+	fitsfile *fptr=NULL;
+
+	char* fullfilename=NULL;
+
+	do{ // Errot handling loop
+		if (tab != NULL){
+			RELXILL_ERROR("relline LP table already loaded",status);
+			break;
+		}
+
+		tab = new_lpTable(LPTABLE_NA,LPTABLE_NH,LPTABLE_NR,status);
+		CHECK_STATUS_BREAK(*status);
+
+		// should be set by previous routine
+		assert(tab!=NULL);
+		assert(tab->dat!=NULL);
+
+		// get the full filename
+		if (asprintf(&fullfilename, "%s/%s", RELXILL_TABLE_PATH,filename) == -1){
+			RELXILL_ERROR("failed to construct full path the lp table",status);
+			break;
+		}
+
+		// open the file
+		if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
+			CHECK_RELXILL_ERROR("opening of the lp table failed",status);
+			printf("    full path given: %s \n",fullfilename);
+			break;
+		}
+
+		// first read the spin axes of the table AND move to the correct extension
+		get_reltable_axis(tab->n_a, &(tab->a), "I_h", "a", fptr, status);
+		CHECK_RELXILL_ERROR("reading of spin axis failed",status);
+
+
+		//now load the full table (need to go through all extensions)
+		int rownum=-1;
+		for (int ii=0; ii<tab->n_a; ii++){
+
+			rownum = ii+1; // number of the row we read in the fits table
+
+			assert(tab->dat[ii]==NULL);
+			tab->dat[ii] = load_single_lpDat(fptr,tab->n_h, tab->n_rad, rownum, status);
+			if (*status!=EXIT_SUCCESS){
+				RELXILL_ERROR("failed to load data from the lp table into memory",status);
+				break;
+			}
+		}
+
+	} while(0);
+
+	if (*status==EXIT_SUCCESS){
+		// assigne the value
+		(*inp_tab) = tab;
+	} else {
+		free_lpTable(tab);
+	}
+	free(fullfilename);
+
+	if (fptr!=NULL) {fits_close_file(fptr,status);}
+
+	return;
+}
 
 static void free_relDat(relDat* dat, int nr){
 	if (dat!=NULL){
 		int ii;
 		for (ii=0; ii<nr; ii++){
-			free(dat->cosne1[ii]);
-			free(dat->cosne2[ii]);
-			free(dat->trff1[ii]);
-			free(dat->trff2[ii]);
+			if (dat->cosne1 !=NULL) free(dat->cosne1[ii]);
+			if (dat->cosne2 !=NULL) free(dat->cosne2[ii]);
+			if (dat->trff1 !=NULL) free(dat->trff1[ii]);
+			if (dat->trff2 !=NULL) free(dat->trff2[ii]);
 		}
 		free(dat->cosne1);
 		free(dat->cosne2);
@@ -317,3 +481,59 @@ void free_relTable(relTable* tab){
 		free(tab);
 	}
 }
+
+lpTable* new_lpTable(int n_a,int n_h, int n_rad, int* status){
+	lpTable* tab = (lpTable*) malloc (sizeof(lpTable));
+	CHECK_MALLOC_RET_STATUS(tab,status,NULL);
+
+	tab->n_a = n_a;
+	tab->n_h = n_h;
+	tab->n_rad = n_rad;
+
+	tab->a = NULL;
+
+	tab->dat = (lpDat**) malloc (sizeof(lpDat*)*tab->n_a);
+	CHECK_MALLOC_RET_STATUS(tab->dat,status,tab);
+
+	int ii;
+	for (ii=0; ii<tab->n_a; ii++){
+		tab->dat[ii] = NULL;
+	}
+	return tab;
+}
+
+/* destroy the LP table structure */
+void free_lpDat(lpDat* dat,int nh){
+	if (dat!=NULL){
+		int ii;
+		for (ii=0;ii<nh;ii++){
+			if (dat->del!=NULL) free(dat->del[ii]);
+			if (dat->del_inc!=NULL) free(dat->del_inc[ii]);
+			if (dat->intens!=NULL) free(dat->intens[ii]);
+		}
+		free(dat->del);
+		free(dat->del_inc);
+		free(dat->intens);
+
+		free(dat->h);
+		free(dat->rad);
+
+	}
+}
+
+/* destroy the LP table structure */
+void free_lpTable(lpTable* tab){
+	if (tab!=NULL){
+		if (tab->dat!=NULL){
+			int ii;
+			for (ii=0;ii<tab->n_a;ii++){
+				free_lpDat(tab->dat[ii],tab->n_h);
+				free(tab->dat[ii]);
+			}
+			free(tab->dat);
+		}
+		free(tab->a);
+		free(tab);
+	}
+}
+

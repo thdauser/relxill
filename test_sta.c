@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "relbase.h"
 #include "relmodels.h"
@@ -21,22 +21,34 @@
 #include "reltable.h"
 
 
-#define LIMIT_PREC 1e-8
+#define LIMIT_PREC 1e-6
 
 static void set_std_param_relline(double* inp_par, int* status){
-	inp_par[0] = 6.4;
+	inp_par[0] = 1.0;
 	inp_par[1] = 3.0;
 	inp_par[2] = 3.0;
 	inp_par[3] = 15.0;
 	inp_par[4] = 0.998;
-	inp_par[5] = 60.0;
+	inp_par[5] = 30.0;
 	inp_par[6] = -1.;
 	inp_par[7] = 400.;
 	inp_par[8] = 0.0;
 }
 
+
+static void set_std_param_relline_lp(double* inp_par, int* status){
+	inp_par[0] = 1.0;
+	inp_par[1] = 3.0;
+	inp_par[2] = 0.998;
+	inp_par[3] = 30.0;
+	inp_par[4] = -1.;
+	inp_par[5] = 400.;
+	inp_par[6] = 0.0;
+	inp_par[7] = 2.0;
+}
+
 /** standard evaluation of the relline model **/
-static void std_eval_relline(int* status){
+static void std_eval_relline(int* status, int n){
 
 	printf("\n *** Evaluating RELLINE MODEL \n");
 	/* set the parameters */
@@ -52,9 +64,38 @@ static void std_eval_relline(int* status){
 
 	/* call the relline model */
 	double photar[n_ener];
-	relline(ener,n_ener,photar,inp_par,n_param,status);
+	int ii;
+	for (ii=0; ii<n; ii++){
+		relline(ener,n_ener,photar,inp_par,n_param,status);
+	}
+}
+
+/** standard evaluation of the relline model **/
+static void std_eval_relline_lp(int* status, int n){
+
+	printf("\n *** Evaluating RELLINE LP MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELLINELP;
+	double inp_par_lp[n_param];
+	set_std_param_relline_lp(inp_par_lp, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	int n_ener = 600;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.1,1.5);
+
+	/* call the relline model */
+	double photar[n_ener];
+	int ii;
+	for (ii=0; ii<n; ii++){
+		rellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
+		CHECK_STATUS_VOID(*status);
+	}
+
 
 }
+
 
 /** test the currently implemented relline table
  ** [current version used: rel_table_v0.4e]   */
@@ -113,6 +154,64 @@ void test_relline_table(int* status){
 	return;
 }
 
+
+/** test the currently implemented relline table
+ ** [current version used: rel_table_v0.4e]   */
+void test_lp_table(int* status){
+
+	printf("\n *** Testing LP TABLE (%s) \n",LPTABLE_FILENAME);
+	lpTable* tab=NULL;
+
+	do{
+		// load the table
+		read_lp_table(LPTABLE_FILENAME,&tab,status);
+		CHECK_RELXILL_ERROR("loading the rel table failed",status);
+
+		// test certain values
+		assert(tab!=NULL);
+		assert(tab->dat!=NULL);
+		assert(tab->a!=NULL);
+
+		double aref_val = 0.98374581;
+		if ( fabs(tab->a[LPTABLE_NA-2] - aref_val) > LIMIT_PREC ){
+			printf(" testing spin: expecting value of %f, but found %f\n",
+					aref_val,tab->a[LPTABLE_NA-2]);
+			RELXILL_ERROR("values in rel table not correct",status);
+			break;
+		}
+
+		double href_val = 1.8294963;
+		if ( fabs(tab->dat[1]->h[1] - href_val) > LIMIT_PREC ){
+			printf(" testing hgrid: expecting value of %f, but found %f\n",href_val,tab->dat[1]->h[1]);
+			RELXILL_ERROR("values in rel table not correct",status);
+			break;
+		}
+
+		const int n = 3;
+		const float ref_val[3] = {7.5840981e-05, 2.6826601, -1.2509402 };
+		const float val[3] = {
+				tab->dat[1]->intens[2][1],
+				tab->dat[1]->del[2][1],
+				tab->dat[1]->del_inc[2][1]
+			};
+		for (int ii=0; ii<n; ii++){
+			if ( fabs( (ref_val[ii] - val[ii]) / ref_val[ii] ) > LIMIT_PREC ){
+				printf(" testing lp table: expecting value of %f, but found %f\n",ref_val[ii],val[ii]);
+				RELXILL_ERROR("values in lp table not correct",status);
+				break;
+			}
+		}
+		printf("  ### all values of the LP table as expected\n");
+
+	} while(0);
+
+	// free memory
+	free_lpTable(tab);
+
+	return;
+}
+
+
 static void test_interp(int* status){
 
 	printf("\n *** Testing INTERPOLATION Routines \n");
@@ -162,15 +261,24 @@ int main(void){
 //		CHECK_STATUS_BREAK(status);
 //		printf("     ---> successful \n");
 
+/*		test_lp_table(&status);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n"); */
 
+/*
 		test_interp(&status);
 		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+		printf("     ---> successful \n"); */
 
 
-		std_eval_relline(&status);
+/*		std_eval_relline(&status,1);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n"); */
+
+		std_eval_relline_lp(&status,1);
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n");
+
 
 		printf( "\n *** Cleaning up and freeing cached structures\n");
 		free_cached_tables();

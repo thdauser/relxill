@@ -42,6 +42,7 @@ typedef struct{
 	double z;
 	double height;
 	double gamma;
+	double v;
 } relParam;
 
 
@@ -54,10 +55,14 @@ typedef struct{
 	double* gmax;
 	double* gstar;
 
-	double* emis;
-
 	double*** trff;
 	double*** cosne;
+
+	/** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
+	double* emis;       // intensity on the surface of the accretion disc
+	double* del_emit;   // angle under which the photon is emitted from the primary source
+	double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
+
 } relSysPar;
 
 

@@ -25,6 +25,8 @@ relTable* relline_table=NULL;
 relSysPar* cached_relSysPar=NULL;
 relSysPar* cached_tab_sysPar=NULL;
 rel_spec* cached_rel_spec=NULL;
+
+
 double cached_int_romb_rad = -1.0;
 const double cache_limit = 1e-8;
 
@@ -44,8 +46,13 @@ static int redo_get_system_parameters(relParam* param,relParam* cached_rel_param
 		if (fabs(param->a - cached_rel_param->a) > cache_limit) {
 			return 1;
 		}
-
 		if (fabs(param->incl - cached_rel_param->incl) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->rin - cached_rel_param->rin) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->rout - cached_rel_param->rout) > cache_limit) {
 			return 1;
 		}
 	}
@@ -111,7 +118,9 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 
 	// load tables
 	if (relline_table==NULL){
+		printf("  loading tables \n");
 		read_relline_table(RELTABLE_FILENAME,&relline_table,status);
+		printf("   ... done!\n");
 		CHECK_STATUS_VOID(*status);
 	}
 	relTable* tab = relline_table;
@@ -186,8 +195,7 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 
 	// let's try to be as efficient as possible here (not that "r" DEcreases)
 	assert(ind_rmin>0); // as defined inverse, re[ind_rmin+1] is the lowest value
-	printf("%e %e %e\n",cached_tab_sysPar->re[ind_rmin+1],rin,rms);
-	// assert((cached_tab_sysPar->re[ind_rmin+1]<=rin));
+	assert((cached_tab_sysPar->re[ind_rmin+1]<=rin));
 	assert((cached_tab_sysPar->re[ind_rmin]>=rin));
 	assert((cached_tab_sysPar->re[ind_rmax+1]<=rout));
 	assert((cached_tab_sysPar->re[ind_rmax]>=rout));
@@ -263,8 +271,6 @@ static relSysPar* get_system_parameters(relParam* param, int* status){
 		interpol_relTable(&cached_relSysPar,param->a,mu0,param->rin,param->rout,status);
 		CHECK_STATUS_RET(*status,NULL);
 	}
-
-
 
 	return cached_relSysPar;
 }
@@ -348,10 +354,10 @@ static str_relb_func* new_str_relb_func(relSysPar* sysPar, int* status){
 }
 
 /** relat. function which we want to integrate **/
-static double relb_func(double e, int k, str_relb_func* str, double line_energy){
+static double relb_func(double eg, int k, str_relb_func* str){
 
   // get the redshift from the energy
-  double eg = e/line_energy;
+  // double eg = e/line_energy;
   double egstar = (eg-str->gmin)*str->del_g;
 
   // find the indices in the original g-grid, but check first if they have already been calculated
@@ -399,10 +405,10 @@ static double RombergIntegral(double a,double b,int k, str_relb_func* str, doubl
   if (str->cached_relbf) {
      r = str->cache_val_relb_func[k];
   } else {
-     r = relb_func(a,k,str,line_ener);
+     r = relb_func(a,k,str);
   }
 
-  str->cache_val_relb_func[k] = relb_func(b,k,str,line_ener);
+  str->cache_val_relb_func[k] = relb_func(b,k,str);
   str->cache_rad_relb_fun = str->re;
   // rb(k) = RELB_FUNC(b,k);
 
@@ -420,7 +426,7 @@ static double RombergIntegral(double a,double b,int k, str_relb_func* str, doubl
 	  pasm=pasm/2.0;
 	  s=ta;
 	  for (ii=1; ii<=pow(2,niter)-1; ii++) {
-		  s += relb_func(a+pas*ii,k,str,line_ener);
+		  s += relb_func(a+pas*ii,k,str);
 	  }
 	  t[0][niter]=s*pas;
 	  r=1.0;
@@ -475,7 +481,7 @@ static double int_edge(double blo, double bhi, double h, str_relb_func* str, dou
   int k=0;
   double norm = 0.0;
   for (k=0; k<2; k++) {
-    norm = norm + relb_func(gstar2ener(hex,str->gmin,str->gmax,line_energy),k,str,line_energy);
+    norm = norm + relb_func(gstar2ener(hex,str->gmin,str->gmax,line_energy),k,str);
   }
 
 
@@ -504,7 +510,7 @@ static double int_romb(double lo, double hi, str_relb_func* str, double line_ene
 		}
 	} else {
 		for (k=0;k<2;k++){
-			flu += relb_func((hi+lo)/2.0,k,str,line_energy)*(hi-lo);
+			flu += relb_func((hi+lo)/2.0,k,str)*(hi-lo);
 		}
 	}
 
@@ -606,6 +612,25 @@ static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gma
 	str->save_g_ind = 0;
 }
 
+
+/** function to properly re-normalize the relline_profile **/
+static void renorm_relline_profile(rel_spec* spec){
+	// normalize to 'cts/bin'
+	int ii; int jj;
+	double sum = 0.0;
+	for (ii=0; ii<spec->n_zones; ii++){
+		for (jj=0; jj<spec->n_ener; jj++){
+			spec->flux[ii][jj] /= 0.5*( spec->ener[jj] + spec->ener[jj+1] );
+			sum += spec->flux[ii][jj];
+		}
+	}
+	for (ii=0; ii<spec->n_zones; ii++){
+		for (jj=0; jj<spec->n_ener; jj++){
+			spec->flux[ii][jj] /= sum;
+		}
+	}
+}
+
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func* cached_str_relb_func = NULL;
 void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
@@ -657,36 +682,22 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 
 	        // lastly, loop over the energies
 	        for (jj=ielo; jj<=iehi; jj++){
-	        	double tmp_var =integ_relline_bin(cached_str_relb_func,spec->ener[jj],spec->ener[jj+1]);
+	        	double tmp_var = integ_relline_bin(cached_str_relb_func,spec->ener[jj],spec->ener[jj+1]);
 	           spec->flux[izone][jj] +=     	tmp_var*weight;
 
-/**		       printf("[%i,%i] %.4f in [%.6f, %.6f] \n",
-		       			ii+1,jj+1,
-		       			tmp_var,
-						spec->ener[jj],spec->ener[jj+1]); **/
 	     	 }
 		}
 	}
 
-	// normalize to 'cts/bin'
-	double sum = 0.0;
-	for (ii=0; ii<spec->n_zones; ii++){
-		for (jj=0; jj<spec->n_ener; jj++){
-			spec->flux[ii][jj] /= 0.5*( spec->ener[jj] + spec->ener[jj+1] );
-			sum += spec->flux[ii][jj];
-		}
-	}
-	for (ii=0; ii<spec->n_zones; ii++){
-		for (jj=0; jj<spec->n_ener; jj++){
-			spec->flux[ii][jj] /= sum;
-		}
-	}
+	renorm_relline_profile(spec);
 }
+
+
 
 /** print the relline profile   **/
 static void save_relline_profile(rel_spec* spec){
 
-	FILE* fp =  fopen ( "test_reline_profile.dat","w+" );
+	FILE* fp =  fopen ( "test_relline_profile.dat","w+" );
 	int ii;
 	for (ii=0; ii<spec->n_ener; ii++){
 		fprintf(fp, " %e \t %e \t %e \n",spec->ener[ii],spec->ener[ii+1],spec->flux[0][ii]);
@@ -694,30 +705,112 @@ static void save_relline_profile(rel_spec* spec){
 	if (fclose(fp)) exit(1);
 }
 
+/** print the relline profile   **/
+static void save_emis_profile(double* rad, double* intens, int n_rad){
+
+	FILE* fp =  fopen ( "test_emis_profile.dat","w+" );
+	int ii;
+	for (ii=0; ii<n_rad; ii++){
+		fprintf(fp, " %e \t %e \n",rad[ii],intens[ii]);
+	}
+	if (fclose(fp)) exit(1);
+}
+
+
+static int comp_single_param_val(double val1, double val2){
+	if (fabs(val1-val2) <= cache_limit){
+		return 0;
+	} else {
+		return 1;
+	}
+}
+
+static void set_cached_rel_param(relParam* cpar, relParam* par){
+
+	cpar->a = par->a;
+	cpar->emis1 = par->emis1;
+	cpar->emis2 = par->emis2;
+	cpar->emis_type = par->emis_type;
+	cpar->gamma = par->gamma;
+	cpar->height = par->height;
+	cpar->incl = par->incl;
+	cpar->model_type = par->model_type;
+	cpar->rbr = par->rbr;
+	cpar->rin = par->rin;
+	cpar->rout = par->rout;
+	cpar->v = par->v;
+
+}
+
+static int comp_rel_param(relParam* cpar, relParam* par){
+	if (comp_single_param_val(par->a,cpar->a)) return 1;
+	if (comp_single_param_val(par->emis1,cpar->emis1)) return 1;
+	if (comp_single_param_val(par->emis2,cpar->emis2)) return 1;
+	if (comp_single_param_val(par->gamma,cpar->gamma)) return 1;
+	if (comp_single_param_val(par->height,cpar->height)) return 1;
+	if (comp_single_param_val(par->incl,cpar->incl)) return 1;
+
+	if (comp_single_param_val( (double) par->emis_type, (double) cpar->emis_type)) return 1;
+	if (comp_single_param_val( (double) par->model_type, (double) cpar->model_type)) return 1;
+
+	if (comp_single_param_val(par->rbr,cpar->rbr)) return 1;
+	if (comp_single_param_val(par->rin,cpar->rin)) return 1;
+	if (comp_single_param_val(par->rout,cpar->rout)) return 1;
+
+	return 0;
+}
+
+/* check if values, which need a re-computation of the relline profile, have changed */
+int redo_relbase_calc(relParam* param, int* status){
+
+	int redo = 1;
+
+	if (cached_rel_param==NULL){
+		cached_rel_param = (relParam*) malloc ( sizeof(relParam));
+		CHECK_MALLOC_RET_STATUS(cached_rel_param,status,1);
+	} else {
+		redo = comp_rel_param(cached_rel_param,param);
+	}
+
+	return redo;
+}
+
+
+
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
  * output: photar(n_ener)     */
 void relbase(double* ener, const int n_ener, double* photar, relParam* param, int* status){
 
-	// check caching here?? -> free values we need to re-alloc!
-
-	// initialize parameter values
-	relSysPar* sysPar = get_system_parameters(param,status);
+	// check caching here and also re-set the cached parameter values
+	int redo = redo_relbase_calc(param,status);
 	CHECK_STATUS_VOID(*status);
 
-	// get emissivity profile
-	calc_emis_profile(param, sysPar, status);
-	CHECK_STATUS_VOID(*status);
+	if (redo){
 
-	// init the spectra where we store the flux
-	init_rel_spec(&cached_rel_spec, param, &ener, n_ener, status);
-	CHECK_STATUS_VOID(*status);
+		// initialize parameter values
+		relSysPar* sysPar = get_system_parameters(param,status);
+		CHECK_STATUS_VOID(*status);
 
-	// calculate line profile
-	relline_profile(cached_rel_spec, sysPar, status);
-	CHECK_STATUS_VOID(*status);
+		// get emissivity profile TODO: do separate caching here??
+		calc_emis_profile(param, cached_rel_param,sysPar, status);
+		save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
+		CHECK_STATUS_VOID(*status);
 
+		// init the spectra where we store the flux
+		init_rel_spec(&cached_rel_spec, param, &ener, n_ener, status);
+		CHECK_STATUS_VOID(*status);
+
+		// calculate line profile (returned units are 'cts/bin')
+		relline_profile(cached_rel_spec, sysPar, status);
+		CHECK_STATUS_VOID(*status);
+
+		// store parameters such that we know what we calculated
+		set_cached_rel_param(cached_rel_param,param);
+	}
+
+	assert(cached_rel_spec!=NULL);
 	save_relline_profile(cached_rel_spec);
 	// cache everything once we've calculated all the stuff
 	// cached_params (!!!)
@@ -742,6 +835,7 @@ void free_cached_tables(void){
 	free_relTable(relline_table);
 	free_relSysPar(cached_relSysPar);
 	free_relSysPar(cached_tab_sysPar);
+	free_cached_lpTable();
 
 	free(cached_rel_param);
 
@@ -767,6 +861,10 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 
 	sysPar->emis = (double*) malloc (nr*sizeof(double));
 	CHECK_MALLOC_RET_STATUS(sysPar->emis,status,sysPar);
+	sysPar->del_emit = (double*) malloc (nr*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(sysPar->del_emit,status,sysPar);
+	sysPar->del_inc = (double*) malloc (nr*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(sysPar->del_inc,status,sysPar);
 
 	sysPar->gstar = (double*) malloc (ng*sizeof(double));
 	CHECK_MALLOC_RET_STATUS(sysPar->gstar,status,sysPar);
@@ -805,6 +903,8 @@ void free_relSysPar(relSysPar* sysPar){
 		free(sysPar->gstar);
 
 		free(sysPar->emis);
+		free(sysPar->del_emit);
+		free(sysPar->del_inc);
 
 		if(sysPar->trff != NULL){
 			int ii;

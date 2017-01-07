@@ -51,4 +51,4 @@ gprof:
 	make clean
 	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
 	./test_sta
-	gprof -b -p test_sta
+	gprof -p test_sta

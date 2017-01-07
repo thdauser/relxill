@@ -46,7 +46,7 @@
 #define version_build 0
 
 
-
+// TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */
 #define RELXILL_TABLE_PATH "/home/thomas/data/relline_tables/"
 
@@ -57,6 +57,12 @@
 #define RELTABLE_NG 20
 #define RELTABLE_MAX_R 1000.0
 #define RELTABLE_FILENAME "rel_table_v0.4e.fits"
+
+/** dimensions of the LP table */
+#define LPTABLE_NA 20
+#define LPTABLE_NH 250
+#define LPTABLE_NR 100
+#define LPTABLE_FILENAME "rel_lp_table_v0.5a.fits"
 
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)

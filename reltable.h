@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef RELTABLE_H_
 #define RELTABLE_H_
@@ -51,6 +51,38 @@ typedef struct{
 }relTable;
 
 
+
+/** the LAMP POST single data structure */
+typedef struct{
+	float* h; // height
+
+	float* rad; // radius
+
+	float** intens;
+	float** del;
+	float** del_inc;
+
+}lpDat;
+
+/** the LAMP POST table structure */
+typedef struct{
+	float* a; // spin
+	int n_a;
+	int n_h;
+	int n_rad;
+	lpDat** dat;
+}lpTable;
+
+
+/* create a new LP table */
+lpTable* new_lpTable(int n_a, int n_h, int n_intens, int* status);
+
+/* destroy the LP table structure */
+void free_lpTable(lpTable* tab);
+
+/* destroy the LP dat structure */
+void free_lpDat(lpDat* dat, int nh);
+
 /* create a new relline table structure */
 relTable* new_relTable(int n_a, int n_mu0, int n_r, int n_g, int* status);
 
@@ -59,6 +91,9 @@ void free_relTable(relTable* tab);
 
 /* routine to read the RELLINE table */
 void read_relline_table(char* filename, relTable** tab, int* status);
+
+/* routine to read the LP table */
+void read_lp_table(char* filename, lpTable** inp_tab, int* status);
 
 
 #endif /* RELTABLE_H_ */

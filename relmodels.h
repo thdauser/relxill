@@ -23,9 +23,10 @@
 
 /**** DEFINES **/
 #define MOD_TYPE_RELLINE 1
-
 #define NUM_PARAM_RELLINE 9
 
+#define MOD_TYPE_RELLINELP 2
+#define NUM_PARAM_RELLINELP 8
 /****  TYPE DEFINITIONS ****/
 
 
@@ -33,6 +34,9 @@
 relParam* init_par_relline(const double* inp_par, const int n_parameter, int* status);
 
 void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+
+void rellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+
 
 /* get a new relbase parameter structure and initialize it */
 relParam* new_relParam(int model_type, int emis_type, int* status);

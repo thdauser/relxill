@@ -26,6 +26,10 @@ double interp_lin_1d(double ifac_r, double rlo, double rhi){
 	return ifac_r*rhi + (1.0-ifac_r)*rlo;
 }
 
+double interp_log_1d(double ifac_r, double rlo, double rhi){
+	return exp(ifac_r*log(rhi) + (1.0-ifac_r)*log(rlo));
+}
+
 // TODO: CHECK IF WE NEED "INLINE" HERE for maximal speed
 /** linear interpolation in 2 dimensions **/
 double interp_lin_2d(double ifac1, double ifac2, double r11, double r12, double r21, double r22){
@@ -206,3 +210,45 @@ double kerr_rms(double a){
 
   return 3.0+Z2-sign*sqrt((3.0-Z1)*(3.0+Z1+(2*Z2)));
 }
+
+
+/** calculate the doppler factor for a moving primary source **/
+double doppler_factor(double del, double bet) {
+	return sqrt(1.0 - bet*bet) / (1.0 + bet*cos(del));
+}
+
+
+/** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
+double gi_potential_lp(double r, double a, double h, double bet, double del){
+
+	/** ! calculates g = E/E_i in the lamp post geometry
+	  ! (see, e.g., page 48, Diploma Thesis, Thomas Dauser) **/
+	double ut_d = ((r*sqrt(r)+a)/(sqrt(r)*sqrt(r*r -3*r + 2*a*sqrt(r))));
+	double ut_h = sqrt((h*h + a*a)/(h*h - h + a*a));
+
+	double gi = ut_d/ut_h;
+
+	// check if we need to calculate the additional factor for the velocity
+	if (fabs(bet) < 1e-6){
+		return gi;
+	}
+
+	double gam = 1.0/sqrt(1.0-bet*bet);
+
+	// get the sign for the equation
+	double sign = 1.0;
+	if (del > M_PI/2) {
+		sign = -1.0;
+	}
+
+	double delta_eq = h*h - 2*h + a*a;
+	double q2 = (pow(sin(del),2))*(  pow((h*h + a*a),2) / delta_eq ) - a*a;
+
+	double beta_fac = sqrt(  pow((h*h + a*a ),2) - delta_eq*(q2 + a*a) );
+	beta_fac = gam*(1.0 + sign*beta_fac / (h*h + a*2) *bet);
+
+	return gi / beta_fac;
+}
+
+
+

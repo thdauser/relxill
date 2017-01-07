@@ -59,6 +59,9 @@
 /** linear interpolation in 1 dimension **/
 double interp_lin_1d(double ifac_r, double rlo, double rhi);
 
+/** log interpolation in 1 dimension **/
+double interp_log_1d(double ifac_r, double rlo, double rhi);
+
 /** linear interpolation in 2 dimensions **/
 double interp_lin_2d(double ifac1, double r1lo, double r1hi, double ifac2, double r2lo, double r2hi);
 double interp_lin_2d_float(double ifac1, double ifac2, float r11, float r12, float r21, float r22);
@@ -107,5 +110,10 @@ double* get_rzone_grid(double rmin, double rmax, int nzones, int* status);
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener);
 
+/** calculate the doppler factor for a moving primary source **/
+double doppler_factor(double del, double bet);
+
+/** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
+double gi_potential_lp(double r, double a, double h, double bet, double del);
 
 #endif /* RELUTILITY_H_ */
