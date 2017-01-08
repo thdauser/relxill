@@ -52,6 +52,28 @@ static void check_parameter_bounds(relParam* param, int* status){
 }
 
 
+xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	xillParam* param = new_xillParam(MOD_TYPE_XILLVER,status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	assert(n_parameter == NUM_PARAM_XILLVER);
+
+	param->gam   = inp_par[0];
+	param->afe   = inp_par[1];
+	param->lxi   = inp_par[2];
+	param->ect   = inp_par[3];
+	param->incl  = inp_par[4]*M_PI/180;
+	param->z     = inp_par[5];
+
+	// TODO: check parameter bounds here as well
+/*	check_parameter_bounds_xillver(param,status);
+	CHECK_STATUS_RET(*status,NULL); */
+
+	return param;
+}
+
 relParam* init_par_relline(const double* inp_par, const int n_parameter, int* status){
 
 	// fill in parameters
@@ -113,6 +135,31 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 	}
 	return ener1keV;
 }
+
+/** XSPEC XILLVER MODEL FUNCTION **/
+void xillver(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	xillParam* param_struct = init_par_xillver(parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+	// shift the spectrum such that we can calculate the line for 1 keV
+	 /**double* ener1keV = shift_energ_spec_1keV(ener, n_ener, 0.0 , param_struct->z,status);
+	 CHECK_STATUS_VOID(*status); **/
+
+	// call the function which calculates the xillver spectrum
+	xill_spec* spec = get_xillver_spectra(param_struct,status);
+	CHECK_STATUS_VOID(*status);
+
+	// rebin it to the given grid
+
+	// test output
+	save_xillver_spectrum(spec);
+
+	free_xillParam(param_struct);
+	free_xill_spec(spec);
+}
+
+
 
 /** XSPEC RELLINE MODEL FUNCTION **/
 void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
@@ -177,5 +224,32 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 
 /* free relbase parameter */
 void free_relParam(relParam* param){
+	free(param);
+}
+
+
+
+/* get a new relbase parameter structure and initialize it */
+xillParam* new_xillParam(int model_type, int* status){
+	xillParam* param = (xillParam*) malloc(sizeof(xillParam));
+	if (param==NULL){
+		RELXILL_ERROR("memory allocation failed",status);
+		return NULL;
+	}
+	param->model_type = model_type;
+
+	param->gam = PARAM_DEFAULT;
+	param->afe = PARAM_DEFAULT;
+	param->lxi = PARAM_DEFAULT;
+	param->ect = PARAM_DEFAULT;
+	param->incl = PARAM_DEFAULT;
+	param->z = PARAM_DEFAULT;
+
+	return param;
+}
+
+
+/* free relbase parameter */
+void free_xillParam(xillParam* param){
 	free(param);
 }

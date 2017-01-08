@@ -9,8 +9,8 @@ COMPILE.c = gcc
 
 INCLUDES = -I${HEADAS}/include
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o
-headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h
+objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o
+headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xilltable.h
 
 LINK_TARGET = test_sta
 

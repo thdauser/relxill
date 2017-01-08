@@ -45,6 +45,16 @@ typedef struct{
 	double v;
 } relParam;
 
+typedef struct{
+	double gam;
+	double afe;
+	double lxi;
+	double ect;
+	double incl;
+	double z;
+	int model_type;
+} xillParam;
+
 
 typedef struct{
 	int nr;
@@ -73,6 +83,14 @@ typedef struct{
 	double* ener;  // length=n_ener +1
 	double** flux;
 } rel_spec;
+
+
+typedef struct{
+	double* ener;  // has n_ener+1 elements
+	double* flu;
+	int n_ener;
+}xill_spec;
+
 
 /******************************/
 

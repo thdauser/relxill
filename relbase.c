@@ -277,7 +277,7 @@ static relSysPar* get_system_parameters(relParam* param, int* status){
 
 /** get new structure to store the relline spectrum (possibly for several zones)
     important note: ener has n_ener+1 number of bins **/
-static rel_spec* new_rel_spec(int nzones, const int n_ener, int*status){
+rel_spec* new_rel_spec(int nzones, const int n_ener, int*status){
 
 	rel_spec* spec = (rel_spec*) malloc(sizeof(rel_spec));
 	CHECK_MALLOC_RET_STATUS(spec,status,NULL);
@@ -775,8 +775,6 @@ int redo_relbase_calc(relParam* param, int* status){
 	return redo;
 }
 
-
-
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
@@ -816,7 +814,7 @@ void relbase(double* ener, const int n_ener, double* photar, relParam* param, in
 	// cached_params (!!!)
 }
 
-static void free_rel_spec(rel_spec* spec){
+void free_rel_spec(rel_spec* spec){
 	if (spec!=NULL){
 		free(spec->ener);
 		free(spec->rgrid);

@@ -23,6 +23,16 @@
 
 #define LIMIT_PREC 1e-6
 
+static void set_std_param_xillver(double* inp_par, int* status){
+	inp_par[0] = 2.0;
+	inp_par[1] = 1.0;
+	inp_par[2] = 1.0;
+	inp_par[3] = 100.0;
+	inp_par[4] = 45.0;
+	inp_par[5] = 0.;
+}
+
+
 static void set_std_param_relline(double* inp_par, int* status){
 	inp_par[0] = 1.0;
 	inp_par[1] = 3.0;
@@ -90,6 +100,35 @@ static void std_eval_relline_lp(int* status, int n){
 	int ii;
 	for (ii=0; ii<n; ii++){
 		rellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
+		CHECK_STATUS_VOID(*status);
+	}
+
+
+}
+
+
+
+
+/** standard evaluation of the relline model **/
+static void std_eval_xillver(int* status, int n){
+
+	printf("\n *** Evaluating XILLVER MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_XILLVER;
+	double inp_par[n_param];
+	set_std_param_xillver(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	int n_ener = 1500;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.05,100.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+	int ii;
+	for (ii=0; ii<n; ii++){
+		xillver(ener,n_ener,photar,inp_par,n_param,status);
 		CHECK_STATUS_VOID(*status);
 	}
 
@@ -275,7 +314,11 @@ int main(void){
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n"); */
 
-		std_eval_relline_lp(&status,1);
+/*		std_eval_relline_lp(&status,1);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n"); */
+
+		std_eval_xillver(&status,1);
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n");
 

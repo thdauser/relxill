@@ -64,6 +64,7 @@
 #define LPTABLE_NR 100
 #define LPTABLE_FILENAME "rel_lp_table_v0.5a.fits"
 
+
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
 #define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
@@ -107,5 +108,8 @@ void free_cached_tables(void );
 relSysPar* new_relSysPar(int nr, int ng, int* status);
 
 void free_relSysPar(relSysPar* sysPar);
+
+void free_rel_spec(rel_spec* spec);
+rel_spec* new_rel_spec(int nzones, const int n_ener, int*status);
 
 #endif /* RELBASE_H_ */

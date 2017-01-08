@@ -252,3 +252,15 @@ double gi_potential_lp(double r, double a, double h, double bet, double del){
 
 
 
+/** print the xillver spectrum   **/
+void save_xillver_spectrum(xill_spec* spec){
+
+	FILE* fp =  fopen ( "test_xillver_spectrum.dat","w+" );
+	int ii;
+	for (ii=0; ii<spec->n_ener; ii++){
+		fprintf(fp, " %e \t %e \t %e \n",spec->ener[ii],spec->ener[ii+1],spec->flu[ii]);
+	}
+	if (fclose(fp)) exit(1);
+}
+
+

@@ -19,6 +19,7 @@
 #define RELUTILITY_H_
 
 #include "relbase.h"
+#include "xilltable.h"
 
 
 /****** DEFINE FUNCTION DEFINITIONS ******/
@@ -115,5 +116,8 @@ double doppler_factor(double del, double bet);
 
 /** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
 double gi_potential_lp(double r, double a, double h, double bet, double del);
+
+/** print the xillver spectrum   **/
+void save_xillver_spectrum(xill_spec* spec);
 
 #endif /* RELUTILITY_H_ */

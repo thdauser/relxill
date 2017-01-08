@@ -20,6 +20,7 @@
 
 #include "relbase.h"
 #include "relutility.h"
+#include "xilltable.h"
 
 /**** DEFINES **/
 #define MOD_TYPE_RELLINE 1
@@ -27,6 +28,10 @@
 
 #define MOD_TYPE_RELLINELP 2
 #define NUM_PARAM_RELLINELP 8
+
+#define MOD_TYPE_XILLVER 0
+#define NUM_PARAM_XILLVER 6
+
 /****  TYPE DEFINITIONS ****/
 
 
@@ -43,5 +48,8 @@ relParam* new_relParam(int model_type, int emis_type, int* status);
 
 /* free relbase parameter */
 void free_relParam(relParam*);
+
+xillParam* new_xillParam(int model_type, int* status);
+void free_xillParam(xillParam*);
 
 #endif /* MODELS_H_ */
