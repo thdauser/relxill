@@ -118,6 +118,14 @@ double doppler_factor(double del, double bet);
 double gi_potential_lp(double r, double a, double h, double bet, double del);
 
 /** print the xillver spectrum   **/
-void save_xillver_spectrum(xill_spec* spec);
+void save_xillver_spectrum(double* ener, double* flu, int n_ener);
+
+/* A simple implementation of the FFT taken
+   from http://paulbourke.net/miscellaneous/dft/
+   (uses the Radix-2 Cooley-Tukey algorithm) */
+void FFT_R2CT(short int dir,long m,double *x,double *y);
+
+/** rebin spectrum to a given energy grid length of ener is nbins+1       **/
+void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double* flu0, int nbins0);
 
 #endif /* RELUTILITY_H_ */

@@ -83,6 +83,8 @@ void free_xillTable(xillTable* tab){
 		free(tab->lxi);
 		free(tab->ect);
 		free(tab->incl);
+		free(tab->elo);
+		free(tab->ehi);
 		int ii; int jj; int kk; int ll; int mm;
 		if (tab->dat!=NULL){
 			for (ii=0; ii<tab->n_gam; ii++){
@@ -332,7 +334,11 @@ static void load_single_spec(fitsfile** fptr, xillTable* tab, int ii, int jj, in
 	LONGLONG nelem = (LONGLONG) tab->n_ener;
 
 	// get the row number (this is how the xillver table is defined)
-	int rownum = (((ii*tab->n_gam + jj)*tab->n_afe + kk)*tab->n_lxi + ll)*tab->n_ect + kk +1;
+	// int ind = 	(( ll*n_ampl + kk ) * n_dt + jj ) * n_freq + ii;
+	int rownum = (((ii*tab->n_afe + jj)*tab->n_lxi + kk)*tab->n_ect + ll)*tab->n_incl + mm +1;
+
+//	printf(" reading row-number %i for [%i][%i][%i][%i][%i] %i %i %i %i %i \n",rownum,ii,jj,kk,ll,mm,
+//			tab->n_gam,tab->n_afe,tab->n_lxi,tab->n_ect,tab->n_incl);
 
 	fits_read_col(*fptr, TFLOAT, colnum_spec, rownum  , 1, nelem ,&nullval,spec, &anynul, status);
 	CHECK_STATUS_VOID(*status);
@@ -353,9 +359,10 @@ static void check_xillTable_cache(xillTable* tab, int* ind, int* status) {
 		for (jj=0; jj<2; jj++){
 			for (kk=0; kk<2; kk++){
 				for (ll=0;ll<2; ll++){
-					for (mm=0;mm<2; mm++){
-						if (tab->dat[ind[0]+ii][ind[1]+jj][ind[2]+kk][ind[3]+ll][ind[4]+mm] == NULL){
-							load_single_spec(&fptr, tab, ind[0]+ii,ind[1]+jj,ind[2]+kk,ind[3]+ll,ind[4]+mm,status);
+					// always load **all** incl bins as for relxill we will certainly need it
+					for (mm=0;mm<tab->n_incl; mm++){
+						if (tab->dat[ind[0]+ii][ind[1]+jj][ind[2]+kk][ind[3]+ll][mm] == NULL){
+							load_single_spec(&fptr, tab, ind[0]+ii,ind[1]+jj,ind[2]+kk,ind[3]+ll,mm,status);
 							CHECK_STATUS_VOID(*status);
 							// todo: check if we can remove part of the cache
 						}
@@ -375,18 +382,25 @@ static void check_xillTable_cache(xillTable* tab, int* ind, int* status) {
 	return ;
 }
 
-xill_spec* new_xill_spec(int n_ener, int* status){
+xill_spec* new_xill_spec(int n_incl, int n_ener, int* status){
 
 	xill_spec* spec = (xill_spec*) malloc(sizeof(xill_spec));
 	CHECK_MALLOC_RET_STATUS(spec,status,NULL);
 
 	spec->n_ener = n_ener;
+	spec->n_incl = n_incl;
 
 	spec->ener = (double*) malloc(sizeof(double)*(n_ener+1));
 	CHECK_MALLOC_RET_STATUS(spec->ener,status,spec);
 
-	spec->flu = (double*) malloc(sizeof(double)*n_ener);
+	spec->flu = (double**) malloc(sizeof(double*)*n_incl);
 	CHECK_MALLOC_RET_STATUS(spec->flu,status,spec);
+
+	int ii;
+	for (ii=0;  ii<n_incl; ii++){
+		spec->flu[ii] = (double*) malloc(sizeof(double)*n_ener);
+		CHECK_MALLOC_RET_STATUS(spec->flu[ii],status,spec);
+	}
 
 	return spec;
 }
@@ -394,12 +408,101 @@ xill_spec* new_xill_spec(int n_ener, int* status){
 void free_xill_spec(xill_spec* spec){
 	if (spec!=NULL){
 		free(spec->ener);
-		free(spec->flu);
+		if (spec->flu!=NULL){
+			int ii;
+			for (ii=0; ii<spec->n_incl; ii++){
+				free(spec->flu[ii]);
+			}
+			free(spec->flu);
+		}
 		free(spec);
 	}
 }
 
-static void interp_xill_table(xillTable* tab,xill_spec* spec, int* ind,int* status){
+static void interp_4d_tab(xillTable* tab, double* flu, int n_ener,
+		double f1, double f2, double f3, double f4, int i1, int i2, int i3, int i4, int i5){
+
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
+		flu[ii] =
+				((1.0-f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1][i2][i3][i4][i5][ii] +
+						(f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1+1][i2][i3][i4][i5][ii] +
+						(1.0-f1)*  (f2)  *(1.0-f3)*tab->dat[i1][i2+1][i3][i4][i5][ii] +
+						(1.0-f1)*(1.0-f2)*   (f3) *tab->dat[i1][i2][i3+1][i4][i5][ii] +
+						(f1)* (f2)   *(1.0-f3)*tab->dat[i1+1][i2+1][i3][i4][i5][ii] +
+						(f1)*(1.0-f2)* (f3)   *tab->dat[i1+1][i2][i3+1][i4][i5][ii] +
+						(1.0-f1)* (f2)   * (f3)   *tab->dat[i1][i2+1][i3+1][i4][i5][ii] +
+						(f1)* (f2)   * (f3)   *tab->dat[i1+1][i2+1][i3+1][i4][i5][ii])
+						*(1-f4) +
+						((1.0-f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1][i2][i3][i4+1][i5][ii] +
+								(f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1+1][i2][i3][i4+1][i5][ii] +
+								(1.0-f1)*  (f2)  *(1.0-f3)*tab->dat[i1][i2+1][i3][i4+1][i5][ii] +
+								(1.0-f1)*(1.0-f2)*   (f3) *tab->dat[i1][i2][i3+1][i4+1][i5][ii] +
+								(f1)* (f2)   *(1.0-f3)*tab->dat[i1+1][i2+1][i3][i4+1][i5][ii] +
+								(f1)*(1.0-f2)* (f3)   *tab->dat[i1+1][i2][i3+1][i4+1][i5][ii] +
+								(1.0-f1)* (f2)   * (f3)   *tab->dat[i1][i2+1][i3+1][i4+1][i5][ii] +
+								(f1)* (f2)   * (f3)   *tab->dat[i1+1][i2+1][i3+1][i4+1][i5][ii])
+								*(f4);
+	}
+
+}
+
+static void interp_5d_tab(xillTable* tab, double* flu, int n_ener,
+		double f1, double f2, double f3, double f4, double f5, int i1, int i2, int i3, int i4, int i5){
+
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
+		flu[ii] =
+				(((1.0-f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1][i2][i3][i4][i5][ii] +
+						(f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1+1][i2][i3][i4][i5][ii] +
+						(1.0-f1)*  (f2)  *(1.0-f3)*tab->dat[i1][i2+1][i3][i4][i5][ii] +
+						(1.0-f1)*(1.0-f2)*   (f3) *tab->dat[i1][i2][i3+1][i4][i5][ii] +
+						(f1)* (f2)   *(1.0-f3)*tab->dat[i1+1][i2+1][i3][i4][i5][ii] +
+						(f1)*(1.0-f2)* (f3)   *tab->dat[i1+1][i2][i3+1][i4][i5][ii] +
+						(1.0-f1)* (f2)   * (f3)   *tab->dat[i1][i2+1][i3+1][i4][i5][ii] +
+						(f1)* (f2)   * (f3)   *tab->dat[i1+1][i2+1][i3+1][i4][i5][ii])
+						*(1-f4) +
+						((1.0-f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1][i2][i3][i4+1][i5][ii] +
+								(f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1+1][i2][i3][i4+1][i5][ii] +
+								(1.0-f1)*  (f2)  *(1.0-f3)*tab->dat[i1][i2+1][i3][i4+1][i5][ii] +
+								(1.0-f1)*(1.0-f2)*   (f3) *tab->dat[i1][i2][i3+1][i4+1][i5][ii] +
+								(f1)* (f2)   *(1.0-f3)*tab->dat[i1+1][i2+1][i3][i4+1][i5][ii] +
+								(f1)*(1.0-f2)* (f3)   *tab->dat[i1+1][i2][i3+1][i4+1][i5][ii] +
+								(1.0-f1)* (f2)   * (f3)   *tab->dat[i1][i2+1][i3+1][i4+1][i5][ii] +
+								(f1)* (f2)   * (f3)   *tab->dat[i1+1][i2+1][i3+1][i4+1][i5][ii])
+								*(f4)) * (1.0-f5) +
+								(((1.0-f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1][i2][i3][i4][i5+1][ii] +
+										(f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1+1][i2][i3][i4][i5+1][ii] +
+										(1.0-f1)*  (f2)  *(1.0-f3)*tab->dat[i1][i2+1][i3][i4][i5+1][ii] +
+										(1.0-f1)*(1.0-f2)*   (f3) *tab->dat[i1][i2][i3+1][i4][i5+1][ii] +
+										(f1)* (f2)   *(1.0-f3)*tab->dat[i1+1][i2+1][i3][i4][i5+1][ii] +
+										(f1)*(1.0-f2)* (f3)   *tab->dat[i1+1][i2][i3+1][i4][i5+1][ii] +
+										(1.0-f1)* (f2)   * (f3)   *tab->dat[i1][i2+1][i3+1][i4][i5+1][ii] +
+										(f1)* (f2)   * (f3)   *tab->dat[i1+1][i2+1][i3+1][i4][i5+1][ii])
+										*(1-f4) +
+										((1.0-f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1][i2][i3][i4+1][i5+1][ii] +
+												(f1)*(1.0-f2)*(1.0-f3)*tab->dat[i1+1][i2][i3][i4+1][i5+1][ii] +
+												(1.0-f1)*  (f2)  *(1.0-f3)*tab->dat[i1][i2+1][i3][i4+1][i5+1][ii] +
+												(1.0-f1)*(1.0-f2)*   (f3) *tab->dat[i1][i2][i3+1][i4+1][i5+1][ii] +
+												(f1)* (f2)   *(1.0-f3)*tab->dat[i1+1][i2+1][i3][i4+1][i5+1][ii] +
+												(f1)*(1.0-f2)* (f3)   *tab->dat[i1+1][i2][i3+1][i4+1][i5+1][ii] +
+												(1.0-f1)* (f2)   * (f3)   *tab->dat[i1][i2+1][i3+1][i4+1][i5+1][ii] +
+												(f1)* (f2)   * (f3)   *tab->dat[i1+1][i2+1][i3+1][i4+1][i5+1][ii])
+												*(f4)) * (f5) ;
+
+	}
+
+}
+
+
+static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,int* status){
+
+	xill_spec* spec = NULL;
+	if (param->model_type==MOD_TYPE_XILLVER){
+		spec = new_xill_spec(1, tab->n_ener, status);
+	} else {
+		spec = new_xill_spec(tab->n_incl, tab->n_ener, status);
+	}
 
 	assert(spec!=NULL);
 	assert(spec->n_ener==tab->n_ener);
@@ -411,11 +514,32 @@ static void interp_xill_table(xillTable* tab,xill_spec* spec, int* ind,int* stat
 	}
 	spec->ener[spec->n_ener] = tab->ehi[spec->n_ener-1];
 
-	// just for now XXXXXXXXXXXXXX DO IT PROPERLY XXXXXXXXX
-	for (ii=0; ii<spec->n_ener; ii++){
-		spec->flu[ii]  = tab->dat[ind[0]][ind[1]][ind[2]][ind[3]][ind[4]][ii];
+	double gfac=(param->gam-tab->gam[ind[0]])/(tab->gam[ind[0]+1]-tab->gam[ind[0]]);
+	double afac=(param->afe-tab->afe[ind[1]])/(tab->afe[ind[1]+1]-tab->afe[ind[1]]);
+	double xfac=(param->lxi-tab->lxi[ind[2]])/(tab->lxi[ind[2]+1]-tab->lxi[ind[2]]);
+	double efac=(param->ect-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
+
+	/**
+	printf("gam=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->gam, gfac,tab->gam[ind[0]], tab->gam[ind[0]+1] ,ind[0]);
+	printf("afe=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->afe, afac,tab->afe[ind[1]], tab->afe[ind[1]+1] ,ind[1]);
+	printf("lxi=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->lxi, xfac,tab->lxi[ind[2]], tab->lxi[ind[2]+1] ,ind[2]);
+	printf("ect=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->ect, efac,tab->ect[ind[3]], tab->ect[ind[3]+1] ,ind[3]); **/
+
+	if (param->model_type==MOD_TYPE_XILLVER){
+		double ifac = (param->incl-tab->incl[ind[4]])/(tab->incl[ind[4]+1]-tab->incl[ind[4]]);
+		// printf("icl=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->incl, ifac,tab->incl[ind[4]], tab->incl[ind[4]+1],ind[4] );
+		interp_5d_tab(tab,spec->flu[0],spec->n_ener,gfac,afac,xfac,efac,ifac,
+				ind[0],ind[1],ind[2],ind[3],ind[4]);
+	} else {
+		// get the spectrum for EACH flux bin
+		for (ii=0; ii<spec->n_incl; ii++){
+			interp_4d_tab(tab,spec->flu[ii],spec->n_ener,gfac,afac,xfac,efac,
+					ind[0],ind[1],ind[2],ind[3],ii);
+		}
+
 	}
 
+	return spec;
 }
 
 /** the main routine for the xillver table: returns a spectrum for the given parameters
@@ -436,11 +560,12 @@ xill_spec* get_xillver_spectra(xillParam* param, int* status){
 
 
 	// =3= interpolate values
-	xill_spec* spec = new_xill_spec(tab->n_ener, status);
-	interp_xill_table(tab,spec,ind,status);
-
+	xill_spec* spec = interp_xill_table(tab,param,ind,status);
 
 	free(ind);
 	return spec;
 }
 
+void free_cached_xillTable(void){
+	free_xillTable(cached_xill_tab);
+}

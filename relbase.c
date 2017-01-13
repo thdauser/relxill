@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 #include "relbase.h"
@@ -692,10 +692,101 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 	renorm_relline_profile(spec);
 }
 
+/** convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
+ *  fout: gives the output
+ *  ener has length n+1 and is the energy array
+ * **/
+void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n, int* status){
 
+	long m;
+	switch(n)	{
+		case 512:  m = 9; break;
+		case 1024: m = 10; break;
+		case 2048: m = 11; break;
+		case 4096: m = 12; break;
+		default:  *status=EXIT_FAILURE; printf(" *** error: Number of Bins %i not allowed in Convolution!! \n",n);break;
+	}
+	CHECK_STATUS_VOID(*status);
+
+	int ii;
+	double x1[n]; double y1[n];
+	double x2[n]; double y2[n];
+	double xcomb[n]; double ycomb[n];
+	for (ii=0; ii<n; ii++){
+		x1[ii] = f1[ii]/(ener[ii+1]-ener[ii]);
+		x2[ii] = f2[ii]/(ener[ii+1]-ener[ii]);
+		y1[ii] = 0.0;
+		y2[ii] = 0.0;
+	}
+
+	FFT_R2CT(1, m, x1, y1);
+	FFT_R2CT(1, m, x2, y2);
+
+	/* complex multiplication
+	 * (we need the real part, so we already use the output variable here
+	 *  to save computing time */
+	for (ii=0; ii<n; ii++){
+		xcomb[ii] = x1[ii]*x2[ii] - y1[ii]*y2[ii];
+		ycomb[ii] = y1[ii]*x2[ii] + x1[ii]*y2[ii];
+	}
+
+	FFT_R2CT(-1, m, fout, ycomb);
+
+	for (ii=0; ii<n; ii++){
+		fout[ii] = xcomb[ii] * (ener[ii+1]-ener[ii]);
+	}
+
+}
+
+/** BASIC RELXILL KERNEL FUNCTION : convole a xillver spectrum with the relbase kernel
+ *  (ener has the length n_ener+1)
+ *  **/
+void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillParam* xill_param, relParam* rel_param, int* status ){
+
+	/* get the (fixed!) energy grid for a RELLINE for a convolution
+	 * -> as we do a simple FFT, we can now take into account that we
+	 *    need it to be number = 2^N */
+
+	int n_ener = N_ENER_CONV;
+	double* ener = (double*) malloc(n_ener*sizeof(double));
+	double* spec = (double*) malloc(n_ener*sizeof(double));
+	get_log_grid(ener, n_ener, EMIN_RELXILL, EMAX_RELXILL);
+
+	// todo: can/should we add caching here directly??
+	rel_spec* rel_profile = relbase(ener, n_ener, NULL , rel_param, status);
+
+	// call the function which calculates the xillver spectrum
+	xill_spec* xill_spec = get_xillver_spectra(xill_param,status);
+
+
+	if (rel_profile->n_zones != 1){
+		RELXILL_ERROR(" *** error: more than one zone in the disk currently not implemented",status);
+	}
+
+	// TODO: we are juest testing this, so we need to implement the full angle dependence still
+	double xill_flux[n_ener];
+	rebin_spectrum(ener,xill_flux,n_ener,
+			xill_spec->ener, xill_spec->flu[xill_spec->n_incl/2], xill_spec->n_ener );
+
+	double conv_out[n_ener];
+	fft_conv_spectrum(ener, rel_profile->flux[0], xill_flux, conv_out,  n_ener, status);
+	CHECK_STATUS_VOID(*status);
+
+	rebin_spectrum(ener_inp,spec_inp,n_ener_inp, ener, conv_out, n_ener);
+
+	// check if we did rebin the input spectrum
+	free_rel_spec(rel_profile);
+	free_xill_spec(xill_spec);
+
+	free(ener);
+	free(spec);
+
+
+	return;
+}
 
 /** print the relline profile   **/
-static void save_relline_profile(rel_spec* spec){
+void save_relline_profile(rel_spec* spec){
 
 	FILE* fp =  fopen ( "test_relline_profile.dat","w+" );
 	int ii;
@@ -715,7 +806,6 @@ static void save_emis_profile(double* rad, double* intens, int n_rad){
 	}
 	if (fclose(fp)) exit(1);
 }
-
 
 static int comp_single_param_val(double val1, double val2){
 	if (fabs(val1-val2) <= cache_limit){
@@ -779,39 +869,39 @@ int redo_relbase_calc(relParam* param, int* status){
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
  * output: photar(n_ener)     */
-void relbase(double* ener, const int n_ener, double* photar, relParam* param, int* status){
+rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* param, int* status){
 
 	// check caching here and also re-set the cached parameter values
 	int redo = redo_relbase_calc(param,status);
-	CHECK_STATUS_VOID(*status);
+	CHECK_STATUS_RET(*status,NULL);
 
 	if (redo){
 
 		// initialize parameter values
 		relSysPar* sysPar = get_system_parameters(param,status);
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,NULL);
 
 		// get emissivity profile TODO: do separate caching here??
 		calc_emis_profile(param, cached_rel_param,sysPar, status);
 		save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,NULL);
 
 		// init the spectra where we store the flux
 		init_rel_spec(&cached_rel_spec, param, &ener, n_ener, status);
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,NULL);
 
 		// calculate line profile (returned units are 'cts/bin')
 		relline_profile(cached_rel_spec, sysPar, status);
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,cached_rel_spec);
 
 		// store parameters such that we know what we calculated
 		set_cached_rel_param(cached_rel_param,param);
 	}
 
+	// TODO: set photar, such that we can directly use this spectrum???
+
 	assert(cached_rel_spec!=NULL);
-	save_relline_profile(cached_rel_spec);
-	// cache everything once we've calculated all the stuff
-	// cached_params (!!!)
+	return cached_rel_spec;
 }
 
 void free_rel_spec(rel_spec* spec){
@@ -834,6 +924,8 @@ void free_cached_tables(void){
 	free_relSysPar(cached_relSysPar);
 	free_relSysPar(cached_tab_sysPar);
 	free_cached_lpTable();
+
+	free_cached_xillTable();
 
 	free(cached_rel_param);
 

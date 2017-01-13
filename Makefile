@@ -36,7 +36,7 @@ clean:
 valgrind:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	valgrind --tool=memcheck --leak-check=full ./test_sta	
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta	
 
 gdb:
 	make clean

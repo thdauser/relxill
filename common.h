@@ -87,8 +87,9 @@ typedef struct{
 
 typedef struct{
 	double* ener;  // has n_ener+1 elements
-	double* flu;
+	double** flu;
 	int n_ener;
+	int n_incl;
 }xill_spec;
 
 

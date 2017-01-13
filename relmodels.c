@@ -64,7 +64,7 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 	param->afe   = inp_par[1];
 	param->lxi   = inp_par[2];
 	param->ect   = inp_par[3];
-	param->incl  = inp_par[4]*M_PI/180;
+	param->incl  = inp_par[4]; // is given in degrees !!
 	param->z     = inp_par[5];
 
 	// TODO: check parameter bounds here as well
@@ -73,6 +73,44 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 
 	return param;
 }
+
+
+void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELLINE,EMIS_TYPE_BKN,status);
+	CHECK_STATUS_VOID(*status);
+
+	xillParam* xparam = new_xillParam(MOD_TYPE_XILLVER,status);
+	CHECK_STATUS_VOID(*status);
+
+	assert(n_parameter == NUM_PARAM_RELXILL);
+
+	param->emis1 = inp_par[0];
+	param->emis2 = inp_par[1];
+	param->rbr   = inp_par[2];
+	param->a     = inp_par[3];
+	param->incl  = inp_par[4]*M_PI/180;
+	param->rin   = inp_par[5];
+	param->rout  = inp_par[6];
+	param->z     = inp_par[11];
+
+	xparam->gam   = inp_par[7];
+	xparam->afe   = inp_par[8];
+	xparam->lxi   = inp_par[9];
+	xparam->ect   = inp_par[10];
+	xparam->z     = inp_par[11];
+
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_VOID(*status);
+
+	*rel_param  = param;
+	*xill_param = xparam;
+
+	return;
+}
+
 
 relParam* init_par_relline(const double* inp_par, const int n_parameter, int* status){
 
@@ -137,7 +175,32 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 }
 
 /** XSPEC XILLVER MODEL FUNCTION **/
-void xillver(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+void relxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	xillParam* xill_param = NULL;
+	relParam* rel_param = NULL;
+
+	init_par_relxill(&rel_param,&xill_param,parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+	double * ener = (double*) ener0;
+	int n_ener = (int) n_ener0;
+	relxill_kernel(ener, photar, n_ener, xill_param, rel_param,status);
+	CHECK_STATUS_VOID(*status);
+
+	// todo: shift spectrum accordingly (or already in xillver???)
+
+	// test output
+	save_xillver_spectrum(ener,photar,n_ener);
+
+	free_xillParam(xill_param);
+	free_relParam(rel_param);
+
+}
+
+
+/** XSPEC XILLVER MODEL FUNCTION **/
+void xillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* param_struct = init_par_xillver(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
@@ -152,10 +215,18 @@ void xillver(const double* ener, const int n_ener, double* photar, const double*
 
 	// rebin it to the given grid
 
+	// =4= rebin to the input grid
+	assert(spec->n_incl==1); // make sure there is only one spectrum given (for the chosen inclination)
+
+	double * ener = (double*) ener0;
+	int n_ener = (int) n_ener0;
+	rebin_spectrum( ener, photar,n_ener,spec->ener,spec->flu[0],spec->n_ener);
+
 	// test output
-	save_xillver_spectrum(spec);
+	save_xillver_spectrum(ener,photar,n_ener);
 
 	free_xillParam(param_struct);
+
 	free_xill_spec(spec);
 }
 
@@ -172,8 +243,10 @@ void relline(const double* ener, const int n_ener, double* photar, const double*
 	 CHECK_STATUS_VOID(*status);
 
 	// call the function which calculates the line (assumes a line at 1keV!)
-	relbase(ener1keV, n_ener, photar, param_struct,status);
+	rel_spec* spec = relbase(ener1keV, n_ener, photar, param_struct,status);
 	CHECK_STATUS_VOID(*status);
+
+	save_relline_profile(spec);
 
 	free_relParam(param_struct);
 }

@@ -24,10 +24,10 @@
 #define LIMIT_PREC 1e-6
 
 static void set_std_param_xillver(double* inp_par, int* status){
-	inp_par[0] = 2.0;
+	inp_par[0] = 2.1;
 	inp_par[1] = 1.0;
-	inp_par[2] = 1.0;
-	inp_par[3] = 100.0;
+	inp_par[2] = 2.0; // logxi
+	inp_par[3] = 300.0;
 	inp_par[4] = 45.0;
 	inp_par[5] = 0.;
 }
@@ -46,6 +46,22 @@ static void set_std_param_relline(double* inp_par, int* status){
 }
 
 
+static void set_std_param_relxill(double* inp_par, int* status){
+	inp_par[0]  = 3.0;
+	inp_par[1]  = 3.0;
+	inp_par[2]  = 15.0;
+	inp_par[3]  = 0.998;
+	inp_par[4]  = 30.0;
+	inp_par[5]  = -1.;
+	inp_par[6]  = 400.;
+	inp_par[7]  = 2.1;   // pl Index
+	inp_par[8]  = 1.0;   // Afe
+	inp_par[9]  = 2.0;   // logxi
+	inp_par[10] = 300.0; // Ecut
+	inp_par[11] = 0.0;   // redshift
+}
+
+
 static void set_std_param_relline_lp(double* inp_par, int* status){
 	inp_par[0] = 1.0;
 	inp_par[1] = 3.0;
@@ -60,7 +76,7 @@ static void set_std_param_relline_lp(double* inp_par, int* status){
 /** standard evaluation of the relline model **/
 static void std_eval_relline(int* status, int n){
 
-	printf("\n *** Evaluating RELLINE MODEL \n");
+	printf("\n ==> Evaluating RELLINE MODEL \n");
 	/* set the parameters */
 	int n_param = NUM_PARAM_RELLINE;
 	double inp_par[NUM_PARAM_RELLINE];
@@ -81,9 +97,33 @@ static void std_eval_relline(int* status, int n){
 }
 
 /** standard evaluation of the relline model **/
+static void std_eval_relxill(int* status, int n){
+
+	printf("\n ==> Evaluating RELXILL MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELXILL;
+	double inp_par[NUM_PARAM_RELXILL];
+	set_std_param_relxill(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	int n_ener = 1000;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.1,1000.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+	int ii;
+	for (ii=0; ii<n; ii++){
+		relxill(ener,n_ener,photar,inp_par,n_param,status);
+	}
+}
+
+
+/** standard evaluation of the relline model **/
 static void std_eval_relline_lp(int* status, int n){
 
-	printf("\n *** Evaluating RELLINE LP MODEL \n");
+	printf("\n ==> Evaluating RELLINE LP MODEL \n");
 	/* set the parameters */
 	int n_param = NUM_PARAM_RELLINELP;
 	double inp_par_lp[n_param];
@@ -106,13 +146,10 @@ static void std_eval_relline_lp(int* status, int n){
 
 }
 
-
-
-
 /** standard evaluation of the relline model **/
 static void std_eval_xillver(int* status, int n){
 
-	printf("\n *** Evaluating XILLVER MODEL \n");
+	printf("\n ==> Evaluating XILLVER MODEL \n");
 	/* set the parameters */
 	int n_param = NUM_PARAM_XILLVER;
 	double inp_par[n_param];
@@ -120,9 +157,10 @@ static void std_eval_xillver(int* status, int n){
 	CHECK_STATUS_VOID(*status);
 
 	/* create an energy grid */
-	int n_ener = 1500;
+	int n_ener = 2000;
 	double ener[n_ener+1];
-	get_log_grid(ener,n_ener+1,0.05,100.0);
+	get_log_grid(ener,n_ener+1,0.08,500.0);
+
 
 	/* call the relline model */
 	double photar[n_ener];
@@ -140,7 +178,7 @@ static void std_eval_xillver(int* status, int n){
  ** [current version used: rel_table_v0.4e]   */
 void test_relline_table(int* status){
 
-	printf("\n *** Testing RELLINE TABLE (%s) \n",RELTABLE_FILENAME);
+	printf("\n ==> Testing RELLINE TABLE (%s) \n",RELTABLE_FILENAME);
 	relTable* tab=NULL;
 
 	do{
@@ -198,7 +236,7 @@ void test_relline_table(int* status){
  ** [current version used: rel_table_v0.4e]   */
 void test_lp_table(int* status){
 
-	printf("\n *** Testing LP TABLE (%s) \n",LPTABLE_FILENAME);
+	printf("\n ==> Testing LP TABLE (%s) \n",LPTABLE_FILENAME);
 	lpTable* tab=NULL;
 
 	do{
@@ -251,9 +289,41 @@ void test_lp_table(int* status){
 }
 
 
+static void test_rebin_spectrum(int* status){
+
+	const int n0 = 6;
+	const int n = 4;
+	double ener0[] = {1,3,4,5,6,7,9};
+	double val0[] =  {1,1,1,2,1,1};
+
+	double ener[] =  {0.5,2,4,5.5,7.5,8};
+	double val[n];
+
+	rebin_spectrum(ener,val,n,ener0,val0,n0);
+
+	double val_ref[5];
+	val_ref[0] = 0.5;
+	val_ref[1] = 0.5+1;
+	val_ref[2] = 1.0+1.0;
+	val_ref[3] = 1.0+1.0+0.25;
+	val_ref[4] = 0.25;
+
+	printf("\n ==> Testing REBINNING Functions\n");
+
+	int ii;
+	for (ii=0; ii<n; ii++){
+		// printf(" %i %e - %e \n",ii,val[ii],val_ref[ii]);
+		if ( fabs(val[ii] - val_ref[ii] ) > LIMIT_PREC ){
+			RELXILL_ERROR(" TEST-ERROR: testing of the function 'rebin_spectrum' failed",status);
+			return;
+		}
+	}
+
+}
+
 static void test_interp(int* status){
 
-	printf("\n *** Testing INTERPOLATION Routines \n");
+	printf("\n ==> Testing INTERPOLATION Routines \n");
 
 	double ifac = 0.2;
 	double rlo = 1.0;
@@ -293,12 +363,12 @@ int main(void){
 
 	do{
 		get_version_number(&buf,&status);
-		printf("\n *** Starting RELXILL Version %s *** \n\n",buf);
+		printf("\n === Starting RELXILL Version %s === \n\n",buf);
 		free(buf);
 
-//		test_relline_table(&status);
-//		CHECK_STATUS_BREAK(status);
-//		printf("     ---> successful \n");
+/*		test_relline_table(&status);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n"); */
 
 /*		test_lp_table(&status);
 		CHECK_STATUS_BREAK(status);
@@ -309,21 +379,35 @@ int main(void){
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n"); */
 
+		test_rebin_spectrum(&status);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n");
+
 
 /*		std_eval_relline(&status,1);
 		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n"); */
+		printf("     ---> successful \n"); *
+
+/*		std_eval_relxill(&status,1);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n"); *
+
 
 /*		std_eval_relline_lp(&status,1);
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n"); */
 
-		std_eval_xillver(&status,1);
+/*		std_eval_xillver(&status,1);
+		CHECK_STATUS_BREAK(status);
+		printf("     ---> successful \n"); */
+
+
+		std_eval_relxill(&status,1);
 		CHECK_STATUS_BREAK(status);
 		printf("     ---> successful \n");
 
 
-		printf( "\n *** Cleaning up and freeing cached structures\n");
+		printf( "\n ==> Cleaning up and freeing cached structures\n");
 		free_cached_tables();
 
 	} while(0);

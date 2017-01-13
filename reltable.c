@@ -17,6 +17,7 @@
 */
 
 #include "reltable.h"
+#include "time.h"
 
 static relDat* new_relDat(int nr, int ng, int* status){
 	relDat* dat = (relDat*) malloc (sizeof(relDat));
@@ -165,10 +166,12 @@ static void load_single_relDat_2dcol(fitsfile* fptr, float** val,int n1, int n2,
 }
 
 /** load one single data extension from the relline table   */
-static relDat* load_single_relDat(fitsfile* fptr, char* extname, int* status){
+static relDat* load_single_relDat(fitsfile* fptr, char* extname, int nhdu, int* status){
 
-	int extver = 0;
-	fits_movnam_hdu(fptr, BINARY_TBL, extname, extver ,status);
+	// int extver = 0;
+	// fits_movnam_hdu(fptr, BINARY_TBL, extname, extver ,status);
+	int exttype;
+	fits_movabs_hdu(fptr,nhdu,&exttype, status);
 	if (*status!=EXIT_SUCCESS){
 		printf(" *** error moving to extension %s\n",extname);
 		return NULL;
@@ -221,7 +224,6 @@ static relDat* load_single_relDat(fitsfile* fptr, char* extname, int* status){
     CHECK_STATUS_RET(*status,dat);
     load_single_relDat_2dcol(fptr,dat->cosne2,RELTABLE_NR,RELTABLE_NG,colnum_cosne2,status);
     CHECK_STATUS_RET(*status,dat);
-
 
     return dat;
 
@@ -279,7 +281,8 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 				}
 
 				assert(tab->arr[ii][jj]==NULL);
-				tab->arr[ii][jj] = load_single_relDat(fptr, extname, status);
+				int nhdu = (ii)*tab->n_mu0+jj+4;
+				tab->arr[ii][jj] = load_single_relDat(fptr, extname, nhdu, status);
 				free(extname);
 				if (*status!=EXIT_SUCCESS){
 					RELXILL_ERROR("failed to load data from the rel table into memory",status);

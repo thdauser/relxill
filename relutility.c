@@ -253,14 +253,153 @@ double gi_potential_lp(double r, double a, double h, double bet, double del){
 
 
 /** print the xillver spectrum   **/
-void save_xillver_spectrum(xill_spec* spec){
+void save_xillver_spectrum(double* ener, double* flu, int n_ener){
 
 	FILE* fp =  fopen ( "test_xillver_spectrum.dat","w+" );
 	int ii;
-	for (ii=0; ii<spec->n_ener; ii++){
-		fprintf(fp, " %e \t %e \t %e \n",spec->ener[ii],spec->ener[ii+1],spec->flu[ii]);
+	for (ii=0; ii<n_ener; ii++){
+		fprintf(fp, " %e \t %e \t %e \n",ener[ii],ener[ii+1],flu[ii]);
 	}
 	if (fclose(fp)) exit(1);
 }
 
 
+/* A simple implementation of the FFT taken from http://paulbourke.net/miscellaneous/dft/
+   (uses the Radix-2 Cooley-Tukey algorithm)
+
+   This computes an in-place complex-to-complex FFT
+   x and y are the real and imaginary arrays of 2^m points.
+   dir =  1 gives forward transform
+   dir = -1 gives reverse transform
+*/
+void FFT_R2CT(short int dir,long m,double *x,double *y){
+
+   long n,i,i1,j,k,i2,l,l1,l2;
+   double c1,c2,tx,ty,t1,t2,u1,u2,z;
+
+   /* Calculate the number of points */
+   n = 1;
+   for (i=0;i<m;i++){
+      n *= 2;
+   }
+
+   /* Do the bit reversal */
+   i2 = n >> 1;
+   j = 0;
+   for (i=0;i<n-1;i++) {
+      if (i < j) {
+         tx = x[i];
+         ty = y[i];
+         x[i] = x[j];
+         y[i] = y[j];
+         x[j] = tx;
+         y[j] = ty;
+      }
+      k = i2;
+      while (k <= j) {
+         j -= k;
+         k >>= 1;
+      }
+      j += k;
+   }
+
+   /* Compute the FFT */
+   c1 = -1.0;
+   c2 = 0.0;
+   l2 = 1;
+   for (l=0;l<m;l++) {
+      l1 = l2;
+      l2 <<= 1;
+      u1 = 1.0;
+      u2 = 0.0;
+      for (j=0;j<l1;j++) {
+         for (i=j;i<n;i+=l2) {
+            i1 = i + l1;
+            t1 = u1 * x[i1] - u2 * y[i1];
+            t2 = u1 * y[i1] + u2 * x[i1];
+            x[i1] = x[i] - t1;
+            y[i1] = y[i] - t2;
+            x[i] += t1;
+            y[i] += t2;
+         }
+         z =  u1 * c1 - u2 * c2;
+         u2 = u1 * c2 + u2 * c1;
+         u1 = z;
+      }
+      c2 = sqrt((1.0 - c1) / 2.0);
+      if (dir == 1)
+         c2 = -c2;
+      c1 = sqrt((1.0 + c1) / 2.0);
+   }
+
+   /* Scaling for forward transform */
+   if (dir == 1) {
+      for (i=0;i<n;i++) {
+         x[i] /= n;
+         y[i] /= n;
+      }
+   }
+
+   return;
+}
+
+
+/** rebin spectrum to a given energy grid
+ *  length of ener is nbins+1       **/
+
+void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double* flu0, int nbins0){
+
+
+	int ii; int jj;
+	int imin = 0;
+	int imax = 0;
+	for (ii=0; ii<nbins; ii++){
+
+		flu[ii] = 0.0;
+
+		/* check of the bin is outside the given energy range */
+		if ( (ener0[0] < ener[ii+1]) && (ener0[nbins0] > ener[ii]) ){
+
+			/* need to make sure we are in the correct bin */
+			while ( ener0[imin]<=ener[ii] && imin<=nbins0){
+				imin++;
+			}
+			// need to set it back, as we just crossed to the next bin
+			if (imin>0){
+				imin--;
+			}
+
+			while ( (ener0[imax]<=ener[ii+1] && imax<=nbins0)){
+				imax++;
+			}
+			if (imax>0){
+				imax--;
+			}
+
+			double elo = ener[ii];
+			double ehi = ener[ii+1];
+			if (elo < ener0[imin]) elo=ener0[imin];
+			if (ehi > ener0[imax+1]) ehi=ener0[imax+1];
+
+			if (imax==imin){
+				flu[ii] = (ehi-elo) / (ener0[imin+1] - ener0[imin]) * flu0[imin];
+			} else {
+
+				double dmin=(ener0[imin+1]-elo)/(ener0[imin+1]-ener0[imin]);
+				double dmax=(ehi-ener0[imax])/(ener0[imax+1]-ener0[imax]);
+
+				flu[ii] += flu0[imin]*dmin + flu0[imax]*dmax;
+
+				for (jj=imin+1; jj <= imax-1; jj++) {
+					flu[ii] += flu0[jj];
+				}
+
+			}
+
+	/**		printf("[%i]  %i-%i  -> ener=[%.3f-%.3f] , choosing bins %.3f and %.3f  => flux=%.2f\n",ii,imin,imax,
+								ener[ii],ener[ii+1],ener0[imin],ener0[imax+1],flu[ii]);  **/
+
+		}
+
+	}
+}

@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef MODELS_H_
 #define MODELS_H_
@@ -31,6 +31,10 @@
 
 #define MOD_TYPE_XILLVER 0
 #define NUM_PARAM_XILLVER 6
+
+#define MOD_TYPE_RELXILL -1
+#define NUM_PARAM_RELXILL 12
+
 
 /****  TYPE DEFINITIONS ****/
 

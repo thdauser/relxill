@@ -20,6 +20,7 @@
 
 #include "relbase.h"
 #include "relutility.h"
+#include "relmodels.h"
 
 
 #define XILLTABLE_N_PARAM 5
@@ -75,7 +76,10 @@ void free_xillTable(xillTable* tab);
  *  (decides if the table needs to be initialized and/or more data loaded          */
 xill_spec* get_xillver_spectra(xillParam* param, int* status);
 
-xill_spec* new_xill_spec(int n_ener, int* status);
+xill_spec* new_xill_spec(int n_incl, int n_ener, int* status);
 void free_xill_spec(xill_spec* spec);
+
+void free_cached_xillTable(void);
+
 
 #endif /* XILLTABLE_H_ */
