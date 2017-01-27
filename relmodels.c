@@ -78,10 +78,10 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
 
 	// fill in parameters
-	relParam* param = new_relParam(MOD_TYPE_RELLINE,EMIS_TYPE_BKN,status);
+	relParam* param = new_relParam(MOD_TYPE_RELXILL,EMIS_TYPE_BKN,status);
 	CHECK_STATUS_VOID(*status);
 
-	xillParam* xparam = new_xillParam(MOD_TYPE_XILLVER,status);
+	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILL,status);
 	CHECK_STATUS_VOID(*status);
 
 	assert(n_parameter == NUM_PARAM_RELXILL);

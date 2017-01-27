@@ -26,7 +26,7 @@ relSysPar* cached_relSysPar=NULL;
 relSysPar* cached_tab_sysPar=NULL;
 rel_spec* cached_rel_spec=NULL;
 
-
+int save_1eV_pos = 0;
 double cached_int_romb_rad = -1.0;
 const double cache_limit = 1e-8;
 
@@ -304,7 +304,7 @@ rel_spec* new_rel_spec(int nzones, const int n_ener, int*status){
 static int get_num_zones(int model_type){
 
 	// set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
-	if (is_xill_model(model_type)){
+	if (is_relxill_model(model_type)){
 		return N_ZONES;
 	} else {
 		return 1;
@@ -694,29 +694,43 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 
 /** convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
  *  fout: gives the output
+ *  f1 input (reflection) specrum
+ *  f2 filter
  *  ener has length n+1 and is the energy array
  * **/
 void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n, int* status){
 
-	long m;
+	long m=0;
 	switch(n)	{
 		case 512:  m = 9; break;
 		case 1024: m = 10; break;
 		case 2048: m = 11; break;
 		case 4096: m = 12; break;
-		default:  *status=EXIT_FAILURE; printf(" *** error: Number of Bins %i not allowed in Convolution!! \n",n);break;
+		default: *status=EXIT_FAILURE; printf(" *** error: Number of Bins %i not allowed in Convolution!! \n",n);break;
 	}
 	CHECK_STATUS_VOID(*status);
 
+	/* need to find out where the 1keV for the filter is, which defines if energies are blue or redshifted*/
+	if (save_1eV_pos==0 ||
+		(! ( (ener[save_1eV_pos]<=1.0) &&
+		(ener[save_1eV_pos+1]>1.0)  ))){
+		save_1eV_pos = binary_search(ener,n+1,1.0);
+	}
+
+
 	int ii;
+	int irot;
 	double x1[n]; double y1[n];
 	double x2[n]; double y2[n];
 	double xcomb[n]; double ycomb[n];
 	for (ii=0; ii<n; ii++){
 		x1[ii] = f1[ii]/(ener[ii+1]-ener[ii]);
-		x2[ii] = f2[ii]/(ener[ii+1]-ener[ii]);
+		irot = (ii-save_1eV_pos+n) % n ;
+		x2[irot ] = f2[ii]/(ener[ii+1]-ener[ii]);
 		y1[ii] = 0.0;
 		y2[ii] = 0.0;
+
+		printf(" save pos %i %i %e\n",save_1eV_pos,irot,x2[irot]);
 	}
 
 	FFT_R2CT(1, m, x1, y1);
@@ -730,7 +744,7 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 		ycomb[ii] = y1[ii]*x2[ii] + x1[ii]*y2[ii];
 	}
 
-	FFT_R2CT(-1, m, fout, ycomb);
+	FFT_R2CT(-1, m, xcomb, ycomb);
 
 	for (ii=0; ii<n; ii++){
 		fout[ii] = xcomb[ii] * (ener[ii+1]-ener[ii]);
@@ -748,9 +762,10 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	 *    need it to be number = 2^N */
 
 	int n_ener = N_ENER_CONV;
-	double* ener = (double*) malloc(n_ener*sizeof(double));
-	double* spec = (double*) malloc(n_ener*sizeof(double));
-	get_log_grid(ener, n_ener, EMIN_RELXILL, EMAX_RELXILL);
+	double ener[n_ener+1]; // = (double*) malloc((n_ener+1)*sizeof(double));
+	// CHECK_MALLOC_VOID_STATUS(ener,status);
+
+	get_log_grid(ener, (n_ener+1), EMIN_RELXILL, EMAX_RELXILL);
 
 	// todo: can/should we add caching here directly??
 	rel_spec* rel_profile = relbase(ener, n_ener, NULL , rel_param, status);
@@ -758,9 +773,9 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	// call the function which calculates the xillver spectrum
 	xill_spec* xill_spec = get_xillver_spectra(xill_param,status);
 
-
 	if (rel_profile->n_zones != 1){
 		RELXILL_ERROR(" *** error: more than one zone in the disk currently not implemented",status);
+		CHECK_STATUS_VOID(*status);
 	}
 
 	// TODO: we are juest testing this, so we need to implement the full angle dependence still
@@ -768,19 +783,23 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	rebin_spectrum(ener,xill_flux,n_ener,
 			xill_spec->ener, xill_spec->flu[xill_spec->n_incl/2], xill_spec->n_ener );
 
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
+		xill_flux[ii] = 0.0;
+	}
+	xill_flux[save_1eV_pos = binary_search(ener,n_ener+1,1.0)] = 1.0;
+
 	double conv_out[n_ener];
-	fft_conv_spectrum(ener, rel_profile->flux[0], xill_flux, conv_out,  n_ener, status);
+	fft_conv_spectrum(ener, xill_flux, rel_profile->flux[0], conv_out,  n_ener, status);
 	CHECK_STATUS_VOID(*status);
 
 	rebin_spectrum(ener_inp,spec_inp,n_ener_inp, ener, conv_out, n_ener);
 
 	// check if we did rebin the input spectrum
-	free_rel_spec(rel_profile);
+//	free_rel_spec(rel_profile);
 	free_xill_spec(xill_spec);
 
-	free(ener);
-	free(spec);
-
+//	free(ener);
 
 	return;
 }
@@ -906,7 +925,7 @@ rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* para
 
 void free_rel_spec(rel_spec* spec){
 	if (spec!=NULL){
-		free(spec->ener);
+	//	free(spec->ener);  we do not need this, as only a pointer for ener is assigned
 		free(spec->rgrid);
 		if (spec->flux!=NULL){
 			int ii;

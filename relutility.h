@@ -102,8 +102,8 @@ double trapez_integ_single(double* re, int ii, int nr);
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);
 
-/** test if it is a (rel)xill flavour model **/
-int is_xill_model(int model_type);
+/** test if it is a relxill flavour model **/
+int is_relxill_model(int model_type);
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
 double* get_rzone_grid(double rmin, double rmax, int nzones, int* status);

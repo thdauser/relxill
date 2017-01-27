@@ -67,12 +67,12 @@
 
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
-#define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
+#define N_ZONES 1       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
 
 /** parameters for the convolution **/
-#define N_ENER_CONV 2048  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
-#define EMIN_RELXILL 0.072  // minimal energy of the convolution (in keV)
-#define EMAX_RELXILL 1000.0 // minimal energy of the convolution (in keV)
+#define N_ENER_CONV 512  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
+#define EMIN_RELXILL 0.03  // minimal energy of the convolution (in keV)
+#define EMAX_RELXILL 10000.0 // minimal energy of the convolution (in keV)
 
 /****** TYPE DEFINITIONS ******/
 

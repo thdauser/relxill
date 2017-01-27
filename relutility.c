@@ -138,8 +138,8 @@ int inv_binary_search(double* arr,int n,double val){
 	return klo;
 }
 
-/** test if it is a (rel)xill flavour model **/
-int is_xill_model(int model_type){
+/** test if it is a relxill flavour model **/
+int is_relxill_model(int model_type){
 	if (model_type < 0){
 		return 1;
 	} else {
@@ -349,10 +349,10 @@ void FFT_R2CT(short int dir,long m,double *x,double *y){
 
 void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double* flu0, int nbins0){
 
-
 	int ii; int jj;
 	int imin = 0;
 	int imax = 0;
+
 	for (ii=0; ii<nbins; ii++){
 
 		flu[ii] = 0.0;
@@ -368,8 +368,7 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 			if (imin>0){
 				imin--;
 			}
-
-			while ( (ener0[imax]<=ener[ii+1] && imax<=nbins0)){
+			while ( (ener0[imax]<=ener[ii+1] && imax<nbins0)){
 				imax++;
 			}
 			if (imax>0){
