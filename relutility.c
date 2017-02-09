@@ -175,7 +175,8 @@ double* get_rzone_grid(double rmin, double rmax, int nzones, int* status){
 		rgrid[0] = rmin;
 		rgrid[1] = rmax;
 	} else {
-		printf(" *** Warning: A radial zones grid is not yet implemented \n");
+		get_log_grid(rgrid,nzones+1,rmin,rmax);
+//		printf(" *** Warning: A radial zones grid is not yet implemented \n");
 	}
 	return rgrid;
 }

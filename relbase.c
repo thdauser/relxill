@@ -293,7 +293,34 @@ rel_spec* new_rel_spec(int nzones, const int n_ener, int*status){
 
 	for (ii=0; ii<spec->n_zones; ii++){
 		spec->flux[ii] = (double*) malloc ( n_ener * sizeof(double) );
-		CHECK_MALLOC_RET_STATUS(spec,status,spec);
+		CHECK_MALLOC_RET_STATUS(spec->flux[ii],status,spec);
+	}
+
+	return spec;
+}
+
+/** get new structure to store the conse distribution spectrum (possibly for several zones) **/
+rel_cosne* new_rel_cosne(int nzones, int n_incl, int*status){
+
+	rel_cosne* spec = (rel_cosne*) malloc(sizeof(rel_cosne));
+	CHECK_MALLOC_RET_STATUS(spec,status,NULL);
+
+
+	spec->n_zones = nzones;
+	spec->n_cosne = n_incl;
+
+	spec->cosne = (double*) malloc (spec->n_cosne * sizeof(double) );
+	CHECK_MALLOC_RET_STATUS(spec->cosne,status,spec);
+
+
+	spec->dist = (double**) malloc (spec->n_zones * sizeof(double*) );
+	CHECK_MALLOC_RET_STATUS(spec->dist,status,spec);
+
+	int ii;
+
+	for (ii=0; ii<spec->n_zones; ii++){
+		spec->dist[ii] = (double*) malloc ( n_incl * sizeof(double) );
+		CHECK_MALLOC_RET_STATUS(spec->dist[ii],status,spec);
 	}
 
 	return spec;
@@ -314,12 +341,23 @@ static int get_num_zones(int model_type){
 
 
 /** initialize the rel_spec structure **/
-static void init_rel_spec(rel_spec** spec, relParam* param, double** pt_ener, const int n_ener, int* status ){
+static void init_rel_spec(rel_spec** spec, relParam* param, xill_spec* xill_spec,
+		double** pt_ener, const int n_ener, int* status ){
 
 	int nzones = get_num_zones(param->model_type);
 
 	if ((*spec)==NULL){
 		(*spec) = new_rel_spec(nzones,n_ener,status);
+	}
+
+	if (xill_spec!=NULL){
+		if ((*spec)->rel_cosne== NULL) {
+			(*spec)->rel_cosne = new_rel_cosne(nzones,xill_spec->n_incl,status);
+		}
+		int ii;
+		for (ii=0; ii<(*spec)->rel_cosne->n_cosne; ii++ ){
+			(*spec)->rel_cosne->cosne[ii] = cos(xill_spec->incl[ii]*M_PI/180);
+		}
 	}
 
 	(*spec)->rgrid = get_rzone_grid(param->rin, param->rout, nzones, status);
@@ -334,6 +372,11 @@ static void zero_rel_spec_flux(rel_spec* spec){
 	for (ii=0; ii<spec->n_zones;ii++){
 		for (jj=0; jj<spec->n_ener;jj++){
 			spec->flux[ii][jj] = 0.0;
+		}
+		if ( spec->rel_cosne!=NULL ){
+			for (jj=0; jj<spec->rel_cosne->n_cosne;jj++){
+				spec->rel_cosne->dist[ii][jj]=0.0;
+			}
 		}
 	}
 }
@@ -477,11 +520,10 @@ static double int_edge(double blo, double bhi, double h, str_relb_func* str, dou
   }
 
   // #2: get the normalization value
-
   int k=0;
   double norm = 0.0;
   for (k=0; k<2; k++) {
-    norm = norm + relb_func(gstar2ener(hex,str->gmin,str->gmax,line_energy),k,str);
+	  norm = norm + relb_func(gstar2ener(hex,str->gmin,str->gmax,line_energy),k,str);
   }
 
 
@@ -629,6 +671,24 @@ static void renorm_relline_profile(rel_spec* spec){
 			spec->flux[ii][jj] /= sum;
 		}
 	}
+
+	if (spec->rel_cosne!=NULL){
+		// normalize it for each zone, the overall flux will be taken care of by the normal structure
+		sum = 0.0;
+		for (ii=0; ii<spec->n_zones; ii++){
+			for (jj=0; jj<spec->rel_cosne->n_cosne; jj++){
+				sum += spec->rel_cosne->dist[ii][jj];
+			}
+			for (jj=0; jj<spec->rel_cosne->n_cosne; jj++){
+				spec->rel_cosne->dist[ii][jj] /= sum;
+			}
+		}
+	}
+}
+
+/** get the bin for a certain emission angle (between [0,n_incl-1] **/
+int static get_cosne_bin(double mu, rel_cosne* dat){
+	return (( int ) (dat->n_cosne*(1 - mu) + 1)) - 1 ;
 }
 
 /** calculate the relline profile(s) for all given zones **/
@@ -680,12 +740,33 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 	       			sysPar->trff[ii],sysPar->cosne[ii],
 					sysPar->emis[ii]);
 
-	        // lastly, loop over the energies
-	        for (jj=ielo; jj<=iehi; jj++){
-	        	double tmp_var = integ_relline_bin(cached_str_relb_func,spec->ener[jj],spec->ener[jj+1]);
-	           spec->flux[izone][jj] +=     	tmp_var*weight;
+	       	// lastly, loop over the energies
+	       	for (jj=ielo; jj<=iehi; jj++){
+	       		double tmp_var = integ_relline_bin(cached_str_relb_func,spec->ener[jj],spec->ener[jj+1]);
+	       		spec->flux[izone][jj] += tmp_var*weight;
 
-	     	 }
+	       	}
+
+	       	/** only calculate the distribution if we need it here  **/
+	       	if (spec->rel_cosne != NULL){
+	       		int kk; int imu;
+	       		str_relb_func* da = cached_str_relb_func; // define a shortcut
+	       		for (jj=0; jj<sysPar->ng; jj++){
+	       			double g = da->gstar[jj]*(da->gmax-da->gmin) + da->gmin;
+	       			for (kk=0; kk<2; kk++){
+	       				imu = get_cosne_bin(da->cosne[jj][kk],spec->rel_cosne);
+
+	       				spec->rel_cosne->dist[izone][imu] +=
+	       						da->re*pow(2*M_PI*g*da->re,2)/
+	       		                sqrt(da->gstar[jj] - da->gstar[jj]*da->gstar[jj])*
+								da->trff[jj][kk]* da->emis
+								* weight * sysPar->d_gstar[jj] ;
+
+	       			}
+	       		}
+	       	} /** end calculating angular distribution **/
+
+
 		}
 	}
 
@@ -706,6 +787,7 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 		case 1024: m = 10; break;
 		case 2048: m = 11; break;
 		case 4096: m = 12; break;
+		case 8192: m = 13; break;
 		default: *status=EXIT_FAILURE; printf(" *** error: Number of Bins %i not allowed in Convolution!! \n",n);break;
 	}
 	CHECK_STATUS_VOID(*status);
@@ -729,8 +811,6 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 		x2[irot ] = f2[ii]/(ener[ii+1]-ener[ii]);
 		y1[ii] = 0.0;
 		y2[ii] = 0.0;
-
-		printf(" save pos %i %i %e\n",save_1eV_pos,irot,x2[irot]);
 	}
 
 	FFT_R2CT(1, m, x1, y1);
@@ -752,6 +832,41 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 
 }
 
+
+static void print_angle_dist(rel_cosne* spec, int izone){
+
+
+	FILE* fp =  fopen ( "test_angle_dist.dat","w+" );
+	int ii;
+	for(ii=0; ii<spec->n_cosne; ii++ ){
+		fprintf(fp," mu=%e %e \n",spec->cosne[ii],
+				// acos(spec->cosne[ii])*180/M_PI,
+				spec->dist[izone][ii]);
+	}
+	if (fclose(fp)) exit(1);
+
+}
+
+
+static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
+		double* cosne, double* dist, int n_incl, int* status){
+
+	int ii; int jj;
+	for (ii=0; ii<xill_spec->n_ener;ii++){
+		xill_flux[ii] = 0.0;
+	}
+
+	double mufac;
+	for (ii=0; ii<xill_spec->n_incl;ii++){
+		/**  0.5*F*mu*dmu (Javier Note, Eq. 25) **/
+		mufac = 0.5*cosne[ii]*dist[ii];
+		for (jj=0; jj<xill_spec->n_ener;jj++){
+			xill_flux[jj] += mufac*xill_spec->flu[ii][jj];
+		}
+	}
+
+}
+
 /** BASIC RELXILL KERNEL FUNCTION : convole a xillver spectrum with the relbase kernel
  *  (ener has the length n_ener+1)
  *  **/
@@ -762,44 +877,65 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	 *    need it to be number = 2^N */
 
 	int n_ener = N_ENER_CONV;
-	double ener[n_ener+1]; // = (double*) malloc((n_ener+1)*sizeof(double));
-	// CHECK_MALLOC_VOID_STATUS(ener,status);
+	double ener[n_ener+1];
 
 	get_log_grid(ener, (n_ener+1), EMIN_RELXILL, EMAX_RELXILL);
 
-	// todo: can/should we add caching here directly??
-	rel_spec* rel_profile = relbase(ener, n_ener, NULL , rel_param, status);
 
 	// call the function which calculates the xillver spectrum
 	xill_spec* xill_spec = get_xillver_spectra(xill_param,status);
 
-	if (rel_profile->n_zones != 1){
+	// todo: can/should we add caching here directly??
+	rel_spec* rel_profile = relbase(ener, n_ener, NULL , rel_param, xill_spec, status);
+
+
+	/** if (rel_profile->n_zones != 1){
 		RELXILL_ERROR(" *** error: more than one zone in the disk currently not implemented",status);
 		CHECK_STATUS_VOID(*status);
-	}
+	} **/
 
-	// TODO: we are juest testing this, so we need to implement the full angle dependence still
-	double xill_flux[n_ener];
-	rebin_spectrum(ener,xill_flux,n_ener,
-			xill_spec->ener, xill_spec->flu[xill_spec->n_incl/2], xill_spec->n_ener );
-
+	// make sure the output array is set to 0
 	int ii;
-	for (ii=0; ii<n_ener; ii++){
-		xill_flux[ii] = 0.0;
+	for (ii=0; ii<n_ener_inp;ii++){
+		spec_inp[ii]=0.0;
 	}
-	xill_flux[save_1eV_pos = binary_search(ener,n_ener+1,1.0)] = 1.0;
 
+	/*** LOOP OVER THE RADIAL ZONES ***/
+	double xill_flux[n_ener];
+	double xill_angdist_inp[xill_spec->n_ener];
 	double conv_out[n_ener];
-	fft_conv_spectrum(ener, xill_flux, rel_profile->flux[0], conv_out,  n_ener, status);
-	CHECK_STATUS_VOID(*status);
+	double single_spec_inp[n_ener_inp];
+	for (ii=0; ii<n_ener;ii++){
+		conv_out[ii] = 0.0;
+	}
+	for (ii=0; ii<rel_profile->n_zones;ii++){
 
-	rebin_spectrum(ener_inp,spec_inp,n_ener_inp, ener, conv_out, n_ener);
+		// now calculate the reflection spectra for each zone (using the angular distribution)
+		assert(rel_profile->rel_cosne != NULL);
+		print_angle_dist(rel_profile->rel_cosne,ii);
+		calc_xillver_angdep(xill_angdist_inp,xill_spec,rel_profile->rel_cosne->cosne,
+				rel_profile->rel_cosne->dist[ii],rel_profile->rel_cosne->n_cosne,status);
 
-	// check if we did rebin the input spectrum
-//	free_rel_spec(rel_profile);
+		// get angular distribution (maybe already when calculating the relat spectrum???)
+
+		// TODO: we are juest testing this, so we need to implement the full angle dependence still
+		rebin_spectrum(ener,xill_flux,n_ener,
+				xill_spec->ener, xill_angdist_inp, xill_spec->n_ener );
+
+		// convolve the spectrum
+		fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out,  n_ener, status);
+		CHECK_STATUS_VOID(*status);
+
+		// rebin to the output grid
+		rebin_spectrum(ener_inp,single_spec_inp,n_ener_inp, ener, conv_out, n_ener);
+
+		// add it to the final output spectrum
+		for (ii=0; ii<n_ener_inp;ii++){
+			spec_inp[ii] += single_spec_inp[ii];
+		}
+	}
+
 	free_xill_spec(xill_spec);
-
-//	free(ener);
 
 	return;
 }
@@ -887,8 +1023,9 @@ int redo_relbase_calc(relParam* param, int* status){
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
+ * optinal input: xillver grid
  * output: photar(n_ener)     */
-rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* param, int* status){
+rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* param, xill_spec* xill_spec  ,int* status){
 
 	// check caching here and also re-set the cached parameter values
 	int redo = redo_relbase_calc(param,status);
@@ -906,7 +1043,7 @@ rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* para
 		CHECK_STATUS_RET(*status,NULL);
 
 		// init the spectra where we store the flux
-		init_rel_spec(&cached_rel_spec, param, &ener, n_ener, status);
+		init_rel_spec(&cached_rel_spec, param, xill_spec, &ener, n_ener, status);
 		CHECK_STATUS_RET(*status,NULL);
 
 		// calculate line profile (returned units are 'cts/bin')
@@ -923,6 +1060,23 @@ rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* para
 	return cached_rel_spec;
 }
 
+
+
+void free_rel_cosne(rel_cosne* spec){
+	if (spec!=NULL){
+	//	free(spec->ener);  we do not need this, as only a pointer for ener is assigned
+		free(spec->cosne);
+		if (spec->dist!=NULL){
+			int ii;
+			for (ii=0; ii<spec->n_zones; ii++){
+				free(spec->dist[ii]);
+			}
+		}
+		free(spec->dist);
+		free(spec);
+	}
+}
+
 void free_rel_spec(rel_spec* spec){
 	if (spec!=NULL){
 	//	free(spec->ener);  we do not need this, as only a pointer for ener is assigned
@@ -934,6 +1088,7 @@ void free_rel_spec(rel_spec* spec){
 			}
 		}
 		free(spec->flux);
+		free_rel_cosne(spec->rel_cosne);
 		free(spec);
 	}
 }
@@ -980,9 +1135,22 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 
 
 	// we already set the values as they are fixed
-	for (int ii=0; ii<ng;ii++){
+	int ii=0;
+	for (ii=0; ii<ng;ii++){
 		sysPar->gstar[ii] = GFAC_H + (1.0-2*GFAC_H)/(ng-1)*( (float) (ii) );
 	}
+
+	sysPar->d_gstar = (double*) malloc (ng*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(sysPar->gstar,status,sysPar);
+	for (ii=0; ii<ng;ii++){
+	     if ((ii==0)||(ii==(ng-1))) {
+	        sysPar->d_gstar[ii] = 0.5*(sysPar->gstar[1]-sysPar->gstar[0])+GFAC_H;
+	     } else {
+	    	 sysPar->d_gstar[ii] = sysPar->gstar[1]-sysPar->gstar[0];
+	     }
+	}
+
+
 
 	sysPar->trff = (double***) malloc(nr*sizeof(double**));
 	CHECK_MALLOC_RET_STATUS(sysPar->trff,status,sysPar);
@@ -1010,6 +1178,7 @@ void free_relSysPar(relSysPar* sysPar){
 		free(sysPar->gmin);
 		free(sysPar->gmax);
 		free(sysPar->gstar);
+		free(sysPar->d_gstar);
 
 		free(sysPar->emis);
 		free(sysPar->del_emit);

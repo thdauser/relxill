@@ -393,6 +393,9 @@ xill_spec* new_xill_spec(int n_incl, int n_ener, int* status){
 	spec->ener = (double*) malloc(sizeof(double)*(n_ener+1));
 	CHECK_MALLOC_RET_STATUS(spec->ener,status,spec);
 
+	spec->incl = (double*) malloc(sizeof(double)*(n_incl));
+	CHECK_MALLOC_RET_STATUS(spec->incl,status,spec);
+
 	spec->flu = (double**) malloc(sizeof(double*)*n_incl);
 	CHECK_MALLOC_RET_STATUS(spec->flu,status,spec);
 
@@ -408,6 +411,7 @@ xill_spec* new_xill_spec(int n_incl, int n_ener, int* status){
 void free_xill_spec(xill_spec* spec){
 	if (spec!=NULL){
 		free(spec->ener);
+		free(spec->incl);
 		if (spec->flu!=NULL){
 			int ii;
 			for (ii=0; ii<spec->n_incl; ii++){
@@ -513,6 +517,11 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 		spec->ener[ii] = tab->elo[ii];
 	}
 	spec->ener[spec->n_ener] = tab->ehi[spec->n_ener-1];
+
+	// set the inclination grid
+	for (ii=0; ii<spec->n_incl; ii++){
+		spec->incl[ii] = tab->incl[ii];
+	}
 
 	double gfac=(param->gam-tab->gam[ind[0]])/(tab->gam[ind[0]+1]-tab->gam[ind[0]]);
 	double afac=(param->afe-tab->afe[ind[1]])/(tab->afe[ind[1]+1]-tab->afe[ind[1]]);

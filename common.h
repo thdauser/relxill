@@ -64,6 +64,7 @@ typedef struct{
 	double* gmin;
 	double* gmax;
 	double* gstar;
+	double* d_gstar;  // bin width for each gstar value
 
 	double*** trff;
 	double*** cosne;
@@ -77,17 +78,26 @@ typedef struct{
 
 
 typedef struct{
+	int n_cosne;
+	int n_zones;
+	double* cosne;
+	double** dist;      // [n_zones][n_cosne]
+} rel_cosne;
+
+typedef struct{
 	int n_ener;
 	int n_zones;
-	double* rgrid; // length=n_zones + 1
-	double* ener;  // length=n_ener +1
-	double** flux;
+	double* rgrid;      // length=n_zones + 1
+	double* ener;       // length=n_ener +1
+	double** flux;      // [n_zones][n_ener]
+	rel_cosne* rel_cosne;
 } rel_spec;
 
 
 typedef struct{
 	double* ener;  // has n_ener+1 elements
-	double** flu;
+	double* incl;  // has n_incl elements
+	double** flu;  // [n_incl,n_ener+1]
 	int n_ener;
 	int n_incl;
 }xill_spec;

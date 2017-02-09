@@ -70,8 +70,8 @@
 #define N_ZONES 1       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
 
 /** parameters for the convolution **/
-#define N_ENER_CONV 512  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
-#define EMIN_RELXILL 0.03  // minimal energy of the convolution (in keV)
+#define N_ENER_CONV 4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
+#define EMIN_RELXILL 0.01  // minimal energy of the convolution (in keV)
 #define EMAX_RELXILL 10000.0 // minimal energy of the convolution (in keV)
 
 /****** TYPE DEFINITIONS ******/
@@ -102,7 +102,7 @@ typedef struct{
 /****** FUNCTION DEFINITIONS ******/
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
-rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* param, int* status);
+rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* param, xill_spec* xill_spec, int* status);
 
 /** calculate the relline profile(s) for all given zones **/
 void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status);

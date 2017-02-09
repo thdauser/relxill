@@ -56,7 +56,7 @@ static void set_std_param_relxill(double* inp_par, int* status){
 	inp_par[6]  = 400.;
 	inp_par[7]  = 2.1;   // pl Index
 	inp_par[8]  = 1.0;   // Afe
-	inp_par[9]  = 2.0;   // logxi
+	inp_par[9]  = 0.0;   // logxi
 	inp_par[10] = 300.0; // Ecut
 	inp_par[11] = 0.0;   // redshift
 }
@@ -107,7 +107,7 @@ static void std_eval_relxill(int* status, int n){
 	CHECK_STATUS_VOID(*status);
 
 	/* create an energy grid */
-	int n_ener = 1000;
+	int n_ener = 2000;
 	double ener[n_ener+1];
 	get_log_grid(ener,n_ener+1,0.1,1000.0);
 

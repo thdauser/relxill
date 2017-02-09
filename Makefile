@@ -29,7 +29,7 @@ $(LINK_TARGET): $(objects)
 	gcc $(INCLUDES) $(CFLAGS) -c $<
 
 clean:
-	rm -f $(objects) $(LINK_TARGET) *~ gmon.out
+	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat
 
 
 .PHONY: valgrind, gdb

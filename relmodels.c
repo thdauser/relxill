@@ -243,7 +243,7 @@ void relline(const double* ener, const int n_ener, double* photar, const double*
 	 CHECK_STATUS_VOID(*status);
 
 	// call the function which calculates the line (assumes a line at 1keV!)
-	rel_spec* spec = relbase(ener1keV, n_ener, photar, param_struct,status);
+	rel_spec* spec = relbase(ener1keV, n_ener, photar, param_struct,NULL,status);
 	CHECK_STATUS_VOID(*status);
 
 	save_relline_profile(spec);
@@ -262,7 +262,7 @@ void rellinelp(const double* ener, const int n_ener, double* photar, const doubl
 	 CHECK_STATUS_VOID(*status);
 
 	// call the function which calculates the line (assumes a line at 1keV!)
-	relbase(ener1keV, n_ener, photar, param_struct,status);
+	relbase(ener1keV, n_ener, photar, param_struct,NULL,status);
 	CHECK_STATUS_VOID(*status);
 
 	free_relParam(param_struct);
