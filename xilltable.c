@@ -242,7 +242,7 @@ static fitsfile* open_xillver_tab(char* filename, int* status){
 	fitsfile* fptr = NULL;
 	char* fullfilename=NULL;
 	// get the full filename
-	if (asprintf(&fullfilename, "%s/%s", RELXILL_TABLE_PATH,filename) == -1){
+	if (asprintf(&fullfilename, "%s/%s", get_relxill_table_path(),filename) == -1){
 		RELXILL_ERROR("failed to construct full path the rel table",status);
 		return NULL;
 	}
@@ -355,6 +355,7 @@ static void check_xillTable_cache(xillTable* tab, int* ind, int* status) {
 	int ll;
 	int mm;
 
+
 	for (ii=0; ii<2; ii++){
 		for (jj=0; jj<2; jj++){
 			for (kk=0; kk<2; kk++){
@@ -372,6 +373,7 @@ static void check_xillTable_cache(xillTable* tab, int* ind, int* status) {
 			}
 		}
 	}
+
 
 
 	if (fptr != NULL) {
@@ -570,6 +572,7 @@ xill_spec* get_xillver_spectra(xillParam* param, int* status){
 
 	// =3= interpolate values
 	xill_spec* spec = interp_xill_table(tab,param,ind,status);
+
 
 
 	free(ind);

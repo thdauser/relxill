@@ -49,7 +49,7 @@
 
 // TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */
-#define RELXILL_TABLE_PATH "/home/thomas/data/relline_tables/"
+#define RELXILL_TABLE_PATH "./"
 
 /** dimensions of the RELLINE table */
 #define RELTABLE_NA 30
@@ -68,7 +68,7 @@
 
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
-#define N_ZONES 1       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
+#define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
 
 /** parameters for the convolution **/
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT

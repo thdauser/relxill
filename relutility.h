@@ -134,4 +134,7 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 /** calculate the gravitational redshift **/
 double grav_redshift(relParam* param);
 
+/** get the relxill table path (dynamically from env variable)  **/
+char* get_relxill_table_path( void );
+
 #endif /* RELUTILITY_H_ */

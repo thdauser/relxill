@@ -62,12 +62,11 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 
 	param->gam   = inp_par[0];
 	param->afe   = inp_par[1];
-	param->lxi   = inp_par[2];
-	param->ect   = inp_par[3];
-	param->incl  = inp_par[4]; // is given in degrees !!
-	param->z     = inp_par[5];
+	param->ect   = inp_par[2];
+	param->lxi   = inp_par[3];
+	param->z     = inp_par[4];
+	param->incl  = inp_par[5]; // is given in degrees !!
 	param->refl_frac = inp_par[6];
-	/** note: fixReflFrac does not play a role here and will be ignored **/
 
 	// TODO: check parameter bounds here as well
 /*	check_parameter_bounds_xillver(param,status);
@@ -95,18 +94,59 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 	param->incl  = inp_par[4]*M_PI/180;
 	param->rin   = inp_par[5];
 	param->rout  = inp_par[6];
-	param->z     = inp_par[11];
+	param->z     = inp_par[7];
+	xparam->z    = inp_par[7];
 
-	xparam->gam   = inp_par[7];
-	xparam->afe   = inp_par[8];
+	xparam->gam   = inp_par[8];
 	xparam->lxi   = inp_par[9];
-	xparam->ect   = inp_par[10];
-	xparam->z     = inp_par[11];
+	xparam->afe   = inp_par[10];
+	xparam->ect   = inp_par[11];
 
 	xparam->refl_frac = inp_par[12];
 	xparam->fixReflFrac = 0;
+
+
 	// xparam->fixReflFrac = (int) (inp_par[13]+0.5); // make sure there is nor problem with integer conversion
 
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_VOID(*status);
+
+	*rel_param  = param;
+	*xill_param = xparam;
+
+	return;
+}
+
+void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELXILLLP,EMIS_TYPE_LP,status);
+	CHECK_STATUS_VOID(*status);
+
+	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLP,PRIM_SPEC_ECUT,status);
+	CHECK_STATUS_VOID(*status);
+
+	assert(n_parameter == NUM_PARAM_RELXILLLP);
+
+	param->height = inp_par[0];
+	param->a      = inp_par[1];
+	param->incl   = inp_par[2]*M_PI/180;
+	param->rin    = inp_par[3];
+	param->rout   = inp_par[4];
+	param->z      = inp_par[5];
+	xparam->z     = inp_par[5];
+
+	param->gamma  = inp_par[6];
+	xparam->gam   = inp_par[6];
+	xparam->lxi   = inp_par[7];
+	xparam->afe   = inp_par[8];
+	xparam->ect   = inp_par[9];
+
+	xparam->refl_frac = inp_par[10];
+	xparam->fixReflFrac = (int) (inp_par[11]+0.5); // make sure there is nor problem with integer conversion
+
+	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_VOID(*status);
@@ -183,6 +223,8 @@ relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int*
 	param->z      = inp_par[6];
 	param->gamma  = inp_par[7];
 
+	param->beta = 0.0;
+
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
 
@@ -205,7 +247,7 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 }
 
 /** XSPEC XILLVER MODEL FUNCTION **/
-void relxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+void tdrelxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* xill_param = NULL;
 	relParam* rel_param = NULL;
@@ -226,9 +268,31 @@ void relxill(const double* ener0, const int n_ener0, double* photar, const doubl
 
 }
 
+/** XSPEC XILLVER MODEL FUNCTION **/
+void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	xillParam* xill_param = NULL;
+	relParam* rel_param = NULL;
+
+	init_par_relxilllp(&rel_param,&xill_param,parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+	double * ener = (double*) ener0;
+	int n_ener = (int) n_ener0;
+	relxill_kernel(ener, photar, n_ener, xill_param, rel_param,status);
+	CHECK_STATUS_VOID(*status);
+
+	// todo: shift spectrum accordingly (or already in xillver???)
+
+
+	free_xillParam(xill_param);
+	free_relParam(rel_param);
+
+}
+
 
 /** XSPEC XILLVER MODEL FUNCTION **/
-void xillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+void tdxillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* param_struct = init_par_xillver(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
@@ -265,7 +329,7 @@ void xillver(const double* ener0, const int n_ener0, double* photar, const doubl
 
 
 /** XSPEC RELLINE MODEL FUNCTION **/
-void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+void tdrelline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relline(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
@@ -286,7 +350,7 @@ void relline(const double* ener, const int n_ener, double* photar, const double*
 }
 
 /** XSPEC RELLINELP MODEL FUNCTION **/
-void rellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+void tdrellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relline_lp(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
@@ -300,11 +364,12 @@ void rellinelp(const double* ener, const int n_ener, double* photar, const doubl
 	CHECK_STATUS_VOID(*status);
 
 	free_relParam(param_struct);
+	free(ener1keV);
 }
 
 
 /** XSPEC RELLINE MODEL FUNCTION **/
-void relconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+void tdrelconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relconv(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
@@ -318,6 +383,7 @@ void relconv(const double* ener, const int n_ener, double* photar, const double*
 	CHECK_STATUS_VOID(*status);
 
 	free_relParam(param_struct);
+	free(ener1keV);
 }
 
 /* get a new relbase parameter structure and initialize it */
@@ -341,7 +407,7 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->z = PARAM_DEFAULT;
 	param->height = PARAM_DEFAULT;
 	param->gamma = PARAM_DEFAULT;
-	param->beta = PARAM_DEFAULT;
+	param->beta = 0.0; // special case, in order to prevent strange results
 
 	return param;
 }

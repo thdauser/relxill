@@ -252,7 +252,7 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 		assert(tab->arr!=NULL);
 
 		// get the full filename
-		if (asprintf(&fullfilename, "%s/%s", RELXILL_TABLE_PATH,filename) == -1){
+		if (asprintf(&fullfilename, "%s/%s", get_relxill_table_path() ,filename) == -1){
 			RELXILL_ERROR("failed to construct full path the rel table",status);
 			break;
 		}
@@ -397,7 +397,7 @@ void read_lp_table(char* filename, lpTable** inp_tab, int* status){
 		assert(tab->dat!=NULL);
 
 		// get the full filename
-		if (asprintf(&fullfilename, "%s/%s", RELXILL_TABLE_PATH,filename) == -1){
+		if (asprintf(&fullfilename, "%s/%s", get_relxill_table_path(),filename) == -1){
 			RELXILL_ERROR("failed to construct full path the lp table",status);
 			break;
 		}

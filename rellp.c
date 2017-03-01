@@ -149,8 +149,8 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 		del_inc[ii] = interp_lin_1d(inter_r, jet_del_inc[kk], jet_del_inc[kk+1]);
 
 	     // multiply by the additional factor gi^gamma (see Dauser et al., 2013)
-
 		 emis[ii] *= pow(gi_potential_lp(re[ii],param->a,param->height,param->beta,del_emit[ii]), param->gamma);
+
 
 	     // take the beaming of the jet into account (see Dauser et al., 2013)
 	     if (param->beta > 1e-6) {

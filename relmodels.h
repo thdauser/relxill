@@ -43,6 +43,9 @@
 #define MOD_TYPE_RELXILL -1
 #define NUM_PARAM_RELXILL 13
 
+#define MOD_TYPE_RELXILLLP -2
+#define NUM_PARAM_RELXILLLP 12
+
 
 /****  TYPE DEFINITIONS ****/
 
@@ -56,15 +59,17 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 
 
 
-void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 
-void rellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 
-void relxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 
-void xillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 
-void relconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdxillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+
+void tdrelconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 
 
 /* get a new relbase parameter structure and initialize it */

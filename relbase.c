@@ -18,6 +18,9 @@
 
 #include "relbase.h"
 
+#include <sys/time.h> // can be removed!!! // TODO
+
+
 
 /** global parameters, which can be used for several calls of the model */
 relParam* cached_rel_param=NULL;
@@ -162,6 +165,13 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 		cached_tab_sysPar->re[ii] = interp_lin_1d(ifac_a,
 				tab->arr[ind_a][ind_mu0]->r[ii],tab->arr[ind_a+1][ind_mu0]->r[ii]);
 	}
+	// we have problems for the intermost radius due to linear interpolation (-> set to RISCO)
+	if ( (cached_tab_sysPar->re[tab->n_r-1] > kerr_rms(a)) &&
+			 ( (cached_tab_sysPar->re[tab->n_r-1] - kerr_rms(a)) / cached_tab_sysPar->re[tab->n_r-1]  < 1e-3)) {
+		//		printf(" re-setting RIN from %.3f to %.3f (dr = %.2e)\n",cached_tab_sysPar->re[tab->n_r-1],kerr_rms(a),
+		//		(cached_tab_sysPar->re[tab->n_r-1]-kerr_rms(a))/cached_tab_sysPar->re[tab->n_r-1]);
+		cached_tab_sysPar->re[tab->n_r-1] = kerr_rms(a);
+	}
 
 	// get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
 	int ind_rmin = inv_binary_search(cached_tab_sysPar->re,tab->n_r,rin);
@@ -196,7 +206,7 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 	}
 	get_fine_radial_grid(rin,rout,sysPar);
 
-	// let's try to be as efficient as possible here (not that "r" DEcreases)
+	// let's try to be as efficient as possible here (note that "r" DEcreases)
 	assert(ind_rmin>0); // as defined inverse, re[ind_rmin+1] is the lowest value
 	assert((cached_tab_sysPar->re[ind_rmin+1]<=rin));
 	assert((cached_tab_sysPar->re[ind_rmin]>=rin));
@@ -349,6 +359,16 @@ static int get_num_zones(int model_type){
 
 	// set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
 	if (is_relxill_model(model_type)){
+		char* env;
+		env = getenv("RELXILL_NUM_RZONES");
+		if (env != NULL){
+			int env_n_zones = atof(env);
+			if ( (env_n_zones > 0 ) && (env_n_zones < 1000) ){
+				return env_n_zones;
+			} else {
+				printf(" *** warning: value of %i for RELXILL_NUM_ZONES not within required interval of [1,1000] \n",env_n_zones);
+			}
+		}
 		return N_ZONES;
 	} else {
 		return 1;
@@ -687,7 +707,7 @@ static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gma
 
 
 /** function to properly re-normalize the relline_profile **/
-static void renorm_relline_profile(rel_spec* spec){
+static void renorm_relline_profile(rel_spec* spec, relParam* rel_param){
 	// normalize to 'cts/bin'
 	int ii; int jj;
 	double sum = 0.0;
@@ -697,9 +717,13 @@ static void renorm_relline_profile(rel_spec* spec){
 			sum += spec->flux[ii][jj];
 		}
 	}
-	for (ii=0; ii<spec->n_zones; ii++){
-		for (jj=0; jj<spec->n_ener; jj++){
-			spec->flux[ii][jj] /= sum;
+
+	/** only renormalize if not the relxill model **/
+	if ((! is_relxill_model(rel_param->model_type) ) || (rel_param->emis_type != EMIS_TYPE_LP)) {
+		for (ii=0; ii<spec->n_zones; ii++){
+			for (jj=0; jj<spec->n_ener; jj++){
+				spec->flux[ii][jj] /= sum;
+			}
 		}
 	}
 
@@ -792,7 +816,6 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 	       		                sqrt(da->gstar[jj] - da->gstar[jj]*da->gstar[jj])*
 								da->trff[jj][kk]* da->emis
 								* weight * sysPar->d_gstar[jj] ;
-
 	       			}
 	       		}
 	       	} /** end calculating angular distribution **/
@@ -801,7 +824,6 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 		}
 	}
 
-	renorm_relline_profile(spec);
 }
 
 /** convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
@@ -958,8 +980,10 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	get_log_grid(ener, (n_ener+1), EMIN_RELXILL, EMAX_RELXILL);
 
 
+
 	// call the function which calculates the xillver spectrum
 	xill_spec* xill_spec = get_xillver_spectra(xill_param,status);
+
 
 	// todo: can/should we add caching here directly??
 	rel_spec* rel_profile = relbase(ener, n_ener, NULL , rel_param, xill_spec, status);
@@ -984,6 +1008,8 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		conv_out[ii] = 0.0;
 	}
 
+
+
 	int jj;
 	for (ii=0; ii<rel_profile->n_zones;ii++){
 
@@ -993,11 +1019,12 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 		// now calculate the reflection spectra for each zone (using the angular distribution)
 		assert(rel_profile->rel_cosne != NULL);
-		print_angle_dist(rel_profile->rel_cosne,ii);
+		if (DEBUG_RELXILL==1){
+			print_angle_dist(rel_profile->rel_cosne,ii);
+		}
+		// get angular distribution (maybe already when calculating the relat spectrum???)
 		calc_xillver_angdep(xill_angdist_inp,xill_spec,rel_profile->rel_cosne->cosne,
 				rel_profile->rel_cosne->dist[ii],rel_profile->rel_cosne->n_cosne,status);
-
-		// get angular distribution (maybe already when calculating the relat spectrum???)
 
 		rebin_spectrum(ener,xill_flux,n_ener,
 				xill_spec->ener, xill_angdist_inp, xill_spec->n_ener );
@@ -1036,6 +1063,8 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	}
 
 
+
+
 	// lastely, we make the spectrum normalization independent of the ionization parameter
 	// todo: put this in a ionization gradient routine ??
 	for (ii=0; ii<n_ener_inp; ii++){
@@ -1063,7 +1092,9 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	/** 1 **  calculate the primary spectrum  **/
 	if (xill_param->prim_type == PRIM_SPEC_ECUT){
 
-		double ecut_rest = xill_param->ect / ( 1 + xill_param->z + grav_redshift(rel_param) );
+		// TODO: change to new defintion ???
+//		double ecut_rest = xill_param->ect / ( 1 + xill_param->z + grav_redshift(rel_param) );
+		double ecut_rest = xill_param->ect / ( 1 + xill_param->z  );
 
 		for (ii=0; ii<n_ener; ii++){
 			pl_flux[ii] = exp(1.0/ecut_rest) *
@@ -1092,7 +1123,6 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	double norm_pl = norm_xill / sum_pl;   // normalization defined, e.g., in Appendix of Dauser+2016
 
 
-
 	/** 3 **  calculate predicted reflection fraction and check if we want to use this value **/
 
 	lpReflFrac* struct_refl_frac = calc_refl_frac(sysPar, rel_param,status);
@@ -1103,7 +1133,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	 }
 
 	/** 4 ** and apply it to primary and reflected spectra **/
-	if (rel_param->model_type == EMIS_TYPE_LP) {
+	if (rel_param->emis_type == EMIS_TYPE_LP) {
 	     double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
 	    		 (rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
 	     for (ii=0; ii<n_ener; ii++) {
@@ -1134,7 +1164,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			sum += flu[ii];
 		}
 
-		printf(" the reflection fraction for a = %.2f and %.2f rg is: %.3f and the reflection strength is: %.3f",
+		printf(" the reflection fraction for a = %.2f and %.2f rg is: %.3f and the reflection strength is: %.3f \n",
 				rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
 	}
 
@@ -1257,6 +1287,9 @@ rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* para
 		// calculate line profile (returned units are 'cts/bin')
 		relline_profile(cached_rel_spec, sysPar, status);
 		CHECK_STATUS_RET(*status,cached_rel_spec);
+
+		// normalize it and calculate the angular disttribution (if necessary)
+		renorm_relline_profile(cached_rel_spec,param);
 
 		// store parameters such that we know what we calculated
 		set_cached_rel_param(cached_rel_param,param);
@@ -1425,3 +1458,17 @@ void free_relSysPar(relSysPar* sysPar){
 	}
 }
 
+
+
+
+/*** struct timeval start, end;
+	long mtime, seconds, useconds;
+	gettimeofday(&start, NULL);
+gettimeofday(&end, NULL);
+
+    seconds  = end.tv_sec  - start.tv_sec;
+    useconds = end.tv_usec - start.tv_usec;
+
+    mtime = ((seconds) * 1000*1000 + useconds) + 0.5;
+
+    printf("Elapsed time: %ld micro seconds\n", mtime); ***/

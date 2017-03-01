@@ -67,8 +67,8 @@ double grav_redshift(relParam* param){
 lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 
 	// get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
-	double del_bh  = sysPar->del_emit[binary_search(sysPar->re, sysPar->nr, param->rin)];
-	double del_ad = sysPar->del_emit[binary_search(sysPar->re, sysPar->nr, param->rout)];
+	double del_bh  = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
+	double del_ad = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
 
 	lpReflFrac* str = (lpReflFrac*) malloc (sizeof(lpReflFrac));
 	CHECK_MALLOC_RET_STATUS(str,status,NULL);
@@ -80,7 +80,7 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	str->refl_frac = str->f_ad/str->f_inf;
 
 /**	printf(" *** %4f [%.3f,%.3f,%.3f] \n",str->refl_frac,str->f_bh,str->f_ad,str->f_inf);
-	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh,del_ad);
+	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh*180/M_PI,del_ad*180/M_PI);
 	printf(" rin %i (%.1f) ---  rout %i (%.1f)\n",binary_search(sysPar->re, sysPar->nr, param->rin),param->rin,
 			binary_search(sysPar->re, sysPar->nr, param->rout),param->rout); **/
 
@@ -216,6 +216,17 @@ void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, int* st
 	return;
 }
 
+/** get the relxill table path (dynamically from env variable)  **/
+char* get_relxill_table_path( void ){
+	char* path;
+	path = getenv("RELXILL_TABLE_PATH");
+	if (path!=NULL){
+		return path;
+	} else {
+		return RELXILL_TABLE_PATH;
+	}
+}
+
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax){
 	for (int ii=0; ii<n_ener; ii++){
@@ -260,7 +271,7 @@ double gi_potential_lp(double r, double a, double h, double bet, double del){
 	/** ! calculates g = E/E_i in the lamp post geometry
 	  ! (see, e.g., page 48, Diploma Thesis, Thomas Dauser) **/
 	double ut_d = ((r*sqrt(r)+a)/(sqrt(r)*sqrt(r*r -3*r + 2*a*sqrt(r))));
-	double ut_h = sqrt((h*h + a*a)/(h*h - h + a*a));
+	double ut_h = sqrt((h*h + a*a)/(h*h - 2*h + a*a));
 
 	double gi = ut_d/ut_h;
 
