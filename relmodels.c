@@ -55,7 +55,7 @@ static void check_parameter_bounds(relParam* param, int* status){
 xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* status){
 
 	// fill in parameters
-	xillParam* param = new_xillParam(MOD_TYPE_XILLVER,status);
+	xillParam* param = new_xillParam(MOD_TYPE_XILLVER,PRIM_SPEC_ECUT,status);
 	CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_XILLVER);
@@ -66,6 +66,8 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 	param->ect   = inp_par[3];
 	param->incl  = inp_par[4]; // is given in degrees !!
 	param->z     = inp_par[5];
+	param->refl_frac = inp_par[6];
+	/** note: fixReflFrac does not play a role here and will be ignored **/
 
 	// TODO: check parameter bounds here as well
 /*	check_parameter_bounds_xillver(param,status);
@@ -81,7 +83,7 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 	relParam* param = new_relParam(MOD_TYPE_RELXILL,EMIS_TYPE_BKN,status);
 	CHECK_STATUS_VOID(*status);
 
-	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILL,status);
+	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILL,PRIM_SPEC_ECUT,status);
 	CHECK_STATUS_VOID(*status);
 
 	assert(n_parameter == NUM_PARAM_RELXILL);
@@ -100,6 +102,10 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 	xparam->lxi   = inp_par[9];
 	xparam->ect   = inp_par[10];
 	xparam->z     = inp_par[11];
+
+	xparam->refl_frac = inp_par[12];
+	xparam->fixReflFrac = 0;
+	// xparam->fixReflFrac = (int) (inp_par[13]+0.5); // make sure there is nor problem with integer conversion
 
 
 	check_parameter_bounds(param,status);
@@ -129,6 +135,30 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 	param->rin   = inp_par[6];
 	param->rout  = inp_par[7];
 	param->z     = inp_par[8];
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	return param;
+}
+
+relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELCONV,EMIS_TYPE_BKN,status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	assert(n_parameter == NUM_PARAM_RELCONV);
+
+	param->lineE = 1.0;
+	param->emis1 = inp_par[0];
+	param->emis2 = inp_par[1];
+	param->rbr   = inp_par[2];
+	param->a     = inp_par[3];
+	param->incl  = inp_par[4]*M_PI/180;
+	param->rin   = inp_par[5];
+	param->rout  = inp_par[6];
+	param->z     = inp_par[7];
 
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
@@ -190,8 +220,6 @@ void relxill(const double* ener0, const int n_ener0, double* photar, const doubl
 
 	// todo: shift spectrum accordingly (or already in xillver???)
 
-	// test output
-	save_xillver_spectrum(ener,photar,n_ener);
 
 	free_xillParam(xill_param);
 	free_relParam(rel_param);
@@ -222,8 +250,12 @@ void xillver(const double* ener0, const int n_ener0, double* photar, const doubl
 	int n_ener = (int) n_ener0;
 	rebin_spectrum( ener, photar,n_ener,spec->ener,spec->flu[0],spec->n_ener);
 
-	// test output
-	save_xillver_spectrum(ener,photar,n_ener);
+	// we make the spectrum normalization independent of the ionization
+	int ii;
+	for (ii=0; ii<n_ener0; ii++){
+		photar[ii] /= pow(10,param_struct->lxi);
+	}
+
 
 	free_xillParam(param_struct);
 
@@ -239,6 +271,7 @@ void relline(const double* ener, const int n_ener, double* photar, const double*
 	CHECK_STATUS_VOID(*status);
 
 	// shift the spectrum such that we can calculate the line for 1 keV
+//	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
 	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
 	 CHECK_STATUS_VOID(*status);
 
@@ -249,6 +282,7 @@ void relline(const double* ener, const int n_ener, double* photar, const double*
 	save_relline_profile(spec);
 
 	free_relParam(param_struct);
+	free(ener1keV);
 }
 
 /** XSPEC RELLINELP MODEL FUNCTION **/
@@ -268,6 +302,23 @@ void rellinelp(const double* ener, const int n_ener, double* photar, const doubl
 	free_relParam(param_struct);
 }
 
+
+/** XSPEC RELLINE MODEL FUNCTION **/
+void relconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	relParam* param_struct = init_par_relconv(parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+	// shift the spectrum such that we can calculate the line for 1 keV
+	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
+	 CHECK_STATUS_VOID(*status);
+
+	// call the function which calculates the line (assumes a line at 1keV!)
+	relconv_kernel(ener1keV, photar, n_ener, param_struct, status );
+	CHECK_STATUS_VOID(*status);
+
+	free_relParam(param_struct);
+}
 
 /* get a new relbase parameter structure and initialize it */
 relParam* new_relParam(int model_type, int emis_type, int* status){
@@ -290,6 +341,7 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->z = PARAM_DEFAULT;
 	param->height = PARAM_DEFAULT;
 	param->gamma = PARAM_DEFAULT;
+	param->beta = PARAM_DEFAULT;
 
 	return param;
 }
@@ -303,13 +355,14 @@ void free_relParam(relParam* param){
 
 
 /* get a new relbase parameter structure and initialize it */
-xillParam* new_xillParam(int model_type, int* status){
+xillParam* new_xillParam(int model_type, int prim_type, int* status){
 	xillParam* param = (xillParam*) malloc(sizeof(xillParam));
 	if (param==NULL){
 		RELXILL_ERROR("memory allocation failed",status);
 		return NULL;
 	}
 	param->model_type = model_type;
+	param->prim_type = prim_type;
 
 	param->gam = PARAM_DEFAULT;
 	param->afe = PARAM_DEFAULT;
@@ -317,6 +370,8 @@ xillParam* new_xillParam(int model_type, int* status){
 	param->ect = PARAM_DEFAULT;
 	param->incl = PARAM_DEFAULT;
 	param->z = PARAM_DEFAULT;
+	param->refl_frac = PARAM_DEFAULT;
+	param->fixReflFrac = -1;
 
 	return param;
 }

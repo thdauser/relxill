@@ -51,6 +51,47 @@ void relxill_error(const char* const func, const char* const msg, int* status){
 	printf(" *** error in relxill (%s): %s!\n", func, msg);
 }
 
+
+/** calculate the gravitational redshift **/
+double grav_redshift(relParam* param){
+	if (param->emis_type==EMIS_TYPE_LP){
+		return 1.0 / sqrt( 1.0 - 2*param->height /
+				(param->height*param->height + param->a*param->a))-1.0;
+	} else {
+		// important: without a geometrical assumption no grav. redshift can be calculated
+		return 0.0;
+	}
+}
+
+/** calculate the reflection fraction as defined in Dauser+2016 **/
+lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
+
+	// get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
+	double del_bh  = sysPar->del_emit[binary_search(sysPar->re, sysPar->nr, param->rin)];
+	double del_ad = sysPar->del_emit[binary_search(sysPar->re, sysPar->nr, param->rout)];
+
+	lpReflFrac* str = (lpReflFrac*) malloc (sizeof(lpReflFrac));
+	CHECK_MALLOC_RET_STATUS(str,status,NULL);
+
+	str->f_bh  = 0.5*(1.0 - cos(del_bh));
+	str->f_ad  = 0.5*(cos(del_bh) - cos(del_ad));
+	str->f_inf = 0.5*(1.0 + cos(del_ad));
+
+	str->refl_frac = str->f_ad/str->f_inf;
+
+/**	printf(" *** %4f [%.3f,%.3f,%.3f] \n",str->refl_frac,str->f_bh,str->f_ad,str->f_inf);
+	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh,del_ad);
+	printf(" rin %i (%.1f) ---  rout %i (%.1f)\n",binary_search(sysPar->re, sysPar->nr, param->rin),param->rin,
+			binary_search(sysPar->re, sysPar->nr, param->rout),param->rout); **/
+
+	if (param->beta > 1e-6){
+		// TODO: implement beta>0 for refl frac
+		printf(" **** warning: primary source with a non-zero velocity not implemented yet. Assuming bet=0 for the reflection fracion! \n");
+	}
+
+	return str;
+}
+
 void check_relxill_error(const char* const func, const char* const msg, int* status){
 	if (*status!=EXIT_SUCCESS){
 		*status = EXIT_FAILURE;
@@ -147,7 +188,6 @@ int is_relxill_model(int model_type){
 	}
 }
 
-
 /** trapez integration around a single bin **/
 double trapez_integ_single(double* re, int ii, int nr){
 	if (ii==0){
@@ -165,20 +205,15 @@ double gstar2ener(double g, double gmin, double gmax, double ener){
 }
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-double* get_rzone_grid(double rmin, double rmax, int nzones, int* status){
-
-	// rgrid has length nzones+1
-	double* rgrid = (double*) malloc( (nzones+1)*sizeof(double));
-	CHECK_MALLOC_RET_STATUS(rgrid,status,NULL);
+void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, int* status){
 
 	if (nzones==1){
 		rgrid[0] = rmin;
 		rgrid[1] = rmax;
 	} else {
 		get_log_grid(rgrid,nzones+1,rmin,rmax);
-//		printf(" *** Warning: A radial zones grid is not yet implemented \n");
 	}
-	return rgrid;
+	return;
 }
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
@@ -254,9 +289,9 @@ double gi_potential_lp(double r, double a, double h, double bet, double del){
 
 
 /** print the xillver spectrum   **/
-void save_xillver_spectrum(double* ener, double* flu, int n_ener){
+void save_xillver_spectrum(double* ener, double* flu, int n_ener, char* fname){
 
-	FILE* fp =  fopen ( "test_xillver_spectrum.dat","w+" );
+	FILE* fp =  fopen ( fname,"w+" );
 	int ii;
 	for (ii=0; ii<n_ener; ii++){
 		fprintf(fp, " %e \t %e \t %e \n",ener[ii],ener[ii+1],flu[ii]);

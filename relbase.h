@@ -45,6 +45,7 @@
 #define version_minor 1
 #define version_build 0
 
+#define DEBUG_RELXILL 1
 
 // TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */
@@ -70,9 +71,15 @@
 #define N_ZONES 1       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
 
 /** parameters for the convolution **/
-#define N_ENER_CONV 4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
-#define EMIN_RELXILL 0.01  // minimal energy of the convolution (in keV)
-#define EMAX_RELXILL 10000.0 // minimal energy of the convolution (in keV)
+#define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
+#define EMIN_RELXILL 0.00035  // minimal energy of the convolution (in keV)
+#define EMAX_RELXILL 2000.0 // minimal energy of the convolution (in keV)
+#define EMIN_XILLVER 0.01
+#define EMAX_XILLVER 1000.0
+
+/** minimal and maximal energy for reflection strength calculation **/
+#define RSTRENGTH_EMIN 20.0
+#define RSTRENGTH_EMAX 40.0
 
 /****** TYPE DEFINITIONS ******/
 
@@ -99,6 +106,7 @@ typedef struct{
 	double* gstar;
 } str_relb_func;
 
+
 /****** FUNCTION DEFINITIONS ******/
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
@@ -116,6 +124,11 @@ relSysPar* new_relSysPar(int nr, int ng, int* status);
 void free_relSysPar(relSysPar* sysPar);
 
 void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillParam* xill_param, relParam* rel_param, int* status );
+
+void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam* rel_param, int* status );
+
+/** function adding a primary component with the proper norm to the flux **/
+void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param, xillParam* xill_param, int* status);
 
 void free_rel_spec(rel_spec* spec);
 rel_spec* new_rel_spec(int nzones, const int n_ener, int*status);

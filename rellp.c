@@ -150,11 +150,11 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 
 	     // multiply by the additional factor gi^gamma (see Dauser et al., 2013)
 
-		 emis[ii] *= pow(gi_potential_lp(re[ii],param->a,param->height,param->v,del_emit[ii]), param->gamma);
+		 emis[ii] *= pow(gi_potential_lp(re[ii],param->a,param->height,param->beta,del_emit[ii]), param->gamma);
 
 	     // take the beaming of the jet into account (see Dauser et al., 2013)
-	     if (param->v > 1e-6) {
-	        emis[ii] *= pow(doppler_factor(del_emit[ii],param->v),2);
+	     if (param->beta > 1e-6) {
+	        emis[ii] *= pow(doppler_factor(del_emit[ii],param->beta),2);
 	     }
 	}
 

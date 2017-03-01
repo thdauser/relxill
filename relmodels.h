@@ -29,11 +29,19 @@
 #define MOD_TYPE_RELLINELP 2
 #define NUM_PARAM_RELLINELP 8
 
+
+#define MOD_TYPE_RELCONV 11
+#define NUM_PARAM_RELCONV 8
+
+#define MOD_TYPE_RELCONVLP 12
+#define NUM_PARAM_RELCONVLP 7
+
+
 #define MOD_TYPE_XILLVER 0
-#define NUM_PARAM_XILLVER 6
+#define NUM_PARAM_XILLVER 7
 
 #define MOD_TYPE_RELXILL -1
-#define NUM_PARAM_RELXILL 12
+#define NUM_PARAM_RELXILL 13
 
 
 /****  TYPE DEFINITIONS ****/
@@ -41,10 +49,22 @@
 
 /**** FUNCTION DEFINITIONS ****/
 relParam* init_par_relline(const double* inp_par, const int n_parameter, int* status);
+relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int* status);
+relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* status);
+xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* status);
+void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status);
+
+
 
 void relline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 
 void rellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+
+void relxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+
+void xillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+
+void relconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 
 
 /* get a new relbase parameter structure and initialize it */
@@ -53,7 +73,7 @@ relParam* new_relParam(int model_type, int emis_type, int* status);
 /* free relbase parameter */
 void free_relParam(relParam*);
 
-xillParam* new_xillParam(int model_type, int* status);
+xillParam* new_xillParam(int model_type, int prim_type, int* status);
 void free_xillParam(xillParam*);
 
 #endif /* MODELS_H_ */

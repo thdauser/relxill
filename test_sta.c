@@ -26,10 +26,11 @@
 static void set_std_param_xillver(double* inp_par, int* status){
 	inp_par[0] = 2.1;
 	inp_par[1] = 1.0;
-	inp_par[2] = 2.0; // logxi
+	inp_par[2] = 0.0; // logxi
 	inp_par[3] = 300.0;
 	inp_par[4] = 45.0;
 	inp_par[5] = 0.;
+	inp_par[6] = -1.0;
 }
 
 
@@ -45,20 +46,32 @@ static void set_std_param_relline(double* inp_par, int* status){
 	inp_par[8] = 0.0;
 }
 
+static void set_std_param_relconv(double* inp_par, int* status){
+	inp_par[0] = 3.0;
+	inp_par[1] = 3.0;
+	inp_par[2] = 15.0;
+	inp_par[3] = 0.998;
+	inp_par[4] = 30.0;
+	inp_par[5] = -1.;
+	inp_par[6] = 400.;
+	inp_par[7] = 0.0;
+}
+
 
 static void set_std_param_relxill(double* inp_par, int* status){
 	inp_par[0]  = 3.0;
 	inp_par[1]  = 3.0;
 	inp_par[2]  = 15.0;
 	inp_par[3]  = 0.998;
-	inp_par[4]  = 30.0;
-	inp_par[5]  = -1.;
+	inp_par[4]  = 60.0;
+	inp_par[5]  = -1.0;
 	inp_par[6]  = 400.;
 	inp_par[7]  = 2.1;   // pl Index
 	inp_par[8]  = 1.0;   // Afe
 	inp_par[9]  = 0.0;   // logxi
 	inp_par[10] = 300.0; // Ecut
 	inp_par[11] = 0.0;   // redshift
+	inp_par[12] = 3.0;   // refl_frac
 }
 
 
@@ -96,6 +109,41 @@ static void std_eval_relline(int* status, int n){
 	}
 }
 
+
+/** standard evaluation of the relline model **/
+static void std_eval_relconv(int* status, int n){
+
+	printf("\n ==> Evaluating RELCONV MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELCONV;
+	double inp_par[NUM_PARAM_RELCONV];
+	set_std_param_relconv(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	int n_ener = 2000;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.05,10.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+
+	int ii;
+	double ener_line = 1.0;
+	for (ii=0; ii<n_ener; ii++){
+		photar[ii] = 0.0;
+		if ((ener[ii]<ener_line) && ener[ii+1]>ener_line){
+			photar[ii] = 1.0; // ener[1]-ener[0];
+		}
+	}
+
+	// test output
+	save_xillver_spectrum(ener,photar,n_ener,"test_relconv_inp_spectrum.dat");
+	relconv(ener,n_ener,photar,inp_par,n_param,status);
+	save_xillver_spectrum(ener,photar,n_ener,"test_relconv_out_spectrum.dat");
+}
+
+
 /** standard evaluation of the relline model **/
 static void std_eval_relxill(int* status, int n){
 
@@ -107,7 +155,7 @@ static void std_eval_relxill(int* status, int n){
 	CHECK_STATUS_VOID(*status);
 
 	/* create an energy grid */
-	int n_ener = 2000;
+	int n_ener = 4000;
 	double ener[n_ener+1];
 	get_log_grid(ener,n_ener+1,0.1,1000.0);
 
@@ -117,6 +165,10 @@ static void std_eval_relxill(int* status, int n){
 	for (ii=0; ii<n; ii++){
 		relxill(ener,n_ener,photar,inp_par,n_param,status);
 	}
+
+	// test output
+	save_xillver_spectrum(ener,photar,n_ener,"test_relxill_spectrum.dat");
+
 }
 
 
@@ -169,6 +221,9 @@ static void std_eval_xillver(int* status, int n){
 		xillver(ener,n_ener,photar,inp_par,n_param,status);
 		CHECK_STATUS_VOID(*status);
 	}
+
+	// test output
+	save_xillver_spectrum(ener,photar,n_ener,"test_xillver_spectrum.dat");
 
 
 }
@@ -384,13 +439,13 @@ int main(void){
 		printf("     ---> successful \n");
 
 
-/*		std_eval_relline(&status,1);
+		std_eval_relline(&status,1);
 		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n"); *
+		printf("     ---> successful \n");
 
-/*		std_eval_relxill(&status,1);
+/*		std_eval_relconv(&status,1);
 		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n"); *
+		printf("     ---> successful \n"); */
 
 
 /*		std_eval_relline_lp(&status,1);

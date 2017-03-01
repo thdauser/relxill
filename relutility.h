@@ -96,6 +96,9 @@ int binary_search_float(float* arr,int n,float val);
 
 int binary_search(double* arr,int n,double val);
 
+/** calculate the reflection fraction **/
+lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status);
+
 /** trapez integration around a single bin **/
 double trapez_integ_single(double* re, int ii, int nr);
 
@@ -106,7 +109,7 @@ double kerr_rms(double a);
 int is_relxill_model(int model_type);
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-double* get_rzone_grid(double rmin, double rmax, int nzones, int* status);
+void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, int* status);
 
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener);
@@ -118,7 +121,7 @@ double doppler_factor(double del, double bet);
 double gi_potential_lp(double r, double a, double h, double bet, double del);
 
 /** print the xillver spectrum   **/
-void save_xillver_spectrum(double* ener, double* flu, int n_ener);
+void save_xillver_spectrum(double* ener, double* flu, int n_ener, char* fname);
 
 /* A simple implementation of the FFT taken
    from http://paulbourke.net/miscellaneous/dft/
@@ -127,5 +130,8 @@ void FFT_R2CT(short int dir,long m,double *x,double *y);
 
 /** rebin spectrum to a given energy grid length of ener is nbins+1       **/
 void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double* flu0, int nbins0);
+
+/** calculate the gravitational redshift **/
+double grav_redshift(relParam* param);
 
 #endif /* RELUTILITY_H_ */

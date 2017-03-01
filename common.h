@@ -23,8 +23,14 @@
 /** define Emissivity Model Type **/
 #define EMIS_TYPE_BKN 1
 #define EMIS_TYPE_LP 2
-
 /***************************************/
+
+/** define primary spectrum Type **/
+#define PRIM_SPEC_NONE 0
+#define PRIM_SPEC_ECUT 1
+#define PRIM_SPEC_NTHCOMP 2
+/***************************************/
+
 
 /****** TYPE DEFINITIONS ******/
 
@@ -42,7 +48,7 @@ typedef struct{
 	double z;
 	double height;
 	double gamma;
-	double v;
+	double beta;
 } relParam;
 
 typedef struct{
@@ -52,7 +58,10 @@ typedef struct{
 	double ect;
 	double incl;
 	double z;
+	double refl_frac;
+	int fixReflFrac;
 	int model_type;
+	int prim_type;
 } xillParam;
 
 
@@ -76,6 +85,13 @@ typedef struct{
 
 } relSysPar;
 
+
+typedef struct{
+	double refl_frac;
+	double f_bh;
+	double f_ad;
+	double f_inf;
+} lpReflFrac;
 
 typedef struct{
 	int n_cosne;
