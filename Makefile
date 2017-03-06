@@ -3,14 +3,21 @@
 CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
+MODEL_VERSION = 0.1
+MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 LIBS = -L${HEADAS}/lib
 
 COMPILE.c = gcc
 
 INCLUDES = -I${HEADAS}/include
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o
+objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o 
 headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xilltable.h
+sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c
+
+model_dir = ./build/
+# add_model_files = modelfiles
+model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh
 
 LINK_TARGET = test_sta
 
@@ -30,6 +37,17 @@ $(LINK_TARGET): $(objects)
 
 clean:
 	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat
+	rm -rf $(model_dir)
+
+
+.PHONY: model
+model:
+	mkdir -p $(model_dir)
+	rm -f $(model_dir)/*
+	cp -v $(model_files) $(model_dir)
+	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
+	cd $(model_dir) && ./compile_relxill.csh && echo 'load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis
+	cp $(model_dir)/$(MODEL_TAR_NAME) .
 
 
 .PHONY: valgrind, gdb

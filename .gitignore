@@ -6,4 +6,4 @@
 test_sta
 .autotools
 gmon.out
-*.dat
+test*.dat

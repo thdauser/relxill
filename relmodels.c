@@ -246,7 +246,8 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 	return ener1keV;
 }
 
-/** XSPEC XILLVER MODEL FUNCTION **/
+
+/** RELXILL MODEL FUNCTION **/
 void tdrelxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* xill_param = NULL;
@@ -268,7 +269,12 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 
 }
 
-/** XSPEC XILLVER MODEL FUNCTION **/
+
+
+
+
+
+/** XSPEC RELXILLLP MODEL FUNCTION **/
 void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* xill_param = NULL;
@@ -289,6 +295,7 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 	free_relParam(rel_param);
 
 }
+
 
 
 /** XSPEC XILLVER MODEL FUNCTION **/
@@ -446,4 +453,80 @@ xillParam* new_xillParam(int model_type, int prim_type, int* status){
 /* free relbase parameter */
 void free_xillParam(xillParam* param){
 	free(param);
+}
+
+
+
+
+/***************************************************/
+/**** XSPEC MODEL WRAPPERS *************************/
+/***************************************************/
+
+
+/** XSPEC RELXILL MODEL FUNCTION **/
+void lmodrelxill(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 13;
+	int status = EXIT_SUCCESS;
+	tdrelxill(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxill model failed",&status);
+}
+
+/** XSPEC RELXILLLP MODEL FUNCTION **/
+void lmodrelxilllp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 12;
+	int status = EXIT_SUCCESS;
+	tdrelxilllp(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxill model failed",&status);
+}
+
+/** XSPEC XILLVER MODEL FUNCTION **/
+void lmodxillver(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 7;
+	int status = EXIT_SUCCESS;
+	tdxillver(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxill model failed",&status);
+}
+
+
+/** XSPEC RELLINE MODEL FUNCTION **/
+void lmodrelline(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 9;
+	int status = EXIT_SUCCESS;
+	tdrelline(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxill model failed",&status);
+}
+
+
+/** XSPEC RELLINELP MODEL FUNCTION **/
+void lmodrellinelp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 8;
+	int status = EXIT_SUCCESS;
+	tdrellinelp(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxill model failed",&status);
+}
+
+/** XSPEC RELCONV MODEL FUNCTION **/
+void lmodrelconv(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 7;
+	int status = EXIT_SUCCESS;
+	tdrelline(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxill model failed",&status);
 }
