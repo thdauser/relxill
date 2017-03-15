@@ -21,6 +21,9 @@
 #include "reltable.h"
 
 
+#include <sys/time.h> // can be removed!!! // TODO
+
+
 #define LIMIT_PREC 1e-6
 
 static void set_std_param_xillver(double* inp_par, int* status){
@@ -211,13 +214,31 @@ static void std_eval_relxilllp(int* status, int n){
 	/* call the relline model */
 	double photar[n_ener];
 	int ii;
+
+
+	struct timeval start, end;
+	long seconds, useconds;
+	gettimeofday(&start, NULL);
+
+
 	for (ii=0; ii<n; ii++){
 		if (n>1){
 			inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
 			inp_par[7] = 1.0*ii/(n-1)*4.7;
+			printf(" relxilllp: testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
 		}
-		printf(" relxilllp: testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
 		tdrelxilllp(ener,n_ener,photar,inp_par,n_param,status);
+	}
+
+	gettimeofday(&end, NULL);
+
+	if (n>1){
+		seconds  = end.tv_sec  - start.tv_sec;
+		useconds = end.tv_usec - start.tv_usec;
+
+		double mtime = ((seconds) * 1000 +  useconds*0.001) / ((double) n );
+
+		printf("time per relxilllp evaluation: %.1f milli seconds\n", mtime);
 	}
 
 	// test output
@@ -466,58 +487,89 @@ static void test_interp(int* status){
 
 }
 
-int main(void){
+static void do_std_test(int* status){
+
+	test_relline_table(status);
+	CHECK_STATUS_VOID(*status);
+	printf("     ---> successful \n");
+
+	test_lp_table(status);
+	CHECK_STATUS_VOID(*status);
+	printf("     ---> successful \n");
+
+
+	test_interp(status);
+	CHECK_STATUS_VOID(*status);
+	printf("     ---> successful \n");
+
+	test_rebin_spectrum(status);
+	CHECK_STATUS_VOID(*status);
+	printf("     ---> successful \n");
+
+}
+
+
+int main(int argc, char *argv[]){
 	char *buf;
 	int status = EXIT_SUCCESS;
+
+
+	int do_all = 1;
+//	int do_relxill = 0;
+	int do_relxilllp = 0;
+
+	if (argc>=2){
+		if (strcmp(argv[1],"relxilllp")==0){
+			do_relxilllp=1;
+			do_all=0;
+		}
+
+	}
+
+	int n = 1;
+	if (argc==3){
+		n = atof(argv[2]);
+	}
 
 	do{
 		get_version_number(&buf,&status);
 		printf("\n === Starting RELXILL Version %s === \n\n",buf);
 		free(buf);
 
-		test_relline_table(&status);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+		if (do_all){
+			do_std_test(&status);
+			CHECK_STATUS_BREAK(status);
+		}
 
-		test_lp_table(&status);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+		if (do_all){
+			std_eval_relline(&status,1);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
 
-
-		test_interp(&status);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
-
-		test_rebin_spectrum(&status);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+			std_eval_relconv(&status,1);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
 
 
-		std_eval_relline(&status,1);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+			std_eval_relline_lp(&status,1);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
 
-		std_eval_relconv(&status,1);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
-
-
-		std_eval_relline_lp(&status,1);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
-
-		std_eval_xillver(&status,1);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+			std_eval_xillver(&status,1);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
 
 
-		std_eval_relxill(&status,1);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+			std_eval_relxill(&status,1);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+		}
 
-		std_eval_relxilllp(&status,1);
-		CHECK_STATUS_BREAK(status);
-		printf("     ---> successful \n");
+		if (do_all || do_relxilllp){
+			std_eval_relxilllp(&status,n);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+		}
 
 		printf( "\n ==> Cleaning up and freeing cached structures\n");
 		free_cached_tables();

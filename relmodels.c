@@ -56,20 +56,25 @@ static void check_parameter_bounds(relParam* param, int* status){
 		param->rin = rms;
 	}
 
-	if (param->rbr < param->rin){
-		printf(" *** warning : Rbr < Rin, resetting Rbr=Rin; please set your limits properly \n");
-		param->rbr=param->rin;
-	}
-
-	if (param->rbr > param->rout){
-		printf(" *** warning : Rbr > Rout, resetting Rbr=Rout; please set your limits properly \n");
-		param->rbr=param->rout;
-	}
-
 	if (param->rout <= param->rin){
 		printf(" *** Error : Rout <= Rin, model evaluation failed \n");
 		*status = EXIT_FAILURE;
 		return;
+	}
+
+
+	/** check rbr values (only applies to LP emissivity **/
+	if (param->emis_type == EMIS_TYPE_BKN){
+		if (param->rbr < param->rin){
+			printf(" *** warning : Rbr < Rin, resetting Rbr=Rin; please set your limits properly \n");
+			param->rbr=param->rin;
+		}
+
+		if (param->rbr > param->rout){
+			printf(" *** warning : Rbr > Rout, resetting Rbr=Rout; please set your limits properly \n");
+			param->rbr=param->rout;
+		}
+
 	}
 
 

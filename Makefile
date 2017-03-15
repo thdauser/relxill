@@ -3,7 +3,7 @@
 CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
-MODEL_VERSION = 0.1
+MODEL_VERSION = 0.1dev
 MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 LIBS = -L${HEADAS}/lib
 
@@ -60,7 +60,7 @@ valgrind:
 gdb:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	gdb --args ./test_sta
+	gdb --args ./test_sta relxilllp
 
 ddd:
 	echo "exit" | make gdb 
@@ -69,5 +69,5 @@ ddd:
 gprof:
 	make clean
 	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
-	./test_sta
+	./test_sta relxilllp 100
 	gprof -p test_sta

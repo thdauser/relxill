@@ -18,8 +18,6 @@
 
 #include "relbase.h"
 
-#include <sys/time.h> // can be removed!!! // TODO
-
 
 
 /** global parameters, which can be used for several calls of the model */
@@ -124,9 +122,12 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 
 	// load tables
 	if (relline_table==NULL){
-		printf("  loading tables \n");
+		char *buf;
+		get_version_number(&buf,status);
+		printf("  *** loading RELXILL model (version %s) \n",buf);
+		free(buf);
+
 		read_relline_table(RELTABLE_FILENAME,&relline_table,status);
-		printf("   ... done!\n");
 		CHECK_STATUS_VOID(*status);
 	}
 	relTable* tab = relline_table;
