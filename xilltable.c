@@ -116,6 +116,7 @@ void free_xillTable(xillTable* tab){
 	}
 }
 
+
 /** read the parameters of the xillver FITS table   */
 static void get_xilltable_parameters(fitsfile* fptr, xillTable* tab, int num_param, const int* num_param_vals, int* status){
 

@@ -25,13 +25,22 @@ static void check_negative_radii(double* r, double a){
 	}
 }
 
+static void check_negative_height(double* h, double a){
+	if (*h<0){
+		*h = -1.0*(*h)*kerr_rplus(a);
+	}
+}
+
+
 int warned_rms = 0;
+int warned_height = 0;
 static void check_parameter_bounds(relParam* param, int* status){
 
 	// first set the Radii to positive value
 	check_negative_radii(&(param->rin), param->a);
 	check_negative_radii(&(param->rout), param->a);
 	check_negative_radii(&(param->rbr), param->a);
+
 
 	if (param->rout<=param->rin){
 		printf(" *** error : Rin >= Rout not possible, please set the parameters  \n");
@@ -42,12 +51,50 @@ static void check_parameter_bounds(relParam* param, int* status){
 	if (param->rin < rms){
 		if (!warned_rms){
 			printf(" *** warning : Rin < ISCO, resetting Rin=ISCO; please set your limits properly \n");
+			warned_rms=1;
 		}
 		param->rin = rms;
 	}
 
+	if (param->rbr < param->rin){
+		printf(" *** warning : Rbr < Rin, resetting Rbr=Rin; please set your limits properly \n");
+		param->rbr=param->rin;
+	}
 
-	// TODO: also check Rbreak here
+	if (param->rbr > param->rout){
+		printf(" *** warning : Rbr > Rout, resetting Rbr=Rout; please set your limits properly \n");
+		param->rbr=param->rout;
+	}
+
+	if (param->rout <= param->rin){
+		printf(" *** Error : Rout <= Rin, model evaluation failed \n");
+		*status = EXIT_FAILURE;
+		return;
+	}
+
+
+	// TODO: also check Rbreak here?
+
+	/** check height values (only applies to LP emissivity **/
+	if (param->emis_type == EMIS_TYPE_LP) {
+		check_negative_height(&(param->height), param->a);
+		double h_fac = 1.1;
+		double r_event = kerr_rplus(param->a);
+		if (param->height <= h_fac*r_event){
+			if (!warned_rms){
+				printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n",h_fac);
+				printf("      Change to negative heights (h <= %.1f), if you want to fit in units of the Event Horizon \n",h_fac);
+				printf("      Height= %.3f  ;  r_event=%.3f \n",param->height,r_event);
+				printf("      Setting    h =  1.1*r_event  = %.3f \n",r_event*h_fac);
+				param->height = r_event*h_fac;
+				warned_height = 1;
+			}
+
+
+		}
+	}
+
+
 
 }
 
@@ -104,9 +151,6 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 
 	xparam->refl_frac = inp_par[12];
 	xparam->fixReflFrac = 0;
-
-
-	// xparam->fixReflFrac = (int) (inp_par[13]+0.5); // make sure there is nor problem with integer conversion
 
 
 	check_parameter_bounds(param,status);
@@ -324,9 +368,12 @@ void tdxillver(const double* ener0, const int n_ener0, double* photar, const dou
 	// we make the spectrum normalization independent of the ionization
 	int ii;
 	for (ii=0; ii<n_ener0; ii++){
-		photar[ii] /= pow(10,param_struct->lxi);
+		photar[ii] /= pow(10,param_struct->lxi) ;
+
+		photar[ii] *= 0.5 * cos(param_struct->incl*M_PI/180.0);
 	}
 
+	add_primary_component(ener,n_ener,photar,NULL,param_struct, status);
 
 	free_xillParam(param_struct);
 

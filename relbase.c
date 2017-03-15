@@ -922,7 +922,7 @@ static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
 	double mufac;
 	for (ii=0; ii<xill_spec->n_incl;ii++){
 		/**  0.5*F*mu*dmu (Javier Note, Eq. 25) **/
-		mufac = 0.5*cosne[ii]*dist[ii];
+		mufac = 0.5*cosne[ii]*dist[ii];   // actually it is also mutliplied by  dmu*nincl = 1/nincl * nincl = 1
 		for (jj=0; jj<xill_spec->n_ener;jj++){
 			xill_flux[jj] += mufac*xill_spec->flu[ii][jj];
 		}
@@ -1086,9 +1086,6 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	int ii;
 	double pl_flux[n_ener];
 
-	// should be cached, as it has been calculated before (todo: check this!!)
-	relSysPar* sysPar = get_system_parameters(rel_param, status);
-
 	/** 1 **  calculate the primary spectrum  **/
 	if (xill_param->prim_type == PRIM_SPEC_ECUT){
 
@@ -1123,50 +1120,72 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	double norm_pl = norm_xill / sum_pl;   // normalization defined, e.g., in Appendix of Dauser+2016
 
 
-	/** 3 **  calculate predicted reflection fraction and check if we want to use this value **/
+	/** 2 **  decide if we need to do relat. calculations **/
+	if (xill_param->model_type == MOD_TYPE_XILLVER ){
 
-	lpReflFrac* struct_refl_frac = calc_refl_frac(sysPar, rel_param,status);
-	CHECK_STATUS_VOID(*status);
-
-	 if ((xill_param->fixReflFrac==1)||(xill_param->fixReflFrac==2)) {
-	     xill_param->refl_frac = struct_refl_frac->refl_frac;
-	 }
-
-	/** 4 ** and apply it to primary and reflected spectra **/
-	if (rel_param->emis_type == EMIS_TYPE_LP) {
-	     double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
-	    		 (rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
-	     for (ii=0; ii<n_ener; ii++) {
-	        pl_flux[ii] *= norm_pl * pow(g_inf,xill_param->gam) * (struct_refl_frac->f_inf / 0.5);
-	        flu[ii] *= fabs(xill_param->refl_frac) / struct_refl_frac->refl_frac;
-	     }
-
-	} else {
-	     for (ii=0; ii<n_ener; ii++){
-	        pl_flux[ii] *= norm_pl;
-	        flu[ii] *= fabs(xill_param->refl_frac);
-	     }
-	}
-
-	/** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
-	if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type==EMIS_TYPE_LP)) {
-
-		/** the reflection strength is calculated between RSTRENGTH_EMIN and RSTRENGTH_EMAX **/
-		// todo: all this to be set by a qualifier
-
-		int imin = binary_search(ener,n_ener+1,RSTRENGTH_EMIN);
-		int imax = binary_search(ener,n_ener+1,RSTRENGTH_EMAX);
-
-		sum_pl = 0.0;
-		double sum = 0.0;
-		for (ii=imin; ii<=imax; ii++){
-			sum_pl += pl_flux[ii];
-			sum += flu[ii];
+		for (ii=0; ii<n_ener; ii++){
+			pl_flux[ii] *= norm_pl;
+			flu[ii] *= fabs(xill_param->refl_frac);
 		}
 
-		printf(" the reflection fraction for a = %.2f and %.2f rg is: %.3f and the reflection strength is: %.3f \n",
-				rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
+	} else {
+
+		assert(rel_param!=NULL);
+
+		// should be cached, as it has been calculated before (todo: check this!!)
+		relSysPar* sysPar = get_system_parameters(rel_param, status);
+
+		/** 3 **  calculate predicted reflection fraction and check if we want to use this value **/
+		lpReflFrac* struct_refl_frac = calc_refl_frac(sysPar, rel_param,status);
+		CHECK_STATUS_VOID(*status);
+
+		if ((xill_param->fixReflFrac==1)||(xill_param->fixReflFrac==2)) {
+			xill_param->refl_frac = struct_refl_frac->refl_frac;
+		}
+
+		/** 4 ** and apply it to primary and reflected spectra **/
+		if (rel_param->emis_type == EMIS_TYPE_LP) {
+			double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
+					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
+			for (ii=0; ii<n_ener; ii++) {
+				pl_flux[ii] *= norm_pl * pow(g_inf,xill_param->gam) * (struct_refl_frac->f_inf / 0.5);
+				flu[ii] *= fabs(xill_param->refl_frac) / struct_refl_frac->refl_frac;
+			}
+
+		} else {
+			for (ii=0; ii<n_ener; ii++){
+				pl_flux[ii] *= norm_pl;
+				flu[ii] *= fabs(xill_param->refl_frac);
+			}
+		}
+
+
+		/** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
+		if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type==EMIS_TYPE_LP)) {
+
+			/** the reflection strength is calculated between RSTRENGTH_EMIN and RSTRENGTH_EMAX **/
+			// todo: all this to be set by a qualifier
+
+			int imin = binary_search(ener,n_ener+1,RSTRENGTH_EMIN);
+			int imax = binary_search(ener,n_ener+1,RSTRENGTH_EMAX);
+
+			sum_pl = 0.0;
+			double sum = 0.0;
+			for (ii=imin; ii<=imax; ii++){
+				sum_pl += pl_flux[ii];
+				sum += flu[ii];
+			}
+
+			printf(" the reflection fraction for a = %.2f and %.2f rg is: %.3f and the reflection strength is: %.3f \n",
+					rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
+		}
+
+		/** free the reflection fraction structure **/
+		free(struct_refl_frac);
+
 	}
+
+
 
 
 	/** 6 ** add power law component only if desired (i.e., refl_frac > 0)**/
@@ -1176,8 +1195,6 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	     }
 	  }
 
-	/** 7 ** free the reflection fraction structure **/
-	free(struct_refl_frac);
 }
 
 /** print the relline profile   **/

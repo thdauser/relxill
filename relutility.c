@@ -66,6 +66,12 @@ double grav_redshift(relParam* param){
 /** calculate the reflection fraction as defined in Dauser+2016 **/
 lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 
+	// in case there is no relativity information, the refl_frac is 1
+	if (param==NULL){
+		printf(" *** Warning: can not calculate reflection fraction as no relat. parameters are given \n");
+		return NULL;
+	}
+
 	// get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
 	double del_bh  = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
 	double del_ad = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
@@ -258,6 +264,10 @@ double kerr_rms(double a){
   return 3.0+Z2-sign*sqrt((3.0-Z1)*(3.0+Z1+(2*Z2)));
 }
 
+/* get the rplus value (size if the black hole event horizon */
+double kerr_rplus(double a){
+	return 1 + sqrt (1 - a*a);
+}
 
 /** calculate the doppler factor for a moving primary source **/
 double doppler_factor(double del, double bet) {

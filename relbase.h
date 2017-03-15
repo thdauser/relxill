@@ -45,7 +45,7 @@
 #define version_minor 1
 #define version_build 0
 
-#define DEBUG_RELXILL 1
+#define DEBUG_RELXILL 0
 
 // TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */

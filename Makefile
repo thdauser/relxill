@@ -17,7 +17,7 @@ sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c
 
 model_dir = ./build/
 # add_model_files = modelfiles
-model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh
+model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh modelfiles/README.txt
 
 LINK_TARGET = test_sta
 
@@ -48,6 +48,7 @@ model:
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
 	cd $(model_dir) && ./compile_relxill.csh && echo 'load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
+	rm -f $(model_dir)/*.c $(model_dir)/*.h 
 
 
 .PHONY: valgrind, gdb

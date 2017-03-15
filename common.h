@@ -93,6 +93,7 @@ typedef struct{
 	double f_inf;
 } lpReflFrac;
 
+/** angles (cosne) and their distribution over the radial zones **/
 typedef struct{
 	int n_cosne;
 	int n_zones;

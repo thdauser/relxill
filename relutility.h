@@ -105,6 +105,9 @@ double trapez_integ_single(double* re, int ii, int nr);
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);
 
+/* get the rplus value (size if the black hole event horizon */
+double kerr_rplus(double a);
+
 /** test if it is a relxill flavour model **/
 int is_relxill_model(int model_type);
 
