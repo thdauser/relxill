@@ -43,7 +43,8 @@
 
 #define version_major 0
 #define version_minor 1
-#define version_build 0
+#define version_build 1
+#define version_dev "dev"
 
 #define DEBUG_RELXILL 0
 

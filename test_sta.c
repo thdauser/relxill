@@ -207,7 +207,7 @@ static void std_eval_relxilllp(int* status, int n){
 	CHECK_STATUS_VOID(*status);
 
 	/* create an energy grid */
-	int n_ener = 4000;
+	const int n_ener = 100;
 	double ener[n_ener+1];
 	get_log_grid(ener,n_ener+1,0.1,1000.0);
 

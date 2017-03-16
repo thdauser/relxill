@@ -18,6 +18,7 @@
 
 #include "relmodels.h"
 
+int version_number_printed=0;
 
 static void check_negative_radii(double* r, double a){
 	if (*r<0){
@@ -31,6 +32,15 @@ static void check_negative_height(double* h, double a){
 	}
 }
 
+void print_version_number(int* status){
+	if (version_number_printed==0){
+		char *buf;
+		get_version_number(&buf,status);
+		printf("  *** loading RELXILL model (version %s) *** \n",buf);
+		free(buf);
+		version_number_printed=1;
+	}
+}
 
 int warned_rms = 0;
 int warned_height = 0;

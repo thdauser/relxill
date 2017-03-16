@@ -559,7 +559,10 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 xill_spec* get_xillver_spectra(xillParam* param, int* status){
 
 	if (cached_xill_tab==NULL){
+		print_version_number(status);
+		CHECK_STATUS_RET(*status,NULL);
 		init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
+		CHECK_STATUS_RET(*status,NULL);
 	}
 	xillTable* tab = cached_xill_tab;
 

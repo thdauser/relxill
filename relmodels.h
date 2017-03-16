@@ -66,6 +66,8 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 void tdxillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 
+/* get the version number text on the screen (if not already printed before */
+void print_version_number(int* status);
 
 /* get a new relbase parameter structure and initialize it */
 relParam* new_relParam(int model_type, int emis_type, int* status);

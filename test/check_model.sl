@@ -2,11 +2,11 @@
 % -*- mode: slang; mode: fold -*-
 
 %% we can load any model
+variable ff = "*";
 if (length(__argv)>1){
-   load_xspec_local_models(__argv[1]);
-} else {
-   load_xspec_local_models("build/librelxill.so");
+   ff = __argv[1];
 }
+load_xspec_local_models("build/librelxill.so");
 
 __set_hard_limits("relxilllp","h",-100,1000);
 
@@ -18,7 +18,7 @@ require("fits_model_struct");
 variable DATA_DIR = "refdata/";
 
 variable sum_name = "relxill_sum.pdf";
-variable glob_str = "test_*.fits";
+variable glob_str = sprintf("test*_%s_*.fits",ff);
 variable fnames = glob(DATA_DIR+sprintf(glob_str));
 fnames = fnames[array_sort(fnames)];
 

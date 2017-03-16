@@ -122,11 +122,8 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 
 	// load tables
 	if (relline_table==NULL){
-		char *buf;
-		get_version_number(&buf,status);
-		printf("  *** loading RELXILL model (version %s) \n",buf);
-		free(buf);
-
+		print_version_number(status);
+		CHECK_STATUS_VOID(*status);
 		read_relline_table(RELTABLE_FILENAME,&relline_table,status);
 		CHECK_STATUS_VOID(*status);
 	}
@@ -1084,8 +1081,18 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param,
 		xillParam* xill_param, int* status){
 
-	int ii;
 	double pl_flux[n_ener];
+
+
+	int ii;
+	const int n_ener_xill = 1000;
+	const double ener_xill_norm_lo = 0.1;
+	const double ener_xill_norm_hi = 1000;
+	double pl_flux_xill[n_ener_xill];
+
+	/** need to create an energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
+	double ener_xill[n_ener_xill+1];
+	get_log_grid(ener_xill,n_ener_xill+1,ener_xill_norm_lo,ener_xill_norm_hi);
 
 	/** 1 **  calculate the primary spectrum  **/
 	if (xill_param->prim_type == PRIM_SPEC_ECUT){
@@ -1094,11 +1101,11 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 //		double ecut_rest = xill_param->ect / ( 1 + xill_param->z + grav_redshift(rel_param) );
 		double ecut_rest = xill_param->ect / ( 1 + xill_param->z  );
 
-		for (ii=0; ii<n_ener; ii++){
-			pl_flux[ii] = exp(1.0/ecut_rest) *
-		             pow(0.5*(ener[ii]+ener[ii+1]),-xill_param->gam) *
-		             exp( -0.5*(ener[ii]+ener[ii+1])/ecut_rest) *
-		             (ener[ii+1] - ener[ii]);
+		for (ii=0; ii<n_ener_xill; ii++){
+			pl_flux_xill[ii] = exp(1.0/ecut_rest) *
+		             pow(0.5*(ener_xill[ii]+ener_xill[ii+1]),-xill_param->gam) *
+		             exp( -0.5*(ener_xill[ii]+ener_xill[ii+1])/ecut_rest) *
+		             (ener_xill[ii+1] - ener_xill[ii]);
 		}
 
 	} else if ( xill_param->prim_type == PRIM_SPEC_NTHCOMP){
@@ -1115,11 +1122,13 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	double keV2erg = 1.602177e-09;
 
 	double sum_pl = 0.0;
-	for (ii=0; ii<n_ener; ii++){
-	     sum_pl += pl_flux[ii] * 0.5*(ener[ii] + ener[ii+1]) * 1e20 * keV2erg;
+	for (ii=0; ii<n_ener_xill; ii++){
+	     sum_pl += pl_flux_xill[ii] * 0.5*(ener_xill[ii] + ener_xill[ii+1]) * 1e20 * keV2erg;
 	}
 	double norm_pl = norm_xill / sum_pl;   // normalization defined, e.g., in Appendix of Dauser+2016
 
+	/** bin the primary continuum onto the given grid **/
+	rebin_spectrum( ener, pl_flux,n_ener, ener_xill, pl_flux_xill, n_ener_xill);
 
 	/** 2 **  decide if we need to do relat. calculations **/
 	if (xill_param->model_type == MOD_TYPE_XILLVER ){
