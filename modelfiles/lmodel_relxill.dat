@@ -18,7 +18,7 @@ Incl    deg     30.   3.      5.      80.       89.       -1
 Rin  " "    -1.   -100.     -100.     -1.      -1.      -0.1
 Rout " "    400.  1.     1.     400.      1000.      -0.1
 
-relline_lp       8  0.         1.e20            c_tdrellinelp     add  0
+relline_lp       8  0.         1.e20            c_lmodrellinelp     add  0
 lineE   keV     6.4   0.01    0.1     10.0       100.0     1.0
 h   GM/c^2     6.0   -100.0    3.0     100.0       500.0     0.1
 a        " "    0.998 -0.998     -0.998     0.998     0.998      0.1

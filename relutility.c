@@ -242,7 +242,8 @@ char* get_relxill_table_path( void ){
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax){
-	for (int ii=0; ii<n_ener; ii++){
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
 		ener[ii] = 1.0*ii / (n_ener-1) * ( log(emax) - log(emin)) + log(emin);
 		ener[ii] = exp(ener[ii]);
 	}
@@ -251,7 +252,8 @@ void get_log_grid(double* ener, int n_ener, double emin, double emax){
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_lin_grid(double* ener, int n_ener, double emin, double emax){
-	for (int ii=0; ii<n_ener; ii++){
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
 		ener[ii] = 1.0*ii / (n_ener-1) * ( emax - emin) + emin;
 	}
 }
@@ -408,6 +410,30 @@ void FFT_R2CT(short int dir,long m,double *x,double *y){
 }
 
 
+
+/** get the number of zones on which we calculate the relline-spectrum **/
+int get_num_zones(int model_type){
+
+	// set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
+	if (is_relxill_model(model_type)){
+		char* env;
+		env = getenv("RELXILL_NUM_RZONES");
+		if (env != NULL){
+			int env_n_zones = atof(env);
+			if ( (env_n_zones > 0 ) && (env_n_zones < 1000) ){
+				return env_n_zones;
+			} else {
+				printf(" *** warning: value of %i for RELXILL_NUM_ZONES not within required interval of [1,1000] \n",env_n_zones);
+			}
+		}
+		return N_ZONES;
+	} else {
+		return 1;
+	}
+
+}
+
+
 /** rebin spectrum to a given energy grid
  *  length of ener is nbins+1       **/
 
@@ -422,7 +448,7 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 		flu[ii] = 0.0;
 
 		/* check of the bin is outside the given energy range */
-		if ( (ener0[0] < ener[ii+1]) && (ener0[nbins0] > ener[ii]) ){
+		if ( (ener0[0] <= ener[ii+1]) && (ener0[nbins0] >= ener[ii]) ){
 
 			/* need to make sure we are in the correct bin */
 			while ( ener0[imin]<=ener[ii] && imin<=nbins0){

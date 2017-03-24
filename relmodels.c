@@ -300,7 +300,8 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 	int ii;
 	for (ii=0; ii<=n_ener; ii++){
 		// ener1keV[ii] = ener[ii];
-		ener1keV[ii] = ener[ii]*(z + line_energ); //TODO: need to test this
+//		ener1keV[ii] = ener[ii]*(z + line_energ); //TODO: need to test this
+		ener1keV[ii] = ener[ii]*(1 + z) / line_energ; //TODO: need to test this
 	}
 	return ener1keV;
 }
@@ -315,9 +316,10 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 	init_par_relxill(&rel_param,&xill_param,parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
 
-	double * ener = (double*) ener0;
-	int n_ener = (int) n_ener0;
-	relxill_kernel(ener, photar, n_ener, xill_param, rel_param,status);
+	// int n_ener = (int) n_ener0;
+	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+
+	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
 	CHECK_STATUS_VOID(*status);
 
 	// todo: shift spectrum accordingly (or already in xillver???)
@@ -342,16 +344,19 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 	init_par_relxilllp(&rel_param,&xill_param,parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
 
-	double * ener = (double*) ener0;
-	int n_ener = (int) n_ener0;
-	relxill_kernel(ener, photar, n_ener, xill_param, rel_param,status);
+
+	double* ener = (double*) ener0;
+	double flux[n_ener0];
+
+	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
 	CHECK_STATUS_VOID(*status);
 
-	// todo: shift spectrum accordingly (or already in xillver???)
-
+	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
 
 	free_xillParam(xill_param);
 	free_relParam(rel_param);
+	free(ener_shifted);
 
 }
 
@@ -378,21 +383,28 @@ void tdxillver(const double* ener0, const int n_ener0, double* photar, const dou
 
 	double * ener = (double*) ener0;
 	int n_ener = (int) n_ener0;
-	rebin_spectrum( ener, photar,n_ener,spec->ener,spec->flu[0],spec->n_ener);
+	double flux[n_ener];
+
+	rebin_spectrum( ener, flux,n_ener,spec->ener,spec->flu[0],spec->n_ener);
 
 	// we make the spectrum normalization independent of the ionization
 	int ii;
+
 	for (ii=0; ii<n_ener0; ii++){
 		photar[ii] /= pow(10,param_struct->lxi) ;
-
-		photar[ii] *= 0.5 * cos(param_struct->incl*M_PI/180.0);
 	}
 
-	add_primary_component(ener,n_ener,photar,NULL,param_struct, status);
+	add_primary_component(ener,n_ener,flux,NULL,param_struct, status);
+
+	double* ener_shifted = shift_energ_spec_1keV(ener, n_ener, 1.0, param_struct->z,status);
+
+	rebin_spectrum(ener_shifted, photar, n_ener, ener, flux, n_ener);
 
 	free_xillParam(param_struct);
 
 	free_xill_spec(spec);
+
+	free(ener_shifted);
 }
 
 
@@ -404,13 +416,19 @@ void tdrelline(const double* ener, const int n_ener, double* photar, const doubl
 	CHECK_STATUS_VOID(*status);
 
 	// shift the spectrum such that we can calculate the line for 1 keV
-//	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
 	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
 	 CHECK_STATUS_VOID(*status);
 
 	// call the function which calculates the line (assumes a line at 1keV!)
-	rel_spec* spec = relbase(ener1keV, n_ener, photar, param_struct,NULL,status);
+	rel_spec* spec = relbase(ener1keV, n_ener, param_struct,NULL,status);
 	CHECK_STATUS_VOID(*status);
+
+
+	assert(spec->n_zones == 1);
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
+		photar[ii] = spec->flux[0][ii];
+	}
 
 	save_relline_profile(spec);
 
@@ -429,8 +447,15 @@ void tdrellinelp(const double* ener, const int n_ener, double* photar, const dou
 	 CHECK_STATUS_VOID(*status);
 
 	// call the function which calculates the line (assumes a line at 1keV!)
-	relbase(ener1keV, n_ener, photar, param_struct,NULL,status);
+	rel_spec* spec = relbase(ener1keV, n_ener, param_struct,NULL,status);
 	CHECK_STATUS_VOID(*status);
+
+	assert(spec->n_zones == 1);
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
+		photar[ii] = spec->flux[0][ii];
+	}
+
 
 	free_relParam(param_struct);
 	free(ener1keV);
@@ -587,7 +612,7 @@ void lmodrelconv(const double* ener0, const int n_ener0, const double* parameter
 
 	const int n_parameter = 7;
 	int status = EXIT_SUCCESS;
-	tdrelline(ener0, n_ener0, photar, parameter, n_parameter, &status);
+	tdrelconv(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating relxill model failed",&status);

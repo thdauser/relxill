@@ -39,8 +39,8 @@ static relDat* new_relDat(int nr, int ng, int* status){
 	dat->trff2 = (float**) malloc( sizeof(float*) * nr);
 	CHECK_MALLOC_RET_STATUS(dat->trff2,status,dat);
 
-
-	for (int ii=0; ii<nr; ii++){
+	int ii;
+	for (ii=0; ii<nr; ii++){
 		dat->cosne1[ii] = (float*) malloc( sizeof(float) * ng);
 		CHECK_MALLOC_RET_STATUS(dat->cosne1,status,dat);
 		dat->cosne2[ii] = (float*) malloc( sizeof(float) * ng);
@@ -101,12 +101,13 @@ relTable* new_relTable(int n_a, int n_mu0, int n_r, int n_g, int* status){
 	tab->arr = (relDat***) malloc (sizeof(relDat**)*tab->n_a);
 	CHECK_MALLOC_RET_STATUS(tab->arr,status,tab);
 
-	for (int ii=0; ii<tab->n_a; ii++){
+	int ii; int jj;
+	for (ii=0; ii<tab->n_a; ii++){
 
 		tab->arr[ii] = (relDat**) malloc (sizeof(relDat*)*tab->n_mu0);
 		CHECK_MALLOC_RET_STATUS(tab->arr[ii],status,tab);
 
-		for (int jj=0; jj<tab->n_mu0; jj++){
+		for (jj=0; jj<tab->n_mu0; jj++){
 			tab->arr[ii][jj] = NULL;
 			CHECK_STATUS_RET(*status,tab);
 		}
@@ -159,7 +160,8 @@ static void load_single_relDat_2dcol(fitsfile* fptr, float** val,int n1, int n2,
 
     LONGLONG nelem = (LONGLONG) n2;
 
-    for (int ii=0; ii<n1;ii++){
+    int ii;
+    for (ii=0; ii<n1;ii++){
         if(fits_read_col(fptr, TFLOAT, colnum, ii+1, 1, nelem ,&nullval,val[ii], &anynul, status)) return;
 
     }
@@ -272,8 +274,9 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 		CHECK_RELXILL_ERROR("reading of mu0 axis failed",status);
 
 		//now load the full table (need to go through all extensions)
-		for (int ii=0; ii<tab->n_a; ii++){
-			for (int jj=0; jj<tab->n_mu0; jj++){
+		int ii; int jj;
+		for (ii=0; ii<tab->n_a; ii++){
+			for (jj=0; jj<tab->n_mu0; jj++){
 
 				if (asprintf(&extname, "%i_%i", ii+1,jj+1) == -1){
 					RELXILL_ERROR("failed to construct full path the rel table",status);
@@ -416,7 +419,8 @@ void read_lp_table(char* filename, lpTable** inp_tab, int* status){
 
 		//now load the full table (need to go through all extensions)
 		int rownum=-1;
-		for (int ii=0; ii<tab->n_a; ii++){
+		int ii;
+		for (ii=0; ii<tab->n_a; ii++){
 
 			rownum = ii+1; // number of the row we read in the fits table
 

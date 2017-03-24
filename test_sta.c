@@ -38,13 +38,13 @@ static void set_std_param_xillver(double* inp_par, int* status){
 
 
 static void set_std_param_relline(double* inp_par, int* status){
-	inp_par[0] = 1.0;
+	inp_par[0] = 6.4;
 	inp_par[1] = 3.0;
 	inp_par[2] = 3.0;
 	inp_par[3] = 15.0;
 	inp_par[4] = 0.998;
 	inp_par[5] = 30.0;
-	inp_par[6] = -1.;
+	inp_par[6] = -1.1;
 	inp_par[7] = 400.;
 	inp_par[8] = 0.0;
 }
@@ -118,7 +118,7 @@ static void std_eval_relline(int* status, int n){
 	/* create an energy grid */
 	int n_ener = 300;
 	double ener[n_ener+1];
-	get_log_grid(ener,n_ener+1,0.1,1.5);
+	get_log_grid(ener,n_ener+1,0.5,8.0);
 
 	/* call the relline model */
 	double photar[n_ener];
@@ -515,13 +515,20 @@ int main(int argc, char *argv[]){
 
 
 	int do_all = 1;
-//	int do_relxill = 0;
+	int do_relline = 0;
+	int do_rellinelp = 0;
 	int do_relxilllp = 0;
 
 	if (argc>=2){
 		if (strcmp(argv[1],"relxilllp")==0){
 			do_relxilllp=1;
 			do_all=0;
+		} else if (strcmp(argv[1],"relline")==0){
+				do_relline=1;
+				do_all=0;
+		} else if (strcmp(argv[1],"rellinelp")==0){
+				do_rellinelp=1;
+				do_all=0;
 		}
 
 	}
@@ -541,19 +548,25 @@ int main(int argc, char *argv[]){
 			CHECK_STATUS_BREAK(status);
 		}
 
-		if (do_all){
+		if (do_all || do_relline){
 			std_eval_relline(&status,1);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
+		}
+
+		if (do_all || do_rellinelp){
+			std_eval_relline_lp(&status,1);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+		}
+
+		if (do_all){
 
 			std_eval_relconv(&status,1);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 
 
-			std_eval_relline_lp(&status,1);
-			CHECK_STATUS_BREAK(status);
-			printf("     ---> successful \n");
 
 			std_eval_xillver(&status,1);
 			CHECK_STATUS_BREAK(status);

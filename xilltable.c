@@ -335,16 +335,20 @@ static void load_single_spec(fitsfile** fptr, xillTable* tab, int ii, int jj, in
 	LONGLONG nelem = (LONGLONG) tab->n_ener;
 
 	// get the row number (this is how the xillver table is defined)
-	// int ind = 	(( ll*n_ampl + kk ) * n_dt + jj ) * n_freq + ii;
 	int rownum = (((ii*tab->n_afe + jj)*tab->n_lxi + kk)*tab->n_ect + ll)*tab->n_incl + mm +1;
-
-//	printf(" reading row-number %i for [%i][%i][%i][%i][%i] %i %i %i %i %i \n",rownum,ii,jj,kk,ll,mm,
-//			tab->n_gam,tab->n_afe,tab->n_lxi,tab->n_ect,tab->n_incl);
 
 	fits_read_col(*fptr, TFLOAT, colnum_spec, rownum  , 1, nelem ,&nullval,spec, &anynul, status);
 	CHECK_STATUS_VOID(*status);
 
+	int iener;
+	/** multiply with the 0.5*cos(mu) factor (which we always need to do in the end; safes time **/
+	double mu = cos(tab->incl[mm]/180.0*M_PI);
+	for (iener=0;iener<tab->n_ener;iener++){
+		spec[iener] *= 0.5*mu;
+	}
+
 	tab->dat[ii][jj][kk][ll][mm] = spec;
+
 }
 
 static void check_xillTable_cache(xillTable* tab, int* ind, int* status) {
@@ -531,17 +535,12 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 	double xfac=(param->lxi-tab->lxi[ind[2]])/(tab->lxi[ind[2]+1]-tab->lxi[ind[2]]);
 	double efac=(param->ect-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
 
-	/**
-	printf("gam=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->gam, gfac,tab->gam[ind[0]], tab->gam[ind[0]+1] ,ind[0]);
-	printf("afe=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->afe, afac,tab->afe[ind[1]], tab->afe[ind[1]+1] ,ind[1]);
-	printf("lxi=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->lxi, xfac,tab->lxi[ind[2]], tab->lxi[ind[2]+1] ,ind[2]);
-	printf("ect=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->ect, efac,tab->ect[ind[3]], tab->ect[ind[3]+1] ,ind[3]); **/
-
 	if (param->model_type==MOD_TYPE_XILLVER){
 		double ifac = (param->incl-tab->incl[ind[4]])/(tab->incl[ind[4]+1]-tab->incl[ind[4]]);
-		// printf("icl=%.2f, fac=%.3f [%.3e, %.3e] ind %i \n",param->incl, ifac,tab->incl[ind[4]], tab->incl[ind[4]+1],ind[4] );
 		interp_5d_tab(tab,spec->flu[0],spec->n_ener,gfac,afac,xfac,efac,ifac,
 				ind[0],ind[1],ind[2],ind[3],ind[4]);
+
+
 	} else {
 		// get the spectrum for EACH flux bin
 		for (ii=0; ii<spec->n_incl; ii++){

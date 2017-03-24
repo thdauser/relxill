@@ -140,4 +140,7 @@ double grav_redshift(relParam* param);
 /** get the relxill table path (dynamically from env variable)  **/
 char* get_relxill_table_path( void );
 
+/** get the number of zones **/
+int get_num_zones(int model_type);
+
 #endif /* RELUTILITY_H_ */

@@ -46,19 +46,23 @@ static int redo_get_emis_lp(relParam* param, relParam* rel_param, relSysPar* sys
 	}
 
 	double cache_limit = 1e-8;
-	if (fabs(param->a - rel_param->a) > cache_limit) {
-		return 1;
-	}
-	if (fabs(param->height - rel_param->height) > cache_limit) {
-		return 1;
-	}
-	if (fabs(param->rin - rel_param->rin) > cache_limit) {
-		return 1;
-	}
-	if (fabs(param->rout - rel_param->rout) > cache_limit) {
-		return 1;
-	}
-	if (fabs(param->gamma - rel_param->gamma) > cache_limit) {
+	if(rel_param!=NULL && param!=NULL){
+		if (fabs(param->a - rel_param->a) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->height - rel_param->height) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->rin - rel_param->rin) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->rout - rel_param->rout) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->gamma - rel_param->gamma) > cache_limit) {
+			return 1;
+		}
+	} else {
 		return 1;
 	}
 

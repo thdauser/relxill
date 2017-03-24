@@ -10,6 +10,7 @@ load_xspec_local_models("build/librelxill.so");
 
 __set_hard_limits("relxilllp","h",-100,1000);
 
+_traceback=1;
 
 require("isisscripts");
 require("fits_model_struct");
@@ -17,7 +18,7 @@ require("fits_model_struct");
 
 variable DATA_DIR = "refdata/";
 
-variable sum_name = "relxill_sum.pdf";
+variable sum_name = "plot_compare_model_sum.pdf";
 variable glob_str = sprintf("test*_%s_*.fits",ff);
 variable fnames = glob(DATA_DIR+sprintf(glob_str));
 fnames = fnames[array_sort(fnames)];
@@ -57,9 +58,14 @@ define check_single_model(fn){
    variable elo = dat.bin_lo;
    variable ehi = dat.bin_hi;
    
+   pl.world(min(elo),max(elo),0.1,200;loglog);
+   plr.world(min(elo),max(elo),0.989,1.011;loglog);
+   
    variable ind_no0 = where(dat.value != 0);
    dat.value = dat.value[ind_no0];
    m_dat = m_dat[ind_no0];
+   elo = elo[ind_no0];
+   ehi = ehi[ind_no0];
    
    pl.hplot([elo,ehi[-1]], dat.value/(ehi-elo)*(0.5*(elo+ehi))^2;
 	    loglog);

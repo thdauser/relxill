@@ -1,6 +1,7 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
+() = system("rm -f refdata/test*");
 
 %% we can load any model
 if (length(__argv)>1){
@@ -24,13 +25,26 @@ define test_relxill(){ %{{{
    fit_fun("relxill");
    set_par("*.refl_frac",1,0,-10,10);
    fits_write_model_struct(get_fname(std_fname));
-   set_par("*.refl_frac",-1,0,-10,10);
-   fits_write_model_struct(get_fname(std_fname));
    set_par("*.refl_frac",0);
    fits_write_model_struct(get_fname(std_fname));
+   set_par("*.refl_frac",-1,0,-10,10);
+   fits_write_model_struct(get_fname(std_fname));
    
+   set_par("*.logxi",0);
+   fits_write_model_struct(get_fname(std_fname));
+
+   set_par("*.logxi",3.1);
+   set_par("*.refl_frac",-1,0,-10,10);
+   set_par("*.z",0.1);
+   fits_write_model_struct(get_fname(std_fname));
+
+   set_par("*.z",0.5);
+   fits_write_model_struct(get_fname(std_fname));
+   set_par("*.z",0.0);
+
    
    set_par("*.refl_frac",1,0,-10,10);
+
 
    variable elo, ehi;
    (elo,ehi) = log_grid(3,200,500);
@@ -42,13 +56,19 @@ define test_relxill(){ %{{{
    (elo,ehi) = log_grid(3,200,2000);
    fits_write_model_struct(get_fname(std_fname);elo=elo,ehi=ehi);
 
+
 }
 %}}}
 define test_xillver(){ %{{{
    fit_fun("xillver");
    set_par("*.refl_frac",-1,0,-10,10);
+   set_par("*.Incl",30.1);
    fits_write_model_struct(get_fname(std_fname));
-   
+
+   set_par("*.logxi",0);
+   fits_write_model_struct(get_fname(std_fname));
+
+   set_par("*.logxi",3.1);
    set_par("*.refl_frac",0);
    fits_write_model_struct(get_fname(std_fname));
    set_par("*.refl_frac",1,0,-10,10);
@@ -88,8 +108,6 @@ define test_relxillxillver(){ %{{{
 
    set_par("relxill*.refl_frac",-1,0,-10,10);
    fits_write_model_struct(get_fname(std_fname));
-   set_par("relxill*.refl_frac",0);
-   fits_write_model_struct(get_fname(std_fname));
 
 
 }
@@ -103,6 +121,7 @@ define test_relxilllpxillver(){ %{{{
    fits_write_model_struct(get_fname(std_fname));
    set_par("relxilllp*.refl_frac",0);
    fits_write_model_struct(get_fname(std_fname));
+   set_par("relxilllp*.refl_frac",1);
    set_par("relxilllp*.fixReflFrac",2);
    fits_write_model_struct(get_fname(std_fname));      
    set_par("xillver*.refl_frac",-0.3,0,-10,10);
@@ -130,8 +149,8 @@ define test_relxilllp(){ %{{{
 }
 %}}}
 
-test_xillver();
+%test_xillver();
 test_relxill();
-test_relxillxillver();
+%test_relxillxillver();
 
 %test_relxilllp;

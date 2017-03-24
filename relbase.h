@@ -43,7 +43,7 @@
 
 #define version_major 0
 #define version_minor 1
-#define version_build 1
+#define version_build 4
 #define version_dev "dev"
 
 #define DEBUG_RELXILL 0
@@ -111,7 +111,7 @@ typedef struct{
 /****** FUNCTION DEFINITIONS ******/
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
-rel_spec* relbase(double* ener, const int n_ener, double* photar, relParam* param, xill_spec* xill_spec, int* status);
+rel_spec* relbase(double* ener, const int n_ener,relParam* param, xill_spec* xill_spec, int* status);
 
 /** calculate the relline profile(s) for all given zones **/
 void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status);
