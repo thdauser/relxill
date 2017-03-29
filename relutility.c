@@ -52,6 +52,16 @@ void relxill_error(const char* const func, const char* const msg, int* status){
 }
 
 
+int is_xill_model(int model_type){
+	if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+
+
 /** calculate the gravitational redshift **/
 double grav_redshift(relParam* param){
 	if (param->emis_type==EMIS_TYPE_LP){

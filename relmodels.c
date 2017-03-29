@@ -51,6 +51,7 @@ static void check_parameter_bounds(relParam* param, int* status){
 	check_negative_radii(&(param->rout), param->a);
 	check_negative_radii(&(param->rbr), param->a);
 
+	const double rout_max = 1000.0;
 
 	if (param->rout<=param->rin){
 		printf(" *** error : Rin >= Rout not possible, please set the parameters  \n");
@@ -70,6 +71,12 @@ static void check_parameter_bounds(relParam* param, int* status){
 		printf(" *** Error : Rout <= Rin, model evaluation failed \n");
 		*status = EXIT_FAILURE;
 		return;
+	}
+
+	if (param->rout > rout_max){
+		printf(" *** Error : Rout=%.2e > %.2e Rg, which is the maximal possible value. Make sure to set your limits properly. \n",param->rout,rout_max);
+		printf("             -> resetting Rout=%.2e\n",rout_max);
+		param->rout = rout_max;
 	}
 
 
@@ -137,6 +144,30 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 	return param;
 }
 
+xillParam* init_par_xillver_dens(const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	xillParam* param = new_xillParam(MOD_TYPE_XILLVERDENS,PRIM_SPEC_ECUT,status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	assert(n_parameter == NUM_PARAM_XILLVER);
+
+	param->gam   = inp_par[0];
+	param->afe   = inp_par[1];
+	param->ect   = 300.0;
+	param->dens  = inp_par[2];
+	param->lxi   = inp_par[3];
+	param->z     = inp_par[4];
+	param->incl  = inp_par[5]; // is given in degrees !!
+	param->refl_frac = inp_par[6];
+
+	// TODO: check parameter bounds here as well
+/*	check_parameter_bounds_xillver(param,status);
+	CHECK_STATUS_RET(*status,NULL); */
+
+	return param;
+}
+
 
 void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
 
@@ -163,6 +194,7 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 	xparam->lxi   = inp_par[9];
 	xparam->afe   = inp_par[10];
 	xparam->ect   = inp_par[11];
+	xparam->dens  = 1e15;
 
 	xparam->refl_frac = inp_par[12];
 	xparam->fixReflFrac = 0;
@@ -176,6 +208,50 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 
 	return;
 }
+
+
+
+void init_par_relxilldens(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELXILL,EMIS_TYPE_BKN,status);
+	CHECK_STATUS_VOID(*status);
+
+	/** only set the MODEL TYPE RELXILL DENS for xillver **/
+	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLDENS,PRIM_SPEC_ECUT,status);
+	CHECK_STATUS_VOID(*status);
+
+	assert(n_parameter == NUM_PARAM_RELXILL);
+
+	param->emis1 = inp_par[0];
+	param->emis2 = inp_par[1];
+	param->rbr   = inp_par[2];
+	param->a     = inp_par[3];
+	param->incl  = inp_par[4]*M_PI/180;
+	param->rin   = inp_par[5];
+	param->rout  = inp_par[6];
+	param->z     = inp_par[7];
+	xparam->z    = inp_par[7];
+
+	xparam->gam   = inp_par[8];
+	xparam->lxi   = inp_par[9];
+	xparam->afe   = inp_par[10];
+	xparam->ect   = 300.0;
+	xparam->dens  = inp_par[11];
+
+	xparam->refl_frac = inp_par[12];
+	xparam->fixReflFrac = 0;
+
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_VOID(*status);
+
+	*rel_param  = param;
+	*xill_param = xparam;
+
+	return;
+}
+
 
 void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
 
@@ -257,7 +333,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 	param->incl  = inp_par[4]*M_PI/180;
 	param->rin   = inp_par[5];
 	param->rout  = inp_par[6];
-	param->z     = inp_par[7];
+	param->z     = 0.0;
 
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
@@ -299,8 +375,6 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 
 	int ii;
 	for (ii=0; ii<=n_ener; ii++){
-		// ener1keV[ii] = ener[ii];
-//		ener1keV[ii] = ener[ii]*(z + line_energ); //TODO: need to test this
 		ener1keV[ii] = ener[ii]*(1 + z) / line_energ; //TODO: need to test this
 	}
 	return ener1keV;
@@ -322,17 +396,31 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
 	CHECK_STATUS_VOID(*status);
 
-	// todo: shift spectrum accordingly (or already in xillver???)
-
-
+	free(ener);
 	free_xillParam(xill_param);
 	free_relParam(rel_param);
 
 }
 
+/** RELXILL DENS MODEL FUNCTION **/
+void tdrelxilldens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
+	xillParam* xill_param = NULL;
+	relParam* rel_param = NULL;
 
+	init_par_relxilldens(&rel_param,&xill_param,parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
 
+	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+
+	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
+	CHECK_STATUS_VOID(*status);
+
+	free(ener);
+	free_xillParam(xill_param);
+	free_relParam(rel_param);
+
+}
 
 
 /** XSPEC RELXILLLP MODEL FUNCTION **/
@@ -368,15 +456,26 @@ void tdxillver(const double* ener0, const int n_ener0, double* photar, const dou
 	xillParam* param_struct = init_par_xillver(parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
 
-	// shift the spectrum such that we can calculate the line for 1 keV
-	 /**double* ener1keV = shift_energ_spec_1keV(ener, n_ener, 0.0 , param_struct->z,status);
-	 CHECK_STATUS_VOID(*status); **/
+	xillver_base(ener0, n_ener0, photar, param_struct, status);
+}
+
+
+/** XSPEC XILLVER DENS MODEL FUNCTION **/
+void tdxillverdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	xillParam* param_struct = init_par_xillver_dens(parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+	xillver_base(ener0, n_ener0, photar, param_struct, status);
+}
+
+/** BASIC XILLVER MODEL FUNCTION **/
+void xillver_base(const double* ener0, const int n_ener0, double* photar, xillParam* param_struct, int* status){
+
 
 	// call the function which calculates the xillver spectrum
 	xill_spec* spec = get_xillver_spectra(param_struct,status);
 	CHECK_STATUS_VOID(*status);
-
-	// rebin it to the given grid
 
 	// =4= rebin to the input grid
 	assert(spec->n_incl==1); // make sure there is only one spectrum given (for the chosen inclination)
@@ -400,10 +499,9 @@ void tdxillver(const double* ener0, const int n_ener0, double* photar, const dou
 
 	rebin_spectrum(ener_shifted, photar, n_ener, ener, flux, n_ener);
 
+	/** free **/
 	free_xillParam(param_struct);
-
 	free_xill_spec(spec);
-
 	free(ener_shifted);
 }
 
@@ -532,6 +630,7 @@ xillParam* new_xillParam(int model_type, int prim_type, int* status){
 	param->z = PARAM_DEFAULT;
 	param->refl_frac = PARAM_DEFAULT;
 	param->fixReflFrac = -1;
+	param->dens = PARAM_DEFAULT;
 
 	return param;
 }
@@ -561,6 +660,18 @@ void lmodrelxill(const double* ener0, const int n_ener0, const double* parameter
 	RELXILL_ERROR("evaluating relxill model failed",&status);
 }
 
+/** XSPEC RELXILL DENS MODEL FUNCTION **/
+void lmodrelxilldens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 13;
+	int status = EXIT_SUCCESS;
+	tdrelxilldens(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxill_dens model failed",&status);
+}
+
+
 /** XSPEC RELXILLLP MODEL FUNCTION **/
 void lmodrelxilllp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
@@ -569,7 +680,7 @@ void lmodrelxilllp(const double* ener0, const int n_ener0, const double* paramet
 	tdrelxilllp(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
-	RELXILL_ERROR("evaluating relxill model failed",&status);
+	RELXILL_ERROR("evaluating rellinelp model failed",&status);
 }
 
 /** XSPEC XILLVER MODEL FUNCTION **/
@@ -580,7 +691,18 @@ void lmodxillver(const double* ener0, const int n_ener0, const double* parameter
 	tdxillver(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
-	RELXILL_ERROR("evaluating relxill model failed",&status);
+	RELXILL_ERROR("evaluating xillver model failed",&status);
+}
+
+/** XSPEC XILLVER MODEL FUNCTION **/
+void lmodxillverdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 7;
+	int status = EXIT_SUCCESS;
+	tdxillverdens(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating xillver model failed",&status);
 }
 
 
@@ -592,7 +714,7 @@ void lmodrelline(const double* ener0, const int n_ener0, const double* parameter
 	tdrelline(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
-	RELXILL_ERROR("evaluating relxill model failed",&status);
+	RELXILL_ERROR("evaluating relline model failed",&status);
 }
 
 
@@ -604,7 +726,7 @@ void lmodrellinelp(const double* ener0, const int n_ener0, const double* paramet
 	tdrellinelp(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
-	RELXILL_ERROR("evaluating relxill model failed",&status);
+	RELXILL_ERROR("evaluating rellinelp model failed",&status);
 }
 
 /** XSPEC RELCONV MODEL FUNCTION **/
@@ -615,5 +737,5 @@ void lmodrelconv(const double* ener0, const int n_ener0, const double* parameter
 	tdrelconv(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
-	RELXILL_ERROR("evaluating relxill model failed",&status);
+	RELXILL_ERROR("evaluating relconv model failed",&status);
 }

@@ -3,7 +3,7 @@
 CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
-MODEL_VERSION = 0.1.4dev
+MODEL_VERSION = 0.1.8dev
 MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 LIBS = -L${HEADAS}/lib
 
@@ -55,7 +55,7 @@ model:
 valgrind:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxilllp
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxilldens
 
 valgrind-rellinelp:
 	make clean

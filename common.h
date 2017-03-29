@@ -59,6 +59,7 @@ typedef struct{
 	double incl;
 	double z;
 	double refl_frac;
+	double dens;
 	int fixReflFrac;
 	int model_type;
 	int prim_type;

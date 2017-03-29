@@ -18,9 +18,11 @@
 
 #include "xilltable.h"
 
-const int XILL_num_param_vals[] = {XILLTABLE_N_GAM,XILLTABLE_N_AFE,XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL};
+int XILL_num_param_vals[] = {XILLTABLE_N_GAM,XILLTABLE_N_AFE,XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL};
+int XILL_DENS_num_param_vals[] = {XILLTABLE_DENS_N_GAM,XILLTABLE_DENS_N_AFE,XILLTABLE_DENS_N_LXI,XILLTABLE_DENS_N_DENS,XILLTABLE_DENS_N_INCL};
 
 xillTable* cached_xill_tab=NULL;
+xillTable* cached_xill_tab_dens=NULL;
 
 /** get a new and empty rel table (structure will be allocated)  */
 xillTable* new_xillTable(int n_gam, int n_afe, int n_lxi, int n_ect, int n_incl, int* status){
@@ -117,6 +119,14 @@ void free_xillTable(xillTable* tab){
 }
 
 
+static int is_dens_model(int model_type){
+	if ((model_type == MOD_TYPE_RELXILLDENS) || (model_type == MOD_TYPE_XILLVERDENS)){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
 /** read the parameters of the xillver FITS table   */
 static void get_xilltable_parameters(fitsfile* fptr, xillTable* tab, int num_param, const int* num_param_vals, int* status){
 
@@ -148,7 +158,6 @@ static void get_xilltable_parameters(fitsfile* fptr, xillTable* tab, int num_par
     for (ii=0; ii<n;ii++){
     	/** first get the number of parameters and check if those are correct **/
     	fits_read_col(fptr, TINT, colnum_n, ii+1, 1, 1 ,&nullval,val, &anynul, status);
-    	// TODO: check if the single integer works!!
     	if (val[0] != num_param_vals[ii]){
     		RELXILL_ERROR("parameter in the xillver table do not fit to the current relxill code. Please check your table!",status);
     		return;
@@ -213,20 +222,37 @@ static void	get_xilltable_ener(int* n_ener, float** elo, float** ehi, fitsfile* 
 	return;
 }
 
+static int* get_ptr_num_param_vals(int model_type){
+	int* num_param_vals;
+	if ( is_dens_model(model_type)){
+		num_param_vals = XILL_DENS_num_param_vals;
+
+	} else {
+		num_param_vals = XILL_num_param_vals;
+	}
+	return num_param_vals;
+}
+
 static int* get_xill_indices(xillParam* param, xillTable* tab,int* status){
 
 	/** important: length here needs to be XILLTABLE_N_PARAM and the parameters in the correct order!! **/
 	double param_vals[] = {param->gam, param->afe, param->lxi, param->ect, param->incl};
 	float* param_arr[]  = {tab->gam,   tab->afe,   tab->lxi,   tab->ect,   tab->incl  };
 
-	const int* num_param_vals = XILL_num_param_vals;
+	/** the value changes for the DENS table, but internally dens is treated as ecut **/
+	if ( is_dens_model(param->model_type)){
+		param_vals[3] = param->dens;
+	}
 
 	int ii;
 	int* ind = (int*) malloc(XILLTABLE_N_PARAM*sizeof(int));
 	CHECK_MALLOC_RET_STATUS(ind,status,NULL);
 
+	int* num_param_vals = get_ptr_num_param_vals(param->model_type);
+
 	for (ii=0; ii<XILLTABLE_N_PARAM; ii++){
 		ind[ii] = binary_search_float(param_arr[ii], num_param_vals[ii],(float) param_vals[ii]);
+
 		// make sure all parameters are by default within the defined limits here!!
 		if (ind[ii] < 0 ){
 			ind[ii] = 0;
@@ -266,6 +292,10 @@ void init_xillver_table(char* filename, xillTable** inp_tab, xillParam* param, i
 	xillTable* tab = (*inp_tab);
 	fitsfile* fptr = NULL;
 
+	print_version_number(status);
+	CHECK_STATUS_VOID(*status);
+
+
 	do{ // Errot handling loop
 
 
@@ -275,15 +305,21 @@ void init_xillver_table(char* filename, xillTable** inp_tab, xillParam* param, i
 		assert (tab == NULL);
 
 		/** allocate space for the new table  **/
-		tab = new_xillTable(XILLTABLE_N_GAM,XILLTABLE_N_AFE, XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL,status);
+		if (is_dens_model(param->model_type)){
+			tab = new_xillTable(XILLTABLE_DENS_N_GAM,XILLTABLE_DENS_N_AFE, XILLTABLE_DENS_N_LXI,XILLTABLE_DENS_N_DENS,XILLTABLE_DENS_N_INCL,status);
+		} else {
+			tab = new_xillTable(XILLTABLE_N_GAM,XILLTABLE_N_AFE, XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL,status);
+		}
 		CHECK_STATUS_BREAK(*status);
+
+		int* num_param_vals = get_ptr_num_param_vals(param->model_type);
 
 		/** now load the energy grid **/
 		get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
 		CHECK_RELXILL_ERROR("reading of energy grid of the xillver table failed",status);
 
 		/** and now the stored parameter values (also check if the correct number of parameters) **/
-		get_xilltable_parameters(fptr, tab,XILLTABLE_N_PARAM, XILL_num_param_vals, status);
+		get_xilltable_parameters(fptr, tab,XILLTABLE_N_PARAM, num_param_vals, status);
 		CHECK_STATUS_BREAK(*status);
 
 		// should be set by previous routine
@@ -308,13 +344,13 @@ void init_xillver_table(char* filename, xillTable** inp_tab, xillParam* param, i
 	return;
 }
 
-static void load_single_spec(fitsfile** fptr, xillTable* tab, int ii, int jj, int kk, int ll, int mm, int* status){
+static void load_single_spec(char* fname, fitsfile** fptr, xillTable* tab, int ii, int jj, int kk, int ll, int mm, int* status){
 
 	assert(tab->dat[ii][jj][kk][ll][mm]==NULL);
 
 	// open the fits file if not already open
 	if (*fptr==NULL){
-		*fptr = open_xillver_tab(XILLTABLE_FILENAME,status);
+		*fptr = open_xillver_tab(fname,status);
 		CHECK_STATUS_VOID(*status);
 	}
 
@@ -351,7 +387,7 @@ static void load_single_spec(fitsfile** fptr, xillTable* tab, int ii, int jj, in
 
 }
 
-static void check_xillTable_cache(xillTable* tab, int* ind, int* status) {
+static void check_xillTable_cache(char* fname, xillTable* tab, int* ind, int* status) {
 	// =2=  check if the necessary spectra are loaded (we only open the file once)
 	fitsfile* fptr = NULL;
 	int ii;
@@ -368,7 +404,7 @@ static void check_xillTable_cache(xillTable* tab, int* ind, int* status) {
 					// always load **all** incl bins as for relxill we will certainly need it
 					for (mm=0;mm<tab->n_incl; mm++){
 						if (tab->dat[ind[0]+ii][ind[1]+jj][ind[2]+kk][ind[3]+ll][mm] == NULL){
-							load_single_spec(&fptr, tab, ind[0]+ii,ind[1]+jj,ind[2]+kk,ind[3]+ll,mm,status);
+							load_single_spec(fname, &fptr, tab, ind[0]+ii,ind[1]+jj,ind[2]+kk,ind[3]+ll,mm,status);
 							CHECK_STATUS_VOID(*status);
 							// todo: check if we can remove part of the cache
 						}
@@ -509,7 +545,7 @@ static void interp_5d_tab(xillTable* tab, double* flu, int n_ener,
 static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,int* status){
 
 	xill_spec* spec = NULL;
-	if (param->model_type==MOD_TYPE_XILLVER){
+	if (is_xill_model(param->model_type)){
 		spec = new_xill_spec(1, tab->n_ener, status);
 	} else {
 		spec = new_xill_spec(tab->n_incl, tab->n_ener, status);
@@ -535,7 +571,12 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 	double xfac=(param->lxi-tab->lxi[ind[2]])/(tab->lxi[ind[2]+1]-tab->lxi[ind[2]]);
 	double efac=(param->ect-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
 
-	if (param->model_type==MOD_TYPE_XILLVER){
+	if (is_dens_model(param->model_type)){
+		/** remember that internally we treat dens as ecut **/
+		efac=(param->dens-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
+	}
+
+	if (is_xill_model(param->model_type)){
 		double ifac = (param->incl-tab->incl[ind[4]])/(tab->incl[ind[4]+1]-tab->incl[ind[4]]);
 		interp_5d_tab(tab,spec->flu[0],spec->n_ener,gfac,afac,xfac,efac,ifac,
 				ind[0],ind[1],ind[2],ind[3],ind[4]);
@@ -557,26 +598,39 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
  *  (decides if the table needs to be initialized and/or more data loaded          */
 xill_spec* get_xillver_spectra(xillParam* param, int* status){
 
-	if (cached_xill_tab==NULL){
-		print_version_number(status);
-		CHECK_STATUS_RET(*status,NULL);
-		init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
-		CHECK_STATUS_RET(*status,NULL);
+	xillTable* tab = NULL;
+	char* fname = NULL;
+
+	if (is_dens_model(param->model_type)) {
+		if (cached_xill_tab_dens==NULL){
+			init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
+			CHECK_STATUS_RET(*status,NULL);
+		}
+		tab = cached_xill_tab_dens;
+		fname = XILLTABLE_DENS_FILENAME;
+
+	} else {
+		if (cached_xill_tab==NULL){
+			init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
+			CHECK_STATUS_RET(*status,NULL);
+		}
+		tab = cached_xill_tab;
+		fname = XILLTABLE_FILENAME;
 	}
-	xillTable* tab = cached_xill_tab;
+
+	assert(tab!=NULL);
+	assert(fname!=NULL);
 
 	// =1=  get the inidices
 	int* ind = get_xill_indices(param, tab, status);
 	CHECK_STATUS_RET(*status,NULL);
 
 	// =2=  check if the necessary spectra are loaded (we only open the file once)
-	check_xillTable_cache(tab, ind, status);
+	check_xillTable_cache(fname, tab, ind, status);
 
 
 	// =3= interpolate values
 	xill_spec* spec = interp_xill_table(tab,param,ind,status);
-
-
 
 	free(ind);
 	return spec;
@@ -584,4 +638,5 @@ xill_spec* get_xillver_spectra(xillParam* param, int* status){
 
 void free_cached_xillTable(void){
 	free_xillTable(cached_xill_tab);
+	free_xillTable(cached_xill_tab_dens);
 }

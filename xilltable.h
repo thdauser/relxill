@@ -29,11 +29,19 @@
 #define XILLTABLE_N_LXI 15
 #define XILLTABLE_N_ECT 11
 #define XILLTABLE_N_INCL 10
-#define XILLTABLE_num_param_vals { XILLTABLE_N_GAM, XILLTABLE_N_AFE,  XILLTABLE_N_LXI, XILLTABLE_N_ECT,  XILLTABLE_N_INCL}
+
+#define XILLTABLE_DENS_N_GAM 12
+#define XILLTABLE_DENS_N_AFE 5
+#define XILLTABLE_DENS_N_LXI 15
+#define XILLTABLE_DENS_N_DENS 9
+#define XILLTABLE_DENS_N_INCL 10
+
+// #define XILLTABLE_num_param_vals { XILLTABLE_N_GAM, XILLTABLE_N_AFE,  XILLTABLE_N_LXI, XILLTABLE_N_ECT,  XILLTABLE_N_INCL}
 
 
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
+#define XILLTABLE_DENS_FILENAME "xillverD-4.fits"
 
 /** the XILLVER table structure */
 typedef struct{

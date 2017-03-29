@@ -143,4 +143,7 @@ char* get_relxill_table_path( void );
 /** get the number of zones **/
 int get_num_zones(int model_type);
 
+/** check if it is the xillver model **/
+int is_xill_model(int model_type);
+
 #endif /* RELUTILITY_H_ */

@@ -58,7 +58,16 @@ static int redo_get_system_parameters(relParam* param,relParam* cached_rel_param
 		if (fabs(param->rout - cached_rel_param->rout) > cache_limit) {
 			return 1;
 		}
+		if (fabs(param->rbr - cached_rel_param->rbr) > cache_limit) {
+			return 1;
+		}
 		if (fabs(param->height - cached_rel_param->height) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->emis1 - cached_rel_param->emis1) > cache_limit) {
+			return 1;
+		}
+		if (fabs(param->emis2 - cached_rel_param->emis2) > cache_limit) {
 			return 1;
 		}
 	} else {
@@ -290,7 +299,7 @@ static relSysPar* get_system_parameters(relParam* param, int* status){
 		interpol_relTable(&cached_relSysPar,param->a,mu0,param->rin,param->rout,status);
 		CHECK_STATUS_RET(*status,NULL);
 
-		// get emissivity profile TODO: do separate caching here??
+		// get emissivity profile
 		calc_emis_profile(param, cached_rel_param,cached_relSysPar, status);
 		CHECK_STATUS_RET(*status,NULL);
 	}
@@ -849,7 +858,6 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 	for (ii=0; ii<n; ii++){
 		x1[ii] = f1[ii]/(ener[ii+1]-ener[ii]);
 		irot = (ii-save_1eV_pos+n) % n ;
-//		x2[irot ] = f2[ii]/(ener[ii+1]-ener[ii]);
 		x2[irot ] = f2[ii]/(ener[ii+1]-ener[ii]);
 		y1[ii] = 0.0;
 		y2[ii] = 0.0;
@@ -968,6 +976,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 	// call the function which calculates the xillver spectrum
 	xill_spec* xill_spec = get_xillver_spectra(xill_param,status);
+	CHECK_STATUS_VOID(*status);
 
 
 	// todo: can/should we add caching here directly??
@@ -1117,13 +1126,12 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	rebin_spectrum( ener, pl_flux,n_ener, ener_xill, pl_flux_xill, n_ener_xill);
 
 	/** 2 **  decide if we need to do relat. calculations **/
-	if (xill_param->model_type == MOD_TYPE_XILLVER ){
+	if (is_xill_model(xill_param->model_type) ){
 
 		for (ii=0; ii<n_ener; ii++){
 			pl_flux[ii] *= norm_pl;
 			flu[ii] *= fabs(xill_param->refl_frac);
 		}
-
 	} else {
 
 		assert(rel_param!=NULL);
@@ -1277,6 +1285,8 @@ int redo_relbase_calc(relParam* param, int* status){
 	} else {
 		redo = comp_rel_param(cached_rel_param,param);
 	}
+
+	printf ("  -> redo %i \n",redo);
 
 	return redo;
 }

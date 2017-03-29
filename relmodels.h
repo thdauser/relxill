@@ -46,6 +46,13 @@
 #define MOD_TYPE_RELXILLLP -2
 #define NUM_PARAM_RELXILLLP 12
 
+/** density models **/
+#define MOD_TYPE_RELXILLDENS -10
+#define NUM_PARAM_RELXILLDENS 13
+
+#define MOD_TYPE_XILLVERDENS -100
+#define NUM_PARAM_XILLVERDENS 7
+
 
 /****  TYPE DEFINITIONS ****/
 
@@ -57,6 +64,8 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* status);
 void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status);
 
+/** basic xillver model function **/
+void xillver_base(const double* ener0, const int n_ener0, double* photar, xillParam* param_struct, int* status);
 
 /** internal MODEL FUNCTIONS **/
 void tdrelline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
@@ -65,6 +74,9 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdxillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+
+void tdrelxilldens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdxillverdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 
 /* get the version number text on the screen (if not already printed before */
 void print_version_number(int* status);
@@ -85,5 +97,9 @@ void lmodxiller(const double* ener0, const int n_ener0, const double* parameter,
 void lmodrelline(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrellinelp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelconv(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+
+void lmodrelxilldens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+void lmodxillerdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+
 
 #endif /* MODELS_H_ */

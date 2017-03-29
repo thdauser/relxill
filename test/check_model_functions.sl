@@ -1,5 +1,7 @@
-% #!/usr/bin/env isis-script
+#!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
+
+_traceback=1;
 
 %% we can load any model
 variable ff = "*";
@@ -12,12 +14,14 @@ require("isisscripts");
 __set_hard_limits("relxilllp","h",-100,1000);
 
 
-variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver"];
+variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD"];
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
 variable sum_name = "plot_check_model_functions_sum.pdf";
 variable counter = 0;
 
+variable lo0, hi0;
+(lo0,hi0) = log_grid(0.5,1000,3000);
 
 %%% generally useful functions %%% 
 
@@ -64,6 +68,8 @@ define check_z_param(ff){ %{{{
       
    set_par("*.z",zp);
    variable val_z = eval_fun_keV(lo,hi);
+
+   set_par("*.z",0.0);
 
    % now change grid
    variable zlo = lo * (1+zp) ;
@@ -158,21 +164,20 @@ define check_conv_mod_single(ff,ff_conv){ %{{{
    
    fit_fun(ff);
    set_par("*.lineE",ener);
-   list_par;
+
    variable lo, hi;
-   (lo,hi) = log_grid(0.2,10,1200);
+   (lo,hi) = log_grid(0.2,10,600);
    
    variable val0 = eval_fun_keV(lo,hi);
       
    fit_fun(ff_conv+"(1,egauss)");
    set_par("*.center",ener);
-   list_par;
    variable val1 = eval_fun_keV(lo,hi);
    
    variable sval1 = sum(val1);
    val1 *= sum(val0)/sval1;
    
-   variable i_en = where(2.0<lo<6.5);
+   variable i_en = where(2.0<lo<6.0);
    simple_plot(lo[i_en],hi[i_en],val0[i_en],val1[i_en];;__qualifiers());
    
    variable gn = goodness(val0[i_en],val1[i_en]);
@@ -183,10 +188,41 @@ define check_conv_mod_single(ff,ff_conv){ %{{{
 %}}}
 
 
+define check_dens_mod_single(ff,ff_dens){ %{{{
+   
+   variable lxi = 2.0;
+   
+   variable lo,hi;
+   variable val0, val1;
+   (lo,hi) = log_grid(0.5,500,4000);
+   
+   fit_fun(ff_dens);
+   set_par("*.refl_frac",1,0,-10,100);
+   set_par("*.logN",15);
+   set_par("*.logxi",lxi);
+   val0 = eval_fun_keV (lo,hi);
+   
+   
+   fit_fun(ff);
+   set_par("*.refl_frac",1,0,-10,100);
+   set_par("*.logxi",lxi);
+   set_par("*.Ecut",300.0);
+   val1 = eval_fun_keV (lo,hi);
+   
+   simple_plot(lo,hi,val0,val1;;__qualifiers());
+   
+   variable gn = goodness(val0,val1);
+   vmessage("    -> %s goodness value: %.3e",
+	    ff_dens, gn);
+   return gn;
+}
+%}}}
+
+
 define check_z(){ %{{{
 
    counter++;
-   vmessage("\n ### %i #### testing REDSHIFT parameter: ###",counter);
+   vmessage("\n### %i #### testing REDSHIFT parameter: ###",counter);
    
    variable ffs = ALL_FF;
    variable ff;
@@ -208,7 +244,7 @@ define check_z(){ %{{{
 define eval_test(){ %{{{
 
    counter++;
-   vmessage("\n ### %i ### testing SIMPLE EVALUATION ### ", counter);
+   vmessage("\n### %i ### testing SIMPLE EVALUATION ### ", counter);
 
    variable ffs = ALL_FF;
    variable ff;
@@ -248,7 +284,6 @@ define check_linee(){ %{{{
 }
 %}}}
 
-
 define check_conv_mod(){ %{{{
    
    counter++;
@@ -260,9 +295,9 @@ define check_conv_mod(){ %{{{
    variable ii,n = length(ff);
    
    _for ii(0,n-1,1){
-      if (check_conv_mod_single(ff[ii],ff_conv[ii]) > goodness_lim*5){
+      if (check_conv_mod_single(ff[ii],ff_conv[ii];nopl) > goodness_lim*5){
 	vmessage(" *** error: there seems to be a problem with the CONVOLUTION MODEL %s ",ff_conv[ii]);
-%	 return EXIT_FAILURE;
+	 return EXIT_FAILURE;
       }
    }
 
@@ -273,10 +308,122 @@ define check_conv_mod(){ %{{{
 }
 %}}}
 
+define check_dens_mod(){ %{{{
+   
+   counter++;
+   vmessage("### %i ### testing HIGH DENSITY MODELS: ###",counter);
+   
+   variable ff = ["xillver","relxill"];
+   variable ff_dens = ["xillverD","relxillD"];
+   
+   variable ii,n = length(ff);
+   
+   _for ii(0,n-1,1){
+      if (check_dens_mod_single(ff[ii],ff_dens[ii];nopl) > goodness_lim*0.1){
+	vmessage(" *** error: there seems to be a problem with the HIGH DENSITY MODEL %s ",ff_dens[ii]);
+	 return EXIT_FAILURE;
+      }
+   }
+
+   
+   message(" ");
+
+   return EXIT_SUCCESS;
+   
+}
+%}}}
 
 
+
+define eval_model(par,val){
+}
+
+define check_caching_single(ff,par){ %{{{
+
+   fit_fun(ff);   
+   variable param0 = get_params("*."+par);
+   if (length(param0)!=1){
+      vmessage(" *** error *** problem with model %s and parameter %s when testing caching",ff,par);
+      return EXIT_FAILURE;
+   }
+   variable p = param0[0];
+   % clone parameter
+
+   % ### 1 ### change parameter between min and max
+   variable N = 30;
+   variable v;
+%   variable vals  = [p.value:p.value*1.01:#N];
+   
+   variable vals;
+   if (abs(p.value-p.min) < abs(p.max-p.value)){
+      vals = [p.value:p.value*1.01 :#N];
+   } else {
+      if (p.value>=0){
+	 vals = [p.value*0.99:p.value:#N];
+      } else {
+	 vals = [p.value:p.value*1.01 :#N];	 
+      }
+   }
+   variable vals0 = vals*0 + vals[-1];
+   
+   tic;
+   foreach v(vals){
+      set_par(p.name,v);
+      vmessage("%s : testing %s for %.3e",ff,p.name,v);
+      () = eval_fun_keV(lo0,hi0);
+   }
+   variable dt = toc;
+
+   tic;
+   foreach v(vals0){
+      set_par(p.name,v);
+      vmessage("%s : testing %s for %.3e",ff,p.name,v);
+      () = eval_fun_keV(lo0,hi0);
+   }
+   variable dt2 = toc;
+
+   vmessage(" Caching vs. NO-caching took %.1e to %.1e msec ",dt/10,dt2/10 );
+   
+   return EXIT_SUCCESS;
+}
+%}}}
+
+define check_caching(){ %{{{
+
+   counter++;
+   vmessage("### %i ### testing CACHING for following models ###",counter);
+   
+   variable ff_arr = Assoc_Type[Array_Type];
+   
+   variable std_rel_param = ["a","Rin","Rout","Incl"];
+   
+   ff_arr["relxill"]   = [std_rel_param];% , "Index1","Index2" ];
+%   ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac" ];
+   
+   variable ff, params;
+   variable ii, n;
+   foreach ff(assoc_get_keys(ff_arr)){
+      params = ff_arr[ff];
+      n = length(params);
+      _for ii(0,n-1){
+	 if (check_caching_single(ff,params[ii];nopl) == EXIT_FAILURE){
+	    vmessage(" *** error: there seems to be a problem with the CACHING for model %s and parameter %s",
+		     ff,ff_arr[ff][ii]);
+	    return EXIT_FAILURE;
+	 }
+      }      
+   }
+   return EXIT_SUCCESS;   
+}
+%}}}
+
+
+#iffalse
 if (eval_test() != EXIT_SUCCESS) exit;
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
+if (check_dens_mod() != EXIT_SUCCESS) exit;
+#endif
 
+if (check_caching() != EXIT_SUCCESS) exit;
