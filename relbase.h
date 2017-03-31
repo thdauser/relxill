@@ -39,7 +39,7 @@
 
 /*********** DEFINE STATEMENTS *********/
 
-#define PARAM_DEFAULT -DBL_MAX
+#define PARAM_DEFAULT 0.0
 
 #define version_major 0
 #define version_minor 1

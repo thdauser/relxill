@@ -265,7 +265,7 @@ define eval_test(){ %{{{
 define check_linee(){ %{{{
    
    counter++;
-   vmessage("### %i ### testing LINEE parameter: ###",counter);
+   vmessage("\n### %i ### testing LINEE parameter: ###",counter);
    
    variable ffs = ["relline","relline_lp"];
    variable ff;
@@ -287,7 +287,7 @@ define check_linee(){ %{{{
 define check_conv_mod(){ %{{{
    
    counter++;
-   vmessage("### %i ### testing CONVOLUTION: ###",counter);
+   vmessage("\n### %i ### testing CONVOLUTION: ###",counter);
    
    variable ff = ["relline"];
    variable ff_conv = ["relconv"];
@@ -301,8 +301,6 @@ define check_conv_mod(){ %{{{
       }
    }
 
-   
-   message(" ");
 
    return EXIT_SUCCESS;
 }
@@ -311,7 +309,7 @@ define check_conv_mod(){ %{{{
 define check_dens_mod(){ %{{{
    
    counter++;
-   vmessage("### %i ### testing HIGH DENSITY MODELS: ###",counter);
+   vmessage("\n### %i ### testing HIGH DENSITY MODELS: ###",counter);
    
    variable ff = ["xillver","relxill"];
    variable ff_dens = ["xillverD","relxillD"];
@@ -326,7 +324,6 @@ define check_dens_mod(){ %{{{
    }
 
    
-   message(" ");
 
    return EXIT_SUCCESS;
    
@@ -334,9 +331,6 @@ define check_dens_mod(){ %{{{
 %}}}
 
 
-
-define eval_model(par,val){
-}
 
 define check_caching_single(ff,par){ %{{{
 
@@ -350,26 +344,31 @@ define check_caching_single(ff,par){ %{{{
    % clone parameter
 
    % ### 1 ### change parameter between min and max
-   variable N = 30;
+   variable N = 3;
    variable v;
 %   variable vals  = [p.value:p.value*1.01:#N];
    
    variable vals;
    if (abs(p.value-p.min) < abs(p.max-p.value)){
-      vals = [p.value:p.value*1.01 :#N];
+      vals = [p.value:p.value*1.1 :#N];
    } else {
       if (p.value>=0){
-	 vals = [p.value*0.99:p.value:#N];
+	 vals = [p.value*0.9:p.value:#N];
       } else {
-	 vals = [p.value:p.value*1.01 :#N];	 
+	 vals = [p.value:p.value*1.1 :#N];	 
       }
    }
    variable vals0 = vals*0 + vals[-1];
    
+   foreach v(vals){
+      set_par(p.name,v);
+%      vmessage("%s : testing %s for %.3e",ff,p.name,v);
+      () = eval_fun_keV(lo0,hi0);
+   }
    tic;
    foreach v(vals){
       set_par(p.name,v);
-      vmessage("%s : testing %s for %.3e",ff,p.name,v);
+%      vmessage("%s : testing %s for %.3e",ff,p.name,v);
       () = eval_fun_keV(lo0,hi0);
    }
    variable dt = toc;
@@ -377,12 +376,12 @@ define check_caching_single(ff,par){ %{{{
    tic;
    foreach v(vals0){
       set_par(p.name,v);
-      vmessage("%s : testing %s for %.3e",ff,p.name,v);
+%      vmessage("%s : testing %s for %.3e",ff,p.name,v);
       () = eval_fun_keV(lo0,hi0);
    }
    variable dt2 = toc;
 
-   vmessage(" Caching vs. NO-caching took %.1e to %.1e msec ",dt/10,dt2/10 );
+   vmessage("   --> %.1f ms vs. %.1f ms  --  (%s -  %s)",dt/N*1e3,dt2/N*1e3,ff,par );
    
    return EXIT_SUCCESS;
 }
@@ -391,14 +390,16 @@ define check_caching_single(ff,par){ %{{{
 define check_caching(){ %{{{
 
    counter++;
-   vmessage("### %i ### testing CACHING for following models ###",counter);
+   vmessage("\n### %i ### testing CACHING for following models ###",counter);
    
    variable ff_arr = Assoc_Type[Array_Type];
    
    variable std_rel_param = ["a","Rin","Rout","Incl"];
+   variable std_xill_param = ["logxi","Afe"];
    
-   ff_arr["relxill"]   = [std_rel_param];% , "Index1","Index2" ];
-%   ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac" ];
+   ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
+   ff_arr["relxill"]   = [std_rel_param, "Index1","Index2",std_xill_param, "Ecut" ];
+   ff_arr["relxillD"]   = [std_rel_param, "Index1","Index2", std_xill_param, "logN" ];
    
    variable ff, params;
    variable ii, n;
@@ -419,11 +420,11 @@ define check_caching(){ %{{{
 
 
 #iffalse
-if (eval_test() != EXIT_SUCCESS) exit;
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
 #endif
 
+if (eval_test() != EXIT_SUCCESS) exit;
 if (check_caching() != EXIT_SUCCESS) exit;

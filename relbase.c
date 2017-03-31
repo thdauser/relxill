@@ -1286,7 +1286,6 @@ int redo_relbase_calc(relParam* param, int* status){
 		redo = comp_rel_param(cached_rel_param,param);
 	}
 
-	printf ("  -> redo %i \n",redo);
 
 	return redo;
 }
