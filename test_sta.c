@@ -199,7 +199,7 @@ static void std_eval_relxill(int* status, int n){
 	for (ii=0; ii<n; ii++){
 		if (n>1){
 			inp_par[3] = 1.0*ii/(n-1)*0.998*2 - 0.998;
-			inp_par[9] = 1.0*ii/(n-1)*4.7;
+			// inp_par[9] = 1.0*ii/(n-1)*0.1;
 		}
 		printf(" testing a=%.3f , lxi=%.2f \n",inp_par[3],inp_par[9]);
 		tdrelxill(ener,n_ener,photar,inp_par,n_param,status);

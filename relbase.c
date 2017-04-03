@@ -31,6 +31,14 @@ int save_1eV_pos = 0;
 double cached_int_romb_rad = -1.0;
 const double cache_limit = 1e-8;
 
+const double ener_xill_norm_lo = 0.1;
+const double ener_xill_norm_hi = 1000;
+const int n_ener_xill = 3000;
+double* ener_xill = NULL;
+
+const int n_ener_std = N_ENER_CONV;
+double* ener_std = NULL;
+
 
 // precision to calculate gstar from [H:1-H] instead of [0:1]
 const double GFAC_H = 2e-3;
@@ -865,6 +873,7 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 		sum1 += f1[ii];
 	}
 
+	/** TODO: we could cache either the relat. or the xillver part, as only one of the two changes (reduce time by 1/3 for convolution) **/
 	FFT_R2CT(1, m, x1, y1);
 	FFT_R2CT(1, m, x2, y2);
 
@@ -932,11 +941,15 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 	 * -> as we do a simple FFT, we can now take into account that we
 	 *    need it to be number = 2^N */
 
-	int n_ener = N_ENER_CONV;
-	double ener[n_ener+1];
-
 	// always do the convolution on this grid
-	get_log_grid(ener, (n_ener+1), EMIN_RELXILL, EMAX_RELXILL);
+	/** only do the calculation once **/
+	if (ener_std == NULL){
+		ener_std = (double*) malloc( (n_ener_std+1) * sizeof(double));
+		CHECK_MALLOC_VOID_STATUS(ener_std,status);
+		get_log_grid(ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
+	}
+	int n_ener = n_ener_std;
+	double* ener = ener_std;
 
 	rel_spec* rel_profile = relbase(ener, n_ener, rel_param, NULL, status);
 
@@ -959,18 +972,24 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 
 
 /** BASIC RELXILL KERNEL FUNCTION : convole a xillver spectrum with the relbase kernel
- *  (ener has the length n_ener+1)
+ * (ener has the length n_ener+1)
  *  **/
+
 void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillParam* xill_param, relParam* rel_param, int* status ){
 
 	/* get the (fixed!) energy grid for a RELLINE for a convolution
 	 * -> as we do a simple FFT, we can now take into account that we
 	 *    need it to be number = 2^N */
 
-	int n_ener = N_ENER_CONV;
-	double ener[n_ener+1];
 
-	get_log_grid(ener, (n_ener+1), EMIN_RELXILL, EMAX_RELXILL);
+	/** only do the calculation once **/
+	if (ener_std == NULL){
+		ener_std = (double*) malloc( n_ener_std * sizeof(double));
+		CHECK_MALLOC_VOID_STATUS(ener_std,status);
+		get_log_grid(ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
+	}
+	int n_ener = n_ener_std;
+	double* ener = ener_std;
 
 
 
@@ -1080,14 +1099,14 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	double pl_flux[n_ener];
 
 	int ii;
-	const int n_ener_xill = 3000;
-	const double ener_xill_norm_lo = 0.1;
-	const double ener_xill_norm_hi = 1000;
 	double pl_flux_xill[n_ener_xill];
 
 	/** need to create an energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-	double ener_xill[n_ener_xill+1];
-	get_log_grid(ener_xill,n_ener_xill+1,ener_xill_norm_lo,ener_xill_norm_hi);
+	if (ener_xill == NULL){
+		ener_xill = (double*) malloc( (n_ener_xill+1) * sizeof(double));
+		CHECK_MALLOC_VOID_STATUS(ener_xill,status);
+		get_log_grid(ener_xill,n_ener_xill+1,ener_xill_norm_lo,ener_xill_norm_hi);
+	}
 
 	/** 1 **  calculate the primary spectrum  **/
 	if (xill_param->prim_type == PRIM_SPEC_ECUT){
@@ -1241,15 +1260,20 @@ static void set_cached_rel_param(relParam* par,int* status){
 	cached_rel_param->a = par->a;
 	cached_rel_param->emis1 = par->emis1;
 	cached_rel_param->emis2 = par->emis2;
-	cached_rel_param->emis_type = par->emis_type;
 	cached_rel_param->gamma = par->gamma;
 	cached_rel_param->height = par->height;
 	cached_rel_param->incl = par->incl;
+	cached_rel_param->beta = par->beta;
+
+	cached_rel_param->z = par->z;
+	cached_rel_param->lineE = par->lineE;
+
+	cached_rel_param->emis_type = par->emis_type;
 	cached_rel_param->model_type = par->model_type;
+
 	cached_rel_param->rbr = par->rbr;
 	cached_rel_param->rin = par->rin;
 	cached_rel_param->rout = par->rout;
-	cached_rel_param->beta = par->beta;
 
 }
 
@@ -1260,6 +1284,7 @@ static int comp_rel_param(relParam* cpar, relParam* par){
 	if (comp_single_param_val(par->gamma,cpar->gamma)) return 1;
 	if (comp_single_param_val(par->height,cpar->height)) return 1;
 	if (comp_single_param_val(par->incl,cpar->incl)) return 1;
+	if (comp_single_param_val(par->beta,cpar->beta)) return 1;
 
 	/** need this for the current code to work; could be optimized **/
 	if (comp_single_param_val(par->z,cpar->z)) return 1;
@@ -1285,7 +1310,6 @@ int redo_relbase_calc(relParam* param, int* status){
 	} else {
 		redo = comp_rel_param(cached_rel_param,param);
 	}
-
 
 	return redo;
 }
@@ -1380,6 +1404,8 @@ void free_cached_tables(void){
 	free_rel_spec(cached_rel_spec);
 
 	free_str_relb_func(cached_str_relb_func);
+
+	free(ener_std);
 }
 
 relSysPar* new_relSysPar(int nr, int ng, int* status){

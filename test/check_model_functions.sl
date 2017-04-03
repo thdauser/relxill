@@ -370,7 +370,6 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
 }
 %}}}
 
-
 define check_caching_single(ff,par){ %{{{
 
    fit_fun(ff);   
@@ -440,10 +439,11 @@ define check_caching_single(ff,par){ %{{{
       vmessage("     => spectra did not behave as expected when testing caching (%s -  %s)",ff,par);
       return EXIT_FAILURE;
    } else {
-      if (dt2 > 10.0*1e-3){
+      if (dt2/N*1e3 < 10.0){
 	 vmessage("   --> %.1f ms vs. %.1f ms  --  (%s -  %s)",dt/N*1e3,dt2/N*1e3,ff,par );	 
       } else {	 
 	 vmessage("   --> *** FAILED ***  [ %.1f ms vs. %.1f ms ] --  (%s -  %s) ",dt/N*1e3,dt2/N*1e3,ff,par );	       
+	 return EXIT_FAILURE;
       }
    }
    
@@ -485,9 +485,11 @@ define check_caching(){ %{{{
 
 if (eval_test() != EXIT_SUCCESS) exit;
 
+#iffalse
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
+#endif
 
 if (check_caching() != EXIT_SUCCESS) exit;

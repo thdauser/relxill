@@ -74,5 +74,5 @@ ddd:
 gprof:
 	make clean
 	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
-	./test_sta relxilllp 100
+	./test_sta relxill 100
 	gprof -p test_sta
