@@ -483,13 +483,61 @@ define check_caching(){ %{{{
 }
 %}}}
 
+define do_mc_testing(){
+
+   
+   counter++;
+   vmessage("\n### %i ### random MC Parameter tests ### ", counter);
+
+   variable n_mc = 100;
+   variable stat;
+
+   variable lo,hi;
+   (lo,hi) = log_grid(0.1,500,500);
+   variable fakeval = lo^-(1.9);
+   variable fake_dat = struct{
+         bin_lo=lo,
+         bin_hi=hi,
+         value=fakeval,
+         err= 0.1*fakeval
+   };
+   
+   variable iDat = define_counts(_A(fake_dat));
+
+   variable save_fit_verbose = Fit_Verbose;
+   Fit_Verbose=0;
+   
+   
+   variable ffs = ALL_FF;
+   variable ff;
+   variable val, dt;
+   foreach ff(ffs){
+
+      fit_fun(ff);
+      freeze("*.norm");
+      tic;
+      stat = fit_search(n_mc, &eval_counts;  serial, dir="/tmp/fit_search");
+      dt = toc / n_mc * 1e3;
+      if ( stat == NULL ){
+	 vmessage(" *** error: MC Parameter test for %s failed!",ff);
+	 return EXIT_FAILURE;
+      }
+      vmessage("   -> successfully tested %s with %i evaluations   \t [ <time> ~ %.0fmsec ]",ff,n_mc,dt);
+
+   }
+   
+   Fit_Verbose = save_fit_verbose;
+   delete_data(iDat);
+   
+   return EXIT_SUCCESS;
+}
+
 if (eval_test() != EXIT_SUCCESS) exit;
 
-#iffalse
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
-#endif
-
 if (check_caching() != EXIT_SUCCESS) exit;
+
+if (do_mc_testing() != EXIT_SUCCESS) exit;

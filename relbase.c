@@ -383,7 +383,8 @@ rel_cosne* new_rel_cosne(int nzones, int n_incl, int*status){
 static void init_rel_spec(rel_spec** spec, relParam* param, xill_spec* xill_spec,
 		double** pt_ener, const int n_ener, int* status ){
 
-	int nzones = get_num_zones(param->model_type);
+	/** in case of the relxill-LP model multiple zones are used **/
+	int nzones = get_num_zones(param->model_type, param->emis_type);
 
 
 	if ((*spec)==NULL){
@@ -901,7 +902,7 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 static void print_angle_dist(rel_cosne* spec, int izone){
 
 
-	FILE* fp =  fopen ( "test_angle_dist.dat","w+" );
+	FILE* fp =  fopen ( "testfiles/test_angle_dist.dat","w+" );
 	int ii;
 	for(ii=0; ii<spec->n_cosne; ii++ ){
 		fprintf(fp," mu=%e %e \n",spec->cosne[ii],
@@ -984,7 +985,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 	/** only do the calculation once **/
 	if (ener_std == NULL){
-		ener_std = (double*) malloc( n_ener_std * sizeof(double));
+		ener_std = (double*) malloc( (n_ener_std+1) * sizeof(double));
 		CHECK_MALLOC_VOID_STATUS(ener_std,status);
 		get_log_grid(ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
 	}
@@ -1001,8 +1002,8 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	// todo: can/should we add caching here directly??
 	rel_spec* rel_profile = relbase(ener, n_ener, rel_param, xill_spec, status);
 
-	if (DEBUG_RELXILL){
-		save_xillver_spectrum(ener,rel_profile->flux[0],n_ener,"test_relxill_conv_spectrum.dat");
+	if (is_debug_run()){
+		save_xillver_spectrum(ener,rel_profile->flux[0],n_ener,"testfiles/test_relxill_conv_spectrum.dat");
 	}
 
 
@@ -1021,8 +1022,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		conv_out[ii] = 0.0;
 	}
 
-
-
 	int jj;
 	for (ii=0; ii<rel_profile->n_zones;ii++){
 
@@ -1032,7 +1031,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 		// now calculate the reflection spectra for each zone (using the angular distribution)
 		assert(rel_profile->rel_cosne != NULL);
-		if (DEBUG_RELXILL==1){
+		if (is_debug_run()==1){
 			print_angle_dist(rel_profile->rel_cosne,ii);
 		}
 		// get angular distribution (maybe already when calculating the relat spectrum???)
@@ -1063,14 +1062,16 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			spec_inp[jj] += single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
 		}
 
-		if (DEBUG_RELXILL==1){
-			if (ii==0){
-				for (jj=0; jj<n_ener;jj++){
-					conv_out[jj] *= test_sum_relline*test_sum_xillver/test_sum_relxill;
-				}
-				save_xillver_spectrum(ener,conv_out,n_ener,"test_relxill_fft_spectrum.dat");
-				save_xillver_spectrum(ener,xill_flux,n_ener,"test_relxill_inp_spectrum.dat");
+		if (is_debug_run()){
+			char* vstr;
+			double test_flu[n_ener_inp];
+			for (jj=0; jj<n_ener_inp;jj++){
+				test_flu[jj] = single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
 			}
+			if (asprintf(&vstr, "testfiles/test_relxill_spec_zones_%03i.dat", ii+1) == -1){
+				RELXILL_ERROR("failed to get filename",status);
+			}
+			save_xillver_spectrum(ener_inp,test_flu,n_ener_inp,vstr);
 		}
 
 	}
@@ -1406,6 +1407,7 @@ void free_cached_tables(void){
 	free_str_relb_func(cached_str_relb_func);
 
 	free(ener_std);
+	free(ener_xill);
 }
 
 relSysPar* new_relSysPar(int nr, int ng, int* status){

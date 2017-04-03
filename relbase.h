@@ -46,7 +46,7 @@
 #define version_build 9
 #define version_dev "dev"
 
-#define DEBUG_RELXILL 0
+#define DEBUG_RELXILL 1
 
 // TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */

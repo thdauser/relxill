@@ -250,6 +250,21 @@ char* get_relxill_table_path( void ){
 	}
 }
 
+
+/** check if we are currently debugging the model **/
+int is_debug_run( void ){
+	char* env;
+	env = getenv("DEBUG_RELXILL");
+	if (env != NULL){
+		int debug = atof(env);
+		if (debug == 1){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax){
 	int ii;
@@ -422,10 +437,10 @@ void FFT_R2CT(short int dir,long m,double *x,double *y){
 
 
 /** get the number of zones on which we calculate the relline-spectrum **/
-int get_num_zones(int model_type){
+int get_num_zones(int model_type, int emis_type){
 
 	// set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
-	if (is_relxill_model(model_type)){
+	if (is_relxill_model(model_type) && (emis_type==EMIS_TYPE_LP)){
 		char* env;
 		env = getenv("RELXILL_NUM_RZONES");
 		if (env != NULL){

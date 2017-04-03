@@ -111,6 +111,9 @@ double kerr_rplus(double a);
 /** test if it is a relxill flavour model **/
 int is_relxill_model(int model_type);
 
+/** check if we are currently debugging the model **/
+int is_debug_run( void );
+
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
 void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, int* status);
 
@@ -141,7 +144,7 @@ double grav_redshift(relParam* param);
 char* get_relxill_table_path( void );
 
 /** get the number of zones **/
-int get_num_zones(int model_type);
+int get_num_zones(int model_type, int emis_type);
 
 /** check if it is the xillver model **/
 int is_xill_model(int model_type);

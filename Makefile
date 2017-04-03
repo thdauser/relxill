@@ -55,12 +55,12 @@ model:
 valgrind:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxilldens
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxill
 
-valgrind-rellinelp:
+valgrind-relxilllp:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta rellinelp
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxilllp
 
 gdb:
 	make clean
