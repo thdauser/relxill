@@ -3,7 +3,7 @@
 CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
-MODEL_VERSION = 0.1.8dev
+MODEL_VERSION = 0.1.9dev
 MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 LIBS = -L${HEADAS}/lib
 

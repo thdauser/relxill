@@ -330,6 +330,45 @@ define check_dens_mod(){ %{{{
 }
 %}}}
 
+define test_caching_spec(v,v0,inp,inp0){ %{{{
+   variable ii, n = length(v);
+   variable status = EXIT_SUCCESS;
+   
+   variable lim = 1e-8;
+   variable tmp;
+   
+   % #1# for v each spectrum should be different
+   _for ii(0,n-2,1){
+      tmp = sum(  (v[ii] - v[ii+1] )^2 ) ;
+      if (tmp < lim ){
+	 vmessage("     caching spectra not correct (did not change while it should), %.3e < %.3e for values %.2e and %.2e ",
+		  tmp, lim, inp[ii], inp[ii+1] );
+	 return EXIT_FAILURE;
+      }
+      
+   }
+   
+   % #2# for v0 each spectrum should be the same
+   _for ii(0,n-2,1){
+      tmp = sum(  (v0[ii] - v0[ii+1] )^2 );
+      if (tmp > lim){
+	 vmessage(" *** caching spectra not correct (did change while it should NOT), %.3e > %.3e", tmp, lim);
+	 return EXIT_FAILURE;
+      }
+      
+   }
+
+   % #3# by design the last elements should be the same
+   tmp = sum(  (v[-1] - v0[-1] )^2 );
+   if (tmp > lim){
+      vmessage(" *** caching spectra not correct (spectra are different while they should NOT), %.3e > %.3e", tmp, lim);
+      return EXIT_FAILURE;
+   }
+   
+   
+   return EXIT_SUCCESS;
+}
+%}}}
 
 
 define check_caching_single(ff,par){ %{{{
@@ -346,9 +385,14 @@ define check_caching_single(ff,par){ %{{{
    % ### 1 ### change parameter between min and max
    variable N = 3;
    variable v;
-%   variable vals  = [p.value:p.value*1.01:#N];
    
    variable vals;
+
+   %% make sure we get useful values of p.value==0
+   if (p.value < 0.1 && p.value >= 0){
+      p.value = 0.1;
+   }
+   
    if (abs(p.value-p.min) < abs(p.max-p.value)){
       vals = [p.value:p.value*1.1 :#N];
    } else {
@@ -358,30 +402,51 @@ define check_caching_single(ff,par){ %{{{
 	 vals = [p.value:p.value*1.1 :#N];	 
       }
    }
-   variable vals0 = vals*0 + vals[-1];
+
+   variable vals0 = vals*0 + vals[-1];  %% DO NOT CHANGE THIS (will be used later)
    
+   %% make sure values of the table are loaded before such that we do
+   %% not count the loading of the table as well here
    foreach v(vals){
       set_par(p.name,v);
-%      vmessage("%s : testing %s for %.3e",ff,p.name,v);
       () = eval_fun_keV(lo0,hi0);
    }
+   
+   variable val_ncache = Array_Type[N];				      
+   variable val0_cache = Array_Type[N];				      
+
+   %% special cases %%
+   if (string_match(p.name,`.*\.Rbr`)){
+      set_par("*.Index1",3.5);
+   }
+   %% %%%%%%%%%%%%% %%
+   
+   variable ii;
    tic;
-   foreach v(vals){
-      set_par(p.name,v);
-%      vmessage("%s : testing %s for %.3e",ff,p.name,v);
-      () = eval_fun_keV(lo0,hi0);
+   _for ii(0,N-1){
+      set_par(p.name,vals[ii]);
+      val_ncache[ii] = eval_fun_keV(lo0,hi0);
    }
    variable dt = toc;
 
    tic;
-   foreach v(vals0){
-      set_par(p.name,v);
-%      vmessage("%s : testing %s for %.3e",ff,p.name,v);
-      () = eval_fun_keV(lo0,hi0);
+   _for ii(0,N-1){
+      set_par(p.name,vals0[ii]);
+      val0_cache[ii] = eval_fun_keV(lo0,hi0);
    }
    variable dt2 = toc;
 
-   vmessage("   --> %.1f ms vs. %.1f ms  --  (%s -  %s)",dt/N*1e3,dt2/N*1e3,ff,par );
+   if (test_caching_spec(val_ncache,val0_cache,vals,vals0) != EXIT_SUCCESS){
+      vmessage("     => spectra did not behave as expected when testing caching (%s -  %s)",ff,par);
+      return EXIT_FAILURE;
+   } else {
+      if (dt2 > 10.0*1e-3){
+	 vmessage("   --> %.1f ms vs. %.1f ms  --  (%s -  %s)",dt/N*1e3,dt2/N*1e3,ff,par );	 
+      } else {	 
+	 vmessage("   --> *** FAILED ***  [ %.1f ms vs. %.1f ms ] --  (%s -  %s) ",dt/N*1e3,dt2/N*1e3,ff,par );	       
+      }
+   }
+   
    
    return EXIT_SUCCESS;
 }
@@ -394,12 +459,12 @@ define check_caching(){ %{{{
    
    variable ff_arr = Assoc_Type[Array_Type];
    
-   variable std_rel_param = ["a","Rin","Rout","Incl"];
-   variable std_xill_param = ["logxi","Afe"];
+   variable std_rel_param = ["a","Incl","Rin","Rout"];
+   variable std_xill_param = ["logxi","Afe","z"];
    
+   ff_arr["relxill"]   = [std_rel_param, "Rbr" , "Index1","Index2",std_xill_param, "Ecut"];
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
-   ff_arr["relxill"]   = [std_rel_param, "Index1","Index2",std_xill_param, "Ecut" ];
-   ff_arr["relxillD"]   = [std_rel_param, "Index1","Index2", std_xill_param, "logN" ];
+   ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
    
    variable ff, params;
    variable ii, n;
@@ -418,13 +483,11 @@ define check_caching(){ %{{{
 }
 %}}}
 
+if (eval_test() != EXIT_SUCCESS) exit;
 
-#iffalse
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
-#endif
 
-if (eval_test() != EXIT_SUCCESS) exit;
 if (check_caching() != EXIT_SUCCESS) exit;
