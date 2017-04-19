@@ -3,7 +3,7 @@
 CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
-MODEL_VERSION = 0.1.9dev
+MODEL_VERSION = 0.1.10dev
 MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 LIBS = -L${HEADAS}/lib
 
@@ -74,5 +74,5 @@ ddd:
 gprof:
 	make clean
 	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
-	./test_sta relxill 100
+	./test_sta relxilllp 100
 	gprof -p test_sta

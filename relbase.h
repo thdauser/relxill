@@ -43,7 +43,7 @@
 
 #define version_major 0
 #define version_minor 1
-#define version_build 9
+#define version_build 10
 #define version_dev "dev"
 
 #define DEBUG_RELXILL 1
@@ -69,7 +69,7 @@
 
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
-#define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
+#define N_ZONES 1       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
 
 /** parameters for the convolution **/
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT

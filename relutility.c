@@ -235,6 +235,7 @@ void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, int* st
 		rgrid[1] = rmax;
 	} else {
 		get_log_grid(rgrid,nzones+1,rmin,rmax);
+//		get_rgrid(rgrid,nzones+1,rmin,rmax);
 	}
 	return;
 }
@@ -271,6 +272,15 @@ void get_log_grid(double* ener, int n_ener, double emin, double emax){
 	for (ii=0; ii<n_ener; ii++){
 		ener[ii] = 1.0*ii / (n_ener-1) * ( log(emax) - log(emin)) + log(emin);
 		ener[ii] = exp(ener[ii]);
+	}
+}
+
+/* get a logarithmic grid from emin to emax with n_ener bins  */
+void get_rgrid(double* ener, int n_ener, double emin, double emax){
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
+		ener[ii] = 1.0*ii / (n_ener-1) * ( 1.0/emax - 1.0/emin) + 1.0/emin;
+		ener[ii] = fabs(1.0/ener[ii]);
 	}
 }
 

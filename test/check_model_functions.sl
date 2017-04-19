@@ -439,7 +439,7 @@ define check_caching_single(ff,par){ %{{{
       vmessage("     => spectra did not behave as expected when testing caching (%s -  %s)",ff,par);
       return EXIT_FAILURE;
    } else {
-      if (dt2/N*1e3 < 10.0){
+      if (dt2/N*1e3 < 25.0){
 	 vmessage("   --> %.1f ms vs. %.1f ms  --  (%s -  %s)",dt/N*1e3,dt2/N*1e3,ff,par );	 
       } else {	 
 	 vmessage("   --> *** FAILED ***  [ %.1f ms vs. %.1f ms ] --  (%s -  %s) ",dt/N*1e3,dt2/N*1e3,ff,par );	       
@@ -483,7 +483,7 @@ define check_caching(){ %{{{
 }
 %}}}
 
-define do_mc_testing(){
+define do_mc_testing(){ %{{{
 
    
    counter++;
@@ -531,6 +531,8 @@ define do_mc_testing(){
    
    return EXIT_SUCCESS;
 }
+%}}}
+
 
 if (eval_test() != EXIT_SUCCESS) exit;
 

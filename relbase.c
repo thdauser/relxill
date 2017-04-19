@@ -386,7 +386,6 @@ static void init_rel_spec(rel_spec** spec, relParam* param, xill_spec* xill_spec
 	/** in case of the relxill-LP model multiple zones are used **/
 	int nzones = get_num_zones(param->model_type, param->emis_type);
 
-
 	if ((*spec)==NULL){
 		(*spec) = new_rel_spec(nzones,n_ener,status);
 	} else {
@@ -417,7 +416,6 @@ static void init_rel_spec(rel_spec** spec, relParam* param, xill_spec* xill_spec
 	get_rzone_grid(param->rin, param->rout, (*spec)->rgrid, nzones, status);
 	CHECK_STATUS_VOID(*status);
 
-	// (*spec)->ener = (*pt_ener);
 	return;
 }
 
@@ -1055,6 +1053,11 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 				test_sum_relxill += conv_out[jj];
 				test_sum_xillver += xill_flux[jj];
 			}
+		}
+
+		/** avoid problems where no relxill bin falls into an ionization bin **/
+		if (test_sum_relline < 1e-12){
+			continue;
 		}
 
 		// add it to the final output spectrum
