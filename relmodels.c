@@ -133,6 +133,7 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 	param->afe   = inp_par[1];
 	param->ect   = inp_par[2];
 	param->lxi   = inp_par[3];
+	param->dens  = 15; // logN
 	param->z     = inp_par[4];
 	param->incl  = inp_par[5]; // is given in degrees !!
 	param->refl_frac = inp_par[6];
@@ -194,7 +195,7 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 	xparam->lxi   = inp_par[9];
 	xparam->afe   = inp_par[10];
 	xparam->ect   = inp_par[11];
-	xparam->dens  = 1e15;
+	xparam->dens  = 15;
 
 	xparam->refl_frac = inp_par[12];
 	xparam->fixReflFrac = 0;
@@ -277,6 +278,48 @@ void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const doub
 	xparam->lxi   = inp_par[7];
 	xparam->afe   = inp_par[8];
 	xparam->ect   = inp_par[9];
+	xparam->dens  = 15.0;
+
+	xparam->refl_frac = inp_par[10];
+	xparam->fixReflFrac = (int) (inp_par[11]+0.5); // make sure there is nor problem with integer conversion
+
+	param->beta = 0.0;
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_VOID(*status);
+
+	*rel_param  = param;
+	*xill_param = xparam;
+
+	return;
+}
+
+
+void init_par_relxilllp_dens(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELXILLLP,EMIS_TYPE_LP,status);
+	CHECK_STATUS_VOID(*status);
+
+	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLPDENS,PRIM_SPEC_ECUT,status);
+	CHECK_STATUS_VOID(*status);
+
+	assert(n_parameter == NUM_PARAM_RELXILLLP);
+
+	param->height = inp_par[0];
+	param->a      = inp_par[1];
+	param->incl   = inp_par[2]*M_PI/180;
+	param->rin    = inp_par[3];
+	param->rout   = inp_par[4];
+	param->z      = inp_par[5];
+	xparam->z     = inp_par[5];
+
+	param->gamma  = inp_par[6];
+	xparam->gam   = inp_par[6];
+	xparam->lxi   = inp_par[7];
+	xparam->afe   = inp_par[8];
+	xparam->ect   = 300.0;
+	xparam->dens  = inp_par[9];
 
 	xparam->refl_frac = inp_par[10];
 	xparam->fixReflFrac = (int) (inp_par[11]+0.5); // make sure there is nor problem with integer conversion
@@ -430,6 +473,33 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 	relParam* rel_param = NULL;
 
 	init_par_relxilllp(&rel_param,&xill_param,parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+
+	double* ener = (double*) ener0;
+	double flux[n_ener0];
+
+	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
+	CHECK_STATUS_VOID(*status);
+
+	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+
+	free_xillParam(xill_param);
+	free_relParam(rel_param);
+	free(ener_shifted);
+
+}
+
+
+
+/** XSPEC RELXILLLP MODEL FUNCTION **/
+void tdrelxilllpdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	xillParam* xill_param = NULL;
+	relParam* rel_param = NULL;
+
+	init_par_relxilllp_dens(&rel_param,&xill_param,parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
 
 
@@ -678,6 +748,17 @@ void lmodrelxilllp(const double* ener0, const int n_ener0, const double* paramet
 	const int n_parameter = 12;
 	int status = EXIT_SUCCESS;
 	tdrelxilllp(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating rellinelp model failed",&status);
+}
+
+/** XSPEC RELXILLLPDENS MODEL FUNCTION **/
+void lmodrelxilllpdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 12;
+	int status = EXIT_SUCCESS;
+	tdrelxilllpdens(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating rellinelp model failed",&status);

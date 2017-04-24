@@ -50,6 +50,9 @@
 #define MOD_TYPE_RELXILLDENS -10
 #define NUM_PARAM_RELXILLDENS 13
 
+#define MOD_TYPE_RELXILLLPDENS -11
+#define NUM_PARAM_RELXILLLPDENS 12
+
 #define MOD_TYPE_XILLVERDENS -100
 #define NUM_PARAM_XILLVERDENS 7
 
@@ -76,6 +79,7 @@ void tdxillver(const double* ener0, const int n_ener0, double* photar, const dou
 void tdrelconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 
 void tdrelxilldens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxilllpdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdxillverdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 
 /* get the version number text on the screen (if not already printed before */
@@ -99,6 +103,7 @@ void lmodrellinelp(const double* ener0, const int n_ener0, const double* paramet
 void lmodrelconv(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 
 void lmodrelxilldens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+void lmodrelxilllpdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodxillerdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 
 

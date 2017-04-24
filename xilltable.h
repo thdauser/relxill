@@ -43,37 +43,6 @@
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
 #define XILLTABLE_DENS_FILENAME "xillverD-4.fits"
 
-/** the XILLVER table structure */
-typedef struct{
-
-	float* elo;
-	float* ehi;
-	int n_ener;
-
-	int num_param;
-
-	float* gam;
-	float* afe;
-	float* lxi;
-	float* ect;
-	float* incl;
-
-	int n_gam;
-	int n_afe;
-	int n_lxi;
-	int n_ect;
-	int n_incl;
-
-	int n_ca_gam;
-	int n_ca_afe;
-	int n_ca_lxi;
-	int n_ca_ect;
-	int n_ca_incl;
-
-	float****** dat;
-
-}xillTable;
-
 /** get a new and empty rel table (structure will be allocated)  */
 xillTable* new_xillTable(int n_gam, int n_afe, int n_lxi, int n_ect, int n_incl, int* status);
 
@@ -89,5 +58,6 @@ void free_xill_spec(xill_spec* spec);
 
 void free_cached_xillTable(void);
 
+char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status);
 
 #endif /* XILLTABLE_H_ */

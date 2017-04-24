@@ -120,7 +120,7 @@ void free_xillTable(xillTable* tab){
 
 
 static int is_dens_model(int model_type){
-	if ((model_type == MOD_TYPE_RELXILLDENS) || (model_type == MOD_TYPE_XILLVERDENS)){
+	if ((model_type == MOD_TYPE_RELXILLDENS) || (model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_RELXILLLPDENS)){
 		return 1;
 	} else {
 		return 0;
@@ -571,6 +571,15 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 	double xfac=(param->lxi-tab->lxi[ind[2]])/(tab->lxi[ind[2]+1]-tab->lxi[ind[2]]);
 	double efac=(param->ect-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
 
+	// can happen due to grav. redshift, although actually observed ecut is larger
+	if (param->ect <= tab->ect[0]){
+		efac = 0.0;
+	}
+	// can happen due to grav. redshift, although actually observed ecut is larger
+	if (param->ect >= tab->ect[tab->n_ect-1]){
+		efac = 1.0;
+	}
+
 	if (is_dens_model(param->model_type)){
 		/** remember that internally we treat dens as ecut **/
 		efac=(param->dens-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
@@ -594,14 +603,37 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 	return spec;
 }
 
+
+/** load the xillver table and return its filename **/
+char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status){
+
+	if (is_dens_model(param->model_type)) {
+		if (cached_xill_tab_dens==NULL){
+			init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
+			CHECK_STATUS_RET(*status,NULL);
+		}
+		*tab = cached_xill_tab_dens;
+		return XILLTABLE_DENS_FILENAME;
+
+	} else {
+		if (cached_xill_tab==NULL){
+			init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
+			CHECK_STATUS_RET(*status,NULL);
+		}
+		*tab = cached_xill_tab;
+		return XILLTABLE_FILENAME;
+	}
+
+}
+
 /** the main routine for the xillver table: returns a spectrum for the given parameters
  *  (decides if the table needs to be initialized and/or more data loaded          */
 xill_spec* get_xillver_spectra(xillParam* param, int* status){
 
 	xillTable* tab = NULL;
-	char* fname = NULL;
+	char* fname = get_init_xillver_table(&tab,param,status);
 
-	if (is_dens_model(param->model_type)) {
+/*	if (is_dens_model(param->model_type)) {
 		if (cached_xill_tab_dens==NULL){
 			init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
 			CHECK_STATUS_RET(*status,NULL);
@@ -616,7 +648,7 @@ xill_spec* get_xillver_spectra(xillParam* param, int* status){
 		}
 		tab = cached_xill_tab;
 		fname = XILLTABLE_FILENAME;
-	}
+	} */
 
 	assert(tab!=NULL);
 	assert(fname!=NULL);

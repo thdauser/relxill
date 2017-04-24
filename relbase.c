@@ -350,7 +350,7 @@ rel_spec* new_rel_spec(int nzones, const int n_ener, int*status){
 	return spec;
 }
 
-/** get new structure to store the conse distribution spectrum (possibly for several zones) **/
+/** get new structure to store the cosne distribution spectrum (possibly for several zones) **/
 rel_cosne* new_rel_cosne(int nzones, int n_incl, int*status){
 
 	rel_cosne* spec = (rel_cosne*) malloc(sizeof(rel_cosne));
@@ -380,7 +380,7 @@ rel_cosne* new_rel_cosne(int nzones, int n_incl, int*status){
 
 
 /** initialize the rel_spec structure **/
-static void init_rel_spec(rel_spec** spec, relParam* param, xill_spec* xill_spec,
+static void init_rel_spec(rel_spec** spec, relParam* param, xillTable* xill_tab,
 		double** pt_ener, const int n_ener, int* status ){
 
 	/** in case of the relxill-LP model multiple zones are used **/
@@ -403,13 +403,13 @@ static void init_rel_spec(rel_spec** spec, relParam* param, xill_spec* xill_spec
 	}
 
 
-	if (xill_spec!=NULL){
+	if (xill_tab!=NULL){
 		if ((*spec)->rel_cosne == NULL) {
-			(*spec)->rel_cosne = new_rel_cosne(nzones,xill_spec->n_incl,status);
+			(*spec)->rel_cosne = new_rel_cosne(nzones,xill_tab->n_incl,status);
 		}
 		int ii;
 		for (ii=0; ii<(*spec)->rel_cosne->n_cosne; ii++ ){
-			(*spec)->rel_cosne->cosne[ii] = cos(xill_spec->incl[ii]*M_PI/180);
+			(*spec)->rel_cosne->cosne[ii] = cos(xill_tab->incl[ii]*M_PI/180);
 		}
 	}
 
@@ -931,6 +931,18 @@ static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
 
 }
 
+static double get_rzone_energ_shift(relParam* param, double rad){
+
+	// can be implemented by using the del_emit from relSysParam in principle
+	if (param->beta){
+		printf(" *** error :  energy shift of the incident spectrum for beta>0 not implemented yet ; assuming beta=0 here ");
+	}
+
+	// as beta=0, we can choose any value for del_emit
+
+	return gi_potential_lp(rad,param->a,param->height,0.0,M_PI/2);
+}
+
 /** BASIC RELCONV FUNCTION : convole any input spectrum with the relbase kernel
  *  (ener has the length n_ener+1)
  *  **/
@@ -991,14 +1003,13 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	double* ener = ener_std;
 
 
+	xillTable* xill_tab = NULL;
+	get_init_xillver_table(&xill_tab,xill_param,status);
 
-	// call the function which calculates the xillver spectrum
-	xill_spec* xill_spec = get_xillver_spectra(xill_param,status);
-	CHECK_STATUS_VOID(*status);
-
+	xill_spec* xill_spec = NULL;
 
 	// todo: can/should we add caching here directly??
-	rel_spec* rel_profile = relbase(ener, n_ener, rel_param, xill_spec, status);
+	rel_spec* rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
 
 	if (is_debug_run()){
 		save_xillver_spectrum(ener,rel_profile->flux[0],n_ener,"testfiles/test_relxill_conv_spectrum.dat");
@@ -1013,12 +1024,14 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 	/*** LOOP OVER THE RADIAL ZONES ***/
 	double xill_flux[n_ener];
-	double xill_angdist_inp[xill_spec->n_ener];
+	double xill_angdist_inp[xill_tab->n_ener];
 	double conv_out[n_ener];
 	double single_spec_inp[n_ener_inp];
 	for (ii=0; ii<n_ener;ii++){
 		conv_out[ii] = 0.0;
 	}
+
+	double ecut0 = xill_param->ect;
 
 	int jj;
 	for (ii=0; ii<rel_profile->n_zones;ii++){
@@ -1032,7 +1045,25 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		if (is_debug_run()==1){
 			print_angle_dist(rel_profile->rel_cosne,ii);
 		}
-		// get angular distribution (maybe already when calculating the relat spectrum???)
+
+		// get the energy shift in order to calculate the proper Ecut value (if nzones>1)
+		// (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
+		//  session the number ofd zones is reset)
+		if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type)==1){
+			xill_param->ect = ecut0;
+		} else {
+			// choose the (linear) middle of the radial zone
+			double rzone = 0.5*(rel_profile->rgrid[ii]+rel_profile->rgrid[ii+1]);
+			xill_param->ect = ecut0 * ( 1 + grav_redshift(rel_param) ) * get_rzone_energ_shift(rel_param,rzone ) ;
+			// printf(" rzone=%.2e-%.2e -> Ecut = %.3f (ecut0=%.2e)\n",rel_profile->rgrid[ii],rel_profile->rgrid[ii+1],xill_param->ect,ecut0);
+			// printf("  --> energ_shift %.5e  --  grav redshift %.5e \n",get_rzone_energ_shift(rel_param,rzone ),  ( 1 + grav_redshift(rel_param) ));
+		}
+
+		// call the function which calculates the xillver spectrum
+		xill_spec = get_xillver_spectra(xill_param,status);
+		CHECK_STATUS_VOID(*status);
+
+		// get angular distribution
 		calc_xillver_angdep(xill_angdist_inp,xill_spec,rel_profile->rel_cosne->cosne,
 				rel_profile->rel_cosne->dist[ii],rel_profile->rel_cosne->n_cosne,status);
 
@@ -1086,7 +1117,11 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	// todo: put this in a ionization gradient routine ??
 	for (ii=0; ii<n_ener_inp; ii++){
 		spec_inp[ii] /= pow(10,xill_param->lxi);
+		if (fabs(xill_param->dens - 15) > 1e-6 ){
+			spec_inp[ii] /= pow(10,xill_param->dens - 15);
+		}
 	}
+
 
 	/** add a primary spectral component and normalize according to the given refl_frac parameter**/
 	add_primary_component(ener_inp,n_ener_inp,spec_inp,rel_param,xill_param, status);
@@ -1117,7 +1152,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 		// TODO: change to new defintion ???
 //		double ecut_rest = xill_param->ect / ( 1 + xill_param->z + grav_redshift(rel_param) );
-		double ecut_rest = xill_param->ect / ( 1 );
+		double ecut_rest = xill_param->ect;
 
 		for (ii=0; ii<n_ener_xill; ii++){
 			pl_flux_xill[ii] = exp(1.0/ecut_rest) *
@@ -1136,7 +1171,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 
 	/** 2 **  get the normalization of the spectrum with respect to xillver **/
-	double norm_xill = 1e15 / 4.0 / M_PI;
+	double norm_xill = xill_param->dens / 4.0 / M_PI;
 	double keV2erg = 1.602177e-09;
 
 	double sum_pl = 0.0;
@@ -1323,7 +1358,7 @@ int redo_relbase_calc(relParam* param, int* status){
  * input: ener(n_ener), param
  * optinal input: xillver grid
  * output: photar(n_ener)     */
-rel_spec* relbase(double* ener, const int n_ener, relParam* param, xill_spec* xill_spec,int* status){
+rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xill_tab,int* status){
 
 	// check caching here and also re-set the cached parameter values
 	// TODO: also check if the energy grid changed!
@@ -1339,7 +1374,7 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xill_spec* xi
 		save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
 
 		// init the spectra where we store the flux
-		init_rel_spec(&cached_rel_spec, param, xill_spec, &ener, n_ener, status);
+		init_rel_spec(&cached_rel_spec, param, xill_tab, &ener, n_ener, status);
 		CHECK_STATUS_RET(*status,NULL);
 
 		// calculate line profile (returned units are 'cts/bin')

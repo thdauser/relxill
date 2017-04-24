@@ -8,13 +8,23 @@ variable ff = "*";
 if (length(__argv)>1){
    ff = __argv[1];
 }
-load_xspec_local_models("build/librelxill.so");
+
+
+variable modlib = "build/librelxill.so";
+
+if (stat_file(modlib) == NULL){
+   message("\n **** error : local relxill model not found ; exiting ... **** \n ");
+   exit;
+}
+
+load_xspec_local_models(modlib);
 require("isisscripts");
 
 __set_hard_limits("relxilllp","h",-100,1000);
 
+_traceback=1;
 
-variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD"];
+variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD"];
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
 variable sum_name = "plot_check_model_functions_sum.pdf";
@@ -48,8 +58,26 @@ define simple_plot(lo,hi,val0,val1){ %{{{
    hplot(lo[ind],hi[ind],val0[ind]/val1[ind]);
 }
 %}}}
+define fit_fun_default(ff){ %{{{
+   %% only works for single model components %%
+   
+   fit_fun(ff);
+   
+   variable p,pa = get_params();   
+   variable df;
+   foreach p(pa){
+      df = eval(sprintf("%s_default(%i)",ff,p.index-1));
+      p.value=df.value;
+      p.min=df.min;
+      p.max=df.max;
+      p.freeze=df.freeze;
+   }
+   set_params(pa);
+}
+%}}}
 
 
+   
 variable EXIT_SUCCESS = 0;
 variable EXIT_FAILURE = -1;
 
@@ -190,22 +218,17 @@ define check_conv_mod_single(ff,ff_conv){ %{{{
 
 define check_dens_mod_single(ff,ff_dens){ %{{{
    
-   variable lxi = 2.0;
+%   variable lxi = 2.0;
    
    variable lo,hi;
    variable val0, val1;
    (lo,hi) = log_grid(0.5,500,4000);
    
-   fit_fun(ff_dens);
-   set_par("*.refl_frac",1,0,-10,100);
+   fit_fun_default(ff_dens);
    set_par("*.logN",15);
-   set_par("*.logxi",lxi);
    val0 = eval_fun_keV (lo,hi);
-   
-   
-   fit_fun(ff);
-   set_par("*.refl_frac",1,0,-10,100);
-   set_par("*.logxi",lxi);
+      
+   fit_fun_default(ff);
    set_par("*.Ecut",300.0);
    val1 = eval_fun_keV (lo,hi);
    
@@ -311,8 +334,8 @@ define check_dens_mod(){ %{{{
    counter++;
    vmessage("\n### %i ### testing HIGH DENSITY MODELS: ###",counter);
    
-   variable ff = ["xillver","relxill"];
-   variable ff_dens = ["xillverD","relxillD"];
+   variable ff = ["xillver","relxill","relxilllp"];
+   variable ff_dens = ["xillverD","relxillD","relxilllpD"];
    
    variable ii,n = length(ff);
    
@@ -439,7 +462,7 @@ define check_caching_single(ff,par){ %{{{
       vmessage("     => spectra did not behave as expected when testing caching (%s -  %s)",ff,par);
       return EXIT_FAILURE;
    } else {
-      if (dt2/N*1e3 < 25.0){
+      if (dt2/N*1e3 < 500.0){
 	 vmessage("   --> %.1f ms vs. %.1f ms  --  (%s -  %s)",dt/N*1e3,dt2/N*1e3,ff,par );	 
       } else {	 
 	 vmessage("   --> *** FAILED ***  [ %.1f ms vs. %.1f ms ] --  (%s -  %s) ",dt/N*1e3,dt2/N*1e3,ff,par );	       
@@ -465,6 +488,7 @@ define check_caching(){ %{{{
    ff_arr["relxill"]   = [std_rel_param, "Rbr" , "Index1","Index2",std_xill_param, "Ecut"];
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
    ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
+   ff_arr["relxilllpD"] = [std_rel_param, "h","refl_frac", std_xill_param, "logN" ];
    
    variable ff, params;
    variable ii, n;

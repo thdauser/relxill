@@ -66,6 +66,38 @@ typedef struct{
 } xillParam;
 
 
+/** the XILLVER table structure */
+typedef struct{
+
+	float* elo;
+	float* ehi;
+	int n_ener;
+
+	int num_param;
+
+	float* gam;
+	float* afe;
+	float* lxi;
+	float* ect;
+	float* incl;
+
+	int n_gam;
+	int n_afe;
+	int n_lxi;
+	int n_ect;
+	int n_incl;
+
+	int n_ca_gam;
+	int n_ca_afe;
+	int n_ca_lxi;
+	int n_ca_ect;
+	int n_ca_incl;
+
+	float****** dat;
+
+}xillTable;
+
+
 typedef struct{
 	int nr;
 	int ng;
