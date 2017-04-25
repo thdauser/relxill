@@ -7,3 +7,6 @@ test_sta
 .autotools
 gmon.out
 test*.dat
+build
+.settings
+*.tgz

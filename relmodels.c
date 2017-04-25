@@ -102,10 +102,10 @@ static void check_parameter_bounds(relParam* param, int* status){
 		check_negative_height(&(param->height), param->a);
 		double h_fac = 1.1;
 		double r_event = kerr_rplus(param->a);
-		if (param->height <= h_fac*r_event){
+		if ( (h_fac*r_event - param->height ) > 1e-4){
 			if (!warned_rms){
 				printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n",h_fac);
-				printf("      Change to negative heights (h <= %.1f), if you want to fit in units of the Event Horizon \n",h_fac);
+				printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",h_fac);
 				printf("      Height= %.3f  ;  r_event=%.3f \n",param->height,r_event);
 				printf("      Setting    h =  1.1*r_event  = %.3f \n",r_event*h_fac);
 				param->height = r_event*h_fac;

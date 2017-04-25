@@ -44,7 +44,7 @@
 
 #define version_major 0
 #define version_minor 1
-#define version_build 12
+#define version_build 14
 #define version_dev "dev"
 
 #define DEBUG_RELXILL 1
@@ -82,6 +82,8 @@
 /** minimal and maximal energy for reflection strength calculation **/
 #define RSTRENGTH_EMIN 20.0
 #define RSTRENGTH_EMAX 40.0
+
+/** file to (additionally) store the version number **/
 
 /****** TYPE DEFINITIONS ******/
 

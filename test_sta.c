@@ -621,6 +621,7 @@ int main(int argc, char *argv[]){
 	int status = EXIT_SUCCESS;
 
 
+
 	int do_all = 1;
 	int do_relline = 0;
 	int do_rellinelp = 0;
@@ -630,6 +631,13 @@ int main(int argc, char *argv[]){
 	int do_relxilllpdens = 0;
 
 	if (argc>=2){
+		if (strcmp(argv[1],"version")==0){
+			get_version_number(&buf,&status);
+			printf("%s",buf);
+			free(buf);
+			return status;
+		}
+
 		if (strcmp(argv[1],"relxilllp")==0){
 			do_relxilllp=1;
 			do_all=0;
@@ -717,6 +725,11 @@ int main(int argc, char *argv[]){
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}
+
+/**		FILE* fp =  fopen ( ,"w+" );
+			fprintf(fp, " %e \t %e \t %e \n",ener[ii],ener[ii+1],flu[ii]);
+		if (fclose(fp)) exit(1);
+		print_version_to_file(FNAME_VERSION); **/
 
 		printf( "\n ==> Cleaning up and freeing cached structures\n");
 		free_cached_tables();

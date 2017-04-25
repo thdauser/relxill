@@ -3,8 +3,7 @@
 CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
-MODEL_VERSION = 0.1.12dev
-MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
+
 LIBS = -L${HEADAS}/lib
 
 COMPILE.c = gcc
@@ -26,7 +25,6 @@ all:
 	make test_sta
 
 $(LINK_TARGET): $(objects)
-	echo $(CFLAGS)
 	gcc -o $@ $^ $(LDFLAGS) 
 
 %.o: %.c %.h
@@ -39,16 +37,30 @@ clean:
 	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat
 	rm -rf $(model_dir)
 
+MODEL_VERSION = x.y.z
+MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 
-.PHONY: model
+
+.PHONY: model, version
 model:
 	mkdir -p $(model_dir)
 	rm -f $(model_dir)/*
 	cp -v $(model_files) $(model_dir)
+
+	make version
+	$(eval MODEL_TAR_NAME := relxill_model_v${RELXILL_VERSION}.tgz)
+
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
 	cd $(model_dir) && ./compile_relxill.csh && echo 'load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
-	rm -f $(model_dir)/*.c $(model_dir)/*.h 
+	rm -f $(model_dir)/*.c $(model_dir)/*.h
+	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
+
+
+
+version:
+	make all
+	$(eval $(setenv RELXILL_VERSION `./test_sta version`))
 
 
 .PHONY: valgrind, gdb
