@@ -3,8 +3,8 @@
 if (-d /data/system/software ) then
     setenv SOFTDIR /data/system/software
     setenv RELXILL_TABLE_PATH "/userdata/data/dauser/relline_tables"
-else if (-d /home/${USER}/software) then
-    setenv SOFTDIR /home/${USER}/software
+else if (-d /home/thomas/software) then
+    setenv SOFTDIR /home/thomas/software
     setenv RELXILL_TABLE_PATH "/home/thomas/data/relline_tables"
 endif
 
