@@ -2,8 +2,10 @@
 
 if (-d /data/system/software ) then
     setenv SOFTDIR /data/system/software
-else if (-d /home/${USER}/software)
+    setenv RELXILL_TABLE_PATH "/userdata/data/dauser/relline_tables"
+else if (-d /home/${USER}/software) then
     setenv SOFTDIR /home/${USER}/software
+    setenv RELXILL_TABLE_PATH "/home/thomas/data/relline_tables"
 endif
 
 if (-e $SOFTDIR/softwarescript_Xray.csh ) then
@@ -14,11 +16,9 @@ if (-e $SOFTDIR/softwarescript_Xray.csh ) then
     echo " Using scripts $SOFTDIR/softwarescript_Xray.csh "
 endif
 
-setenv RELXILL_TABLE_PATH "/userdata/data/dauser/relline_tables"
 
-make 
- ./test_sta
+make
+./test_sta
 
 make model
-
-cd test/ && ./check_model_functions.sl
+cd test/check_model_functions.sl

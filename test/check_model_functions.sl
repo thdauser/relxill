@@ -512,7 +512,6 @@ define check_refl_frac_single(ff){
    variable val0,val1,valr;
    
    fit_fun(ff);
-   
    set_par("*.refl_frac",1,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
