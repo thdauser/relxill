@@ -17,6 +17,7 @@ if (stat_file(modlib) == NULL){
    exit;
 }
 
+require("xspec");
 load_xspec_local_models(modlib);
 require("isisscripts");
 
