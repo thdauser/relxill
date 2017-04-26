@@ -9,13 +9,16 @@ else if (-d /home/thomas/software) then
 endif
 
 if (-e $SOFTDIR/softwarescript_Xray.csh ) then
-    if (-e $SOFTDIR/softwarescript.csh ) then
+
+    if ($HOST == "cepheus") then
+	setenv PATH /data/system/software/isis/current/x86_64-libc2.23/bin:$PATH
+	echo "Using isis in /data/system/software/isis/current/x86_64-libc2.23/bin"
+    else if (-e $SOFTDIR/softwarescript.csh ) then
 	source $SOFTDIR/softwarescript.csh
     endif
     source $SOFTDIR/softwarescript_Xray.csh
     echo " Using scripts $SOFTDIR/softwarescript_Xray.csh "
 endif
-
 
 make
 ./test_sta

@@ -51,7 +51,7 @@ model:
 	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION).tgz)
 
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
-	cd $(model_dir) && ./compile_relxill.csh && echo 'load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis
+	cd $(model_dir) && ./compile_relxill.csh && echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
 	rm -f $(model_dir)/*.c $(model_dir)/*.h
 	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
