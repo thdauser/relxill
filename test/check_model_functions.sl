@@ -395,7 +395,7 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
 
 define check_caching_single(ff,par){ %{{{
 
-   fit_fun(ff);   
+   fit_fun_default(ff);   
    variable param0 = get_params("*."+par);
    if (length(param0)!=1){
       vmessage(" *** error *** problem with model %s and parameter %s when testing caching",ff,par);
@@ -507,6 +507,68 @@ define check_caching(){ %{{{
 }
 %}}}
 
+define check_refl_frac_single(ff){
+   
+   variable val0,val1,valr;
+   
+   fit_fun(ff);
+   
+   set_par("*.refl_frac",1,0,-10,10);
+   val1 =  eval_fun_keV(lo0,hi0);
+
+   set_par("*.refl_frac",0,0,-10,10);
+   val0 =  eval_fun_keV(lo0,hi0);
+
+   set_par("*.refl_frac",-1,0,-10,10);
+   valr =  eval_fun_keV(lo0,hi0);
+      
+   return goodness(val1,val0+valr);
+}
+
+
+define ncheck_fix_refl_frac_single(ff){
+   
+   vmessage("   -> reflection fraction in %s",ff);
+   variable val0,val1,valr;
+   
+   fit_fun(ff);
+   
+   set_par("*.refl_frac",1,0,-10,10);
+   set_par("*.fixReflFrac",0);
+   val1 =  eval_fun_keV(lo0,hi0);
+
+   set_par("*.fixReflFrac",1);
+   val0 =  eval_fun_keV(lo0,hi0);
+      
+   return goodness(val1,val0);
+}
+
+define check_refl_frac(){
+   
+   counter++;
+   vmessage("\n### %i ### testing REFLECTION FRACTION PARAMTERS: ###",counter);
+   
+   variable ff = ["relxill","relxilllp","relxillD","relxilllpD"];
+   
+   variable ii,n = length(ff);
+   
+   _for ii(0,n-1,1){
+      vmessage("   -> reflection fraction in %s",ff[ii]);
+      if (check_refl_frac_single(ff[ii]) > goodness_lim*5){
+	vmessage(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s ",ff[ii]);
+	 return EXIT_FAILURE;
+      }
+      if (is_substr(ff[ii],"lp") > 0){
+	 if (ncheck_fix_refl_frac_single(ff[ii]) < goodness_lim){
+	    vmessage(" *** error: there seems to be a problem with fixReflFrac in  MODEL %s ",ff[ii]);
+	    return EXIT_FAILURE;
+	 }
+      }
+   }
+   
+   return EXIT_SUCCESS;
+}
+
 define do_mc_testing(){ %{{{
 
    
@@ -564,6 +626,8 @@ if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
+if (check_refl_frac() != EXIT_SUCCESS) exit;
+
 if (check_caching() != EXIT_SUCCESS) exit;
 
 if (do_mc_testing() != EXIT_SUCCESS) exit;

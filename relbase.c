@@ -1171,7 +1171,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 
 	/** 2 **  get the normalization of the spectrum with respect to xillver **/
-	double norm_xill = xill_param->dens / 4.0 / M_PI;
+	double norm_xill = pow(10,xill_param->dens) / 4.0 / M_PI;
 	double keV2erg = 1.602177e-09;
 
 	double sum_pl = 0.0;
