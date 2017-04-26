@@ -21,4 +21,4 @@ make
 ./test_sta
 
 make model
-cd test/check_model_functions.sl
+test/check_model_functions.sl
