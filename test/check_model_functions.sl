@@ -508,12 +508,12 @@ define check_caching(){ %{{{
 }
 %}}}
 
-define check_refl_frac_single(ff){
+define check_refl_frac_single(ff){ %{{{
    
    variable val0,val1,valr;
    
    fit_fun(ff);
-   set_par("*.refl_frac",1,0,-10,10);
+   set_par("*.refl_frac",1.0,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
    set_par("*.refl_frac",0,0,-10,10);
@@ -524,31 +524,34 @@ define check_refl_frac_single(ff){
       
    return goodness(val1,val0+valr);
 }
+%}}}
 
-
-define ncheck_fix_refl_frac_single(ff){
+define ncheck_fix_refl_frac_single(ff){ %{{{
    
-   vmessage("   -> reflection fraction in %s",ff);
+%   vmessage("   -> reflection fraction in %s",ff);
    variable val0,val1,valr;
    
-   fit_fun(ff);
+   fit_fun_default(ff);
    
    set_par("*.refl_frac",1,0,-10,10);
-   set_par("*.fixReflFrac",0);
+%   set_par("*.fixReflFrac",0);
    val1 =  eval_fun_keV(lo0,hi0);
 
-   set_par("*.fixReflFrac",1);
+%   set_par("*.fixReflFrac",1);
+   set_par("*.refl_frac",-1,0,-10,10);
+%   set_par("*.fixReflFrac",0);
    val0 =  eval_fun_keV(lo0,hi0);
       
    return goodness(val1,val0);
 }
+%}}}
 
-define check_refl_frac(){
+define check_refl_frac(){ %{{{
    
    counter++;
    vmessage("\n### %i ### testing REFLECTION FRACTION PARAMTERS: ###",counter);
    
-   variable ff = ["relxill","relxilllp","relxillD","relxilllpD"];
+   variable ff = ["relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD"];
    
    variable ii,n = length(ff);
    
@@ -558,16 +561,16 @@ define check_refl_frac(){
 	vmessage(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s ",ff[ii]);
 	 return EXIT_FAILURE;
       }
-      if (is_substr(ff[ii],"lp") > 0){
-	 if (ncheck_fix_refl_frac_single(ff[ii]) < goodness_lim){
-	    vmessage(" *** error: there seems to be a problem with fixReflFrac in  MODEL %s ",ff[ii]);
-	    return EXIT_FAILURE;
-	 }
+      if (ncheck_fix_refl_frac_single(ff[ii]) < goodness_lim){
+	 vmessage(" *** error: there seems to be a problem with the reflection fraction (no difference between 1 and -1) in  MODEL %s ",ff[ii]);
+	 return EXIT_FAILURE;
       }
    }
    
    return EXIT_SUCCESS;
 }
+%}}}
+
 
 define do_mc_testing(){ %{{{
 

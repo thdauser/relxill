@@ -1111,8 +1111,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	}
 
 
-
-
 	// lastely, we make the spectrum normalization independent of the ionization parameter
 	// todo: put this in a ionization gradient routine ??
 	for (ii=0; ii<n_ener_inp; ii++){
@@ -1151,7 +1149,6 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	if (xill_param->prim_type == PRIM_SPEC_ECUT){
 
 		// TODO: change to new defintion ???
-//		double ecut_rest = xill_param->ect / ( 1 + xill_param->z + grav_redshift(rel_param) );
 		double ecut_rest = xill_param->ect;
 
 		for (ii=0; ii<n_ener_xill; ii++){

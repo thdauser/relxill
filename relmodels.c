@@ -560,7 +560,10 @@ void xillver_base(const double* ener0, const int n_ener0, double* photar, xillPa
 	int ii;
 
 	for (ii=0; ii<n_ener0; ii++){
-		photar[ii] /= pow(10,param_struct->lxi) ;
+		flux[ii] /= pow(10,param_struct->lxi) ;
+		if (fabs(param_struct->dens - 15) > 1e-6 ){
+			flux[ii] /= pow(10,param_struct->dens - 15);
+		}
 	}
 
 	add_primary_component(ener,n_ener,flux,NULL,param_struct, status);
