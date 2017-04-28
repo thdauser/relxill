@@ -20,6 +20,8 @@ if (-e $SOFTDIR/softwarescript_Xray.csh ) then
     echo " Using scripts $SOFTDIR/softwarescript_Xray.csh "
 endif
 
+make clean
+
 make
 ./test_sta
 

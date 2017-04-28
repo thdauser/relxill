@@ -35,6 +35,7 @@ $(LINK_TARGET): $(objects)
 clean:
 	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat
 	rm -rf $(model_dir)
+	rm -f relxill_model_v*.tgz
 
 MODEL_VERSION = x.y.z
 MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
