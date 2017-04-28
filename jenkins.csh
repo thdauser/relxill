@@ -23,7 +23,7 @@ endif
 make clean
 
 make
-./test_sta
+./test_sta > test_output.log
 
 make model
-test/check_model_functions.sl
+test/check_model_functions.sl  >> test_output.log

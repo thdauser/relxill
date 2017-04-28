@@ -405,7 +405,7 @@ static void std_eval_xillver(int* status, int n){
 	}
 
 	// test output
-	save_xillver_spectrum(ener,photar,n_ener,"test_xillver_spectrum.dat");
+	// save_xillver_spectrum(ener,photar,n_ener,"test_xillver_spectrum.dat");
 
 
 }

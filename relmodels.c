@@ -601,8 +601,6 @@ void tdrelline(const double* ener, const int n_ener, double* photar, const doubl
 		photar[ii] = spec->flux[0][ii];
 	}
 
-	save_relline_profile(spec);
-
 	free_relParam(param_struct);
 	free(ener1keV);
 }

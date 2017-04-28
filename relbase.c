@@ -1168,7 +1168,9 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 
 	/** 2 **  get the normalization of the spectrum with respect to xillver **/
-	double norm_xill = pow(10,xill_param->dens) / 4.0 / M_PI;
+	// double norm_xill = pow(10,xill_param->dens) / 4.0 / M_PI;
+	/** everything is normalized to 10^15 cm^3 **/
+	double norm_xill = 1e15 / 4.0 / M_PI;
 	double keV2erg = 1.602177e-09;
 
 	double sum_pl = 0.0;
@@ -1368,7 +1370,9 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 		relSysPar* sysPar = get_system_parameters(param,status);
 		CHECK_STATUS_RET(*status,NULL);
 
-		save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
+		if (is_debug_run()){
+			save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
+		}
 
 		// init the spectra where we store the flux
 		init_rel_spec(&cached_rel_spec, param, xill_tab, &ener, n_ener, status);

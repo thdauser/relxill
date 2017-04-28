@@ -33,7 +33,7 @@ $(LINK_TARGET): $(objects)
 	gcc $(INCLUDES) $(CFLAGS) -c $<
 
 clean:
-	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat
+	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat *.log
 	rm -rf $(model_dir)
 	rm -f relxill_model_v*.tgz
 
