@@ -50,12 +50,14 @@ define simple_plot(lo,hi,val0,val1){ %{{{
    if (qualifier_exists("nopl")){
       return;
    }
-   
+
+   xlog;ylog;
    open_plot("/xw",2,1);
    hplot(lo,hi,val0);
    ohplot(lo,hi,val1);
    
    variable ind = where(val1!=0);
+   ylin;
    hplot(lo[ind],hi[ind],val0[ind]/val1[ind]);
 }
 %}}}
@@ -225,6 +227,10 @@ define check_dens_mod_single(ff,ff_dens){ %{{{
    variable val0, val1;
    (lo,hi) = log_grid(0.5,500,4000);
    
+   if (string_match(ff_dens,"lpD")){
+      putenv("RELXILL_NUM_RZONES=1");
+   }
+   
    fit_fun_default(ff_dens);
    set_par("*.logN",15);
    val0 = eval_fun_keV (lo,hi);
@@ -234,7 +240,9 @@ define check_dens_mod_single(ff,ff_dens){ %{{{
    val1 = eval_fun_keV (lo,hi);
    
    simple_plot(lo,hi,val0,val1;;__qualifiers());
-   
+
+   putenv("RELXILL_NUM_RZONES");
+
    variable gn = goodness(val0,val1);
    vmessage("    -> %s goodness value: %.3e",
 	    ff_dens, gn);
@@ -508,11 +516,42 @@ define check_caching(){ %{{{
 }
 %}}}
 
+define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
+   
+   variable val0,val1;
+   
+   fit_fun_default(ff);
+   set_par("*.refl_frac",0.0,0,-10,10);
+   val1 =  eval_fun_keV(lo0,hi0);
+
+   fit_fun_default(ff_cont);
+   
+   fit_fun(ff+"+"+ff_cont);
+   variable key;
+   foreach key(assoc_get_keys(assoc)){
+      set_par("*."+assoc[key],get_par("*."+key));
+   }
+      
+   fit_fun(ff_cont);
+   
+   % current definition for the high density models 
+   if (string_match(ff,"D")){
+      set_par("*.HighECut",300.0);
+   }
+   
+   val0 =  eval_fun_keV(lo0,hi0);
+   val0 = val0/sum(val0)*sum(val1);
+      
+   return goodness(val1,val0/sum(val0)*sum(val1));
+}
+%}}}
+
+
 define check_refl_frac_single(ff){ %{{{
    
    variable val0,val1,valr;
    
-   fit_fun(ff);
+   fit_fun_default(ff);
    set_par("*.refl_frac",1.0,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
@@ -546,6 +585,38 @@ define ncheck_fix_refl_frac_single(ff){ %{{{
 }
 %}}}
 
+
+define check_prim_cont(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### testing PRIMARY CONTINUUM: ###",counter);
+
+   
+   variable assoc = Assoc_Type[String_Type];
+   assoc["gamma"] = "PhoIndex";
+   assoc["Ecut"]  = "HighECut";
+   variable assocD = Assoc_Type[String_Type];   
+   assocD["gamma"] = "PhoIndex";
+
+   variable ff =      ["relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD"];
+   variable ff_cont = ["cutoffpl","cutoffpl","cutoffpl","cutoffpl","cutoffpl","cutoffpl"];
+   variable arr_assoc=[assoc,assoc,assocD,assocD,assoc,assocD];
+   
+   
+   variable ii,n = length(ff);
+   
+   _for ii(0,n-1,1){
+      vmessage("   -> primary continum %s for reflection model %s",ff_cont[ii],ff[ii]);
+      if (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]) > goodness_lim){
+	vmessage(" *** error: there seems to be a problem with the PRIMARY CONTINUUM in  MODEL %s ",ff[ii]);
+	 return EXIT_FAILURE;
+      }
+   }
+   
+   return EXIT_SUCCESS;
+}
+%}}}
+
 define check_refl_frac(){ %{{{
    
    counter++;
@@ -555,10 +626,12 @@ define check_refl_frac(){ %{{{
    
    variable ii,n = length(ff);
    
+   variable goodn;
    _for ii(0,n-1,1){
       vmessage("   -> reflection fraction in %s",ff[ii]);
-      if (check_refl_frac_single(ff[ii]) > goodness_lim*5){
-	vmessage(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s ",ff[ii]);
+      goodn = check_refl_frac_single(ff[ii]);
+      if (goodn > goodness_lim*5){
+	vmessage(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s (goodness %e)",ff[ii],goodn);
 	 return EXIT_FAILURE;
       }
       if (ncheck_fix_refl_frac_single(ff[ii]) < goodness_lim){
@@ -626,11 +699,12 @@ define do_mc_testing(){ %{{{
 if (eval_test() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
+
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
 if (check_refl_frac() != EXIT_SUCCESS) exit;
-
+if (check_prim_cont() != EXIT_SUCCESS) exit;
 if (check_caching() != EXIT_SUCCESS) exit;
 
 if (do_mc_testing() != EXIT_SUCCESS) exit;

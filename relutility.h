@@ -115,7 +115,7 @@ int is_relxill_model(int model_type);
 int is_debug_run( void );
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, int* status);
+void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double h, int* status);
 
 void get_rgrid(double* ener, int n_ener, double emin, double emax);
 

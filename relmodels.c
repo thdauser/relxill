@@ -668,7 +668,7 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->rout = PARAM_DEFAULT;
 	param->lineE = PARAM_DEFAULT;
 	param->z = PARAM_DEFAULT;
-	param->height = PARAM_DEFAULT;
+	param->height = 0.0;
 	param->gamma = PARAM_DEFAULT;
 	param->beta = 0.0; // special case, in order to prevent strange results
 

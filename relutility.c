@@ -228,14 +228,37 @@ double gstar2ener(double g, double gmin, double gmax, double ener){
 }
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, int* status){
+void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double h, int* status){
 
 	if (nzones==1){
 		rgrid[0] = rmin;
 		rgrid[1] = rmax;
 	} else {
 		get_log_grid(rgrid,nzones+1,rmin,rmax);
-//		get_rgrid(rgrid,nzones+1,rmin,rmax);
+
+		double h_fac = 1.0;
+
+		int indr = binary_search(rgrid,nzones+1,h*h_fac);
+		int ii;
+
+		if (indr < nzones ){
+
+			double rlo = rgrid[indr+1];
+			double rhi = rgrid[nzones];
+			// add 1/r for larger radii
+			for (ii=indr+1; ii<nzones+1; ii++){
+				rgrid[ii] = 1.0*(ii-indr-1) / (nzones-indr-1) * ( 1.0/rhi - 1.0/rlo) + 1.0/rlo;
+				rgrid[ii] = fabs(1.0/rgrid[ii]);
+			}
+
+		}
+
+
+/*		for (ii=0; ii<nzones; ii++){
+			printf("%i : %.2e-%.2e \n",ii,rgrid[ii],rgrid[ii+1]);
+		} */
+
+
 	}
 	return;
 }
@@ -455,10 +478,10 @@ int get_num_zones(int model_type, int emis_type){
 		env = getenv("RELXILL_NUM_RZONES");
 		if (env != NULL){
 			int env_n_zones = atof(env);
-			if ( (env_n_zones > 0 ) && (env_n_zones < 1000) ){
+			if ( (env_n_zones > 0 ) && (env_n_zones <= N_ZONES_MAX) ){
 				return env_n_zones;
 			} else {
-				printf(" *** warning: value of %i for RELXILL_NUM_ZONES not within required interval of [1,1000] \n",env_n_zones);
+				printf(" *** warning: value of %i for RELXILL_NUM_ZONES not within required interval of [1,%i] \n",env_n_zones,N_ZONES_MAX);
 			}
 		}
 		return N_ZONES;

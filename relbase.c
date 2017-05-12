@@ -21,11 +21,16 @@
 
 
 /** global parameters, which can be used for several calls of the model */
-relParam* cached_rel_param=NULL;
 relTable* relline_table=NULL;
 relSysPar* cached_relSysPar=NULL;
 relSysPar* cached_tab_sysPar=NULL;
 rel_spec* cached_rel_spec=NULL;
+
+/** caching parameters **/
+relParam* cached_rel_param=NULL;
+xillParam* cached_xill_param=NULL;
+relParam* cached_relbase_param=NULL;
+
 
 int save_1eV_pos = 0;
 double cached_int_romb_rad = -1.0;
@@ -39,13 +44,17 @@ double* ener_xill = NULL;
 const int n_ener_std = N_ENER_CONV;
 double* ener_std = NULL;
 
+int c_num_zones=0;
+
+specCache* spec_cache = NULL;
+
 
 // precision to calculate gstar from [H:1-H] instead of [0:1]
 const double GFAC_H = 2e-3;
 
 
 /* function to check of the system parameters need to be re-calculated  */
-static int redo_get_system_parameters(relParam* param,relParam* cached_rel_param){
+static int redo_get_system_parameters(relParam* param,relParam* ca_rel_param){
 
 	if (cached_relSysPar==NULL){
 		return 1;
@@ -53,29 +62,29 @@ static int redo_get_system_parameters(relParam* param,relParam* cached_rel_param
 
 
 
-	if (cached_rel_param!=NULL){
-		if (fabs(param->a - cached_rel_param->a) > cache_limit) {
+	if (ca_rel_param!=NULL){
+		if (fabs(param->a - ca_rel_param->a) > cache_limit) {
 			return 1;
 		}
-		if (fabs(param->incl - cached_rel_param->incl) > cache_limit) {
+		if (fabs(param->incl - ca_rel_param->incl) > cache_limit) {
 			return 1;
 		}
-		if (fabs(param->rin - cached_rel_param->rin) > cache_limit) {
+		if (fabs(param->rin - ca_rel_param->rin) > cache_limit) {
 			return 1;
 		}
-		if (fabs(param->rout - cached_rel_param->rout) > cache_limit) {
+		if (fabs(param->rout - ca_rel_param->rout) > cache_limit) {
 			return 1;
 		}
-		if (fabs(param->rbr - cached_rel_param->rbr) > cache_limit) {
+		if (fabs(param->rbr - ca_rel_param->rbr) > cache_limit) {
 			return 1;
 		}
-		if (fabs(param->height - cached_rel_param->height) > cache_limit) {
+		if (fabs(param->height - ca_rel_param->height) > cache_limit) {
 			return 1;
 		}
-		if (fabs(param->emis1 - cached_rel_param->emis1) > cache_limit) {
+		if (fabs(param->emis1 - ca_rel_param->emis1) > cache_limit) {
 			return 1;
 		}
-		if (fabs(param->emis2 - cached_rel_param->emis2) > cache_limit) {
+		if (fabs(param->emis2 - ca_rel_param->emis2) > cache_limit) {
 			return 1;
 		}
 	} else {
@@ -302,13 +311,14 @@ static relSysPar* get_system_parameters(relParam* param, int* status){
 
 	// only re-do the interpolation if rmin,rmax,a,mu0 changed
 	// or if the cached parameters are NULL
-	if (redo_get_system_parameters(param,cached_rel_param)){
+
+	if (redo_get_system_parameters(param,cached_relbase_param)){
 		double mu0 = cos(param->incl);
 		interpol_relTable(&cached_relSysPar,param->a,mu0,param->rin,param->rout,status);
 		CHECK_STATUS_RET(*status,NULL);
 
 		// get emissivity profile
-		calc_emis_profile(param, cached_rel_param,cached_relSysPar, status);
+		calc_emis_profile(param, cached_relbase_param,cached_relSysPar, status);
 		CHECK_STATUS_RET(*status,NULL);
 	}
 
@@ -413,7 +423,7 @@ static void init_rel_spec(rel_spec** spec, relParam* param, xillTable* xill_tab,
 		}
 	}
 
-	get_rzone_grid(param->rin, param->rout, (*spec)->rgrid, nzones, status);
+	get_rzone_grid(param->rin, param->rout, (*spec)->rgrid, nzones, param->height, status);
 	CHECK_STATUS_VOID(*status);
 
 	return;
@@ -833,7 +843,8 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
  *  f2 filter
  *  ener has length n+1 and is the energy array
  * **/
-void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n, int* status){
+void fft_conv_spectrum(double* ener, double* fxill, double* frel, double* fout, int n,
+		int re_rel, int re_xill, int izone, int* status){
 
 	long m=0;
 	switch(n)	{
@@ -856,25 +867,36 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 
 	int ii;
 	int irot;
-	double x1[n]; double y1[n];
-	double x2[n]; double y2[n];
 	double xcomb[n]; double ycomb[n];
-	double sum1 = 0.0;
-	double sum2 = 0.0;
-	double sum_fft = 0.0;
-	for (ii=0; ii<n; ii++){
-		x1[ii] = f1[ii]/(ener[ii+1]-ener[ii]);
-		irot = (ii-save_1eV_pos+n) % n ;
-		x2[irot ] = f2[ii]/(ener[ii+1]-ener[ii]);
-		y1[ii] = 0.0;
-		y2[ii] = 0.0;
-		sum2 += f2[ii];
-		sum1 += f1[ii];
-	}
 
-	/** TODO: we could cache either the relat. or the xillver part, as only one of the two changes (reduce time by 1/3 for convolution) **/
-	FFT_R2CT(1, m, x1, y1);
-	FFT_R2CT(1, m, x2, y2);
+	/**********************************************************************/
+	/** cache either the relat. or the xillver part, as only one of the
+	 * two changes most of the time (reduce time by 1/3 for convolution) **/
+	/**********************************************************************/
+
+	/** #1: for the xillver part **/
+	if (re_xill){
+		for (ii=0; ii<n; ii++){
+			spec_cache->fft_xill[izone][0][ii] = fxill[ii]/(ener[ii+1]-ener[ii]);
+			spec_cache->fft_xill[izone][1][ii] = 0.0;
+		}
+		FFT_R2CT(1, m, spec_cache->fft_xill[izone][0], spec_cache->fft_xill[izone][1]);
+	}
+	double* x1 = spec_cache->fft_xill[izone][0];
+	double* y1 = spec_cache->fft_xill[izone][1];
+
+	/** #2: for the relat. part **/
+ 	if (re_rel){
+		for (ii=0; ii<n; ii++){
+			irot = (ii-save_1eV_pos+n) % n ;
+			spec_cache->fft_rel[izone][0][irot ] = frel[ii]/(ener[ii+1]-ener[ii]);
+			spec_cache->fft_rel[izone][1][ii] = 0.0;
+		}
+		FFT_R2CT(1, m, spec_cache->fft_rel[izone][0], spec_cache->fft_rel[izone][1]);
+	}
+	double* x2 = spec_cache->fft_rel[izone][0];
+	double* y2 = spec_cache->fft_rel[izone][1];
+
 
 	/* complex multiplication
 	 * (we need the real part, so we already use the output variable here
@@ -888,12 +910,8 @@ void fft_conv_spectrum(double* ener, double* f1, double* f2, double* fout, int n
 
 	for (ii=0; ii<n; ii++){
 		fout[ii] = xcomb[ii] * (ener[ii+1]-ener[ii]);
-		sum_fft += fout[ii];
 	}
 
-	for (ii=0; ii<n; ii++){
-//		fout[ii] *= sum1*sum2 / sum_fft;
-	}
 }
 
 
@@ -904,7 +922,6 @@ static void print_angle_dist(rel_cosne* spec, int izone){
 	int ii;
 	for(ii=0; ii<spec->n_cosne; ii++ ){
 		fprintf(fp," mu=%e %e \n",spec->cosne[ii],
-				// acos(spec->cosne[ii])*180/M_PI,
 				spec->dist[izone][ii]);
 	}
 	if (fclose(fp)) exit(1);
@@ -943,6 +960,59 @@ static double get_rzone_energ_shift(relParam* param, double rad){
 	return gi_potential_lp(rad,param->a,param->height,0.0,M_PI/2);
 }
 
+/** check if the complete spectrum is cached and if the energy grid did not change
+ *  -> additionally we adapte the energy grid to the new dimensions and energy values
+ *     if it's not the case yet
+ */
+static int is_all_cached(specCache* spec_cache,int n_ener_inp,double* ener_inp, int recompute_xill, int recompute_rel, int* status){
+
+	if ( (recompute_xill+recompute_rel) == 0 && ( spec_cache->out_spec != NULL )) {
+		/** first need to check if the energy grid did change (might happen) **/
+		if (spec_cache->out_spec->n_ener != n_ener_inp){
+			return 0;
+		}
+		int ii;
+		// we know that n_ener
+		for (ii=0; ii<n_ener_inp; ii++){
+			if ( fabs(spec_cache->out_spec->ener[ii] - ener_inp[ii]) > 1e-4){
+				int jj;
+				for (jj=0; jj<n_ener_inp; jj++){
+					spec_cache->out_spec->ener[jj] = ener_inp[jj];
+				}
+				return 0;
+			}
+		}
+		return 1;
+	} else {
+		return 0;
+	}
+
+}
+
+
+static void check_caching_relxill(relParam* rel_param, xillParam* xill_param, int* re_rel, int* re_xill){
+
+	/** always re-compute if the number of zones changed **/
+	if (cached_rel_spec != NULL){
+		if (c_num_zones != cached_rel_spec->n_zones){
+			*re_rel  = 1;
+			*re_xill = 1;
+			return;
+		}
+	} else {
+		*re_rel  = 1;
+		*re_xill = 1;
+		return;
+	}
+
+	/** did any of the relat. parameters change?  **/
+	*re_rel  = redo_relbase_calc(rel_param, cached_rel_param);
+
+	*re_xill = redo_xillver_calc(rel_param, xill_param, cached_rel_param, cached_xill_param);
+
+	return;
+}
+
 /** BASIC RELCONV FUNCTION : convole any input spectrum with the relbase kernel
  *  (ener has the length n_ener+1)
  *  **/
@@ -973,7 +1043,10 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 			ener_inp, spec_inp, n_ener_inp );
 
 	// convolve the spectrum
-	fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out,  n_ener, status);
+	init_specCache(&spec_cache,status);
+	CHECK_STATUS_VOID(*status);
+	fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out,  n_ener,
+			1,1,0,status);
 	CHECK_STATUS_VOID(*status);
 
 	// rebin to the output grid
@@ -1006,14 +1079,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	xillTable* xill_tab = NULL;
 	get_init_xillver_table(&xill_tab,xill_param,status);
 
-	xill_spec* xill_spec = NULL;
-
-	// todo: can/should we add caching here directly??
-	rel_spec* rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
-
-	if (is_debug_run()){
-		save_xillver_spectrum(ener,rel_profile->flux[0],n_ener,"testfiles/test_relxill_conv_spectrum.dat");
-	}
 
 
 	// make sure the output array is set to 0
@@ -1033,98 +1098,148 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 	double ecut0 = xill_param->ect;
 
-	int jj;
-	for (ii=0; ii<rel_profile->n_zones;ii++){
+	int recompute_xill;
+	int recompute_rel;
+	check_caching_relxill(rel_param,xill_param,&recompute_rel,&recompute_xill);
 
-		double test_sum_relline = 0.0;
-		double test_sum_relxill = 0.0;
-		double test_sum_xillver = 0.0;
+	init_specCache(&spec_cache,status);
+	CHECK_STATUS_VOID(*status);
 
-		// now calculate the reflection spectra for each zone (using the angular distribution)
-		assert(rel_profile->rel_cosne != NULL);
-		if (is_debug_run()==1){
-			print_angle_dist(rel_profile->rel_cosne,ii);
+
+	/** is both already cached we can see if we can simply use the output flux value **/
+	if ( is_all_cached(spec_cache,n_ener_inp,ener_inp,recompute_xill,recompute_rel,status) ){
+		CHECK_STATUS_VOID(*status);
+		for (ii=0; ii<n_ener_inp; ii++){
+			spec_inp[ii] = spec_cache->out_spec->flux[ii];
 		}
 
-		// get the energy shift in order to calculate the proper Ecut value (if nzones>1)
-		// (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
-		//  session the number ofd zones is reset)
-		if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type)==1){
-			xill_param->ect = ecut0;
-		} else {
-			// choose the (linear) middle of the radial zone
-			double rzone = 0.5*(rel_profile->rgrid[ii]+rel_profile->rgrid[ii+1]);
-			xill_param->ect = ecut0 * ( 1 + grav_redshift(rel_param) ) * get_rzone_energ_shift(rel_param,rzone ) ;
-			// printf(" rzone=%.2e-%.2e -> Ecut = %.3f (ecut0=%.2e)\n",rel_profile->rgrid[ii],rel_profile->rgrid[ii+1],xill_param->ect,ecut0);
-			// printf("  --> energ_shift %.5e  --  grav redshift %.5e \n",get_rzone_energ_shift(rel_param,rzone ),  ( 1 + grav_redshift(rel_param) ));
-		}
-
-		// call the function which calculates the xillver spectrum
-		xill_spec = get_xillver_spectra(xill_param,status);
+    /** if NOT, we need to do a whole lot of COMPUTATIONS **/
+	} else {
 		CHECK_STATUS_VOID(*status);
 
-		// get angular distribution
-		calc_xillver_angdep(xill_angdist_inp,xill_spec,rel_profile->rel_cosne->cosne,
-				rel_profile->rel_cosne->dist[ii],rel_profile->rel_cosne->n_cosne,status);
+		/* *** first, stored the parameters for which we are calculating **/
+		set_cached_xill_param(xill_param , &cached_xill_param, status);
+		set_cached_rel_param(rel_param , &cached_rel_param, status);
+		c_num_zones = get_num_zones(rel_param->model_type,rel_param->emis_type);
 
-		rebin_spectrum(ener,xill_flux,n_ener,
-				xill_spec->ener, xill_angdist_inp, xill_spec->n_ener );
+		/* calculate the relline profile **/
+		rel_spec* rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
 
-		// convolve the spectrum
-		fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out,  n_ener, status);
-		CHECK_STATUS_VOID(*status);
-
-		// rebin to the output grid
-		rebin_spectrum(ener_inp,single_spec_inp,n_ener_inp, ener, conv_out, n_ener);
+		/* init the xillver spectrum structure **/
+		xill_spec* xill_spec = NULL;
 
 
-		for (jj=0; jj<n_ener;jj++){
-			if (ener[jj] > EMIN_XILLVER && ener[jj+1] < EMAX_XILLVER  ){
-				test_sum_relline += rel_profile->flux[ii][jj];
-				test_sum_relxill += conv_out[jj];
-				test_sum_xillver += xill_flux[jj];
+		int jj;
+		for (ii=0; ii<rel_profile->n_zones;ii++){
+			assert(spec_cache!=NULL);
+
+
+			// now calculate the reflection spectra for each zone (using the angular distribution)
+			assert(rel_profile->rel_cosne != NULL);
+			if (is_debug_run()==1){
+				print_angle_dist(rel_profile->rel_cosne,ii);
 			}
-		}
 
-		/** avoid problems where no relxill bin falls into an ionization bin **/
-		if (test_sum_relline < 1e-12){
-			continue;
-		}
+			// get the energy shift in order to calculate the proper Ecut value (if nzones>1)
+			// (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
+			//  session the number ofd zones is reset)
+			if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type)==1){
+				xill_param->ect = ecut0;
+			} else {
+				// choose the (linear) middle of the radial zone
+				double rzone = 0.5*(rel_profile->rgrid[ii]+rel_profile->rgrid[ii+1]);
+				xill_param->ect = ecut0 * ( 1 + grav_redshift(rel_param) ) * get_rzone_energ_shift(rel_param,rzone ) ;
+			}
 
-		// add it to the final output spectrum
-		for (jj=0; jj<n_ener_inp;jj++){
-			spec_inp[jj] += single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
-		}
+			// call the function which calculates the xillver spectrum
+			if (recompute_xill){
+				if (spec_cache->xill_spec[ii]!=NULL){
+					free_xill_spec(spec_cache->xill_spec[ii]);
+				}
+				spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param,status);
+			}
+			xill_spec = spec_cache->xill_spec[ii];
 
-		if (is_debug_run()){
-			char* vstr;
-			double test_flu[n_ener_inp];
+			// get angular distribution
+			calc_xillver_angdep(xill_angdist_inp,xill_spec,rel_profile->rel_cosne->cosne,
+					rel_profile->rel_cosne->dist[ii],rel_profile->rel_cosne->n_cosne,status);
+
+			rebin_spectrum(ener,xill_flux,n_ener,
+					xill_spec->ener, xill_angdist_inp, xill_spec->n_ener );
+
+			// convolve the spectrum
+			fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out,  n_ener,
+					recompute_rel, recompute_xill, ii, status);
+			CHECK_STATUS_VOID(*status);
+
+			// rebin to the output grid
+			rebin_spectrum(ener_inp,single_spec_inp,n_ener_inp, ener, conv_out, n_ener);
+
+
+			double test_sum_relline = 0.0;
+			double test_sum_relxill = 0.0;
+			double test_sum_xillver = 0.0;
+			for (jj=0; jj<n_ener;jj++){
+				if (ener[jj] > EMIN_XILLVER && ener[jj+1] < EMAX_XILLVER  ){
+					test_sum_relline += rel_profile->flux[ii][jj];
+					test_sum_relxill += conv_out[jj];
+					test_sum_xillver += xill_flux[jj];
+				}
+			}
+
+			/** avoid problems where no relxill bin falls into an ionization bin **/
+			if (test_sum_relline < 1e-12){
+				continue;
+			}
+
+			// add it to the final output spectrum
 			for (jj=0; jj<n_ener_inp;jj++){
-				test_flu[jj] = single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
+				spec_inp[jj] += single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
 			}
-			if (asprintf(&vstr, "testfiles/test_relxill_spec_zones_%03i.dat", ii+1) == -1){
-				RELXILL_ERROR("failed to get filename",status);
+
+			if (is_debug_run()){
+				char* vstr;
+				double test_flu[n_ener_inp];
+				for (jj=0; jj<n_ener_inp;jj++){
+					test_flu[jj] = single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
+				}
+				if (asprintf(&vstr, "testfiles/test_relxill_spec_zones_%03i.dat", ii+1) == -1){
+					RELXILL_ERROR("failed to get filename",status);
+				}
+				save_xillver_spectrum(ener_inp,test_flu,n_ener_inp,vstr);
 			}
-			save_xillver_spectrum(ener_inp,test_flu,n_ener_inp,vstr);
+
+		} /**** END OF LOOP OVER RADIAL ZONES [ii] *****/
+
+		/** important: set the cutoff energy value back to its original value **/
+		xill_param->ect = ecut0;
+
+
+		/** initialize the cached output spec array **/
+		if ((spec_cache->out_spec != NULL ) ) {
+			if ( spec_cache->out_spec->n_ener != n_ener_inp){
+				free_out_spec(spec_cache->out_spec);
+				spec_cache->out_spec = init_out_spec(n_ener_inp,ener_inp,status);
+				CHECK_STATUS_VOID(*status);
+			}
+		} else {
+			spec_cache->out_spec = init_out_spec(n_ener_inp,ener_inp,status);
+			CHECK_STATUS_VOID(*status);
 		}
 
-	}
-
-
-	// lastely, we make the spectrum normalization independent of the ionization parameter
-	// todo: put this in a ionization gradient routine ??
-	for (ii=0; ii<n_ener_inp; ii++){
-		spec_inp[ii] /= pow(10,xill_param->lxi);
-		if (fabs(xill_param->dens - 15) > 1e-6 ){
-			spec_inp[ii] /= pow(10,xill_param->dens - 15);
+			// lastely, we make the spectrum normalization independent of the ionization parameter
+		for (ii=0; ii<n_ener_inp; ii++){
+			spec_inp[ii] /= pow(10,xill_param->lxi);
+			if (fabs(xill_param->dens - 15) > 1e-6 ){
+				spec_inp[ii] /= pow(10,xill_param->dens - 15);
+			}
+			spec_cache->out_spec->flux[ii] = spec_inp[ii];
 		}
-	}
 
+	} /************* END OF THE HUGE COMPUTATION ********************/
 
 	/** add a primary spectral component and normalize according to the given refl_frac parameter**/
 	add_primary_component(ener_inp,n_ener_inp,spec_inp,rel_param,xill_param, status);
-
-	free_xill_spec(xill_spec);
 
 	return;
 }
@@ -1148,7 +1263,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	/** 1 **  calculate the primary spectrum  **/
 	if (xill_param->prim_type == PRIM_SPEC_ECUT){
 
-		// TODO: change to new defintion ???
+		/** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
 		double ecut_rest = xill_param->ect;
 
 		for (ii=0; ii<n_ener_xill; ii++){
@@ -1193,7 +1308,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 		assert(rel_param!=NULL);
 
-		// should be cached, as it has been calculated before (todo: check this!!)
+		// should be cached, as it has been calculated before
 		relSysPar* sysPar = get_system_parameters(rel_param, status);
 
 		/** 3 **  calculate predicted reflection fraction and check if we want to use this value **/
@@ -1237,8 +1352,9 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 				sum += flu[ii];
 			}
 
-			printf(" the reflection fraction for a = %.2f and %.2f rg is: %.3f and the reflection strength is: %.3f \n",
+			printf(" reflection fraction for a = %.3f and h = %.2f rg is: %.3f \n reflection strength is: %.3f \n",
 					rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
+			printf(" %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
 		}
 
 		/** free the reflection fraction structure **/
@@ -1288,30 +1404,30 @@ static int comp_single_param_val(double val1, double val2){
 	}
 }
 
-static void set_cached_rel_param(relParam* par,int* status){
+void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status){
 
-	if (cached_rel_param==NULL){
-		cached_rel_param = (relParam*) malloc ( sizeof(relParam));
-		CHECK_MALLOC_VOID_STATUS(cached_rel_param,status);
+	if ((*ca_rel_param)==NULL){
+		(*ca_rel_param) = (relParam*) malloc ( sizeof(relParam));
+		CHECK_MALLOC_VOID_STATUS((*ca_rel_param),status);
 	}
 
-	cached_rel_param->a = par->a;
-	cached_rel_param->emis1 = par->emis1;
-	cached_rel_param->emis2 = par->emis2;
-	cached_rel_param->gamma = par->gamma;
-	cached_rel_param->height = par->height;
-	cached_rel_param->incl = par->incl;
-	cached_rel_param->beta = par->beta;
+	(*ca_rel_param)->a = par->a;
+	(*ca_rel_param)->emis1 = par->emis1;
+	(*ca_rel_param)->emis2 = par->emis2;
+	(*ca_rel_param)->gamma = par->gamma;
+	(*ca_rel_param)->height = par->height;
+	(*ca_rel_param)->incl = par->incl;
+	(*ca_rel_param)->beta = par->beta;
 
-	cached_rel_param->z = par->z;
-	cached_rel_param->lineE = par->lineE;
+	(*ca_rel_param)->z = par->z;
+	(*ca_rel_param)->lineE = par->lineE;
 
-	cached_rel_param->emis_type = par->emis_type;
-	cached_rel_param->model_type = par->model_type;
+	(*ca_rel_param)->emis_type = par->emis_type;
+	(*ca_rel_param)->model_type = par->model_type;
 
-	cached_rel_param->rbr = par->rbr;
-	cached_rel_param->rin = par->rin;
-	cached_rel_param->rout = par->rout;
+	(*ca_rel_param)->rbr = par->rbr;
+	(*ca_rel_param)->rin = par->rin;
+	(*ca_rel_param)->rout = par->rout;
 
 }
 
@@ -1336,21 +1452,80 @@ static int comp_rel_param(relParam* cpar, relParam* par){
 	if (comp_single_param_val(par->rin,cpar->rin)) return 1;
 	if (comp_single_param_val(par->rout,cpar->rout)) return 1;
 
+	/** also check if the number of zones changed **/
+	if (c_num_zones != get_num_zones(par->model_type,par->emis_type)) return 1;
+
 	return 0;
 }
 
 /* check if values, which need a re-computation of the relline profile, have changed */
-int redo_relbase_calc(relParam* param, int* status){
+int redo_relbase_calc(relParam* param, relParam* ca_rel_param){
 
 	int redo = 1;
 
-	if (cached_rel_param==NULL){
+	if (ca_rel_param==NULL){
 	} else {
-		redo = comp_rel_param(cached_rel_param,param);
+		redo = comp_rel_param(ca_rel_param,param);
 	}
 
 	return redo;
 }
+
+
+
+void set_cached_xill_param(xillParam* par, xillParam** ca_xill_param, int* status){
+
+	if ((*ca_xill_param)==NULL){
+		(*ca_xill_param) = (xillParam*) malloc ( sizeof(xillParam));
+		CHECK_MALLOC_VOID_STATUS((*ca_xill_param),status);
+	}
+
+	(*ca_xill_param)->afe = par->afe;
+	(*ca_xill_param)->dens = par->dens;
+	(*ca_xill_param)->ect = par->ect;
+	(*ca_xill_param)->gam = par->gam;
+	(*ca_xill_param)->lxi = par->lxi;
+	(*ca_xill_param)->z = par->z;
+
+	(*ca_xill_param)->prim_type = par->prim_type;
+	(*ca_xill_param)->model_type = par->model_type;
+
+}
+
+int comp_xill_param(xillParam* cpar, xillParam* par){
+	if (comp_single_param_val(par->afe,cpar->afe)) return 1;
+	if (comp_single_param_val(par->dens,cpar->dens)) return 1;
+	if (comp_single_param_val(par->ect,cpar->ect)) return 1;
+	if (comp_single_param_val(par->gam,cpar->gam)) return 1;
+	if (comp_single_param_val(par->lxi,cpar->lxi)) return 1;
+	if (comp_single_param_val(par->z,cpar->z)) return 1;
+
+	if (comp_single_param_val( (double) par->prim_type, (double) cpar->prim_type)) return 1;
+	if (comp_single_param_val( (double) par->model_type, (double) cpar->model_type)) return 1;
+
+	return 0;
+}
+
+/* check if values, which need a re-computation of the relline profile, have changed */
+int redo_xillver_calc(relParam* rel_param, xillParam* xill_param, relParam* ca_rel_param, xillParam* ca_xill_param){
+
+	int redo = 1;
+
+	if ((ca_rel_param==NULL)|| (ca_xill_param==NULL)  ){
+	} else {
+		redo = comp_xill_param(ca_xill_param,xill_param);
+
+		/** did spin or h change (means xillver needs to be re-computed as well, due to Ecut) **/
+		if (comp_single_param_val(rel_param->a,ca_rel_param->a) ||
+				comp_single_param_val(rel_param->height,ca_rel_param->height)	){
+			redo = 1;
+		}
+
+	}
+
+	return redo;
+}
+
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup
  * (assuming a 1keV line, by a grid given in keV!)
@@ -1361,8 +1536,7 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 
 	// check caching here and also re-set the cached parameter values
 	// TODO: also check if the energy grid changed!
-	int redo = redo_relbase_calc(param,status);
-	CHECK_STATUS_RET(*status,NULL);
+	int redo = redo_relbase_calc(param,cached_relbase_param);
 
 	if (redo){
 
@@ -1386,7 +1560,7 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 		renorm_relline_profile(cached_rel_spec,param);
 
 		// store parameters such that we know what we calculated
-		set_cached_rel_param(param,status);
+		set_cached_rel_param(param,&cached_relbase_param,status);
 		CHECK_STATUS_RET(*status,NULL);
 	}
 
@@ -1440,10 +1614,14 @@ void free_cached_tables(void){
 	free_cached_xillTable();
 
 	free(cached_rel_param);
+	free(cached_xill_param);
+	free(cached_relbase_param);
 
 	free_rel_spec(cached_rel_spec);
 
 	free_str_relb_func(cached_str_relb_func);
+
+	free_specCache();
 
 	free(ener_std);
 	free(ener_xill);
@@ -1558,7 +1736,134 @@ void free_relSysPar(relSysPar* sysPar){
 }
 
 
+void free_fft_cache(double*** sp, int n1, int n2){
 
+	int ii; int jj;
+	if (sp !=NULL){
+		for (ii=0; ii<n1; ii++){
+			if (sp[ii] != NULL){
+				for (jj=0; jj<n2; jj++){
+					free(sp[ii][jj]);
+				}
+			}
+			free(sp[ii]);
+		}
+		free(sp);
+	}
+
+}
+
+
+static specCache* new_specCache(int n_cache, int n_ener, int* status){
+
+
+
+	specCache* spec = (specCache*) malloc(sizeof(specCache));
+	CHECK_MALLOC_RET_STATUS(spec,status,NULL);
+
+	spec->n_cache = n_cache;
+	spec->nzones = 0;
+	spec->n_ener = n_ener;
+
+	spec->fft_xill = (double***) malloc (sizeof(double**)*n_cache);
+	CHECK_MALLOC_RET_STATUS(spec->fft_xill,status,NULL);
+
+	spec->fft_rel = (double***) malloc (sizeof(double**)*n_cache);
+	CHECK_MALLOC_RET_STATUS(spec->fft_rel,status,NULL);
+
+	spec->xill_spec = (xill_spec**) malloc(sizeof(xill_spec*)*n_cache);
+	CHECK_MALLOC_RET_STATUS(spec->xill_spec,status,NULL);
+
+
+	int ii; int jj;
+	int m = 2;
+	for (ii=0; ii<n_cache; ii++){
+		spec->fft_xill[ii] = (double**) malloc (sizeof(double*)*m);
+		CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii],status,NULL);
+		spec->fft_rel[ii] = (double**) malloc (sizeof(double*)*m);
+		CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii],status,NULL);
+
+		for (jj=0; jj<m; jj++){
+			spec->fft_xill[ii][jj] = (double*) malloc (sizeof(double)*n_ener);
+			CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii][jj],status,NULL);
+			spec->fft_rel[ii][jj] = (double*) malloc (sizeof(double)*n_ener);
+			CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii][jj],status,NULL);
+		}
+
+		spec->xill_spec[ii] = NULL;
+
+	}
+
+	spec->out_spec = NULL;
+
+	return spec;
+}
+
+
+out_spec* init_out_spec(int n_ener, double* ener, int* status){
+
+	out_spec* spec = (out_spec*) malloc( sizeof(out_spec));
+	CHECK_MALLOC_RET_STATUS(spec,status,NULL);
+
+	spec->n_ener = n_ener;
+	spec->ener = (double*) malloc(sizeof(double)*n_ener) ;
+	CHECK_MALLOC_RET_STATUS(spec->ener,status,NULL);
+	spec->flux = (double*) malloc(sizeof(double)*n_ener) ;
+	CHECK_MALLOC_RET_STATUS(spec->flux,status,NULL);
+
+	int ii;
+	for (ii=0; ii<n_ener; ii++){
+		spec->ener[ii] = ener[ii];
+		spec->flux[ii] = 0.0;
+	}
+
+	return spec;
+}
+
+void free_out_spec(out_spec* spec){
+	if (spec!=NULL){
+		free(spec->ener);
+		free(spec->flux);
+		free(spec);
+		spec = NULL;
+	}
+}
+
+
+void free_specCache(void){
+
+	int ii;
+	int m = 2;
+	if (spec_cache->xill_spec != NULL){
+		for (ii=0; ii<spec_cache->n_cache; ii++){
+			if (spec_cache->xill_spec[ii] != NULL){
+				free_xill_spec(spec_cache->xill_spec[ii]);
+			}
+		}
+		free(spec_cache->xill_spec);
+	}
+
+
+	if (spec_cache->fft_xill != NULL){
+		free_fft_cache(spec_cache->fft_xill,spec_cache->n_cache,m);
+	}
+
+	if (spec_cache->fft_rel != NULL){
+		free_fft_cache(spec_cache->fft_rel,spec_cache->n_cache,m);
+	}
+
+	free_out_spec(spec_cache->out_spec);
+
+	free(spec_cache);
+
+}
+
+void init_specCache(specCache** spec, int* status){
+
+	if ((*spec)==NULL){
+		(*spec) = new_specCache(N_ZONES_MAX,N_ENER_CONV,status);
+	}
+}
 
 /*** struct timeval start, end;
 	long mtime, seconds, useconds;

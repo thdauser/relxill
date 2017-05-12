@@ -633,22 +633,6 @@ xill_spec* get_xillver_spectra(xillParam* param, int* status){
 	xillTable* tab = NULL;
 	char* fname = get_init_xillver_table(&tab,param,status);
 
-/*	if (is_dens_model(param->model_type)) {
-		if (cached_xill_tab_dens==NULL){
-			init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
-			CHECK_STATUS_RET(*status,NULL);
-		}
-		tab = cached_xill_tab_dens;
-		fname = XILLTABLE_DENS_FILENAME;
-
-	} else {
-		if (cached_xill_tab==NULL){
-			init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
-			CHECK_STATUS_RET(*status,NULL);
-		}
-		tab = cached_xill_tab;
-		fname = XILLTABLE_FILENAME;
-	} */
 
 	assert(tab!=NULL);
 	assert(fname!=NULL);

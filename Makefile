@@ -43,16 +43,22 @@ MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 
 .PHONY: model
 model:
+
+	make clean
+
 	mkdir -p $(model_dir)
 	rm -f $(model_dir)/*
 	cp -v $(model_files) $(model_dir)
 
 	make $(LINK_TARGET)
+
+
 	$(eval MODEL_VERSION := $(shell ./test_sta version))
 	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION).tgz)
 
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
-	cd $(model_dir) && ./compile_relxill.csh && echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
+	echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' 
+	cd $(model_dir) && ./compile_relxill.csh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
 	rm -f $(model_dir)/*.c $(model_dir)/*.h
 	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
@@ -73,7 +79,7 @@ valgrind-relxilllp:
 gdb:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	gdb --args ./test_sta relxilllp
+	gdb --args ./test_sta relxill
 
 ddd:
 	echo "exit" | make gdb 

@@ -94,8 +94,8 @@ static void set_std_param_relxilldens(double* inp_par, int* status){
 
 
 static void set_std_param_relxilllp(double* inp_par, int* status){
-	inp_par[0]  = 3.0;   // height
-	inp_par[1]  = 0.998; // a
+	inp_par[0]  = -1.1;   // height
+	inp_par[1]  = 0.9798; // a
 	inp_par[2]  = 60.0;  // incl
 	inp_par[3]  = -1.0;  // rin
 	inp_par[4]  = 400.;  // rout
@@ -104,8 +104,8 @@ static void set_std_param_relxilllp(double* inp_par, int* status){
 	inp_par[7]  = 0.0;   // logxi
 	inp_par[8]  = 1.0;   // Afe
 	inp_par[9]  = 300.0; // Ecut
-	inp_par[10] = -1.0;   // refl_frac
-	inp_par[11] = 1.0;   // fixReflFrac
+	inp_par[10] = 3.0;   // refl_frac
+	inp_par[11] = 0.0;   // fixReflFrac
 }
 
 
@@ -205,21 +205,47 @@ static void std_eval_relxill(int* status, int n){
 	CHECK_STATUS_VOID(*status);
 
 	/* create an energy grid */
-	int n_ener = 4000;
+	int n_ener = 3000;
 	double ener[n_ener+1];
 	get_log_grid(ener,n_ener+1,0.1,1000.0);
 
 	/* call the relline model */
 	double photar[n_ener];
-	int ii;
-	for (ii=0; ii<n; ii++){
+
+	/* int ii;
+	 for (ii=0; ii<n; ii++){
 		if (n>1){
-			inp_par[3] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+			//			inp_par[3] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+			inp_par[7] = 1.0*ii/(n-1)*0.1 - 0.0;
+			inp_par[7] = 0.0;
 			// inp_par[9] = 1.0*ii/(n-1)*0.1;
 		}
-		printf(" testing a=%.3f , lxi=%.2f \n",inp_par[3],inp_par[9]);
-		tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
-	}
+		// printf(" testing a=%.3f , lxi=%.2f \n",inp_par[3],inp_par[9]);
+		printf(" testing z=%.3f \n",inp_par[7]);
+	}*/
+	tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
+
+}
+
+
+/** standard evaluation of the relxill model **/
+static void std_eval_relxill2(int* status, int n){
+
+	printf("\n ==> Evaluating RELXILL MODEL 2 \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELXILL;
+	double inp_par[NUM_PARAM_RELXILL];
+	set_std_param_relxill(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	int n_ener = 1;
+	double ener[n_ener+1];
+	ener[0] = 1.0;
+	ener[1] = 2.0;
+	double photar[n_ener];
+
+	tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
 
 }
 
@@ -279,14 +305,22 @@ static void std_eval_relxilllp(int* status, int n){
 
 	for (ii=0; ii<n; ii++){
 		if (n>1){
-			inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
-			inp_par[7] = 1.0*ii/(n-1)*4.7;
+	//		inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+	//		inp_par[7] = 1.0*ii/(n-1)*4.7;
 			printf(" relxilllp: testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
 		}
 		tdrelxilllp(ener,n_ener,photar,inp_par,n_param,status);
+
 	}
+	double sum=0.0;
+	int jj;
+	for (jj=0;jj<n_ener;jj++){
+		sum += photar[jj];
+	}
+	printf(" integ flux = %.2e \n",sum);
 
 	gettimeofday(&end, NULL);
+
 
 	if (n>1){
 		seconds  = end.tv_sec  - start.tv_sec;
@@ -328,7 +362,6 @@ static void std_eval_relxilllpdens(int* status, int n){
 	long seconds, useconds;
 	gettimeofday(&start, NULL);
 
-
 	for (ii=0; ii<n; ii++){
 		if (n>1){
 			inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
@@ -348,9 +381,6 @@ static void std_eval_relxilllpdens(int* status, int n){
 
 		printf("time per relxilllp evaluation: %.1f milli seconds\n", mtime);
 	}
-
-	// test output
-	// save_xillver_spectrum(ener,photar,n_ener,"test_relxilllp_spectrum.dat");
 
 }
 
@@ -704,6 +734,8 @@ int main(int argc, char *argv[]){
 
 		if (do_all || do_relxill){
 			std_eval_relxill(&status,n);
+			std_eval_relxilllp(&status,n);
+			std_eval_relxill2(&status,n);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}

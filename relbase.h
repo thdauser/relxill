@@ -43,11 +43,9 @@
 #define PARAM_DEFAULT 0.0
 
 #define version_major 0
-#define version_minor 1
-#define version_build 16
+#define version_minor 2
+#define version_build 0
 #define version_dev "dev"
-
-#define DEBUG_RELXILL 1
 
 // TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */
@@ -70,7 +68,8 @@
 
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
-#define N_ZONES 1       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
+#define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
+#define N_ZONES_MAX 100  // maximal number of radial zones
 
 /** parameters for the convolution **/
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
@@ -110,6 +109,21 @@ typedef struct{
 	double* gstar;
 } str_relb_func;
 
+typedef struct{
+	int n_ener;
+	double* ener;
+	double* flux;
+} out_spec;
+
+typedef struct{
+	int nzones;   // number of zones actually stored there
+	int n_cache;  // number of array (nzones <= n_cache !!)
+	int n_ener;
+	double*** fft_xill;  // dimensions [n_cache,2,n_ener]
+	double*** fft_rel;   // dimensions [n_cache,2,n_ener]
+	xill_spec** xill_spec;
+	out_spec* out_spec;
+} specCache;
 
 /****** FUNCTION DEFINITIONS ******/
 
@@ -136,5 +150,18 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 void free_rel_spec(rel_spec* spec);
 rel_spec* new_rel_spec(int nzones, const int n_ener, int*status);
+
+/** caching routines **/
+void init_specCache(specCache** spec, int* status);
+void free_specCache(void);
+void free_fft_cache(double*** sp,int n1, int n2);
+void free_out_spec(out_spec* spec);
+out_spec* init_out_spec(int n_ener, double* ener, int* status);
+int redo_relbase_calc(relParam* param, relParam* ca_para);
+int redo_xillver_calc(relParam* rel_param, xillParam* xill_param, relParam* ca_rel, xillParam* ca_xill);
+int comp_xill_param(xillParam* cpar, xillParam* par);
+void set_cached_xill_param(xillParam* par,xillParam** ca_par, int* status);
+void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status);
+
 
 #endif /* RELBASE_H_ */
