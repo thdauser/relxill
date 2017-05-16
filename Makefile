@@ -10,9 +10,9 @@ COMPILE.c = gcc
 
 INCLUDES = -I${HEADAS}/include
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o 
+objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o
 headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xilltable.h
-sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c
+sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c donthcomp.c
 
 model_dir = ./build/
 model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh modelfiles/README.txt
@@ -69,7 +69,7 @@ model:
 valgrind:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxill
+	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relconv
 
 valgrind-relxilllp:
 	make clean

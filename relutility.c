@@ -19,7 +19,6 @@
 #include "relutility.h"
 
 
-
 // TODO: CHECK IF WE NEED "INLINE" HERE for maximal speed
 /** linear interpolation in 1 dimension **/
 double interp_lin_1d(double ifac_r, double rlo, double rhi){
@@ -549,4 +548,13 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 		}
 
 	}
+}
+
+void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z){
+	  nthcomp_param[0] = gam;
+	  nthcomp_param[1] = kte;
+	  nthcomp_param[2] = 0.05; // ktbb
+	  nthcomp_param[3] = 1.0;  // inp_type
+	  nthcomp_param[4] = z;
+
 }

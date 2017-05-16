@@ -1041,7 +1041,6 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 	double conv_out[n_ener];
 	rebin_spectrum(ener,rebin_flux,n_ener,
 			ener_inp, spec_inp, n_ener_inp );
-
 	// convolve the spectrum
 	init_specCache(&spec_cache,status);
 	CHECK_STATUS_VOID(*status);
@@ -1261,9 +1260,10 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	}
 
 	/** 1 **  calculate the primary spectrum  **/
-	if (xill_param->prim_type == PRIM_SPEC_ECUT){
+	if (xill_param->prim_type == PRIM_SPEC_ECUT ){
 
 		/** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
+		/**    (in case of the nthcomp primary continuum ect is actually kte ) **/
 		double ecut_rest = xill_param->ect;
 
 		for (ii=0; ii<n_ener_xill; ii++){
@@ -1273,8 +1273,10 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 		             (ener_xill[ii+1] - ener_xill[ii]);
 		}
 
-	} else if ( xill_param->prim_type == PRIM_SPEC_NTHCOMP){
-		printf(" **** warning: NTHCOMP primary continuum not yet implemented \n");
+	} else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
+		double nthcomp_param[5];
+		get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, 0.0);
+		c_donthcomp(ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
 	} else {
 		RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
 		return;

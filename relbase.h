@@ -20,17 +20,9 @@
 
 #define _GNU_SOURCE
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <math.h>
-#include <string.h>
-#include <assert.h>
-#include <limits.h>
-#include <float.h>
+#include "common.h"
 
 #include "fitsio.h"
-
-#include "common.h"
 
 #include "relutility.h"
 #include "reltable.h"
@@ -44,7 +36,7 @@
 
 #define version_major 0
 #define version_minor 2
-#define version_build 0
+#define version_build 1
 #define version_dev "dev"
 
 // TODO: allow to set it by an environment variable

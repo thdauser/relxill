@@ -59,6 +59,15 @@ static void set_std_param_relconv(double* inp_par, int* status){
 	inp_par[6] = 400.;
 }
 
+static void set_std_param_relconvlp(double* inp_par, int* status){
+	inp_par[0] = 3.0;
+	inp_par[1] = 0.998;
+	inp_par[2] = 30.0;
+	inp_par[3] = -1.;
+	inp_par[4] = 400.;
+	inp_par[5] = 2.0;
+}
+
 
 static void set_std_param_relxill(double* inp_par, int* status){
 	inp_par[0]  = 3.0;
@@ -74,6 +83,22 @@ static void set_std_param_relxill(double* inp_par, int* status){
 	inp_par[10] = 1.0;   // Afe
 	inp_par[11] = 300.0; // Ecut
 	inp_par[12] = 3.0;   // refl_frac
+}
+
+static void set_std_param_relxill_nthcomp(double* inp_par, int* status){
+	inp_par[0]  = 3.0;
+	inp_par[1]  = 3.0;
+	inp_par[2]  = 15.0;
+	inp_par[3]  = 0.998;
+	inp_par[4]  = 60.0;
+	inp_par[5]  = -1.0;
+	inp_par[6]  = 400.;
+	inp_par[7]  = 0.0;   // redshift
+	inp_par[8]  = 2.1;   // pl Index
+	inp_par[9]  = 0.0;   // logxi
+	inp_par[10] = 1.0;   // Afe
+	inp_par[11] = 100.0; // kTe
+	inp_par[12] = 0.0;   // refl_frac
 }
 
 static void set_std_param_relxilldens(double* inp_par, int* status){
@@ -108,6 +133,21 @@ static void set_std_param_relxilllp(double* inp_par, int* status){
 	inp_par[11] = 0.0;   // fixReflFrac
 }
 
+
+static void set_std_param_relxilllp_nthcomp(double* inp_par, int* status){
+	inp_par[0]  = -1.1;   // height
+	inp_par[1]  = 0.9798; // a
+	inp_par[2]  = 60.0;  // incl
+	inp_par[3]  = -1.0;  // rin
+	inp_par[4]  = 400.;  // rout
+	inp_par[5]  = 0.0;    // redshift
+	inp_par[6]  = 2.1;   // pl Index
+	inp_par[7]  = 0.0;   // logxi
+	inp_par[8]  = 1.0;   // Afe
+	inp_par[9]  = 100.0; // kTe
+	inp_par[10] = 3.0;   // refl_frac
+	inp_par[11] = 0.0;   // fixReflFrac
+}
 
 static void set_std_param_relxilllpdens(double* inp_par, int* status){
 	inp_par[0]  = 3.0;   // height
@@ -194,6 +234,41 @@ static void std_eval_relconv(int* status, int n){
 }
 
 
+
+/** standard evaluation of the relline model **/
+static void std_eval_relconvlp(int* status, int n){
+
+	printf("\n ==> Evaluating RELCONV_LP MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELCONVLP;
+	double inp_par[NUM_PARAM_RELCONVLP];
+	set_std_param_relconvlp(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	int n_ener = 2000;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.05,10.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+
+	int ii;
+	double ener_line = 1.0;
+	for (ii=0; ii<n_ener; ii++){
+		photar[ii] = 0.0;
+		if ((ener[ii]<ener_line) && ener[ii+1]>ener_line){
+			photar[ii] = 1.0; // ener[1]-ener[0];
+		}
+	}
+
+	// test output
+	// save_xillver_spectrum(ener,photar,n_ener,"test_relconv_inp_spectrum.dat");
+	tdrelconvlp(ener,n_ener,photar,inp_par,n_param,status);
+	save_xillver_spectrum(ener,photar,n_ener,"test_relconv_out_spectrum.dat");
+}
+
+
 /** standard evaluation of the relxill model **/
 static void std_eval_relxill(int* status, int n){
 
@@ -227,27 +302,39 @@ static void std_eval_relxill(int* status, int n){
 
 }
 
-
 /** standard evaluation of the relxill model **/
-static void std_eval_relxill2(int* status, int n){
+static void std_eval_relxill_nthcomp(int* status, int n){
 
-	printf("\n ==> Evaluating RELXILL MODEL 2 \n");
+	printf("\n ==> Evaluating RELXILL NTHCOMP MODEL \n");
 	/* set the parameters */
 	int n_param = NUM_PARAM_RELXILL;
 	double inp_par[NUM_PARAM_RELXILL];
-	set_std_param_relxill(inp_par, status);
+	set_std_param_relxill_nthcomp(inp_par, status);
 	CHECK_STATUS_VOID(*status);
 
 	/* create an energy grid */
-	int n_ener = 1;
+	int n_ener = 3000;
 	double ener[n_ener+1];
-	ener[0] = 1.0;
-	ener[1] = 2.0;
+	get_log_grid(ener,n_ener+1,0.1,1000.0);
+
+	/* call the relline model */
 	double photar[n_ener];
 
-	tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
-
+	/* int ii;
+	 for (ii=0; ii<n; ii++){
+		if (n>1){
+			//			inp_par[3] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+			inp_par[7] = 1.0*ii/(n-1)*0.1 - 0.0;
+			inp_par[7] = 0.0;
+			// inp_par[9] = 1.0*ii/(n-1)*0.1;
+		}
+		// printf(" testing a=%.3f , lxi=%.2f \n",inp_par[3],inp_par[9]);
+		printf(" testing z=%.3f \n",inp_par[7]);
+	}*/
+	tdrelxill_nthcomp(ener,n_ener,photar,inp_par,n_param,status);
+	save_xillver_spectrum(ener,photar,n_ener,"test_relxillCp_spectrum.dat");
 }
+
 
 /** standard evaluation of the relxillD model **/
 static void std_eval_relxilldens(int* status, int n){
@@ -336,6 +423,38 @@ static void std_eval_relxilllp(int* status, int n){
 
 }
 
+/** standard evaluation of the relxill model **/
+static void std_eval_relxilllp_nthcomp(int* status, int n){
+
+	printf("\n ==> Evaluating RELXILLLP NTHCOMP MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELXILLLP;
+	double inp_par[NUM_PARAM_RELXILLLP];
+	set_std_param_relxilllp_nthcomp(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	const int n_ener = 100;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.1,1000.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+	int ii;
+
+	for (ii=0; ii<n; ii++){
+		if (n>1){
+	//		inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+	//		inp_par[7] = 1.0*ii/(n-1)*4.7;
+			printf(" relxilllp (nthcomp): testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
+		}
+		tdrelxilllp_nthcomp(ener,n_ener,photar,inp_par,n_param,status);
+
+	}
+
+	// save_xillver_spectrum(ener,photar,n_ener,"test_relxilllp_spectrum.dat");
+
+}
 
 
 /** standard evaluation of the relxill model **/
@@ -659,6 +778,9 @@ int main(int argc, char *argv[]){
 	int do_relxilllp = 0;
 	int do_relxilldens = 0;
 	int do_relxilllpdens = 0;
+	int do_relxillnthcomp= 0;
+	int do_relxilllpnthcomp = 0;
+	int do_relconv = 0;
 
 	if (argc>=2){
 		if (strcmp(argv[1],"version")==0){
@@ -674,6 +796,9 @@ int main(int argc, char *argv[]){
 		} else if (strcmp(argv[1],"relline")==0){
 				do_relline=1;
 				do_all=0;
+		} else if (strcmp(argv[1],"relconv")==0){
+				do_relconv=1;
+				do_all=0;
 		} else if (strcmp(argv[1],"rellinelp")==0){
 				do_rellinelp=1;
 				do_all=0;
@@ -686,7 +811,14 @@ int main(int argc, char *argv[]){
 		} else if (strcmp(argv[1],"relxilllpdens")==0){
 			do_relxilllpdens=1;
 			do_all=0;
-	}
+		} else if (strcmp(argv[1],"relxillCp")==0){
+				do_relxillnthcomp=1;
+				do_all=0;
+		} else if (strcmp(argv[1],"relxilllpCp")==0){
+			do_relxilllpnthcomp=1;
+			do_all=0;
+
+		}
 
 	}
 
@@ -717,14 +849,18 @@ int main(int argc, char *argv[]){
 			printf("     ---> successful \n");
 		}
 
-		if (do_all){
+		if (do_relconv){
 
 			std_eval_relconv(&status,1);
 			CHECK_STATUS_BREAK(status);
+			std_eval_relconvlp(&status,1);
+			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 
+		}
 
 
+		if (do_all) {
 			std_eval_xillver(&status,1);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
@@ -734,14 +870,24 @@ int main(int argc, char *argv[]){
 
 		if (do_all || do_relxill){
 			std_eval_relxill(&status,n);
-			std_eval_relxilllp(&status,n);
-			std_eval_relxill2(&status,n);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}
 
 		if (do_all || do_relxilllp){
 			std_eval_relxilllp(&status,n);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+		}
+
+		if (do_all || do_relxillnthcomp){
+			std_eval_relxill_nthcomp(&status,n);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+		}
+
+		if (do_all || do_relxilllpnthcomp){
+			std_eval_relxilllp_nthcomp(&status,n);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}

@@ -18,6 +18,14 @@
 #ifndef COMMON_H_
 #define COMMON_H_
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+#include <string.h>
+#include <assert.h>
+#include <limits.h>
+#include <float.h>
+
 /*********** DEFINE STATEMENTS *********/
 
 /** define Emissivity Model Type **/
@@ -30,7 +38,6 @@
 #define PRIM_SPEC_ECUT 1
 #define PRIM_SPEC_NTHCOMP 2
 /***************************************/
-
 
 /****** TYPE DEFINITIONS ******/
 
@@ -154,6 +161,7 @@ typedef struct{
 
 
 /******************************/
-
+/* define the c_donthcomp function here */
+void c_donthcomp(double *ear, int ne, double* param, double *photar);
 
 #endif /* COMMON_H_ */

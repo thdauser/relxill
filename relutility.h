@@ -151,4 +151,6 @@ int get_num_zones(int model_type, int emis_type);
 /** check if it is the xillver model **/
 int is_xill_model(int model_type);
 
+void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z);
+
 #endif /* RELUTILITY_H_ */

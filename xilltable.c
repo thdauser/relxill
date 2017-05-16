@@ -20,9 +20,11 @@
 
 int XILL_num_param_vals[] = {XILLTABLE_N_GAM,XILLTABLE_N_AFE,XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL};
 int XILL_DENS_num_param_vals[] = {XILLTABLE_DENS_N_GAM,XILLTABLE_DENS_N_AFE,XILLTABLE_DENS_N_LXI,XILLTABLE_DENS_N_DENS,XILLTABLE_DENS_N_INCL};
+int XILL_NTHCOMP_num_param_vals[] = {XILLTABLE_NTHCOMP_N_GAM,XILLTABLE_NTHCOMP_N_AFE,XILLTABLE_NTHCOMP_N_LXI,XILLTABLE_NTHCOMP_N_KTE,XILLTABLE_NTHCOMP_N_INCL};
 
 xillTable* cached_xill_tab=NULL;
 xillTable* cached_xill_tab_dens=NULL;
+xillTable* cached_xill_tab_nthcomp=NULL;
 
 /** get a new and empty rel table (structure will be allocated)  */
 xillTable* new_xillTable(int n_gam, int n_afe, int n_lxi, int n_ect, int n_incl, int* status){
@@ -222,11 +224,14 @@ static void	get_xilltable_ener(int* n_ener, float** elo, float** ehi, fitsfile* 
 	return;
 }
 
-static int* get_ptr_num_param_vals(int model_type){
+static int* get_ptr_num_param_vals(xillParam* param ){
+	int model_type = param->model_type;
 	int* num_param_vals;
 	if ( is_dens_model(model_type)){
 		num_param_vals = XILL_DENS_num_param_vals;
 
+	} else if (param->prim_type == PRIM_SPEC_NTHCOMP ){
+		num_param_vals = XILL_NTHCOMP_num_param_vals;
 	} else {
 		num_param_vals = XILL_num_param_vals;
 	}
@@ -248,7 +253,7 @@ static int* get_xill_indices(xillParam* param, xillTable* tab,int* status){
 	int* ind = (int*) malloc(XILLTABLE_N_PARAM*sizeof(int));
 	CHECK_MALLOC_RET_STATUS(ind,status,NULL);
 
-	int* num_param_vals = get_ptr_num_param_vals(param->model_type);
+	int* num_param_vals = get_ptr_num_param_vals(param);
 
 	for (ii=0; ii<XILLTABLE_N_PARAM; ii++){
 		ind[ii] = binary_search_float(param_arr[ii], num_param_vals[ii],(float) param_vals[ii]);
@@ -307,12 +312,15 @@ void init_xillver_table(char* filename, xillTable** inp_tab, xillParam* param, i
 		/** allocate space for the new table  **/
 		if (is_dens_model(param->model_type)){
 			tab = new_xillTable(XILLTABLE_DENS_N_GAM,XILLTABLE_DENS_N_AFE, XILLTABLE_DENS_N_LXI,XILLTABLE_DENS_N_DENS,XILLTABLE_DENS_N_INCL,status);
-		} else {
+		} else if (param->prim_type == PRIM_SPEC_NTHCOMP){
+				tab = new_xillTable(XILLTABLE_NTHCOMP_N_GAM,XILLTABLE_NTHCOMP_N_AFE, XILLTABLE_NTHCOMP_N_LXI,
+						XILLTABLE_NTHCOMP_N_KTE,XILLTABLE_NTHCOMP_N_INCL,status);
+			} else {
 			tab = new_xillTable(XILLTABLE_N_GAM,XILLTABLE_N_AFE, XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL,status);
 		}
 		CHECK_STATUS_BREAK(*status);
 
-		int* num_param_vals = get_ptr_num_param_vals(param->model_type);
+		int* num_param_vals = get_ptr_num_param_vals(param);
 
 		/** now load the energy grid **/
 		get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
@@ -326,9 +334,6 @@ void init_xillver_table(char* filename, xillTable** inp_tab, xillParam* param, i
 		assert(tab!=NULL);
 		assert(tab->elo!=NULL);
 		assert(tab->dat!=NULL);
-
-
-
 
 	} while(0);
 
@@ -615,8 +620,17 @@ char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status){
 		*tab = cached_xill_tab_dens;
 		return XILLTABLE_DENS_FILENAME;
 
-	} else {
-		if (cached_xill_tab==NULL){
+	} else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
+			if (cached_xill_tab_nthcomp==NULL){
+				init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_nthcomp, param, status);
+				CHECK_STATUS_RET(*status,NULL);
+			}
+			*tab = cached_xill_tab_nthcomp;
+			return XILLTABLE_NTHCOMP_FILENAME;
+
+		} else {
+
+			if (cached_xill_tab==NULL){
 			init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
 			CHECK_STATUS_RET(*status,NULL);
 		}

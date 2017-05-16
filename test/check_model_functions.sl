@@ -25,7 +25,8 @@ __set_hard_limits("relxilllp","h",-100,1000);
 
 _traceback=1;
 
-variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD"];
+variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
+		  "relxillCp","relxilllpCp","xillverCp"];
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
 variable sum_name = "plot_check_model_functions_sum.pdf";
@@ -218,6 +219,31 @@ define check_conv_mod_single(ff,ff_conv){ %{{{
 }
 %}}}
 
+define check_neg_nthcomp_mod_single(ff,ff_dens){ %{{{
+   
+   
+   variable lo,hi;
+   variable val0, val1;
+   (lo,hi) = log_grid(0.5,500,4000);
+   
+   fit_fun_default(ff_dens);
+   set_par("*.kTe",100.0);
+   val0 = eval_fun_keV (lo,hi);
+      
+   fit_fun_default(ff);
+   set_par("*.Ecut",300.0);
+   val1 = eval_fun_keV (lo,hi);
+   
+   simple_plot(lo,hi,val0,val1;;__qualifiers());
+
+   variable gn = goodness(val0,val1);
+   vmessage("    -> %s vs %s  [ %.2e]",
+	    ff_dens, ff,gn);
+   return gn;
+}
+%}}}
+
+
 
 define check_dens_mod_single(ff,ff_dens){ %{{{
    
@@ -321,13 +347,13 @@ define check_conv_mod(){ %{{{
    counter++;
    vmessage("\n### %i ### testing CONVOLUTION: ###",counter);
    
-   variable ff = ["relline"];
-   variable ff_conv = ["relconv"];
+   variable ff = ["relline","relline_lp"];
+   variable ff_conv = ["relconv","relconv_lp"];
    
    variable ii,n = length(ff);
    
    _for ii(0,n-1,1){
-      if (check_conv_mod_single(ff[ii],ff_conv[ii];nopl) > goodness_lim*5){
+      if (not  (check_conv_mod_single(ff[ii],ff_conv[ii];nopl) < goodness_lim*8) ){
 	vmessage(" *** error: there seems to be a problem with the CONVOLUTION MODEL %s ",ff_conv[ii]);
 	 return EXIT_FAILURE;
       }
@@ -351,6 +377,31 @@ define check_dens_mod(){ %{{{
    _for ii(0,n-1,1){
       if (check_dens_mod_single(ff[ii],ff_dens[ii];nopl) > goodness_lim*0.1){
 	vmessage(" *** error: there seems to be a problem with the HIGH DENSITY MODEL %s ",ff_dens[ii]);
+	 return EXIT_FAILURE;
+      }
+   }
+
+   
+
+   return EXIT_SUCCESS;
+   
+}
+%}}}
+
+
+define check_nthcomp_mod(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### testing NTHCOMP vs. BKN PL MODELS: ###",counter);
+   
+   variable ff = ["xillver","relxill","relxilllp"];
+   variable ff_dens = ["xillverCp","relxillCp","relxilllpCp"];
+   
+   variable ii,n = length(ff);
+   
+   _for ii(0,n-1,1){
+      if (check_neg_nthcomp_mod_single(ff[ii],ff_dens[ii];nopl) < goodness_lim*0.1){
+	vmessage(" *** error: NTHCOMP and PKN PL do not differ \n => there seems to be a problem with the NTHCOMP MODEL %s ",ff_dens[ii]);
 	 return EXIT_FAILURE;
       }
    }
@@ -538,11 +589,18 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
    if (string_match(ff,"D")){
       set_par("*.HighECut",300.0);
    }
-   
+   if (string_match(ff,"Cp")){
+      set_par("nthComp*kT_bb",0.05);
+      set_par("nthComp*inp_type",1.0);
+   }
+
    val0 =  eval_fun_keV(lo0,hi0);
    val0 = val0/sum(val0)*sum(val1);
       
-   return goodness(val1,val0/sum(val0)*sum(val1));
+   variable gn = goodness(val1,val0/sum(val0)*sum(val1));
+   vmessage("   -> primary continum %s for reflection model %s  [gn=%.2e]",ff_cont,ff,gn);
+
+   return gn; 
 }
 %}}}
 
@@ -580,7 +638,7 @@ define ncheck_fix_refl_frac_single(ff){ %{{{
    set_par("*.refl_frac",-1,0,-10,10);
 %   set_par("*.fixReflFrac",0);
    val0 =  eval_fun_keV(lo0,hi0);
-      
+   
    return goodness(val1,val0);
 }
 %}}}
@@ -597,16 +655,19 @@ define check_prim_cont(){ %{{{
    assoc["Ecut"]  = "HighECut";
    variable assocD = Assoc_Type[String_Type];   
    assocD["gamma"] = "PhoIndex";
+   variable assocCp = Assoc_Type[String_Type];   
+   assocCp["gamma"] = "Gamma";
+   assocCp["kTe"] = "kT_e";
+   
 
-   variable ff =      ["relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD"];
-   variable ff_cont = ["cutoffpl","cutoffpl","cutoffpl","cutoffpl","cutoffpl","cutoffpl"];
-   variable arr_assoc=[assoc,assoc,assocD,assocD,assoc,assocD];
+   variable ff =      ["relxill","relxilllp","relxillD","relxilllpD","relxillCp","relxilllpCp","xillver","xillverD","xillverCp"];
+   variable ff_cont = ["cutoffpl","cutoffpl","cutoffpl","cutoffpl","nthComp","nthComp","cutoffpl","cutoffpl","nthComp"];
+   variable arr_assoc=[assoc,assoc,assocD,assocD,assocCp,assocCp,assoc,assocD,assocCp];
    
    
    variable ii,n = length(ff);
    
    _for ii(0,n-1,1){
-      vmessage("   -> primary continum %s for reflection model %s",ff_cont[ii],ff[ii]);
       if (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]) > goodness_lim){
 	vmessage(" *** error: there seems to be a problem with the PRIMARY CONTINUUM in  MODEL %s ",ff[ii]);
 	 return EXIT_FAILURE;
@@ -622,7 +683,8 @@ define check_refl_frac(){ %{{{
    counter++;
    vmessage("\n### %i ### testing REFLECTION FRACTION PARAMTERS: ###",counter);
    
-   variable ff = ["relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD"];
+   variable ff = ["relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD",
+		  "relxillCp","relxilllpCp","xillverCp"];
    
    variable ii,n = length(ff);
    
@@ -643,7 +705,6 @@ define check_refl_frac(){ %{{{
    return EXIT_SUCCESS;
 }
 %}}}
-
 
 define do_mc_testing(){ %{{{
 
@@ -698,13 +759,15 @@ define do_mc_testing(){ %{{{
 
 if (eval_test() != EXIT_SUCCESS) exit;
 
+
 if (check_z() != EXIT_SUCCESS) exit;
 
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
-if (check_refl_frac() != EXIT_SUCCESS) exit;
 if (check_prim_cont() != EXIT_SUCCESS) exit;
+if (check_nthcomp_mod() != EXIT_SUCCESS) exit;
+if (check_refl_frac() != EXIT_SUCCESS) exit;
 if (check_caching() != EXIT_SUCCESS) exit;
 
 if (do_mc_testing() != EXIT_SUCCESS) exit;

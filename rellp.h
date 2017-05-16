@@ -18,7 +18,6 @@
 #ifndef RELLP_H_
 #define RELLP_H_
 
-#include "common.h"
 #include "relbase.h"
 #include "relutility.h"
 
