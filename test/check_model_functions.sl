@@ -189,6 +189,39 @@ define check_line_ener(ff){ %{{{
 %}}}
 
 
+define check_line_limb(ff){ %{{{
+   fit_fun_default(ff);
+
+   if (string_match(ff,"\.*line") == 0){
+      return;
+   }
+      
+   variable le0 = 6.4;
+   variable le1 = 3.2;
+   
+   variable lo, hi;
+   (lo,hi) = log_grid(0.2,10,600);
+   
+   
+   variable val0 = eval_fun_keV(lo,hi);
+      
+   set_par("*.limb",1);
+   variable val1 = eval_fun_keV(lo,hi);
+   
+   list_par;
+
+   set_par("*.limb",2);
+   variable val2 = eval_fun_keV(lo,hi);
+
+   variable gn = goodness(val0,val1);
+   variable gn2 = goodness(val0,val2);
+   vmessage("    -> %s goodness value for limb dark %.3e amd bright %.3e",
+	    ff, gn,gn2);
+   return gn+gn2;
+}
+%}}}
+
+
 define check_conv_mod_single(ff,ff_conv){ %{{{
    
    variable ener = 6.4;
@@ -331,6 +364,10 @@ define check_linee(){ %{{{
    foreach ff(ffs){            
       if (check_line_ener(ff;nopl) > goodness_lim*3){
 	vmessage(" *** error: there seems to be a problem with the LineE in %s ",ff);
+	 return EXIT_FAILURE;
+      }
+      if (check_line_limb(ff;nopl) < goodness_lim*3){
+	vmessage(" *** error: there seems to be a problem with the Limb Brightening / Darkening  in %s ",ff);
 	 return EXIT_FAILURE;
       }
    }
@@ -745,7 +782,7 @@ define do_mc_testing(){ %{{{
 	 vmessage(" *** error: MC Parameter test for %s failed!",ff);
 	 return EXIT_FAILURE;
       }
-      vmessage("   -> successfully tested %s with %i evaluations   \t [ <time> ~ %.0fmsec ]",ff,n_mc,dt);
+      vmessage("   -> tested %s with %i evaluations   \t [ <time> ~ %.0fmsec ]",ff,n_mc,dt);
 
    }
    

@@ -56,6 +56,7 @@ typedef struct{
 	double height;
 	double gamma;
 	double beta;
+	int limb;
 } relParam;
 
 typedef struct{
@@ -122,6 +123,8 @@ typedef struct{
 	double* emis;       // intensity on the surface of the accretion disc
 	double* del_emit;   // angle under which the photon is emitted from the primary source
 	double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
+
+	int limb_law;
 
 } relSysPar;
 

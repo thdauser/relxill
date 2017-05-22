@@ -36,7 +36,7 @@
 
 #define version_major 0
 #define version_minor 2
-#define version_build 1
+#define version_build 2
 #define version_dev "dev"
 
 // TODO: allow to set it by an environment variable
@@ -94,6 +94,8 @@ typedef struct{
 	double gmin;
 	double del_g;
 	double emis;
+
+	int limb_law;
 
 	int ng;
 	double** trff;

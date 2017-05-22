@@ -454,6 +454,7 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 	param->rin   = inp_par[6];
 	param->rout  = inp_par[7];
 	param->z     = inp_par[8];
+	param->limb  = (int) (inp_par[9] + 0.5);
 
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
@@ -478,6 +479,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 	param->rin   = inp_par[5];
 	param->rout  = inp_par[6];
 	param->z     = 0.0;
+	param->limb  = (int) (inp_par[7] + 0.5);
 
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
@@ -500,7 +502,8 @@ relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int*
 	param->rin    = inp_par[4];
 	param->rout   = inp_par[5];
 	param->z      = inp_par[6];
-	param->gamma  = inp_par[7];
+	param->limb  = (int) (inp_par[7] + 0.5);
+	param->gamma  = inp_par[8];
 
 	param->beta = 0.0;
 
@@ -525,7 +528,8 @@ relParam* init_par_relconv_lp(const double* inp_par, const int n_parameter, int*
 	param->rin    = inp_par[3];
 	param->rout   = inp_par[4];
 	param->z      = 0.0;
-	param->gamma  = inp_par[5];
+	param->limb  = (int) (inp_par[5] + 0.5);
+	param->gamma  = inp_par[6];
 
 	param->beta = 0.0;
 
@@ -871,6 +875,7 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->height = 0.0;
 	param->gamma = PARAM_DEFAULT;
 	param->beta = 0.0; // special case, in order to prevent strange results
+	param->limb = 0;
 
 	return param;
 }
@@ -1023,7 +1028,7 @@ void lmodxillvernthcomp(const double* ener0, const int n_ener0, const double* pa
 /** XSPEC RELLINE MODEL FUNCTION **/
 void lmodrelline(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
-	const int n_parameter = 9;
+	const int n_parameter = 10;
 	int status = EXIT_SUCCESS;
 	tdrelline(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
@@ -1035,7 +1040,7 @@ void lmodrelline(const double* ener0, const int n_ener0, const double* parameter
 /** XSPEC RELLINELP MODEL FUNCTION **/
 void lmodrellinelp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
-	const int n_parameter = 8;
+	const int n_parameter = 9;
 	int status = EXIT_SUCCESS;
 	tdrellinelp(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
@@ -1046,7 +1051,7 @@ void lmodrellinelp(const double* ener0, const int n_ener0, const double* paramet
 /** XSPEC RELCONV MODEL FUNCTION **/
 void lmodrelconv(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
-	const int n_parameter = 7;
+	const int n_parameter = 8;
 	int status = EXIT_SUCCESS;
 	tdrelconv(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
@@ -1057,7 +1062,7 @@ void lmodrelconv(const double* ener0, const int n_ener0, const double* parameter
 /** XSPEC RELCONV LP MODEL FUNCTION **/
 void lmodrelconvlp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
-	const int n_parameter = 6;
+	const int n_parameter = 7;
 	int status = EXIT_SUCCESS;
 	tdrelconvlp(ener0, n_ener0, photar, parameter, n_parameter, &status);
 

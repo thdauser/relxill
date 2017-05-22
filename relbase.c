@@ -87,6 +87,9 @@ static int redo_get_system_parameters(relParam* param,relParam* ca_rel_param){
 		if (fabs(param->emis2 - ca_rel_param->emis2) > cache_limit) {
 			return 1;
 		}
+		if (param->limb != ca_rel_param->limb) {
+			return 1;
+		}
 	} else {
 		return 1;
 	}
@@ -317,6 +320,10 @@ static relSysPar* get_system_parameters(relParam* param, int* status){
 		interpol_relTable(&cached_relSysPar,param->a,mu0,param->rin,param->rout,status);
 		CHECK_STATUS_RET(*status,NULL);
 
+		if (param->limb!=0){
+			cached_relSysPar->limb_law = param->limb;
+		}
+
 		// get emissivity profile
 		calc_emis_profile(param, cached_relbase_param,cached_relSysPar, status);
 		CHECK_STATUS_RET(*status,NULL);
@@ -451,6 +458,7 @@ static str_relb_func* new_str_relb_func(relSysPar* sysPar, int* status){
 
 	str->gstar = sysPar->gstar;
 	str->ng = sysPar->ng;
+	str->limb_law = 0;
 
 	//str->cache_val_relb_func = (double*) malloc(2*sizeof(double));
 	//CHECK_MALLOC_RET_STATUS(str->cache_val_relb_func,status,str);
@@ -476,18 +484,23 @@ static double relb_func(double eg, int k, str_relb_func* str){
   double inte1=1.0-inte;
   double ftrf = inte*str->trff[ind][k] + inte1*str->trff[ind+1][k];
 
-  // double fmu0 = inte*str->cosne[ind,k] + inte1*str->cosne[ind+1,k];
+  double val = pow((eg*str->re),3)/((str->gmax-str->gmin)*sqrt(egstar - egstar*egstar))*ftrf*str->emis;
 
-  /** isotropic limb law by default (see Svoboda (2009))
-  limb = 1.D0
-  if (limb_law.eq.1) then   !Laor(1991)
-       limb = (1.D0 + 2.06D0*fmu0)
-  else if (limb_law.eq.2) then  !Haardt (1993)
-     limb = log(1.D0+1.D0/fmu0)
-  endif **/
-
- // ! INTEGRAL !
- return pow((eg*str->re),3)/((str->gmax-str->gmin)*sqrt(egstar - egstar*egstar))*ftrf*str->emis;
+  /** isotropic limb law by default (see Svoboda (2009)) **/
+  if (str->limb_law==0){
+	  return val;
+  } else {
+	  double fmu0 = inte*str->cosne[ind][k] + inte1*str->cosne[ind+1][k];
+	  double limb = 1.0;
+	  if (str->limb_law==1) { //   !Laor(1991)
+		  limb = (1.0 + 2.06*fmu0);
+	  }else if (str->limb_law == 2) {  //  !Haardt (1993)
+		  limb = log(1.0+1.0/fmu0);
+	  } else {
+		  return val;
+	  }
+	  return val*limb;
+  }
 }
 
 /** Romberg Integration Routine **/
@@ -700,7 +713,8 @@ static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0){
 	return flu;
 }
 
-static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gmax, double** trff, double** cosne, double emis){
+static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gmax, double** trff,
+		double** cosne, double emis, int limb_law){
 	str->re = re;
 	str->gmin = gmin;
 	str->gmax = gmax;
@@ -712,6 +726,8 @@ static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gma
 
 	str->cache_bin_ener = -1.0;
 	str->cached_relbf = 0;
+
+	str->limb_law = limb_law;
 
 	str->save_g_ind = 0;
 }
@@ -805,7 +821,7 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 	       	set_str_relbf(cached_str_relb_func,
 	       			sysPar->re[ii], sysPar->gmin[ii],sysPar->gmax[ii],
 	       			sysPar->trff[ii],sysPar->cosne[ii],
-					sysPar->emis[ii]);
+					sysPar->emis[ii], sysPar->limb_law );
 
 	       	// lastly, loop over the energies
 	       	for (jj=ielo; jj<=iehi; jj++){
@@ -918,7 +934,7 @@ void fft_conv_spectrum(double* ener, double* fxill, double* frel, double* fout, 
 static void print_angle_dist(rel_cosne* spec, int izone){
 
 
-	FILE* fp =  fopen ( "testfiles/test_angle_dist.dat","w+" );
+	FILE* fp =  fopen ( "test_angle_dist.dat","w+" );
 	int ii;
 	for(ii=0; ii<spec->n_cosne; ii++ ){
 		fprintf(fp," mu=%e %e \n",spec->cosne[ii],
@@ -1202,7 +1218,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 				for (jj=0; jj<n_ener_inp;jj++){
 					test_flu[jj] = single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
 				}
-				if (asprintf(&vstr, "testfiles/test_relxill_spec_zones_%03i.dat", ii+1) == -1){
+				if (asprintf(&vstr, "test_relxill_spec_zones_%03i.dat", ii+1) == -1){
 					RELXILL_ERROR("failed to get filename",status);
 				}
 				save_xillver_spectrum(ener_inp,test_flu,n_ener_inp,vstr);
@@ -1237,8 +1253,11 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 	} /************* END OF THE HUGE COMPUTATION ********************/
 
+
+
 	/** add a primary spectral component and normalize according to the given refl_frac parameter**/
 	add_primary_component(ener_inp,n_ener_inp,spec_inp,rel_param,xill_param, status);
+
 
 	return;
 }
@@ -1422,6 +1441,7 @@ void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status){
 	(*ca_rel_param)->beta = par->beta;
 
 	(*ca_rel_param)->z = par->z;
+	(*ca_rel_param)->limb = par->limb;
 	(*ca_rel_param)->lineE = par->lineE;
 
 	(*ca_rel_param)->emis_type = par->emis_type;
@@ -1441,6 +1461,8 @@ static int comp_rel_param(relParam* cpar, relParam* par){
 	if (comp_single_param_val(par->height,cpar->height)) return 1;
 	if (comp_single_param_val(par->incl,cpar->incl)) return 1;
 	if (comp_single_param_val(par->beta,cpar->beta)) return 1;
+
+	if ((par->limb!=cpar->limb)) return 1;
 
 	/** need this for the current code to work; could be optimized **/
 	if (comp_single_param_val(par->z,cpar->z)) return 1;
@@ -1560,6 +1582,8 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 
 		// normalize it and calculate the angular disttribution (if necessary)
 		renorm_relline_profile(cached_rel_spec,param);
+
+		save_relline_profile(cached_rel_spec);
 
 		// store parameters such that we know what we calculated
 		set_cached_rel_param(param,&cached_relbase_param,status);
@@ -1690,6 +1714,8 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 			CHECK_MALLOC_RET_STATUS(sysPar->cosne[ii][jj],status,sysPar);
 		}
 	}
+
+	sysPar->limb_law = 0;
 
 	return sysPar;
 }
@@ -1836,25 +1862,29 @@ void free_specCache(void){
 
 	int ii;
 	int m = 2;
-	if (spec_cache->xill_spec != NULL){
-		for (ii=0; ii<spec_cache->n_cache; ii++){
-			if (spec_cache->xill_spec[ii] != NULL){
-				free_xill_spec(spec_cache->xill_spec[ii]);
+	if (spec_cache != NULL){
+		if (spec_cache->xill_spec != NULL){
+			for (ii=0; ii<spec_cache->n_cache; ii++){
+				if (spec_cache->xill_spec[ii] != NULL){
+					free_xill_spec(spec_cache->xill_spec[ii]);
+				}
 			}
+			free(spec_cache->xill_spec);
 		}
-		free(spec_cache->xill_spec);
+
+
+		if (spec_cache->fft_xill != NULL){
+			free_fft_cache(spec_cache->fft_xill,spec_cache->n_cache,m);
+		}
+
+		if (spec_cache->fft_rel != NULL){
+			free_fft_cache(spec_cache->fft_rel,spec_cache->n_cache,m);
+		}
+
+		free_out_spec(spec_cache->out_spec);
+
 	}
 
-
-	if (spec_cache->fft_xill != NULL){
-		free_fft_cache(spec_cache->fft_xill,spec_cache->n_cache,m);
-	}
-
-	if (spec_cache->fft_rel != NULL){
-		free_fft_cache(spec_cache->fft_rel,spec_cache->n_cache,m);
-	}
-
-	free_out_spec(spec_cache->out_spec);
 
 	free(spec_cache);
 

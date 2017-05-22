@@ -47,6 +47,7 @@ static void set_std_param_relline(double* inp_par, int* status){
 	inp_par[6] = -1.1;
 	inp_par[7] = 400.;
 	inp_par[8] = 0.0;
+	inp_par[9] = 1.0;
 }
 
 static void set_std_param_relconv(double* inp_par, int* status){
@@ -57,6 +58,7 @@ static void set_std_param_relconv(double* inp_par, int* status){
 	inp_par[4] = 30.0;
 	inp_par[5] = -1.;
 	inp_par[6] = 400.;
+	inp_par[7] = 0.0;
 }
 
 static void set_std_param_relconvlp(double* inp_par, int* status){
@@ -65,7 +67,8 @@ static void set_std_param_relconvlp(double* inp_par, int* status){
 	inp_par[2] = 30.0;
 	inp_par[3] = -1.;
 	inp_par[4] = 400.;
-	inp_par[5] = 2.0;
+	inp_par[5] = 0.0;
+	inp_par[6] = 2.0;
 }
 
 
@@ -173,7 +176,8 @@ static void set_std_param_relline_lp(double* inp_par, int* status){
 	inp_par[4] = -1.;
 	inp_par[5] = 400.;
 	inp_par[6] = 0.0;  // redshift
-	inp_par[7] = 2.0;  // gamma
+	inp_par[7] = 0.0;
+	inp_par[8] = 2.0;  // gamma
 }
 
 /** standard evaluation of the relline model **/
@@ -444,7 +448,7 @@ static void std_eval_relxilllp_nthcomp(int* status, int n){
 
 	for (ii=0; ii<n; ii++){
 		if (n>1){
-	//		inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+			inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
 	//		inp_par[7] = 1.0*ii/(n-1)*4.7;
 			printf(" relxilllp (nthcomp): testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
 		}
