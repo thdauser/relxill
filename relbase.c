@@ -1008,9 +1008,15 @@ static int is_all_cached(specCache* spec_cache,int n_ener_inp,double* ener_inp, 
 
 static void check_caching_relxill(relParam* rel_param, xillParam* xill_param, int* re_rel, int* re_xill){
 
+
 	/** always re-compute if the number of zones changed **/
 	if (cached_rel_spec != NULL){
-		if (c_num_zones != cached_rel_spec->n_zones){
+
+		if (get_num_zones(rel_param->model_type, rel_param->emis_type) != cached_rel_spec->n_zones){
+			if ( is_debug_run() ){
+				printf("  *** warning :  the number of radial zones was changed from %i to %i \n",
+						get_num_zones(rel_param->model_type, rel_param->emis_type), cached_rel_spec->n_zones);
+			}
 			*re_rel  = 1;
 			*re_xill = 1;
 			return;

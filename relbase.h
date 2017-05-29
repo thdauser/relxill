@@ -36,7 +36,7 @@
 
 #define version_major 0
 #define version_minor 2
-#define version_build 2
+#define version_build 3
 #define version_dev "dev"
 
 // TODO: allow to set it by an environment variable

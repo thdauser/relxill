@@ -401,6 +401,8 @@ static void std_eval_relxilllp(int* status, int n){
 			printf(" relxilllp: testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
 		}
 		tdrelxilllp(ener,n_ener,photar,inp_par,n_param,status);
+		putenv("RELXILL_NUM_RZONES=2");
+		tdrelxilllp(ener,n_ener,photar,inp_par,n_param,status);
 
 	}
 	double sum=0.0;
