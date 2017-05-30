@@ -241,6 +241,12 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 	}
 	get_fine_radial_grid(rin,rout,sysPar);
 
+	/** we do not have rmax=1000.0 in the table, but just values close to it so let's do this trick**/
+	double rmax = 1000.0;
+	if (cached_tab_sysPar->re[ind_rmax] < rmax && cached_tab_sysPar->re[ind_rmax]*1.01 > rmax ){
+		cached_tab_sysPar->re[ind_rmax] = rmax;
+	}
+
 	// let's try to be as efficient as possible here (note that "r" DEcreases)
 	assert(ind_rmin>0); // as defined inverse, re[ind_rmin+1] is the lowest value
 	assert((cached_tab_sysPar->re[ind_rmin+1]<=rin));

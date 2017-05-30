@@ -45,7 +45,7 @@ static void set_std_param_relline(double* inp_par, int* status){
 	inp_par[4] = 0.998;
 	inp_par[5] = 30.0;
 	inp_par[6] = -1.1;
-	inp_par[7] = 400.;
+	inp_par[7] = 1000.;
 	inp_par[8] = 0.0;
 	inp_par[9] = 1.0;
 }
