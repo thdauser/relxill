@@ -72,7 +72,7 @@ $fixReflFrac 0
 xillver     7  0.         1.e20          c_lmodxillver     add  0
 gamma    " "    2.       1.0      1.0       3.4       3.4       0.01
 Afe      " "    1.       .5       .5       10.        10.       0.01
-Ecut      keV    300.       20.       20.       1000.        1000.   -0.1
+Ecut      keV    300.       5.       5.       1000.        1000.   -0.1
 logxi  " "    3.1      0.0      0.0       4.7       4.7       0.01
 z        " "    0.    0.      0.      10.       10.       -0.001
 Incl    deg     30.   3.      5.      80.       89.       -1
@@ -148,7 +148,7 @@ $fixReflFrac 0
 xillverCp     7  0.         1.e20          c_lmodxillvernthcomp     add  0
 gamma    " "    2.       1.0      1.0       3.4       3.4       0.01
 Afe      " "    1.       .5       .5       10.        10.       0.01
-kTe      keV    60.       20.       20.       400.        400.   -0.1
+kTe      keV    60.       1.       1.       400.        400.   -0.1
 logxi  " "    3.1      0.0      0.0       4.7       4.7       0.01
 z        " "    0.    0.      0.      10.       10.       -0.001
 Incl    deg     30.   3.      5.      80.       89.       -1
