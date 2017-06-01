@@ -126,7 +126,7 @@ static void set_std_param_relxilllp(double* inp_par, int* status){
 	inp_par[1]  = 0.9798; // a
 	inp_par[2]  = 60.0;  // incl
 	inp_par[3]  = -1.0;  // rin
-	inp_par[4]  = 400.;  // rout
+	inp_par[4]  = 1000.;  // rout
 	inp_par[5]  = 0.0;    // redshift
 	inp_par[6]  = 2.1;   // pl Index
 	inp_par[7]  = 0.0;   // logxi

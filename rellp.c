@@ -126,9 +126,9 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 	for (ii=n_r-1 ; ii>=0 ;ii--){
 		while((re[ii] >= jet_rad[kk+1])){
 			kk++;
-			if (kk>=n_r-1) { //TODO: construct table such that we don't need this?
+			if (kk>=tab->n_rad-1) { //TODO: construct table such that we don't need this?
 				if ( re[ii]-RELTABLE_MAX_R <= 1e-6){
-					kk=n_r-2;
+					kk=tab->n_rad-2;
 					break;
 				} else {
 					RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid",status);
