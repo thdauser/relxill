@@ -281,8 +281,10 @@ static fitsfile* open_xillver_tab(char* filename, int* status){
 
 	// open the file
 	if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
-		CHECK_RELXILL_ERROR("opening of the rel table failed",status);
-		printf("    full path given: %s \n",fullfilename);
+		CHECK_RELXILL_ERROR("opening of the xillver table failed",status);
+		printf("    either the full path given (%s) is wrong \n",fullfilename);
+		printf("    or you need to download the table ** %s **  from \n",filename);
+		printf("    http://www.sternwarte.uni-erlangen.de/research/relxill/ \n");
 		return NULL;
 	}
 
@@ -646,6 +648,7 @@ xill_spec* get_xillver_spectra(xillParam* param, int* status){
 
 	xillTable* tab = NULL;
 	char* fname = get_init_xillver_table(&tab,param,status);
+	CHECK_STATUS_RET(*status,NULL);
 
 
 	assert(tab!=NULL);

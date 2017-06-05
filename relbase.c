@@ -1105,6 +1105,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 	xillTable* xill_tab = NULL;
 	get_init_xillver_table(&xill_tab,xill_param,status);
+	CHECK_STATUS_VOID(*status);
 
 
 

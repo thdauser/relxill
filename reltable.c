@@ -262,7 +262,9 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 		// open the file
 		if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
 			CHECK_RELXILL_ERROR("opening of the rel table failed",status);
-			printf("    full path given: %s \n",fullfilename);
+			printf("    either the full path given (%s) is wrong \n",fullfilename);
+			printf("    or you need to download the table ** %s **  from \n",filename);
+			printf("    http://www.sternwarte.uni-erlangen.de/research/relxill/ \n");
 			break;
 		}
 

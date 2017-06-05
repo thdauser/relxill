@@ -353,6 +353,33 @@ define eval_test(){ %{{{
 }
 %}}}
 
+define eval_test_notable(){ %{{{
+
+   counter++;
+   vmessage("\n### %i ### testing SIMPLE EVALUATION WITHOUT TABLES (should crash)### ", counter);
+
+   variable tab_env = getenv("RELXILL_TABLE_PATH");
+   putenv("RELXILL_TABLE_PATH");
+   
+   variable ffs = ALL_FF;
+   variable ff;
+   variable val;
+   foreach ff(ffs){
+      fit_fun(ff);
+      val = eval_fun_keV(1,2);
+      if (not ( val >= 0 )){
+	 vmessage(" *** error: simple test withOUT tables for %s failed!",ff);
+	 return EXIT_FAILURE;
+      }
+   }
+
+   putenv(sprintf("RELXILL_TABLE_PATH=%s",tab_env));
+
+   return EXIT_SUCCESS;
+}
+%}}}
+
+
 define check_linee(){ %{{{
    
    counter++;
@@ -794,7 +821,10 @@ define do_mc_testing(){ %{{{
 %}}}
 
 
+if (eval_test_notable() != EXIT_SUCCESS) exit;
+
 if (eval_test() != EXIT_SUCCESS) exit;
+
 
 
 if (check_z() != EXIT_SUCCESS) exit;
