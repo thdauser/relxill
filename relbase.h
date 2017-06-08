@@ -34,8 +34,8 @@
 
 #define PARAM_DEFAULT 0.0
 
-#define version_major 0
-#define version_minor 3
+#define version_major 1
+#define version_minor 0
 #define version_build 0
 #define version_dev ""
 
