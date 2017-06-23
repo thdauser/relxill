@@ -153,4 +153,6 @@ int is_xill_model(int model_type);
 
 void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z);
 
+int do_renorm_model(relParam* rel_param);
+
 #endif /* RELUTILITY_H_ */

@@ -550,6 +550,26 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 	}
 }
 
+int do_renorm_model(relParam* rel_param){
+
+	int renorm = 0;
+
+	char* env;
+	env = getenv("RENORM_RELXILL_MODEL");
+	if (env != NULL){
+		int val_relxill = atof(env);
+		// make sure we directly return if it's either 1 or 0
+		if (val_relxill == 1 || val_relxill == 0){
+			return val_relxill;
+		}
+	}
+
+	if ((! is_relxill_model(rel_param->model_type) ) || (rel_param->emis_type != EMIS_TYPE_LP)){
+		renorm = 1;
+	}
+	return renorm;
+}
+
 void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z){
 	  nthcomp_param[0] = gam;
 	  nthcomp_param[1] = kte;

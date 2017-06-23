@@ -208,8 +208,6 @@ define check_line_limb(ff){ %{{{
    set_par("*.limb",1);
    variable val1 = eval_fun_keV(lo,hi);
    
-   list_par;
-
    set_par("*.limb",2);
    variable val2 = eval_fun_keV(lo,hi);
 
@@ -379,6 +377,64 @@ define eval_test_notable(){ %{{{
 }
 %}}}
 
+
+
+define check_norm(){ %{{{
+
+   counter++;
+   vmessage("\n### %i ### testing NORMALIZATION ### ", counter);
+
+   variable ffs = ALL_FF;
+   variable ff;
+   variable val,val2,val3;
+   variable stdpar;
+   foreach ff(ffs){
+      
+      if (string_match(ff,"rel")==0){
+	 continue;
+      }
+      
+      putenv("RENORM_RELXILL_MODEL");
+      fit_fun(ff);
+      val = eval_fun_keV(1,2);
+      
+      stdpar = get_par("*.a");
+      
+      putenv("RENORM_RELXILL_MODEL=1");
+      set_par("*.a",stdpar*0.99);
+      () = eval_fun_keV(1,2);
+      set_par("*.a",stdpar);
+      val2 = eval_fun_keV(1,2);
+       
+      
+      putenv("RENORM_RELXILL_MODEL=0");
+      set_par("*.a",stdpar*0.99);
+      () = eval_fun_keV(1,2);
+      set_par("*.a",stdpar);
+      val3 = eval_fun_keV(1,2);
+
+      vmessage(" *** %s : neutral (%.3e) - normalized (%.3e) - non (%.3e)",ff,sum(val2),sum(val),sum(val3));
+      
+      variable refval;
+      
+      if ((string_match(ff,"lp")==0) || ( string_match(ff,"relxill")==0 )){
+	 refval = abs(sum(val2) - sum(val));
+      } else {
+	 %% LP is non-normalized by default 	 
+	 refval = abs(sum(val) - sum(val3));
+      }
+      
+      
+      if ( (abs(sum(val3)-sum(val2))<1e-5)|| refval>1e-5 ){
+	 vmessage(" *** error: normalization test failed!");
+	 return EXIT_FAILURE;
+      }
+   }
+   putenv("RENORM_RELXILL_MODEL");
+
+   return EXIT_SUCCESS;
+}
+%}}}
 
 define check_linee(){ %{{{
    
@@ -822,13 +878,11 @@ define do_mc_testing(){ %{{{
 
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
-
 if (eval_test() != EXIT_SUCCESS) exit;
 
-
+if (check_norm() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
-
 if (check_linee() != EXIT_SUCCESS) exit;
 if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
