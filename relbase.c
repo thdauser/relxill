@@ -1597,7 +1597,9 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 		// normalize it and calculate the angular disttribution (if necessary)
 		renorm_relline_profile(cached_rel_spec,param);
 
-		save_relline_profile(cached_rel_spec);
+		if (is_debug_run()){
+			save_relline_profile(cached_rel_spec);
+		}
 
 		// store parameters such that we know what we calculated
 		set_cached_rel_param(param,&cached_relbase_param,status);

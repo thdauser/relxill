@@ -35,8 +35,8 @@
 #define PARAM_DEFAULT 0.0
 
 #define version_major 1
-#define version_minor 0
-#define version_build 1
+#define version_minor 1
+#define version_build 0
 #define version_dev ""
 
 // TODO: allow to set it by an environment variable
@@ -54,8 +54,8 @@
 /** dimensions of the LP table */
 #define LPTABLE_NA 20
 #define LPTABLE_NH 250
+#define LPTABLE_FILENAME "rel_lp_table_v0.5b.fits"
 #define LPTABLE_NR 100
-#define LPTABLE_FILENAME "rel_lp_table_v0.5a.fits"
 
 
 /** parameters for interpolation an interagration **/
