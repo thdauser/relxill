@@ -1125,7 +1125,17 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		conv_out[ii] = 0.0;
 	}
 
+	/** be careful, as xill_param->ect can get over-written so save the following values**/
 	double ecut0 = xill_param->ect;
+
+	/** note that in case of the nthcomp model Ecut is in the frame of the primary source
+	    but for the bkn_powerlaw it is given in the observer frame */
+	double ecut_primary = 0.0;
+	if (xill_param->prim_type == PRIM_SPEC_ECUT ){
+		ecut_primary = ecut0 * ( 1 + grav_redshift(rel_param) );
+	} else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP ){
+		ecut_primary = ecut0 ;
+	}
 
 	int recompute_xill;
 	int recompute_rel;
@@ -1173,11 +1183,11 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			// (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
 			//  session the number ofd zones is reset)
 			if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type)==1){
-				xill_param->ect = ecut0;
+				xill_param->ect = ecut0 ;
 			} else {
 				// choose the (linear) middle of the radial zone
 				double rzone = 0.5*(rel_profile->rgrid[ii]+rel_profile->rgrid[ii+1]);
-				xill_param->ect = ecut0 * ( 1 + grav_redshift(rel_param) ) * get_rzone_energ_shift(rel_param,rzone ) ;
+				xill_param->ect = ecut_primary * get_rzone_energ_shift(rel_param,rzone ) ;
 			}
 
 			// call the function which calculates the xillver spectrum
@@ -1292,6 +1302,9 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 		get_log_grid(ener_xill,n_ener_xill+1,ener_xill_norm_lo,ener_xill_norm_hi);
 	}
 
+	/** note that in case of the nthcomp model Ecut is in the frame of the primary source
+	    but for the bkn_powerlaw it is given in the observer frame */
+
 	/** 1 **  calculate the primary spectrum  **/
 	if (xill_param->prim_type == PRIM_SPEC_ECUT ){
 
@@ -1308,7 +1321,13 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 	} else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
 		double nthcomp_param[5];
-		get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, 0.0);
+		/** important, kTe is given in the primary source frame, so we have to add the redshift here
+		 *     however, only if the REL model **/
+		double z=0.0;
+		if (rel_param != NULL &&rel_param->emis_type==EMIS_TYPE_LP ){
+			z = grav_redshift(rel_param);
+		}
+		get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
 		c_donthcomp(ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
 	} else {
 		RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
@@ -1318,7 +1337,6 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 
 	/** 2 **  get the normalization of the spectrum with respect to xillver **/
-	// double norm_xill = pow(10,xill_param->dens) / 4.0 / M_PI;
 	/** everything is normalized to 10^15 cm^3 **/
 	double norm_xill = 1e15 / 4.0 / M_PI;
 	double keV2erg = 1.602177e-09;
@@ -1389,7 +1407,8 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 			printf(" reflection fraction for a = %.3f and h = %.2f rg is: %.3f \n reflection strength is: %.3f \n",
 					rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
-			printf(" %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
+			printf(" -> %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
+			printf(" -> gravitational redshift from the observer to the primary source is %.3f\n",grav_redshift(rel_param) );
 		}
 
 		/** free the reflection fraction structure **/

@@ -60,7 +60,7 @@ model:
 	echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' 
 	cd $(model_dir) && ./compile_relxill.csh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
-	rm -f $(model_dir)/*.c $(model_dir)/*.h
+#	rm -f $(model_dir)/*.c $(model_dir)/*.h
 	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
 
 

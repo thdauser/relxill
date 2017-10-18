@@ -79,6 +79,10 @@ define fit_fun_default(ff){ %{{{
    set_params(pa);
 }
 %}}}
+define grav_redshift_prim(a,h){ %{{{
+   return 1.0 / sqrt( 1.0 - 2*h/(h^2 + a^2) ) - 1.0;
+}
+%}}}
 
 
    
@@ -340,6 +344,7 @@ define eval_test(){ %{{{
    variable val;
    foreach ff(ffs){
       fit_fun(ff);
+      message(ff);
       val = eval_fun_keV(1,2);
       if (not ( val > 0 )){
 	 vmessage(" *** error: simple test for %s failed!",ff);
@@ -413,7 +418,7 @@ define check_norm(){ %{{{
       set_par("*.a",stdpar);
       val3 = eval_fun_keV(1,2);
 
-      vmessage(" *** %s : neutral (%.3e) - normalized (%.3e) - non (%.3e)",ff,sum(val2),sum(val),sum(val3));
+      vmessage(" *** %s : neutral (%.5e) - normalized (%.5e) - non (%.5e)",ff,sum(val2),sum(val),sum(val3));
       
       variable refval;
       
@@ -426,6 +431,8 @@ define check_norm(){ %{{{
       
       
       if ( (abs(sum(val3)-sum(val2))<1e-5)|| refval>1e-5 ){
+	 print(refval);
+	 print(abs(sum(val3)-sum(val2)));
 	 vmessage(" *** error: normalization test failed!");
 	 return EXIT_FAILURE;
       }
@@ -695,6 +702,11 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
    set_par("*.refl_frac",0.0,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
+   variable z = 0.0; 
+   if (string_match(ff,"lp")){
+      z = grav_redshift_prim(get_par("*.a"),get_par("*.h"));
+   }
+   
    fit_fun_default(ff_cont);
    
    fit_fun(ff+"+"+ff_cont);
@@ -712,6 +724,7 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
    if (string_match(ff,"Cp")){
       set_par("nthComp*kT_bb",0.05);
       set_par("nthComp*inp_type",1.0);
+      set_par("nthComp*Redshift",z);
    }
 
    val0 =  eval_fun_keV(lo0,hi0);
@@ -762,6 +775,7 @@ define ncheck_fix_refl_frac_single(ff){ %{{{
    return goodness(val1,val0);
 }
 %}}}
+
 
 
 define check_prim_cont(){ %{{{
