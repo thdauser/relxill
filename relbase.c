@@ -1042,6 +1042,24 @@ static void check_caching_relxill(relParam* rel_param, xillParam* xill_param, in
 	return;
 }
 
+/** renorm a model (flu) to have the same flux as another model (flu)
+ *  (bin-integrated flux, same energy grid!) **/
+static void renorm_model(double* flu0, double* flu, int nbins){
+
+	double sum_inp = 0.0;
+	double sum_out = 0.0;
+	int ii;
+	for (ii=0; ii<nbins;ii++){
+		sum_inp += flu0[ii];
+		sum_out += flu[ii];
+	}
+	for (ii=0; ii<nbins;ii++){
+		flu[ii] *= sum_inp / sum_out;
+	}
+
+
+}
+
 /** BASIC RELCONV FUNCTION : convole any input spectrum with the relbase kernel
  *  (ener has the length n_ener+1)
  *  **/
@@ -1076,6 +1094,9 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 	fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out,  n_ener,
 			1,1,0,status);
 	CHECK_STATUS_VOID(*status);
+
+	// need to renormalize the convolution such that we do not loose flux
+	renorm_model(rebin_flux,conv_out,n_ener);
 
 	// rebin to the output grid
 	rebin_spectrum(ener_inp,spec_inp,n_ener_inp, ener, conv_out, n_ener);

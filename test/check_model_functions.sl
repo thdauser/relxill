@@ -254,6 +254,30 @@ define check_conv_mod_single(ff,ff_conv){ %{{{
 }
 %}}}
 
+
+
+define check_conv_norm_single(ff_conv){ %{{{
+      
+   variable ff_line = "egauss";
+   fit_fun(ff_line);
+
+   set_par("*.center",6.4);
+   variable lo, hi;
+   (lo,hi) = log_grid(0.2,10,600);
+   
+   variable val0 = eval_fun_keV(lo,hi);
+      
+   fit_fun(sprintf("%s(1,%s)",ff_conv,ff_line));
+   variable val1 = eval_fun_keV(lo,hi);
+         
+   variable gn = sum(val0)/sum(val1); 
+   vmessage("    -> %s normalization value: %e",
+	    ff, gn);
+   return gn;
+}
+%}}}
+
+
 define check_neg_nthcomp_mod_single(ff,ff_dens){ %{{{
    
    
@@ -484,6 +508,12 @@ define check_conv_mod(){ %{{{
 	vmessage(" *** error: there seems to be a problem with the CONVOLUTION MODEL %s ",ff_conv[ii]);
 	 return EXIT_FAILURE;
       }
+      
+      if (not  ( abs(check_conv_norm_single(ff_conv[ii];nopl)-1) < 0.001) ){
+	 vmessage(" *** error: there seems to be a problem with the NORMALIZATION of the CONVOLUTION MODEL %s ",ff_conv[ii]);
+	 return EXIT_FAILURE;
+      }
+
    }
 
 
