@@ -249,7 +249,7 @@ void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double 
 		int indr = binary_search(rgrid,nzones+1,h*h_fac);
 		int ii;
 
-		if (indr < nzones ){
+		if (indr+1 < nzones ){
 
 			double rlo = rgrid[indr+1];
 			double rhi = rgrid[nzones];

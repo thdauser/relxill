@@ -963,7 +963,7 @@ static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
 	double mufac;
 	for (ii=0; ii<xill_spec->n_incl;ii++){
 		/**  0.5*F*mu*dmu (Javier Note, Eq. 25) **/
-		mufac = dist[ii];   // actually it is also mutliplied by  dmu*nincl = 1/nincl * nincl = 1
+		mufac = dist[ii];   // actually it is also multiplied by  dmu*nincl = 1/nincl * nincl = 1
 		for (jj=0; jj<xill_spec->n_ener;jj++){
 			xill_flux[jj] += mufac*xill_spec->flu[ii][jj];
 		}
@@ -1158,8 +1158,8 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		ecut_primary = ecut0 ;
 	}
 
-	int recompute_xill;
-	int recompute_rel;
+	int recompute_xill=1;
+	int recompute_rel=1;
 	check_caching_relxill(rel_param,xill_param,&recompute_rel,&recompute_xill);
 
 	init_specCache(&spec_cache,status);
@@ -1192,7 +1192,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		int jj;
 		for (ii=0; ii<rel_profile->n_zones;ii++){
 			assert(spec_cache!=NULL);
-
 
 			// now calculate the reflection spectra for each zone (using the angular distribution)
 			assert(rel_profile->rel_cosne != NULL);
@@ -1227,9 +1226,12 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			rebin_spectrum(ener,xill_flux,n_ener,
 					xill_spec->ener, xill_angdist_inp, xill_spec->n_ener );
 
-			// convolve the spectrum
+			/** convolve the spectrum **
+			 * (important for the convolution: need to recompute fft for xillver
+			 *  always if rel changes, as the angular distribution changes !!)
+			 */
 			fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out,  n_ener,
-					recompute_rel, recompute_xill, ii, status);
+					recompute_rel, 1, ii, status);
 			CHECK_STATUS_VOID(*status);
 
 			// rebin to the output grid
@@ -1425,6 +1427,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 				sum_pl += pl_flux[ii];
 				sum += flu[ii];
 			}
+
 
 			printf(" reflection fraction for a = %.3f and h = %.2f rg is: %.3f \n reflection strength is: %.3f \n",
 					rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
