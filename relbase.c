@@ -944,7 +944,7 @@ static void print_angle_dist(rel_cosne* spec, int izone){
 	FILE* fp =  fopen ( "test_angle_dist.dat","w+" );
 	int ii;
 	for(ii=0; ii<spec->n_cosne; ii++ ){
-		fprintf(fp," mu=%e %e \n",spec->cosne[ii],
+		fprintf(fp," %e %e \n",spec->cosne[ii],
 				spec->dist[izone][ii]);
 	}
 	if (fclose(fp)) exit(1);
@@ -1226,6 +1226,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			rebin_spectrum(ener,xill_flux,n_ener,
 					xill_spec->ener, xill_angdist_inp, xill_spec->n_ener );
 
+
 			/** convolve the spectrum **
 			 * (important for the convolution: need to recompute fft for xillver
 			 *  always if rel changes, as the angular distribution changes !!)
@@ -1234,13 +1235,11 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 					recompute_rel, 1, ii, status);
 			CHECK_STATUS_VOID(*status);
 
-			// rebin to the output grid
-			rebin_spectrum(ener_inp,single_spec_inp,n_ener_inp, ener, conv_out, n_ener);
 
 
 			double test_sum_relline = 0.0;
-			double test_sum_relxill = 0.0;
 			double test_sum_xillver = 0.0;
+			double test_sum_relxill = 0.0;
 			for (jj=0; jj<n_ener;jj++){
 				if (ener[jj] > EMIN_XILLVER && ener[jj+1] < EMAX_XILLVER  ){
 					test_sum_relline += rel_profile->flux[ii][jj];
@@ -1248,6 +1247,10 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 					test_sum_xillver += xill_flux[jj];
 				}
 			}
+
+			// rebin to the output grid
+			rebin_spectrum(ener_inp,single_spec_inp,n_ener_inp, ener, conv_out, n_ener);
+
 
 			/** avoid problems where no relxill bin falls into an ionization bin **/
 			if (test_sum_relline < 1e-12){
@@ -1297,7 +1300,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			}
 			spec_cache->out_spec->flux[ii] = spec_inp[ii];
 		}
-
 	} /************* END OF THE HUGE COMPUTATION ********************/
 
 
@@ -1305,6 +1307,10 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	/** add a primary spectral component and normalize according to the given refl_frac parameter**/
 	add_primary_component(ener_inp,n_ener_inp,spec_inp,rel_param,xill_param, status);
 
+	double sum_all=0.0;
+	for (ii=0; ii<n_ener_inp; ii++){
+		sum_all+=spec_inp[ii];
+	}
 
 	return;
 }
@@ -1396,21 +1402,21 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 		}
 
 		/** 4 ** and apply it to primary and reflected spectra **/
+		double sm=0.0;
 		if (rel_param->emis_type == EMIS_TYPE_LP) {
 			double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
 					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
 			for (ii=0; ii<n_ener; ii++) {
 				pl_flux[ii] *= norm_pl * pow(g_inf,xill_param->gam) * (struct_refl_frac->f_inf / 0.5);
-				flu[ii] *= fabs(xill_param->refl_frac) / struct_refl_frac->refl_frac;
+				sm+=flu[ii];
+				flu[ii] *= fabs(xill_param->refl_frac) / struct_refl_frac->refl_frac_norm;
 			}
-
 		} else {
 			for (ii=0; ii<n_ener; ii++){
 				pl_flux[ii] *= norm_pl;
 				flu[ii] *= fabs(xill_param->refl_frac);
 			}
 		}
-
 
 		/** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
 		if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type==EMIS_TYPE_LP)) {
@@ -1775,6 +1781,9 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 	}
 
 	sysPar->limb_law = 0;
+
+	sysPar->del_ad_risco=0;
+	sysPar->del_ad_rmax=M_PI/2;
 
 	return sysPar;
 }

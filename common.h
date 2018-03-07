@@ -39,6 +39,8 @@
 #define PRIM_SPEC_NTHCOMP 2
 /***************************************/
 
+#define AD_ROUT_MAX 1000
+
 /****** TYPE DEFINITIONS ******/
 
 typedef struct{
@@ -124,6 +126,9 @@ typedef struct{
 	double* del_emit;   // angle under which the photon is emitted from the primary source
 	double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
 
+	double del_ad_risco; // delta of the photon where it would hit the ISCO (irrespective of Rin)
+	double del_ad_rmax;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
+
 	int limb_law;
 
 } relSysPar;
@@ -131,9 +136,11 @@ typedef struct{
 
 typedef struct{
 	double refl_frac;
+	double refl_frac_norm;
 	double f_bh;
 	double f_ad;
 	double f_inf;
+	double f_ad_norm;
 } lpReflFrac;
 
 /** angles (cosne) and their distribution over the radial zones **/

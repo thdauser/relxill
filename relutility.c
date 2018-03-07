@@ -81,19 +81,25 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 		return NULL;
 	}
 
-	double AD_ROUT_MAX = 1000.;
-	
+	/** important: get the radial values for which the RELLINE is calculated
+	 *             should be Rin=r_isco & Rout=1000rg  **/
+
 	// get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
 	double del_bh  = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
 	double del_ad = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
-	double del_ad_max = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, AD_ROUT_MAX)];
 
 	lpReflFrac* str = (lpReflFrac*) malloc (sizeof(lpReflFrac));
 	CHECK_MALLOC_RET_STATUS(str,status,NULL);
 
 	str->f_bh  = 0.5*(1.0 - cos(del_bh));
 	str->f_ad  = 0.5*(cos(del_bh) - cos(del_ad));
-	str->f_inf = 0.5*(1.0 + cos(del_ad_max));
+	/** photons are not allowed to cross the disk
+	 *  (so they only reach infinity if they don't hit the disk plane) */
+	str->f_inf = 0.5*(1.0 + cos(sysPar->del_ad_rmax));
+
+	/** fraction of photons which would hit the maximally
+	 *  simulated accretion disk */
+	str->f_ad_norm = 0.5*(cos(sysPar->del_ad_risco) - cos(sysPar->del_ad_rmax));
 
 	// photons are not allowed to crosstalk the disk plane
 	if (str->f_inf > 0.5){
@@ -101,6 +107,7 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	}
 	
 	str->refl_frac = str->f_ad/str->f_inf;
+	str->refl_frac_norm = str->f_ad_norm/str->f_inf;
 
 /**	printf(" *** %4f [%.3f,%.3f,%.3f] \n",str->refl_frac,str->f_bh,str->f_ad,str->f_inf);
 	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh*180/M_PI,del_ad*180/M_PI);

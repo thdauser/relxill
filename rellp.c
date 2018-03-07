@@ -120,7 +120,8 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 	double inter_r;
 
 	// get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
-	int ind_rmin = binary_search(jet_rad,tab->n_rad,param->rin);
+//	int ind_rmin = binary_search(jet_rad,tab->n_rad,param->rin);
+	int ind_rmin = binary_search(jet_rad,tab->n_rad,re[n_r-1]);
 	assert(ind_rmin>0);
 	int kk=ind_rmin;
 	for (ii=n_r-1 ; ii>=0 ;ii--){
@@ -213,6 +214,21 @@ void calc_emis_profile(relParam* param, relParam* cached_param, relSysPar* sysPa
 		if (redo_get_emis_lp(param, cached_param, sysPar)){
 			get_emis_jet(param,sysPar->emis, sysPar->del_emit, sysPar->del_inc,
 					sysPar->re, sysPar->nr, status);
+			CHECK_STATUS_VOID(*status);
+
+			int nr_lim = 2;
+			double del_emit[2];
+			double del_dummy[2];
+			double emis_dummy[2];
+
+			double rad[2] = {AD_ROUT_MAX, kerr_rms(param->a)};
+
+			// get the primary source emission angle for the simulated inner and out edge of the disk
+			get_emis_jet(param,emis_dummy, del_emit, del_dummy,rad, nr_lim, status);
+			CHECK_STATUS_VOID(*status);
+			sysPar->del_ad_rmax = del_emit[0];
+			sysPar->del_ad_risco = del_emit[1];
+
 		}
 
 	} else {

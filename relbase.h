@@ -37,7 +37,7 @@
 #define version_major 1
 #define version_minor 0
 #define version_build 4
-#define version_dev "b"
+#define version_dev ""
 
 // TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */
