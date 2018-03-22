@@ -1407,9 +1407,10 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
 					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
 			for (ii=0; ii<n_ener; ii++) {
-				pl_flux[ii] *= norm_pl * pow(g_inf,xill_param->gam) * (struct_refl_frac->f_inf / 0.5);
+				 // -> major bug fix after Adam Ingram comments: gi^(gamma+2) is the correct energy shift
+				pl_flux[ii] *= norm_pl * pow(g_inf,xill_param->gam+2) / fabs(xill_param->refl_frac);
 				sm+=flu[ii];
-				flu[ii] *= fabs(xill_param->refl_frac) / struct_refl_frac->refl_frac_norm;
+				flu[ii] *= fabs(xill_param->refl_frac) ;
 			}
 		} else {
 			for (ii=0; ii<n_ener; ii++){

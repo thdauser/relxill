@@ -49,7 +49,7 @@ GNU General Public License for more details.
 For a copy of the GNU General Public License see
 <http://www.gnu.org/licenses/>.
 
-Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
+Copyright 2018 Thomas Dauser, Remeis Observatory & ECAP
 
 #########################################
 #########################################
