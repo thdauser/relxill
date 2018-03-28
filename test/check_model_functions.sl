@@ -832,7 +832,7 @@ define check_prim_cont(){ %{{{
    variable ii,n = length(ff);
    
    _for ii(0,n-1,1){
-      if (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]) > goodness_lim){
+      if (not (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]) < goodness_lim)){
 	vmessage(" *** error: there seems to be a problem with the PRIMARY CONTINUUM in  MODEL %s ",ff[ii]);
 	 return EXIT_FAILURE;
       }
