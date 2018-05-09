@@ -1407,14 +1407,13 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
 
 			double refl_fac = fabs(xill_param->refl_frac) /  ( struct_refl_frac->f_ad / struct_refl_frac->f_inf );
-			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam+2) ;
+// 			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam+2) ; correct line, but currently not used
+			double prim_fac = pow(g_inf,xill_param->gam+2) ;
 
 			for (ii=0; ii<n_ener; ii++) {
 				 // -> major bug fix after Adam Ingram comments: gi^(gamma+2) is the correct energy shift
-//				pl_flux[ii] *= norm_pl * pow(g_inf,xill_param->gam+2) * ( struct_refl_frac->f_inf / 0.5) ;
 				pl_flux[ii] *= norm_pl * prim_fac;  ;
 				flu[ii] *= refl_fac;
-//				flu[ii] *= fabs(xill_param->refl_frac) ;
 			}
 		} else {
 			for (ii=0; ii<n_ener; ii++){
