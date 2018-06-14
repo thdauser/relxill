@@ -961,9 +961,12 @@ static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
 	}
 
 	double mufac;
+	double mu;
 	for (ii=0; ii<xill_spec->n_incl;ii++){
+		mu = cosne[ii]*0.5;
 		/**  0.5*F*mu*dmu (Javier Note, Eq. 25) **/
-		mufac = dist[ii];   // actually it is also multiplied by  dmu*nincl = 1/nincl * nincl = 1
+		mufac = dist[ii]/mu;   // actually it is also multiplied by  dmu*nincl = 1/nincl * nincl = 1
+//		printf(" XXXX dist=%.3e  (mu=%.3e) \n",dist[ii],mu);
 		for (jj=0; jj<xill_spec->n_ener;jj++){
 			xill_flux[jj] += mufac*xill_spec->flu[ii][jj];
 		}
@@ -1406,9 +1409,11 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
 					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
 
-			double refl_fac = fabs(xill_param->refl_frac) /  ( struct_refl_frac->f_ad / struct_refl_frac->f_inf );
-// 			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam+2) ; correct line, but currently not used
-			double prim_fac = pow(g_inf,xill_param->gam+2) ;
+//			double refl_fac = fabs(xill_param->refl_frac) /  ( struct_refl_frac->refl_frac_norm );
+			double refl_fac = fabs(xill_param->refl_frac); // correct
+			printf(" ** testing ** incl: %f -> expected refl_frac %f\n",rel_param->incl*180/3.1415,
+					struct_refl_frac->refl_frac_norm);
+ 			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam+2) ;
 
 			for (ii=0; ii<n_ener; ii++) {
 				 // -> major bug fix after Adam Ingram comments: gi^(gamma+2) is the correct energy shift
