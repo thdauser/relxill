@@ -570,16 +570,6 @@ int do_renorm_model(relParam* rel_param){
 
 	int renorm = 0;
 
-	char* env;
-	env = getenv("RENORM_RELXILL_MODEL");
-	if (env != NULL){
-		int val_relxill = atof(env);
-		// make sure we directly return if it's either 1 or 0
-		if (val_relxill == 1 || val_relxill == 0){
-			return val_relxill;
-		}
-	}
-
 	if ((! is_relxill_model(rel_param->model_type) ) || (rel_param->emis_type != EMIS_TYPE_LP)){
 		renorm = 1;
 	}
