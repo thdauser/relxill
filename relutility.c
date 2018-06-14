@@ -109,8 +109,8 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	str->refl_frac = str->f_ad/str->f_inf;
 	str->refl_frac_norm = str->f_ad_norm/str->f_inf;
 
-/**	printf(" *** %4f [%.3f,%.3f,%.3f] \n",str->refl_frac,str->f_bh,str->f_ad,str->f_inf);
-	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh*180/M_PI,del_ad*180/M_PI);
+	// printf(" *** %4f [%.3f,%.3f,%.3f] \n",str->refl_frac,str->f_bh,str->f_ad,str->f_inf);
+	/**	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh*180/M_PI,del_ad*180/M_PI);
 	printf(" rin %i (%.1f) ---  rout %i (%.1f)\n",binary_search(sysPar->re, sysPar->nr, param->rin),param->rin,
 			binary_search(sysPar->re, sysPar->nr,
 			param->rout),param->rout);  **/
@@ -569,16 +569,6 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 int do_renorm_model(relParam* rel_param){
 
 	int renorm = 0;
-
-	char* env;
-	env = getenv("RENORM_RELXILL_MODEL");
-	if (env != NULL){
-		int val_relxill = atof(env);
-		// make sure we directly return if it's either 1 or 0
-		if (val_relxill == 1 || val_relxill == 0){
-			return val_relxill;
-		}
-	}
 
 	if ((! is_relxill_model(rel_param->model_type) ) || (rel_param->emis_type != EMIS_TYPE_LP)){
 		renorm = 1;

@@ -35,9 +35,9 @@
 #define PARAM_DEFAULT 0.0
 
 #define version_major 1
-#define version_minor 0
-#define version_build 4
-#define version_dev ""
+#define version_minor 1
+#define version_build 0
+#define version_dev "pre-4"
 
 // TODO: allow to set it by an environment variable
 /** path to all RELXILL tables */
