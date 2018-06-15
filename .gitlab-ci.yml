@@ -40,4 +40,3 @@ provide:
     - rsync -vhu relxill_model_v*.tgz /data/www/dauser_download/relxillArchive/
   only:
     - tags
-    - master
