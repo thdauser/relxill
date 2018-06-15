@@ -14,8 +14,8 @@ build:
   script:
     - make
     - make model
-#  only:
-#    - master
+  only:
+    - master
   artifacts:
     expire_in: 30 min
     paths:
@@ -28,8 +28,8 @@ test:
   script:
     - ./test_sta > test_output.log
     - test/check_model_functions.sl  >> test_output.log
-#  only:
-#    - master
+  only:
+    - master
   artifacts:
     expire_in: 10 min
     paths:
@@ -39,5 +39,5 @@ provide:
   stage: deploy
   script:
     - rsync -vhu relxill_model_v*.tgz /data/www/dauser_download/relxillArchive/
-#  only:
-#    - master
+  only:
+    - master
