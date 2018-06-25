@@ -753,13 +753,13 @@ static void renorm_relline_profile(rel_spec* spec, relParam* rel_param){
 
 	/** only renormalize if not the relxill model or not a lamp post model **/
 
-	if (do_renorm_model(rel_param)) {
+/*	if (do_renorm_model(rel_param)) {
 		for (ii=0; ii<spec->n_zones; ii++){
 			for (jj=0; jj<spec->n_ener; jj++){
 				spec->flux[ii][jj] /= sum;
 			}
 		}
-	}
+	} */
 
 	if (spec->rel_cosne!=NULL){
 		for (ii=0; ii<spec->n_zones; ii++){
