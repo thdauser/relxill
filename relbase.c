@@ -140,12 +140,12 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
 /*  get the fine radial grid */
 static void get_fine_radial_grid(double rin, double rout, relSysPar* sysPar){
 
-	double r1=1.0/sqrt(rout);
-	double r2=1.0/sqrt(rin);
+	double r1=1.0/rout;
+	double r2=1.0/rin;
 	int ii;
 	for (ii=0; ii<sysPar->nr; ii++){
 		sysPar->re[ii] = ((double) (ii) )*(r2-r1)/(sysPar->nr-1)+r1;
-		sysPar->re[ii] = pow(1.0/(sysPar->re[ii]),2);
+		sysPar->re[ii] = 1.0/(sysPar->re[ii]);
 		assert(sysPar->re[ii]>1.0);
 	}
 	return;
@@ -249,7 +249,6 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 
 	// let's try to be as efficient as possible here (note that "r" DEcreases)
 	assert(ind_rmin>0); // as defined inverse, re[ind_rmin+1] is the lowest value
-	printf(" XXX %f %f \n",cached_tab_sysPar->re[ind_rmin+1],rin);
 	assert((cached_tab_sysPar->re[ind_rmin+1]<=rin));
 	assert((cached_tab_sysPar->re[ind_rmin]>=rin));
 	assert((cached_tab_sysPar->re[ind_rmax+1]<=rout));
@@ -754,13 +753,13 @@ static void renorm_relline_profile(rel_spec* spec, relParam* rel_param){
 
 	/** only renormalize if not the relxill model or not a lamp post model **/
 
-	/*if (do_renorm_model(rel_param)) {
+	if (do_renorm_model(rel_param)) {
 		for (ii=0; ii<spec->n_zones; ii++){
 			for (jj=0; jj<spec->n_ener; jj++){
 				spec->flux[ii][jj] /= sum;
 			}
 		}
-	} */
+	}
 
 	if (spec->rel_cosne!=NULL){
 		for (ii=0; ii<spec->n_zones; ii++){
@@ -1412,8 +1411,8 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 //			double refl_fac = fabs(xill_param->refl_frac) /  ( struct_refl_frac->refl_frac_norm );
 			double refl_fac = fabs(xill_param->refl_frac); // correct
-			printf(" ** testing ** incl: %f -> expected refl_frac %f (%f)\n",rel_param->incl*180/3.1415,
-					struct_refl_frac->refl_frac_norm,struct_refl_frac->refl_frac);
+			printf(" ** testing ** incl: %f -> expected refl_frac %f\n",rel_param->incl*180/3.1415,
+					struct_refl_frac->refl_frac_norm);
  			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam+2) ;
 
 			for (ii=0; ii<n_ener; ii++) {
