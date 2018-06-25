@@ -140,12 +140,12 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
 /*  get the fine radial grid */
 static void get_fine_radial_grid(double rin, double rout, relSysPar* sysPar){
 
-	double r1=1.0/rout;
-	double r2=1.0/rin;
+	double r1=1.0/sqrt(rout);
+	double r2=1.0/sqrt(rin);
 	int ii;
 	for (ii=0; ii<sysPar->nr; ii++){
 		sysPar->re[ii] = ((double) (ii) )*(r2-r1)/(sysPar->nr-1)+r1;
-		sysPar->re[ii] = 1.0/(sysPar->re[ii]);
+		sysPar->re[ii] = pow(1.0/(sysPar->re[ii]),2);
 		assert(sysPar->re[ii]>1.0);
 	}
 	return;
