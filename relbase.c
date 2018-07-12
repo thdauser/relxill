@@ -48,9 +48,8 @@ int c_num_zones=0;
 
 specCache* spec_cache = NULL;
 
-
 // precision to calculate gstar from [H:1-H] instead of [0:1]
-const double GFAC_H = 2e-3;
+const double GFAC_H = 5e-3;
 
 
 /* function to check of the system parameters need to be re-calculated  */
@@ -490,7 +489,7 @@ static double relb_func(double eg, int k, str_relb_func* str){
   double inte1=1.0-inte;
   double ftrf = inte*str->trff[ind][k] + inte1*str->trff[ind+1][k];
 
-  double val = pow((eg*str->re),3)/((str->gmax-str->gmin)*sqrt(egstar - egstar*egstar))*ftrf*str->emis;
+  double val = pow(eg,3)/((str->gmax-str->gmin)*sqrt(egstar - egstar*egstar))*ftrf*str->emis;
 
   /** isotropic limb law by default (see Svoboda (2009)) **/
   if (str->limb_law==0){
@@ -511,7 +510,7 @@ static double relb_func(double eg, int k, str_relb_func* str){
 
 /** Romberg Integration Routine **/
 static double RombergIntegral(double a,double b,int k, str_relb_func* str, double line_ener){
-  const double prec = 0.05;
+  const double prec = 0.02;
   double obtprec = 1.0;
   const int itermin = 0;
   int itermax = 5;
@@ -633,7 +632,7 @@ static double int_romb(double lo, double hi, str_relb_func* str, double line_ene
 		}
 	} else {
 		for (k=0;k<2;k++){
-			flu += relb_func((hi+lo)/2.0,k,str)*(hi-lo);
+			flu += RombergIntegral(lo,hi,k,str,line_energy);
 		}
 	}
 
@@ -715,7 +714,6 @@ static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0){
 		flu = flu  + int_romb(rlo,rhi,str,line_ener);
 	}
 
-
 	return flu;
 }
 
@@ -753,13 +751,13 @@ static void renorm_relline_profile(rel_spec* spec, relParam* rel_param){
 
 	/** only renormalize if not the relxill model or not a lamp post model **/
 
-/*	if (do_renorm_model(rel_param)) {
+	if (do_renorm_model(rel_param)) {
 		for (ii=0; ii<spec->n_zones; ii++){
 			for (jj=0; jj<spec->n_ener; jj++){
 				spec->flux[ii][jj] /= sum;
 			}
 		}
-	} */
+	}
 
 	if (spec->rel_cosne!=NULL){
 		for (ii=0; ii<spec->n_zones; ii++){
@@ -821,14 +819,18 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 	        // in which ionization bin are we?
 	        int izone = binary_search(spec->rgrid,spec->n_zones+1,sysPar->re[ii]);
 
-	        // trapez integration
-	       	double weight = trapez_integ_single(sysPar->re,ii,sysPar->nr);
-
 	       	// set the current parameters in a cached structure (and reset some values) [optimizes speed]
 	       	set_str_relbf(cached_str_relb_func,
 	       			sysPar->re[ii], sysPar->gmin[ii],sysPar->gmax[ii],
 	       			sysPar->trff[ii],sysPar->cosne[ii],
 					sysPar->emis[ii], sysPar->limb_law );
+
+	        /** INTEGRATION
+	         *   [remember: defintion of Xillver/Relxill is 1/2 * Speith Code]
+	         *   [remember: trapez integration returns just r*dr*PI (full integral is over dA/2)]
+	         *   [ -> in the end it's weigth=PI*r*dr/2 ]
+	         */
+	       	double weight = trapez_integ_single(sysPar->re,ii,sysPar->nr)/2;
 
 	       	// lastly, loop over the energies
 	       	for (jj=ielo; jj<=iehi; jj++){
@@ -1409,10 +1411,9 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
 					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
 
-//			double refl_fac = fabs(xill_param->refl_frac) /  ( struct_refl_frac->refl_frac_norm );
 			double refl_fac = fabs(xill_param->refl_frac); // correct
-			printf(" ** testing ** incl: %f -> expected refl_frac %f\n",rel_param->incl*180/3.1415,
-					struct_refl_frac->refl_frac_norm);
+			/**			printf(" ** testing ** incl: %f -> expected refl_frac %f, real %f \n",rel_param->incl*180/3.1415,
+						struct_refl_frac->refl_frac_norm, struct_refl_frac->refl_frac); **/
  			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam+2) ;
 
 			for (ii=0; ii<n_ener; ii++) {

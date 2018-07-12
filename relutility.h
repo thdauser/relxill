@@ -99,7 +99,7 @@ int binary_search(double* arr,int n,double val);
 /** calculate the reflection fraction **/
 lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status);
 
-/** trapez integration around a single bin **/
+/** trapez integration around a single bin (returns only r*dr*PI!) **/
 double trapez_integ_single(double* re, int ii, int nr);
 
 /* calculate the radius of marginal stability */

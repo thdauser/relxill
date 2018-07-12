@@ -226,16 +226,21 @@ int is_relxill_model(int model_type){
 	}
 }
 
-/** trapez integration around a single bin **/
+/** trapez integration around a single bin
+ *  caveat: only returns half of the full 2*PI*r*dr due to computational speed**/
 double trapez_integ_single(double* re, int ii, int nr){
+	double dr;
+	// dr is defined such that the full disk is covered once, with NO overlapping bins
 	if (ii==0){
-		return 1.0/re[ii+1] - 1.0/re[ii];
+		dr = 0.5*(re[ii] - re[ii+1]) ;
 	} else if (ii==nr-1){
-        return 1.0/re[ii] - 1.0/re[ii-1];
+        dr =  0.5*(re[ii-1] - re[ii]) ;
 	} else {
-        return 1.0/re[ii+1] - 1.0/re[ii-1];
+        dr = 0.5*( re[ii-1] - re[ii+1]);
 	}
+	return re[ii]*dr*M_PI;
 }
+
 
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener){
@@ -557,9 +562,6 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 				}
 
 			}
-
-	/**		printf("[%i]  %i-%i  -> ener=[%.3f-%.3f] , choosing bins %.3f and %.3f  => flux=%.2f\n",ii,imin,imax,
-								ener[ii],ener[ii+1],ener0[imin],ener0[imax+1],flu[ii]);  **/
 
 		}
 
