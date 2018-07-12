@@ -14,10 +14,12 @@ require("fits_model_struct");
 variable counter = 0;
 variable std_fname = "test_%04i_%s_mod.fits";
 variable DATA_DIR = "refdata/";
+variable PAR_DIR = "parfiles/";
 
 define get_fname(fname){ %{{{
    counter++;
-   return DATA_DIR+sprintf(fname,counter,get_fit_fun());
+   variable funname = qualifier("par",get_fit_fun());
+   return DATA_DIR+sprintf(fname,counter,funname);
 }
 %}}}
 
@@ -148,6 +150,20 @@ define test_relxilllp(){ %{{{
    fits_write_model_struct(get_fname(std_fname));
 }
 %}}}
+
+define test_parfiles(){
+   
+   variable pars = glob(PAR_DIR+"*.par");
+   
+   variable par;
+   variable parname;
+   foreach par(pars){
+      load_par(par);
+      parname = strchop(par)[0];
+      fits_write_model_struct(get_fname(std_fname;par=parname));      
+   }
+   
+}
 
 %test_xillver();
 test_relxill();
