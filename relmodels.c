@@ -735,16 +735,19 @@ void xillver_base(const double* ener0, const int n_ener0, double* photar, xillPa
 	// =4= rebin to the input grid
 	assert(spec->n_incl==1); // make sure there is only one spectrum given (for the chosen inclination)
 
+	/** add the dependence on incl, assuming a semi-infinite slab **/
+	norm_xillver_spec(spec, param_struct->incl);
+
 	double * ener = (double*) ener0;
 	int n_ener = (int) n_ener0;
 	double flux[n_ener];
 
 	rebin_spectrum( ener, flux,n_ener,spec->ener,spec->flu[0],spec->n_ener);
 
-	// we make the spectrum normalization independent of the ionization
 	int ii;
 
 	for (ii=0; ii<n_ener0; ii++){
+		// we make the spectrum normalization independent of the ionization
 		flux[ii] /= pow(10,param_struct->lxi) ;
 		if (fabs(param_struct->dens - 15) > 1e-6 ){
 			flux[ii] /= pow(10,param_struct->dens - 15);

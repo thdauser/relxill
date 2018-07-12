@@ -67,4 +67,6 @@ void free_cached_xillTable(void);
 
 char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status);
 
+void norm_xillver_spec(xill_spec* spec, double incl);
+
 #endif /* XILLTABLE_H_ */

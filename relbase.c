@@ -962,15 +962,9 @@ static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
 		xill_flux[ii] = 0.0;
 	}
 
-	double mufac;
-	double mu;
 	for (ii=0; ii<xill_spec->n_incl;ii++){
-		mu = cosne[ii]*0.5;
-		/**  0.5*F*mu*dmu (Javier Note, Eq. 25) **/
-		mufac = dist[ii]/mu;   // actually it is also multiplied by  dmu*nincl = 1/nincl * nincl = 1
-//		printf(" XXXX dist=%.3e  (mu=%.3e) \n",dist[ii],mu);
 		for (jj=0; jj<xill_spec->n_ener;jj++){
-			xill_flux[jj] += mufac*xill_spec->flu[ii][jj];
+			xill_flux[jj] += dist[ii]*xill_spec->flu[ii][jj];
 		}
 	}
 
