@@ -1397,13 +1397,23 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 		CHECK_STATUS_VOID(*status);
 
 		if ((xill_param->fixReflFrac==1)||(xill_param->fixReflFrac==2)) {
+			/** set the reflection fraction calculated from the height and
+			 *  spin of the primary source, in this case for the physical
+			 *  value from Rin to Rout          						 */
 			xill_param->refl_frac = struct_refl_frac->refl_frac;
+		} else {
+
 		}
 
 		/** 4 ** and apply it to primary and reflected spectra **/
 		if (rel_param->emis_type == EMIS_TYPE_LP) {
 			double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
 					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
+
+
+			/**  Important: defined such that we have to set the reflection fraction
+			 *  for the full disk from r_isco to rout=1000rg, as relconv takes into account
+			 *  the extent of the disk **/
 
 			double refl_fac = fabs(xill_param->refl_frac); // correct
 			/**			printf(" ** testing ** incl: %f -> expected refl_frac %f, real %f \n",rel_param->incl*180/3.1415,
@@ -1413,7 +1423,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			for (ii=0; ii<n_ener; ii++) {
 				 // -> major bug fix after Adam Ingram comments: gi^(gamma+2) is the correct energy shift
 				pl_flux[ii] *= norm_pl * prim_fac;  ;
-				flu[ii] *= refl_fac;
+				flu[ii] *= (0.5*struct_refl_frac->f_ad_norm)*(refl_fac/struct_refl_frac->refl_frac);
 			}
 		} else {
 			for (ii=0; ii<n_ener; ii++){
