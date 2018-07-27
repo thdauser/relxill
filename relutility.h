@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2018 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef RELUTILITY_H_
 #define RELUTILITY_H_
