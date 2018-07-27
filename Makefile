@@ -15,7 +15,7 @@ headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xillta
 sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c donthcomp.c
 
 model_dir = ./build/
-model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh modelfiles/README.txt
+model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh modelfiles/README.txt modelfiles/CHANGELOG.txt
 
 LINK_TARGET = test_sta
 

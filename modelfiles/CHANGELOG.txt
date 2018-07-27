@@ -1,0 +1,33 @@
+[1.1.0] major update and bug fix for the lamp post version of relxill:
+
+  (1) the emissivity profile in the lamp post geometry has been
+    corrected, leading to a steeper radial dependency
+
+  (2) fixing a wrong normalization of the reflected spectrum, mainly
+  affecting models with a large inclination angle
+
+  (3) removing the re-normalization with RENORM_RELXILL_MODEL
+
+[1.0.4] only applies to the LP model flavors fixed inconsistencies and
+problems with the normalization of the reflection component of
+relxilllp</tt> and <tt>relxilllpCp</tt>, affecting only LP sources at
+large height (>20Rg) and Rout<1000 Rg, or with Rin>R_ISCO. The
+spectral shape and therefore eventually fitting parameters were only
+affected if <tt>fixReflFrac=1,2</tt> was set. Additionally, problems
+with caching which sometimes occured when changing the inclination by
+a large were also fixed.
+
+[1.0.3] fixed relconv normalization (same now as for the previous
+relxill version) and in <tt>relxilllpCp</tt> temperature is now
+correctly given in the rest frame of the primary source
+
+[1.0.2] solved segmentation fault if model was executed in folder
+without write permission
+
+[1.0.1]: added possiblity to change the re-normalization behaviour of
+the models with the environment variable RENORM_RELXILL_MODEL.
+
+[1.0.0]: first version of the new relxill model, including now
+multiple zones for the LP-relxill model flavours. All other models
+produce the same results, but all models are evaluated significantly
+faster.
