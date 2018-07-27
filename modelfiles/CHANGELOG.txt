@@ -8,6 +8,9 @@
 
   (3) removing the re-normalization with RENORM_RELXILL_MODEL
 
+  (4) updating the relativistic table, to achieve a more precise
+  calculation of relativstic blurring for very low inclinations
+
 [1.0.4] only applies to the LP model flavors fixed inconsistencies and
 problems with the normalization of the reflection component of
 relxilllp</tt> and <tt>relxilllpCp</tt>, affecting only LP sources at
