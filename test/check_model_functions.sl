@@ -476,11 +476,11 @@ define check_linee(){ %{{{
    variable ff;
    
    foreach ff(ffs){            
-      if (check_line_ener(ff;nopl) > goodness_lim*3){
+      if (check_line_ener(ff;nopl) > goodness_lim*5){
 	vmessage(" *** error: there seems to be a problem with the LineE in %s ",ff);
 	 return EXIT_FAILURE;
       }
-      if (check_line_limb(ff;nopl) < goodness_lim*3){
+      if (check_line_limb(ff;nopl) < goodness_lim*5){
 	vmessage(" *** error: there seems to be a problem with the Limb Brightening / Darkening  in %s ",ff);
 	 return EXIT_FAILURE;
       }
@@ -924,7 +924,7 @@ define do_mc_testing(){ %{{{
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
 
-if (check_norm() != EXIT_SUCCESS) exit;
+%% if (check_norm() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
