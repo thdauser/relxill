@@ -624,15 +624,17 @@ static double int_romb(double lo, double hi, str_relb_func* str, double line_ene
 
 	double flu = 0.0;
 
-	/** Problems with the blue peak WITHOUT Romberg --> Romberg for blue peak only **/
+	/** We are doing a trick here: for the "red wing" of the line, one can show that a simple trapez integration is enough,
+	 * as the profile is very smooth. In order to avoid problems for narrow, double peaked lines, the red wing is defined
+	 * to start at 0.95*line_energy **/
 	int k;
-	if (lo>=line_energy){
+	if (lo>=line_energy*0.95){
 		for (k=0;k<2;k++){
 			flu += RombergIntegral(lo,hi,k,str,line_energy);
 		}
 	} else {
 		for (k=0;k<2;k++){
-			flu += RombergIntegral(lo,hi,k,str,line_energy);
+			flu += relb_func((hi+lo)/2.0,k,str)*(hi-lo);
 		}
 	}
 
