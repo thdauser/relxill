@@ -1420,12 +1420,8 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			  */
 			double norm_fac_refl = (fabs(xill_param->refl_frac))/struct_refl_frac->refl_frac;
 
-			 // -> major bug fix after Adam Ingram comments: gi^(gamma+2) is the correct energy shift
- 			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam+2);
+ 			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam);
 
-
-		/**	printf(" **** refl_frac_norm: %.3f  -> factor=%.3f (f_inf=%.3f refl_frac0=%.3f)\n",struct_refl_frac->refl_frac_norm,
-					norm_fac_refl,	struct_refl_frac->f_inf,struct_refl_frac->refl_frac); **/
 			for (ii=0; ii<n_ener; ii++) {
 				pl_flux[ii] *= norm_pl * prim_fac;
 				flu[ii] *= norm_fac_refl;
