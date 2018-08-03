@@ -1096,8 +1096,10 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 			1,1,0,status);
 	CHECK_STATUS_VOID(*status);
 
-	// need to renormalize the convolution such that we do not loose flux
-	renorm_model(rebin_flux,conv_out,n_ener);
+	// need to renormalize the convolution? (not that only LP has a physical norm!!)
+	if (! do_not_normalize_relline()){
+		renorm_model(rebin_flux,conv_out,n_ener);
+	}
 
 	// rebin to the output grid
 	rebin_spectrum(ener_inp,spec_inp,n_ener_inp, ener, conv_out, n_ener);

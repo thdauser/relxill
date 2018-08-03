@@ -309,6 +309,20 @@ int is_debug_run( void ){
 }
 
 
+/** check if we should return the relline/relconv physical norm from ENV **/
+int do_not_normalize_relline( void ){
+	char* env;
+	env = getenv("RELLINE_PHYSICAL_NORM");
+	if (env != NULL){
+		int phys_norm = atof(env);
+		if (phys_norm == 1){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax){
 	int ii;
@@ -570,11 +584,20 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 
 int do_renorm_model(relParam* rel_param){
 
+
 	int renorm = 0;
 
-	if ((! is_relxill_model(rel_param->model_type) ) || (rel_param->emis_type != EMIS_TYPE_LP)){
-		renorm = 1;
+	// never renorm the relxill model or the lamp post model
+	if (is_relxill_model(rel_param->model_type)|| (rel_param->emis_type == EMIS_TYPE_LP) ) {
+		return 0;
+    // normalize the rest, if the ENV for PHYSICAL_NORM is not set
+	} else if ( ! do_not_normalize_relline()) {
+		return 1;
+	} else {
+		return 0;
 	}
+
+
 	return renorm;
 }
 
@@ -586,3 +609,5 @@ void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z)
 	  nthcomp_param[4] = z;
 
 }
+
+

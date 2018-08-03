@@ -155,4 +155,7 @@ void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z)
 
 int do_renorm_model(relParam* rel_param);
 
+/** check if we should return the relline/relconv physical norm from ENV **/
+int do_not_normalize_relline( void );
+
 #endif /* RELUTILITY_H_ */

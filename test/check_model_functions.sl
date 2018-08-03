@@ -467,6 +467,74 @@ define check_norm(){ %{{{
 }
 %}}}
 
+define check_relline_phys_norm(){ %{{{
+
+   counter++;
+   vmessage("\n### %i ### testing the ENV setting RELLINE_PHYSICAL_NORM ### ", counter);
+
+   variable ffs = ALL_FF;
+   variable ff;
+   variable val,val2,val3;
+   variable stdpar;
+   foreach ff(ffs){
+      
+      %% does not make sense for xillver models
+      if (string_match(ff,"rel")==0){
+	 continue;
+      }
+      
+      putenv("RELLINE_PHYSICAL_NORM");
+      fit_fun(ff);
+      val = eval_fun_keV(1,2);
+      
+      stdpar = get_par("*.a");
+      
+      putenv("RELLINE_PHYSICAL_NORM=0");
+      set_par("*.a",stdpar*0.99);
+      () = eval_fun_keV(1,2);
+      set_par("*.a",stdpar);
+      val2 = eval_fun_keV(1,2);
+       
+      
+      putenv("RELLINE_PHYSICAL_NORM=1");
+      set_par("*.a",stdpar*0.99);
+      () = eval_fun_keV(1,2);
+      set_par("*.a",stdpar);
+      val3 = eval_fun_keV(1,2);
+
+      %% val2: original normalization
+      vmessage(" *** %s (integ flux):  not set (%.5e) - ENV=0 (%.5e) - ENV=1 (%.5e)",
+	       ff,sum(val2),sum(val),sum(val3));
+      
+      variable refval;
+      variable nrefval;
+      
+      %% should have no effect on the relxill models (not normalized
+      %% always
+      if (( string_match(ff,"relxill")>0 ) || ( string_match(ff,"lp")>0 )){
+ 	 %% there is no positive test (as there should be no difference)
+	 refval = 1.0;
+	 nrefval= abs(sum(val3) - sum(val));
+      } else {
+	 %% LP is non-normalized by default 	 
+	 nrefval = abs(sum(val) - sum(val2));
+	 refval = abs(sum(val) - sum(val3));
+      }
+      
+      
+      if ( (nrefval>1e-5)|| (refval<1e-5) ){
+	 vmessage(" nrefval=%.3e   --- refval=%.3e  ",nrefval,refval);
+	 vmessage(" *** error: normalization test failed!");
+	 return EXIT_FAILURE;
+      }
+   }
+      putenv("RELLINE_PHYSICAL_NORM");
+
+   return EXIT_SUCCESS;
+}
+%}}}
+
+
 define check_linee(){ %{{{
    
    counter++;
@@ -806,8 +874,6 @@ define ncheck_fix_refl_frac_single(ff){ %{{{
 }
 %}}}
 
-
-
 define check_prim_cont(){ %{{{
    
    counter++;
@@ -920,11 +986,12 @@ define do_mc_testing(){ %{{{
 }
 %}}}
 
+if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
+
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
 
-%% if (check_norm() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
