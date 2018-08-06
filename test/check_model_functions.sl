@@ -509,9 +509,9 @@ define check_relline_phys_norm(){ %{{{
       variable refval;
       variable nrefval;
       
-      %% should have no effect on the relxill models (not normalized
-      %% always
-      if (( string_match(ff,"relxill")>0 ) || ( string_match(ff,"lp")>0 )){
+      %% should have no effect on the relxill models (not normalized are
+      %% always normalized)
+      if (( string_match(ff,"relxill")>0 ) ){
  	 %% there is no positive test (as there should be no difference)
 	 refval = 1.0;
 	 nrefval= abs(sum(val3) - sum(val));
@@ -986,12 +986,13 @@ define do_mc_testing(){ %{{{
 }
 %}}}
 
-if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
 
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
 
+
+if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;

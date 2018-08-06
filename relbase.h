@@ -35,8 +35,8 @@
 #define PARAM_DEFAULT 0.0
 
 #define version_major 1
-#define version_minor 1
-#define version_build 1
+#define version_minor 2
+#define version_build 0
 #define version_dev "-pre0"
 
 // TODO: allow to set it by an environment variable

@@ -587,16 +587,19 @@ int do_renorm_model(relParam* rel_param){
 
 	int renorm = 0;
 
-	// never renorm the relxill model or the lamp post model
-	if (is_relxill_model(rel_param->model_type)|| (rel_param->emis_type == EMIS_TYPE_LP) ) {
-		return 0;
-    // normalize the rest, if the ENV for PHYSICAL_NORM is not set
-	} else if ( ! do_not_normalize_relline()) {
-		return 1;
+	if ( is_relxill_model(rel_param->model_type) ){
+			if (rel_param->emis_type == EMIS_TYPE_LP){
+				renorm=0;
+			} else {
+				renorm=1;
+			}
 	} else {
-		return 0;
+		if ( do_not_normalize_relline() ){
+			renorm=0;
+		} else {
+			renorm=1;
+		}
 	}
-
 
 	return renorm;
 }
