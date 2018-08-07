@@ -1,3 +1,9 @@
+[1.2.0] IMPORTANT reverting the wrong change for the emissivity
+profile, in 1.1.0, change (1). Besides this change, the environment
+variable RELLINE_PHYSICAL_NORM has been added. If set to 1, it will
+return the acutal normalization of the relline and relconv type models
+(not recommended for fitting).
+
 [1.1.0] major update and bug fix for the lamp post version of relxill:
 
   (1) the emissivity profile in the lamp post geometry has been
