@@ -15,7 +15,7 @@ headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xillta
 sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c donthcomp.c
 
 model_dir = ./build/
-model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh modelfiles/README.txt modelfiles/CHANGELOG.txt
+model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
 
 LINK_TARGET = test_sta
 
@@ -58,7 +58,7 @@ model:
 
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
 	echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' 
-	cd $(model_dir) && ./compile_relxill.csh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
+	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
 #	rm -f $(model_dir)/*.c $(model_dir)/*.h
 	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
