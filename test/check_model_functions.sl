@@ -854,6 +854,8 @@ define check_refl_frac_single(ff){ %{{{
 }
 %}}}
 
+
+
 define ncheck_fix_refl_frac_single(ff){ %{{{
    
 %   vmessage("   -> reflection fraction in %s",ff);
@@ -986,6 +988,28 @@ define do_mc_testing(){ %{{{
 }
 %}}}
 
+define print_refl_frac(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### print REFLECTION FRACTION information: ###",counter);
+   
+   variable ff = ["relxilllp","relxilllpD","relxilllpCp"];
+   
+   variable ii,n = length(ff);
+   
+   variable goodn;
+   _for ii(0,n-1,1){
+      fit_fun(ff[ii]);
+      vmessage(" %s : ",ff[ii]);
+      set_par("*.fixReflFrac",2);
+      () = eval_fun_keV(1,2);
+      set_par("*.fixReflFrac",0);
+      message("\n");
+   }
+   
+   return EXIT_SUCCESS;
+}
+%}}}
 
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
@@ -1001,6 +1025,7 @@ if (check_dens_mod() != EXIT_SUCCESS) exit;
 if (check_prim_cont() != EXIT_SUCCESS) exit;
 if (check_nthcomp_mod() != EXIT_SUCCESS) exit;
 if (check_refl_frac() != EXIT_SUCCESS) exit;
+if (print_refl_frac() != EXIT_SUCCESS) exit;
 if (check_caching() != EXIT_SUCCESS) exit;
 
 if (do_mc_testing() != EXIT_SUCCESS) exit;

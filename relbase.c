@@ -1452,10 +1452,10 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			}
 
 
-			printf(" reflection fraction for a = %.3f and h = %.2f rg is: %.3f \n reflection strength is: %.3f \n",
+			printf("For a = %.3f and h = %.2f rg: \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
 					rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
-			printf(" -> %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
-			printf(" -> gravitational redshift from the observer to the primary source is %.3f\n",grav_redshift(rel_param) );
+			printf(" - %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
+			printf(" - gravitational redshift from the observer to the primary source is %.3f\n",grav_redshift(rel_param) );
 		}
 
 		/** free the reflection fraction structure **/
