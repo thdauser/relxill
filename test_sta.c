@@ -582,7 +582,7 @@ void test_relline_table(int* status){
 		assert(tab!=NULL);
 		assert(tab->arr!=NULL);
 
-		double aref_val = 0.98605162;
+		double aref_val = 0.9829549;
 		if ( fabs(tab->a[RELTABLE_NA-2] - aref_val) > LIMIT_PREC ){
 			printf(" testing spin: expecting value of %f, but found %f\n",
 					aref_val,tab->a[RELTABLE_NA-2]);
@@ -590,7 +590,7 @@ void test_relline_table(int* status){
 			break;
 		}
 
-		double mu0ref_val = 9.7182781e-02;
+		double mu0ref_val = 0.09476821;
 		if ( fabs(tab->mu0[1] - mu0ref_val) > LIMIT_PREC ){
 			printf(" testing mu0: expecting value of %f, but found %f\n",mu0ref_val,tab->mu0[1]);
 			RELXILL_ERROR("values in rel table not correct",status);
@@ -598,7 +598,7 @@ void test_relline_table(int* status){
 		}
 
 		const int n = 5;
-		const float ref_val[5] = {985.76074, 0.0055350405,0.0055231834, 0.0054442692,0.030979944 };
+		const float ref_val[5] = {985.76074, 0.01127052,0.01120779 , 0.01121218, 0.03022655};
 		const float val[5] = {
 				tab->arr[0][0]->r[1],
 				tab->arr[0][0]->trff1[0][0],
@@ -657,7 +657,7 @@ void test_lp_table(int* status){
 		}
 
 		const int n = 3;
-		const float ref_val[3] = {7.5840981e-05, 2.6826601, -1.2509402 };
+		const float ref_val[3] = {7.618106e-05, 2.6826601, -1.2509402 };
 		const float val[3] = {
 				tab->dat[1]->intens[2][1],
 				tab->dat[1]->del[2][1],
@@ -665,7 +665,7 @@ void test_lp_table(int* status){
 			};
 		for (int ii=0; ii<n; ii++){
 			if ( fabs( (ref_val[ii] - val[ii]) / ref_val[ii] ) > LIMIT_PREC ){
-				printf(" testing lp table: expecting value of %f, but found %f\n",ref_val[ii],val[ii]);
+				printf(" testing lp table: expecting value of %e, but found %e\n",ref_val[ii],val[ii]);
 				RELXILL_ERROR("values in lp table not correct",status);
 				break;
 			}
