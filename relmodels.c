@@ -481,6 +481,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 	param->z     = 0.0;
 	param->limb  = (int) (inp_par[7] + 0.5);
 
+
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
 
@@ -548,7 +549,7 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 
 	int ii;
 	for (ii=0; ii<=n_ener; ii++){
-		ener1keV[ii] = ener[ii]*(1 + z) / line_energ; //TODO: need to test this
+		ener1keV[ii] = ener[ii]*(1 + z) / line_energ;
 	}
 	return ener1keV;
 }
@@ -566,7 +567,7 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 	// int n_ener = (int) n_ener0;
 	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 
-	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
+	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param, status);
 	CHECK_STATUS_VOID(*status);
 
 	free(ener);
@@ -880,6 +881,12 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->beta = 0.0; // special case, in order to prevent strange results
 	param->limb = 0;
 
+	// this is set by the environment variable "RELLINE_PHYSICAL_NORM"
+	param->do_renorm_relline = do_renorm_model(param);
+
+	// set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
+	param->num_zones = get_num_zones(param->model_type,param->emis_type);
+
 	return param;
 }
 
@@ -933,7 +940,9 @@ void lmodrelxill(const double* ener0, const int n_ener0, const double* parameter
 
 	const int n_parameter = 13;
 	int status = EXIT_SUCCESS;
+
 	tdrelxill(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating relxill model failed",&status);

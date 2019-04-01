@@ -59,6 +59,8 @@ typedef struct{
 	double gamma;
 	double beta;
 	int limb;
+	int do_renorm_relline;
+	int num_zones;
 } relParam;
 
 typedef struct{
@@ -168,6 +170,23 @@ typedef struct{
 	int n_ener;
 	int n_incl;
 }xill_spec;
+
+
+typedef struct{
+	int n_ener;
+	double* ener;
+	double* flux;
+} out_spec;
+
+typedef struct{
+	int nzones;   // number of zones actually stored there
+	int n_cache;  // number of array (nzones <= n_cache !!)
+	int n_ener;
+	double*** fft_xill;  // dimensions [n_cache,2,n_ener]
+	double*** fft_rel;   // dimensions [n_cache,2,n_ener]
+	xill_spec** xill_spec;
+	out_spec* out_spec;
+} specCache;
 
 
 /******************************/

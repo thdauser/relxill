@@ -28,6 +28,8 @@
 
 #define CHECK_RELXILL_ERROR(msg,status) (check_relxill_error(__func__, msg,status))
 
+#define CHECK_RELXILL_DEFAULT_ERROR(status) (check_relxill_error(__func__, "function evaluation failed",status))
+
 #define CHECK_STATUS_RET(status, retval) \
   if (EXIT_SUCCESS!=status) return(retval);
 
@@ -48,10 +50,6 @@
 		RELXILL_ERROR("memory allocation failed",status); \
 		return retval;\
 	}
-
-#define CHECK_STATUS_RET(status, retval) \
-  if (EXIT_SUCCESS!=status) return(retval);
-
 
 /**************************/
 /** Function Definitions **/

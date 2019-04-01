@@ -39,8 +39,8 @@ static void get_emis_bkn(double* emis, double* re,int nr,
 	return;
 }
 
-/* function to check of the system parameters need to be re-calculated  */
-static int redo_get_emis_lp(relParam* param, relParam* rel_param, relSysPar* sysPar){
+/* function to check of the system parameters need to be re-calculated  XXX not used at the moment*/
+/** static int redo_get_emis_lp(relParam* param, relParam* rel_param, relSysPar* sysPar){
 
 	if (rel_param==NULL){
 		return 1;
@@ -68,7 +68,7 @@ static int redo_get_emis_lp(relParam* param, relParam* rel_param, relSysPar* sys
 	}
 
 	return 0;
-}
+} **/
 
 static void get_emis_jet_point_source(relParam* param, double* emis, double* del_emit, double* del_inc,
 		double* re, int n_r, lpTable* tab, int ind_a, double ifac_a, int* status){
@@ -190,7 +190,7 @@ void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_i
 }
 
 /** calculate the emissivity profile, depending on the EMIS_TYPE given **/
-void calc_emis_profile(relParam* param, relParam* cached_param, relSysPar* sysPar, int* status){
+void calc_emis_profile(relParam* param, relSysPar* sysPar, int* status){
 
 	assert(sysPar!=NULL);
 	double invalid_angle = -1.0;
@@ -210,25 +210,25 @@ void calc_emis_profile(relParam* param, relParam* cached_param, relSysPar* sysPa
 	/**  *** Lamp Post Emissivity ***  **/
 	} else if (param->emis_type==EMIS_TYPE_LP){
 
-		if (redo_get_emis_lp(param, cached_param, sysPar)){
-			get_emis_jet(param,sysPar->emis, sysPar->del_emit, sysPar->del_inc,
-					sysPar->re, sysPar->nr, status);
-			CHECK_STATUS_VOID(*status);
+		// if (redo_get_emis_lp(param, cached_param, sysPar)){  // XXX Currently we always re-do it if we get here
+		get_emis_jet(param,sysPar->emis, sysPar->del_emit, sysPar->del_inc,
+				sysPar->re, sysPar->nr, status);
+		CHECK_STATUS_VOID(*status);
 
-			int nr_lim = 2;
-			double del_emit[2];
-			double del_dummy[2];
-			double emis_dummy[2];
+		int nr_lim = 2;
+		double del_emit[2];
+		double del_dummy[2];
+		double emis_dummy[2];
 
-			double rad[2] = {AD_ROUT_MAX, kerr_rms(param->a)};
+		double rad[2] = {AD_ROUT_MAX, kerr_rms(param->a)};
 
-			// get the primary source emission angle for the simulated inner and out edge of the disk
-			get_emis_jet(param,emis_dummy, del_emit, del_dummy,rad, nr_lim, status);
-			CHECK_STATUS_VOID(*status);
-			sysPar->del_ad_rmax = del_emit[0];
-			sysPar->del_ad_risco = del_emit[1];
+		// get the primary source emission angle for the simulated inner and out edge of the disk
+		get_emis_jet(param,emis_dummy, del_emit, del_dummy,rad, nr_lim, status);
+		CHECK_STATUS_VOID(*status);
+		sysPar->del_ad_rmax = del_emit[0];
+		sysPar->del_ad_risco = del_emit[1];
 
-		}
+		//}
 
 	} else {
 

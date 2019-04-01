@@ -200,6 +200,11 @@ static void std_eval_relline(int* status, int n){
 	int ii;
 	for (ii=0; ii<n; ii++){
 		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
+		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
+		inp_par[2] = 0.99;
+		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
+		inp_par[2] = 0.998;
+		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
 	}
 }
 

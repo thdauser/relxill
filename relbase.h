@@ -28,6 +28,7 @@
 #include "reltable.h"
 #include "rellp.h"
 #include "xilltable.h"
+#include "relcache.h"
 
 
 /*********** DEFINE STATEMENTS *********/
@@ -104,22 +105,6 @@ typedef struct{
 	double* gstar;
 } str_relb_func;
 
-typedef struct{
-	int n_ener;
-	double* ener;
-	double* flux;
-} out_spec;
-
-typedef struct{
-	int nzones;   // number of zones actually stored there
-	int n_cache;  // number of array (nzones <= n_cache !!)
-	int n_ener;
-	double*** fft_xill;  // dimensions [n_cache,2,n_ener]
-	double*** fft_rel;   // dimensions [n_cache,2,n_ener]
-	xill_spec** xill_spec;
-	out_spec* out_spec;
-} specCache;
-
 /****** FUNCTION DEFINITIONS ******/
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
@@ -140,6 +125,9 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam* rel_param, int* status );
 
+relSysPar* get_system_parameters(relParam* param, int* status);
+
+
 /** function adding a primary component with the proper norm to the flux **/
 void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param, xillParam* xill_param, int* status);
 
@@ -152,11 +140,13 @@ void free_specCache(void);
 void free_fft_cache(double*** sp,int n1, int n2);
 void free_out_spec(out_spec* spec);
 out_spec* init_out_spec(int n_ener, double* ener, int* status);
-int redo_relbase_calc(relParam* param, relParam* ca_para);
+
 int redo_xillver_calc(relParam* rel_param, xillParam* xill_param, relParam* ca_rel, xillParam* ca_xill);
-int comp_xill_param(xillParam* cpar, xillParam* par);
-void set_cached_xill_param(xillParam* par,xillParam** ca_par, int* status);
+int redo_relbase_calc(relParam* rel_param, relParam* ca_rel_param);
+
 void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status);
+
+int comp_xill_param(xillParam* cpar, xillParam* par);
 
 
 #endif /* RELBASE_H_ */

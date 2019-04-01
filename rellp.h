@@ -22,7 +22,7 @@
 #include "relutility.h"
 
 
-void calc_emis_profile(relParam* param, relParam* cached_param, relSysPar* sysPar, int* status);
+void calc_emis_profile(relParam* param, relSysPar* sysPar, int* status);
 
 void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_inc,
 		double* re, int n_r, int* status);

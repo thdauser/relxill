@@ -18,23 +18,23 @@
 #include "relbase.h"
 
 
+// new CACHE routines
+cnode* cache_relbase = NULL;
+cnode* cache_syspar  = NULL;
 
 
 /** global parameters, which can be used for several calls of the model */
 relTable* relline_table=NULL;
-relSysPar* cached_relSysPar=NULL;
 relSysPar* cached_tab_sysPar=NULL;
-rel_spec* cached_rel_spec=NULL;
 
 /** caching parameters **/
 relParam* cached_rel_param=NULL;
 xillParam* cached_xill_param=NULL;
-relParam* cached_relbase_param=NULL;
 
 
 int save_1eV_pos = 0;
 double cached_int_romb_rad = -1.0;
-const double cache_limit = 1e-8;
+//const double cache_limit = 1e-8;
 
 const double ener_xill_norm_lo = 0.1;
 const double ener_xill_norm_hi = 1000;
@@ -50,51 +50,6 @@ specCache* spec_cache = NULL;
 
 // precision to calculate gstar from [H:1-H] instead of [0:1]
 const double GFAC_H = 5e-3;
-
-
-/* function to check of the system parameters need to be re-calculated  */
-static int redo_get_system_parameters(relParam* param,relParam* ca_rel_param){
-
-	if (cached_relSysPar==NULL){
-		return 1;
-	}
-
-
-
-	if (ca_rel_param!=NULL){
-		if (fabs(param->a - ca_rel_param->a) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->incl - ca_rel_param->incl) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->rin - ca_rel_param->rin) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->rout - ca_rel_param->rout) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->rbr - ca_rel_param->rbr) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->height - ca_rel_param->height) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->emis1 - ca_rel_param->emis1) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->emis2 - ca_rel_param->emis2) > cache_limit) {
-			return 1;
-		}
-		if (param->limb != ca_rel_param->limb) {
-			return 1;
-		}
-	} else {
-		return 1;
-	}
-
-	return 0;
-}
 
 // interpolate the table in the A-MU0 plane (for one value of radius)
 static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
@@ -151,15 +106,15 @@ static void get_fine_radial_grid(double rin, double rout, relSysPar* sysPar){
 }
 
 /* function interpolating the rel table values for rin,rout,mu0,incl   */
-static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, double rin, double rout,
+static relSysPar* interpol_relTable(double a, double mu0, double rin, double rout,
 		 int* status){
 
 	// load tables
 	if (relline_table==NULL){
 		print_version_number(status);
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,NULL);
 		read_relline_table(RELTABLE_FILENAME,&relline_table,status);
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,NULL);
 	}
 	relTable* tab = relline_table;
 	assert(tab!=NULL);
@@ -179,7 +134,7 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 	// get a structure to store the values from the interpolation in the A-MU0-plane
 	if (cached_tab_sysPar == NULL){
 		cached_tab_sysPar = new_relSysPar(tab->n_r,tab->n_g,status);
-		CHECK_STATUS_VOID(*status);
+		CHECK_STATUS_RET(*status,NULL);
 	}
 
 	int ind_a   = binary_search_float(tab->a,tab->n_a,a);
@@ -232,12 +187,9 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 	/** 2 **  Bin to Fine Grid **/
 	/****************************/
 
-	relSysPar* sysPar = (*sysPar_inp);
-	// only need to initialize and allocat memory if not already loaded
-	if (sysPar == NULL){
-		sysPar = new_relSysPar(N_FRAD,tab->n_g,status);
-		CHECK_STATUS_VOID(*status);
-	}
+	//  need to initialize and allocate memory
+	relSysPar* sysPar = new_relSysPar(N_FRAD,tab->n_g,status);
+	CHECK_STATUS_RET(*status,NULL);
 	get_fine_radial_grid(rin,rout,sysPar);
 
 	/** we do not have rmax=1000.0 in the table, but just values close to it so let's do this trick**/
@@ -269,7 +221,7 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 					RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid",status);
 					printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
 							sysPar->re[ii], RELTABLE_MAX_R);
-					CHECK_STATUS_VOID(*status);
+					CHECK_STATUS_RET(*status,NULL);
 				}
 			}
 		}
@@ -283,7 +235,7 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
 			RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid",status);
 			printf("   --> radius %.4e not found in [%.4e,%.4e]  \n",
 					sysPar->re[ii],cached_tab_sysPar->re[ind_tabr+1],cached_tab_sysPar->re[ind_tabr]);
-			CHECK_STATUS_VOID(*status);
+			CHECK_STATUS_RET(*status,NULL);
 		}
 
 		int jj; int kk;
@@ -306,36 +258,75 @@ static void interpol_relTable(relSysPar** sysPar_inp,double a, double mu0, doubl
  			interp_lin_1d(ifac_r,cached_tab_sysPar->gmax[ind_tabr+1],cached_tab_sysPar->gmax[ind_tabr]);
 
 	}
-	(*sysPar_inp) = sysPar;
 
-	return;
+	return sysPar;
 }
 
+/**  calculate all relativistic system parameters, including interpolation
+ *   of the rel-table, and the emissivity; caching is implemented
+ *   Input: relParam* param   Output: relSysPar* system_parameter_struct
+ */
 
 
-/* function to get the system parameters; decides if values need to be re-computed
- * interpolate values loaded from the table if necessary */
-static relSysPar* get_system_parameters(relParam* param, int* status){
+/* function to get the system parameters */
+static relSysPar* calculate_system_parameters(relParam* param, int* status){
 
 	// only re-do the interpolation if rmin,rmax,a,mu0 changed
 	// or if the cached parameters are NULL
 
-	if (redo_get_system_parameters(param,cached_relbase_param)){
-		double mu0 = cos(param->incl);
-		interpol_relTable(&cached_relSysPar,param->a,mu0,param->rin,param->rout,status);
-		CHECK_STATUS_RET(*status,NULL);
+	double mu0 = cos(param->incl);
+	relSysPar* sysPar = interpol_relTable(param->a,mu0,param->rin,param->rout,status);
+	CHECK_STATUS_RET(*status,NULL);
 
-		if (param->limb!=0){
-			cached_relSysPar->limb_law = param->limb;
-		}
-
-		// get emissivity profile
-		calc_emis_profile(param, cached_relbase_param,cached_relSysPar, status);
-		CHECK_STATUS_RET(*status,NULL);
+	if (param->limb!=0){
+		sysPar->limb_law = param->limb;
 	}
 
-	return cached_relSysPar;
+	// get emissivity profile
+	calc_emis_profile(param, sysPar, status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	return sysPar;
 }
+
+
+relSysPar* get_system_parameters(relParam* param, int* status){
+
+	CHECK_STATUS_RET(*status, NULL);
+
+	inpar* sysinp = set_input_syspar(param,status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	cache_info* ca_info = cli_check_cache(cache_syspar, sysinp, check_cache_syspar, status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	relSysPar* sysPar = NULL;
+	if (ca_info->syscache==1){
+		// system parameter values are cached, so we can take it from there
+		sysPar = ca_info->store->data->relSysPar;
+		if (is_debug_run()){
+			printf(" DEBUG:  SYSPAR-Cache: re-using calculated values\n");
+		}
+	} else {
+		// NOT CACHED, so we need to calculate the system parameters
+		sysPar = calculate_system_parameters(param, status);
+
+		// now add (i.e., prepend) the current calculation to the cache
+		set_cache_syspar(&cache_syspar, param, sysPar,status);
+
+		if (is_debug_run()){
+			printf(" DEBUG:  The count of the SYSPAR-Cache  is  %i",cli_count_elements(cache_relbase));
+		}
+	}
+
+	assert(sysPar!=NULL);
+
+	free(ca_info);
+	free(sysinp);
+
+	return  sysPar;
+}
+
 
 /** get new structure to store the relline spectrum (possibly for several zones)
     important note: ener has n_ener+1 number of bins **/
@@ -405,6 +396,8 @@ rel_cosne* new_rel_cosne(int nzones, int n_incl, int*status){
 static void init_rel_spec(rel_spec** spec, relParam* param, xillTable* xill_tab,
 		double** pt_ener, const int n_ener, int* status ){
 
+	CHECK_STATUS_VOID(*status);
+
 	/** in case of the relxill-LP model multiple zones are used **/
 	int nzones = get_num_zones(param->model_type, param->emis_type);
 
@@ -436,7 +429,8 @@ static void init_rel_spec(rel_spec** spec, relParam* param, xillTable* xill_tab,
 	}
 
 	get_rzone_grid(param->rin, param->rout, (*spec)->rgrid, nzones, param->height, status);
-	CHECK_STATUS_VOID(*status);
+
+	CHECK_RELXILL_DEFAULT_ERROR(status);
 
 	return;
 }
@@ -708,7 +702,7 @@ static double integ_relline_bin(str_relb_func* str, double rlo0, double rhi0){
 
 		// has the function relb_func been calculated at the lower bin boundary before?
 		// (should've been upper bound before; also make sure we haven't changed the radial bin!)
-		if ( (fabs(rlo - str->cache_bin_ener) < cache_limit) && (fabs(str->re - str->cache_rad_relb_fun) < cache_limit)) {
+		if ( (fabs(rlo - str->cache_bin_ener) < CACHE_LIMIT) && (fabs(str->re - str->cache_rad_relb_fun) < CACHE_LIMIT)) {
 			str->cached_relbf = 1;
 		} else {
 			str->cached_relbf = 0;
@@ -783,6 +777,8 @@ int static get_cosne_bin(double mu, rel_cosne* dat){
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func* cached_str_relb_func = NULL;
 void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
+
+	CHECK_STATUS_VOID(*status);
 
 	double line_ener=1.0;
 
@@ -861,6 +857,8 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 
 		}
 	}
+
+	CHECK_RELXILL_DEFAULT_ERROR(status);
 
 }
 
@@ -1018,12 +1016,12 @@ static void check_caching_relxill(relParam* rel_param, xillParam* xill_param, in
 
 
 	/** always re-compute if the number of zones changed **/
-	if (cached_rel_spec != NULL){
+	if (cached_rel_param != NULL){
 
-		if (get_num_zones(rel_param->model_type, rel_param->emis_type) != cached_rel_spec->n_zones){
+		if (get_num_zones(rel_param->model_type, rel_param->emis_type) != cached_rel_param->num_zones){
 			if ( is_debug_run() ){
 				printf("  *** warning :  the number of radial zones was changed from %i to %i \n",
-						get_num_zones(rel_param->model_type, rel_param->emis_type), cached_rel_spec->n_zones);
+						get_num_zones(rel_param->model_type, rel_param->emis_type), cached_rel_param->num_zones);
 			}
 			*re_rel  = 1;
 			*re_xill = 1;
@@ -1497,105 +1495,6 @@ static void save_emis_profile(double* rad, double* intens, int n_rad){
 	if (fclose(fp)) exit(1);
 }
 
-static int comp_single_param_val(double val1, double val2){
-	if (fabs(val1-val2) <= cache_limit){
-		return 0;
-	} else {
-		return 1;
-	}
-}
-
-void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status){
-
-	if ((*ca_rel_param)==NULL){
-		(*ca_rel_param) = (relParam*) malloc ( sizeof(relParam));
-		CHECK_MALLOC_VOID_STATUS((*ca_rel_param),status);
-	}
-
-	(*ca_rel_param)->a = par->a;
-	(*ca_rel_param)->emis1 = par->emis1;
-	(*ca_rel_param)->emis2 = par->emis2;
-	(*ca_rel_param)->gamma = par->gamma;
-	(*ca_rel_param)->height = par->height;
-	(*ca_rel_param)->incl = par->incl;
-	(*ca_rel_param)->beta = par->beta;
-
-	(*ca_rel_param)->z = par->z;
-	(*ca_rel_param)->limb = par->limb;
-	(*ca_rel_param)->lineE = par->lineE;
-
-	(*ca_rel_param)->emis_type = par->emis_type;
-	(*ca_rel_param)->model_type = par->model_type;
-
-	(*ca_rel_param)->rbr = par->rbr;
-	(*ca_rel_param)->rin = par->rin;
-	(*ca_rel_param)->rout = par->rout;
-
-}
-
-static int comp_rel_param(relParam* cpar, relParam* par){
-	if (comp_single_param_val(par->a,cpar->a)) return 1;
-	if (comp_single_param_val(par->emis1,cpar->emis1)) return 1;
-	if (comp_single_param_val(par->emis2,cpar->emis2)) return 1;
-	if (comp_single_param_val(par->gamma,cpar->gamma)) return 1;
-	if (comp_single_param_val(par->height,cpar->height)) return 1;
-	if (comp_single_param_val(par->incl,cpar->incl)) return 1;
-	if (comp_single_param_val(par->beta,cpar->beta)) return 1;
-
-	if ((par->limb!=cpar->limb)) return 1;
-
-	/** need this for the current code to work; could be optimized **/
-	if (comp_single_param_val(par->z,cpar->z)) return 1;
-	if (comp_single_param_val(par->lineE,cpar->lineE)) return 1;
-
-
-	if (comp_single_param_val( (double) par->emis_type, (double) cpar->emis_type)) return 1;
-	if (comp_single_param_val( (double) par->model_type, (double) cpar->model_type)) return 1;
-
-	if (comp_single_param_val(par->rbr,cpar->rbr)) return 1;
-	if (comp_single_param_val(par->rin,cpar->rin)) return 1;
-	if (comp_single_param_val(par->rout,cpar->rout)) return 1;
-
-	/** also check if the number of zones changed **/
-	if (c_num_zones != get_num_zones(par->model_type,par->emis_type)) return 1;
-
-	return 0;
-}
-
-/* check if values, which need a re-computation of the relline profile, have changed */
-int redo_relbase_calc(relParam* param, relParam* ca_rel_param){
-
-	int redo = 1;
-
-	if (ca_rel_param==NULL){
-	} else {
-		redo = comp_rel_param(ca_rel_param,param);
-	}
-
-	return redo;
-}
-
-
-
-void set_cached_xill_param(xillParam* par, xillParam** ca_xill_param, int* status){
-
-	if ((*ca_xill_param)==NULL){
-		(*ca_xill_param) = (xillParam*) malloc ( sizeof(xillParam));
-		CHECK_MALLOC_VOID_STATUS((*ca_xill_param),status);
-	}
-
-	(*ca_xill_param)->afe = par->afe;
-	(*ca_xill_param)->dens = par->dens;
-	(*ca_xill_param)->ect = par->ect;
-	(*ca_xill_param)->gam = par->gam;
-	(*ca_xill_param)->lxi = par->lxi;
-	(*ca_xill_param)->z = par->z;
-
-	(*ca_xill_param)->prim_type = par->prim_type;
-	(*ca_xill_param)->model_type = par->model_type;
-
-}
-
 int comp_xill_param(xillParam* cpar, xillParam* par){
 	if (comp_single_param_val(par->afe,cpar->afe)) return 1;
 	if (comp_single_param_val(par->dens,cpar->dens)) return 1;
@@ -1630,54 +1529,88 @@ int redo_xillver_calc(relParam* rel_param, xillParam* xill_param, relParam* ca_r
 	return redo;
 }
 
+int redo_relbase_calc(relParam* rel_param, relParam* ca_rel_param){
+
+	int redo = 1;
+	int not_redo = 0;
+
+
+	if (comp_rel_param(ca_rel_param, rel_param)){
+		return redo;
+	}
+
+	return not_redo;
+
+}
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
  * optinal input: xillver grid
  * output: photar(n_ener)     */
-rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xill_tab,int* status){
+
+rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xill_tab, int* status){
+
+	CHECK_STATUS_RET(*status,NULL);
+
+	inpar* inp = set_input(ener,n_ener,param,NULL, status);
 
 	// check caching here and also re-set the cached parameter values
-	// TODO: also check if the energy grid changed!
-	int redo = redo_relbase_calc(param,cached_relbase_param);
+	cache_info* ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
 
-	if (redo){
+
+	// set a pointer to the spectrum
+	rel_spec* spec = NULL;
+
+	if ( is_relbase_cached(ca_info)==0 ) {
+
+		printf(" redo-RELBASE: %i \n",is_relbase_cached(ca_info));
 
 		// initialize parameter values
 		relSysPar* sysPar = get_system_parameters(param,status);
-		CHECK_STATUS_RET(*status,NULL);
 
 		if (is_debug_run()){
 			save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
 		}
 
 		// init the spectra where we store the flux
-		init_rel_spec(&cached_rel_spec, param, xill_tab, &ener, n_ener, status);
-		CHECK_STATUS_RET(*status,NULL);
+		init_rel_spec(&spec, param, xill_tab, &ener, n_ener, status);
 
 		// calculate line profile (returned units are 'cts/bin')
-		relline_profile(cached_rel_spec, sysPar, status);
-		CHECK_STATUS_RET(*status,cached_rel_spec);
+		relline_profile(spec, sysPar, status);
 
-		// normalize it and calculate the angular disttribution (if necessary)
-		renorm_relline_profile(cached_rel_spec,param);
+		// normalize it and calculate the angular distribution (if necessary)
+		renorm_relline_profile(spec,param);
 
 		if (is_debug_run()){
-			save_relline_profile(cached_rel_spec);
+			save_relline_profile(spec);
 		}
 
-		// store parameters such that we know what we calculated
-		set_cached_rel_param(param,&cached_relbase_param,status);
-		CHECK_STATUS_RET(*status,NULL);
+		// last step: store parameters and cached rel_spec (this prepends a new node to the cache)
+		set_cache_relbase(&cache_relbase,param,spec, status);
+		if (is_debug_run()){
+			printf(" DEBUG:  The count of the RELBASE-Cache is  %i",cli_count_elements(cache_relbase));
+		}
 	}
 
-	// TODO: set photar, such that we can directly use this spectrum???
+	else {
+		if (is_debug_run()){
+			printf(" DEBUG:  RELBASE-Cache: re-using calculated values\n");
+		}
+		spec = ca_info->store->data->relbase_spec;
+	}
 
-	assert(cached_rel_spec!=NULL);
-	return cached_rel_spec;
+
+	assert(spec!=NULL);
+
+	// free the input structure
+	free(inp);
+	free(ca_info);
+
+	CHECK_RELXILL_DEFAULT_ERROR(status);
+
+	return spec;
 }
-
 
 
 void free_rel_cosne(rel_cosne* spec){
@@ -1715,7 +1648,6 @@ void free_rel_spec(rel_spec* spec){
 
 void free_cached_tables(void){
 	free_relTable(relline_table);
-	free_relSysPar(cached_relSysPar);
 	free_relSysPar(cached_tab_sysPar);
 	free_cached_lpTable();
 
@@ -1723,9 +1655,6 @@ void free_cached_tables(void){
 
 	free(cached_rel_param);
 	free(cached_xill_param);
-	free(cached_relbase_param);
-
-	free_rel_spec(cached_rel_spec);
 
 	free_str_relb_func(cached_str_relb_func);
 

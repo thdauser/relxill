@@ -10,9 +10,9 @@ COMPILE.c = gcc
 
 INCLUDES = -I${HEADAS}/include
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o
-headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xilltable.h
-sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c donthcomp.c
+objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o
+headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xilltable.h relcache.h
+sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c donthcomp.c relcache.c
 
 model_dir = ./build/
 model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
