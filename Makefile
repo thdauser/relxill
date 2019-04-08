@@ -79,7 +79,7 @@ valgrind-relxilllp:
 gdb:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	gdb --args ./test_sta relline
+	gdb --args ./test_sta relline 100
 
 ddd:
 	echo "exit" | make gdb 
@@ -88,5 +88,5 @@ ddd:
 gprof:
 	make clean
 	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
-	./test_sta relxilllpCp 100
+	./test_sta relline 100
 	gprof -p test_sta

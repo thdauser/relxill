@@ -314,15 +314,21 @@ relSysPar* get_system_parameters(relParam* param, int* status){
 		// now add (i.e., prepend) the current calculation to the cache
 		set_cache_syspar(&cache_syspar, param, sysPar,status);
 
-		if (is_debug_run()){
-			printf(" DEBUG:  The count of the SYSPAR-Cache  is  %i",cli_count_elements(cache_relbase));
+		if (is_debug_run() && *status==EXIT_SUCCESS){
+			printf(" DEBUG:  The count of the SYSPAR-Cache  is  %i \n",cli_count_elements(cache_syspar));
 		}
 	}
 
-	assert(sysPar!=NULL);
-
 	free(ca_info);
 	free(sysinp);
+
+	CHECK_RELXILL_DEFAULT_ERROR(status);
+
+	// make a sanity check for now
+	if (*status == EXIT_SUCCESS){
+		assert(cache_syspar!=NULL);
+		assert(sysPar!=NULL);
+	}
 
 	return  sysPar;
 }
@@ -734,7 +740,10 @@ static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gma
 
 
 /** function to properly re-normalize the relline_profile **/
-static void renorm_relline_profile(rel_spec* spec, relParam* rel_param){
+static void renorm_relline_profile(rel_spec* spec, relParam* rel_param, int* status){
+
+	CHECK_STATUS_VOID(*status);
+
 	// normalize to 'cts/bin'
 	int ii; int jj;
 	double sum = 0.0;
@@ -1476,6 +1485,8 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 /** print the relline profile   **/
 void save_relline_profile(rel_spec* spec){
 
+	if (spec==NULL) return;
+
 	FILE* fp =  fopen ( "test_relline_profile.dat","w+" );
 	int ii;
 	for (ii=0; ii<spec->n_ener; ii++){
@@ -1564,12 +1575,11 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 
 	if ( is_relbase_cached(ca_info)==0 ) {
 
-		printf(" redo-RELBASE: %i \n",is_relbase_cached(ca_info));
 
 		// initialize parameter values
 		relSysPar* sysPar = get_system_parameters(param,status);
 
-		if (is_debug_run()){
+		if (is_debug_run() && sysPar!=NULL){
 			save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
 		}
 
@@ -1580,7 +1590,7 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 		relline_profile(spec, sysPar, status);
 
 		// normalize it and calculate the angular distribution (if necessary)
-		renorm_relline_profile(spec,param);
+		renorm_relline_profile(spec,param,status);
 
 		if (is_debug_run()){
 			save_relline_profile(spec);
@@ -1588,8 +1598,8 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 
 		// last step: store parameters and cached rel_spec (this prepends a new node to the cache)
 		set_cache_relbase(&cache_relbase,param,spec, status);
-		if (is_debug_run()){
-			printf(" DEBUG:  The count of the RELBASE-Cache is  %i",cli_count_elements(cache_relbase));
+		if (is_debug_run() && *status==EXIT_SUCCESS){
+			printf(" DEBUG:  Adding new RELBASE eval to cache; the count is %i \n",cli_count_elements(cache_relbase));
 		}
 	}
 
@@ -1599,9 +1609,6 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 		}
 		spec = ca_info->store->data->relbase_spec;
 	}
-
-
-	assert(spec!=NULL);
 
 	// free the input structure
 	free(inp);

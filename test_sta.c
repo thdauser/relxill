@@ -198,12 +198,19 @@ static void std_eval_relline(int* status, int n){
 	/* call the relline model */
 	double photar[n_ener];
 	int ii;
-	for (ii=0; ii<n; ii++){
+	if (n>2){
+		for (ii=0; ii<n; ii++){
+			inp_par[4] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+			tdrelline(ener,n_ener,photar,inp_par,n_param,status);
+		}
+	} else {
+		inp_par[8] = 0.0;
 		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
+		inp_par[8] = 1.0;
 		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
-		inp_par[2] = 0.99;
+		inp_par[8] = 2.0;
 		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
-		inp_par[2] = 0.998;
+		inp_par[8] = 0.0;
 		tdrelline(ener,n_ener,photar,inp_par,n_param,status);
 	}
 }
@@ -296,18 +303,19 @@ static void std_eval_relxill(int* status, int n){
 	/* call the relline model */
 	double photar[n_ener];
 
-	/* int ii;
+	int ii;
 	 for (ii=0; ii<n; ii++){
 		if (n>1){
-			//			inp_par[3] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+			inp_par[3] = 1.0*ii/(n-1)*0.998*2 - 0.998;
 			inp_par[7] = 1.0*ii/(n-1)*0.1 - 0.0;
 			inp_par[7] = 0.0;
-			// inp_par[9] = 1.0*ii/(n-1)*0.1;
+			inp_par[9] = 1.0*ii/(n-1)*0.1;
+			tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
 		}
 		// printf(" testing a=%.3f , lxi=%.2f \n",inp_par[3],inp_par[9]);
-		printf(" testing z=%.3f \n",inp_par[7]);
-	}*/
-	tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
+		//printf(" testing z=%.3f \n",inp_par[7]);
+	}
+	// tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
 
 }
 
@@ -533,9 +541,17 @@ static void std_eval_relline_lp(int* status, int n){
 	double photar[n_ener];
 	int ii;
 	for (ii=0; ii<n; ii++){
+//		tdrellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
+		inp_par_lp[2] = 0.998;
+		tdrellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
+		tdrellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
+		inp_par_lp[2] = 0.99;
+		tdrellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
+		inp_par_lp[2] = 0.998;
 		tdrellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
 		CHECK_STATUS_VOID(*status);
 	}
+
 
 
 }
@@ -793,6 +809,8 @@ int main(int argc, char *argv[]){
 	int do_relxilllpnthcomp = 0;
 	int do_relconv = 0;
 
+	putenv("DEBUG_RELXILL=1");
+
 	if (argc>=2){
 		if (strcmp(argv[1],"version")==0){
 			get_version_number(&buf,&status);
@@ -849,7 +867,7 @@ int main(int argc, char *argv[]){
 		}
 
 		if (do_all || do_relline){
-			std_eval_relline(&status,1);
+			std_eval_relline(&status,n);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}

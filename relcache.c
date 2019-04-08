@@ -96,6 +96,8 @@ int comp_rel_param(relParam* cpar, relParam* par){
 
 void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status){
 
+	assert(ca_rel_param!=NULL);
+
 	if ((*ca_rel_param)==NULL){
 		(*ca_rel_param) = (relParam*) malloc ( sizeof(relParam));
 		CHECK_MALLOC_VOID_STATUS((*ca_rel_param),status);
@@ -119,6 +121,10 @@ void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status){
 	(*ca_rel_param)->rbr = par->rbr;
 	(*ca_rel_param)->rin = par->rin;
 	(*ca_rel_param)->rout = par->rout;
+
+	(*ca_rel_param)->do_renorm_relline = par->do_renorm_relline;
+	(*ca_rel_param)->num_zones = par->num_zones;
+
 
 }
 
@@ -204,13 +210,19 @@ int cli_count_elements(cnode* head){
 
 
 /* delete the linked list */
-void cli_delete_list(cnode* head){
-    cnode* cursor = head;
+void cli_delete_list(cnode** pt_head){
+    cnode* cursor = *pt_head;
+
+    cnode* next = NULL;
+
+
     while(cursor != NULL) {
-    	cnode* next = cursor->next;
+    	next = cursor->next;
         free_cnode(&cursor);
         cursor = next;
     }
+
+    *pt_head = NULL;
 }
 
 
@@ -251,7 +263,6 @@ cnode* check_cache_relpar(cache_info* ca_info, inpar* inp, cnode* node){
 	if ( comp_rel_param(node->data->par_rel,inp->rel_par) == 0){
 		// system parameters did not change in this iteration
 		// however, one last check if the energy grid did change
-
 		if (did_energy_grid_change(inp->ener,inp->n_ener,node->data->relbase_spec) ){
 			return node->next;
 
@@ -278,14 +289,28 @@ cache_info* cli_check_cache(cnode* head, inpar* inp, cnode* (*check_cache) (cach
 
     int c = 0;
 	cnode* cursor = head;
-    while(cursor != NULL && c < CLI_NMAX) {
-    	if (c>=CLI_NMAX){
-    		// if we are above the maximal number of elements, delete the rest and break
-    		cli_delete_list(cursor);
-    		break;
-    	}
-    	cursor =  check_cache(ca_info, inp, cursor);
+	cnode* next = NULL;
+    while(cursor != NULL ) {
+
+    	// if cursor is not NULL, we already have one element
     	c++;
+
+    	// let's check the cache: return value can be NULL for 2 conditions:
+    	// (1) found a match
+    	// (2) end of the list
+    	next =  check_cache(ca_info, inp, cursor);
+
+		// if we are above the maximal number of elements, delete the rest and break
+    	// (+) we need to set the cursor->next=NULL
+    	if (next != NULL && c>=CLI_NMAX-1) {
+    		if (is_debug_run()) {
+    			printf(" DEBUG: Cached Reach its limit \n");
+    		}
+    		cli_delete_list(&next);
+    		cursor->next = NULL;
+    		assert(next==NULL);
+    	}
+		cursor = next;
     }
 
 
@@ -298,9 +323,9 @@ cnode* add_node_to_cache(cnode* head, relParam* relpar, xillParam* xillpar, int*
 
 	CHECK_STATUS_RET(*status,NULL);
 
-	cdata* data = NULL;
+	cdata* data = init_cdata(status);
 
-	init_cdata(&data, status);
+	assert(data!=NULL);
 	if (relpar!=NULL){
 		set_cached_rel_param(relpar,&(data->par_rel),status);
 	}
@@ -312,6 +337,8 @@ cnode* add_node_to_cache(cnode* head, relParam* relpar, xillParam* xillpar, int*
 	// prepend (i.e., create new node, assign data, and set the new head)
 	cnode* new_head = cli_prepend(head, data, status);
 
+	assert(new_head!=NULL);
+
 	CHECK_RELXILL_DEFAULT_ERROR(status);
 
 	return new_head;
@@ -322,13 +349,16 @@ void set_cache_relbase(cnode** pt_head, relParam* param, rel_spec* spec, int* st
 
 	CHECK_STATUS_VOID(*status);
 
+
+	cnode* old_head = *pt_head;
+
 	// prepend new node and set parameters
-	cnode* new_head = add_node_to_cache(*pt_head,param,NULL, status);
+	cnode* new_head = add_node_to_cache(old_head,param,NULL, status);
 
 	// set the data
 	new_head->data->relbase_spec = spec;
 
-	pt_head = &new_head;
+	*pt_head = new_head;
 
 	CHECK_RELXILL_DEFAULT_ERROR(status);
 }
@@ -343,7 +373,7 @@ void set_cache_syspar(cnode** pt_head, relParam* param, relSysPar* syspar, int* 
 	// set the data
 	new_head->data->relSysPar = syspar;
 
-	pt_head = &new_head;
+	*pt_head = new_head;
 
 	CHECK_RELXILL_DEFAULT_ERROR(status);
 }
@@ -353,12 +383,12 @@ void set_cache_syspar(cnode** pt_head, relParam* param, relSysPar* syspar, int* 
 /********* HELPER ROUTINES *********/
 
 
-void init_cdata(cdata** pt_data, int* status){
+cdata* init_cdata(int* status){
 
-	CHECK_STATUS_VOID(*status);
+	CHECK_STATUS_RET(*status,NULL);
 
     cdata* data = (cdata*)malloc(sizeof(cdata));
-    CHECK_MALLOC_VOID_STATUS(data,status);
+    CHECK_MALLOC_RET_STATUS(data,status,NULL);
 
     data->par_rel=NULL;
     data->par_xill=NULL;
@@ -366,7 +396,7 @@ void init_cdata(cdata** pt_data, int* status){
     data->relbase_spec=NULL;
     data->relxill_cache=NULL;
 
-    pt_data = &data;
+    return data;
 }
 
 

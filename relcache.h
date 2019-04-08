@@ -27,7 +27,7 @@
 
 /****** TYPEDEF******/
 
-#define CLI_NMAX 3
+#define CLI_NMAX 10
 
 
 typedef struct cdata{
@@ -82,13 +82,13 @@ int comp_single_param_val(double val1, double val2);
 cnode* cli_create(cdata* data,cnode* next, int* status);
 
 /** delete the full list (starting from head) **/
-void cli_delete_list(cnode* head);
+void cli_delete_list(cnode** head);
 int cli_count_elements(cnode* head);
 
 cnode* cli_prepend(cnode* head,cdata* data, int* status);
 // void cli_traverse(cnode* head,callback f);
 
-void init_cdata(cdata** pt_data, int* status);
+cdata* init_cdata(int* status);
 
 // Routines to set the cached parameters
 void set_cache_relbase(cnode** node, relParam* param, rel_spec* spec, int* status);

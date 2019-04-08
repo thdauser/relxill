@@ -70,7 +70,7 @@ define fit_fun_default(ff){ %{{{
    variable p,pa = get_params();   
    variable df;
    foreach p(pa){
-      df = eval(sprintf("%s_default(%i)",ff,p.index-1));
+      df = eval(sprintf("%s_default(%i)",qualifier("ff0",ff),p.index-1));
       p.value=df.value;
       p.min=df.min;
       p.max=df.max;
@@ -160,7 +160,7 @@ define check_z_param(ff){ %{{{
 
 
 define check_line_ener(ff){ %{{{
-   fit_fun(ff);
+   fit_fun_default(ff);
 
    if (string_match(ff,"\.*line") == 0){
       return;
@@ -217,7 +217,7 @@ define check_line_limb(ff){ %{{{
 
    variable gn = goodness(val0,val1);
    variable gn2 = goodness(val0,val2);
-   vmessage("    -> %s goodness value for limb dark %.3e amd bright %.3e",
+   vmessage("    -> %s goodness value for limb dark %.3e and bright %.3e",
 	    ff, gn,gn2);
    return gn+gn2;
 }
@@ -229,14 +229,14 @@ define check_conv_mod_single(ff,ff_conv){ %{{{
    variable ener = 6.4;
    
    
-   fit_fun(ff);
+   fit_fun_default(ff);
    set_par("*.lineE",ener);
 
    variable lo, hi;
    (lo,hi) = log_grid(0.2,10,600);
    
    variable val0 = eval_fun_keV(lo,hi);
-      
+
    fit_fun(ff_conv+"(1,egauss)");
    set_par("*.center",ener);
    variable val1 = eval_fun_keV(lo,hi);
@@ -690,7 +690,7 @@ define check_caching_single(ff,par){ %{{{
    % clone parameter
 
    % ### 1 ### change parameter between min and max
-   variable N = 3;
+   variable N = 10;
    variable v;
    
    variable vals;
@@ -701,12 +701,12 @@ define check_caching_single(ff,par){ %{{{
    }
    
    if (abs(p.value-p.min) < abs(p.max-p.value)){
-      vals = [p.value:p.value*1.1 :#N];
+      vals = [p.value:p.value*1.2 :#N];
    } else {
       if (p.value>=0){
-	 vals = [p.value*0.9:p.value:#N];
+	 vals = [p.value*0.8:p.value:#N];
       } else {
-	 vals = [p.value:p.value*1.1 :#N];	 
+	 vals = [p.value:p.value*1.2 :#N];	 
       }
    }
 
@@ -770,6 +770,8 @@ define check_caching(){ %{{{
    variable std_rel_param = ["a","Incl","Rin","Rout"];
    variable std_xill_param = ["logxi","Afe","z"];
    
+   ff_arr["relline"]   = [std_rel_param, "Rbr" , "Index1","Index2"];
+   ff_arr["relline_lp"]   = [std_rel_param, "h"];
    ff_arr["relxill"]   = [std_rel_param, "Rbr" , "Index1","Index2",std_xill_param, "Ecut"];
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
    ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
