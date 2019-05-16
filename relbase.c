@@ -262,6 +262,7 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 	return sysPar;
 }
 
+
 /**  calculate all relativistic system parameters, including interpolation
  *   of the rel-table, and the emissivity; caching is implemented
  *   Input: relParam* param   Output: relSysPar* system_parameter_struct
@@ -271,20 +272,31 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 /* function to get the system parameters */
 static relSysPar* calculate_system_parameters(relParam* param, int* status){
 
+	CHECK_STATUS_RET(*status,NULL);
+
 	// only re-do the interpolation if rmin,rmax,a,mu0 changed
 	// or if the cached parameters are NULL
 
 	double mu0 = cos(param->incl);
 	relSysPar* sysPar = interpol_relTable(param->a,mu0,param->rin,param->rout,status);
-	CHECK_STATUS_RET(*status,NULL);
 
 	if (param->limb!=0){
 		sysPar->limb_law = param->limb;
 	}
 
+
+	// if we are in LP Geometry, we also need primary source emission angle to hit Rin and Rout
+	if (param->emis_type==EMIS_TYPE_LP){
+		get_ad_del_lim(param, sysPar, status);
+	}
+
+
 	// get emissivity profile
-	calc_emis_profile(param, sysPar, status);
-	CHECK_STATUS_RET(*status,NULL);
+	calc_emis_profile(sysPar->emis, sysPar->del_emit, sysPar->del_inc, sysPar->re, sysPar->nr, param, status);
+
+	if (*status!=EXIT_SUCCESS){
+		RELXILL_ERROR("failed to calculate the system parameters",status);
+	}
 
 	return sysPar;
 }
@@ -966,6 +978,8 @@ static void print_angle_dist(rel_cosne* spec, int izone){
 static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
 		double* cosne, double* dist, int n_incl, int* status){
 
+	CHECK_STATUS_VOID(*status);
+
 	int ii; int jj;
 	for (ii=0; ii<xill_spec->n_ener;ii++){
 		xill_flux[ii] = 0.0;
@@ -1067,6 +1081,18 @@ static void renorm_model(double* flu0, double* flu, int nbins){
 
 
 }
+
+
+static void renorm_xill_spec(double* spec , int n, double lxi, double dens){
+
+	for (int ii=0; ii<n; ii++){
+		spec[ii] /= pow(10,lxi);
+		if (fabs(dens - 15) > 1e-6 ){
+			spec[ii] /= pow(10,dens - 15);
+		}
+	}
+}
+
 
 /** BASIC RELCONV FUNCTION : convole any input spectrum with the relbase kernel
  *  (ener has the length n_ener+1)
@@ -1175,7 +1201,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	init_specCache(&spec_cache,status);
 	CHECK_STATUS_VOID(*status);
 
-
 	/** is both already cached we can see if we can simply use the output flux value **/
 	if ( is_all_cached(spec_cache,n_ener_inp,ener_inp,recompute_xill,recompute_rel,status) ){
 		CHECK_STATUS_VOID(*status);
@@ -1199,6 +1224,15 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		xill_spec* xill_spec = NULL;
 
 
+		// currently only working for the LP version (as relxill always has just 1 zone)
+		ion_grad* ion = NULL;
+		if (is_iongrad_model(rel_param->model_type) ){
+			ion = calc_ion_gradient(rel_param, xill_param->lxi, xill_param->ion_grad_index, xill_param->ion_grad_type,
+					rel_profile->rgrid, rel_profile->n_zones, status);
+			CHECK_STATUS_VOID(*status);
+		}
+
+
 		int jj;
 		for (ii=0; ii<rel_profile->n_zones;ii++){
 			assert(spec_cache!=NULL);
@@ -1211,13 +1245,18 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 			// get the energy shift in order to calculate the proper Ecut value (if nzones>1)
 			// (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
-			//  session the number ofd zones is reset)
+			//  session the number of zones is reset)
 			if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type)==1){
 				xill_param->ect = ecut0 ;
 			} else {
 				// choose the (linear) middle of the radial zone
 				double rzone = 0.5*(rel_profile->rgrid[ii]+rel_profile->rgrid[ii+1]);
 				xill_param->ect = ecut_primary * get_rzone_energ_shift(rel_param,rzone ) ;
+			}
+
+			// if we have an ionization gradient defined, we need to set the xlxi to the value of the current zone
+			if (ion!=NULL){
+				xill_param->lxi = ion->lxi[ii];
 			}
 
 			// call the function which calculates the xillver spectrum
@@ -1267,12 +1306,15 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 				continue;
 			}
 
+			// renorm the spectrum (such that it is independent of xi and density)
+			renorm_xill_spec(single_spec_inp, n_ener_inp, xill_param->lxi, xill_param->dens);
+
 			// add it to the final output spectrum
 			for (jj=0; jj<n_ener_inp;jj++){
 				spec_inp[jj] += single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
 			}
 
-			if (is_debug_run()){
+			if (is_debug_run() && rel_profile->n_zones <= 10 ){
 				char* vstr;
 				double test_flu[n_ener_inp];
 				for (jj=0; jj<n_ener_inp;jj++){
@@ -1289,6 +1331,8 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		/** important: set the cutoff energy value back to its original value **/
 		xill_param->ect = ecut0;
 
+		/** free the ionization parameter structure **/
+		free_ion_grad(ion);
 
 		/** initialize the cached output spec array **/
 		if ((spec_cache->out_spec != NULL ) ) {
@@ -1304,10 +1348,10 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 			// lastely, we make the spectrum normalization independent of the ionization parameter
 		for (ii=0; ii<n_ener_inp; ii++){
-			spec_inp[ii] /= pow(10,xill_param->lxi);
+			/**		spec_inp[ii] /= pow(10,xill_param->lxi);  // RE-NORMALIZATION is now done before
 			if (fabs(xill_param->dens - 15) > 1e-6 ){
 				spec_inp[ii] /= pow(10,xill_param->dens - 15);
-			}
+			} **/
 			spec_cache->out_spec->flux[ii] = spec_inp[ii];
 		}
 	} /************* END OF THE HUGE COMPUTATION ********************/
@@ -1317,10 +1361,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	/** add a primary spectral component and normalize according to the given refl_frac parameter**/
 	add_primary_component(ener_inp,n_ener_inp,spec_inp,rel_param,xill_param, status);
 
-	double sum_all=0.0;
-	for (ii=0; ii<n_ener_inp; ii++){
-		sum_all+=spec_inp[ii];
-	}
 
 	return;
 }
@@ -1516,6 +1556,9 @@ int comp_xill_param(xillParam* cpar, xillParam* par){
 
 	if (comp_single_param_val( (double) par->prim_type, (double) cpar->prim_type)) return 1;
 	if (comp_single_param_val( (double) par->model_type, (double) cpar->model_type)) return 1;
+
+	if (comp_single_param_val( par->ion_grad_index, cpar->ion_grad_index)) return 1;
+	if (comp_single_param_val( (double) par->ion_grad_type, (double) cpar->ion_grad_type)) return 1;
 
 	return 0;
 }

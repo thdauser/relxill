@@ -146,6 +146,10 @@ void set_cached_xill_param(xillParam* par, xillParam** ca_xill_param, int* statu
 	(*ca_xill_param)->prim_type = par->prim_type;
 	(*ca_xill_param)->model_type = par->model_type;
 
+	(*ca_xill_param)->ion_grad_index = par->ion_grad_index;
+	(*ca_xill_param)->ion_grad_type = par->ion_grad_type;
+
+
 }
 
 

@@ -39,6 +39,13 @@
 #define PRIM_SPEC_NTHCOMP 2
 /***************************************/
 
+/** define Ionization Gradient Type**/
+#define ION_GRAD_TYPE_CONST 2
+#define ION_GRAD_TYPE_PL 0
+#define ION_GRAD_TYPE_ALPHA 1
+/***************************************/
+
+
 #define AD_ROUT_MAX 1000
 
 /****** TYPE DEFINITIONS ******/
@@ -72,11 +79,20 @@ typedef struct{
 	double z;
 	double refl_frac;
 	double dens;
+	double ion_grad_index;
+	int ion_grad_type;
 	int fixReflFrac;
 	int model_type;
 	int prim_type;
 } xillParam;
 
+
+typedef struct{
+	double* lxi;
+	double* fx;
+	double* r;
+	int nbins;
+} ion_grad;
 
 /** the XILLVER table structure */
 typedef struct{

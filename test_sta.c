@@ -180,6 +180,25 @@ static void set_std_param_relline_lp(double* inp_par, int* status){
 	inp_par[8] = 2.0;  // gamma
 }
 
+
+
+static void set_std_param_relxilllpion(double* inp_par, int* status){
+	inp_par[0]  = 6;   // height
+	inp_par[1]  = 0.9; // a
+	inp_par[2]  = 30.0;  // incl
+	inp_par[3]  = -1.0;  // rin
+	inp_par[4]  = 1000.;  // rout
+	inp_par[5]  = 0.0;    // redshift
+	inp_par[6]  = 2.0;   // pl Index
+	inp_par[7]  = 3.00;   // logxi
+	inp_par[8]  = 1.0;   // Afe
+	inp_par[9]  = 300.0; // Ecut
+	inp_par[10] = 1;     // ion_grad_type
+	inp_par[11] = 0.0;   // ion_grad_index
+	inp_par[12] = 3.0;   // refl_frac
+	inp_par[13] = 0.0;   // fixReflFrac
+}
+
 /** standard evaluation of the relline model **/
 static void std_eval_relline(int* status, int n){
 
@@ -441,6 +460,34 @@ static void std_eval_relxilllp(int* status, int n){
 	// save_xillver_spectrum(ener,photar,n_ener,"test_relxilllp_spectrum.dat");
 
 }
+
+
+
+/** standard evaluation of the relxill model **/
+static void std_eval_relxilllpion(int* status, int n){
+
+	printf("\n ==> Evaluating RELXILLLPION MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELXILLLPION;
+	double inp_par[NUM_PARAM_RELXILLLPION];
+	set_std_param_relxilllpion(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	const int n_ener = 1000;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.1,1000.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+
+	//int ii;
+
+	//for (ii=0; ii<n; ii++){
+		tdrelxilllpion(ener,n_ener,photar,inp_par,n_param,status);
+	//}
+}
+
 
 /** standard evaluation of the relxill model **/
 static void std_eval_relxilllp_nthcomp(int* status, int n){
@@ -803,6 +850,7 @@ int main(int argc, char *argv[]){
 	int do_rellinelp = 0;
 	int do_relxill = 0;
 	int do_relxilllp = 0;
+	int do_relxilllpion = 0;
 	int do_relxilldens = 0;
 	int do_relxilllpdens = 0;
 	int do_relxillnthcomp= 0;
@@ -824,6 +872,9 @@ int main(int argc, char *argv[]){
 			do_all=0;
 		} else if (strcmp(argv[1],"relline")==0){
 				do_relline=1;
+				do_all=0;
+		} else if (strcmp(argv[1],"relxilllpion")==0){
+				do_relxilllpion=1;
 				do_all=0;
 		} else if (strcmp(argv[1],"relconv")==0){
 				do_relconv=1;
@@ -888,6 +939,12 @@ int main(int argc, char *argv[]){
 
 		}
 
+		if (do_all | do_relxilllpion){
+			std_eval_relxilllpion(&status,n);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+
+		}
 
 		if (do_all) {
 			std_eval_xillver(&status,1);

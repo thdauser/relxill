@@ -106,7 +106,7 @@ double kerr_rms(double a);
 /* get the rplus value (size if the black hole event horizon */
 double kerr_rplus(double a);
 
-/** test if it is a relxill flavour model **/
+/** test if it is a relxill flavor model **/
 int is_relxill_model(int model_type);
 
 /** check if we are currently debugging the model **/
@@ -155,5 +155,20 @@ int do_renorm_model(relParam* rel_param);
 
 /** check if we should return the relline/relconv physical norm from ENV **/
 int do_not_normalize_relline( void );
+
+/** calculate the ionization gradient **/
+ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, int type, double* rgrid, int n, int* status);
+
+/*** we calculate not normalized disk density from  Shakura & Sunyaev (1973) for zone A  ***/
+double density_ss73_zone_a(double radius, double rms);
+
+/** is is a model for which we want to calculate the ionization gradient? **/
+int is_iongrad_model(int ion_type);
+
+void free_ion_grad(ion_grad* ion);
+ion_grad* new_ion_grad(double* r, int n, int* status);
+
+/** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
+void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int nn, int* status);
 
 #endif /* RELUTILITY_H_ */
