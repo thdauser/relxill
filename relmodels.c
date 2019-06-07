@@ -613,7 +613,7 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 
 	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param, status);
-	CHECK_STATUS_VOID(*status);
+
 
 	free(ener);
 	free_xillParam(xill_param);

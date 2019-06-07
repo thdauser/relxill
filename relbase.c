@@ -279,6 +279,8 @@ static relSysPar* calculate_system_parameters(relParam* param, int* status){
 
 	double mu0 = cos(param->incl);
 	relSysPar* sysPar = interpol_relTable(param->a,mu0,param->rin,param->rout,status);
+	CHECK_STATUS_RET(*status,NULL);
+
 
 	if (param->limb!=0){
 		sysPar->limb_law = param->limb;
@@ -1150,7 +1152,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	 * -> as we do a simple FFT, we can now take into account that we
 	 *    need it to be number = 2^N */
 
-
 	/** only do the calculation once **/
 	if (ener_std == NULL){
 		ener_std = (double*) malloc( (n_ener_std+1) * sizeof(double));
@@ -1164,7 +1165,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	xillTable* xill_tab = NULL;
 	get_init_xillver_table(&xill_tab,xill_param,status);
 	CHECK_STATUS_VOID(*status);
-
 
 
 	// make sure the output array is set to 0
@@ -1218,7 +1218,9 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		c_num_zones = get_num_zones(rel_param->model_type,rel_param->emis_type);
 
 		/* calculate the relline profile **/
+
 		rel_spec* rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
+		CHECK_STATUS_VOID(*status);
 
 		/* init the xillver spectrum structure **/
 		xill_spec* xill_spec = NULL;

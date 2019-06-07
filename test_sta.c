@@ -334,7 +334,7 @@ static void std_eval_relxill(int* status, int n){
 		// printf(" testing a=%.3f , lxi=%.2f \n",inp_par[3],inp_par[9]);
 		//printf(" testing z=%.3f \n",inp_par[7]);
 	}
-	// tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
+	tdrelxill(ener,n_ener,photar,inp_par,n_param,status);
 
 }
 
