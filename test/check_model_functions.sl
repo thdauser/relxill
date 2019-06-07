@@ -26,7 +26,7 @@ __set_hard_limits("relxilllp","h",-100,1000);
 _traceback=1;
 
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
-		  "relxillCp","relxilllpCp","xillverCp"];
+		  "relxillCp","relxilllpCp","xillverCp","relxilllpion"];
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
 variable sum_name = "plot_check_model_functions_sum.pdf";
@@ -770,6 +770,7 @@ define check_caching(){ %{{{
    variable std_rel_param = ["a","Incl","Rin","Rout"];
    variable std_xill_param = ["logxi","Afe","z"];
    
+   ff_arr["relxilllpion"] = [std_rel_param, "h","refl_frac", std_xill_param, "xi_index" ];
    ff_arr["relline"]   = [std_rel_param, "Rbr" , "Index1","Index2"];
    ff_arr["relline_lp"]   = [std_rel_param, "h"];
    ff_arr["relxill"]   = [std_rel_param, "Rbr" , "Index1","Index2",std_xill_param, "Ecut"];
