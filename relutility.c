@@ -705,6 +705,7 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 	CHECK_STATUS_RET(*status,NULL);
 
 	double rmean[n];
+	double del_inc[n];
 	for (int ii=0; ii<n; ii++){
 		rmean[ii] = 0.5*(rgrid[ii] + rgrid[ii+1]);
 	}
@@ -730,6 +731,7 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 		relSysPar* sysPar = get_system_parameters(rel_param,status);
 		assert(sysPar->emis!=NULL);
 		inv_rebin_mean(sysPar->re, sysPar->emis, sysPar->nr, rmean, emis_zones, n,  status);
+		inv_rebin_mean(sysPar->re, sysPar->del_inc, sysPar->nr, rmean, del_inc, n,  status);
 
 		// calculate the maximal ionization assuming r^-3 and SS73 alpha disk
 		double lxi_max = cal_lxi_max_ss73(sysPar->re, sysPar->emis, sysPar->nr, rin, status);
@@ -743,6 +745,8 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 
 			// now we can use the emissivity to calculate the ionization
 			ion->lxi[ii] = cal_lxi(dens[ii], emis_zones[ii]) + fac_lxi_norm;
+
+			ion->lxi[ii] += log10(cos(M_PI/4)/cos(del_inc[ii]));
 
 		    lxi_set_to_xillver_bounds(&(ion->lxi[ii]));
 		}
