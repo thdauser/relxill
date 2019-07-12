@@ -36,9 +36,9 @@
 #define PARAM_DEFAULT 0.0
 
 #define version_major 1
-#define version_minor 2
-#define version_build 2
-#define version_dev "dev3"
+#define version_minor 3
+#define version_build 0
+#define version_dev ""
 
 /** path to all RELXILL tables */
 #define RELXILL_TABLE_PATH "./"
