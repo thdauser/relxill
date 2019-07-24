@@ -479,9 +479,6 @@ static str_relb_func* new_str_relb_func(relSysPar* sysPar, int* status){
 	str->ng = sysPar->ng;
 	str->limb_law = 0;
 
-	//str->cache_val_relb_func = (double*) malloc(2*sizeof(double));
-	//CHECK_MALLOC_RET_STATUS(str->cache_val_relb_func,status,str);
-
 	return str;
 }
 
@@ -579,10 +576,10 @@ static double RombergIntegral(double a,double b,int k, str_relb_func* str, doubl
 }
 
 
-static void free_str_relb_func(str_relb_func* str){
-	if (str!=NULL){
-//		free(str->cache_val_relb_func);
-		free(str);
+static void free_str_relb_func(str_relb_func** str){
+	if (*str!=NULL){
+		free(*str);
+		*str=NULL;
 	}
 }
 
@@ -745,6 +742,7 @@ static void	set_str_relbf(str_relb_func* str, double re, double gmin, double gma
 	str->cosne = cosne;
 
 	str->cache_bin_ener = -1.0;
+	str->cache_rad_relb_fun = -1.0;
 	str->cached_relbf = 0;
 
 	str->limb_law = limb_law;
@@ -880,6 +878,10 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 
 		}
 	}
+
+	/** we need to free the structure as it points to the currently cached sysPar structure
+	 	which is freed if the cache is full and therefore causes "invalid reads" **/
+	free_str_relb_func(&cached_str_relb_func);
 
 	CHECK_RELXILL_DEFAULT_ERROR(status);
 
@@ -1708,7 +1710,7 @@ void free_cached_tables(void){
 	free(cached_rel_param);
 	free(cached_xill_param);
 
-	free_str_relb_func(cached_str_relb_func);
+	free_str_relb_func(&cached_str_relb_func);
 
 	free_specCache();
 

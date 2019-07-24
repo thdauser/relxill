@@ -67,6 +67,19 @@ static void check_parameter_bounds(relParam* param, int* status){
 		param->rin = rms;
 	}
 
+	if (param->a >0.9982){
+		printf(" *** Error : Spin a > 0.9982, model evaluation failed \n");
+		*status = EXIT_FAILURE;
+		return;
+	}
+
+	if (param->a <-1){
+		printf(" *** Error : Spin a < -1, model evaluation failed \n");
+		*status = EXIT_FAILURE;
+		return;
+	}
+
+
 	if (param->rout <= param->rin){
 		printf(" *** Error : Rout <= Rin, model evaluation failed \n");
 		*status = EXIT_FAILURE;
