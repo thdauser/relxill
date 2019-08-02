@@ -144,7 +144,7 @@ double grav_redshift(relParam* param);
 char* get_relxill_table_path( void );
 
 /** get the number of zones **/
-int get_num_zones(int model_type, int emis_type);
+int get_num_zones(int model_type, int emis_type, int ion_grad_type);
 
 /** check if it is the xillver model **/
 int is_xill_model(int model_type);
@@ -163,7 +163,7 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 double density_ss73_zone_a(double radius, double rms);
 
 /** is is a model for which we want to calculate the ionization gradient? **/
-int is_iongrad_model(int ion_type);
+int is_iongrad_model(int ion_type, int ion_grad_type);
 
 void free_ion_grad(ion_grad* ion);
 ion_grad* new_ion_grad(double* r, int n, int* status);

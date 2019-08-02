@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef MODELS_H_
 #define MODELS_H_
@@ -58,10 +58,10 @@
 
 /** ion grad models **/
 #define MOD_TYPE_RELXILLLPION -21
-#define NUM_PARAM_RELXILLLPION 14
+#define NUM_PARAM_RELXILLLPION 15
 
 #define MOD_TYPE_RELXILLION -20  // not implemented yet
-// #define NUM_PARAM_RELXILLION 14
+// #define NUM_PARAM_RELXILLION 15???
 
 
 /****  TYPE DEFINITIONS ****/

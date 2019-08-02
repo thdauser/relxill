@@ -37,8 +37,8 @@
 
 #define version_major 1
 #define version_minor 3
-#define version_build 1
-#define version_dev "dev1"
+#define version_build 2
+#define version_dev ""
 
 /** path to all RELXILL tables */
 #define RELXILL_TABLE_PATH "./"
@@ -62,7 +62,7 @@
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
 #define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
-#define N_ZONES_MAX 100  // maximal number of radial zones
+#define N_ZONES_MAX 50  // maximal number of radial zones
 
 /** parameters for the convolution **/
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT

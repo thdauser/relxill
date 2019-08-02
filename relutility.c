@@ -59,8 +59,9 @@ int is_xill_model(int model_type){
 
 
 // ion-gradient model, which is not set to constant ionization
-int is_iongrad_model(int model_type){
-	if ( ( (model_type == MOD_TYPE_RELXILLLPION ) || (model_type == MOD_TYPE_RELXILLION ) ) ) {
+//  - in case ion_grad_type=constant, it is working as a normal model
+int is_iongrad_model(int model_type, int ion_grad_type ){
+	if ( (model_type == MOD_TYPE_RELXILLLPION ) &&  ( ion_grad_type!=ION_GRAD_TYPE_CONST ) ) {
 		return 1;
 	} else {
 		return 0;
@@ -79,6 +80,11 @@ double grav_redshift(relParam* param){
 	}
 }
 
+static double relat_abberation(double del,double beta) {
+	return acos( (cos(del)-beta) / (1-beta*cos(del)));
+}
+
+
 /** calculate the reflection fraction as defined in Dauser+2016 **/
 lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 
@@ -95,6 +101,19 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	double del_bh  = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
 	double del_ad = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
 
+	/** calculate the coordinate transformation / relat abberation
+	 *   - an observer on the accretion disk sees the rays from
+	 *     del_bh up to del_ad
+	 *   - for the reflection fraction we therefore need to convert from
+	 *     the moving source (which the disk observer sees) into the
+	 *     local frame
+	 *   -> therefore we need to calculate the abberation fro -beta
+	 */
+	if (param->beta>1e-6) {
+	     del_bh = relat_abberation(del_bh, -1.*param->beta);
+	     del_ad = relat_abberation(del_ad, -1.*param->beta);
+	}
+
 	lpReflFrac* str = (lpReflFrac*) malloc (sizeof(lpReflFrac));
 	CHECK_MALLOC_RET_STATUS(str,status,NULL);
 
@@ -105,7 +124,7 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	str->f_inf = 0.5*(1.0 + cos(sysPar->del_ad_rmax));
 
 	/** fraction of photons which would hit the maximally
-	 *  simulated accretion disk */
+	 *  simulated accretion disk. Do not change this with BETA (!) */
 	str->f_ad_norm = 0.5*(cos(sysPar->del_ad_risco) - cos(sysPar->del_ad_rmax));
 
 	// photons are not allowed to crosstalk the disk plane
@@ -115,17 +134,6 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	
 	str->refl_frac = str->f_ad/str->f_inf;
 	str->refl_frac_norm = str->f_ad_norm/str->f_inf;
-
-	// printf(" *** %4f [%.3f,%.3f,%.3f] \n",str->refl_frac,str->f_bh,str->f_ad,str->f_inf);
-	/**	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh*180/M_PI,del_ad*180/M_PI);
-	printf(" rin %i (%.1f) ---  rout %i (%.1f)\n",binary_search(sysPar->re, sysPar->nr, param->rin),param->rin,
-			binary_search(sysPar->re, sysPar->nr,
-			param->rout),param->rout);  **/
-
-	if (param->beta > 1e-6){
-		// TODO: implement beta>0 for refl frac
-		printf(" **** warning: primary source with a non-zero velocity not implemented yet. Assuming bet=0 for the reflection fracion! \n");
-	}
 
 	return str;
 }
@@ -277,24 +285,18 @@ void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double 
 
 		}
 
-		//printf(" XX %i \n",indr);
 		if (indr < nzones ){
 
 			double rlo = r_transition;
 			double rhi = rmax; // rgrid[nzones];
 			// add 1/r for larger radii
 			for (int ii=indr; ii<nzones+1; ii++){
-				// printf(" Fac:%.4f \n",1.0*(ii-indr) / (nzones-indr));
 				rgrid[ii] = 1.0*(ii-indr) / (nzones-indr) * ( 1.0/rhi - 1.0/rlo) + 1.0/rlo;
 				rgrid[ii] = fabs(1.0/rgrid[ii]);
 			}
 
 		}
 
-
-		for (int ii=0; ii<nzones; ii++){
-			// printf("%i : %.2e-%.2e \n",ii,rgrid[ii],rgrid[ii+1]);
-		}
 
 	}
 	return;
@@ -521,20 +523,33 @@ void FFT_R2CT(short int dir,long m,double *x,double *y){
 
 
 /** get the number of zones on which we calculate the relline-spectrum **/
-int get_num_zones(int model_type, int emis_type){
+int get_num_zones(int model_type, int emis_type, int ion_grad_type){
+
+	char* env;
+	env = getenv("RELXILL_NUM_RZONES");
+	int env_n_zones = 0;
+	if (env != NULL){
+		env_n_zones = atof(env);
+	}
+
 
 	// set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
-	if (is_iongrad_model(model_type)){
-			return N_ZONES_MAX;  // TODO: maybe change to allow user control
-	} else if (is_relxill_model(model_type) && (emis_type==EMIS_TYPE_LP)){
-		char* env;
-		env = getenv("RELXILL_NUM_RZONES");
+	if (is_iongrad_model(model_type, ion_grad_type)){
 		if (env != NULL){
-			int env_n_zones = atof(env);
+			if ( (env_n_zones > 9 ) && (env_n_zones <= N_ZONES_MAX) ){
+				return env_n_zones;
+			} else {
+				printf(" *** warning: value of %i for RELXILL_NUM_RZONES not within required interval of [10,%i] \n",env_n_zones,N_ZONES_MAX);
+			}
+		}
+		return N_ZONES_MAX;
+	} else if (is_relxill_model(model_type) && (emis_type==EMIS_TYPE_LP)){
+
+		if (env != NULL){
 			if ( (env_n_zones > 0 ) && (env_n_zones <= N_ZONES_MAX) ){
 				return env_n_zones;
 			} else {
-				printf(" *** warning: value of %i for RELXILL_NUM_ZONES not within required interval of [1,%i] \n",env_n_zones,N_ZONES_MAX);
+				printf(" *** warning: value of %i for RELXILL_NUM_RZONES not within required interval of [1,%i] \n",env_n_zones,N_ZONES_MAX);
 			}
 		}
 		return N_ZONES;
@@ -732,6 +747,7 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 		assert(sysPar->emis!=NULL);
 		inv_rebin_mean(sysPar->re, sysPar->emis, sysPar->nr, rmean, emis_zones, n,  status);
 		inv_rebin_mean(sysPar->re, sysPar->del_inc, sysPar->nr, rmean, del_inc, n,  status);
+		inv_rebin_mean(sysPar->re, sysPar->del_emit, sysPar->nr, rmean, ion->del_emit, n,  status);
 
 		// calculate the maximal ionization assuming r^-3 and SS73 alpha disk
 		double lxi_max = cal_lxi_max_ss73(sysPar->re, sysPar->emis, sysPar->nr, rin, status);
@@ -751,10 +767,8 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 		    lxi_set_to_xillver_bounds(&(ion->lxi[ii]));
 		}
 
-        // TODO: how about the normalization?? -> normalize it by the zone with maximum ionization
 
-
-	} else if (type==ION_GRAD_TYPE_CONST) {
+	} else if (type==ION_GRAD_TYPE_CONST) {  // should not happen, as this will be approximated by 1 zone (but just in case we get here...)
 		for (int ii=0; ii<n; ii++){
 		     ion->lxi[ii] = xlxi0;
 		}
@@ -790,6 +804,8 @@ ion_grad* new_ion_grad(double* r, int n, int* status){
 	CHECK_MALLOC_RET_STATUS(ion->lxi,status,NULL);
 	ion->fx = (double*) malloc ( (n)*sizeof(double));
 	CHECK_MALLOC_RET_STATUS(ion->fx,status,NULL);
+	ion->del_emit = (double*) malloc ( (n)*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(ion->del_emit,status,NULL);
 
 	ion->nbins = n;
 
@@ -797,6 +813,7 @@ ion_grad* new_ion_grad(double* r, int n, int* status){
 		ion->r[ii] = r[ii];
 		ion->lxi[ii] = 0.0;
 		ion->fx[ii] = 0.0;
+		ion->del_emit[ii] = M_PI/4.; // assume default 45 deg (xillver assumption), only used if beta>0
 	}
 	// radius goes to n+1
 	ion->r[n] = r[n];

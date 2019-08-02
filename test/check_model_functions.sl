@@ -336,6 +336,102 @@ define check_dens_mod_single(ff,ff_dens){ %{{{
 %}}}
 
 
+define check_single_iongrad_model(ff_ion,ff_ref){ %{{{
+
+   
+   variable lo,hi;
+   variable val0, val1, val2;
+   (lo,hi) = log_grid(0.5,500,4000);
+
+   putenv("RELXILL_NUM_RZONES=50");
+
+   fit_fun_default(ff_ion);   
+   set_par("*.xi_index",0);
+   set_par("*.ion_grad_type",1);  %% PL ion gradient
+   val0 = eval_fun_keV (lo,hi);
+
+
+   fit_fun_default(ff_ref);
+   val1 = eval_fun_keV (lo,hi);
+
+
+   fit_fun_default(ff_ion);   
+   set_par("*.ion_grad_type",2) ;  %% alpha disk
+   val2 = eval_fun_keV (lo,hi);
+   
+   
+   simple_plot(lo,hi,val0,val1;;__qualifiers());
+
+
+   variable gn = goodness(val0,val1);
+   vmessage("    -> %s: goodness for comparison with relxilllp: %.3e",
+	    ff_ion, gn);
+
+   variable gn_change = goodness(val0,val2);
+   vmessage("    -> %s: difference between ion to non-ion grad? %.3e",
+	    ff_ion, gn_change);
+
+   putenv("RELXILL_NUM_RZONES");
+   
+   return gn;
+}
+%}}}
+
+define check_reflfrac_beta(ff_ion){ %{{{
+   
+   variable lo,hi;
+   variable val0, val1;
+   (lo,hi) = log_grid(0.5,500,4000);
+
+   fit_fun_default(ff_ion);
+
+   vmessage(" checking the how refl_frac depends on BETA for %s",ff_ion);
+   
+   %% just use the normal relxilllp model for the test here
+   set_par("*.ion_grad_type",0);
+   set_par("*.fixReflFrac",2);
+   
+   variable bet = [0:0.5:#3];
+   variable ii, n = length(bet);
+
+   _for ii(0,n-1){
+      set_par("*.beta",bet[ii]);
+      val0 = eval_fun_keV (lo,hi);
+   }
+
+   variable gn=0;
+   
+   return gn;
+}
+%}}}
+
+
+define check_single_beta(ff_ion){ %{{{
+
+   
+   variable lo,hi;
+   variable val0, val1;
+   (lo,hi) = log_grid(0.5,500,4000);
+
+   fit_fun_default(ff_ion);
+
+   set_par("*.beta",0);
+   val0 = eval_fun_keV (lo,hi);
+   
+   
+   set_par("*.beta",0.1);
+   val1 = eval_fun_keV (lo,hi);
+   
+   
+
+   variable gn = goodness(val0,val1);
+   vmessage("    -> %s: difference if beta changes? %.3e",
+	    ff_ion, gn);
+   return gn;
+}
+%}}}
+
+
 define check_z(){ %{{{
 
    counter++;
@@ -857,6 +953,38 @@ define check_refl_frac_single(ff){ %{{{
 }
 %}}}
 
+define check_iongrad_mod(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### testing IONIZATION GRADIENT MODELS: ###",counter);
+
+
+   %% currently the only model with an ionization gradient
+   variable ff_ion = ["relxilllpion"];
+   variable ff_ref = ["relxilllp"];
+   
+   variable ii,n = length(ff);
+   
+   _for ii(0,n-1,1){
+%%      vmessage(" - testing %s model: %s",ff_ion[ii]);
+      if (check_single_iongrad_model(ff_ion[ii],ff_ref[ii];nopl) > goodness_lim*0.1){
+	 vmessage(" *** error: there seems to be a general problem with the IONGRAD MODEL %s ",ff_ion[ii]);
+	 return EXIT_FAILURE;
+      }
+      if (check_single_beta(ff_ion[ii];nopl) < goodness_lim*0.1){
+	 vmessage(" *** error: changing BETA paramter in IONGRAD MODEL seems to have no effect %s ",ff_ion[ii]);
+	 return EXIT_FAILURE;
+      }
+      if (check_reflfrac_beta(ff_ion[ii];nopl) > goodness_lim*0.1){
+	 vmessage(" *** error: reflection fraction in IONGRAD MODEL not working correctly %s ",ff_ion[ii]);
+	 return EXIT_FAILURE;
+      }
+   }   
+
+   return EXIT_SUCCESS;
+   
+}
+%}}}
 
 
 define ncheck_fix_refl_frac_single(ff){ %{{{
@@ -1015,6 +1143,7 @@ define print_refl_frac(){ %{{{
 %}}}
 
 
+
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
 
@@ -1027,8 +1156,11 @@ if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
 if (check_prim_cont() != EXIT_SUCCESS) exit;
 if (check_nthcomp_mod() != EXIT_SUCCESS) exit;
+if (check_iongrad_mod() != EXIT_SUCCESS) exit;
+
 if (check_refl_frac() != EXIT_SUCCESS) exit;
 if (print_refl_frac() != EXIT_SUCCESS) exit;
+
 if (check_caching() != EXIT_SUCCESS) exit;
 
 if (do_mc_testing() != EXIT_SUCCESS) exit;

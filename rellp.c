@@ -60,6 +60,7 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 		for (int jj=0; jj<tab->n_h; jj++){
 			for (int kk=0; kk<tab->n_rad; kk++){
 				dat[ii]->del_inc[jj][kk] = fabs(dat[ii]->del_inc[jj][kk]);
+				dat[ii]->del[jj][kk] = fabs(dat[ii]->del[jj][kk]);
 			}
 		}
 

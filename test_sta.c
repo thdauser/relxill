@@ -193,10 +193,11 @@ static void set_std_param_relxilllpion(double* inp_par, int* status){
 	inp_par[7]  = 3.00;   // logxi
 	inp_par[8]  = 1.0;   // Afe
 	inp_par[9]  = 300.0; // Ecut
-	inp_par[10] = 1;     // ion_grad_type
-	inp_par[11] = 0.0;   // ion_grad_index
-	inp_par[12] = 3.0;   // refl_frac
-	inp_par[13] = 0.0;   // fixReflFrac
+	inp_par[10] = 0.0;     // beta
+	inp_par[11] = 0;     // ion_grad_type
+	inp_par[12] = 0.0;   // ion_grad_index
+	inp_par[13] = 3.0;   // refl_frac
+	inp_par[14] = 0.0;   // fixReflFrac
 }
 
 /** standard evaluation of the relline model **/
@@ -481,11 +482,32 @@ static void std_eval_relxilllpion(int* status, int n){
 	/* call the relline model */
 	double photar[n_ener];
 
-	//int ii;
+	struct timeval start, end;
+	long seconds, useconds;
+	gettimeofday(&start, NULL);
 
-	//for (ii=0; ii<n; ii++){
+	int ii;
+	for (ii=0; ii<n; ii++){
+		if (n>1){
+			inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+	//		inp_par[7] = 1.0*ii/(n-1)*4.7;
+			printf(" relxilllpion: testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
+		}
 		tdrelxilllpion(ener,n_ener,photar,inp_par,n_param,status);
-	//}
+	}
+
+	gettimeofday(&end, NULL);
+
+
+	if (n>1){
+		seconds  = end.tv_sec  - start.tv_sec;
+		useconds = end.tv_usec - start.tv_usec;
+
+		double mtime = ((seconds) * 1000 +  useconds*0.001) / ((double) n );
+
+		printf("time per relxilllpion evaluation: %.1f milli seconds\n", mtime);
+	}
+
 }
 
 
@@ -857,7 +879,7 @@ int main(int argc, char *argv[]){
 	int do_relxilllpnthcomp = 0;
 	int do_relconv = 0;
 
-	putenv("DEBUG_RELXILL=1");
+//	putenv("DEBUG_RELXILL=1");
 
 	if (argc>=2){
 		if (strcmp(argv[1],"version")==0){
@@ -989,11 +1011,6 @@ int main(int argc, char *argv[]){
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}
-
-/**		FILE* fp =  fopen ( ,"w+" );
-			fprintf(fp, " %e \t %e \t %e \n",ener[ii],ener[ii+1],flu[ii]);
-		if (fclose(fp)) exit(1);
-		print_version_to_file(FNAME_VERSION); **/
 
 		printf( "\n ==> Cleaning up and freeing cached structures\n");
 		free_cached_tables();

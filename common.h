@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef COMMON_H_
 #define COMMON_H_
@@ -40,9 +40,9 @@
 /***************************************/
 
 /** define Ionization Gradient Type**/
-#define ION_GRAD_TYPE_CONST 2
-#define ION_GRAD_TYPE_PL 0
-#define ION_GRAD_TYPE_ALPHA 1
+#define ION_GRAD_TYPE_CONST 0
+#define ION_GRAD_TYPE_PL 1
+#define ION_GRAD_TYPE_ALPHA 2
 /***************************************/
 
 
@@ -91,6 +91,7 @@ typedef struct{
 	double* lxi;
 	double* fx;
 	double* r;
+	double* del_emit;
 	int nbins;
 } ion_grad;
 

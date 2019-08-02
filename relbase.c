@@ -419,7 +419,7 @@ static void init_rel_spec(rel_spec** spec, relParam* param, xillTable* xill_tab,
 	CHECK_STATUS_VOID(*status);
 
 	/** in case of the relxill-LP model multiple zones are used **/
-	int nzones = get_num_zones(param->model_type, param->emis_type);
+	int nzones = param->num_zones; ///  get_num_zones(param->model_type, param->emis_type, ION_GRAD_TYPE_CONST);
 
 	if ((*spec)==NULL){
 		(*spec) = new_rel_spec(nzones,n_ener,status);
@@ -520,7 +520,7 @@ static double relb_func(double eg, int k, str_relb_func* str){
 }
 
 /** Romberg Integration Routine **/
-static double RombergIntegral(double a,double b,int k, str_relb_func* str, double line_ener){
+static double romberg_integration(double a,double b,int k, str_relb_func* str, double line_ener){
   const double prec = 0.02;
   double obtprec = 1.0;
   const int itermin = 0;
@@ -641,7 +641,7 @@ static double int_romb(double lo, double hi, str_relb_func* str, double line_ene
 	int k;
 	if (lo>=line_energy*0.95){
 		for (k=0;k<2;k++){
-			flu += RombergIntegral(lo,hi,k,str,line_energy);
+			flu += romberg_integration(lo,hi,k,str,line_energy);
 		}
 	} else {
 		for (k=0;k<2;k++){
@@ -997,16 +997,10 @@ static void calc_xillver_angdep(double* xill_flux, xill_spec* xill_spec,
 
 }
 
-static double get_rzone_energ_shift(relParam* param, double rad){
+static double get_rzone_energ_shift(relParam* param, double rad, double del_emit){
 
-	// can be implemented by using the del_emit from relSysParam in principle
-	if (param->beta){
-		printf(" *** error :  energy shift of the incident spectrum for beta>0 not implemented yet ; assuming beta=0 here ");
-	}
-
-	// as beta=0, we can choose any value for del_emit
-
-	return gi_potential_lp(rad,param->a,param->height,0.0,M_PI/2);
+	// del_emit: any value (for beta!=0 is okay, as it does not matter for the energy shift!)
+	return gi_potential_lp(rad,param->a,param->height,param->beta,del_emit);
 }
 
 /** check if the complete spectrum is cached and if the energy grid did not change
@@ -1045,10 +1039,10 @@ static void check_caching_relxill(relParam* rel_param, xillParam* xill_param, in
 	/** always re-compute if the number of zones changed **/
 	if (cached_rel_param != NULL){
 
-		if (get_num_zones(rel_param->model_type, rel_param->emis_type) != cached_rel_param->num_zones){
+		if (rel_param->num_zones != cached_rel_param->num_zones){
 			if ( is_debug_run() ){
 				printf("  *** warning :  the number of radial zones was changed from %i to %i \n",
-						get_num_zones(rel_param->model_type, rel_param->emis_type), cached_rel_param->num_zones);
+						rel_param->num_zones, cached_rel_param->num_zones);
 			}
 			*re_rel  = 1;
 			*re_xill = 1;
@@ -1168,6 +1162,10 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	get_init_xillver_table(&xill_tab,xill_param,status);
 	CHECK_STATUS_VOID(*status);
 
+	// in case of an ionization gradient, we need to update the number of zones
+	if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) ){
+		rel_param->num_zones = get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type);
+	}
 
 	// make sure the output array is set to 0
 	int ii;
@@ -1217,7 +1215,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		/* *** first, stored the parameters for which we are calculating **/
 		set_cached_xill_param(xill_param , &cached_xill_param, status);
 		set_cached_rel_param(rel_param , &cached_rel_param, status);
-		c_num_zones = get_num_zones(rel_param->model_type,rel_param->emis_type);
+		c_num_zones = rel_param->num_zones;
 
 		/* calculate the relline profile **/
 
@@ -1230,7 +1228,11 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 		// currently only working for the LP version (as relxill always has just 1 zone)
 		ion_grad* ion = NULL;
-		if (is_iongrad_model(rel_param->model_type) ){
+		if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) ){
+
+			// make sure the number of zones is correctly set:
+			assert(rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type));
+
 			ion = calc_ion_gradient(rel_param, xill_param->lxi, xill_param->ion_grad_index, xill_param->ion_grad_type,
 					rel_profile->rgrid, rel_profile->n_zones, status);
 			CHECK_STATUS_VOID(*status);
@@ -1250,12 +1252,18 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			// get the energy shift in order to calculate the proper Ecut value (if nzones>1)
 			// (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
 			//  session the number of zones is reset)
-			if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type)==1){
+			if (rel_profile->n_zones==1) {
+//			if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type, xill_param->ion_grad_type)==1){
 				xill_param->ect = ecut0 ;
 			} else {
 				// choose the (linear) middle of the radial zone
 				double rzone = 0.5*(rel_profile->rgrid[ii]+rel_profile->rgrid[ii+1]);
-				xill_param->ect = ecut_primary * get_rzone_energ_shift(rel_param,rzone ) ;
+				double del_emit = 0.0;  // only relevant if beta!=0 (doppler boosting)
+				if (ion!=NULL){
+					assert(ion->nbins==rel_profile->n_zones);
+					del_emit = ion->del_emit[ii];
+				}
+				xill_param->ect = ecut_primary * get_rzone_energ_shift(rel_param,rzone, del_emit ) ;
 			}
 
 			// if we have an ionization gradient defined, we need to set the xlxi to the value of the current zone
@@ -1264,6 +1272,8 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			}
 
 			// call the function which calculates the xillver spectrum
+			//  - always need to re-compute if we have an ionization gradient, TODO: better caching here
+//			if (recompute_xill || ion!=NULL){
 			if (recompute_xill){
 				if (spec_cache->xill_spec[ii]!=NULL){
 					free_xill_spec(spec_cache->xill_spec[ii]);
@@ -1502,11 +1512,14 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 				sum += flu[ii];
 			}
 
-
-			printf("For a = %.3f and h = %.2f rg: \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
-					rel_param->a,rel_param->height,struct_refl_frac->refl_frac,sum/sum_pl);
+			printf("For a = %.3f and h = %.2f rg", rel_param->a,rel_param->height);
+			if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) || rel_param->beta>1e-6){
+				printf(" and beta=%.3f v/c", rel_param->beta);
+			}
+			printf(": \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",	struct_refl_frac->refl_frac,sum/sum_pl);
 			printf(" - %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
 			printf(" - gravitational redshift from the observer to the primary source is %.3f\n",grav_redshift(rel_param) );
+			// TODO: add the movement of the source here
 		}
 
 		/** free the reflection fraction structure **/

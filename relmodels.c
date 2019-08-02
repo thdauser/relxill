@@ -579,14 +579,16 @@ void init_par_relxilllpion(relParam** rel_param, xillParam** xill_param, const d
 	xparam->lxi      = inp_par[7];
 	xparam->afe      = inp_par[8];
 	xparam->ect      = inp_par[9];
+
 	xparam->dens     = 15.0;
-	xparam->ion_grad_type = (int) (inp_par[10] + 0.5) ;  // make sure there is no problem with integer conversion
-	xparam->ion_grad_index = inp_par[11];
+	xparam->ion_grad_type = (int) (inp_par[11] + 0.5) ;  // make sure there is no problem with integer conversion
+	xparam->ion_grad_index = inp_par[12];
 
-	xparam->refl_frac = inp_par[12];
-	xparam->fixReflFrac = (int) (inp_par[13]+0.5); // make sure there is no problem with integer conversion
 
-	param->beta = 0.0;
+	xparam->refl_frac = inp_par[13];
+	xparam->fixReflFrac = (int) (inp_par[14]+0.5); // make sure there is no problem with integer conversion
+
+	param->beta = inp_par[10];
 
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_VOID(*status);
@@ -970,7 +972,8 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->do_renorm_relline = do_renorm_model(param);
 
 	// set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
-	param->num_zones = get_num_zones(param->model_type,param->emis_type);
+	//  -> note as this is onl for relat. models, in case of an ion gradient this needs to be updated
+	param->num_zones = get_num_zones(param->model_type,param->emis_type, ION_GRAD_TYPE_CONST);
 
 	return param;
 }
@@ -1173,7 +1176,7 @@ void lmodrelconvlp(const double* ener0, const int n_ener0, const double* paramet
 /** XSPEC RELXILLLP MODEL FUNCTION **/
 void lmodrelxilllpion(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
-	const int n_parameter = 14;
+	const int n_parameter = 15;
 	int status = EXIT_SUCCESS;
 	tdrelxilllpion(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
