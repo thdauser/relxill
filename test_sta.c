@@ -200,6 +200,25 @@ static void set_std_param_relxilllpion(double* inp_par, int* status){
 	inp_par[14] = 0.0;   // fixReflFrac
 }
 
+static void set_std_param_relxilllpion_nthcomp(double* inp_par, int* status){
+	inp_par[0]  = 6;   // height
+	inp_par[1]  = 0.9; // a
+	inp_par[2]  = 30.0;  // incl
+	inp_par[3]  = -1.0;  // rin
+	inp_par[4]  = 1000.;  // rout
+	inp_par[5]  = 0.0;    // redshift
+	inp_par[6]  = 2.0;   // pl Index
+	inp_par[7]  = 3.00;   // logxi
+	inp_par[8]  = 1.0;   // Afe
+	inp_par[9]  = 100.0; // kTe
+	inp_par[10] = 0.0;     // beta
+	inp_par[11] = 0;     // ion_grad_type
+	inp_par[12] = 0.0;   // ion_grad_index
+	inp_par[13] = 3.0;   // refl_frac
+	inp_par[14] = 0.0;   // fixReflFrac
+}
+
+
 /** standard evaluation of the relline model **/
 static void std_eval_relline(int* status, int n){
 
@@ -545,6 +564,39 @@ static void std_eval_relxilllp_nthcomp(int* status, int n){
 }
 
 
+
+
+/** standard evaluation of the relxill model **/
+static void std_eval_relxilllpion_nthcomp(int* status, int n){
+
+	printf("\n ==> Evaluating RELXILLLP ION NTHCOMP MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELXILLLP;
+	double inp_par[NUM_PARAM_RELXILLLP];
+	set_std_param_relxilllpion_nthcomp(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	const int n_ener = 100;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.1,1000.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+	int ii;
+
+	for (ii=0; ii<n; ii++){
+		if (n>1){
+			inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+			printf(" relxilllpion (nthcomp): testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
+		}
+		tdrelxilllp_nthcomp(ener,n_ener,photar,inp_par,n_param,status);
+
+	}
+
+}
+
+
 /** standard evaluation of the relxill model **/
 static void std_eval_relxilllpdens(int* status, int n){
 
@@ -877,6 +929,7 @@ int main(int argc, char *argv[]){
 	int do_relxilllpdens = 0;
 	int do_relxillnthcomp= 0;
 	int do_relxilllpnthcomp = 0;
+	int do_relxilllpionnthcomp = 0;
 	int do_relconv = 0;
 
 //	putenv("DEBUG_RELXILL=1");
@@ -897,6 +950,9 @@ int main(int argc, char *argv[]){
 				do_all=0;
 		} else if (strcmp(argv[1],"relxilllpion")==0){
 				do_relxilllpion=1;
+				do_all=0;
+		} else if (strcmp(argv[1],"relxilllpionCp")==0){
+				do_relxilllpionnthcomp=1;
 				do_all=0;
 		} else if (strcmp(argv[1],"relconv")==0){
 				do_relconv=1;
@@ -967,6 +1023,14 @@ int main(int argc, char *argv[]){
 			printf("     ---> successful \n");
 
 		}
+
+		if (do_all | do_relxilllpionnthcomp){
+			std_eval_relxilllpion_nthcomp(&status,n);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+
+		}
+
 
 		if (do_all) {
 			std_eval_xillver(&status,1);
