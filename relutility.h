@@ -77,6 +77,9 @@ void get_version_number(char** vstr, int* status);
 /* print relxill error message */
 void relxill_error(const char* const func, const char* const msg, int* status);
 
+/* print a standardized warning message */
+void relxill_warning(const char* const msg);
+
 /* check and print relxill error message */
 void check_relxill_error(const char* const func, const char* const msg, int* status);
 

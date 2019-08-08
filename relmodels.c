@@ -93,7 +93,7 @@ static void check_parameter_bounds(relParam* param, int* status){
 	}
 
 
-	/** check rbr values (only applies to LP emissivity **/
+	/** check rbr values (only applies to BKN emissivity) **/
 	if (param->emis_type == EMIS_TYPE_BKN){
 		if (param->rbr < param->rin){
 			printf(" *** warning : Rbr < Rin, resetting Rbr=Rin; please set your limits properly \n");
@@ -105,6 +105,21 @@ static void check_parameter_bounds(relParam* param, int* status){
 			param->rbr=param->rout;
 		}
 
+
+
+	}
+
+
+	/** check velocity values (only applies to LP emissivity) **/
+	if (param->emis_type == EMIS_TYPE_LP){
+		if (param->beta < 0 ){
+			printf(" *** warning (relxill):  beta < 0 is not implemented   (beta=%.3e\n)",param->beta);
+			param->beta = 0.0;
+		}
+		if (param->beta > 0.99){
+			printf(" *** warning (relxill):  velocity has to be within 0 <= beta < 0.99  (beta=%.3e\n)",param->beta);
+			param->beta = 0.99;
+		}
 	}
 
 
@@ -997,9 +1012,8 @@ void tdrelxilllpion_nthcomp(const double* ener0, const int n_ener0, double* phot
 	xillParam* xill_param = NULL;
 	relParam* rel_param = NULL;
 
-	init_par_relxilllpion(&rel_param,&xill_param,parameter,n_parameter,status);
+	init_par_relxilllpion_nthcomp(&rel_param,&xill_param,parameter,n_parameter,status);
 	CHECK_STATUS_VOID(*status);
-
 
 	double* ener = (double*) ener0;
 	double flux[n_ener0];
@@ -1264,7 +1278,7 @@ void lmodrelxilllpionnthcomp(const double* ener0, const int n_ener0, const doubl
 
 	const int n_parameter = 15;
 	int status = EXIT_SUCCESS;
-	tdrelxilllpion(ener0, n_ener0, photar, parameter, n_parameter, &status);
+	tdrelxilllpion_nthcomp(ener0, n_ener0, photar, parameter, n_parameter, &status);
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating relxilllpionCp model failed",&status);

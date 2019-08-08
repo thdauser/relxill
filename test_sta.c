@@ -591,7 +591,7 @@ static void std_eval_relxilllpion_nthcomp(int* status, int n){
 			printf(" relxilllpion (nthcomp): testing a=%.3f , lxi=%.2f \n",inp_par[1],inp_par[7]);
 		}
 		tdrelxilllp_nthcomp(ener,n_ener,photar,inp_par,n_param,status);
-
+		printf(" -> %e \n",photar[0]);
 	}
 
 }

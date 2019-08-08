@@ -49,6 +49,11 @@ void relxill_error(const char* const func, const char* const msg, int* status){
 }
 
 
+void relxill_warning(const char* const msg){
+	printf(" *** warning from relxill: %s!\n", msg);
+}
+
+
 int is_xill_model(int model_type){
 	if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)){
 		return 1;

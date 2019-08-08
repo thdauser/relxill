@@ -9,7 +9,6 @@ if (length(__argv)>1){
    ff = __argv[1];
 }
 
-
 variable modlib = "build/librelxill.so";
 
 if (stat_file(modlib) == NULL){
@@ -25,8 +24,10 @@ __set_hard_limits("relxilllp","h",-100,1000);
 
 _traceback=1;
 
+
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
-		  "relxillCp","relxilllpCp","xillverCp","relxilllpion"];
+		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
+
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
 variable sum_name = "plot_check_model_functions_sum.pdf";
@@ -363,6 +364,8 @@ define check_single_iongrad_model(ff_ion,ff_ref){ %{{{
    simple_plot(lo,hi,val0,val1;;__qualifiers());
 
 
+   sleep(5);
+   
    variable gn = goodness(val0,val1);
    vmessage("    -> %s: goodness for comparison with relxilllp: %.3e",
 	    ff_ion, gn);
@@ -467,7 +470,7 @@ define eval_test(){ %{{{
       message(ff);
       val = eval_fun_keV(1,2);
       if (not ( val > 0 )){
-	 vmessage(" *** error: simple test for %s failed!",ff);
+	 vmessage(" *** error: simple test for %s failed! (val=%e)",ff,val);
 	 return EXIT_FAILURE;
       }
    }
@@ -960,10 +963,10 @@ define check_iongrad_mod(){ %{{{
 
 
    %% currently the only model with an ionization gradient
-   variable ff_ion = ["relxilllpion"];
-   variable ff_ref = ["relxilllp"];
+   variable ff_ion = ["relxilllpion","relxilllpionCp"];
+   variable ff_ref = ["relxilllp","relxilllpCp"];
    
-   variable ii,n = length(ff);
+   variable ii,n = length(ff_ion);
    
    _for ii(0,n-1,1){
 %%      vmessage(" - testing %s model: %s",ff_ion[ii]);
@@ -1101,6 +1104,7 @@ define do_mc_testing(){ %{{{
 
       fit_fun(ff);
       freeze("*.norm");
+
       tic;
       stat = fit_search(n_mc, &eval_counts;  serial, dir="/tmp/fit_search");
       dt = toc / n_mc * 1e3;
@@ -1142,7 +1146,8 @@ define print_refl_frac(){ %{{{
 }
 %}}}
 
-
+if (do_mc_testing() != EXIT_SUCCESS) exit;
+#iffalse
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
