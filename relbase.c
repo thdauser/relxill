@@ -1422,6 +1422,14 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 		}
 		get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
 		c_donthcomp(ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
+
+	} else if (xill_param->prim_type == PRIM_SPEC_BB) {
+
+		double en;
+		for (ii=0; ii<n_ener_xill; ii++){
+			en = 0.5*(ener_xill[ii]+ener_xill[ii+1]);
+			pl_flux_xill[ii] = en*en / ( pow(xill_param->kTbb,4) * (exp(en/xill_param->kTbb) - 1 ) );
+		}
 	} else {
 		RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
 		return;
