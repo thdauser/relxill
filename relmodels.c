@@ -803,27 +803,6 @@ void tdrelxilldens(const double* ener0, const int n_ener0, double* photar, const
 
 }
 
-/** RELXILL MODEL FUNCTION **/
-void tdrelxillion(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
-
-	xillParam* xill_param = NULL;
-	relParam* rel_param = NULL;
-
-	init_par_relxill_ion(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
-
-	// int n_ener = (int) n_ener0;
-	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
-
-	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
-
-	free(ener);
-	free_xillParam(xill_param);
-	free_relParam(rel_param);
-
-}
-
 
 /** RELXILL NTHCOMP MODEL FUNCTION **/
 void tdrelxill_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
@@ -872,30 +851,6 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 
 }
 
-/** XSPEC RELXILLLP_ION MODEL FUNCTION **/
-void tdrelxilllpion(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
-
-	xillParam* xill_param = NULL;
-	relParam* rel_param = NULL;
-
-	init_par_relxilllp_ion(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
-
-
-	double* ener = (double*) ener0;
-	double flux[n_ener0];
-
-	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
-
-	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
-	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
-
-	free_xillParam(xill_param);
-	free_relParam(rel_param);
-	free(ener_shifted);
-
-}
 
 /** XSPEC RELXILLLP NTHCOMP MODEL FUNCTION **/
 void tdrelxilllp_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
@@ -1280,17 +1235,6 @@ void lmodrelxillns(const double* ener0, const int n_ener0, const double* paramet
 }
 
 
-/** XSPEC RELXILL MODEL FUNCTION **/
-void lmodrelxillion(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
-
-	const int n_parameter = 14;
-	int status = EXIT_SUCCESS;
-	tdrelxillion(ener0, n_ener0, photar, parameter, n_parameter, &status);
-
-	if (status!=EXIT_SUCCESS)
-	RELXILL_ERROR("evaluating relxill_ion model failed",&status);
-}
-
 /** XSPEC RELXILL DENS MODEL FUNCTION **/
 void lmodrelxilldens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
@@ -1325,16 +1269,6 @@ void lmodrelxilllp(const double* ener0, const int n_ener0, const double* paramet
 	RELXILL_ERROR("evaluating rellinelp model failed",&status);
 }
 
-/** XSPEC RELXILLLPION MODEL FUNCTION **/
-void lmodrelxilllpion(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
-
-	const int n_parameter = 13;
-	int status = EXIT_SUCCESS;
-	tdrelxilllpion(ener0, n_ener0, photar, parameter, n_parameter, &status);
-
-	if (status!=EXIT_SUCCESS)
-	RELXILL_ERROR("evaluating rellinelp_ion model failed",&status);
-}
 
 /** XSPEC RELXILLLPDENS MODEL FUNCTION **/
 void lmodrelxilllpdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
