@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 #include "xilltable.h"
@@ -383,15 +383,20 @@ static void load_single_spec(char* fname, fitsfile** fptr, xillTable* tab, int i
 	fits_read_col(*fptr, TFLOAT, colnum_spec, rownum  , 1, nelem ,&nullval,spec, &anynul, status);
 	CHECK_STATUS_VOID(*status);
 
-	int iener;
-	/** multiply with the 0.5*cos(mu) factor (which we always need to do in the end; safes time **/
-	double mu = cos(tab->incl[mm]/180.0*M_PI);
-	for (iener=0;iener<tab->n_ener;iener++){
-		spec[iener] *= 0.5*mu;
-	}
-
 	tab->dat[ii][jj][kk][ll][mm] = spec;
 
+}
+
+void norm_xillver_spec(xill_spec* spec, double incl){
+
+	/** adds the proper flux normalization for a semi-infinate slab
+	 *  under inclination angle incl */
+	int ii;
+	for (ii=0; ii<spec->n_ener; ii++){
+		spec->flu[0][ii] *= 0.5*cos(incl*M_PI/180);
+	}
+
+	return;
 }
 
 static void check_xillTable_cache(char* fname, xillTable* tab, int* ind, int* status) {

@@ -67,6 +67,19 @@ static void check_parameter_bounds(relParam* param, int* status){
 		param->rin = rms;
 	}
 
+	if (param->a >0.9982){
+		printf(" *** Error : Spin a > 0.9982, model evaluation failed \n");
+		*status = EXIT_FAILURE;
+		return;
+	}
+
+	if (param->a <-1){
+		printf(" *** Error : Spin a < -1, model evaluation failed \n");
+		*status = EXIT_FAILURE;
+		return;
+	}
+
+
 	if (param->rout <= param->rin){
 		printf(" *** Error : Rout <= Rin, model evaluation failed \n");
 		*status = EXIT_FAILURE;
@@ -80,7 +93,7 @@ static void check_parameter_bounds(relParam* param, int* status){
 	}
 
 
-	/** check rbr values (only applies to LP emissivity **/
+	/** check rbr values (only applies to BKN emissivity) **/
 	if (param->emis_type == EMIS_TYPE_BKN){
 		if (param->rbr < param->rin){
 			printf(" *** warning : Rbr < Rin, resetting Rbr=Rin; please set your limits properly \n");
@@ -92,6 +105,21 @@ static void check_parameter_bounds(relParam* param, int* status){
 			param->rbr=param->rout;
 		}
 
+
+
+	}
+
+
+	/** check velocity values (only applies to LP emissivity) **/
+	if (param->emis_type == EMIS_TYPE_LP){
+		if (param->beta < 0 ){
+			printf(" *** warning (relxill):  beta < 0 is not implemented   (beta=%.3e\n)",param->beta);
+			param->beta = 0.0;
+		}
+		if (param->beta > 0.99){
+			printf(" *** warning (relxill):  velocity has to be within 0 <= beta < 0.99  (beta=%.3e\n)",param->beta);
+			param->beta = 0.99;
+		}
 	}
 
 
@@ -546,6 +574,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 	param->z     = 0.0;
 	param->limb  = (int) (inp_par[7] + 0.5);
 
+
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_RET(*status,NULL);
 
@@ -605,6 +634,99 @@ relParam* init_par_relconv_lp(const double* inp_par, const int n_parameter, int*
 }
 
 
+
+void init_par_relxilllpion(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELXILLLPION,EMIS_TYPE_LP,status);
+	CHECK_STATUS_VOID(*status);
+
+	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLPION,PRIM_SPEC_ECUT,status);
+	CHECK_STATUS_VOID(*status);
+
+	assert(n_parameter == NUM_PARAM_RELXILLLPION);
+
+	param->height = inp_par[0];
+	param->a      = inp_par[1];
+	param->incl   = inp_par[2]*M_PI/180;
+	param->rin    = inp_par[3];
+	param->rout   = inp_par[4];
+	param->z      = inp_par[5];
+	xparam->z     = inp_par[5];
+
+	param->gamma     = inp_par[6];
+	xparam->gam      = inp_par[6];
+	xparam->lxi      = inp_par[7];
+	xparam->afe      = inp_par[8];
+	xparam->ect      = inp_par[9];
+
+	xparam->dens     = 15.0;
+	xparam->ion_grad_type = (int) (inp_par[11] + 0.5) ;  // make sure there is no problem with integer conversion
+	xparam->ion_grad_index = inp_par[12];
+
+
+	xparam->refl_frac = inp_par[13];
+	xparam->fixReflFrac = (int) (inp_par[14]+0.5); // make sure there is no problem with integer conversion
+
+	param->beta = inp_par[10];
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_VOID(*status);
+
+	*rel_param  = param;
+	*xill_param = xparam;
+
+	return;
+}
+
+
+
+void init_par_relxilllpion_nthcomp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+	// fill in parameters
+	relParam* param = new_relParam(MOD_TYPE_RELXILLLPION,EMIS_TYPE_LP,status);
+	CHECK_STATUS_VOID(*status);
+
+	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLPION,PRIM_SPEC_NTHCOMP,status);
+	CHECK_STATUS_VOID(*status);
+
+	assert(n_parameter == NUM_PARAM_RELXILLLPION);
+
+	param->height = inp_par[0];
+	param->a      = inp_par[1];
+	param->incl   = inp_par[2]*M_PI/180;
+	param->rin    = inp_par[3];
+	param->rout   = inp_par[4];
+	param->z      = inp_par[5];
+	xparam->z     = inp_par[5];
+
+	param->gamma     = inp_par[6];
+	xparam->gam      = inp_par[6];
+	xparam->lxi      = inp_par[7];
+	xparam->afe      = inp_par[8];
+	xparam->ect      = inp_par[9];  // treated as kTe internally (!)
+
+	xparam->dens     = 15.0;
+	xparam->ion_grad_type = (int) (inp_par[11] + 0.5) ;  // make sure there is no problem with integer conversion
+	xparam->ion_grad_index = inp_par[12];
+
+
+	xparam->refl_frac = inp_par[13];
+	xparam->fixReflFrac = (int) (inp_par[14]+0.5); // make sure there is no problem with integer conversion
+
+	param->beta = inp_par[10];
+
+	check_parameter_bounds(param,status);
+	CHECK_STATUS_VOID(*status);
+
+	*rel_param  = param;
+	*xill_param = xparam;
+
+	return;
+}
+
+
+
 /** shift the spectrum such that we can calculate the line for 1 keV **/
 static double* shift_energ_spec_1keV(const double* ener, const int n_ener, double line_energ, double z,int* status){
 
@@ -613,7 +735,7 @@ static double* shift_energ_spec_1keV(const double* ener, const int n_ener, doubl
 
 	int ii;
 	for (ii=0; ii<=n_ener; ii++){
-		ener1keV[ii] = ener[ii]*(1 + z) / line_energ; //TODO: need to test this
+		ener1keV[ii] = ener[ii]*(1 + z) / line_energ;
 	}
 	return ener1keV;
 }
@@ -631,8 +753,8 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 	// int n_ener = (int) n_ener0;
 	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 
-	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
+	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param, status);
+
 
 	free(ener);
 	free_xillParam(xill_param);
@@ -877,16 +999,19 @@ void xillver_base(const double* ener0, const int n_ener0, double* photar, xillPa
 	// =4= rebin to the input grid
 	assert(spec->n_incl==1); // make sure there is only one spectrum given (for the chosen inclination)
 
+	/** add the dependence on incl, assuming a semi-infinite slab **/
+	norm_xillver_spec(spec, param_struct->incl);
+
 	double * ener = (double*) ener0;
 	int n_ener = (int) n_ener0;
 	double flux[n_ener];
 
 	rebin_spectrum( ener, flux,n_ener,spec->ener,spec->flu[0],spec->n_ener);
 
-	// we make the spectrum normalization independent of the ionization
 	int ii;
 
 	for (ii=0; ii<n_ener0; ii++){
+		// we make the spectrum normalization independent of the ionization
 		flux[ii] /= pow(10,param_struct->lxi) ;
 		if (fabs(param_struct->dens - 15) > 1e-6 ){
 			flux[ii] /= pow(10,param_struct->dens - 15);
@@ -995,6 +1120,59 @@ void tdrelconvlp(const double* ener, const int n_ener, double* photar, const dou
 	free(ener1keV);
 }
 
+
+/** XSPEC RELXILLLPION MODEL FUNCTION **/
+void tdrelxilllpion(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	xillParam* xill_param = NULL;
+	relParam* rel_param = NULL;
+
+	init_par_relxilllpion(&rel_param,&xill_param,parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+
+	double* ener = (double*) ener0;
+	double flux[n_ener0];
+
+	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
+	CHECK_STATUS_VOID(*status);
+
+	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+
+	free_xillParam(xill_param);
+	free_relParam(rel_param);
+	free(ener_shifted);
+
+}
+
+
+
+/** XSPEC RELXILLLPIONCP MODEL FUNCTION **/
+void tdrelxilllpion_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+	xillParam* xill_param = NULL;
+	relParam* rel_param = NULL;
+
+	init_par_relxilllpion_nthcomp(&rel_param,&xill_param,parameter,n_parameter,status);
+	CHECK_STATUS_VOID(*status);
+
+	double* ener = (double*) ener0;
+	double flux[n_ener0];
+
+	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
+	CHECK_STATUS_VOID(*status);
+
+	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+
+	free_xillParam(xill_param);
+	free_relParam(rel_param);
+	free(ener_shifted);
+
+}
+
+
 /* get a new relbase parameter structure and initialize it */
 relParam* new_relParam(int model_type, int emis_type, int* status){
 	relParam* param = (relParam*) malloc(sizeof(relParam));
@@ -1018,6 +1196,13 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->gamma = PARAM_DEFAULT;
 	param->beta = 0.0; // special case, in order to prevent strange results
 	param->limb = 0;
+
+	// this is set by the environment variable "RELLINE_PHYSICAL_NORM"
+	param->do_renorm_relline = do_renorm_model(param);
+
+	// set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
+	//  -> note as this is onl for relat. models, in case of an ion gradient this needs to be updated
+	param->num_zones = get_num_zones(param->model_type,param->emis_type, ION_GRAD_TYPE_CONST);
 
 	return param;
 }
@@ -1050,7 +1235,9 @@ xillParam* new_xillParam(int model_type, int prim_type, int* status){
 	param->fixReflFrac = -1;
 	param->dens = PARAM_DEFAULT;
 	param->kTbb = PARAM_DEFAULT;
-
+	param->ion_grad_type = ION_GRAD_TYPE_CONST; // no ion grad
+	param->ion_grad_index = PARAM_DEFAULT;
+        
 	return param;
 }
 
@@ -1073,7 +1260,9 @@ void lmodrelxill(const double* ener0, const int n_ener0, const double* parameter
 
 	const int n_parameter = 13;
 	int status = EXIT_SUCCESS;
+
 	tdrelxill(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating relxill model failed",&status);
@@ -1257,4 +1446,29 @@ void lmodrelconvlp(const double* ener0, const int n_ener0, const double* paramet
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating relconv model failed",&status);
+}
+
+
+/** XSPEC RELXILLLP MODEL FUNCTION **/
+void lmodrelxilllpion(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 15;
+	int status = EXIT_SUCCESS;
+	tdrelxilllpion(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxilllpion model failed",&status);
+}
+
+
+
+/** XSPEC RELXILLLP MODEL FUNCTION **/
+void lmodrelxilllpionnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+	const int n_parameter = 15;
+	int status = EXIT_SUCCESS;
+	tdrelxilllpion_nthcomp(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+	if (status!=EXIT_SUCCESS)
+	RELXILL_ERROR("evaluating relxilllpionCp model failed",&status);
 }

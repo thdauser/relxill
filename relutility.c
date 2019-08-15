@@ -13,13 +13,12 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 #include "relutility.h"
 
 
-// TODO: CHECK IF WE NEED "INLINE" HERE for maximal speed
 /** linear interpolation in 1 dimension **/
 double interp_lin_1d(double ifac_r, double rlo, double rhi){
 	return ifac_r*rhi + (1.0-ifac_r)*rlo;
@@ -29,7 +28,6 @@ double interp_log_1d(double ifac_r, double rlo, double rhi){
 	return exp(ifac_r*log(rhi) + (1.0-ifac_r)*log(rlo));
 }
 
-// TODO: CHECK IF WE NEED "INLINE" HERE for maximal speed
 /** linear interpolation in 2 dimensions **/
 double interp_lin_2d(double ifac1, double ifac2, double r11, double r12, double r21, double r22){
 	return (1.0 - ifac1) * (1.0 - ifac2) * r11 +
@@ -51,6 +49,11 @@ void relxill_error(const char* const func, const char* const msg, int* status){
 }
 
 
+void relxill_warning(const char* const msg){
+	printf(" *** warning from relxill: %s!\n", msg);
+}
+
+
 int is_xill_model(int model_type){
 	if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)){
 		return 1;
@@ -59,6 +62,16 @@ int is_xill_model(int model_type){
 	}
 }
 
+
+// ion-gradient model, which is not set to constant ionization
+//  - in case ion_grad_type=constant, it is working as a normal model
+int is_iongrad_model(int model_type, int ion_grad_type ){
+	if ( (model_type == MOD_TYPE_RELXILLLPION ) &&  ( ion_grad_type!=ION_GRAD_TYPE_CONST ) ) {
+		return 1;
+	} else {
+		return 0;
+	}
+}
 
 
 /** calculate the gravitational redshift **/
@@ -71,6 +84,11 @@ double grav_redshift(relParam* param){
 		return 0.0;
 	}
 }
+
+static double relat_abberation(double del,double beta) {
+	return acos( (cos(del)-beta) / (1-beta*cos(del)));
+}
+
 
 /** calculate the reflection fraction as defined in Dauser+2016 **/
 lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
@@ -88,6 +106,19 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	double del_bh  = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
 	double del_ad = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
 
+	/** calculate the coordinate transformation / relat abberation
+	 *   - an observer on the accretion disk sees the rays from
+	 *     del_bh up to del_ad
+	 *   - for the reflection fraction we therefore need to convert from
+	 *     the moving source (which the disk observer sees) into the
+	 *     local frame
+	 *   -> therefore we need to calculate the abberation fro -beta
+	 */
+	if (param->beta>1e-6) {
+	     del_bh = relat_abberation(del_bh, -1.*param->beta);
+	     del_ad = relat_abberation(del_ad, -1.*param->beta);
+	}
+
 	lpReflFrac* str = (lpReflFrac*) malloc (sizeof(lpReflFrac));
 	CHECK_MALLOC_RET_STATUS(str,status,NULL);
 
@@ -98,7 +129,7 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	str->f_inf = 0.5*(1.0 + cos(sysPar->del_ad_rmax));
 
 	/** fraction of photons which would hit the maximally
-	 *  simulated accretion disk */
+	 *  simulated accretion disk. Do not change this with BETA (!) */
 	str->f_ad_norm = 0.5*(cos(sysPar->del_ad_risco) - cos(sysPar->del_ad_rmax));
 
 	// photons are not allowed to crosstalk the disk plane
@@ -108,17 +139,6 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	
 	str->refl_frac = str->f_ad/str->f_inf;
 	str->refl_frac_norm = str->f_ad_norm/str->f_inf;
-
-/**	printf(" *** %4f [%.3f,%.3f,%.3f] \n",str->refl_frac,str->f_bh,str->f_ad,str->f_inf);
-	printf(" del_bh = %.1f  ---  del_ad = %.1f \n",del_bh*180/M_PI,del_ad*180/M_PI);
-	printf(" rin %i (%.1f) ---  rout %i (%.1f)\n",binary_search(sysPar->re, sysPar->nr, param->rin),param->rin,
-			binary_search(sysPar->re, sysPar->nr,
-			param->rout),param->rout);  **/
-
-	if (param->beta > 1e-6){
-		// TODO: implement beta>0 for refl frac
-		printf(" **** warning: primary source with a non-zero velocity not implemented yet. Assuming bet=0 for the reflection fracion! \n");
-	}
 
 	return str;
 }
@@ -226,16 +246,21 @@ int is_relxill_model(int model_type){
 	}
 }
 
-/** trapez integration around a single bin **/
+/** trapez integration around a single bin
+ *  caveat: only returns half of the full 2*PI*r*dr due to computational speed**/
 double trapez_integ_single(double* re, int ii, int nr){
+	double dr;
+	// dr is defined such that the full disk is covered once, with NO overlapping bins
 	if (ii==0){
-		return 1.0/re[ii+1] - 1.0/re[ii];
+		dr = 0.5*(re[ii] - re[ii+1]) ;
 	} else if (ii==nr-1){
-        return 1.0/re[ii] - 1.0/re[ii-1];
+        dr =  0.5*(re[ii-1] - re[ii]) ;
 	} else {
-        return 1.0/re[ii+1] - 1.0/re[ii-1];
+        dr = 0.5*( re[ii-1] - re[ii+1]);
 	}
+	return re[ii]*dr*M_PI;
 }
+
 
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener){
@@ -249,29 +274,33 @@ void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double 
 		rgrid[0] = rmin;
 		rgrid[1] = rmax;
 	} else {
-		get_log_grid(rgrid,nzones+1,rmin,rmax);
 
-		double h_fac = 1.0;
+		double r_transition = rmin;
+		int indr = 0;
 
-		int indr = binary_search(rgrid,nzones+1,h*h_fac);
-		int ii;
+		// if h > rmin we choose a log grid for r<h
+		if (h > rmin){
 
-		if (indr+1 < nzones ){
+			r_transition = h;
 
-			double rlo = rgrid[indr+1];
-			double rhi = rgrid[nzones];
+			get_log_grid(rgrid,nzones+1,rmin,rmax);
+			indr = binary_search(rgrid,nzones+1,r_transition);
+
+			r_transition = rgrid[indr];
+
+		}
+
+		if (indr < nzones ){
+
+			double rlo = r_transition;
+			double rhi = rmax; // rgrid[nzones];
 			// add 1/r for larger radii
-			for (ii=indr+1; ii<nzones+1; ii++){
-				rgrid[ii] = 1.0*(ii-indr-1) / (nzones-indr-1) * ( 1.0/rhi - 1.0/rlo) + 1.0/rlo;
+			for (int ii=indr; ii<nzones+1; ii++){
+				rgrid[ii] = 1.0*(ii-indr) / (nzones-indr) * ( 1.0/rhi - 1.0/rlo) + 1.0/rlo;
 				rgrid[ii] = fabs(1.0/rgrid[ii]);
 			}
 
 		}
-
-
-/*		for (ii=0; ii<nzones; ii++){
-			printf("%i : %.2e-%.2e \n",ii,rgrid[ii],rgrid[ii+1]);
-		} */
 
 
 	}
@@ -297,6 +326,20 @@ int is_debug_run( void ){
 	if (env != NULL){
 		int debug = atof(env);
 		if (debug == 1){
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
+/** check if we should return the relline/relconv physical norm from ENV **/
+int do_not_normalize_relline( void ){
+	char* env;
+	env = getenv("RELLINE_PHYSICAL_NORM");
+	if (env != NULL){
+		int phys_norm = atof(env);
+		if (phys_norm == 1){
 			return 1;
 		}
 	}
@@ -485,18 +528,33 @@ void FFT_R2CT(short int dir,long m,double *x,double *y){
 
 
 /** get the number of zones on which we calculate the relline-spectrum **/
-int get_num_zones(int model_type, int emis_type){
+int get_num_zones(int model_type, int emis_type, int ion_grad_type){
+
+	char* env;
+	env = getenv("RELXILL_NUM_RZONES");
+	int env_n_zones = 0;
+	if (env != NULL){
+		env_n_zones = atof(env);
+	}
+
 
 	// set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
-	if (is_relxill_model(model_type) && (emis_type==EMIS_TYPE_LP)){
-		char* env;
-		env = getenv("RELXILL_NUM_RZONES");
+	if (is_iongrad_model(model_type, ion_grad_type)){
 		if (env != NULL){
-			int env_n_zones = atof(env);
+			if ( (env_n_zones > 9 ) && (env_n_zones <= N_ZONES_MAX) ){
+				return env_n_zones;
+			} else {
+				printf(" *** warning: value of %i for RELXILL_NUM_RZONES not within required interval of [10,%i] \n",env_n_zones,N_ZONES_MAX);
+			}
+		}
+		return N_ZONES_MAX;
+	} else if (is_relxill_model(model_type) && (emis_type==EMIS_TYPE_LP)){
+
+		if (env != NULL){
 			if ( (env_n_zones > 0 ) && (env_n_zones <= N_ZONES_MAX) ){
 				return env_n_zones;
 			} else {
-				printf(" *** warning: value of %i for RELXILL_NUM_ZONES not within required interval of [1,%i] \n",env_n_zones,N_ZONES_MAX);
+				printf(" *** warning: value of %i for RELXILL_NUM_RZONES not within required interval of [1,%i] \n",env_n_zones,N_ZONES_MAX);
 			}
 		}
 		return N_ZONES;
@@ -558,9 +616,6 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 
 			}
 
-	/**		printf("[%i]  %i-%i  -> ener=[%.3f-%.3f] , choosing bins %.3f and %.3f  => flux=%.2f\n",ii,imin,imax,
-								ener[ii],ener[ii+1],ener0[imin],ener0[imax+1],flu[ii]);  **/
-
 		}
 
 	}
@@ -568,21 +623,23 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 
 int do_renorm_model(relParam* rel_param){
 
+
 	int renorm = 0;
 
-	char* env;
-	env = getenv("RENORM_RELXILL_MODEL");
-	if (env != NULL){
-		int val_relxill = atof(env);
-		// make sure we directly return if it's either 1 or 0
-		if (val_relxill == 1 || val_relxill == 0){
-			return val_relxill;
+	if ( is_relxill_model(rel_param->model_type) ){
+			if (rel_param->emis_type == EMIS_TYPE_LP){
+				renorm=0;
+			} else {
+				renorm=1;
+			}
+	} else {
+		if ( do_not_normalize_relline() ){
+			renorm=0;
+		} else {
+			renorm=1;
 		}
 	}
 
-	if ((! is_relxill_model(rel_param->model_type) ) || (rel_param->emis_type != EMIS_TYPE_LP)){
-		renorm = 1;
-	}
 	return renorm;
 }
 
@@ -592,5 +649,224 @@ void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z)
 	  nthcomp_param[2] = 0.05; // ktbb
 	  nthcomp_param[3] = 1.0;  // inp_type
 	  nthcomp_param[4] = z;
+
+}
+
+
+
+
+/*** we calculate the disk density from  Shakura & Sunyaev (1973)
+ *    - for zone A as describe in their publication,  formula (Eq 2.11)
+ *    - only the radial dependence is picked up here  (viscosity alpha=const.)
+ *    - normalized such that dens(rms) = 1
+ *                                                               ***/
+double density_ss73_zone_a(double radius, double rms){
+	return pow((radius/rms),(3./2)) * pow((1-sqrt(rms/radius)),-2);
+}
+
+
+// calculate the log(xi) for given density and emissivity
+static double cal_lxi(double dens, double emis){
+	return log10(4.0*M_PI*emis/dens);
+}
+
+// determine the radius of maximal ionization
+static double cal_lxi_max_ss73(double* re, double* emis, int nr, double rin, int* status){
+
+	CHECK_STATUS_RET(*status,0.0);
+
+	double rad_max_lxi  = pow((11./9.),2) * rin;  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
+
+	// radial AD grid is sorted descending (!)
+	int kk = inv_binary_search(re, nr, rad_max_lxi);
+	double interp = (rad_max_lxi - re[kk+1]) / ( re[kk] - re[kk+1] );
+
+	double emis_max_lxi = interp_lin_1d(interp,emis[kk+1],emis[kk]);
+
+
+	double lxi_max =  cal_lxi( density_ss73_zone_a(rad_max_lxi,rin) , emis_max_lxi);
+
+	return lxi_max;
+}
+
+static void save_ion_profile(ion_grad* ion){
+
+	FILE* fp =  fopen ( "test_ion_grad_relxill.dat","w+" );
+	int ii;
+	for (ii=0; ii<ion->nbins; ii++){
+		fprintf(fp, " %e \t %e \t %e \n",ion->r[ii],ion->r[ii+1],ion->lxi[ii]);
+	}
+	if (fclose(fp)) exit(1);
+
+}
+
+/** *** set log(xi) to obey the limits of the xillver table: TODO: check if we need to adjust the normalization as well  ***
+ *  NOTE: with correctly set xpsec/isis limits, it is only possible to reach the lower boundary       **/
+static void lxi_set_to_xillver_bounds(double* pt_lxi){
+	/**  TODO: Need to define this globally **/
+	double xlxi_tab_min = 0.0;
+	double xlxi_tab_max = 4.7;
+
+	// #1: set the value of xi to the lowest value of the table
+    if (*pt_lxi < xlxi_tab_min){
+    	*pt_lxi = xlxi_tab_min;
+    } else if (*pt_lxi > xlxi_tab_max){
+    //	#2: high ionization: we approximately assume such a highly ionized disk acts as a mirror
+    	*pt_lxi = xlxi_tab_max;
+    }
+
+}
+
+ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, int type, double* rgrid, int n, int* status) {
+
+	CHECK_STATUS_RET(*status,NULL);
+
+	ion_grad* ion = new_ion_grad(rgrid, n, status);
+	CHECK_STATUS_RET(*status,NULL);
+
+	double rmean[n];
+	double del_inc[n];
+	for (int ii=0; ii<n; ii++){
+		rmean[ii] = 0.5*(rgrid[ii] + rgrid[ii+1]);
+	}
+
+	if (type==ION_GRAD_TYPE_PL){
+		for (int ii=0; ii<n; ii++){
+		     ion->lxi[ii] = (exp(xlxi0))* pow((rmean[ii]/rmean[0]),-1.0*xindex);  // TODO: check if we need to subtract xlxi_tab_min here
+		     ion->lxi[ii] = log(ion->lxi[ii]);
+
+
+		     lxi_set_to_xillver_bounds(&(ion->lxi[ii]));
+
+		}
+
+	} else if (type==ION_GRAD_TYPE_ALPHA){
+		double dens[n];
+		double rin = rgrid[0];
+
+		// TODO: use a better approach to not linearly interpolate but rather average over the profile?
+		double emis_zones[n];
+
+		// we need the emissivity profile (should be cached, so no extra effort required here)
+		relSysPar* sysPar = get_system_parameters(rel_param,status);
+		assert(sysPar->emis!=NULL);
+		inv_rebin_mean(sysPar->re, sysPar->emis, sysPar->nr, rmean, emis_zones, n,  status);
+		inv_rebin_mean(sysPar->re, sysPar->del_inc, sysPar->nr, rmean, del_inc, n,  status);
+		inv_rebin_mean(sysPar->re, sysPar->del_emit, sysPar->nr, rmean, ion->del_emit, n,  status);
+
+		// calculate the maximal ionization assuming r^-3 and SS73 alpha disk
+		double lxi_max = cal_lxi_max_ss73(sysPar->re, sysPar->emis, sysPar->nr, rin, status);
+
+		// the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
+		double fac_lxi_norm = xlxi0 - lxi_max; // subtraction instead of division because of the log
+
+		/** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
+		for (int ii=0; ii<n; ii++){
+			dens[ii] = density_ss73_zone_a(rmean[ii],rin);
+
+			// now we can use the emissivity to calculate the ionization
+			ion->lxi[ii] = cal_lxi(dens[ii], emis_zones[ii]) + fac_lxi_norm;
+
+			ion->lxi[ii] += log10(cos(M_PI/4)/cos(del_inc[ii]));
+
+		    lxi_set_to_xillver_bounds(&(ion->lxi[ii]));
+		}
+
+
+	} else if (type==ION_GRAD_TYPE_CONST) {  // should not happen, as this will be approximated by 1 zone (but just in case we get here...)
+		for (int ii=0; ii<n; ii++){
+		     ion->lxi[ii] = xlxi0;
+		}
+	} else {
+		printf(" *** ionization type with number %i not implemented \n",type);
+		printf("     choose either %i for the PL, %i for the ALPHA-disk, or %i for constant\n",
+				ION_GRAD_TYPE_PL,ION_GRAD_TYPE_ALPHA,ION_GRAD_TYPE_CONST);
+		RELXILL_ERROR("unknown ionization gradient type", status);
+	}
+
+
+
+	if (is_debug_run()){
+		save_ion_profile(ion);
+	}
+
+	if (*status!=EXIT_SUCCESS){
+		RELXILL_ERROR("calculating the ionization gradient failed due to previous error", status);
+	}
+
+	return ion;
+}
+
+
+ion_grad* new_ion_grad(double* r, int n, int* status){
+
+	ion_grad* ion = (ion_grad*) malloc(  sizeof(ion_grad));
+	CHECK_MALLOC_RET_STATUS(ion,status,NULL);
+
+	ion->r = (double*) malloc ( (n+1)*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(ion->r,status,NULL);
+	ion->lxi = (double*) malloc ( (n)*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(ion->lxi,status,NULL);
+	ion->fx = (double*) malloc ( (n)*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(ion->fx,status,NULL);
+	ion->del_emit = (double*) malloc ( (n)*sizeof(double));
+	CHECK_MALLOC_RET_STATUS(ion->del_emit,status,NULL);
+
+	ion->nbins = n;
+
+	for (int ii=0; ii<n; ii++){
+		ion->r[ii] = r[ii];
+		ion->lxi[ii] = 0.0;
+		ion->fx[ii] = 0.0;
+		ion->del_emit[ii] = M_PI/4.; // assume default 45 deg (xillver assumption), only used if beta>0
+	}
+	// radius goes to n+1
+	ion->r[n] = r[n];
+
+	return ion;
+}
+
+void free_ion_grad(ion_grad* ion){
+
+	if (ion!=NULL){
+		if (ion->r!=NULL){
+			free(ion->r);
+		}
+		if (ion->lxi!=NULL){
+			free(ion->lxi);
+		}
+		if (ion->fx!=NULL){
+			free(ion->fx);
+		}
+		free(ion);
+	}
+}
+
+// for x0 descending and xn ascending, calculate the mean at xn
+void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int nn, int* status){
+	if (xn[0]>xn[nn-1] || x0[nn-1]>x0[0]){
+		RELXILL_ERROR(" *** grid in wrong order",status);
+		return;
+	}
+	if (xn[0]<x0[n0-1] || xn[nn-1]>x0[0]){
+		RELXILL_ERROR(" *** new grid is larger than the input grid",status);
+		return;
+	}
+
+	int in = nn-1; // traverse new array backwards
+	for (int ii=0; ii<n0-2; ii++){  // only go to the second to last bin
+
+		if (x0[ii]>xn[in] && x0[ii+1]<=xn[in]){
+
+			double ifac_r = (xn[in]-x0[ii+1]) /  (x0[ii] - x0[ii+1] );
+			yn[in] = interp_lin_1d(ifac_r, y0[ii+1], y0[ii]);
+
+			in--;
+			if (in<0){ // we can stop if once we are below zero as the array is filled
+				break;
+			}
+		}
+
+	}
 
 }

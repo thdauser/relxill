@@ -56,6 +56,13 @@
 #define MOD_TYPE_XILLVERDENS -100
 #define NUM_PARAM_XILLVERDENS 7
 
+/** ion grad models **/
+#define MOD_TYPE_RELXILLLPION -21
+#define NUM_PARAM_RELXILLLPION 15
+
+#define MOD_TYPE_RELXILLION -20  // not implemented yet
+// #define NUM_PARAM_RELXILLION 15???
+
 
 /** Neutron Star / BB models **/
 #define MOD_TYPE_RELXILLNS -30
@@ -83,6 +90,7 @@ void tdrelline(const double* ener, const int n_ener, double* photar, const doubl
 void tdrellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxilllpion(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdxillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelconvlp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
@@ -94,6 +102,7 @@ void tdxillverns(const double* ener0, const int n_ener0, double* photar, const d
 
 void tdrelxill_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelxilllp_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxilllpion_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdxillver_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 
 /* get the version number text on the screen (if not already printed before */
@@ -111,6 +120,7 @@ void free_xillParam(xillParam*);
 /* xspec local model wrapper functions **/
 void lmodrelxill(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelxilllp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+void lmodrelxilllpion(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodxillver(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelline(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrellinelp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
@@ -126,6 +136,7 @@ void lmodxillverns(const double* ener0, const int n_ener0, const double* paramet
 
 void lmodrelxillnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelxilllpnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+void lmodrelxilllpionnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodxillvernthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 
 #endif /* MODELS_H_ */

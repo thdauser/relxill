@@ -9,7 +9,6 @@ if (length(__argv)>1){
    ff = __argv[1];
 }
 
-
 variable modlib = "build/librelxill.so";
 
 if (stat_file(modlib) == NULL){
@@ -25,8 +24,10 @@ __set_hard_limits("relxilllp","h",-100,1000);
 
 _traceback=1;
 
+
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
-		  "relxillCp","relxilllpCp","xillverCp"];
+		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
+
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
 variable sum_name = "plot_check_model_functions_sum.pdf";
@@ -70,7 +71,7 @@ define fit_fun_default(ff){ %{{{
    variable p,pa = get_params();   
    variable df;
    foreach p(pa){
-      df = eval(sprintf("%s_default(%i)",ff,p.index-1));
+      df = eval(sprintf("%s_default(%i)",qualifier("ff0",ff),p.index-1));
       p.value=df.value;
       p.min=df.min;
       p.max=df.max;
@@ -160,7 +161,7 @@ define check_z_param(ff){ %{{{
 
 
 define check_line_ener(ff){ %{{{
-   fit_fun(ff);
+   fit_fun_default(ff);
 
    if (string_match(ff,"\.*line") == 0){
       return;
@@ -217,7 +218,7 @@ define check_line_limb(ff){ %{{{
 
    variable gn = goodness(val0,val1);
    variable gn2 = goodness(val0,val2);
-   vmessage("    -> %s goodness value for limb dark %.3e amd bright %.3e",
+   vmessage("    -> %s goodness value for limb dark %.3e and bright %.3e",
 	    ff, gn,gn2);
    return gn+gn2;
 }
@@ -229,14 +230,14 @@ define check_conv_mod_single(ff,ff_conv){ %{{{
    variable ener = 6.4;
    
    
-   fit_fun(ff);
+   fit_fun_default(ff);
    set_par("*.lineE",ener);
 
    variable lo, hi;
    (lo,hi) = log_grid(0.2,10,600);
    
    variable val0 = eval_fun_keV(lo,hi);
-      
+
    fit_fun(ff_conv+"(1,egauss)");
    set_par("*.center",ener);
    variable val1 = eval_fun_keV(lo,hi);
@@ -336,6 +337,104 @@ define check_dens_mod_single(ff,ff_dens){ %{{{
 %}}}
 
 
+define check_single_iongrad_model(ff_ion,ff_ref){ %{{{
+
+   
+   variable lo,hi;
+   variable val0, val1, val2;
+   (lo,hi) = log_grid(0.5,500,4000);
+
+   putenv("RELXILL_NUM_RZONES=50");
+
+   fit_fun_default(ff_ion);   
+   set_par("*.xi_index",0);
+   set_par("*.ion_grad_type",1);  %% PL ion gradient
+   val0 = eval_fun_keV (lo,hi);
+
+
+   fit_fun_default(ff_ref);
+   val1 = eval_fun_keV (lo,hi);
+
+
+   fit_fun_default(ff_ion);   
+   set_par("*.ion_grad_type",2) ;  %% alpha disk
+   val2 = eval_fun_keV (lo,hi);
+   
+   
+   simple_plot(lo,hi,val0,val1;;__qualifiers());
+
+
+   sleep(5);
+   
+   variable gn = goodness(val0,val1);
+   vmessage("    -> %s: goodness for comparison with relxilllp: %.3e",
+	    ff_ion, gn);
+
+   variable gn_change = goodness(val0,val2);
+   vmessage("    -> %s: difference between ion to non-ion grad? %.3e",
+	    ff_ion, gn_change);
+
+   putenv("RELXILL_NUM_RZONES");
+   
+   return gn;
+}
+%}}}
+
+define check_reflfrac_beta(ff_ion){ %{{{
+   
+   variable lo,hi;
+   variable val0, val1;
+   (lo,hi) = log_grid(0.5,500,4000);
+
+   fit_fun_default(ff_ion);
+
+   vmessage(" checking the how refl_frac depends on BETA for %s",ff_ion);
+   
+   %% just use the normal relxilllp model for the test here
+   set_par("*.ion_grad_type",0);
+   set_par("*.fixReflFrac",2);
+   
+   variable bet = [0:0.5:#3];
+   variable ii, n = length(bet);
+
+   _for ii(0,n-1){
+      set_par("*.beta",bet[ii]);
+      val0 = eval_fun_keV (lo,hi);
+   }
+
+   variable gn=0;
+   
+   return gn;
+}
+%}}}
+
+
+define check_single_beta(ff_ion){ %{{{
+
+   
+   variable lo,hi;
+   variable val0, val1;
+   (lo,hi) = log_grid(0.5,500,4000);
+
+   fit_fun_default(ff_ion);
+
+   set_par("*.beta",0);
+   val0 = eval_fun_keV (lo,hi);
+   
+   
+   set_par("*.beta",0.1);
+   val1 = eval_fun_keV (lo,hi);
+   
+   
+
+   variable gn = goodness(val0,val1);
+   vmessage("    -> %s: difference if beta changes? %.3e",
+	    ff_ion, gn);
+   return gn;
+}
+%}}}
+
+
 define check_z(){ %{{{
 
    counter++;
@@ -371,7 +470,7 @@ define eval_test(){ %{{{
       message(ff);
       val = eval_fun_keV(1,2);
       if (not ( val > 0 )){
-	 vmessage(" *** error: simple test for %s failed!",ff);
+	 vmessage(" *** error: simple test for %s failed! (val=%e)",ff,val);
 	 return EXIT_FAILURE;
       }
    }
@@ -467,6 +566,74 @@ define check_norm(){ %{{{
 }
 %}}}
 
+define check_relline_phys_norm(){ %{{{
+
+   counter++;
+   vmessage("\n### %i ### testing the ENV setting RELLINE_PHYSICAL_NORM ### ", counter);
+
+   variable ffs = ALL_FF;
+   variable ff;
+   variable val,val2,val3;
+   variable stdpar;
+   foreach ff(ffs){
+      
+      %% does not make sense for xillver models
+      if (string_match(ff,"rel")==0){
+	 continue;
+      }
+      
+      putenv("RELLINE_PHYSICAL_NORM");
+      fit_fun(ff);
+      val = eval_fun_keV(1,2);
+      
+      stdpar = get_par("*.a");
+      
+      putenv("RELLINE_PHYSICAL_NORM=0");
+      set_par("*.a",stdpar*0.99);
+      () = eval_fun_keV(1,2);
+      set_par("*.a",stdpar);
+      val2 = eval_fun_keV(1,2);
+       
+      
+      putenv("RELLINE_PHYSICAL_NORM=1");
+      set_par("*.a",stdpar*0.99);
+      () = eval_fun_keV(1,2);
+      set_par("*.a",stdpar);
+      val3 = eval_fun_keV(1,2);
+
+      %% val2: original normalization
+      vmessage(" *** %s (integ flux):  not set (%.5e) - ENV=0 (%.5e) - ENV=1 (%.5e)",
+	       ff,sum(val2),sum(val),sum(val3));
+      
+      variable refval;
+      variable nrefval;
+      
+      %% should have no effect on the relxill models (not normalized are
+      %% always normalized)
+      if (( string_match(ff,"relxill")>0 ) ){
+ 	 %% there is no positive test (as there should be no difference)
+	 refval = 1.0;
+	 nrefval= abs(sum(val3) - sum(val));
+      } else {
+	 %% LP is non-normalized by default 	 
+	 nrefval = abs(sum(val) - sum(val2));
+	 refval = abs(sum(val) - sum(val3));
+      }
+      
+      
+      if ( (nrefval>1e-5)|| (refval<1e-5) ){
+	 vmessage(" nrefval=%.3e   --- refval=%.3e  ",nrefval,refval);
+	 vmessage(" *** error: normalization test failed!");
+	 return EXIT_FAILURE;
+      }
+   }
+      putenv("RELLINE_PHYSICAL_NORM");
+
+   return EXIT_SUCCESS;
+}
+%}}}
+
+
 define check_linee(){ %{{{
    
    counter++;
@@ -476,11 +643,11 @@ define check_linee(){ %{{{
    variable ff;
    
    foreach ff(ffs){            
-      if (check_line_ener(ff;nopl) > goodness_lim*3){
+      if (check_line_ener(ff;nopl) > goodness_lim*5){
 	vmessage(" *** error: there seems to be a problem with the LineE in %s ",ff);
 	 return EXIT_FAILURE;
       }
-      if (check_line_limb(ff;nopl) < goodness_lim*3){
+      if (check_line_limb(ff;nopl) < goodness_lim*5){
 	vmessage(" *** error: there seems to be a problem with the Limb Brightening / Darkening  in %s ",ff);
 	 return EXIT_FAILURE;
       }
@@ -622,7 +789,7 @@ define check_caching_single(ff,par){ %{{{
    % clone parameter
 
    % ### 1 ### change parameter between min and max
-   variable N = 3;
+   variable N = 10;
    variable v;
    
    variable vals;
@@ -633,12 +800,12 @@ define check_caching_single(ff,par){ %{{{
    }
    
    if (abs(p.value-p.min) < abs(p.max-p.value)){
-      vals = [p.value:p.value*1.1 :#N];
+      vals = [p.value:p.value*1.2 :#N];
    } else {
       if (p.value>=0){
-	 vals = [p.value*0.9:p.value:#N];
+	 vals = [p.value*0.8:p.value:#N];
       } else {
-	 vals = [p.value:p.value*1.1 :#N];	 
+	 vals = [p.value:p.value*1.2 :#N];	 
       }
    }
 
@@ -702,6 +869,9 @@ define check_caching(){ %{{{
    variable std_rel_param = ["a","Incl","Rin","Rout"];
    variable std_xill_param = ["logxi","Afe","z"];
    
+   ff_arr["relxilllpion"] = [std_rel_param, "h","refl_frac", std_xill_param, "xi_index" ];
+   ff_arr["relline"]   = [std_rel_param, "Rbr" , "Index1","Index2"];
+   ff_arr["relline_lp"]   = [std_rel_param, "h"];
    ff_arr["relxill"]   = [std_rel_param, "Rbr" , "Index1","Index2",std_xill_param, "Ecut"];
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
    ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
@@ -786,6 +956,40 @@ define check_refl_frac_single(ff){ %{{{
 }
 %}}}
 
+define check_iongrad_mod(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### testing IONIZATION GRADIENT MODELS: ###",counter);
+
+
+   %% currently the only model with an ionization gradient
+   variable ff_ion = ["relxilllpion","relxilllpionCp"];
+   variable ff_ref = ["relxilllp","relxilllpCp"];
+   
+   variable ii,n = length(ff_ion);
+   
+   _for ii(0,n-1,1){
+%%      vmessage(" - testing %s model: %s",ff_ion[ii]);
+      if (check_single_iongrad_model(ff_ion[ii],ff_ref[ii];nopl) > goodness_lim*0.1){
+	 vmessage(" *** error: there seems to be a general problem with the IONGRAD MODEL %s ",ff_ion[ii]);
+	 return EXIT_FAILURE;
+      }
+      if (check_single_beta(ff_ion[ii];nopl) < goodness_lim*0.1){
+	 vmessage(" *** error: changing BETA paramter in IONGRAD MODEL seems to have no effect %s ",ff_ion[ii]);
+	 return EXIT_FAILURE;
+      }
+      if (check_reflfrac_beta(ff_ion[ii];nopl) > goodness_lim*0.1){
+	 vmessage(" *** error: reflection fraction in IONGRAD MODEL not working correctly %s ",ff_ion[ii]);
+	 return EXIT_FAILURE;
+      }
+   }   
+
+   return EXIT_SUCCESS;
+   
+}
+%}}}
+
+
 define ncheck_fix_refl_frac_single(ff){ %{{{
    
 %   vmessage("   -> reflection fraction in %s",ff);
@@ -805,8 +1009,6 @@ define ncheck_fix_refl_frac_single(ff){ %{{{
    return goodness(val1,val0);
 }
 %}}}
-
-
 
 define check_prim_cont(){ %{{{
    
@@ -832,7 +1034,7 @@ define check_prim_cont(){ %{{{
    variable ii,n = length(ff);
    
    _for ii(0,n-1,1){
-      if (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]) > goodness_lim){
+      if (not (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]) < goodness_lim)){
 	vmessage(" *** error: there seems to be a problem with the PRIMARY CONTINUUM in  MODEL %s ",ff[ii]);
 	 return EXIT_FAILURE;
       }
@@ -902,6 +1104,7 @@ define do_mc_testing(){ %{{{
 
       fit_fun(ff);
       freeze("*.norm");
+
       tic;
       stat = fit_search(n_mc, &eval_counts;  serial, dir="/tmp/fit_search");
       dt = toc / n_mc * 1e3;
@@ -920,11 +1123,37 @@ define do_mc_testing(){ %{{{
 }
 %}}}
 
+define print_refl_frac(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### print REFLECTION FRACTION information: ###",counter);
+   
+   variable ff = ["relxilllp","relxilllpD","relxilllpCp"];
+   
+   variable ii,n = length(ff);
+   
+   variable goodn;
+   _for ii(0,n-1,1){
+      fit_fun(ff[ii]);
+      vmessage(" %s : ",ff[ii]);
+      set_par("*.fixReflFrac",2);
+      () = eval_fun_keV(1,2);
+      set_par("*.fixReflFrac",0);
+      message("\n");
+   }
+   
+   return EXIT_SUCCESS;
+}
+%}}}
+
+if (do_mc_testing() != EXIT_SUCCESS) exit;
+#iffalse
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
 
-if (check_norm() != EXIT_SUCCESS) exit;
+
+if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
@@ -932,7 +1161,11 @@ if (check_conv_mod() != EXIT_SUCCESS) exit;
 if (check_dens_mod() != EXIT_SUCCESS) exit;
 if (check_prim_cont() != EXIT_SUCCESS) exit;
 if (check_nthcomp_mod() != EXIT_SUCCESS) exit;
+if (check_iongrad_mod() != EXIT_SUCCESS) exit;
+
 if (check_refl_frac() != EXIT_SUCCESS) exit;
+if (print_refl_frac() != EXIT_SUCCESS) exit;
+
 if (check_caching() != EXIT_SUCCESS) exit;
 
 if (do_mc_testing() != EXIT_SUCCESS) exit;

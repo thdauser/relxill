@@ -1,0 +1,42 @@
+# relxill CI jobs
+
+before_script:
+  - source /data/system/software/softwarescript.bash && source /data/system/software/softwarescript_Xray.bash
+  - export RELXILL_TABLE_PATH="/userdata/data/dauser/relline_tables"
+
+stages:
+  - build
+  - test
+  - model
+  - deploy
+
+build:
+  stage: build
+  script:
+    - make
+    - make model
+  artifacts:
+    expire_in: 30 min
+    paths:
+      - "relxill_model_v*.tgz"
+      - "./test_sta"
+      - "build/"
+
+test:
+  stage: test
+  script:
+    - ./test_sta > test_output.log
+    - test/check_model_functions.sl  >> test_output.log
+  only:
+   - master
+  artifacts:
+    expire_in: 30 min
+    paths:
+      - "test_output.log"
+
+provide:
+  stage: deploy
+  script:
+    - rsync -vhu relxill_model_v*.tgz /data/www/dauser_download/relxillArchive/
+  only:
+    - tags

@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef RELLP_H_
 #define RELLP_H_
@@ -21,8 +21,10 @@
 #include "relbase.h"
 #include "relutility.h"
 
+// calculate the angles of emission from the primary source to git Rin and Rout
+void get_ad_del_lim(relParam* param, relSysPar* sysPar, int* status);
 
-void calc_emis_profile(relParam* param, relParam* cached_param, relSysPar* sysPar, int* status);
+void calc_emis_profile(double* emis, double* del_emit, double* del_inc, double* r, int nr, relParam* param, int* status);
 
 void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_inc,
 		double* re, int n_r, int* status);

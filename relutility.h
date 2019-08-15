@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef RELUTILITY_H_
 #define RELUTILITY_H_
@@ -27,6 +27,8 @@
 #define RELXILL_ERROR(msg,status) (relxill_error(__func__, msg,status))
 
 #define CHECK_RELXILL_ERROR(msg,status) (check_relxill_error(__func__, msg,status))
+
+#define CHECK_RELXILL_DEFAULT_ERROR(status) (check_relxill_error(__func__, "function evaluation failed",status))
 
 #define CHECK_STATUS_RET(status, retval) \
   if (EXIT_SUCCESS!=status) return(retval);
@@ -48,10 +50,6 @@
 		RELXILL_ERROR("memory allocation failed",status); \
 		return retval;\
 	}
-
-#define CHECK_STATUS_RET(status, retval) \
-  if (EXIT_SUCCESS!=status) return(retval);
-
 
 /**************************/
 /** Function Definitions **/
@@ -79,6 +77,9 @@ void get_version_number(char** vstr, int* status);
 /* print relxill error message */
 void relxill_error(const char* const func, const char* const msg, int* status);
 
+/* print a standardized warning message */
+void relxill_warning(const char* const msg);
+
 /* check and print relxill error message */
 void check_relxill_error(const char* const func, const char* const msg, int* status);
 
@@ -99,7 +100,7 @@ int binary_search(double* arr,int n,double val);
 /** calculate the reflection fraction **/
 lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status);
 
-/** trapez integration around a single bin **/
+/** trapez integration around a single bin (returns only r*dr*PI!) **/
 double trapez_integ_single(double* re, int ii, int nr);
 
 /* calculate the radius of marginal stability */
@@ -108,7 +109,7 @@ double kerr_rms(double a);
 /* get the rplus value (size if the black hole event horizon */
 double kerr_rplus(double a);
 
-/** test if it is a relxill flavour model **/
+/** test if it is a relxill flavor model **/
 int is_relxill_model(int model_type);
 
 /** check if we are currently debugging the model **/
@@ -146,7 +147,7 @@ double grav_redshift(relParam* param);
 char* get_relxill_table_path( void );
 
 /** get the number of zones **/
-int get_num_zones(int model_type, int emis_type);
+int get_num_zones(int model_type, int emis_type, int ion_grad_type);
 
 /** check if it is the xillver model **/
 int is_xill_model(int model_type);
@@ -154,5 +155,23 @@ int is_xill_model(int model_type);
 void get_nthcomp_param( double* nthcomp_param, double gam, double kte, double z);
 
 int do_renorm_model(relParam* rel_param);
+
+/** check if we should return the relline/relconv physical norm from ENV **/
+int do_not_normalize_relline( void );
+
+/** calculate the ionization gradient **/
+ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, int type, double* rgrid, int n, int* status);
+
+/*** we calculate not normalized disk density from  Shakura & Sunyaev (1973) for zone A  ***/
+double density_ss73_zone_a(double radius, double rms);
+
+/** is is a model for which we want to calculate the ionization gradient? **/
+int is_iongrad_model(int ion_type, int ion_grad_type);
+
+void free_ion_grad(ion_grad* ion);
+ion_grad* new_ion_grad(double* r, int n, int* status);
+
+/** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
+void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int nn, int* status);
 
 #endif /* RELUTILITY_H_ */

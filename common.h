@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef COMMON_H_
 #define COMMON_H_
@@ -40,6 +40,15 @@
 #define PRIM_SPEC_BB 3
 /***************************************/
 
+/** define Ionization Gradient Type**/
+#define ION_GRAD_TYPE_CONST 0
+#define ION_GRAD_TYPE_PL 1
+#define ION_GRAD_TYPE_ALPHA 2
+/***************************************/
+
+
+#define AD_ROUT_MAX 1000
+
 /****** TYPE DEFINITIONS ******/
 
 typedef struct{
@@ -58,6 +67,8 @@ typedef struct{
 	double gamma;
 	double beta;
 	int limb;
+	int do_renorm_relline;
+	int num_zones;
 } relParam;
 
 typedef struct{
@@ -70,11 +81,21 @@ typedef struct{
 	double z;
 	double refl_frac;
 	double dens;
+	double ion_grad_index;
+	int ion_grad_type;
 	int fixReflFrac;
 	int model_type;
 	int prim_type;
 } xillParam;
 
+
+typedef struct{
+	double* lxi;
+	double* fx;
+	double* r;
+	double* del_emit;
+	int nbins;
+} ion_grad;
 
 /** the XILLVER table structure */
 typedef struct{
@@ -163,6 +184,23 @@ typedef struct{
 	int n_ener;
 	int n_incl;
 }xill_spec;
+
+
+typedef struct{
+	int n_ener;
+	double* ener;
+	double* flux;
+} out_spec;
+
+typedef struct{
+	int nzones;   // number of zones actually stored there
+	int n_cache;  // number of array (nzones <= n_cache !!)
+	int n_ener;
+	double*** fft_xill;  // dimensions [n_cache,2,n_ener]
+	double*** fft_rel;   // dimensions [n_cache,2,n_ener]
+	xill_spec** xill_spec;
+	out_spec* out_spec;
+} specCache;
 
 
 /******************************/

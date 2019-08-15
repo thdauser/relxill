@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef XILLTABLE_H_
 #define XILLTABLE_H_
@@ -30,7 +30,7 @@
 #define XILLTABLE_N_ECT 11
 #define XILLTABLE_N_INCL 10
 
-#define XILLTABLE_DENS_N_GAM 12
+#define XILLTABLE_DENS_N_GAM 13
 #define XILLTABLE_DENS_N_AFE 5
 #define XILLTABLE_DENS_N_LXI 15
 #define XILLTABLE_DENS_N_DENS 9
@@ -47,7 +47,7 @@
 
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
-#define XILLTABLE_DENS_FILENAME "xillverD-4.fits"
+#define XILLTABLE_DENS_FILENAME "xillverD-5.fits"
 #define XILLTABLE_NTHCOMP_FILENAME "xillver-comp.fits"
 
 /** get a new and empty rel table (structure will be allocated)  */
@@ -66,5 +66,7 @@ void free_xill_spec(xill_spec* spec);
 void free_cached_xillTable(void);
 
 char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status);
+
+void norm_xillver_spec(xill_spec* spec, double incl);
 
 #endif /* XILLTABLE_H_ */

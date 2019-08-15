@@ -10,12 +10,12 @@ COMPILE.c = gcc
 
 INCLUDES = -I${HEADAS}/include
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o
-headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xilltable.h
-sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c donthcomp.c
+objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o
+headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h xilltable.h relcache.h
+sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c xilltable.c donthcomp.c relcache.c
 
 model_dir = ./build/
-model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.csh modelfiles/README.txt
+model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
 
 LINK_TARGET = test_sta
 
@@ -58,7 +58,7 @@ model:
 
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
 	echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' 
-	cd $(model_dir) && ./compile_relxill.csh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
+	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
 #	rm -f $(model_dir)/*.c $(model_dir)/*.h
 	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
@@ -79,7 +79,7 @@ valgrind-relxilllp:
 gdb:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	gdb --args ./test_sta relline
+	gdb --args ./test_sta relline 100
 
 ddd:
 	echo "exit" | make gdb 
@@ -88,5 +88,5 @@ ddd:
 gprof:
 	make clean
 	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
-	./test_sta relxilllpCp 100
+	./test_sta relxilllpion 100
 	gprof -p test_sta

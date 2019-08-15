@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2016 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 #include "rellp.h"
@@ -39,36 +39,6 @@ static void get_emis_bkn(double* emis, double* re,int nr,
 	return;
 }
 
-/* function to check of the system parameters need to be re-calculated  */
-static int redo_get_emis_lp(relParam* param, relParam* rel_param, relSysPar* sysPar){
-
-	if (rel_param==NULL){
-		return 1;
-	}
-
-	double cache_limit = 1e-8;
-	if(rel_param!=NULL && param!=NULL){
-		if (fabs(param->a - rel_param->a) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->height - rel_param->height) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->rin - rel_param->rin) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->rout - rel_param->rout) > cache_limit) {
-			return 1;
-		}
-		if (fabs(param->gamma - rel_param->gamma) > cache_limit) {
-			return 1;
-		}
-	} else {
-		return 1;
-	}
-
-	return 0;
-}
 
 static void get_emis_jet_point_source(relParam* param, double* emis, double* del_emit, double* del_inc,
 		double* re, int n_r, lpTable* tab, int ind_a, double ifac_a, int* status){
@@ -84,7 +54,18 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 		ind_h[ii] = binary_search_float(dat[ii]->h,tab->n_h,param->height);
 		ifac_h[ii]   = (param->height-dat[ii]->h[ind_h[ii]])/
 					   (dat[ii]->h[ind_h[ii]+1]-dat[ii]->h[ind_h[ii]]);
+
+		// make sure the incident angle is defined as positive value (otherwise the interpolation
+		// will create problems / jumps )
+		for (int jj=0; jj<tab->n_h; jj++){
+			for (int kk=0; kk<tab->n_rad; kk++){
+				dat[ii]->del_inc[jj][kk] = fabs(dat[ii]->del_inc[jj][kk]);
+				dat[ii]->del[jj][kk] = fabs(dat[ii]->del[jj][kk]);
+			}
+		}
+
 	}
+
 
 	double jet_rad[tab->n_rad];
 	double jet_emis[tab->n_rad];
@@ -155,9 +136,8 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 		del_emit[ii] = interp_lin_1d(inter_r, jet_del[kk], jet_del[kk+1]);
 		del_inc[ii] = interp_lin_1d(inter_r, jet_del_inc[kk], jet_del_inc[kk+1]);
 
-	     // multiply by the additional factor gi^gamma (see Dauser et al., 2013)
+	    /** multiply by the additional factor gi^gamma (see Dauser et al., 2013) **/
 		 emis[ii] *= pow(gi_potential_lp(re[ii],param->a,param->height,param->beta,del_emit[ii]), param->gamma);
-
 
 	     // take the beaming of the jet into account (see Dauser et al., 2013)
 	     if (param->beta > 1e-6) {
@@ -167,9 +147,12 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 
 }
 
+
 /** routine to calculate the emissivity in the lamp post geometry**/
 void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_inc,
 		double* re, int n_r, int* status){
+
+	CHECK_STATUS_VOID(*status);
 
 	if (cached_lp_table==NULL){
 		read_lp_table(LPTABLE_FILENAME, &cached_lp_table,status);
@@ -183,6 +166,7 @@ void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_i
 	double ifac_a   = (param->a-cached_lp_table->a[ind_a])/
 				   (cached_lp_table->a[ind_a+1]-cached_lp_table->a[ind_a]);
 
+
 	// TODO: make it possible for an extended jet
 	get_emis_jet_point_source(param, emis, del_emit, del_inc, re, n_r,
 			cached_lp_table, ind_a, ifac_a,status);
@@ -190,53 +174,61 @@ void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_i
 	return;
 }
 
-/** calculate the emissivity profile, depending on the EMIS_TYPE given **/
-void calc_emis_profile(relParam* param, relParam* cached_param, relSysPar* sysPar, int* status){
 
-	assert(sysPar!=NULL);
+// calculate the angles of emission from the primary source to git Rin and Rout
+void get_ad_del_lim(relParam* param, relSysPar* sysPar, int* status) {
+	int nr_lim = 2;
+	double del_emit[2];
+	double del_dummy[2];
+	double emis_dummy[2];
+	double rad[2] = { AD_ROUT_MAX, kerr_rms(param->a) };
+	// get the primary source emission angle for the simulated inner and out edge of the disk
+	get_emis_jet(param, emis_dummy, del_emit, del_dummy, rad, nr_lim, status);
+	sysPar->del_ad_rmax = del_emit[0];
+	sysPar->del_ad_risco = del_emit[1];
+
+	if (*status!=EXIT_SUCCESS){
+		printf(" *** failed calculating the primary source photon emission angles for Rin=%.2e and Rmax=%.2e",rad[1], rad[0]);
+	}
+}
+
+
+void calc_emis_profile(double* emis, double* del_emit, double* del_inc, double* re, int nr, relParam* param, int* status){
+
+	CHECK_STATUS_VOID(*status);
+
 	double invalid_angle = -1.0;
 
 	/**  *** Broken Power Law Emissivity ***  **/
 	if (param->emis_type==EMIS_TYPE_BKN){
 
-		get_emis_bkn(sysPar->emis, sysPar->re, sysPar->nr,
+		get_emis_bkn(emis, re, nr,
 				param->emis1,param->emis2,param->rbr);
 		// set the angles in this case to a default value
 		int ii;
-		for (ii=0; ii<sysPar->nr; ii++){
-			sysPar->del_emit[ii] = invalid_angle;
-			sysPar->del_inc[ii] = invalid_angle;
+		for (ii=0; ii<nr; ii++){
+			del_emit[ii] = invalid_angle;
+			del_inc[ii] = invalid_angle;
 		}
 
 	/**  *** Lamp Post Emissivity ***  **/
 	} else if (param->emis_type==EMIS_TYPE_LP){
 
-		if (redo_get_emis_lp(param, cached_param, sysPar)){
-			get_emis_jet(param,sysPar->emis, sysPar->del_emit, sysPar->del_inc,
-					sysPar->re, sysPar->nr, status);
-			CHECK_STATUS_VOID(*status);
-
-			int nr_lim = 2;
-			double del_emit[2];
-			double del_dummy[2];
-			double emis_dummy[2];
-
-			double rad[2] = {AD_ROUT_MAX, kerr_rms(param->a)};
-
-			// get the primary source emission angle for the simulated inner and out edge of the disk
-			get_emis_jet(param,emis_dummy, del_emit, del_dummy,rad, nr_lim, status);
-			CHECK_STATUS_VOID(*status);
-			sysPar->del_ad_rmax = del_emit[0];
-			sysPar->del_ad_risco = del_emit[1];
-
-		}
-
+		// if (redo_get_emis_lp(param, cached_param, sysPar)){  // XXX Currently we always re-do it if we get here
+		get_emis_jet(param,emis, del_emit, del_inc,
+				re, nr, status);
 	} else {
 
 		RELXILL_ERROR(" calculation of emissivity profile not possible \n",status);
 		printf("   -> emis_type=%i not known \n",param->emis_type);
 		return;
 	}
+
+
+	if (*status!=EXIT_SUCCESS){
+		RELXILL_ERROR("calculating the emissivity profile failed due to previous error", status);
+	}
+
 	return;
 }
 
