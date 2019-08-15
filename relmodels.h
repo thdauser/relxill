@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2017 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef MODELS_H_
 #define MODELS_H_
@@ -57,6 +57,14 @@
 #define NUM_PARAM_XILLVERDENS 7
 
 
+/** Neutron Star / BB models **/
+#define MOD_TYPE_RELXILLNS -30
+#define NUM_PARAM_RELXILLNS 13
+
+#define MOD_TYPE_XILLVERNS -101
+#define NUM_PARAM_XILLVERNS 7
+
+
 /****  TYPE DEFINITIONS ****/
 
 
@@ -81,6 +89,8 @@ void tdrelconvlp(const double* ener, const int n_ener, double* photar, const dou
 void tdrelxilldens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelxilllpdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdxillverdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxillns(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdxillverns(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 
 void tdrelxill_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelxilllp_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
@@ -110,6 +120,9 @@ void lmodrelconvlp(const double* ener0, const int n_ener0, const double* paramet
 void lmodrelxilldens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelxilllpdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodxillverdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+
+void lmodrelxillns(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+void lmodxillverns(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 
 void lmodrelxillnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelxilllpnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
