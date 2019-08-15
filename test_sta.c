@@ -104,6 +104,23 @@ static void set_std_param_relxill_nthcomp(double* inp_par, int* status){
 	inp_par[12] = 0.0;   // refl_frac
 }
 
+static void set_std_param_relxillns(double* inp_par, int* status){
+	inp_par[0]  = 3.0;
+	inp_par[1]  = 3.0;
+	inp_par[2]  = 15.0;
+	inp_par[3]  = 0.998;
+	inp_par[4]  = 60.0;
+	inp_par[5]  = -1.0;
+	inp_par[6]  = 400.;
+	inp_par[7]  = 0.0;   // redshift
+	inp_par[8]  = 2.0;   // kTbb
+	inp_par[9]  = 2.0;   // logxi
+	inp_par[10] = 1.0;   // Afe
+	inp_par[11] = 15.0; // logN
+	inp_par[12] = 3.0;   // refl_frac
+}
+
+
 static void set_std_param_relxilldens(double* inp_par, int* status){
 	inp_par[0]  = 3.0;
 	inp_par[1]  = 3.0;
@@ -358,7 +375,31 @@ static void std_eval_relxill(int* status, int n){
 
 }
 
-/** standard evaluation of the relxill model **/
+
+
+/** standard evaluation of the relxillNS model **/
+static void std_eval_relxill_ns(int* status, int n){
+
+	printf("\n ==> Evaluating RELXILL NS MODEL \n");
+	/* set the parameters */
+	int n_param = NUM_PARAM_RELXILL;
+	double inp_par[NUM_PARAM_RELXILL];
+	set_std_param_relxillns(inp_par, status);
+	CHECK_STATUS_VOID(*status);
+
+	/* create an energy grid */
+	int n_ener = 3000;
+	double ener[n_ener+1];
+	get_log_grid(ener,n_ener+1,0.1,1000.0);
+
+	/* call the relline model */
+	double photar[n_ener];
+
+	tdrelxillns(ener,n_ener,photar,inp_par,n_param,status);
+}
+
+
+/** standard evaluation of the relxill nthcomp model **/
 static void std_eval_relxill_nthcomp(int* status, int n){
 
 	printf("\n ==> Evaluating RELXILL NTHCOMP MODEL \n");
@@ -926,6 +967,7 @@ int main(int argc, char *argv[]){
 	int do_relxilllp = 0;
 	int do_relxilllpion = 0;
 	int do_relxilldens = 0;
+	int do_relxillns = 0;
 	int do_relxilllpdens = 0;
 	int do_relxillnthcomp= 0;
 	int do_relxilllpnthcomp = 0;
@@ -965,6 +1007,9 @@ int main(int argc, char *argv[]){
 				do_all=0;
 		} else if (strcmp(argv[1],"relxill")==0){
 				do_relxill=1;
+				do_all=0;
+		} else if (strcmp(argv[1],"relxillns")==0){
+				do_relxillns=1;
 				do_all=0;
 		} else if (strcmp(argv[1],"relxilllpdens")==0){
 			do_relxilllpdens=1;
@@ -1042,6 +1087,12 @@ int main(int argc, char *argv[]){
 
 		if (do_all || do_relxill){
 			std_eval_relxill(&status,n);
+			CHECK_STATUS_BREAK(status);
+			printf("     ---> successful \n");
+		}
+
+		if (do_all || do_relxillns){
+			std_eval_relxill_ns(&status,n);
 			CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}
