@@ -608,12 +608,13 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 	double xfac=(param->lxi-tab->lxi[ind[2]])/(tab->lxi[ind[2]+1]-tab->lxi[ind[2]]);
 	double efac=(param->ect-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
 
-	if (xfac<0 || xfac>1){
+	double del=1e-6;
+	if (xfac<0-del || xfac>1+del){
 		 printf(" *** warning: value of logxi=%.2f outside the tabulated range [%.2f,%.2f]\n",
 				 param->lxi,tab->lxi[0],tab->lxi[tab->n_lxi-1]);
-		if (xfac<0) xfac=0;
-		if (xfac>1) xfac=1;
 	}
+	if (xfac<0) xfac=0;
+	if (xfac>1) xfac=1;
 
 	// can happen due to grav. redshift, although actually observed ecut is larger
 	if (param->ect <= tab->ect[0]){
