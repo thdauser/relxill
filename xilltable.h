@@ -42,13 +42,18 @@
 #define XILLTABLE_NTHCOMP_N_KTE 12
 #define XILLTABLE_NTHCOMP_N_INCL 10
 
-// #define XILLTABLE_num_param_vals { XILLTABLE_N_GAM, XILLTABLE_N_AFE,  XILLTABLE_N_LXI, XILLTABLE_N_ECT,  XILLTABLE_N_INCL}
+#define XILLTABLE_NS_N_KTBB 7
+#define XILLTABLE_NS_N_AFE 4
+#define XILLTABLE_NS_N_LXI 7
+#define XILLTABLE_NS_N_DENS 5
+#define XILLTABLE_NS_N_INCL 10
 
 
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
 #define XILLTABLE_DENS_FILENAME "xillverD-5.fits"
 #define XILLTABLE_NTHCOMP_FILENAME "xillver-comp.fits"
+#define XILLTABLE_NS_FILENAME "xillverNS.fits"
 
 /** get a new and empty rel table (structure will be allocated)  */
 xillTable* new_xillTable(int n_gam, int n_afe, int n_lxi, int n_ect, int n_incl, int* status);

@@ -20,10 +20,12 @@
 
 int XILL_num_param_vals[] = {XILLTABLE_N_GAM,XILLTABLE_N_AFE,XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL};
 int XILL_DENS_num_param_vals[] = {XILLTABLE_DENS_N_GAM,XILLTABLE_DENS_N_AFE,XILLTABLE_DENS_N_LXI,XILLTABLE_DENS_N_DENS,XILLTABLE_DENS_N_INCL};
+int XILL_NS_num_param_vals[] = {XILLTABLE_NS_N_KTBB,XILLTABLE_NS_N_AFE,XILLTABLE_NS_N_LXI,XILLTABLE_NS_N_DENS,XILLTABLE_NS_N_INCL};
 int XILL_NTHCOMP_num_param_vals[] = {XILLTABLE_NTHCOMP_N_GAM,XILLTABLE_NTHCOMP_N_AFE,XILLTABLE_NTHCOMP_N_LXI,XILLTABLE_NTHCOMP_N_KTE,XILLTABLE_NTHCOMP_N_INCL};
 
 xillTable* cached_xill_tab=NULL;
 xillTable* cached_xill_tab_dens=NULL;
+xillTable* cached_xill_tab_ns=NULL;
 xillTable* cached_xill_tab_nthcomp=NULL;
 
 /** get a new and empty rel table (structure will be allocated)  */
@@ -123,6 +125,14 @@ void free_xillTable(xillTable* tab){
 
 static int is_dens_model(int model_type){
 	if ((model_type == MOD_TYPE_RELXILLDENS) || (model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_RELXILLLPDENS)){
+		return 1;
+	} else {
+		return 0;
+	}
+}
+
+static int is_ns_model(int model_type){
+	if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) ){
 		return 1;
 	} else {
 		return 0;
@@ -230,6 +240,8 @@ static int* get_ptr_num_param_vals(xillParam* param ){
 	if ( is_dens_model(model_type)){
 		num_param_vals = XILL_DENS_num_param_vals;
 
+	} else if ( is_ns_model(model_type)){
+		num_param_vals = XILL_NS_num_param_vals;
 	} else if (param->prim_type == PRIM_SPEC_NTHCOMP ){
 		num_param_vals = XILL_NTHCOMP_num_param_vals;
 	} else {
@@ -246,6 +258,13 @@ static int* get_xill_indices(xillParam* param, xillTable* tab,int* status){
 
 	/** the value changes for the DENS table, but internally dens is treated as ecut **/
 	if ( is_dens_model(param->model_type)){
+		param_vals[3] = param->dens;
+	}
+
+	/** the value changes for the NS table, but internally kTbb is treated as gam
+	 *  and also we use a density here instead of the useless ecut**/
+	if ( is_ns_model(param->model_type)){
+		param_vals[0] = param->kTbb;
 		param_vals[3] = param->dens;
 	}
 
@@ -314,12 +333,18 @@ void init_xillver_table(char* filename, xillTable** inp_tab, xillParam* param, i
 		/** allocate space for the new table  **/
 		if (is_dens_model(param->model_type)){
 			tab = new_xillTable(XILLTABLE_DENS_N_GAM,XILLTABLE_DENS_N_AFE, XILLTABLE_DENS_N_LXI,XILLTABLE_DENS_N_DENS,XILLTABLE_DENS_N_INCL,status);
+
 		} else if (param->prim_type == PRIM_SPEC_NTHCOMP){
-				tab = new_xillTable(XILLTABLE_NTHCOMP_N_GAM,XILLTABLE_NTHCOMP_N_AFE, XILLTABLE_NTHCOMP_N_LXI,
-						XILLTABLE_NTHCOMP_N_KTE,XILLTABLE_NTHCOMP_N_INCL,status);
-			} else {
+			tab = new_xillTable(XILLTABLE_NTHCOMP_N_GAM,XILLTABLE_NTHCOMP_N_AFE, XILLTABLE_NTHCOMP_N_LXI,
+					XILLTABLE_NTHCOMP_N_KTE,XILLTABLE_NTHCOMP_N_INCL,status);
+
+		}	else if (is_ns_model(param->model_type)){
+			tab = new_xillTable(XILLTABLE_NS_N_KTBB,XILLTABLE_NS_N_AFE, XILLTABLE_NS_N_LXI,XILLTABLE_NS_N_DENS,XILLTABLE_NS_N_INCL,status);
+
+		} else {
 			tab = new_xillTable(XILLTABLE_N_GAM,XILLTABLE_N_AFE, XILLTABLE_N_LXI,XILLTABLE_N_ECT,XILLTABLE_N_INCL,status);
 		}
+
 		CHECK_STATUS_BREAK(*status);
 
 		int* num_param_vals = get_ptr_num_param_vals(param);
@@ -597,6 +622,12 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 		efac=(param->dens-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
 	}
 
+	if (is_ns_model(param->model_type)){
+		/** remember that internally we treat dens as ecut **/
+		efac=(param->dens-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
+		gfac=(param->kTbb-tab->gam[ind[0]])/(tab->gam[ind[0]+1]-tab->gam[ind[0]]);
+	}
+
 	if (is_xill_model(param->model_type)){
 		double ifac = (param->incl-tab->incl[ind[4]])/(tab->incl[ind[4]+1]-tab->incl[ind[4]]);
 		interp_5d_tab(tab,spec->flu[0],spec->n_ener,gfac,afac,xfac,efac,ifac,
@@ -627,17 +658,24 @@ char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status){
 		*tab = cached_xill_tab_dens;
 		return XILLTABLE_DENS_FILENAME;
 
-	} else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
-			if (cached_xill_tab_nthcomp==NULL){
-				init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_nthcomp, param, status);
-				CHECK_STATUS_RET(*status,NULL);
-			}
-			*tab = cached_xill_tab_nthcomp;
-			return XILLTABLE_NTHCOMP_FILENAME;
+	} else if (is_ns_model(param->model_type)) {
+		if (cached_xill_tab_ns==NULL){
+			init_xillver_table(XILLTABLE_NS_FILENAME, &cached_xill_tab_ns, param, status);
+			CHECK_STATUS_RET(*status,NULL);
+		}
+		*tab = cached_xill_tab_ns;
+		return XILLTABLE_NS_FILENAME;
+	}	else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
+		if (cached_xill_tab_nthcomp==NULL){
+			init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_nthcomp, param, status);
+			CHECK_STATUS_RET(*status,NULL);
+		}
+		*tab = cached_xill_tab_nthcomp;
+		return XILLTABLE_NTHCOMP_FILENAME;
 
-		} else {
+	} else {
 
-			if (cached_xill_tab==NULL){
+		if (cached_xill_tab==NULL){
 			init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
 			CHECK_STATUS_RET(*status,NULL);
 		}
