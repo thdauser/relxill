@@ -608,6 +608,13 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 	double xfac=(param->lxi-tab->lxi[ind[2]])/(tab->lxi[ind[2]+1]-tab->lxi[ind[2]]);
 	double efac=(param->ect-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
 
+	if (xfac<0 || xfac>1){
+		 printf(" *** warning: value of logxi=%.2f outside the tabulated range [%.2f,%.2f]\n",
+				 param->lxi,tab->lxi[0],tab->lxi[tab->n_lxi-1]);
+		if (xfac<0) xfac=0;
+		if (xfac>1) xfac=1;
+	}
+
 	// can happen due to grav. redshift, although actually observed ecut is larger
 	if (param->ect <= tab->ect[0]){
 		efac = 0.0;
@@ -636,6 +643,7 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 
 	} else {
 		// get the spectrum for EACH flux bin
+
 		for (ii=0; ii<spec->n_incl; ii++){
 			interp_4d_tab(tab,spec->flu[ii],spec->n_ener,gfac,afac,xfac,efac,
 					ind[0],ind[1],ind[2],ind[3],ii);
