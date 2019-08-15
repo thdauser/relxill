@@ -1577,6 +1577,7 @@ int comp_xill_param(xillParam* cpar, xillParam* par){
 	if (comp_single_param_val(par->ect,cpar->ect)) return 1;
 	if (comp_single_param_val(par->gam,cpar->gam)) return 1;
 	if (comp_single_param_val(par->lxi,cpar->lxi)) return 1;
+	if (comp_single_param_val(par->kTbb,cpar->kTbb)) return 1;
 	if (comp_single_param_val(par->z,cpar->z)) return 1;
 
 	if (comp_single_param_val( (double) par->prim_type, (double) cpar->prim_type)) return 1;

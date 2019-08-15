@@ -141,6 +141,7 @@ void set_cached_xill_param(xillParam* par, xillParam** ca_xill_param, int* statu
 	(*ca_xill_param)->ect = par->ect;
 	(*ca_xill_param)->gam = par->gam;
 	(*ca_xill_param)->lxi = par->lxi;
+	(*ca_xill_param)->kTbb = par->kTbb;
 	(*ca_xill_param)->z = par->z;
 
 	(*ca_xill_param)->prim_type = par->prim_type;
