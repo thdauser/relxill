@@ -1083,7 +1083,8 @@ static void renorm_model(double* flu0, double* flu, int nbins){
 
 static void renorm_xill_spec(double* spec , int n, double lxi, double dens){
 
-	for (int ii=0; ii<n; ii++){
+  int ii;
+	for (ii=0; ii<n; ii++){
 		spec[ii] /= pow(10,lxi);
 		if (fabs(dens - 15) > 1e-6 ){
 			spec[ii] /= pow(10,dens - 15);
