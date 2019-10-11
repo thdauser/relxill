@@ -26,7 +26,8 @@ _traceback=1;
 
 
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
-		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
+		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp",
+		  "xillverNS"];
 
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
@@ -1146,8 +1147,6 @@ define print_refl_frac(){ %{{{
 }
 %}}}
 
-if (do_mc_testing() != EXIT_SUCCESS) exit;
-#iffalse
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
