@@ -295,7 +295,8 @@ void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double 
 			double rlo = r_transition;
 			double rhi = rmax; // rgrid[nzones];
 			// add 1/r for larger radii
-			for (int ii=indr; ii<nzones+1; ii++){
+            int ii;
+            for (ii=indr; ii<nzones+1; ii++){
 				rgrid[ii] = 1.0*(ii-indr) / (nzones-indr) * ( 1.0/rhi - 1.0/rlo) + 1.0/rlo;
 				rgrid[ii] = fabs(1.0/rgrid[ii]);
 			}
@@ -726,12 +727,13 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 
 	double rmean[n];
 	double del_inc[n];
-	for (int ii=0; ii<n; ii++){
+	int ii;
+	for (ii=0; ii<n; ii++){
 		rmean[ii] = 0.5*(rgrid[ii] + rgrid[ii+1]);
 	}
 
 	if (type==ION_GRAD_TYPE_PL){
-		for (int ii=0; ii<n; ii++){
+		for (ii=0; ii<n; ii++){
 		     ion->lxi[ii] = (exp(xlxi0))* pow((rmean[ii]/rmean[0]),-1.0*xindex);  // TODO: check if we need to subtract xlxi_tab_min here
 		     ion->lxi[ii] = log(ion->lxi[ii]);
 
@@ -761,7 +763,7 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 		double fac_lxi_norm = xlxi0 - lxi_max; // subtraction instead of division because of the log
 
 		/** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
-		for (int ii=0; ii<n; ii++){
+		for (ii=0; ii<n; ii++){
 			dens[ii] = density_ss73_zone_a(rmean[ii],rin);
 
 			// now we can use the emissivity to calculate the ionization
@@ -774,7 +776,7 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 
 
 	} else if (type==ION_GRAD_TYPE_CONST) {  // should not happen, as this will be approximated by 1 zone (but just in case we get here...)
-		for (int ii=0; ii<n; ii++){
+		for (ii=0; ii<n; ii++){
 		     ion->lxi[ii] = xlxi0;
 		}
 	} else {
@@ -814,7 +816,8 @@ ion_grad* new_ion_grad(double* r, int n, int* status){
 
 	ion->nbins = n;
 
-	for (int ii=0; ii<n; ii++){
+	int ii;
+	for (ii=0; ii<n; ii++){
 		ion->r[ii] = r[ii];
 		ion->lxi[ii] = 0.0;
 		ion->fx[ii] = 0.0;
@@ -854,7 +857,8 @@ void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int
 	}
 
 	int in = nn-1; // traverse new array backwards
-	for (int ii=0; ii<n0-2; ii++){  // only go to the second to last bin
+	int ii;
+	for (ii=0; ii<n0-2; ii++){  // only go to the second to last bin
 
 		if (x0[ii]>xn[in] && x0[ii+1]<=xn[in]){
 

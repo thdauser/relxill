@@ -164,7 +164,9 @@ static int did_energy_grid_change(double* ener, int n_ener, rel_spec* ca){
 	if (n_ener!=ca->n_ener){
 		return 1;
 	}
-	for (int ii=0; ii<n_ener; ii++){
+
+    int ii;
+	for (ii=0; ii<n_ener; ii++){
 		if ( fabs(ca->ener[ii] - ener[ii]) > 1e-4){
 			return 1;
 		}

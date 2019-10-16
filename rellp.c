@@ -57,8 +57,9 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 
 		// make sure the incident angle is defined as positive value (otherwise the interpolation
 		// will create problems / jumps )
-		for (int jj=0; jj<tab->n_h; jj++){
-			for (int kk=0; kk<tab->n_rad; kk++){
+		int jj; int kk;
+		for (jj=0; jj<tab->n_h; jj++){
+			for (kk=0; kk<tab->n_rad; kk++){
 				dat[ii]->del_inc[jj][kk] = fabs(dat[ii]->del_inc[jj][kk]);
 				dat[ii]->del[jj][kk] = fabs(dat[ii]->del[jj][kk]);
 			}

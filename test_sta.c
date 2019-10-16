@@ -748,7 +748,8 @@ void test_relline_table(int* status){
 				tab->arr[0][0]->trff1[1][0],
 				tab->arr[0][1]->trff1[1][0]
 			};
-		for (int ii=0; ii<n; ii++){
+		int ii;
+		for (ii=0; ii<n; ii++){
 			if ( fabs( ref_val[ii] - val[ii]) > LIMIT_PREC ){
 				printf(" testing rel table: expecting value of %f, but found %f\n",ref_val[ii],val[ii]);
 				RELXILL_ERROR("values in rel table not correct",status);
@@ -805,7 +806,8 @@ void test_lp_table(int* status){
 				tab->dat[1]->del[2][1],
 				tab->dat[1]->del_inc[2][1]
 			};
-		for (int ii=0; ii<n; ii++){
+		int ii;
+		for (ii=0; ii<n; ii++){
 			if ( fabs( (ref_val[ii] - val[ii]) / ref_val[ii] ) > LIMIT_PREC ){
 				printf(" testing lp table: expecting value of %e, but found %e\n",ref_val[ii],val[ii]);
 				RELXILL_ERROR("values in lp table not correct",status);
