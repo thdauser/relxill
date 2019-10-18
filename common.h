@@ -108,21 +108,25 @@ typedef struct{
 	float* afe;
 	float* lxi;
 	float* ect;
+	float* dens;
 	float* incl;
 
 	int n_gam;
 	int n_afe;
 	int n_lxi;
 	int n_ect;
+	int n_dens;
 	int n_incl;
 
 	int n_ca_gam;
 	int n_ca_afe;
 	int n_ca_lxi;
 	int n_ca_ect;
+    int n_ca_dens;
 	int n_ca_incl;
 
-	float****** dat;
+	float******* dat;
+    float****** dat5d;
 
 }xillTable;
 
