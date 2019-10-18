@@ -102,49 +102,35 @@ typedef struct{
 	float* ehi;
 	int n_ener;
 
-	int num_param;
+	int  num_param;        // number of parameters (basically the dimension of the table)
+	int* num_param_vals;   // number of values given for each parameter
 
-	float* gam;
-	float* afe;
-	float* lxi;
-	float* ect;
-	float* dens;
-	float* incl;
+	/* need to identify the meaning of each parameter here
+     * [param->gam, param->afe, param->lxi, param->ect, param->dens, param->incl] */
+    int* param_index;
 
-	int n_gam;
-	int n_afe;
-	int n_lxi;
-	int n_ect;
-	int n_dens;
-	int n_incl;
+    float** param_vals;    // array to store the parameter values (as given in the table)
 
-	int n_ca_gam;
-	int n_ca_afe;
-	int n_ca_lxi;
-	int n_ca_ect;
-    int n_ca_dens;
-	int n_ca_incl;
-
-	float******* dat;
-    float****** dat5d;
+    float******* data_storage;  // storage of a 6-dim table
+    void* dat;                  // pointer to point at the start of the table such that it has the correct dimensionality
 
 }xillTable;
 
 
 typedef struct{
-	int nr;
-	int ng;
+   int nr;
+   int ng;
 
-	double* re;
-	double* gmin;
-	double* gmax;
-	double* gstar;
-	double* d_gstar;  // bin width for each gstar value
+   double* re;
+   double* gmin;
+   double* gmax;
+   double* gstar;
+   double* d_gstar;  // bin width for each gstar value
 
-	double*** trff;
-	double*** cosne;
+   double*** trff;
+   double*** cosne;
 
-	/** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
+   /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
 	double* emis;       // intensity on the surface of the accretion disc
 	double* del_emit;   // angle under which the photon is emitted from the primary source
 	double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
