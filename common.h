@@ -105,7 +105,7 @@ typedef struct{
 	int  num_param;        // number of parameters (basically the dimension of the table)
 	int* num_param_vals;   // number of values given for each parameter
 
-	/* need to identify the meaning of each parameter here
+	/* need to identify the meaning of each parameter here [index in the array]
      * [param->gam, param->afe, param->lxi, param->ect, param->dens, param->incl] */
     int* param_index;
 

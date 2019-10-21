@@ -49,6 +49,9 @@
 
 #define MAX_DIM_TABLE 6
 
+// currently the number of different parameters that can be given in a table
+#define N_PARAM_MAX 6
+
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
 #define XILLTABLE_DENS_FILENAME "xillverD-5.fits"
