@@ -51,6 +51,12 @@
 
 // currently the number of different parameters that can be given in a table
 #define N_PARAM_MAX 6
+#define PARAM_GAM 0
+#define PARAM_AFE 1
+#define PARAM_LXI 2
+#define PARAM_ECT 3
+#define PARAM_DNS 4
+#define PARAM_INC 5
 
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"

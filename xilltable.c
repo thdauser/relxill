@@ -93,12 +93,13 @@ xillTable* new_xillTable(int* num_param_vals, int* index_val, int num_param, int
 	    tab->n_vals[ii] = num_param_vals[ii];
 	}
 
-	tab->vals = (float**) malloc (sizeof(float*)*num_param);
+	tab->param_vals = (float**) malloc (sizeof(float*)*num_param);
     CHECK_MALLOC_RET_STATUS(tab->n_vals, status, NULL);
 
-	// only create the first instance here, others will be added if necessary (safes a factor of 10 in space)
-	tab->data = (float*******) malloc (sizeof(float******)*tab->n_dens);
-	CHECK_MALLOC_RET_STATUS(tab->dat,status,tab);
+    // inclination is the last value
+    tab->incl = NULL;
+    tab->n_incl = -1;
+
 
     // check if we have only a 5dim table, then we can set this to make the rest of the code easier
     int table_dimenson = 6;
@@ -212,14 +213,6 @@ static void get_xilltable_parameters(fitsfile* fptr, xillTable* tab, int num_par
     	/** also get the name **/
         fits_read_col(fptr, TSTRING, 1, ii+1, 1, 1 ,&nullval,parname, &anynul, status);
 
-
-        /* if (val[0] != num_param_vals[ii]){
-            RELXILL_ERROR("parameter in the xillver table do not fit to the current relxill code. Please check your table!",status);
-            return;
-        } */
-    	// we can directly load num_param_vals from the table
-    	//num_param_vals[ii] = val[0];
-
     	if (is_debug_run()){
     	    printf(" loading %i values of parameter %s \n", tab->num_param_vals[ii],parname);
     	}
@@ -238,6 +231,9 @@ static void get_xilltable_parameters(fitsfile* fptr, xillTable* tab, int num_par
     	CHECK_STATUS_VOID(*status);
     }
 
+    // now we set a pointer to the inclination separately (assuming it is the last parameter)
+    tab->incl = tab->param_vals[tab->num_param-1];
+    tab->n_incl = tab->num_param_vals[tab->num_param-1];
 
     return;
 }
@@ -287,12 +283,12 @@ static double* get_xill_param_vals_array(xillParam* param, int* status){
     int* param_vals = (int*) malloc(N_PARAM_MAX*sizeof(double));
     CHECK_MALLOC_RET_STATUS(ind,status,NULL);
     // store the input in a variable
-    param_vals[0] = param->gam;
-    param_vals[1] = param->afe;
-    param_vals[2] = param->lxi;
-    param_vals[3] = param->ect;
-    param_vals[4] = param->dens;
-    param_vals[5] = param->incl;
+    param_vals[PARAM_GAM] = param->gam;
+    param_vals[PARAM_AFE] = param->afe;
+    param_vals[PARAM_LXI] = param->lxi;
+    param_vals[PARAM_ECT] = param->ect;
+    param_vals[PARAM_DNS] = param->dens;
+    param_vals[PARAM_INC] = param->incl;
 
     return param_vals;
 }
@@ -303,11 +299,6 @@ static int* get_xill_indices(xillParam* param, xillTable* tab, int* status){
 	// store the input in a variable
     double param_vals = get_xill_param_vals_array(param, status);
 
-
-    /** the value changes for the DENS table, but internally dens is treated as ecut **/
-	if ( is_dens_model(param->model_type)){
-		param_vals[3] = param->dens;
-	}
 
 	int ii;
 	int* ind = (int*) malloc(XILLTABLE_N_PARAM*sizeof(int));
@@ -373,7 +364,7 @@ void init_xillver_table(char* filename, xillTable** inp_tab, xillParam* param, i
 
         int* num_param_vals = get_ptr_num_param_vals(param);
 
-        int num_param = 5;  // need a routine to get the number of parameters here
+        int num_param = get_num_param(param);  // need a routine to get the number of parameters here
 
         /** allocate space for the new table  **/
         tab = new_xillTable(num_param_vals, num_param,status);
@@ -633,42 +624,45 @@ static xill_spec* interp_xill_table(xillTable* tab, xillParam* param, int* ind,i
 		spec->incl[ii] = tab->incl[ii];
 	}
 
-	int nfac = 5;
-	double fac[5];
+	int nfac = tab->num_param;
+	double* fac = (double*) malloc(sizeof(double)*nfac);
+	CHECK_MALLOC_RET_STATUS(fac,*status,NULL);
 
+	/* calculate interpolation factor for all parameters
+	 * ([nfac-1] is inclination, which might not be used ) */
+	int pind = -1;
 	for (ii=0; ii<nfac; ii++){
-	    fac[ii] = param_vals[tab->param_index[ii]]; ////????????
+	    pind = tab->param_index[ii];
+	    fac[ii] = (param_vals[pind] - tab->param_vals[pind[ind[ii]]]) /
+                (tab->param_vals[pind[ind[ii]+1]] - tab->param_vals[pind[ind[ii]]]);
 	}
 
-	double gfac=(param->gam-tab->gam[ind[0]])/(tab->gam[ind[0]+1]-tab->gam[ind[0]]);
-	double afac=(param->afe-tab->afe[ind[1]])/(tab->afe[ind[1]+1]-tab->afe[ind[1]]);
-	double xfac=(param->lxi-tab->lxi[ind[2]])/(tab->lxi[ind[2]+1]-tab->lxi[ind[2]]);
-	double efac=(param->ect-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
-
 	// can happen due to grav. redshift, although actually observed ecut is larger
-	if (param->ect <= tab->ect[0]){
+
+	if (param->ect <= tab->param_vals[tab->param_index[PARAM_ECT]]){
 		efac = 0.0;
 	}
 	// can happen due to grav. redshift, although actually observed ecut is larger
-	if (param->ect >= tab->ect[tab->n_ect-1]){
+	if (param->ect >= tab->param_vals[tab->param_index[PARAM_ECT]]){
+
 		efac = 1.0;
 	}
 
-	if (is_dens_model(param->model_type)){
-		/** remember that internally we treat dens as ecut **/
-		efac=(param->dens-tab->ect[ind[3]])/(tab->ect[ind[3]+1]-tab->ect[ind[3]]);
-	}
-
 	if (is_xill_model(param->model_type)){
-		double ifac = (param->incl-tab->incl[ind[4]])/(tab->incl[ind[4]+1]-tab->incl[ind[4]]);
-		interp_5d_tab(tab,spec->flu[0],spec->n_ener,gfac,afac,xfac,efac,ifac,
+	    assert(nfac==5);
+		interp_5d_tab(tab,spec->flu[0],spec->n_ener,
+		        fac[0],fac[1],fac[2],fac[3],fac[4],
 				ind[0],ind[1],ind[2],ind[3],ind[4]);
 
 
 	} else {
+	    // do not interpolate over the inclination (so skip the last parameter)
+	    nfac--;
+	    assert(nfac==4);
 		// get the spectrum for EACH flux bin
 		for (ii=0; ii<spec->n_incl; ii++){
-			interp_4d_tab(tab,spec->flu[ii],spec->n_ener,gfac,afac,xfac,efac,
+			interp_4d_tab(tab,spec->flu[ii],spec->n_ener,
+			        fac[0],fac[1],fac[2],fac[3],
 					ind[0],ind[1],ind[2],ind[3],ii);
 		}
 
