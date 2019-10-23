@@ -36,7 +36,7 @@ void print_version_number(int* status){
 	if (version_number_printed==0){
 		char *buf;
 		get_version_number(&buf,status);
-		printf("  *** loading RELXILL model (version %s) *** \n",buf);
+        printf(" *** loading RELXILL model (version %s) *** \n", buf);
 		free(buf);
 		version_number_printed=1;
 	}
@@ -44,6 +44,9 @@ void print_version_number(int* status){
 
 int warned_rms = 0;
 int warned_height = 0;
+
+void init_flux_arry(const int n_ener0, const double *flux);
+
 static void check_parameter_bounds(relParam* param, int* status){
 
 	// first set the Radii to positive value
@@ -742,7 +745,9 @@ void tdrelxill_nthcomp(const double* ener0, const int n_ener0, double* photar, c
 /** XSPEC RELXILLLP MODEL FUNCTION **/
 void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
-	xillParam* xill_param = NULL;
+    CHECK_STATUS_VOID(*status);
+
+    xillParam *xill_param = NULL;
 	relParam* rel_param = NULL;
 
 	init_par_relxilllp(&rel_param,&xill_param,parameter,n_parameter,status);
@@ -752,8 +757,9 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 	double* ener = (double*) ener0;
 	double flux[n_ener0];
 
-	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
+    init_flux_arry(n_ener0, flux);
+
+    relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
 
 	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
@@ -762,6 +768,13 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 	free_relParam(rel_param);
 	free(ener_shifted);
 
+}
+
+void init_flux_arry(const int n_ener0, double *flux) {
+    int ii;
+    for (ii = 0; ii < n_ener0; ii++) {
+        flux[ii] = 0.0;
+    }
 }
 
 /** XSPEC RELXILLLP NTHCOMP MODEL FUNCTION **/

@@ -16,6 +16,7 @@
     Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+#include <zconf.h>
 #include "xilltable.h"
 
 // has to be 6DIM, where are the parameters
@@ -279,6 +280,16 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
     fits_read_col(fptr, TFLOAT, colnum_elo, 1, 1, nelem, &nullval, *elo, &anynul, status);
     fits_read_col(fptr, TFLOAT, colnum_ehi, 1, 1, nelem, &nullval, *ehi, &anynul, status);
 
+    if (status != EXIT_SUCCESS) {
+        char errtext[30];
+        fits_get_errstatus(*status, errtext);
+        printf("cfitsio error: %s", errtext);
+    }
+
+
+    // simply let's check if something went wrong
+    CHECK_RELXILL_ERROR("reading of energy grid of the xillver table failed", status);
+
 }
 
 static double *get_xill_param_vals_array(xillParam *param, int *status) {
@@ -372,7 +383,6 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
 
     /** now load the energy grid **/
     get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
-    CHECK_RELXILL_ERROR("reading of energy grid of the xillver table failed", status);
 
     /** and now the stored parameter values (also check if the correct number of parameters) **/
     get_xilltable_parameters(fptr, tab, param, status);
@@ -751,10 +761,11 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, int *ind, 
 /** load the xillver table and return its filename **/
 char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
+    CHECK_STATUS_RET(*status, NULL)
+
     if (is_dens_model(param->model_type)) {
         if (cached_xill_tab_dens == NULL) {
             init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
-            CHECK_STATUS_RET(*status, NULL)
         }
         *tab = cached_xill_tab_dens;
         return XILLTABLE_DENS_FILENAME;
@@ -762,7 +773,6 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
     } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
         if (cached_xill_tab_nthcomp == NULL) {
             init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_nthcomp, param, status);
-            CHECK_STATUS_RET(*status, NULL)
         }
         *tab = cached_xill_tab_nthcomp;
         return XILLTABLE_NTHCOMP_FILENAME;
@@ -771,7 +781,6 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
         if (cached_xill_tab == NULL) {
             init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
-            CHECK_STATUS_RET(*status, NULL)
         }
         *tab = cached_xill_tab;
         return XILLTABLE_FILENAME;
@@ -783,21 +792,19 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
  *  (decides if the table needs to be initialized and/or more data loaded          */
 xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 
-    xillTable *tab = NULL;
-    char *fname = get_init_xillver_table(&tab, param, status);
     CHECK_STATUS_RET(*status, NULL)
 
+    xillTable *tab = NULL;
+    char *fname = get_init_xillver_table(&tab, param, status);
 
     assert(tab != NULL);
     assert(fname != NULL);
 
     // =1=  get the inidices
     int *ind = get_xill_indices(param, tab, status);
-    CHECK_STATUS_RET(*status, NULL)
 
     // =2=  check if the necessary spectra are loaded (we only open the file once)
     check_xillTable_cache(fname, tab, ind, status);
-
 
     // =3= interpolate values
     xill_spec *spec = interp_xill_table(tab, param, ind, status);
