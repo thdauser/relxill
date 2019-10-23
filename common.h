@@ -113,9 +113,9 @@ typedef struct{
      * (see routine "get_xill_param_vals_array" */
     int* param_index;  // lenth is N_PARAM_MAX
 
-    float** param_vals;    // array to store the parameter values (as given in the table)
+    double** param_vals;    // array to store the parameter values (as given in the table)
 
-    float******* data_storage;  // storage of a 6-dim table
+    float******* data_storage;   // storage of a 6-dim table
     void* dat;                  // pointer to point at the start of the table such that it has the correct dimensionality
 
 }xillTable;

@@ -64,7 +64,7 @@
 #define XILLTABLE_NTHCOMP_FILENAME "xillver-comp.fits"
 
 /** get a new and empty rel table (structure will be allocated)  */
-xillTable* new_xillTable(int n_gam, int n_afe, int n_lxi, int n_ect, int n_incl, int* status);
+xillTable* new_xillTable(int num_param, int* status);
 
 /* destroy the relline table structure */
 void free_xillTable(xillTable* tab);
