@@ -18,12 +18,6 @@
 
 #include "xilltable.h"
 
-int XILL_num_param_vals[] = {XILLTABLE_N_GAM, XILLTABLE_N_AFE, XILLTABLE_N_LXI, XILLTABLE_N_ECT, XILLTABLE_N_INCL};
-int XILL_DENS_num_param_vals[] = {XILLTABLE_DENS_N_GAM, XILLTABLE_DENS_N_AFE, XILLTABLE_DENS_N_LXI,
-                                  XILLTABLE_DENS_N_DENS, XILLTABLE_DENS_N_INCL};
-int XILL_NTHCOMP_num_param_vals[] = {XILLTABLE_NTHCOMP_N_GAM, XILLTABLE_NTHCOMP_N_AFE, XILLTABLE_NTHCOMP_N_LXI,
-                                     XILLTABLE_NTHCOMP_N_KTE, XILLTABLE_NTHCOMP_N_INCL};
-
 // has to be 6DIM, where are the parameters
 // [param->gam, param->afe, param->lxi, param->ect, param->dens, param->incl]
 int XILL_PARAM_INDEX[] = {0, 1, 2, 3, -1, 4};
@@ -33,7 +27,6 @@ int XILL_NTHCOMP_PARAM_INDEX[] = {0, 1, 2, -1, 3, 4};
 xillTable *cached_xill_tab = NULL;
 xillTable *cached_xill_tab_dens = NULL;
 xillTable *cached_xill_tab_nthcomp = NULL;
-
 
 static void init_5dim_xilltable(float ******dat, xillTable *tab, int *status) {
 // allocate the full arrays just with pointers; make sure everything is set to NULL in the end
@@ -47,19 +40,19 @@ static void init_5dim_xilltable(float ******dat, xillTable *tab, int *status) {
     int mm;
     for (ii = 0; ii < tab->num_param_vals[istart]; ii++) {
         dat[ii] = (float *****) malloc(sizeof(float ****) * tab->num_param_vals[istart]);
-        CHECK_MALLOC_VOID_STATUS(dat[ii], status);
+        CHECK_MALLOC_VOID_STATUS(dat[ii], status)
 
         for (jj = 0; jj < tab->num_param_vals[istart + 1]; jj++) {
             dat[ii][jj] = (float ****) malloc(sizeof(float ***) * tab->num_param_vals[istart + 1]);
-            CHECK_MALLOC_VOID_STATUS(dat[ii][jj], status);
+            CHECK_MALLOC_VOID_STATUS(dat[ii][jj], status)
 
             for (kk = 0; kk < tab->num_param_vals[istart + 2]; kk++) {
                 dat[ii][jj][kk] = (float ***) malloc(sizeof(float **) * tab->num_param_vals[istart + 2]);
-                CHECK_MALLOC_VOID_STATUS(dat[ii][jj][kk], status);
+                CHECK_MALLOC_VOID_STATUS(dat[ii][jj][kk], status)
 
                 for (ll = 0; ll < tab->num_param_vals[istart + 3]; ll++) {
                     dat[ii][jj][kk][ll] = (float **) malloc(sizeof(float *) * tab->num_param_vals[istart + 3]);
-                    CHECK_MALLOC_VOID_STATUS(dat[ii][jj][kk][ll], status);
+                    CHECK_MALLOC_VOID_STATUS(dat[ii][jj][kk][ll], status)
 
                     for (mm = 0; mm < tab->num_param_vals[istart + 4]; mm++) {
                         dat[ii][jj][kk][ll][mm] = NULL;
@@ -75,7 +68,7 @@ static void init_5dim_xilltable(float ******dat, xillTable *tab, int *status) {
 xillTable *new_xillTable(int num_param, int *status) {
 
     xillTable *tab = (xillTable *) malloc(sizeof(xillTable));
-    CHECK_MALLOC_RET_STATUS(tab, status, tab);
+    CHECK_MALLOC_RET_STATUS(tab, status, tab)
 
     tab->num_param = num_param;
 
@@ -86,13 +79,13 @@ xillTable *new_xillTable(int num_param, int *status) {
     }
 
     tab->num_param_vals = (int *) malloc(sizeof(int) * num_param);
-    CHECK_MALLOC_RET_STATUS(tab->num_param_vals, status, NULL);
+    CHECK_MALLOC_RET_STATUS(tab->num_param_vals, status, NULL)
 
     tab->param_index = (int *) malloc(sizeof(int) * num_param);
-    CHECK_MALLOC_RET_STATUS(tab->param_index, status, NULL);
+    CHECK_MALLOC_RET_STATUS(tab->param_index, status, NULL)
 
     tab->param_vals = (double **) malloc(sizeof(double *) * num_param);
-    CHECK_MALLOC_RET_STATUS(tab->param_vals, status, NULL);
+    CHECK_MALLOC_RET_STATUS(tab->param_vals, status, NULL)
 
     tab->param_index = NULL;
     tab->param_vals = NULL;
@@ -115,7 +108,7 @@ xillTable *new_xillTable(int num_param, int *status) {
     }
 
     tab->data_storage = (float *******) malloc(sizeof(float ******) * npar0);
-    CHECK_MALLOC_RET_STATUS(tab->data_storage[ii], status, NULL);
+    CHECK_MALLOC_RET_STATUS(tab->data_storage[ii], status, NULL)
 
     for (ii = 0; ii < npar0; ii++) {
         init_5dim_xilltable(tab->data_storage[ii], tab, status);
@@ -179,7 +172,7 @@ static int *get_ptr_param_index(xillParam *param) {
 /** read the parameters of the xillver FITS table   */
 static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *param, int *status) {
 
-    CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
     int extver = 0;
     fits_movnam_hdu(fptr, BINARY_TBL, "PARAMETERS", extver, status);
@@ -196,7 +189,7 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
 
     // initialize memory to store the number of values of each parameter
     tab->num_param_vals = (int *) malloc(sizeof(int) * tab->num_param);
-    CHECK_MALLOC_VOID_STATUS(tab->num_param_vals, status);
+    CHECK_MALLOC_VOID_STATUS(tab->num_param_vals, status)
 
     // we know the column for the Number of Parameter-Values
     int colnum_n = 9;
@@ -216,7 +209,7 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
     int ii;
     // int val[1];
     char parname[12];
-    for (ii = 0; ii < n; ii++) {
+    for (ii = 0; ii < tab->num_param; ii++) {
         /** first get the number of parameters and check if those are correct **/
         fits_read_col(fptr, TINT, colnum_n, ii + 1, 1, 1, &nullval, &(tab->num_param_vals[ii]), &anynul, status);
         // fits_read_col(fptr, TINT, colnum_n, ii+1, 1, 1 ,&nullval,val, &anynul, status);
@@ -236,18 +229,18 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
             return;
         }
         (*ptr_val) = (double *) malloc(tab->num_param_vals[ii] * sizeof(double));
-        CHECK_MALLOC_VOID_STATUS(*ptr_val, status);
+        CHECK_MALLOC_VOID_STATUS(*ptr_val, status)
 
         fits_read_col(fptr, TFLOAT, colnum_vals, ii + 1, 1, tab->num_param_vals[ii], &nullval, *ptr_val, &anynul,
                       status);
-        CHECK_STATUS_VOID(*status);
+
+        CHECK_STATUS_BREAK(*status)
     }
 
     // now we set a pointer to the inclination separately (assuming it is the last parameter)
     tab->incl = tab->param_vals[tab->num_param - 1];
     tab->n_incl = tab->num_param_vals[tab->num_param - 1];
 
-    return;
 }
 
 
@@ -255,7 +248,7 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
 // static void get_reltable_axis(int nrows, float** val, char* extname, char* colname, fitsfile* fptr, int* status){
 static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *fptr, int *status) {
 
-    CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
     int extver = 0;
     fits_movnam_hdu(fptr, BINARY_TBL, "ENERGIES", extver, status);
@@ -271,13 +264,14 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
     // get the number of rows
     long nrows;
     if (fits_get_num_rows(fptr, &nrows, status)) return;
-    *n_ener = nrows;
+    // (strongly assume they fit in Integer range)
+    *n_ener = (int) nrows;
 
     // allocate memory for the array
     *elo = (float *) malloc((*n_ener) * sizeof(float));
-    CHECK_MALLOC_VOID_STATUS(*elo, status);
+    CHECK_MALLOC_VOID_STATUS(*elo, status)
     *ehi = (float *) malloc((*n_ener) * sizeof(float));
-    CHECK_MALLOC_VOID_STATUS(*ehi, status);
+    CHECK_MALLOC_VOID_STATUS(*ehi, status)
 
     int anynul = 0;
     double nullval = 0.0;
@@ -285,15 +279,14 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
     fits_read_col(fptr, TFLOAT, colnum_elo, 1, 1, nelem, &nullval, *elo, &anynul, status);
     fits_read_col(fptr, TFLOAT, colnum_ehi, 1, 1, nelem, &nullval, *ehi, &anynul, status);
 
-    return;
 }
 
 static double *get_xill_param_vals_array(xillParam *param, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
     double *param_vals = (double *) malloc(N_PARAM_MAX * sizeof(double));
-    CHECK_MALLOC_RET_STATUS(param_vals, status, NULL);
+    CHECK_MALLOC_RET_STATUS(param_vals, status, NULL)
     // store the input in a variable
     param_vals[PARAM_GAM] = param->gam;
     param_vals[PARAM_AFE] = param->afe;
@@ -307,13 +300,13 @@ static double *get_xill_param_vals_array(xillParam *param, int *status) {
 
 static int *get_xill_indices(xillParam *param, xillTable *tab, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, NULL)
     // store the input in a variable
     double *inp_param_vals = get_xill_param_vals_array(param, status);
 
     int ii;
     int *ind = (int *) malloc(XILLTABLE_N_PARAM * sizeof(int));
-    CHECK_MALLOC_RET_STATUS(ind, status, NULL);
+    CHECK_MALLOC_RET_STATUS(ind, status, NULL)
 
 
     for (ii = 0; ii < tab->num_param; ii++) {
@@ -333,6 +326,8 @@ static int *get_xill_indices(xillParam *param, xillTable *tab, int *status) {
 
 
 static fitsfile *open_xillver_tab(char *filename, int *status) {
+
+    CHECK_STATUS_RET(*status, NULL)
 
     fitsfile *fptr = NULL;
     char *fullfilename = NULL;
@@ -359,44 +354,34 @@ static fitsfile *open_xillver_tab(char *filename, int *status) {
 /** load the complete relline table */
 void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, int *status) {
 
+    CHECK_STATUS_VOID(*status)
+
     xillTable *tab = (*inp_tab);
     fitsfile *fptr = NULL;
 
     print_version_number(status);
-    CHECK_STATUS_VOID(*status);
 
+    fptr = open_xillver_tab(filename, status);
 
-    do { // Errot handling loop
+    assert(tab == NULL);
 
+    int num_param = get_num_param(param);  // need a routine to get the number of parameters here
 
-        fptr = open_xillver_tab(filename, status);
-        CHECK_STATUS_BREAK(*status);
+    /** allocate space for the new table  **/
+    tab = new_xillTable(num_param, status);
 
-        assert(tab == NULL);
+    /** now load the energy grid **/
+    get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
+    CHECK_RELXILL_ERROR("reading of energy grid of the xillver table failed", status);
 
-        int num_param = get_num_param(param);  // need a routine to get the number of parameters here
+    /** and now the stored parameter values (also check if the correct number of parameters) **/
+    get_xilltable_parameters(fptr, tab, param, status);
 
-        /** allocate space for the new table  **/
-        tab = new_xillTable(num_param, status);
-        CHECK_STATUS_BREAK(*status);
-
-
-        /** now load the energy grid **/
-        get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
-        CHECK_RELXILL_ERROR("reading of energy grid of the xillver table failed", status);
-
-        /** and now the stored parameter values (also check if the correct number of parameters) **/
-        get_xilltable_parameters(fptr, tab, param, status);
-        CHECK_STATUS_BREAK(*status);
-
+    if (*status == EXIT_SUCCESS) {
         // should be set by previous routine
         assert(tab != NULL);
         assert(tab->elo != NULL);
         assert(tab->dat != NULL);
-
-    } while (0);
-
-    if (*status == EXIT_SUCCESS) {
         // assigne the value
         (*inp_tab) = tab;
     } else {
@@ -405,18 +390,34 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
 
     if (fptr != NULL) { fits_close_file(fptr, status); }
 
-    return;
 }
 
-static void
-load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int ii, int jj, int kk, int ll, int mm, int *status) {
+static int
+get_xillspec_rownum(const int *num_param_vals, int num_param, int nn, int ii, int jj, int kk, int ll, int mm) {
 
-    assert(tab->dat[ii][jj][kk][ll][mm] == NULL);
+    if (num_param == 5) {
+        return (((ii * num_param_vals[1] + jj) * num_param_vals[2]
+                 + kk) * num_param_vals[3] + ll) * num_param_vals[4] + mm + 1;
+    } else if (num_param == 6) {
+        return ((((nn * num_param_vals[1] + ii) * num_param_vals[2]
+                  + jj) * num_param_vals[3] + kk) * num_param_vals[4] + ll) * num_param_vals[5] + mm + 1;
+        return -1;
+    }
+
+    return -1;
+}
+
+
+static void
+load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, int jj, int kk, int ll, int mm,
+                 int *status) {
+
+    CHECK_STATUS_VOID(*status)
 
     // open the fits file if not already open
     if (*fptr == NULL) {
         *fptr = open_xillver_tab(fname, status);
-        CHECK_STATUS_VOID(*status);
+        CHECK_STATUS_VOID(*status)
     }
 
     int extver = 0;
@@ -428,24 +429,27 @@ load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int ii, int jj, i
 
 
     float *spec = (float *) malloc(tab->n_ener * sizeof(float));
-    CHECK_MALLOC_VOID_STATUS(spec, status);
+    CHECK_MALLOC_VOID_STATUS(spec, status)
 
     int colnum_spec = 2;
     int anynul = 0;
     double nullval = 0.0;
     LONGLONG nelem = (LONGLONG) tab->n_ener;
 
-    // todo: make this work for the 6dim table
     // get the row number (this is how the xillver table is defined)
-    int rownum = (((ii * tab->num_param_vals[1] + jj) * tab->num_param_vals[2]
-                   + kk) * tab->num_param_vals[3] + ll) * tab->num_param_vals[4] + mm + 1;
+    int rownum = get_xillspec_rownum(tab->num_param_vals, tab->num_param, nn, ii, jj, kk, ll, mm);
 
     fits_read_col(*fptr, TFLOAT, colnum_spec, rownum, 1, nelem, &nullval, spec, &anynul, status);
-    CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
-    tab->dat[ii][jj][kk][ll][mm] = spec;
+    if (tab->num_param == 5) {
+        tab->data_storage[0][ii][jj][kk][ll][mm] = spec;
+    } else {
+        RELXILL_ERROR(" 6dim not implemented yet", status);
+    }
 
 }
+
 
 void norm_xillver_spec(xill_spec *spec, double incl) {
 
@@ -456,10 +460,12 @@ void norm_xillver_spec(xill_spec *spec, double incl) {
         spec->flu[0][ii] *= 0.5 * cos(incl * M_PI / 180);
     }
 
-    return;
 }
 
-static void check_xillTable_cache(char *fname, xillTable *tab, int *ind, int *status) {
+static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, int *status) {
+
+    CHECK_STATUS_VOID(*status)
+
     // =2=  check if the necessary spectra are loaded (we only open the file once)
     fitsfile *fptr = NULL;
     int ii;
@@ -467,24 +473,38 @@ static void check_xillTable_cache(char *fname, xillTable *tab, int *ind, int *st
     int kk;
     int ll;
     int mm;
+    int nn;
+
+    // (current) standard case for 5 param
+    int i0lo = 0;
+    int i0hi = 0;
+    int istart = 0;
+    // for 6dim
+    if (tab->num_param == 6) {
+        i0lo = ind[0];
+        i0hi = ind[0] + 1;
+    }
 
 
-    for (ii = 0; ii < 2; ii++) {
-        for (jj = 0; jj < 2; jj++) {
-            for (kk = 0; kk < 2; kk++) {
-                for (ll = 0; ll < 2; ll++) {
-                    // always load **all** incl bins as for relxill we will certainly need it
-                    for (mm = 0; mm < tab->n_incl; mm++) {
-                        if (tab->dat[ind[0] + ii][ind[1] + jj][ind[2] + kk][ind[3] + ll][mm] == NULL) {
-                            load_single_spec(fname, &fptr, tab, ind[0] + ii, ind[1] + jj, ind[2] + kk, ind[3] + ll, mm,
-                                             status);
-                            CHECK_STATUS_VOID(*status);
+    for (nn = i0lo; nn <= i0hi; nn++) { // for 5dim this is a dummy loop
+        for (ii = ind[istart]; ii <= ind[istart] + 1; ii++) {
+            for (jj = ind[istart + 1]; jj <= ind[istart + 1] + 1; jj++) {
+                for (kk = ind[istart + 2]; kk <= ind[istart + 2] + 1; kk++) {
+                    for (ll = ind[istart + 3]; ll <= ind[istart + 3] + 1; ll++) {
+                        // always load **all** incl bins as for relxill we will certainly need it
+                        for (mm = 0; mm < tab->n_incl; mm++) {
+
+                            if (tab->data_storage[nn][ii][jj][kk][ll][mm] == NULL) {
+                                load_single_spec(fname, &fptr, tab, nn, ii, jj, kk, ll, mm, status);
+                                CHECK_STATUS_VOID(*status)
+                            }
+
                         }
-
                     }
                 }
             }
         }
+
     }
 
 
@@ -493,30 +513,32 @@ static void check_xillTable_cache(char *fname, xillTable *tab, int *ind, int *st
             RELXILL_ERROR(" *** error closing FITS file", status);
         }
     }
-    return;
+
 }
 
 xill_spec *new_xill_spec(int n_incl, int n_ener, int *status) {
 
+    CHECK_STATUS_RET(*status, NULL)
+
     xill_spec *spec = (xill_spec *) malloc(sizeof(xill_spec));
-    CHECK_MALLOC_RET_STATUS(spec, status, NULL);
+    CHECK_MALLOC_RET_STATUS(spec, status, NULL)
 
     spec->n_ener = n_ener;
     spec->n_incl = n_incl;
 
     spec->ener = (double *) malloc(sizeof(double) * (n_ener + 1));
-    CHECK_MALLOC_RET_STATUS(spec->ener, status, spec);
+    CHECK_MALLOC_RET_STATUS(spec->ener, status, spec)
 
     spec->incl = (double *) malloc(sizeof(double) * (n_incl));
-    CHECK_MALLOC_RET_STATUS(spec->incl, status, spec);
+    CHECK_MALLOC_RET_STATUS(spec->incl, status, spec)
 
     spec->flu = (double **) malloc(sizeof(double *) * n_incl);
-    CHECK_MALLOC_RET_STATUS(spec->flu, status, spec);
+    CHECK_MALLOC_RET_STATUS(spec->flu, status, spec)
 
     int ii;
     for (ii = 0; ii < n_incl; ii++) {
         spec->flu[ii] = (double *) malloc(sizeof(double) * n_ener);
-        CHECK_MALLOC_RET_STATUS(spec->flu[ii], status, spec);
+        CHECK_MALLOC_RET_STATUS(spec->flu[ii], status, spec)
     }
 
     return spec;
@@ -617,6 +639,8 @@ static void interp_5d_tab(float ******dat, double *flu, int n_ener,
 static void interp_6d_tab_incl(float *******dat, double *flu, int n_ener,
                                double *fac, int nfac, int *ind, int iincl) {
 
+    // we make sure this is used only for a 6dim table
+    assert(nfac == 6);
 
     double s1[n_ener];
     double s2[n_ener];
@@ -663,11 +687,11 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, int *ind, 
 
     int nfac = tab->num_param;
     double *fac = (double *) malloc(sizeof(double) * nfac);
-    CHECK_MALLOC_RET_STATUS(fac, status, NULL);
+    CHECK_MALLOC_RET_STATUS(fac, status, NULL)
 
     /* calculate interpolation factor for all parameters
      * ([nfac-1] is inclination, which might not be used ) */
-    int pind = -1;
+    int pind;
     for (ii = 0; ii < nfac; ii++) {
         pind = tab->param_index[ii];
         fac[ii] = (param_vals[pind] - tab->param_vals[pind][ind[ii]]) /
@@ -730,7 +754,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
     if (is_dens_model(param->model_type)) {
         if (cached_xill_tab_dens == NULL) {
             init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
-            CHECK_STATUS_RET(*status, NULL);
+            CHECK_STATUS_RET(*status, NULL)
         }
         *tab = cached_xill_tab_dens;
         return XILLTABLE_DENS_FILENAME;
@@ -738,7 +762,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
     } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
         if (cached_xill_tab_nthcomp == NULL) {
             init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_nthcomp, param, status);
-            CHECK_STATUS_RET(*status, NULL);
+            CHECK_STATUS_RET(*status, NULL)
         }
         *tab = cached_xill_tab_nthcomp;
         return XILLTABLE_NTHCOMP_FILENAME;
@@ -747,7 +771,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
         if (cached_xill_tab == NULL) {
             init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
-            CHECK_STATUS_RET(*status, NULL);
+            CHECK_STATUS_RET(*status, NULL)
         }
         *tab = cached_xill_tab;
         return XILLTABLE_FILENAME;
@@ -761,7 +785,7 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 
     xillTable *tab = NULL;
     char *fname = get_init_xillver_table(&tab, param, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 
     assert(tab != NULL);
@@ -769,7 +793,7 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 
     // =1=  get the inidices
     int *ind = get_xill_indices(param, tab, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
     // =2=  check if the necessary spectra are loaded (we only open the file once)
     check_xillTable_cache(fname, tab, ind, status);

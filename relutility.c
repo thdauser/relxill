@@ -874,3 +874,4 @@ void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int
 	}
 
 }
+

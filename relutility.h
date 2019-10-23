@@ -24,20 +24,17 @@
 
 /****** DEFINE FUNCTION DEFINITIONS ******/
 
-#define RELXILL_ERROR(msg,status) (relxill_error(__func__, msg,status))
+#define RELXILL_ERROR(msg, status) (relxill_error(__func__, msg,status))
 
 #define CHECK_RELXILL_ERROR(msg,status) (check_relxill_error(__func__, msg,status))
 
 #define CHECK_RELXILL_DEFAULT_ERROR(status) (check_relxill_error(__func__, "function evaluation failed",status))
 
-#define CHECK_STATUS_RET(status, retval) \
-  if (EXIT_SUCCESS!=status) return(retval);
+#define CHECK_STATUS_RET(status, retval) (if (EXIT_SUCCESS!=status) return(retval);)
 
-#define CHECK_STATUS_VOID(status) \
-  if (EXIT_SUCCESS!=status) return;
+#define CHECK_STATUS_VOID(status)  (if (EXIT_SUCCESS!=status) return;)
 
-#define CHECK_STATUS_BREAK(status) \
-  if (EXIT_SUCCESS!=status) break;
+#define CHECK_STATUS_BREAK(status) if (EXIT_SUCCESS!=status) break;
 
 #define CHECK_MALLOC_VOID_STATUS(a,status) \
 	if (NULL==a) { \
@@ -79,9 +76,6 @@ void relxill_error(const char* const func, const char* const msg, int* status);
 
 /* print a standardized warning message */
 void relxill_warning(const char* const msg);
-
-/* check and print relxill error message */
-void check_relxill_error(const char* const func, const char* const msg, int* status);
 
 /* check and print relxill error message */
 void check_relxill_error(const char* const func, const char* const msg, int* status);
