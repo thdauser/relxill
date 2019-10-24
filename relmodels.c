@@ -45,8 +45,6 @@ void print_version_number(int* status){
 int warned_rms = 0;
 int warned_height = 0;
 
-void init_flux_arry(const int n_ener0, const double *flux);
-
 static void check_parameter_bounds(relParam* param, int* status){
 
 	// first set the Radii to positive value
@@ -663,6 +661,12 @@ void init_par_relxilllpion_nthcomp(relParam** rel_param, xillParam** xill_param,
 	return;
 }
 
+static void init_flux_array(const int n_ener0, double *flux) {
+    int ii;
+    for (ii = 0; ii < n_ener0; ii++) {
+        flux[ii] = 0.0;
+    }
+}
 
 
 /** shift the spectrum such that we can calculate the line for 1 keV **/
@@ -757,7 +761,7 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 	double* ener = (double*) ener0;
 	double flux[n_ener0];
 
-    init_flux_arry(n_ener0, flux);
+    init_flux_array(n_ener0, flux);
 
     relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
 
@@ -770,12 +774,6 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 
 }
 
-void init_flux_arry(const int n_ener0, double *flux) {
-    int ii;
-    for (ii = 0; ii < n_ener0; ii++) {
-        flux[ii] = 0.0;
-    }
-}
 
 /** XSPEC RELXILLLP NTHCOMP MODEL FUNCTION **/
 void tdrelxilllp_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){

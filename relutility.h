@@ -83,6 +83,9 @@ void relxill_warning(const char* const msg);
 /* check and print relxill error message */
 void check_relxill_error(const char* const func, const char* const msg, int* status);
 
+/** check and report FITS error   */
+void relxill_check_fits_error(int *status);
+
 /* inverse binary search */
 int inv_binary_search(double* arr,int n,double val);
 

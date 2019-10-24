@@ -25,6 +25,7 @@
 #include <assert.h>
 #include <limits.h>
 #include <float.h>
+#include <fitsio.h>
 
 /*********** DEFINE STATEMENTS *********/
 
@@ -107,13 +108,13 @@ typedef struct{
 
 	// information on the inclination is stored separately (the last parameter in the table)
 	int n_incl;
-	double* incl;
+    float *incl;
 
 	/* need to identify the meaning of each parameter here [index in the array]
      * (see routine "get_xill_param_vals_array" */
     int* param_index;  // lenth is N_PARAM_MAX
 
-    double** param_vals;    // array to store the parameter values (as given in the table)
+    float **param_vals;    // array to store the parameter values (as given in the table)
 
     float******* data_storage;   // storage of a 6-dim table
     void* dat;                  // pointer to point at the start of the table such that it has the correct dimensionality

@@ -73,6 +73,15 @@ int is_iongrad_model(int model_type, int ion_grad_type ){
 	}
 }
 
+/** check and report FITS error   */
+void relxill_check_fits_error(int *status) {
+    if (*status != EXIT_SUCCESS) {
+        char errtext[30];
+        fits_get_errstatus(*status, errtext);
+        printf("cfitsio error: %s \n", errtext);
+    }
+}
+
 
 /** calculate the gravitational redshift **/
 double grav_redshift(relParam* param){
