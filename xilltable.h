@@ -58,6 +58,14 @@
 #define PARAM_DNS 4
 #define PARAM_INC 5
 
+#define NAME_GAM "Gamma"
+#define NAME_AFE "A_Fe"
+#define NAME_LXI "logXi"
+#define NAME_ECT "Ecut"
+#define NAME_DNS "Dens"
+#define NAME_INC "Incl"
+
+
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
 #define XILLTABLE_DENS_FILENAME "xillverD-5.fits"

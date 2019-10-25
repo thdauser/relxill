@@ -116,8 +116,8 @@ typedef struct{
 
     float **param_vals;    // array to store the parameter values (as given in the table)
 
-    float******* data_storage;   // storage of a 6-dim table
-    void* dat;                  // pointer to point at the start of the table such that it has the correct dimensionality
+    float **data_storage;   // storage of a n-dim table (n_elements spectra with n_ener bins each)
+    int num_elements;
 
 }xillTable;
 

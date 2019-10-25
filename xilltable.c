@@ -25,73 +25,45 @@ int XILL_PARAM_INDEX[] = {0, 1, 2, 3, -1, 4};
 int XILL_DENS_PARAM_INDEX[] = {0, 1, 2, -1, 3, 4};
 int XILL_NTHCOMP_PARAM_INDEX[] = {0, 1, 2, -1, 3, 4};
 
+int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_DNS, PARAM_INC};
+char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_DNS, NAME_INC};
+
 xillTable *cached_xill_tab = NULL;
 xillTable *cached_xill_tab_dens = NULL;
 xillTable *cached_xill_tab_nthcomp = NULL;
 
-static void init_5dim_xilltable(float ******dat, xillTable *tab, int *status) {
-// allocate the full arrays just with pointers; make sure everything is set to NULL in the end
 
-    int istart = (tab->num_param + 1) - MAX_DIM_TABLE; // if 5dim, we start at 0, for 6dim start at 1
+static int get_num_elem(int *n_parvals, int npar) {
 
-    dat = (float ******) malloc(sizeof(float *****) * tab->num_param_vals[istart]);
-    CHECK_MALLOC_VOID_STATUS(dat, status)
+    assert(npar >= 1);
+    long num_elem = n_parvals[0];
 
     int ii;
-    int jj;
-    int kk;
-    int ll;
-    int mm;
-    for (ii = 0; ii < tab->num_param_vals[istart]; ii++) {
-        dat[ii] = (float *****) malloc(sizeof(float ****) * tab->num_param_vals[istart + 1]);
-        CHECK_MALLOC_VOID_STATUS(dat[ii], status)
-
-        for (jj = 0; jj < tab->num_param_vals[istart + 1]; jj++) {
-            dat[ii][jj] = (float ****) malloc(sizeof(float ***) * tab->num_param_vals[istart + 2]);
-            CHECK_MALLOC_VOID_STATUS(dat[ii][jj], status)
-
-            for (kk = 0; kk < tab->num_param_vals[istart + 2]; kk++) {
-                dat[ii][jj][kk] = (float ***) malloc(sizeof(float **) * tab->num_param_vals[istart + 3]);
-                CHECK_MALLOC_VOID_STATUS(dat[ii][jj][kk], status)
-
-                for (ll = 0; ll < tab->num_param_vals[istart + 3]; ll++) {
-                    dat[ii][jj][kk][ll] = (float **) malloc(sizeof(float *) * tab->num_param_vals[istart + 4]);
-                    CHECK_MALLOC_VOID_STATUS(dat[ii][jj][kk][ll], status)
-
-                    for (mm = 0; mm < tab->num_param_vals[istart + 4]; mm++) {
-                        dat[ii][jj][kk][ll][mm] = NULL;
-                    }
-                }
-            }
-        }
+    for (ii = 1; ii < npar; ii++) {
+        num_elem *= n_parvals[ii];
     }
-}
 
+    assert(num_elem <= INT_MAX);
+
+    return (int) num_elem;
+}
 
 static void init_xilltable_data_struct(xillTable *tab, int *status) {
 
     CHECK_STATUS_VOID(*status)
 
-    // check if we have only a 5dim table, then we can set this to make the rest of the code easier
-    int npar0 = tab->num_param_vals[0];
-    if (tab->num_param == 5) {
-        npar0 = 1;
-    }
 
-    tab->data_storage = (float *******) malloc(sizeof(float ******) * npar0);
+    tab->num_elements = get_num_elem(tab->num_param_vals, tab->num_param);
+
+    tab->data_storage = (float **) malloc(sizeof(float *) * tab->num_elements);
     CHECK_MALLOC_VOID_STATUS(tab->data_storage, status)
 
+    // important to make sure everything is set to NULL (used to only load spectra if !=NULL)
     int ii;
-    for (ii = 0; ii < npar0; ii++) {
-        init_5dim_xilltable(tab->data_storage[ii], tab, status);
+    for (ii = 0; ii < tab->num_elements; ii++) {
+        tab->data_storage[ii] = NULL;
     }
 
-
-    if (tab->num_param == 5) {
-        tab->dat = (tab->data_storage[0]);  // set the pointer to the 5D table
-    } else {
-        tab->dat = (tab->data_storage);    // set the pointer to the 6D table
-    }
 }
 
 /** get a new and empty rel table (structure will be allocated)  */
@@ -163,19 +135,15 @@ static int get_num_param(xillParam *param) {
 }
 
 /* routine to get the pointer to the pre-defined parameter index array
- * (i.e. with this we know which parameter relates to the input parameters )
- * TODO: in principle this routine is not necessary and the information can be taken from the table */
-static int *get_ptr_param_index(xillParam *param) {
-    int *param_index;
+ * (i.e. with this we know which parameter relates to the input parameters ) */
+static int *set_parindex_from_parname(int *pindex, char **pname, int n, int *status) {
 
-    if (is_dens_model(param->model_type)) {
-        param_index = XILL_DENS_PARAM_INDEX;
-    } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
-        param_index = XILL_NTHCOMP_PARAM_INDEX;
-    } else {
-        param_index = XILL_PARAM_INDEX;
+    int ii;
+    //strcmp();
+    for (ii = 0; ii < n; ii++) {
+        pindex[ii] = -1;  // TODO XXXXXXXXXXXXXX
     }
-    return param_index;
+
 }
 
 
@@ -195,10 +163,11 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
     tab->num_param = get_num_param(param);
 
     // get a pointer to the parameter index array
-    tab->param_index = get_ptr_param_index(param);
+    tab->param_index = malloc(sizeof(int) * tab->num_param);
+    CHECK_MALLOC_VOID_STATUS(tab->param_index, status)
 
     // initialize memory to store the number of values of each parameter
-    tab->num_param_vals = (int *) malloc(sizeof(int) * tab->num_param);
+    tab->num_param_vals = malloc(sizeof(int) * tab->num_param);
     CHECK_MALLOC_VOID_STATUS(tab->num_param_vals, status)
 
     // we know the column for the Number of Parameter-Values
@@ -236,11 +205,6 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
 
 
     for (ii = 0; ii < tab->num_param; ii++) {
-        /** first get the number of parameters and check if those are correct **/
-        //   fits_read_col(fptr, TINT, colnum_n, ii + 1, 1, 1, &nullval, &(tab->num_param_vals[ii]), &anynul, status);
-
-        //      tab->param_vals[ii] = (float*) malloc(sizeof(float) * tab->num_param_vals[ii]);
-
         /** the we load the parameter values **/
         float **ptr_val = &(tab->param_vals[ii]);
 
@@ -265,12 +229,14 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
         CHECK_STATUS_BREAK(*status)
     }
 
+    // get the
+    tab->param_index = get_parindex_from_parname(xilltable_parname, tab->num_param, status);
+
     // now we set a pointer to the inclination separately (assuming it is the last parameter)
     tab->incl = tab->param_vals[tab->num_param - 1];
     tab->n_incl = tab->num_param_vals[tab->num_param - 1];
 
 }
-
 
 
 // static void get_reltable_axis(int nrows, float** val, char* extname, char* colname, fitsfile* fptr, int* status){
@@ -331,7 +297,7 @@ static float *get_xill_param_vals_array(xillParam *param, int *status) {
     return param_vals;
 }
 
-static int *get_xill_indices(xillParam *param, xillTable *tab, int *status) {
+static int *xillInd_from_parInput(xillParam *param, xillTable *tab, int *status) {
 
     CHECK_STATUS_RET(*status, NULL)
     // store the input in a variable
@@ -355,6 +321,36 @@ static int *get_xill_indices(xillParam *param, xillTable *tab, int *status) {
         }
     }
     return ind;
+}
+
+static int
+get_xillspec_rownum(const int *num_param_vals, int num_param, int nn, int ii, int jj, int kk, int ll, int mm) {
+
+    if (num_param == 5) {
+        return (((ii * num_param_vals[1] + jj) * num_param_vals[2]
+                 + kk) * num_param_vals[3] + ll) * num_param_vals[4] + mm + 1;
+    } else if (num_param == 6) {
+        return ((((nn * num_param_vals[1] + ii) * num_param_vals[2]
+                  + jj) * num_param_vals[3] + kk) * num_param_vals[4] + ll) * num_param_vals[5] + mm + 1;
+    }
+
+    return -1;
+}
+
+static void set_dat(float *spec, xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
+    int index = get_xillspec_rownum(tab->num_param_vals, tab->num_param,
+                                    i0, i1, i2, i3, i4, i5);
+    tab->data_storage[index] = spec;
+}
+
+
+// get one Spectrum from the Data Storage
+static float *get_dat(xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
+
+    int index = get_xillspec_rownum(tab->num_param_vals, tab->num_param,
+                                    i0, i1, i2, i3, i4, i5);
+
+    return tab->data_storage[index];
 }
 
 
@@ -413,13 +409,10 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
     init_xilltable_data_struct(tab, status);
 
     if (*status == EXIT_SUCCESS) {
-        // should be set by previous routine
-        assert(tab != NULL);
-        assert(tab->elo != NULL);
-        assert(tab->data_storage != NULL);
-        // assigne the value
+        // assign the value
         (*inp_tab) = tab;
     } else {
+        printf(" *** error *** initializing of the XILLVER table %s failed \n", filename);
         free_xillTable(tab);
     }
 
@@ -427,20 +420,6 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
 
 }
 
-static int
-get_xillspec_rownum(const int *num_param_vals, int num_param, int nn, int ii, int jj, int kk, int ll, int mm) {
-
-    if (num_param == 5) {
-        return (((ii * num_param_vals[1] + jj) * num_param_vals[2]
-                 + kk) * num_param_vals[3] + ll) * num_param_vals[4] + mm + 1;
-    } else if (num_param == 6) {
-        return ((((nn * num_param_vals[1] + ii) * num_param_vals[2]
-                  + jj) * num_param_vals[3] + kk) * num_param_vals[4] + ll) * num_param_vals[5] + mm + 1;
-        return -1;
-    }
-
-    return -1;
-}
 
 
 static void
@@ -477,11 +456,7 @@ load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, i
     fits_read_col(*fptr, TFLOAT, colnum_spec, rownum, 1, nelem, &nullval, spec, &anynul, status);
     CHECK_STATUS_VOID(*status)
 
-    if (tab->num_param == 5) {
-        tab->data_storage[0][ii][jj][kk][ll][mm] = spec;
-    } else {
-        RELXILL_ERROR(" 6dim not implemented yet", status);
-    }
+    set_dat(spec, tab, nn, ii, jj, kk, ll, mm);
 
 }
 
@@ -529,7 +504,7 @@ static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, i
                         // always load **all** incl bins as for relxill we will certainly need it
                         for (mm = 0; mm < tab->n_incl; mm++) {
 
-                            if (tab->data_storage[nn][ii][jj][kk][ll][mm] == NULL) {
+                            if (get_dat(tab, nn, ii, jj, kk, ll, mm) == NULL) {
                                 load_single_spec(fname, &fptr, tab, nn, ii, jj, kk, ll, mm, status);
                                 CHECK_STATUS_VOID(*status)
                             }
@@ -593,85 +568,90 @@ void free_xill_spec(xill_spec *spec) {
     }
 }
 
-static void interp_5d_tab_incl(float ******dat, double *flu, int n_ener,
-                               double f1, double f2, double f3, double f4, int i1, int i2, int i3, int i4, int i5) {
+
+static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
+                               double f1, double f2, double f3, double f4,
+                               int i0, int i1, int i2, int i3, int i4, int i5) {
 
     int ii;
     for (ii = 0; ii < n_ener; ii++) {
         flu[ii] =
-                ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * dat[i1][i2][i3][i4][i5][ii] +
-                 (f1) * (1.0 - f2) * (1.0 - f3) * dat[i1 + 1][i2][i3][i4][i5][ii] +
-                 (1.0 - f1) * (f2) * (1.0 - f3) * dat[i1][i2 + 1][i3][i4][i5][ii] +
-                 (1.0 - f1) * (1.0 - f2) * (f3) * dat[i1][i2][i3 + 1][i4][i5][ii] +
-                 (f1) * (f2) * (1.0 - f3) * dat[i1 + 1][i2 + 1][i3][i4][i5][ii] +
-                 (f1) * (1.0 - f2) * (f3) * dat[i1 + 1][i2][i3 + 1][i4][i5][ii] +
-                 (1.0 - f1) * (f2) * (f3) * dat[i1][i2 + 1][i3 + 1][i4][i5][ii] +
-                 (f1) * (f2) * (f3) * dat[i1 + 1][i2 + 1][i3 + 1][i4][i5][ii])
+                ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4, i5))[ii]) +
+                 (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4, i5))[ii]) +
+                 (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4, i5))[ii]) +
+                 (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4, i5))[ii]) +
+                 (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4, i5))[ii]) +
+                 (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4, i5))[ii]) +
+                 (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4, i5))[ii]) +
+                 (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5))[ii]))
                 * (1 - f4) +
-                ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * dat[i1][i2][i3][i4 + 1][i5][ii] +
-                 (f1) * (1.0 - f2) * (1.0 - f3) * dat[i1 + 1][i2][i3][i4 + 1][i5][ii] +
-                 (1.0 - f1) * (f2) * (1.0 - f3) * dat[i1][i2 + 1][i3][i4 + 1][i5][ii] +
-                 (1.0 - f1) * (1.0 - f2) * (f3) * dat[i1][i2][i3 + 1][i4 + 1][i5][ii] +
-                 (f1) * (f2) * (1.0 - f3) * dat[i1 + 1][i2 + 1][i3][i4 + 1][i5][ii] +
-                 (f1) * (1.0 - f2) * (f3) * dat[i1 + 1][i2][i3 + 1][i4 + 1][i5][ii] +
-                 (1.0 - f1) * (f2) * (f3) * dat[i1][i2 + 1][i3 + 1][i4 + 1][i5][ii] +
-                 (f1) * (f2) * (f3) * dat[i1 + 1][i2 + 1][i3 + 1][i4 + 1][i5][ii])
+                ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4 + 1, i5))[ii]) +
+                 (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4 + 1, i5))[ii]) +
+                 (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4 + 1, i5))[ii]) +
+                 (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4 + 1, i5))[ii]) +
+                 (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5))[ii]) +
+                 (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5))[ii]) +
+                 (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5))[ii]) +
+                 (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5))[ii]))
                 * (f4);
     }
 
 }
 
-static void interp_5d_tab(float ******dat, double *flu, int n_ener,
-                          double f1, double f2, double f3, double f4, double f5, int i1, int i2, int i3, int i4,
+
+static void interp_5d_tab(xillTable *tab, double *flu, int n_ener,
+                          double f1, double f2, double f3, double f4, double f5,
+                          int i0, int i1, int i2, int i3, int i4,
                           int i5) {
 
     int ii;
     for (ii = 0; ii < n_ener; ii++) {
         flu[ii] =
-                (((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * dat[i1][i2][i3][i4][i5][ii] +
-                  (f1) * (1.0 - f2) * (1.0 - f3) * dat[i1 + 1][i2][i3][i4][i5][ii] +
-                  (1.0 - f1) * (f2) * (1.0 - f3) * dat[i1][i2 + 1][i3][i4][i5][ii] +
-                  (1.0 - f1) * (1.0 - f2) * (f3) * dat[i1][i2][i3 + 1][i4][i5][ii] +
-                  (f1) * (f2) * (1.0 - f3) * dat[i1 + 1][i2 + 1][i3][i4][i5][ii] +
-                  (f1) * (1.0 - f2) * (f3) * dat[i1 + 1][i2][i3 + 1][i4][i5][ii] +
-                  (1.0 - f1) * (f2) * (f3) * dat[i1][i2 + 1][i3 + 1][i4][i5][ii] +
-                  (f1) * (f2) * (f3) * dat[i1 + 1][i2 + 1][i3 + 1][i4][i5][ii])
+                (((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4, i5))[ii]) +
+                  (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4, i5))[ii]) +
+                  (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4, i5))[ii]) +
+                  (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4, i5))[ii]) +
+                  (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4, i5))[ii]) +
+                  (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4, i5))[ii]) +
+                  (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4, i5))[ii]) +
+                  (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5))[ii]))
                  * (1 - f4) +
-                 ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * dat[i1][i2][i3][i4 + 1][i5][ii] +
-                  (f1) * (1.0 - f2) * (1.0 - f3) * dat[i1 + 1][i2][i3][i4 + 1][i5][ii] +
-                  (1.0 - f1) * (f2) * (1.0 - f3) * dat[i1][i2 + 1][i3][i4 + 1][i5][ii] +
-                  (1.0 - f1) * (1.0 - f2) * (f3) * dat[i1][i2][i3 + 1][i4 + 1][i5][ii] +
-                  (f1) * (f2) * (1.0 - f3) * dat[i1 + 1][i2 + 1][i3][i4 + 1][i5][ii] +
-                  (f1) * (1.0 - f2) * (f3) * dat[i1 + 1][i2][i3 + 1][i4 + 1][i5][ii] +
-                  (1.0 - f1) * (f2) * (f3) * dat[i1][i2 + 1][i3 + 1][i4 + 1][i5][ii] +
-                  (f1) * (f2) * (f3) * dat[i1 + 1][i2 + 1][i3 + 1][i4 + 1][i5][ii])
+                 ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4 + 1, i5))[ii]) +
+                  (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4 + 1, i5))[ii]) +
+                  (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4 + 1, i5))[ii]) +
+                  (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4 + 1, i5))[ii]) +
+                  (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5))[ii]) +
+                  (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5))[ii]) +
+                  (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5))[ii]) +
+                  (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5))[ii]))
                  * (f4)) * (1.0 - f5) +
-                (((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * dat[i1][i2][i3][i4][i5 + 1][ii] +
-                  (f1) * (1.0 - f2) * (1.0 - f3) * dat[i1 + 1][i2][i3][i4][i5 + 1][ii] +
-                  (1.0 - f1) * (f2) * (1.0 - f3) * dat[i1][i2 + 1][i3][i4][i5 + 1][ii] +
-                  (1.0 - f1) * (1.0 - f2) * (f3) * dat[i1][i2][i3 + 1][i4][i5 + 1][ii] +
-                  (f1) * (f2) * (1.0 - f3) * dat[i1 + 1][i2 + 1][i3][i4][i5 + 1][ii] +
-                  (f1) * (1.0 - f2) * (f3) * dat[i1 + 1][i2][i3 + 1][i4][i5 + 1][ii] +
-                  (1.0 - f1) * (f2) * (f3) * dat[i1][i2 + 1][i3 + 1][i4][i5 + 1][ii] +
-                  (f1) * (f2) * (f3) * dat[i1 + 1][i2 + 1][i3 + 1][i4][i5 + 1][ii])
+                (((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4, i5 + 1))[ii]) +
+                  (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4, i5 + 1))[ii]) +
+                  (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4, i5 + 1))[ii]) +
+                  (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4, i5 + 1))[ii]) +
+                  (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4, i5 + 1))[ii]) +
+                  (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4, i5 + 1))[ii]) +
+                  (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4, i5 + 1))[ii]) +
+                  (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5 + 1))[ii]))
                  * (1 - f4) +
-                 ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * dat[i1][i2][i3][i4 + 1][i5 + 1][ii] +
-                  (f1) * (1.0 - f2) * (1.0 - f3) * dat[i1 + 1][i2][i3][i4 + 1][i5 + 1][ii] +
-                  (1.0 - f1) * (f2) * (1.0 - f3) * dat[i1][i2 + 1][i3][i4 + 1][i5 + 1][ii] +
-                  (1.0 - f1) * (1.0 - f2) * (f3) * dat[i1][i2][i3 + 1][i4 + 1][i5 + 1][ii] +
-                  (f1) * (f2) * (1.0 - f3) * dat[i1 + 1][i2 + 1][i3][i4 + 1][i5 + 1][ii] +
-                  (f1) * (1.0 - f2) * (f3) * dat[i1 + 1][i2][i3 + 1][i4 + 1][i5 + 1][ii] +
-                  (1.0 - f1) * (f2) * (f3) * dat[i1][i2 + 1][i3 + 1][i4 + 1][i5 + 1][ii] +
-                  (f1) * (f2) * (f3) * dat[i1 + 1][i2 + 1][i3 + 1][i4 + 1][i5 + 1][ii])
+                 ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4 + 1, i5 + 1))[ii]) +
+                  (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4 + 1, i5 + 1))[ii]) +
+                  (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4 + 1, i5 + 1))[ii]) +
+                  (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4 + 1, i5 + 1))[ii]) +
+                  (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5 + 1))[ii]) +
+                  (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5 + 1))[ii]) +
+                  (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5 + 1))[ii]) +
+                  (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5 + 1))[ii]))
                  * (f4)) * (f5);
 
     }
 
 }
 
+
 /* cheap man's version of a 6dim interpolation */
-static void interp_6d_tab_incl(float *******dat, double *flu, int n_ener,
-                               double *fac, int nfac, int *ind, int iincl) {
+static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
+                               double *fac, int nfac, const int *ind, int iincl) {
 
     // we make sure this is used only for a 6dim table
     assert(nfac == 6);
@@ -679,12 +659,12 @@ static void interp_6d_tab_incl(float *******dat, double *flu, int n_ener,
     double s1[n_ener];
     double s2[n_ener];
 
-    interp_5d_tab_incl(dat[ind[0]], s1, n_ener,
-                       fac[1], fac[2], fac[3], fac[4],
+    interp_5d_tab_incl(tab, s1, n_ener,
+                       fac[1], fac[2], fac[3], fac[4], ind[0],
                        ind[1], ind[2], ind[3], ind[4], iincl);
 
-    interp_5d_tab_incl(dat[ind[0] + 1], s2, n_ener,
-                       fac[1], fac[2], fac[3], fac[4],
+    interp_5d_tab_incl(tab, s2, n_ener,
+                       fac[1], fac[2], fac[3], fac[4], ind[0] + 1,
                        ind[1], ind[2], ind[3], ind[4], iincl);
 
     int ii;
@@ -693,7 +673,7 @@ static void interp_6d_tab_incl(float *******dat, double *flu, int n_ener,
     }
 }
 
-static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, int *ind, int *status) {
+static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
 
     xill_spec *spec = NULL;
     if (is_xill_model(param->model_type)) {
@@ -746,8 +726,8 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, int *ind, 
     if (tab->num_param == 5) {
         if (is_xill_model(param->model_type)) {
             assert(nfac == 5);
-            interp_5d_tab(tab->dat, spec->flu[0], spec->n_ener,
-                          fac[0], fac[1], fac[2], fac[3], fac[4],
+            interp_5d_tab(tab, spec->flu[0], spec->n_ener,
+                          fac[0], fac[1], fac[2], fac[3], fac[4], 0,
                           ind[0], ind[1], ind[2], ind[3], ind[4]);
 
 
@@ -757,8 +737,8 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, int *ind, 
             assert(nfac == 4);
             // get the spectrum for EACH flux bin
             for (ii = 0; ii < spec->n_incl; ii++) {
-                interp_5d_tab_incl(tab->dat, spec->flu[ii], spec->n_ener,
-                                   fac[0], fac[1], fac[2], fac[3],
+                interp_5d_tab_incl(tab, spec->flu[ii], spec->n_ener,
+                                   fac[0], fac[1], fac[2], fac[3], 0,
                                    ind[0], ind[1], ind[2], ind[3], ii);
             }
 
@@ -772,7 +752,7 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, int *ind, 
 
         assert(nfac == 6);
         for (ii = 0; ii < spec->n_incl; ii++) {
-            interp_6d_tab_incl(tab->dat, spec->flu[ii], spec->n_ener,
+            interp_6d_tab_incl(tab, spec->flu[ii], spec->n_ener,
                                fac, nfac, ind, ii);
         }
 
@@ -825,7 +805,7 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
     assert(fname != NULL);
 
     // =1=  get the inidices
-    int *ind = get_xill_indices(param, tab, status);
+    int *ind = xillInd_from_parInput(param, tab, status);
 
     // =2=  check if the necessary spectra are loaded (we only open the file once)
     check_xillTable_cache(fname, tab, ind, status);
@@ -838,68 +818,11 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 }
 
 
-static void free_xillTable_5dim(float ******dat, int n1, int n2, int n3, int n4, int n5) {
-
-    int ii;
-    int jj;
-    int kk;
-    int ll;
-    int mm;
-
-    if (dat != NULL) {
-        for (ii = 0; ii < n1; ii++) {
-            if (dat[ii] != NULL) {
-                for (jj = 0; jj < n2; jj++) {
-                    if (dat[ii][jj] != NULL) {
-                        for (kk = 0; kk < n3; kk++) {
-                            if (dat[ii][jj][kk] != NULL) {
-                                for (ll = 0; ll < n4; ll++) {
-                                    if (dat[ii][jj][kk][ll] != NULL) {
-                                        for (mm = 0; mm < n5; mm++) {
-                                            free(dat[ii][jj][kk][ll][mm]);
-                                        }
-                                        free(dat[ii][jj][kk][ll]);
-                                    }
-                                }
-                                free(dat[ii][jj][kk]);
-                            }
-                        }
-                        free(dat[ii][jj]);
-                    }
-                }
-                free(dat[ii]);
-            }
-
-        }
-    }
-}
-
 void free_xillTable(xillTable *tab) {
     if (tab != NULL) {
 
         int ii;
         if (tab->data_storage != NULL) {
-            if (tab->num_param == 5) {
-                free_xillTable_5dim(tab->data_storage[0],
-                                    tab->num_param_vals[0],
-                                    tab->num_param_vals[1],
-                                    tab->num_param_vals[2],
-                                    tab->num_param_vals[3],
-                                    tab->num_param_vals[4]
-                );
-            } else {
-                for (ii = 0; ii < tab->num_param_vals[0]; ii++) {
-                    if (tab->data_storage[ii] != NULL) {
-                        free_xillTable_5dim(tab->data_storage[ii],
-                                            tab->num_param_vals[1],
-                                            tab->num_param_vals[2],
-                                            tab->num_param_vals[3],
-                                            tab->num_param_vals[4],
-                                            tab->num_param_vals[5]
-                        );
-                    }
-                }
-            }
             free(tab->data_storage);
         }
 
@@ -910,6 +833,7 @@ void free_xillTable(xillTable *tab) {
         }
 
         free(tab->num_param_vals);
+        free(tab->param_index);
 
         free(tab);
     }

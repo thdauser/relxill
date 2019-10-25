@@ -40,6 +40,14 @@ static void test_new_xilltable(int *status) {
 
 }
 
+static void print_status_outcome(const int *status) {
+    if (*status != EXIT_SUCCESS) {
+        printf("  FAILED");
+    } else {
+        printf("  SUCCESSFUL");
+    }
+}
+
 static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
     printf("\n *** TEST: initializing xilltable %s  ...   \n\n", fname);
@@ -49,16 +57,25 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
     assert(tab->n_ener > 0);
 
-    if (tab->num_param == 5) {
-        assert(tab->dat[0][0][0][0][0][0] == NULL);
+
+    assert(tab->num_param > 0);
+    int ii;
+    for (ii = 0; ii < tab->num_param; ii++) {
+        assert(tab->num_param_vals[ii] > 0);
     }
 
-    if (*status != EXIT_SUCCESS) {
-        printf("  FAILED");
-    } else {
-        printf("  SUCCESSFUL");
-    }
+    print_status_outcome(status);
 
+}
+
+static void test_get_spec(int *status) {
+
+    printf("\n *** TEST: loading Spectrum from Storage  ...   \n\n");
+
+    xillParam *param = get_std_param_xillver(status);
+    xill_spec *spec = get_xillver_spectra(param, status);
+
+    print_status_outcome(status);
 }
 
 static void test_all_xilltables(int *status) {
@@ -80,6 +97,7 @@ int main(int argc, char *argv[]) {
 
     test_all_xilltables(&status);
 
+    test_get_spec(&status);
 
     if (status != EXIT_SUCCESS) {
         printf(" *** TESTING NOT SUCCESSFUL \n");
