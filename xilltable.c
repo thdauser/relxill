@@ -32,7 +32,7 @@ xillTable *cached_xill_tab_nthcomp = NULL;
 static void init_5dim_xilltable(float ******dat, xillTable *tab, int *status) {
 // allocate the full arrays just with pointers; make sure everything is set to NULL in the end
 
-    int istart = MAX_DIM_TABLE - tab->num_param;
+    int istart = (tab->num_param + 1) - MAX_DIM_TABLE; // if 5dim, we start at 0, for 6dim start at 1
 
     dat = (float ******) malloc(sizeof(float *****) * tab->num_param_vals[istart]);
     CHECK_MALLOC_VOID_STATUS(dat, status)
@@ -86,10 +86,11 @@ static void init_xilltable_data_struct(xillTable *tab, int *status) {
         init_5dim_xilltable(tab->data_storage[ii], tab, status);
     }
 
+
     if (tab->num_param == 5) {
-        tab->dat = (float ******) tab->data_storage[0];  // set the pointer to the 5D table
+        tab->dat = (tab->data_storage[0]);  // set the pointer to the 5D table
     } else {
-        tab->dat = (float *******) tab->data_storage;    // set the pointer to the 6D table
+        tab->dat = (tab->data_storage);    // set the pointer to the 6D table
     }
 }
 
@@ -540,7 +541,6 @@ static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, i
         }
 
     }
-
 
     if (fptr != NULL) {
         if (fits_close_file(fptr, status)) {

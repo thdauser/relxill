@@ -78,6 +78,8 @@ void free_xill_spec(xill_spec* spec);
 
 void free_cached_xillTable(void);
 
+void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, int *status);
+
 char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status);
 
 void norm_xillver_spec(xill_spec* spec, double incl);
