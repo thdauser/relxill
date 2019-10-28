@@ -10,3 +10,4 @@ test*.dat
 build
 .settings
 *.tgz
+cmake-build-test

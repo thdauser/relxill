@@ -63,6 +63,7 @@
 #define MOD_TYPE_RELXILLION -20  // not implemented yet
 // #define NUM_PARAM_RELXILLION 15???
 
+#define MOD_TYPE_RELXILLCO -200
 
 /** Neutron Star / BB models **/
 #define MOD_TYPE_RELXILLNS -30
