@@ -84,18 +84,18 @@ void relxill_warning(const char* const msg);
 void check_relxill_error(const char* const func, const char* const msg, int* status);
 
 /** check and report FITS error   */
-void relxill_check_fits_error(int *status);
+void relxill_check_fits_error(const int *status);
 
 /* inverse binary search */
-int inv_binary_search(double* arr,int n,double val);
+int inv_binary_search(const double *arr, int n, double val);
 
 /* inverse binary search */
-int inv_binary_search_float(float* arr,int n,float val);
+int inv_binary_search_float(const float *arr, int n, float val);
 
 /* binary search */
-int binary_search_float(float* arr,int n,float val);
+int binary_search_float(const float *arr, int n, float val);
 
-int binary_search(double* arr,int n,double val);
+int binary_search(const double *arr, int n, double val);
 
 /** calculate the reflection fraction **/
 lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status);
@@ -116,7 +116,7 @@ int is_relxill_model(int model_type);
 int is_debug_run( void );
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double h, int* status);
+void get_rzone_grid(double rmin, double rmax, double *rgrid, int nzones, double h);
 
 void get_rgrid(double* ener, int n_ener, double emin, double emax);
 

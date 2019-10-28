@@ -136,7 +136,8 @@ void init_specCache(specCache** spec, int* status);
 void free_specCache(void);
 void free_fft_cache(double*** sp,int n1, int n2);
 void free_out_spec(out_spec* spec);
-out_spec* init_out_spec(int n_ener, double* ener, int* status);
+
+out_spec *init_out_spec(int n_ener, const double *ener, int *status);
 
 int redo_xillver_calc(relParam* rel_param, xillParam* xill_param, relParam* ca_rel, xillParam* ca_xill);
 int redo_relbase_calc(relParam* rel_param, relParam* ca_rel_param);
