@@ -19,15 +19,12 @@
 #include <zconf.h>
 #include "xilltable.h"
 
-// has to be 6DIM, where are the parameters
-// [param->gam, param->afe, param->lxi, param->ect, param->dens, param->incl]
-int XILL_PARAM_INDEX[] = {0, 1, 2, 3, -1, 4};
-int XILL_DENS_PARAM_INDEX[] = {0, 1, 2, -1, 3, 4};
-int XILL_NTHCOMP_PARAM_INDEX[] = {0, 1, 2, -1, 3, 4};
-
+// possible parameters for the xillver tables
 int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_DNS, PARAM_INC};
 char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_DNS, NAME_INC};
+int global_num_param = 6;
 
+// storage for the tables
 xillTable *cached_xill_tab = NULL;
 xillTable *cached_xill_tab_dens = NULL;
 xillTable *cached_xill_tab_nthcomp = NULL;
@@ -138,10 +135,29 @@ static int get_num_param(xillParam *param) {
  * (i.e. with this we know which parameter relates to the input parameters ) */
 static int *set_parindex_from_parname(int *pindex, char **pname, int n, int *status) {
 
+
     int ii;
-    //strcmp();
+    // loop over given parameters
     for (ii = 0; ii < n; ii++) {
-        pindex[ii] = -1;  // TODO XXXXXXXXXXXXXX
+        pindex[ii] = -1;
+
+        // now loop over all possible parameters
+        int jj;
+        for (jj = 0; jj < global_num_param; jj++) {
+            if (strcmp(pname[ii], global_param_names[jj]) == 0) {
+                pindex[ii] = global_param_index[jj];
+                if (is_debug_run()) {
+                    printf("   detected parameter %s in xillver table with index %i \n",
+                           pname[ii], pindex[ii]);
+                }
+                continue;
+            }
+        }
+
+        if (pindex[ii] == -1) {
+            RELXILL_ERROR(" parameter not found in xillver table \n", status);
+            printf("    trying to find parameter %s, but was not found in xillver table \n", pname[ii]);
+        }
     }
 
 }
@@ -229,8 +245,8 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
         CHECK_STATUS_BREAK(*status)
     }
 
-    // get the
-    tab->param_index = get_parindex_from_parname(xilltable_parname, tab->num_param, status);
+    // set the index of each parameter according to the NAME column we found in the table
+    set_parindex_from_parname(tab->param_index, xilltab_parname, tab->num_param, status);
 
     // now we set a pointer to the inclination separately (assuming it is the last parameter)
     tab->incl = tab->param_vals[tab->num_param - 1];
@@ -697,7 +713,7 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
         spec->incl[ii] = tab->incl[ii];
     }
 
-    float *param_vals = get_xill_param_vals_array(param, status);
+    float *inp_param_vals = get_xill_param_vals_array(param, status);
 
     int nfac = tab->num_param;
     double *fac = (double *) malloc(sizeof(double) * nfac);
@@ -707,9 +723,10 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
      * ([nfac-1] is inclination, which might not be used ) */
     int pind;
     for (ii = 0; ii < nfac; ii++) {
+        // need the index
         pind = tab->param_index[ii];
-        fac[ii] = (param_vals[pind] - tab->param_vals[pind][ind[ii]]) /
-                  (tab->param_vals[pind][ind[ii] + 1] - tab->param_vals[pind][ind[ii]]);
+        fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
+                  (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
     }
 
     // can happen due to grav. redshift, although actually observed ecut is larger
