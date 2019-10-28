@@ -16,6 +16,7 @@
     Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "relbase.h"
+#include "xilltable.h"
 #include "relutility.h"
 #include "reltable.h"
 #include "test_relxill.h"
@@ -251,43 +252,43 @@ int main(int argc, char *argv[]){
 			return status;
 		}
 
-		if (strcmp(argv[1],"relxilllp")==0){
-			do_relxilllp=1;
-			do_all=0;
-		} else if (strcmp(argv[1],"relline")==0){
-				do_relline=1;
-				do_all=0;
-		} else if (strcmp(argv[1],"relxilllpion")==0){
-				do_relxilllpion=1;
-				do_all=0;
-		} else if (strcmp(argv[1],"relxilllpionCp")==0){
-				do_relxilllpionnthcomp=1;
-				do_all=0;
+        if (strcmp(argv[1], "relline") == 0) {
+            do_relline = 1;
+            do_all = 0;
 		} else if (strcmp(argv[1],"relconv")==0){
 				do_relconv=1;
 				do_all=0;
 		} else if (strcmp(argv[1],"rellinelp")==0){
 				do_rellinelp=1;
 				do_all=0;
-		} else if (strcmp(argv[1],"relxilldens")==0){
-				do_relxilldens=1;
-				do_all=0;
-		} else if (strcmp(argv[1],"relxill")==0){
-				do_relxill=1;
-				do_all=0;
-		} else if (strcmp(argv[1],"relxilllpdens")==0){
-			do_relxilllpdens=1;
-			do_all=0;
-		} else if (strcmp(argv[1],"relxillCp")==0){
-				do_relxillnthcomp=1;
-				do_all=0;
-		} else if (strcmp(argv[1],"relxilllpCp")==0){
-			do_relxilllpnthcomp=1;
-			do_all=0;
+        } else if (strcmp(argv[1], "relxill") == 0) {
+            do_relxill = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxilllp") == 0) {
+            do_relxilllp = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxilldens") == 0){
+            do_relxilldens=1;
+            do_all=0;
+        } else if (strcmp(argv[1], "relxilllpdens") == 0){
+            do_relxilllpdens = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxillCp") == 0) {
+            do_relxillnthcomp = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxilllpCp") == 0) {
+            do_relxilllpnthcomp = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxilllpion") == 0) {
+            do_relxilllpion = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxilllpionCp") == 0) {
+            do_relxilllpionnthcomp = 1;
+            do_all = 0;
+        }
 
-		}
 
-	}
+    }
 
 	int n = 1;
 	if (argc==3){
@@ -317,7 +318,6 @@ int main(int argc, char *argv[]){
 		}
 
 		if (do_relconv){
-
 			std_eval_relconv(&status,1);
             CHECK_STATUS_BREAK(status)
 			std_eval_relconvlp(&status,1);
@@ -326,28 +326,12 @@ int main(int argc, char *argv[]){
 
 		}
 
-        if (do_all || do_relxilllpion) {
-			std_eval_relxilllpion(&status,n);
-            CHECK_STATUS_BREAK(status)
-			printf("     ---> successful \n");
-
-		}
-
-        if (do_all || do_relxilllpionnthcomp) {
-			std_eval_relxilllpion_nthcomp(&status,n);
-            CHECK_STATUS_BREAK(status)
-			printf("     ---> successful \n");
-
-		}
-
-
 		if (do_all) {
 			std_eval_xillver(&status,1);
             CHECK_STATUS_BREAK(status)
 			printf("     ---> successful \n");
 
 		}
-
 
 		if (do_all || do_relxill){
 			std_eval_relxill(&status,n);
@@ -385,7 +369,22 @@ int main(int argc, char *argv[]){
 			printf("     ---> successful \n");
 		}
 
-		printf( "\n ==> Cleaning up and freeing cached structures\n");
+        if (do_all || do_relxilllpion) {
+            std_eval_relxilllpion(&status, n);
+            CHECK_STATUS_BREAK(status)
+            printf("     ---> successful \n");
+
+        }
+
+        if (do_all || do_relxilllpionnthcomp) {
+            std_eval_relxilllpion_nthcomp(&status, n);
+            CHECK_STATUS_BREAK(status)
+            printf("     ---> successful \n");
+
+        }
+
+
+        printf("\n ==> Cleaning up and freeing cached structures\n");
 		free_cached_tables();
 
 	} while(0);

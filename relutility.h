@@ -171,6 +171,7 @@ int is_iongrad_model(int ion_type, int ion_grad_type);
 void free_ion_grad(ion_grad* ion);
 ion_grad* new_ion_grad(double* r, int n, int* status);
 
+
 /** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
 void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int nn, int* status);
 

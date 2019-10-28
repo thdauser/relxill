@@ -559,8 +559,8 @@ void std_eval_relxilllpion_nthcomp(int *status, int n) {
 
     printf("\n ==> Evaluating RELXILLLP ION NTHCOMP MODEL \n");
     /* set the parameters */
-    int n_param = NUM_PARAM_RELXILLLP;
-    double inp_par[NUM_PARAM_RELXILLLP];
+    int n_param = NUM_PARAM_RELXILLLPION;
+    double inp_par[NUM_PARAM_RELXILLLPION];
     set_std_param_relxilllpion_nthcomp(inp_par);
     CHECK_STATUS_VOID(*status)
 
@@ -578,7 +578,7 @@ void std_eval_relxilllpion_nthcomp(int *status, int n) {
             inp_par[1] = 1.0 * ii / (n - 1) * 0.998 * 2 - 0.998;
             printf(" relxilllpion (nthcomp): testing a=%.3f , lxi=%.2f \n", inp_par[1], inp_par[7]);
         }
-        tdrelxilllp_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
+        tdrelxilllpion_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
         printf(" -> %e \n", photar[0]);
     }
 

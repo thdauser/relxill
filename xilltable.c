@@ -16,13 +16,11 @@
     Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include <zconf.h>
 #include "xilltable.h"
 
 // possible parameters for the xillver tables
-int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_DNS, PARAM_INC};
-char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_DNS, NAME_INC};
-int global_num_param = 6;
+int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_KTE, PARAM_DNS, PARAM_INC};
+char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_KTE, NAME_DNS, NAME_INC};
 
 // storage for the tables
 xillTable *cached_xill_tab = NULL;
@@ -143,7 +141,7 @@ static void set_parindex_from_parname(int *pindex, char **pname, int n, int *sta
 
         // now loop over all possible parameters
         int jj;
-        for (jj = 0; jj < global_num_param; jj++) {
+        for (jj = 0; jj < N_PARAM_MAX; jj++) {
             if (strcmp(pname[ii], global_param_names[jj]) == 0) {
                 pindex[ii] = global_param_index[jj];
                 continue;
@@ -308,6 +306,7 @@ static float *get_xill_param_vals_array(xillParam *param, int *status) {
     param_vals[PARAM_AFE] = (float) param->afe;
     param_vals[PARAM_LXI] = (float) param->lxi;
     param_vals[PARAM_ECT] = (float) param->ect;
+    param_vals[PARAM_KTE] = (float) param->ect;
     param_vals[PARAM_DNS] = (float) param->dens;
     param_vals[PARAM_INC] = (float) param->incl;
 
@@ -474,20 +473,8 @@ load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, i
     CHECK_STATUS_VOID(*status)
 
     set_dat(spec, tab, nn, ii, jj, kk, ll, mm);
-
 }
 
-
-void norm_xillver_spec(xill_spec *spec, double incl) {
-
-    /** adds the proper flux normalization for a semi-infinate slab
-     *  under inclination angle incl */
-    int ii;
-    for (ii = 0; ii < spec->n_ener; ii++) {
-        spec->flu[0][ii] *= 0.5 * cos(incl * M_PI / 180);
-    }
-
-}
 
 static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, int *status) {
 
@@ -690,6 +677,20 @@ static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
     }
 }
 
+static int is_in_xilltable(xillTable *tab, int ind) {
+
+    int ii;
+    int ret = FALSE;
+    for (ii = 0; ii < tab->num_param; ii++) {
+        if (tab->param_index[ii] == ind) {
+            ret = TRUE;
+            continue;
+        }
+    }
+    return ret;
+}
+
+
 static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
 
     xill_spec *spec = NULL;
@@ -732,13 +733,16 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
 
     // can happen due to grav. redshift, although actually observed ecut is larger
 
-    if (param->ect <= tab->param_vals[tab->param_index[PARAM_ECT]][0]) {
-        fac[tab->param_index[PARAM_ECT]] = 0.0;
-    }
-    // can happen due to grav. redshift, although actually observed ecut is larger
-    if (param->ect >=
-        tab->param_vals[tab->param_index[PARAM_ECT]][tab->num_param_vals[tab->param_index[PARAM_ECT]] - 1]) {
-        fac[tab->param_index[PARAM_ECT]] = 1.0;
+    // need to make sure ECUT is a parameter in the table
+    if (is_in_xilltable(tab, PARAM_ECT)) {
+        if (param->ect <= tab->param_vals[tab->param_index[PARAM_ECT]][0]) {
+            fac[tab->param_index[PARAM_ECT]] = 0.0;
+        }
+        // can happen due to grav. redshift, although actually observed ecut is larger
+        if (param->ect >=
+            tab->param_vals[tab->param_index[PARAM_ECT]][tab->num_param_vals[tab->param_index[PARAM_ECT]] - 1]) {
+            fac[tab->param_index[PARAM_ECT]] = 1.0;
+        }
     }
 
     if (tab->num_param == 5) {
@@ -819,7 +823,7 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
     xillTable *tab = NULL;
     char *fname = get_init_xillver_table(&tab, param, status);
 
-    assert(tab != NULL);
+    CHECK_STATUS_RET(*status, NULL)
     assert(fname != NULL);
 
     // =1=  get the inidices
@@ -833,6 +837,18 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 
     free(ind);
     return spec;
+}
+
+
+void norm_xillver_spec(xill_spec *spec, double incl) {
+
+    /** adds the proper flux normalization for a semi-infinate slab
+     *  under inclination angle incl */
+    int ii;
+    for (ii = 0; ii < spec->n_ener; ii++) {
+        spec->flu[0][ii] *= 0.5 * cos(incl * M_PI / 180);
+    }
+
 }
 
 

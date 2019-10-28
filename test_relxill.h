@@ -21,6 +21,7 @@
 #include "relbase.h"
 #include "relmodels.h"
 #include "relutility.h"
+#include "xilltable.h"
 
 #include <sys/time.h> // onyl for speed tests
 
