@@ -133,7 +133,7 @@ static int get_num_param(xillParam *param) {
 
 /* routine to get the pointer to the pre-defined parameter index array
  * (i.e. with this we know which parameter relates to the input parameters ) */
-static void *set_parindex_from_parname(int *pindex, char **pname, int n, int *status) {
+static void set_parindex_from_parname(int *pindex, char **pname, int n, int *status) {
 
 
     int ii;

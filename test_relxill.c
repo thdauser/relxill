@@ -442,14 +442,11 @@ void std_eval_relxilllp(int *status, int n) {
 
     for (ii = 0; ii < n; ii++) {
         if (n > 1) {
-            //		inp_par[1] = 1.0*ii/(n-1)*0.998*2 - 0.998;
+            inp_par[1] = 1.0 * ii / (n - 1) * 0.998 * 2 - 0.998;
             //		inp_par[7] = 1.0*ii/(n-1)*4.7;
             printf(" relxilllp: testing a=%.3f , lxi=%.2f \n", inp_par[1], inp_par[7]);
         }
         tdrelxilllp(ener, n_ener, photar, inp_par, n_param, status);
-        putenv("RELXILL_NUM_RZONES=2");
-        tdrelxilllp(ener, n_ener, photar, inp_par, n_param, status);
-
     }
     double sum = 0.0;
     int jj;
