@@ -153,7 +153,7 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 
 	// fill in parameters
 	xillParam* param = new_xillParam(MOD_TYPE_XILLVER,PRIM_SPEC_ECUT,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	assert(n_parameter == NUM_PARAM_XILLVER);
 
@@ -177,7 +177,7 @@ xillParam* init_par_xillver_dens(const double* inp_par, const int n_parameter, i
 
 	// fill in parameters
 	xillParam* param = new_xillParam(MOD_TYPE_XILLVERDENS,PRIM_SPEC_ECUT,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	assert(n_parameter == NUM_PARAM_XILLVER);
 
@@ -201,7 +201,7 @@ xillParam* init_par_xillver_nthcomp(const double* inp_par, const int n_parameter
 
 	// fill in parameters
 	xillParam* param = new_xillParam(MOD_TYPE_XILLVER,PRIM_SPEC_NTHCOMP,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	assert(n_parameter == NUM_PARAM_XILLVER);
 
@@ -225,10 +225,10 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILL,EMIS_TYPE_BKN,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILL,PRIM_SPEC_ECUT,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILL);
 
@@ -253,7 +253,7 @@ void init_par_relxill(relParam** rel_param, xillParam** xill_param, const double
 
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -265,10 +265,10 @@ void init_par_relxill_nthcomp(relParam** rel_param, xillParam** xill_param, cons
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILL,EMIS_TYPE_BKN,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILL,PRIM_SPEC_NTHCOMP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILL);
 
@@ -293,7 +293,7 @@ void init_par_relxill_nthcomp(relParam** rel_param, xillParam** xill_param, cons
 
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -306,11 +306,11 @@ void init_par_relxilldens(relParam** rel_param, xillParam** xill_param, const do
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILL,EMIS_TYPE_BKN,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	/** only set the MODEL TYPE RELXILL DENS for xillver **/
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLDENS,PRIM_SPEC_ECUT,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILL);
 
@@ -335,7 +335,7 @@ void init_par_relxilldens(relParam** rel_param, xillParam** xill_param, const do
 
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -348,10 +348,10 @@ void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const doub
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILLLP,EMIS_TYPE_LP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLP,PRIM_SPEC_ECUT,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILLLP);
 
@@ -376,7 +376,7 @@ void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const doub
 	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -388,10 +388,10 @@ void init_par_relxilllp_nthcomp(relParam** rel_param, xillParam** xill_param, co
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILLLP,EMIS_TYPE_LP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLP,PRIM_SPEC_NTHCOMP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILLLP);
 
@@ -416,7 +416,7 @@ void init_par_relxilllp_nthcomp(relParam** rel_param, xillParam** xill_param, co
 	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -429,10 +429,10 @@ void init_par_relxilllp_dens(relParam** rel_param, xillParam** xill_param, const
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILLLP,EMIS_TYPE_LP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLPDENS,PRIM_SPEC_ECUT,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILLLP);
 
@@ -457,7 +457,7 @@ void init_par_relxilllp_dens(relParam** rel_param, xillParam** xill_param, const
 	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -470,7 +470,7 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELLINE,EMIS_TYPE_BKN,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	assert(n_parameter == NUM_PARAM_RELLINE);
 
@@ -486,7 +486,7 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 	param->limb  = (int) (inp_par[9] + 0.5);
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	return param;
 }
@@ -495,7 +495,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELCONV,EMIS_TYPE_BKN,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	assert(n_parameter == NUM_PARAM_RELCONV);
 
@@ -512,7 +512,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	return param;
 }
@@ -521,7 +521,7 @@ relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int*
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELLINELP,EMIS_TYPE_LP,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	assert(n_parameter == NUM_PARAM_RELLINELP);
 
@@ -538,7 +538,7 @@ relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int*
 	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	return param;
 }
@@ -547,7 +547,7 @@ relParam* init_par_relconv_lp(const double* inp_par, const int n_parameter, int*
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELCONVLP,EMIS_TYPE_LP,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	assert(n_parameter == NUM_PARAM_RELCONVLP);
 
@@ -564,7 +564,7 @@ relParam* init_par_relconv_lp(const double* inp_par, const int n_parameter, int*
 	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	return param;
 }
@@ -575,10 +575,10 @@ void init_par_relxilllpion(relParam** rel_param, xillParam** xill_param, const d
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILLLPION,EMIS_TYPE_LP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLPION,PRIM_SPEC_ECUT,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILLLPION);
 
@@ -607,7 +607,7 @@ void init_par_relxilllpion(relParam** rel_param, xillParam** xill_param, const d
 	param->beta = inp_par[10];
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -621,10 +621,10 @@ void init_par_relxilllpion_nthcomp(relParam** rel_param, xillParam** xill_param,
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELXILLLPION,EMIS_TYPE_LP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLPION,PRIM_SPEC_NTHCOMP,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(n_parameter == NUM_PARAM_RELXILLLPION);
 
@@ -653,7 +653,7 @@ void init_par_relxilllpion_nthcomp(relParam** rel_param, xillParam** xill_param,
 	param->beta = inp_par[10];
 
 	check_parameter_bounds(param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	*rel_param  = param;
 	*xill_param = xparam;
@@ -673,7 +673,7 @@ static void init_flux_array(const int n_ener0, double *flux) {
 static double* shift_energ_spec_1keV(const double* ener, const int n_ener, double line_energ, double z,int* status){
 
 	double* ener1keV = (double*) malloc((n_ener+1)*sizeof(double));
-	CHECK_MALLOC_RET_STATUS(ener1keV,status,NULL);
+    CHECK_MALLOC_RET_STATUS(ener1keV, status, NULL)
 
 	int ii;
 	for (ii=0; ii<=n_ener; ii++){
@@ -690,7 +690,7 @@ void tdrelxill(const double* ener0, const int n_ener0, double* photar, const dou
 	relParam* rel_param = NULL;
 
 	init_par_relxill(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// int n_ener = (int) n_ener0;
 	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
@@ -711,12 +711,12 @@ void tdrelxilldens(const double* ener0, const int n_ener0, double* photar, const
 	relParam* rel_param = NULL;
 
 	init_par_relxilldens(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 
 	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	free(ener);
 	free_xillParam(xill_param);
@@ -731,13 +731,13 @@ void tdrelxill_nthcomp(const double* ener0, const int n_ener0, double* photar, c
 	relParam* rel_param = NULL;
 
 	init_par_relxill_nthcomp(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// int n_ener = (int) n_ener0;
 	double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 
 	relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	free(ener);
 	free_xillParam(xill_param);
@@ -749,13 +749,13 @@ void tdrelxill_nthcomp(const double* ener0, const int n_ener0, double* photar, c
 /** XSPEC RELXILLLP MODEL FUNCTION **/
 void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
-    CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
     xillParam *xill_param = NULL;
 	relParam* rel_param = NULL;
 
 	init_par_relxilllp(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 
 	double* ener = (double*) ener0;
@@ -778,18 +778,18 @@ void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const d
 /** XSPEC RELXILLLP NTHCOMP MODEL FUNCTION **/
 void tdrelxilllp_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
+    CHECK_STATUS_VOID(*status)
+
 	xillParam* xill_param = NULL;
 	relParam* rel_param = NULL;
 
 	init_par_relxilllp_nthcomp(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
 
 
 	double* ener = (double*) ener0;
 	double flux[n_ener0];
 
 	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
 
 	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
@@ -809,14 +809,14 @@ void tdrelxilllpdens(const double* ener0, const int n_ener0, double* photar, con
 	relParam* rel_param = NULL;
 
 	init_par_relxilllp_dens(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 
 	double* ener = (double*) ener0;
 	double flux[n_ener0];
 
 	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
@@ -833,7 +833,7 @@ void tdrelxilllpdens(const double* ener0, const int n_ener0, double* photar, con
 void tdxillver(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* param_struct = init_par_xillver(parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillver_base(ener0, n_ener0, photar, param_struct, status);
 }
@@ -842,7 +842,7 @@ void tdxillver(const double* ener0, const int n_ener0, double* photar, const dou
 void tdxillver_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* param_struct = init_par_xillver_nthcomp(parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillver_base(ener0, n_ener0, photar, param_struct, status);
 }
@@ -852,7 +852,7 @@ void tdxillver_nthcomp(const double* ener0, const int n_ener0, double* photar, c
 void tdxillverdens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	xillParam* param_struct = init_par_xillver_dens(parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	xillver_base(ener0, n_ener0, photar, param_struct, status);
 }
@@ -863,7 +863,7 @@ void xillver_base(const double* ener0, const int n_ener0, double* photar, xillPa
 
 	// call the function which calculates the xillver spectrum
 	xill_spec* spec = get_xillver_spectra(param_struct,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// =4= rebin to the input grid
 	assert(spec->n_incl==1); // make sure there is only one spectrum given (for the chosen inclination)
@@ -905,15 +905,15 @@ void xillver_base(const double* ener0, const int n_ener0, double* photar, xillPa
 void tdrelline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relline(parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// shift the spectrum such that we can calculate the line for 1 keV
 	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
-	 CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// call the function which calculates the line (assumes a line at 1keV!)
 	rel_spec* spec = relbase(ener1keV, n_ener, param_struct,NULL,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 
 	assert(spec->n_zones == 1);
@@ -930,15 +930,15 @@ void tdrelline(const double* ener, const int n_ener, double* photar, const doubl
 void tdrellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relline_lp(parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// shift the spectrum such that we can calculate the line for 1 keV
 	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
-	 CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// call the function which calculates the line (assumes a line at 1keV!)
 	rel_spec* spec = relbase(ener1keV, n_ener, param_struct,NULL,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	assert(spec->n_zones == 1);
 	int ii;
@@ -956,15 +956,15 @@ void tdrellinelp(const double* ener, const int n_ener, double* photar, const dou
 void tdrelconv(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relconv(parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// shift the spectrum such that we can calculate the line for 1 keV
 	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
-	 CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// call the function which calculates the line (assumes a line at 1keV!)
 	relconv_kernel(ener1keV, photar, n_ener, param_struct, status );
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	free_relParam(param_struct);
 	free(ener1keV);
@@ -975,15 +975,15 @@ void tdrelconv(const double* ener, const int n_ener, double* photar, const doubl
 void tdrelconvlp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status){
 
 	relParam* param_struct = init_par_relconv_lp(parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// shift the spectrum such that we can calculate the line for 1 keV
 	 double* ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z,status);
-	 CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	// call the function which calculates the line (assumes a line at 1keV!)
 	relconv_kernel(ener1keV, photar, n_ener, param_struct, status );
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	free_relParam(param_struct);
 	free(ener1keV);
@@ -997,14 +997,14 @@ void tdrelxilllpion(const double* ener0, const int n_ener0, double* photar, cons
 	relParam* rel_param = NULL;
 
 	init_par_relxilllpion(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 
 	double* ener = (double*) ener0;
 	double flux[n_ener0];
 
 	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
@@ -1024,13 +1024,13 @@ void tdrelxilllpion_nthcomp(const double* ener0, const int n_ener0, double* phot
 	relParam* rel_param = NULL;
 
 	init_par_relxilllpion_nthcomp(&rel_param,&xill_param,parameter,n_parameter,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	double* ener = (double*) ener0;
 	double flux[n_ener0];
 
 	relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
-	CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status)
 
 	double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
 	rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
