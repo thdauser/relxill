@@ -42,18 +42,19 @@ static void test_new_xilltable(int *status) {
 
 static void print_status_outcome(const int *status) {
     if (*status != EXIT_SUCCESS) {
-        printf("  FAILED");
+        printf("  FAILED \n\n");
     } else {
-        printf("  SUCCESSFUL");
+        printf("  SUCCESSFUL \n\n");
     }
 }
 
 static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
-    printf("\n *** TEST: initializing xilltable %s  ...   \n\n", fname);
 
     xillTable *tab = NULL;
     init_xillver_table(fname, &tab, param, status);
+
+    printf("\n *** TEST: initializing xilltable %s  ...  ", fname);
 
     assert(tab->n_ener > 0);
 
@@ -68,20 +69,52 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
 }
 
+static void test_spec_norm(xill_spec *spec, int *status) {
+
+    printf("\n *** TEST: check Spectrum normalization ...  ");
+
+    int ii;
+    int jj;
+
+    double sum = 0.0;
+
+    for (jj = 0; jj < spec->n_incl; jj++) {
+        for (ii = 0; ii < spec->n_ener; ii++) {
+            sum += spec->flu[jj][ii];
+        }
+    }
+
+    printf("SUM = %.4e \n\n", sum);
+
+}
+
 static void test_get_spec(int *status) {
 
-    printf("\n *** TEST: loading Spectrum from Storage  ...   \n\n");
+    printf("\n *** TEST: loading Spectrum from Storage  ...   ");
 
     xillParam *param = get_std_param_xillver(status);
     xill_spec *spec = get_xillver_spectra(param, status);
 
+    assert(spec->n_ener > 0);
+    assert(spec->n_incl > 0);
+
     print_status_outcome(status);
+
+
+    test_spec_norm(spec, status);
+
+
+    free_xill_spec(spec);
+
+
 }
 
 static void test_all_xilltables(int *status) {
 
+    putenv("DEBUG_RELXILL=1");
     xillParam *param = get_std_param_xillver(status);
     test_init_xilltable(XILLTABLE_FILENAME, param, status);
+    putenv("DEBUG_RELXILL=0");
 
 }
 

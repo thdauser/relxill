@@ -30,7 +30,7 @@ xillTable *cached_xill_tab_dens = NULL;
 xillTable *cached_xill_tab_nthcomp = NULL;
 
 
-static int get_num_elem(int *n_parvals, int npar) {
+static int get_num_elem(const int *n_parvals, int npar) {
 
     assert(npar >= 1);
     long num_elem = n_parvals[0];
@@ -133,7 +133,7 @@ static int get_num_param(xillParam *param) {
 
 /* routine to get the pointer to the pre-defined parameter index array
  * (i.e. with this we know which parameter relates to the input parameters ) */
-static int *set_parindex_from_parname(int *pindex, char **pname, int n, int *status) {
+static void *set_parindex_from_parname(int *pindex, char **pname, int n, int *status) {
 
 
     int ii;
@@ -146,10 +146,6 @@ static int *set_parindex_from_parname(int *pindex, char **pname, int n, int *sta
         for (jj = 0; jj < global_num_param; jj++) {
             if (strcmp(pname[ii], global_param_names[jj]) == 0) {
                 pindex[ii] = global_param_index[jj];
-                if (is_debug_run()) {
-                    printf("   detected parameter %s in xillver table with index %i \n",
-                           pname[ii], pindex[ii]);
-                }
                 continue;
             }
         }
@@ -162,6 +158,15 @@ static int *set_parindex_from_parname(int *pindex, char **pname, int n, int *sta
 
 }
 
+
+void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname) {
+    int ii;
+    for (ii = 0; ii < tab->num_param; ii++) {
+        printf(" loaded parameter %s  (index=%i) \t -  %02i values from %.2f to %.2f\n",
+               xilltab_parname[ii], tab->param_index[ii], tab->num_param_vals[ii],
+               tab->param_vals[ii][0], tab->param_vals[ii][tab->num_param_vals[ii] - 1]);
+    }
+}
 
 /** read the parameters of the xillver FITS table   */
 static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *param, int *status) {
@@ -203,15 +208,13 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
 
     int ii;
     char strnull[10];
+    strcpy(strnull, " ");
+
     /* allocate space for string column value */
     char **xilltab_parname = (char **) malloc(sizeof(char *) * tab->num_param);
     CHECK_MALLOC_VOID_STATUS(xilltab_parname, status)
 
-
-    strcpy(strnull, " ");
-
-    /** also get the name **/
-    // TODO: get reading a string working
+    // get the name
     for (ii = 0; ii < tab->num_param; ii++) {
         xilltab_parname[ii] = (char *) malloc(sizeof(char) * 32);
         CHECK_MALLOC_VOID_STATUS(xilltab_parname[ii], status)
@@ -235,18 +238,16 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
                       status);
 
 
-        if (is_debug_run()) {
-            printf(" loading parameter %s  \t -  %02i values from %.2f to %.2f\n",
-                   xilltab_parname[ii], tab->num_param_vals[ii],
-                   tab->param_vals[ii][0], tab->param_vals[ii][tab->num_param_vals[ii] - 1]);
-        }
-
-
         CHECK_STATUS_BREAK(*status)
     }
 
     // set the index of each parameter according to the NAME column we found in the table
     set_parindex_from_parname(tab->param_index, xilltab_parname, tab->num_param, status);
+
+    if (is_debug_run()) {
+        print_xilltable_parameters(tab, xilltab_parname);
+    }
+
 
     // now we set a pointer to the inclination separately (assuming it is the last parameter)
     tab->incl = tab->param_vals[tab->num_param - 1];

@@ -205,7 +205,7 @@ void set_std_param_relxilllpion_nthcomp(double *inp_par) {
 }
 
 
-xillParam *get_std_param_xillver(const int *status) {
+xillParam *get_std_param_xillver(int *status) {
     int n_param = NUM_PARAM_XILLVER;
     double *inp_par = (double *) malloc(sizeof(double) * n_param);
     CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)

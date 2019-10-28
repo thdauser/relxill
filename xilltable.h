@@ -92,4 +92,6 @@ char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status);
 
 void norm_xillver_spec(xill_spec* spec, double incl);
 
+void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname);
+
 #endif /* XILLTABLE_H_ */

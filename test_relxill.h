@@ -50,7 +50,7 @@ void set_std_param_relxilllpion(double *inp_par);
 
 void set_std_param_relxilllpion_nthcomp(double *inp_par);
 
-xillParam *get_std_param_xillver(const int *status);
+xillParam *get_std_param_xillver(int *status);
 
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n);
