@@ -1146,8 +1146,6 @@ define print_refl_frac(){ %{{{
 }
 %}}}
 
-if (do_mc_testing() != EXIT_SUCCESS) exit;
-#iffalse
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
