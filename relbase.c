@@ -1079,10 +1079,6 @@ static void renorm_model(const double *flu0, double *flu, int nbins) {
 
 
 static void renorm_xill_spec(double* spec , int n, double lxi, double dens){
-    <<<<<<< HEAD
-
-            == == == =
-    >>>>>>> 6dim
   int ii;
 	for (ii=0; ii<n; ii++){
 		spec[ii] /= pow(10,lxi);
