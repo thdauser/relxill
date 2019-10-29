@@ -25,15 +25,17 @@
 #define XILLTABLE_N_PARAM 5
 
 // currently the number of different parameters that can be given in a table
-#define N_PARAM_MAX 8
+#define N_PARAM_MAX 10
 #define PARAM_GAM 0
 #define PARAM_AFE 1
+#define PARAM_ACO 1  // caveat: internally we use it same as AFE
 #define PARAM_LXI 2
 #define PARAM_ECT 3
 #define PARAM_KTE 3  // caveat: internally we treat kTe as Ecut
-#define PARAM_KTB 4
-#define PARAM_DNS 5
-#define PARAM_INC 6
+#define PARAM_DNS 4
+#define PARAM_KTB 5
+#define PARAM_FRA 6
+#define PARAM_INC 7
 
 #define NAME_GAM "Gamma"
 #define NAME_AFE "A_Fe"
@@ -42,6 +44,8 @@
 #define NAME_KTE "kTe"
 #define NAME_KTB "kTbb"
 #define NAME_DNS "Dens"
+#define NAME_ACO "A_CO"
+#define NAME_FRA "Frac"
 #define NAME_INC "Incl"
 
 

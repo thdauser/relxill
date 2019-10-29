@@ -74,7 +74,6 @@ typedef struct{
 
 typedef struct{
 	double gam;
-	double kTbb;
 	double afe;
 	double lxi;
 	double ect;
@@ -83,6 +82,8 @@ typedef struct{
 	double refl_frac;
 	double dens;
 	double ion_grad_index;
+	double kTbb;
+	double frac_pl_bb;
 	int ion_grad_type;
 	int fixReflFrac;
 	int model_type;

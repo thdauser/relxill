@@ -19,8 +19,10 @@
 #include "xilltable.h"
 
 // possible parameters for the xillver tables
-int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_KTE, PARAM_DNS, PARAM_KTB, PARAM_INC};
-char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_KTE, NAME_DNS, NAME_KTB, NAME_INC};
+int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_KTE, PARAM_DNS,
+                            PARAM_KTB, PARAM_ACO, PARAM_FRA, PARAM_INC};
+char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_KTE, NAME_DNS,
+                              NAME_KTB, NAME_ACO, NAME_FRA, NAME_INC};
 
 // storage for the tables
 xillTable *cached_xill_tab = NULL;

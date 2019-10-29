@@ -1199,6 +1199,7 @@ xillParam* new_xillParam(int model_type, int prim_type, int* status){
 	param->refl_frac = PARAM_DEFAULT;
 	param->fixReflFrac = -1;
 	param->dens = PARAM_DEFAULT;
+	param->frac_pl_bb = PARAM_DEFAULT;
 	param->kTbb = PARAM_DEFAULT;
 	param->ion_grad_type = ION_GRAD_TYPE_CONST; // no ion grad
 	param->ion_grad_index = PARAM_DEFAULT;
