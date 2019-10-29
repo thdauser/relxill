@@ -27,7 +27,7 @@ _traceback=1;
 
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
 		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp",
-		  "xillverNS"];
+		  "xillverNS","relxillNS"];
 
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
@@ -85,7 +85,36 @@ define grav_redshift_prim(a,h){ %{{{
    return 1.0 / sqrt( 1.0 - 2*h/(h^2 + a^2) ) - 1.0;
 }
 %}}}
+define set_params_xillver(pars){
 
+   if (pars==NULL) return;
+   variable ii, n = length(pars);
+
+   variable assoc = Assoc_Type[String_Type];
+   assoc["gamma"]   = "Gamma";
+   assoc["Afe"]     = "A_Fe";
+   assoc["logxi"]   = "logXi";
+   assoc["norm"]    = "norm";
+   assoc["Ecut"]    = "Ecut";
+   assoc["Incl"]    = "Incl";
+   assoc["z"   ]    = "redshift";
+   assoc["logN"]    = "Dens";
+   assoc["kTe" ]    = "kTe";
+
+   
+   variable par_array = ["gamma","Afe"];
+   
+   _for ii(0,n-1){
+      %% get the name of the parameter string and then set the
+      %% respective value
+      variable pname = string_matches(pars[ii].name,"\.\(.*\)"R)[-1];
+      if (pname == "refl_frac") continue; 
+      
+      set_par("*"+assoc[pname],pars[ii].value);
+   }
+   
+   
+}
 
    
 variable EXIT_SUCCESS = 0;
@@ -938,6 +967,40 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
 }
 %}}}
 
+define check_xilltab_implementation_single(ff,tabname){
+   
+   
+   %%%%  CURRENTLY NOT WORKED (KILLDE BY ISIS DUE TO MEMEORY (?) ISSUES)
+   %% variable tablepath =  getenv("RELXILL_TABLE_PATH")+ "/";
+   %% variable ff_tab = "tab";
+   %% add_atable_model(tablepath+tabname,"tab");
+   %% fit_fun(ff_tab);
+   %% variable pars = get_params();
+   %% set_params_xillver(pars);
+   %% variable valr =  eval_fun_keV(lo0,hi0);
+   %% valr *=  sum(val1) / sum(valr);
+
+   %% doing this instead 
+   variable refdat = fits_read_table(sprintf("refdat/refdat_%s.fits",ff));
+   variable lo0 = refdat.lo;
+   variable hi0 = refdat.hi;
+   variable valr = refdat.val;
+   
+   fit_fun_default(ff);
+   set_par("*.refl_frac",-1.0);   
+   variable val1     =  eval_fun_keV(lo0,hi0);
+   
+
+   if (qualifier_exists("pl")){
+      xlog;ylog;
+      hplot(lo0,hi0,val1);
+      ohplot(lo0,hi0,valr);
+      sleep(10);
+   }
+   
+   return goodness(val1,valr);
+
+}
 
 define check_refl_frac_single(ff){ %{{{
    
@@ -1045,6 +1108,32 @@ define check_prim_cont(){ %{{{
 }
 %}}}
 
+
+define check_xilltab_implementation(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### testing XILLVER models (compare to table models):  ###",counter);
+
+   
+   variable ff =     ["xillverCp", "xillver","xillverD","xillverNS"];
+   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits", "xillverNS.fits"];
+   
+   
+   variable ii,n = length(ff);
+   
+   _for ii(0,n-1,1){
+      if (not (check_xilltab_implementation_single(ff[ii],ff_tab[ii] ) < goodness_lim)){
+	vmessage(" *** error: MODEL %s does not agree with its table %s  ",ff[ii],ff_tab[ii]);
+	 return EXIT_FAILURE;
+      }
+      vmessage("  comparing %s \t with table %s \t succesful ", ff[ii], ff_tab[ii]);
+   }
+   
+   return EXIT_SUCCESS;
+}
+%}}}
+
+
 define check_refl_frac(){ %{{{
    
    counter++;
@@ -1148,6 +1237,9 @@ define print_refl_frac(){ %{{{
 %}}}
 
 
+if (check_xilltab_implementation() != EXIT_SUCCESS) exit;
+
+#iffalse
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
 
