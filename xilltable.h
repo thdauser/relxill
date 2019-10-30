@@ -25,7 +25,7 @@
 #define XILLTABLE_N_PARAM 5
 
 // currently the number of different parameters that can be given in a table
-#define N_PARAM_MAX 10
+#define N_PARAM_MAX 10  // has to be as long as the NAME_ array
 #define PARAM_GAM 0
 #define PARAM_AFE 1
 #define PARAM_ACO 1  // caveat: internally we use it same as AFE
@@ -79,5 +79,6 @@ void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parna
 
 void norm_xillver_spec(xill_spec *spec, double incl);
 
+int is_6dim_table(int model_type);
 
 #endif /* XILLTABLE_H_ */

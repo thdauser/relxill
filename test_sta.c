@@ -233,13 +233,12 @@ int main(int argc, char *argv[]){
 	int do_relxilllpion = 0;
 	int do_relxilldens = 0;
 	int do_relxillns = 0;
+    int do_relxillco = 0;
 	int do_relxilllpdens = 0;
 	int do_relxillnthcomp= 0;
 	int do_relxilllpnthcomp = 0;
 	int do_relxilllpionnthcomp = 0;
 	int do_relconv = 0;
-
-//	putenv("DEBUG_RELXILL=1");
 
 	if (argc>=2){
 		if (strcmp(argv[1],"version")==0){
@@ -266,6 +265,12 @@ int main(int argc, char *argv[]){
             do_all = 0;
         } else if (strcmp(argv[1], "relxilldens") == 0) {
             do_relxilldens = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxillNS") == 0) {
+            do_relxillns = 1;
+            do_all = 0;
+        } else if (strcmp(argv[1], "relxillCO") == 0) {
+            do_relxillco = 1;
             do_all = 0;
         } else if (strcmp(argv[1], "relxilllpdens") == 0) {
             do_relxilllpdens = 1;
@@ -342,7 +347,13 @@ int main(int argc, char *argv[]){
 			printf("     ---> successful \n");
 		}
 
-		if (do_all || do_relxilllp){
+        if (do_all || do_relxillco) {
+            std_eval_relxill_co(&status, n);
+            CHECK_STATUS_BREAK(status);
+            printf("     ---> successful \n");
+        }
+
+        if (do_all || do_relxilllp) {
 			std_eval_relxilllp(&status,n);
             CHECK_STATUS_BREAK(status)
 			printf("     ---> successful \n");

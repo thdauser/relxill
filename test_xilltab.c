@@ -48,6 +48,18 @@ static void print_status_outcome(const int *status) {
     }
 }
 
+static void test_tab_num_param(const xillParam *param, int *status, const xillTable *tab) {
+    printf("     - number of parameters: %i ", tab->num_param);
+    int dim_expect = 5;
+    if (is_6dim_table(param->model_type)) {
+        dim_expect = 6;
+    }
+    printf(" [expected: %i] ", dim_expect);
+    if (tab->num_param != dim_expect) {
+        *status = EXIT_FAILURE;
+    }
+}
+
 static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
 
@@ -59,11 +71,14 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
     assert(tab->n_ener > 0);
 
 
-    assert(tab->num_param > 0);
     int ii;
     for (ii = 0; ii < tab->num_param; ii++) {
         assert(tab->num_param_vals[ii] > 0);
     }
+
+    assert(tab->num_param > 0);
+    test_tab_num_param(param, status, tab);
+
 
     print_status_outcome(status);
 
@@ -88,12 +103,15 @@ static void test_spec_norm(xill_spec *spec, int *status) {
 
 }
 
-static void test_get_spec(int *status) {
+static void test_get_spec(int *status, xillParam *param) {
 
-    printf("\n *** TEST: loading Spectrum from Storage  ...   ");
+    printf("\n *** TEST: loading Spectrum from Storage (model type = %i) ...   ",
+           param->model_type);
 
-    xillParam *param = get_std_param_xillver(status);
     xill_spec *spec = get_xillver_spectra(param, status);
+    if (*status != EXIT_SUCCESS) {
+        printf("\n *** ERROR trying to load the spectrum \n");
+    }
 
     assert(spec->n_ener > 0);
     assert(spec->n_incl > 0);
@@ -105,15 +123,35 @@ static void test_get_spec(int *status) {
 
 
     free_xill_spec(spec);
+}
+
+static void test_all_spec(int *status) {
+
+    xillParam *param;
+
+    // param = get_std_param_xillver(status);
+    //  test_get_spec(status, param);
+
+    param = get_std_param_xillver_co(status);
+    test_get_spec(status, param);
 
 
 }
 
 static void test_all_xilltables(int *status) {
 
+    xillParam *param;
     putenv("DEBUG_RELXILL=1");
-    xillParam *param = get_std_param_xillver(status);
+
+    /** -1- xillver (5dim table) **/
+    param = get_std_param_xillver(status);
     test_init_xilltable(XILLTABLE_FILENAME, param, status);
+
+    /** -2- xillver CO  (6dim table) **/
+    param = get_std_param_xillver_co(status);
+    test_init_xilltable(XILLTABLE_CO_FILENAME, param, status);
+
+
     putenv("DEBUG_RELXILL=0");
 
 }
@@ -130,7 +168,7 @@ int main(int argc, char *argv[]) {
 
     test_all_xilltables(&status);
 
-    test_get_spec(&status);
+    test_all_spec(&status);
 
     if (status != EXIT_SUCCESS) {
         printf(" *** TESTING NOT SUCCESSFUL \n");

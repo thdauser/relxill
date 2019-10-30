@@ -55,7 +55,8 @@ void relxill_warning(const char* const msg){
 
 
 int is_xill_model(int model_type){
-	if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER) || (model_type == MOD_TYPE_XILLVERNS)){
+    if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)
+        || (model_type == MOD_TYPE_XILLVERNS) || (model_type == MOD_TYPE_XILLVERCO)) {
 		return 1;
 	} else {
 		return 0;
@@ -78,7 +79,7 @@ void relxill_check_fits_error(const int *status) {
     if (*status != EXIT_SUCCESS) {
         char errtext[30];
         fits_get_errstatus(*status, errtext);
-        printf("cfitsio error: %s \n", errtext);
+        printf("   cfitsio error: %s \n", errtext);
     }
 }
 

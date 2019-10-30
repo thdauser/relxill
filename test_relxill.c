@@ -28,6 +28,17 @@ void set_std_param_xillver(double *inp_par) {
     inp_par[6] = -1.0;   // refl. frac.
 }
 
+void set_std_param_xillverco(double *inp_par) {
+    inp_par[0] = 2.1;    // Gamma
+    inp_par[1] = 5.0;    // A_CO
+    inp_par[2] = 0.1;   // kTbb
+    inp_par[3] = 0.1;   // frac_pl_bb
+    inp_par[4] = 300.0;  // Ecut
+    inp_par[5] = 0.;     // redshift
+    inp_par[6] = 45.0;   // inclination
+    inp_par[7] = -1.0;   // refl. frac.
+}
+
 void set_std_param_relline(double *inp_par) {
     inp_par[0] = 6.4;
     inp_par[1] = 3.0;
@@ -222,12 +233,38 @@ void set_std_param_relxillns(double *inp_par) {
 }
 
 
+void set_std_param_relxillco(double *inp_par) {
+    inp_par[0] = 3.0;
+    inp_par[1] = 3.0;
+    inp_par[2] = 15.0;
+    inp_par[3] = 0.998;
+    inp_par[4] = 60.0;
+    inp_par[5] = -1.0;
+    inp_par[6] = 400.;
+    inp_par[7] = 0.0;   // redshift
+    inp_par[8] = 2.0;   // gamma
+    inp_par[10] = 1.0;  // A_CO
+    inp_par[11] = 5.0;  // kTbb
+    inp_par[11] = 0.1;  // frac_pl_bb
+    inp_par[11] = 300.0;  // Ecut
+    inp_par[12] = 3.0;   // refl_frac
+}
+
+
 xillParam *get_std_param_xillver(int *status) {
     int n_param = NUM_PARAM_XILLVER;
     double *inp_par = (double *) malloc(sizeof(double) * n_param);
     CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
     set_std_param_xillver(inp_par);
     return init_par_xillver(inp_par, n_param, status);
+}
+
+xillParam *get_std_param_xillver_co(int *status) {
+    int n_param = NUM_PARAM_XILLVERCO;
+    double *inp_par = (double *) malloc(sizeof(double) * n_param);
+    CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
+    set_std_param_xillverco(inp_par);
+    return init_par_xillver_co(inp_par, n_param, status);
 }
 
 
@@ -716,8 +753,8 @@ void std_eval_relxill_ns(int *status, int n) {
 
     printf("\n ==> Evaluating RELXILL NS MODEL \n");
     /* set the parameters */
-    int n_param = NUM_PARAM_RELXILL;
-    double inp_par[NUM_PARAM_RELXILL];
+    int n_param = NUM_PARAM_RELXILLNS;
+    double inp_par[NUM_PARAM_RELXILLNS];
     set_std_param_relxillns(inp_par);
     CHECK_STATUS_VOID(*status);
 
@@ -730,4 +767,25 @@ void std_eval_relxill_ns(int *status, int n) {
     double photar[n_ener];
 
     tdrelxillns(ener, n_ener, photar, inp_par, n_param, status);
+}
+
+/** standard evaluation of the relxillNS model **/
+void std_eval_relxill_co(int *status, int n) {
+
+    printf("\n ==> Evaluating RELXILL NS MODEL \n");
+    /* set the parameters */
+    int n_param = NUM_PARAM_RELXILLCO;
+    double inp_par[NUM_PARAM_RELXILLCO];
+    set_std_param_relxillco(inp_par);
+    CHECK_STATUS_VOID(*status);
+
+    /* create an energy grid */
+    int n_ener = 3000;
+    double ener[n_ener + 1];
+    get_log_grid(ener, n_ener + 1, 0.1, 1000.0);
+
+    /* call the relline model */
+    double photar[n_ener];
+
+    tdrelxillco(ener, n_ener, photar, inp_par, n_param, status);
 }

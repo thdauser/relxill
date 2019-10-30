@@ -130,7 +130,7 @@ static int is_dens_model(int model_type) {
     }
 }
 
-static int is_6dim_table(int model_type) {
+int is_6dim_table(int model_type) {
     if (is_co_model(model_type)) {
         return 1;
     } else {
@@ -331,6 +331,7 @@ static float *get_xill_param_vals_array(xillParam *param, int *status) {
     param_vals[PARAM_KTE] = (float) param->ect;
     param_vals[PARAM_DNS] = (float) param->dens;
     param_vals[PARAM_KTB] = (float) param->kTbb;
+    param_vals[PARAM_FRA] = (float) param->frac_pl_bb;
     param_vals[PARAM_INC] = (float) param->incl;
 
     return param_vals;
@@ -459,6 +460,7 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
 }
 
 
+
 static void
 load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, int jj, int kk, int ll, int mm,
                  int *status) {
@@ -491,7 +493,12 @@ load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, i
     int rownum = get_xillspec_rownum(tab->num_param_vals, tab->num_param, nn, ii, jj, kk, ll, mm);
 
     fits_read_col(*fptr, TFLOAT, colnum_spec, rownum, 1, nelem, &nullval, spec, &anynul, status);
-    CHECK_STATUS_VOID(*status)
+    if (*status != EXIT_SUCCESS) {
+        printf("\n *** ERROR *** failed reading table %s  (rownum %i) \n",
+               fname, rownum);
+        relxill_check_fits_error(status);
+        return;
+    }
 
     set_dat(spec, tab, nn, ii, jj, kk, ll, mm);
 }
@@ -514,10 +521,12 @@ static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, i
     int i0lo = 0;
     int i0hi = 0;
     int istart = 0;
-    // for 6dim
+    // for 6dim we (i.e., I) decided to use the complicated statement
+    // (reason: new dimension has to be at the beginning, as inclination HAS to be last
     if (tab->num_param == 6) {
         i0lo = ind[0];
         i0hi = ind[0] + 1;
+        istart = 1;
     }
 
 
@@ -574,6 +583,8 @@ xill_spec *new_xill_spec(int n_incl, int n_ener, int *status) {
         spec->flu[ii] = (double *) malloc(sizeof(double) * n_ener);
         CHECK_MALLOC_RET_STATUS(spec->flu[ii], status, spec)
     }
+
+    assert(spec != NULL);
 
     return spec;
 }
@@ -698,20 +709,42 @@ static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
     }
 }
 
+/** check if the given parameter index is in the xillver table
+ *  -1 : not found
+ *  ii : return index where this value is found in the param_index array  **/
 static int is_in_xilltable(xillTable *tab, int ind) {
 
     int ii;
-    int ret = FALSE;
     for (ii = 0; ii < tab->num_param; ii++) {
         if (tab->param_index[ii] == ind) {
-            ret = TRUE;
-            continue;
+            return ii;
         }
     }
-    return ret;
+    return -1;
+}
+
+/** check boundary of the Ecut parameter  (grav. redshift can lead to the code asking
+ *  for an Ecut not tabulated, although actually observed ecut is larger
+ *  Input: tab, param
+ *  Output fac         **/
+static void check_boundarys_ecut(xillTable *tab, const xillParam *param, double *fac) {
+    // first need to make sure ECUT is a parameter in the table
+    int index_ect = is_in_xilltable(tab, PARAM_ECT);
+    if (index_ect >= 0) {
+        if (param->ect <= tab->param_vals[tab->param_index[index_ect]][0]) {
+            fac[index_ect] = 0.0;
+        }
+        // can happen due to grav. redshift, although actually observed ecut is larger
+        if (param->ect >=
+            tab->param_vals[tab->param_index[index_ect]][tab->num_param_vals[tab->param_index[index_ect]] - 1]) {
+            fac[index_ect] = 1.0;
+        }
+    }
 }
 
 static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
+
+    CHECK_STATUS_RET(*status, NULL)
 
     xill_spec *spec = NULL;
     if (is_xill_model(param->model_type)) {
@@ -749,21 +782,14 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
         pind = tab->param_index[ii];
         fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
                   (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
+        printf("\n [%i] par_index=%i  : parval = %.2e (index=%i), determining fac = %.2e ",
+               ii, pind, inp_param_vals[pind], ind[ii], fac[ii]);
     }
 
-    // can happen due to grav. redshift, although actually observed ecut is larger
-
-    // need to make sure ECUT is a parameter in the table
-    if (is_in_xilltable(tab, PARAM_ECT)) {
-        if (param->ect <= tab->param_vals[tab->param_index[PARAM_ECT]][0]) {
-            fac[tab->param_index[PARAM_ECT]] = 0.0;
-        }
-        // can happen due to grav. redshift, although actually observed ecut is larger
-        if (param->ect >=
-            tab->param_vals[tab->param_index[PARAM_ECT]][tab->num_param_vals[tab->param_index[PARAM_ECT]] - 1]) {
-            fac[tab->param_index[PARAM_ECT]] = 1.0;
-        }
-    }
+    /** check boundary of the Ecut parameter
+     *  (grav. redshift can lead to the code asking for an Ecut not tabulated,
+     *  although actually observed ecut is larger **/
+    check_boundarys_ecut(tab, param, fac);
 
     if (tab->num_param == 5) {
         if (is_xill_model(param->model_type)) {
@@ -786,11 +812,6 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
 
         }
     } else if (tab->num_param == 6) {
-
-        if (is_xill_model(param->model_type)) {
-            printf(" **** 6DIM Table not implemented for xillver model \n");
-            return NULL;
-        }
 
         assert(nfac == 6);
         for (ii = 0; ii < spec->n_incl; ii++) {
