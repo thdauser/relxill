@@ -54,6 +54,7 @@
 #define XILLTABLE_DENS_FILENAME "xillverD-5.fits"
 #define XILLTABLE_NTHCOMP_FILENAME "xillver-comp.fits"
 #define XILLTABLE_NS_FILENAME "xillverNS.fits"
+#define XILLTABLE_CO_FILENAME "xillverCO.fits"
 
 /** get a new and empty rel table (structure will be allocated)  */
 xillTable *new_xillTable(int num_param, int *status);

@@ -197,6 +197,34 @@ xillParam* init_par_xillver_ns(const double* inp_par, const int n_parameter, int
 	return param;
 }
 
+
+xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int *status) {
+
+    // fill in parameters
+    xillParam *param = new_xillParam(MOD_TYPE_XILLVERCO, PRIM_SPEC_ECUT, status);
+    CHECK_STATUS_RET(*status, NULL);
+
+    assert(n_parameter == NUM_PARAM_XILLVERCO);
+
+    param->gam = inp_par[0];
+    param->afe = inp_par[1]; // this is A_CO here for the xillverCO model
+    param->kTbb = inp_par[2]; //
+    param->frac_pl_bb = inp_par[3]; //
+    param->ect = inp_par[4];
+    param->z = inp_par[5];
+    param->incl = inp_par[6]; // is given in degrees !!
+    param->refl_frac = inp_par[7];
+
+    param->lxi = 0.0;       // interestingly this model does not have an ionization
+
+    // TODO: check parameter bounds here as well
+/*	check_parameter_bounds_xillver(param,status);
+	CHECK_STATUS_RET(*status,NULL); */
+
+    return param;
+}
+
+
 xillParam* init_par_xillver_dens(const double* inp_par, const int n_parameter, int* status){
 
 	// fill in parameters
@@ -316,15 +344,55 @@ void init_par_relxill_ns(relParam** rel_param, xillParam** xill_param, const dou
 	xparam->refl_frac = inp_par[12];
 	xparam->fixReflFrac = 0;
 
-
 	check_parameter_bounds(param,status);
 	CHECK_STATUS_VOID(*status);
 
 	*rel_param  = param;
 	*xill_param = xparam;
 
-	return;
 }
+
+
+void init_par_relxill_co(relParam **rel_param, xillParam **xill_param, const double *inp_par, const int n_parameter,
+                         int *status) {
+
+    // fill in parameters
+    relParam *param = new_relParam(MOD_TYPE_RELXILLCO, EMIS_TYPE_BKN, status);
+    CHECK_STATUS_VOID(*status);
+
+    xillParam *xparam = new_xillParam(MOD_TYPE_RELXILLCO, PRIM_SPEC_ECUT, status);
+    CHECK_STATUS_VOID(*status);
+
+    assert(n_parameter == NUM_PARAM_RELXILLCO);
+
+    param->emis1 = inp_par[0];
+    param->emis2 = inp_par[1];
+    param->rbr = inp_par[2];
+    param->a = inp_par[3];
+    param->incl = inp_par[4] * M_PI / 180;
+    param->rin = inp_par[5];
+    param->rout = inp_par[6];
+    param->z = inp_par[7];
+    xparam->z = inp_par[7];
+
+    xparam->gam = inp_par[8];
+    xparam->afe = inp_par[9]; // this is A_CO here for the xillverCO model
+    xparam->kTbb = inp_par[10]; //
+    xparam->frac_pl_bb = inp_par[11]; //
+    xparam->ect = inp_par[12];
+    xparam->refl_frac = inp_par[13];
+
+    xparam->fixReflFrac = 0;
+
+
+    check_parameter_bounds(param, status);
+    CHECK_STATUS_VOID(*status);
+
+    *rel_param = param;
+    *xill_param = xparam;
+
+}
+
 
 void init_par_relxill_nthcomp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
 
@@ -790,6 +858,29 @@ void tdrelxillns(const double* ener0, const int n_ener0, double* photar, const d
 
 }
 
+/** RELXILL MODEL FUNCTION for the xillverCO table  **/
+void tdrelxillco(const double *ener0, const int n_ener0, double *photar, const double *parameter,
+                 const int n_parameter, int *status) {
+
+    xillParam *xill_param = NULL;
+    relParam *rel_param = NULL;
+
+    init_par_relxill_co(&rel_param, &xill_param, parameter, n_parameter, status);
+    CHECK_STATUS_VOID(*status);
+
+    // int n_ener = (int) n_ener0;
+    double *ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
+
+    relxill_kernel(ener, photar, n_ener0, xill_param, rel_param, status);
+    CHECK_STATUS_VOID(*status);
+
+    free(ener);
+    free_xillParam(xill_param);
+    free_relParam(rel_param);
+
+}
+
+
 /** RELXILL DENS MODEL FUNCTION **/
 void tdrelxilldens(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
 
@@ -952,6 +1043,17 @@ void tdxillverns(const double* ener0, const int n_ener0, double* photar, const d
 
 	xillver_base(ener0, n_ener0, photar, param_struct, status);
 }
+
+/** XSPEC XILLVER CO MODEL FUNCTION **/
+void tdxillverco(const double *ener0, const int n_ener0, double *photar,
+                 const double *parameter, const int n_parameter, int *status) {
+
+    xillParam *param_struct = init_par_xillver_co(parameter, n_parameter, status);
+    CHECK_STATUS_VOID(*status);
+
+    xillver_base(ener0, n_ener0, photar, param_struct, status);
+}
+
 
 /** BASIC XILLVER MODEL FUNCTION **/
 void xillver_base(const double* ener0, const int n_ener0, double* photar, xillParam* param_struct, int* status){
@@ -1314,6 +1416,7 @@ void lmodxillver(const double* ener0, const int n_ener0, const double* parameter
 	RELXILL_ERROR("evaluating xillver model failed",&status);
 }
 
+
 /** XSPEC XILLVER MODEL FUNCTION **/
 void lmodxillverdens(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
@@ -1334,6 +1437,31 @@ void lmodxillverns(const double* ener0, const int n_ener0, const double* paramet
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating xillverNS model failed",&status);
+}
+
+/** XSPEC XILLVER CO MODEL FUNCTION **/
+void lmodxillverco(const double *ener0, const int n_ener0, const double *parameter, int ifl,
+                   double *photar, double *photer, const char *init) {
+
+    const int n_parameter = 8;
+    int status = EXIT_SUCCESS;
+    tdxillverco(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+    if (status != EXIT_SUCCESS)
+        RELXILL_ERROR("evaluating xillverCO model failed", &status);
+}
+
+/** XSPEC RELXILL CO MODEL FUNCTION **/
+void
+lmodrelxillco(const double *ener0, const int n_ener0, const double *parameter, int ifl, double *photar, double *photer,
+              const char *init) {
+
+    const int n_parameter = 14;
+    int status = EXIT_SUCCESS;
+    tdrelxillco(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+    if (status != EXIT_SUCCESS)
+        RELXILL_ERROR("evaluating relxillCO model failed", &status);
 }
 
 

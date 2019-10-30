@@ -29,7 +29,25 @@ xillTable *cached_xill_tab = NULL;
 xillTable *cached_xill_tab_dens = NULL;
 xillTable *cached_xill_tab_nthcomp = NULL;
 xillTable *cached_xill_tab_ns = NULL;
+xillTable *cached_xill_tab_co = NULL;
 
+
+// todo: put "is model func" in relmodels.c and better structure?
+static int is_ns_model(int model_type) {
+    if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static int is_co_model(int model_type) {
+    if ((model_type == MOD_TYPE_RELXILLCO) || (model_type == MOD_TYPE_XILLVERCO)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
 
 static int get_num_elem(const int *n_parvals, int npar) {
 
@@ -113,7 +131,7 @@ static int is_dens_model(int model_type) {
 }
 
 static int is_6dim_table(int model_type) {
-    if (model_type == MOD_TYPE_RELXILLCO) {
+    if (is_co_model(model_type)) {
         return 1;
     } else {
         return 0;
@@ -169,13 +187,6 @@ void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parna
     }
 }
 
-static int is_ns_model(int model_type) {
-    if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS)) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
 
 /** read the parameters of the xillver FITS table   */
 static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *param, int *status) {
@@ -812,6 +823,14 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
         }
         *tab = cached_xill_tab_ns;
         return XILLTABLE_NS_FILENAME;
+
+    } else if (is_co_model(param->model_type)) {
+        if (cached_xill_tab_ns == NULL) {
+            init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, param, status);
+            CHECK_STATUS_RET(*status, NULL)
+        }
+        *tab = cached_xill_tab_co;
+        return XILLTABLE_CO_FILENAME;
 
     } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
         if (cached_xill_tab_nthcomp == NULL) {

@@ -60,10 +60,14 @@
 #define MOD_TYPE_RELXILLLPION -21
 #define NUM_PARAM_RELXILLLPION 15
 
-#define MOD_TYPE_RELXILLION -20  // not implemented yet
-// #define NUM_PARAM_RELXILLION 15???
+// TODO: implement RELXILLION model ??
 
+/** CO models **/
 #define MOD_TYPE_RELXILLCO -200
+#define NUM_PARAM_RELXILLCO -1
+
+#define MOD_TYPE_XILLVERCO -210
+#define NUM_PARAM_XILLVERCO -1
 
 /** Neutron Star / BB models **/
 #define MOD_TYPE_RELXILLNS -30
@@ -106,6 +110,12 @@ void tdrelxilllp_nthcomp(const double* ener0, const int n_ener0, double* photar,
 void tdrelxilllpion_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdxillver_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 
+void tdxillverco(const double *ener0, const int n_ener0, double *photar, const double *parameter, const int n_parameter,
+                 int *status);
+
+void tdrelxillco(const double *ener0, const int n_ener0, double *photar, const double *parameter, const int n_parameter,
+                 int *status);
+
 /* get the version number text on the screen (if not already printed before */
 void print_version_number(int* status);
 
@@ -134,6 +144,14 @@ void lmodxillverdens(const double* ener0, const int n_ener0, const double* param
 
 void lmodrelxillns(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodxillverns(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+
+void
+lmodxillverco(const double *ener0, const int n_ener0, const double *parameter, int ifl, double *photar, double *photer,
+              const char *init);
+
+void
+lmodrelxillco(const double *ener0, const int n_ener0, const double *parameter, int ifl, double *photar, double *photer,
+              const char *init);
 
 void lmodrelxillnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelxilllpnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
