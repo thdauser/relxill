@@ -328,7 +328,6 @@ static float *get_xill_param_vals_array(xillParam *param, int *status) {
     param_vals[PARAM_AFE] = (float) param->afe;
     param_vals[PARAM_LXI] = (float) param->lxi;
     param_vals[PARAM_ECT] = (float) param->ect;
-    param_vals[PARAM_KTE] = (float) param->ect;
     param_vals[PARAM_DNS] = (float) param->dens;
     param_vals[PARAM_KTB] = (float) param->kTbb;
     param_vals[PARAM_FRA] = (float) param->frac_pl_bb;
@@ -689,7 +688,6 @@ static void interp_5d_tab(xillTable *tab, double *flu, int n_ener,
 static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
                                double *fac, int nfac, const int *ind, int iincl) {
 
-    // we make sure this is used only for a 6dim table
     assert(nfac == 6);
 
     double s1[n_ener];
@@ -708,6 +706,32 @@ static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
         flu[ii] = interp_lin_1d(fac[0], s1[ii], s2[ii]);
     }
 }
+
+/* cheap man's version of a 6dim interpolation */
+static void interp_6d_tab(xillTable *tab, double *flu, int n_ener,
+                          double *fac, int nfac, const int *ind) {
+
+    assert(nfac == 6);
+
+    double s1[n_ener];
+    double s2[n_ener];
+
+    interp_5d_tab(tab, s1, n_ener,
+                  fac[1], fac[2], fac[3], fac[4], fac[5],
+                  ind[0],
+                  ind[1], ind[2], ind[3], ind[4], ind[5]);
+
+    interp_5d_tab(tab, s2, n_ener,
+                  fac[1], fac[2], fac[3], fac[4], fac[5],
+                  ind[0] + 1,
+                  ind[1], ind[2], ind[3], ind[4], ind[5]);
+
+    int ii;
+    for (ii = 0; ii < n_ener; ii++) {
+        flu[ii] = interp_lin_1d(fac[0], s1[ii], s2[ii]);
+    }
+}
+
 
 /** check if the given parameter index is in the xillver table
  *  -1 : not found
@@ -782,8 +806,11 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
         pind = tab->param_index[ii];
         fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
                   (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
-        printf("\n [%i] par_index=%i  : parval = %.2e (index=%i), determining fac = %.2e ",
-               ii, pind, inp_param_vals[pind], ind[ii], fac[ii]);
+
+        if (is_debug_run()) {
+            printf("\n [%i] par_index=%i  : parval = %.2e (index=%i), determining fac = %.2e ",
+                   ii, pind, inp_param_vals[pind], ind[ii], fac[ii]);
+        }
     }
 
     /** check boundary of the Ecut parameter
@@ -793,7 +820,6 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
 
     if (tab->num_param == 5) {
         if (is_xill_model(param->model_type)) {
-            assert(nfac == 5);
             interp_5d_tab(tab, spec->flu[0], spec->n_ener,
                           fac[0], fac[1], fac[2], fac[3], fac[4], 0,
                           ind[0], ind[1], ind[2], ind[3], ind[4]);
@@ -813,10 +839,16 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
         }
     } else if (tab->num_param == 6) {
 
-        assert(nfac == 6);
-        for (ii = 0; ii < spec->n_incl; ii++) {
-            interp_6d_tab_incl(tab, spec->flu[ii], spec->n_ener,
-                               fac, nfac, ind, ii);
+        if (is_xill_model(param->model_type)) {
+            for (ii = 0; ii < spec->n_incl; ii++) {
+                interp_6d_tab(tab, spec->flu[ii], spec->n_ener,
+                              fac, nfac, ind);
+            }
+        } else {
+            for (ii = 0; ii < spec->n_incl; ii++) {
+                interp_6d_tab_incl(tab, spec->flu[ii], spec->n_ener,
+                                   fac, nfac, ind, ii);
+            }
         }
 
     }
@@ -846,7 +878,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
         return XILLTABLE_NS_FILENAME;
 
     } else if (is_co_model(param->model_type)) {
-        if (cached_xill_tab_ns == NULL) {
+        if (cached_xill_tab_co == NULL) {
             init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, param, status);
             CHECK_STATUS_RET(*status, NULL)
         }

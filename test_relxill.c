@@ -243,11 +243,11 @@ void set_std_param_relxillco(double *inp_par) {
     inp_par[6] = 400.;
     inp_par[7] = 0.0;   // redshift
     inp_par[8] = 2.0;   // gamma
-    inp_par[10] = 1.0;  // A_CO
-    inp_par[11] = 5.0;  // kTbb
+    inp_par[9] = 10.0;  // A_CO
+    inp_par[10] = 5.0;  // kTbb
     inp_par[11] = 0.1;  // frac_pl_bb
-    inp_par[11] = 300.0;  // Ecut
-    inp_par[12] = 3.0;   // refl_frac
+    inp_par[12] = 300.0;  // Ecut
+    inp_par[13] = 3.0;   // refl_frac
 }
 
 
@@ -772,7 +772,7 @@ void std_eval_relxill_ns(int *status, int n) {
 /** standard evaluation of the relxillNS model **/
 void std_eval_relxill_co(int *status, int n) {
 
-    printf("\n ==> Evaluating RELXILL NS MODEL \n");
+    printf("\n ==> Evaluating RELXILL CO MODEL \n");
     /* set the parameters */
     int n_param = NUM_PARAM_RELXILLCO;
     double inp_par[NUM_PARAM_RELXILLCO];
