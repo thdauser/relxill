@@ -36,6 +36,8 @@ define set_params_xillver(pars){ %{{{
    assoc["logN"]    = "Dens";
    assoc["kTe" ]    = "kTe";
    assoc["kTbb" ]   = "kTbb";
+   assoc["frac_pl_bb" ]   = "Frac";
+   assoc["A_CO" ]   = "A_CO";
 
    
    variable par_array = ["gamma","Afe"];
@@ -54,6 +56,7 @@ define set_params_xillver(pars){ %{{{
 
 %}}}
 
+putenv("DEBUG_RELXILL=1");
 
 define check_xilltab_implementation_single(ff,tabname){
    variable tablepath =  getenv("RELXILL_TABLE_PATH")+ "/";
@@ -63,7 +66,16 @@ define check_xilltab_implementation_single(ff,tabname){
    add_atable_model(tablepath+tabname,"tab");
    
    fit_fun(ff);
-   set_par("*.refl_frac",-1.0);   
+   set_par("*.refl_frac",-1.0);
+
+   if (string_matches(ff,"NS")!=NULL){
+      set_par("*.kTbb",2.1);      
+   } else {
+      set_par("*.gamma",2.1);
+   }
+ 
+   set_par("*.Incl",40.0);
+   
    variable val1     =  eval_fun_keV(lo0,hi0);
    list_par;
    

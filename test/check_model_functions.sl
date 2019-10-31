@@ -27,7 +27,7 @@ _traceback=1;
 
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
 		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp",
-		  "xillverNS","relxillNS"];
+		  "xillverNS","relxillNS","xillverCO","relxillCO"];
 
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
@@ -85,7 +85,7 @@ define grav_redshift_prim(a,h){ %{{{
    return 1.0 / sqrt( 1.0 - 2*h/(h^2 + a^2) ) - 1.0;
 }
 %}}}
-define set_params_xillver(pars){
+define set_params_xillver(pars){ %{{{
 
    if (pars==NULL) return;
    variable ii, n = length(pars);
@@ -100,6 +100,8 @@ define set_params_xillver(pars){
    assoc["z"   ]    = "redshift";
    assoc["logN"]    = "Dens";
    assoc["kTe" ]    = "kTe";
+   assoc["frac_pl_bb"]     = "Frac";
+   assoc["kTbb"]     = "kTBB";
 
    
    variable par_array = ["gamma","Afe"];
@@ -115,6 +117,8 @@ define set_params_xillver(pars){
    
    
 }
+%}}}
+
 
    
 variable EXIT_SUCCESS = 0;
@@ -906,6 +910,7 @@ define check_caching(){ %{{{
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
    ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
    ff_arr["relxilllpD"] = [std_rel_param, "h","refl_frac", std_xill_param, "logN" ];
+   ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
    
    variable ff, params;
    variable ii, n;
@@ -967,7 +972,7 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
 }
 %}}}
 
-define check_xilltab_implementation_single(ff,tabname){
+define check_xilltab_implementation_single(ff,tabname){ %{{{
    
    
    %%%%  CURRENTLY NOT WORKED (KILLDE BY ISIS DUE TO MEMEORY (?) ISSUES)
@@ -987,20 +992,31 @@ define check_xilltab_implementation_single(ff,tabname){
    variable valr = refdat.val;
    
    fit_fun_default(ff);
-   set_par("*.refl_frac",-1.0);   
+   set_par("*.refl_frac",-1.0);
+
+   if (string_matches(ff,"NS")!=NULL){
+      set_par("*.kTbb",2.1);
+   } else {
+      set_par("*.gamma",2.1);
+   }
+      
+   set_par("*.Incl",40);
+
    variable val1     =  eval_fun_keV(lo0,hi0);
    
 
-   if (qualifier_exists("pl")){
+   if ( goodness(val1,valr) > goodness_lim || qualifier_exists("pl")){
       xlog;ylog;
       hplot(lo0,hi0,val1);
       ohplot(lo0,hi0,valr);
-      sleep(10);
+      sleep(10);      
    }
    
    return goodness(val1,valr);
 
 }
+%}}}
+
 
 define check_refl_frac_single(ff){ %{{{
    
@@ -1115,8 +1131,8 @@ define check_xilltab_implementation(){ %{{{
    vmessage("\n### %i ### testing XILLVER models (compare to table models):  ###",counter);
 
    
-   variable ff =     ["xillverCp", "xillver","xillverD","xillverNS"];
-   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits", "xillverNS.fits"];
+   variable ff =     ["xillverCp", "xillver","xillverD","xillverNS","xillverCO"];
+   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits", "xillverNS.fits","xillverCO.fits"];
    
    
    variable ii,n = length(ff);
@@ -1237,14 +1253,13 @@ define print_refl_frac(){ %{{{
 %}}}
 
 
-if (check_xilltab_implementation() != EXIT_SUCCESS) exit;
 
-#iffalse
 if (eval_test_notable() != EXIT_SUCCESS) exit;
 if (eval_test() != EXIT_SUCCESS) exit;
 
-
 if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
+
+if (check_xilltab_implementation() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
