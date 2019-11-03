@@ -200,17 +200,6 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
         return;
     }
 
-    // first set the number of parameters to the table
-    tab->num_param = get_num_param(param);
-
-    // get a pointer to the parameter index array
-    tab->param_index = malloc(sizeof(int) * tab->num_param);
-    CHECK_MALLOC_VOID_STATUS(tab->param_index, status)
-
-    // initialize memory to store the number of values of each parameter
-    tab->num_param_vals = malloc(sizeof(int) * tab->num_param);
-    CHECK_MALLOC_VOID_STATUS(tab->num_param_vals, status)
-
     // we know the column for the Number of Parameter-Values
     int colnum_n = 9;
     int colnum_vals = 10;
@@ -268,6 +257,10 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
         print_xilltable_parameters(tab, xilltab_parname);
     }
 
+    for (ii = 0; ii < tab->num_param; ii++) { // let's free the memory
+        free(xilltab_parname[ii]);
+    }
+    free(xilltab_parname);
 
     // now we set a pointer to the inclination separately (assuming it is the last parameter)
     tab->incl = tab->param_vals[tab->num_param - 1];
@@ -358,6 +351,8 @@ static int *xillInd_from_parInput(xillParam *param, xillTable *tab, int *status)
             ind[ii] = tab->num_param_vals[ii] - 2;
         }
     }
+    free(inp_param_vals);
+
     return ind;
 }
 
@@ -813,6 +808,8 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
         }
     }
 
+    free(inp_param_vals);
+
     /** check boundary of the Ecut parameter
      *  (grav. redshift can lead to the code asking for an Ecut not tabulated,
      *  although actually observed ecut is larger **/
@@ -852,6 +849,8 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
         }
 
     }
+
+    free(fac);
 
     return spec;
 }
@@ -946,6 +945,12 @@ void free_xillTable(xillTable *tab) {
 
         int ii;
         if (tab->data_storage != NULL) {
+            for (ii = 0; ii < tab->num_elements; ii++) {
+                if (tab->data_storage[ii] != NULL) {
+                    free(tab->data_storage[ii]);
+                }
+
+            }
             free(tab->data_storage);
         }
 
@@ -953,10 +958,14 @@ void free_xillTable(xillTable *tab) {
             for (ii = 0; ii < tab->num_param; ii++) {
                 free(tab->param_vals[ii]);
             }
+            free(tab->param_vals);
         }
 
         free(tab->num_param_vals);
         free(tab->param_index);
+
+        free(tab->elo);
+        free(tab->ehi);
 
         free(tab);
     }

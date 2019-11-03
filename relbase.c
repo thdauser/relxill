@@ -1325,12 +1325,12 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 			}
 
 			if (is_debug_run() && rel_profile->n_zones <= 10 ){
-				char* vstr;
+                char vstr[200];
 				double test_flu[n_ener_inp];
 				for (jj=0; jj<n_ener_inp;jj++){
 					test_flu[jj] = single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
 				}
-				if (asprintf(&vstr, "test_relxill_spec_zones_%03i.dat", ii+1) == -1){
+                if (sprintf(vstr, "test_relxill_spec_zones_%03i.dat", ii + 1) == -1) {
 					RELXILL_ERROR("failed to get filename",status);
 				}
 				save_xillver_spectrum(ener_inp,test_flu,n_ener_inp,vstr);
