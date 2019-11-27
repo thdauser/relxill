@@ -110,6 +110,8 @@ xillTable *new_xillTable(int num_param, int *status) {
         tab->param_vals[ii] = NULL;
     }
 
+    tab->elo = NULL;
+    tab->ehi = NULL;
 
     // inclination is the last value
     tab->incl = NULL;
@@ -802,10 +804,10 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
         fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
                   (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
 
-        if (is_debug_run()) {
+/*        if (is_debug_run()) {
             printf("\n [%i] par_index=%i  : parval = %.2e (index=%i), determining fac = %.2e ",
                    ii, pind, inp_param_vals[pind], ind[ii], fac[ii]);
-        }
+        } */
     }
 
     free(inp_param_vals);

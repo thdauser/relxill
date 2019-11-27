@@ -525,6 +525,7 @@ define eval_test_notable(){ %{{{
    variable ff;
    variable val;
    foreach ff(ffs){
+      vmessage(" trying to load %s without table ",ff);
       fit_fun(ff);
       val = eval_fun_keV(1,2);
       if (not ( val >= 0 )){
@@ -903,6 +904,7 @@ define check_caching(){ %{{{
    variable std_rel_param = ["a","Incl","Rin","Rout"];
    variable std_xill_param = ["logxi","Afe","z"];
    
+   ff_arr["relxilllpionCp"] = [std_rel_param, "h","refl_frac", std_xill_param, "xi_index",  "kTe"];
    ff_arr["relxilllpion"] = [std_rel_param, "h","refl_frac", std_xill_param, "xi_index" ];
    ff_arr["relline"]   = [std_rel_param, "Rbr" , "Index1","Index2"];
    ff_arr["relline_lp"]   = [std_rel_param, "h"];
@@ -1253,8 +1255,8 @@ define print_refl_frac(){ %{{{
 %}}}
 
 
-
 if (eval_test_notable() != EXIT_SUCCESS) exit;
+
 if (eval_test() != EXIT_SUCCESS) exit;
 
 if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
@@ -1274,4 +1276,3 @@ if (print_refl_frac() != EXIT_SUCCESS) exit;
 
 if (check_caching() != EXIT_SUCCESS) exit;
 
-if (do_mc_testing() != EXIT_SUCCESS) exit;

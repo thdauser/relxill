@@ -1111,17 +1111,16 @@ void tdrelline(const double* ener, const int n_ener, double* photar, const doubl
 
 	// call the function which calculates the line (assumes a line at 1keV!)
 	rel_spec* spec = relbase(ener1keV, n_ener, param_struct,NULL,status);
+    free_relParam(param_struct);
+    free(ener1keV);
     CHECK_STATUS_VOID(*status)
 
 
-	assert(spec->n_zones == 1);
 	int ii;
 	for (ii=0; ii<n_ener; ii++){
 		photar[ii] = spec->flux[0][ii];
 	}
 
-	free_relParam(param_struct);
-	free(ener1keV);
 }
 
 /** XSPEC RELLINELP MODEL FUNCTION **/
@@ -1136,8 +1135,13 @@ void tdrellinelp(const double* ener, const int n_ener, double* photar, const dou
 
 	// call the function which calculates the line (assumes a line at 1keV!)
 	rel_spec* spec = relbase(ener1keV, n_ener, param_struct,NULL,status);
+
+    free_relParam(param_struct);
+    free(ener1keV);
+
     CHECK_STATUS_VOID(*status)
 
+    // now we certainly have a valid return value
 	assert(spec->n_zones == 1);
 	int ii;
 	for (ii=0; ii<n_ener; ii++){
@@ -1145,8 +1149,6 @@ void tdrellinelp(const double* ener, const int n_ener, double* photar, const dou
 	}
 
 
-	free_relParam(param_struct);
-	free(ener1keV);
 }
 
 

@@ -36,7 +36,7 @@
 #define version_major 1
 #define version_minor 3
 #define version_build 5
-#define version_dev "dev3"
+#define version_dev "dev4"
 
 /** path to all RELXILL tables */
 #define RELXILL_TABLE_PATH "./"
@@ -146,5 +146,7 @@ void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status);
 
 int comp_xill_param(xillParam* cpar, xillParam* par);
 
+/** free the CLI cache **/
+void free_cache( void );
 
 #endif /* RELBASE_H_ */

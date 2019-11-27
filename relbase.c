@@ -326,6 +326,7 @@ relSysPar* get_system_parameters(relParam* param, int* status){
 	} else {
 		// NOT CACHED, so we need to calculate the system parameters
 		sysPar = calculate_system_parameters(param, status);
+		CHECK_STATUS_RET(*status,NULL)
 
 		// now add (i.e., prepend) the current calculation to the cache
 		set_cache_syspar(&cache_syspar, param, sysPar,status);
@@ -1677,7 +1678,7 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 	free(inp);
 	free(ca_info);
 
-	CHECK_RELXILL_DEFAULT_ERROR(status);
+	// CHECK_RELXILL_DEFAULT_ERROR(status);
 
 	return spec;
 }
@@ -1978,6 +1979,11 @@ void init_specCache(specCache** spec, int* status){
 	if ((*spec)==NULL){
 		(*spec) = new_specCache(N_ZONES_MAX,N_ENER_CONV,status);
 	}
+}
+
+void free_cache(){
+    cli_delete_list(&cache_relbase);
+    cli_delete_list(&cache_syspar);
 }
 
 /*** struct timeval start, end;

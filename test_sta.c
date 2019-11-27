@@ -16,7 +16,6 @@
     Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "relbase.h"
-#include "xilltable.h"
 #include "relutility.h"
 #include "reltable.h"
 #include "test_relxill.h"
@@ -33,6 +32,7 @@ void test_relline_table(int* status){
     // load the table
     read_relline_table(RELTABLE_FILENAME, &tab, status);
     CHECK_RELXILL_ERROR("loading the rel table failed", status);
+    CHECK_STATUS_VOID(*status)
 
     // test certain values
     assert(tab != NULL);
@@ -304,22 +304,34 @@ int main(int argc, char *argv[]){
 
 		if (do_all){
 			do_std_test(&status);
-            CHECK_STATUS_BREAK(status)
 		}
 
+		status=EXIT_SUCCESS;
 		if (do_all || do_relline){
+            status=EXIT_SUCCESS;
 			std_eval_relline(&status,n);
-            CHECK_STATUS_BREAK(status)
-			printf("     ---> successful \n");
+			if (status==EXIT_SUCCESS) {
+                printf("     ---> successful \n");
+            }
 		}
 
 		if (do_all || do_rellinelp){
+            status=EXIT_SUCCESS;
 			std_eval_relline_lp(&status,1);
-            CHECK_STATUS_BREAK(status)
-			printf("     ---> successful \n");
+            if (status==EXIT_SUCCESS) {
+                printf("     ---> successful \n");
+            }
 		}
 
-		if (do_relconv){
+        if (do_all || do_relxill){
+            status=EXIT_SUCCESS;
+            std_eval_relxill(&status,n);
+            if (status==EXIT_SUCCESS) {
+                printf("     ---> successful \n");
+            }
+        }
+
+        if (do_relconv){
 			std_eval_relconv(&status,1);
             CHECK_STATUS_BREAK(status)
 			std_eval_relconvlp(&status,1);
@@ -335,11 +347,6 @@ int main(int argc, char *argv[]){
 
 		}
 
-		if (do_all || do_relxill){
-			std_eval_relxill(&status,n);
-            CHECK_STATUS_BREAK(status)
-			printf("     ---> successful \n");
-		}
 
 		if (do_all || do_relxillns){
 			std_eval_relxill_ns(&status,n);
@@ -400,6 +407,7 @@ int main(int argc, char *argv[]){
 
         printf("\n ==> Cleaning up and freeing cached structures\n");
 		free_cached_tables();
+        free_cache();
 
 	} while(0);
 
@@ -408,6 +416,7 @@ int main(int argc, char *argv[]){
 		// free tables
 		printf( "\n *** Cleaning up and freeing cached structures\n");
 		free_cached_tables();
+		free_cache();
 	}
 
 }
