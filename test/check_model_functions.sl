@@ -1,6 +1,10 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
+%%% put this to 1 if also the model in "lmodel_relxill_devel.dat"
+%%% should be tested
+variable TEST_DEVEL = 0; 
+
 _traceback=1;
 
 %% we can load any model
@@ -26,8 +30,11 @@ _traceback=1;
 
 
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
-		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp",
-		  "xillverNS","relxillNS","xillverCO","relxillCO"];
+		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
+variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO"];
+if (TEST_DEVEL==1){
+   ALL_FF= [ALL_FF,additional_FF];
+}
 
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
@@ -912,7 +919,9 @@ define check_caching(){ %{{{
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
    ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
    ff_arr["relxilllpD"] = [std_rel_param, "h","refl_frac", std_xill_param, "logN" ];
-   ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
+   if (TEST_DEVEL==1){
+       ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
+   }
    
    variable ff, params;
    variable ii, n;
@@ -1133,8 +1142,13 @@ define check_xilltab_implementation(){ %{{{
    vmessage("\n### %i ### testing XILLVER models (compare to table models):  ###",counter);
 
    
-   variable ff =     ["xillverCp", "xillver","xillverD","xillverNS","xillverCO"];
-   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits", "xillverNS.fits","xillverCO.fits"];
+   variable ff =     ["xillverCp", "xillver","xillverD"];
+   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits"];
+   
+   if (TEST_DEVEL==1){
+      ff =     ["xillverCp", "xillver","xillverD","xillverNS","xillverCO"];
+      ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits", "xillverNS.fits","xillverCO.fits"];
+   }
    
    
    variable ii,n = length(ff);
