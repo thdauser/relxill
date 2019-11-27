@@ -187,3 +187,4 @@ $ion_grad_type 1
 xi_index  " "    1.0      -10.0      0.0       3.0       10.0       0.01
 refl_frac  " "   3.       -1000       0       10.        1000.       0.01
 $fixReflFrac 0
+

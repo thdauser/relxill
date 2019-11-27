@@ -55,7 +55,8 @@ void relxill_warning(const char* const msg){
 
 
 int is_xill_model(int model_type){
-	if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)){
+    if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)
+        || (model_type == MOD_TYPE_XILLVERNS) || (model_type == MOD_TYPE_XILLVERCO)) {
 		return 1;
 	} else {
 		return 0;
@@ -71,6 +72,15 @@ int is_iongrad_model(int model_type, int ion_grad_type ){
 	} else {
 		return 0;
 	}
+}
+
+/** check and report FITS error   */
+void relxill_check_fits_error(const int *status) {
+    if (*status != EXIT_SUCCESS) {
+        char errtext[30];
+        fits_get_errstatus(*status, errtext);
+        printf("   cfitsio error: %s \n", errtext);
+    }
 }
 
 
@@ -120,7 +130,7 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	}
 
 	lpReflFrac* str = (lpReflFrac*) malloc (sizeof(lpReflFrac));
-	CHECK_MALLOC_RET_STATUS(str,status,NULL);
+    CHECK_MALLOC_RET_STATUS(str, status, NULL)
 
 	str->f_bh  = 0.5*(1.0 - cos(del_bh));
 	str->f_ad  = 0.5*(cos(del_bh) - cos(del_ad));
@@ -165,11 +175,13 @@ void get_version_number(char** vstr, int* status){
 
 /**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
-int binary_search_float(float* arr,int n,float val){
+int binary_search_float(const float *arr, int n, float val) {
+
+    if (n <= 1) return -1;
 
 	int klo=0;
 	int khi=n-1;
-	int k=-1;
+    int k;
 	while ( (khi-klo) > 1 ){
 		k=(khi+klo)/2;
 		if(arr[k]>val){
@@ -183,11 +195,13 @@ int binary_search_float(float* arr,int n,float val){
 
 /**  search for value "val" in array "arr" (sorted ASCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
-int binary_search(double* arr,int n,double val){
+int binary_search(const double *arr, int n, double val) {
+
+    if (n <= 1) return -1;
 
 	int klo=0;
 	int khi=n-1;
-	int k=-1;
+    int k;
 	while ( (khi-klo) > 1 ){
 		k=(khi+klo)/2;
 		if(arr[k]>val){
@@ -202,11 +216,13 @@ int binary_search(double* arr,int n,double val){
 
 /**  FLOAT search for value "val" in array "arr" (sorted DESCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
-int inv_binary_search_float(float* arr,int n,float val){
+int inv_binary_search_float(const float *arr, int n, float val) {
+
+    if (n <= 1) return -1;
 
 	int klo=0;
 	int khi=n-1;
-	int k=-1;
+    int k;
 	while ( (khi-klo) > 1 ){
 		k=(khi+klo)/2;
 		if(arr[k]<val){
@@ -221,11 +237,13 @@ int inv_binary_search_float(float* arr,int n,float val){
 
 /**  search for value "val" in array "arr" (sorted DESCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
-int inv_binary_search(double* arr,int n,double val){
+int inv_binary_search(const double *arr, int n, double val) {
 
-	int klo=0;
+    if (n <= 1) return -1;
+
+    int klo = 0;
 	int khi=n-1;
-	int k=-1;
+    int k;
 	while ( (khi-klo) > 1 ){
 		k=(khi+klo)/2;
 		if(arr[k]<val){
@@ -268,7 +286,7 @@ double gstar2ener(double g, double gmin, double gmax, double ener){
 }
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-void get_rzone_grid(double rmin, double rmax, double* rgrid, int nzones, double h, int* status){
+void get_rzone_grid(double rmin, double rmax, double *rgrid, int nzones, double h) {
 
 	if (nzones==1){
 		rgrid[0] = rmin;
@@ -674,7 +692,7 @@ static double cal_lxi(double dens, double emis){
 // determine the radius of maximal ionization
 static double cal_lxi_max_ss73(double* re, double* emis, int nr, double rin, int* status){
 
-	CHECK_STATUS_RET(*status,0.0);
+    CHECK_STATUS_RET(*status, 0.0)
 
 	double rad_max_lxi  = pow((11./9.),2) * rin;  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
 
@@ -720,10 +738,10 @@ static void lxi_set_to_xillver_bounds(double* pt_lxi){
 
 ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, int type, double* rgrid, int n, int* status) {
 
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	ion_grad* ion = new_ion_grad(rgrid, n, status);
-	CHECK_STATUS_RET(*status,NULL);
+    CHECK_STATUS_RET(*status, NULL)
 
 	double rmean[n];
 	double del_inc[n];
@@ -803,16 +821,16 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 ion_grad* new_ion_grad(double* r, int n, int* status){
 
 	ion_grad* ion = (ion_grad*) malloc(  sizeof(ion_grad));
-	CHECK_MALLOC_RET_STATUS(ion,status,NULL);
+    CHECK_MALLOC_RET_STATUS(ion, status, NULL)
 
 	ion->r = (double*) malloc ( (n+1)*sizeof(double));
-	CHECK_MALLOC_RET_STATUS(ion->r,status,NULL);
+    CHECK_MALLOC_RET_STATUS(ion->r, status, NULL)
 	ion->lxi = (double*) malloc ( (n)*sizeof(double));
-	CHECK_MALLOC_RET_STATUS(ion->lxi,status,NULL);
+    CHECK_MALLOC_RET_STATUS(ion->lxi, status, NULL)
 	ion->fx = (double*) malloc ( (n)*sizeof(double));
-	CHECK_MALLOC_RET_STATUS(ion->fx,status,NULL);
+    CHECK_MALLOC_RET_STATUS(ion->fx, status, NULL)
 	ion->del_emit = (double*) malloc ( (n)*sizeof(double));
-	CHECK_MALLOC_RET_STATUS(ion->del_emit,status,NULL);
+    CHECK_MALLOC_RET_STATUS(ion->del_emit, status, NULL)
 
 	ion->nbins = n;
 
@@ -874,3 +892,4 @@ void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int
 	}
 
 }
+

@@ -26,7 +26,8 @@ _traceback=1;
 
 
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
-		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
+		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp",
+		  "xillverNS","relxillNS","xillverCO","relxillCO"];
 
 variable DATA_DIR = "refdata/";
 variable goodness_lim = 1e-4;
@@ -82,6 +83,39 @@ define fit_fun_default(ff){ %{{{
 %}}}
 define grav_redshift_prim(a,h){ %{{{
    return 1.0 / sqrt( 1.0 - 2*h/(h^2 + a^2) ) - 1.0;
+}
+%}}}
+define set_params_xillver(pars){ %{{{
+
+   if (pars==NULL) return;
+   variable ii, n = length(pars);
+
+   variable assoc = Assoc_Type[String_Type];
+   assoc["gamma"]   = "Gamma";
+   assoc["Afe"]     = "A_Fe";
+   assoc["logxi"]   = "logXi";
+   assoc["norm"]    = "norm";
+   assoc["Ecut"]    = "Ecut";
+   assoc["Incl"]    = "Incl";
+   assoc["z"   ]    = "redshift";
+   assoc["logN"]    = "Dens";
+   assoc["kTe" ]    = "kTe";
+   assoc["frac_pl_bb"]     = "Frac";
+   assoc["kTbb"]     = "kTBB";
+
+   
+   variable par_array = ["gamma","Afe"];
+   
+   _for ii(0,n-1){
+      %% get the name of the parameter string and then set the
+      %% respective value
+      variable pname = string_matches(pars[ii].name,"\.\(.*\)"R)[-1];
+      if (pname == "refl_frac") continue; 
+      
+      set_par("*"+assoc[pname],pars[ii].value);
+   }
+   
+   
 }
 %}}}
 
@@ -491,6 +525,7 @@ define eval_test_notable(){ %{{{
    variable ff;
    variable val;
    foreach ff(ffs){
+      vmessage(" trying to load %s without table ",ff);
       fit_fun(ff);
       val = eval_fun_keV(1,2);
       if (not ( val >= 0 )){
@@ -869,6 +904,7 @@ define check_caching(){ %{{{
    variable std_rel_param = ["a","Incl","Rin","Rout"];
    variable std_xill_param = ["logxi","Afe","z"];
    
+   ff_arr["relxilllpionCp"] = [std_rel_param, "h","refl_frac", std_xill_param, "xi_index",  "kTe"];
    ff_arr["relxilllpion"] = [std_rel_param, "h","refl_frac", std_xill_param, "xi_index" ];
    ff_arr["relline"]   = [std_rel_param, "Rbr" , "Index1","Index2"];
    ff_arr["relline_lp"]   = [std_rel_param, "h"];
@@ -876,6 +912,7 @@ define check_caching(){ %{{{
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
    ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
    ff_arr["relxilllpD"] = [std_rel_param, "h","refl_frac", std_xill_param, "logN" ];
+   ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
    
    variable ff, params;
    variable ii, n;
@@ -934,6 +971,51 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
    vmessage("   -> primary continum %s for reflection model %s  [gn=%.2e]",ff_cont,ff,gn);
 
    return gn; 
+}
+%}}}
+
+define check_xilltab_implementation_single(ff,tabname){ %{{{
+   
+   
+   %%%%  CURRENTLY NOT WORKED (KILLDE BY ISIS DUE TO MEMEORY (?) ISSUES)
+   %% variable tablepath =  getenv("RELXILL_TABLE_PATH")+ "/";
+   %% variable ff_tab = "tab";
+   %% add_atable_model(tablepath+tabname,"tab");
+   %% fit_fun(ff_tab);
+   %% variable pars = get_params();
+   %% set_params_xillver(pars);
+   %% variable valr =  eval_fun_keV(lo0,hi0);
+   %% valr *=  sum(val1) / sum(valr);
+
+   %% doing this instead 
+   variable refdat = fits_read_table(sprintf("refdat/refdat_%s.fits",ff));
+   variable lo0 = refdat.lo;
+   variable hi0 = refdat.hi;
+   variable valr = refdat.val;
+   
+   fit_fun_default(ff);
+   set_par("*.refl_frac",-1.0);
+
+   if (string_matches(ff,"NS")!=NULL){
+      set_par("*.kTbb",2.1);
+   } else {
+      set_par("*.gamma",2.1);
+   }
+      
+   set_par("*.Incl",40);
+
+   variable val1     =  eval_fun_keV(lo0,hi0);
+   
+
+   if ( goodness(val1,valr) > goodness_lim || qualifier_exists("pl")){
+      xlog;ylog;
+      hplot(lo0,hi0,val1);
+      ohplot(lo0,hi0,valr);
+      sleep(10);      
+   }
+   
+   return goodness(val1,valr);
+
 }
 %}}}
 
@@ -1044,6 +1126,32 @@ define check_prim_cont(){ %{{{
 }
 %}}}
 
+
+define check_xilltab_implementation(){ %{{{
+   
+   counter++;
+   vmessage("\n### %i ### testing XILLVER models (compare to table models):  ###",counter);
+
+   
+   variable ff =     ["xillverCp", "xillver","xillverD","xillverNS","xillverCO"];
+   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits", "xillverNS.fits","xillverCO.fits"];
+   
+   
+   variable ii,n = length(ff);
+   
+   _for ii(0,n-1,1){
+      if (not (check_xilltab_implementation_single(ff[ii],ff_tab[ii] ) < goodness_lim)){
+	vmessage(" *** error: MODEL %s does not agree with its table %s  ",ff[ii],ff_tab[ii]);
+	 return EXIT_FAILURE;
+      }
+      vmessage("  comparing %s \t with table %s \t succesful ", ff[ii], ff_tab[ii]);
+   }
+   
+   return EXIT_SUCCESS;
+}
+%}}}
+
+
 define check_refl_frac(){ %{{{
    
    counter++;
@@ -1146,14 +1254,14 @@ define print_refl_frac(){ %{{{
 }
 %}}}
 
-if (do_mc_testing() != EXIT_SUCCESS) exit;
-#iffalse
 
 if (eval_test_notable() != EXIT_SUCCESS) exit;
+
 if (eval_test() != EXIT_SUCCESS) exit;
 
-
 if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
+
+if (check_xilltab_implementation() != EXIT_SUCCESS) exit;
 
 if (check_z() != EXIT_SUCCESS) exit;
 if (check_linee() != EXIT_SUCCESS) exit;
@@ -1168,4 +1276,3 @@ if (print_refl_frac() != EXIT_SUCCESS) exit;
 
 if (check_caching() != EXIT_SUCCESS) exit;
 
-if (do_mc_testing() != EXIT_SUCCESS) exit;

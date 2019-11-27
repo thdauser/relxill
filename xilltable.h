@@ -22,36 +22,42 @@
 #include "relutility.h"
 #include "relmodels.h"
 
-
 #define XILLTABLE_N_PARAM 5
-#define XILLTABLE_N_GAM 13
-#define XILLTABLE_N_AFE 4
-#define XILLTABLE_N_LXI 15
-#define XILLTABLE_N_ECT 11
-#define XILLTABLE_N_INCL 10
 
-#define XILLTABLE_DENS_N_GAM 13
-#define XILLTABLE_DENS_N_AFE 5
-#define XILLTABLE_DENS_N_LXI 15
-#define XILLTABLE_DENS_N_DENS 9
-#define XILLTABLE_DENS_N_INCL 10
+// currently the number of different parameters that can be given in a table
+#define N_PARAM_MAX 10  // has to be as long as the NAME_ array
+#define PARAM_GAM 0
+#define PARAM_AFE 1
+#define PARAM_ACO 1  // caveat: internally we use it same as AFE
+#define PARAM_LXI 2
+#define PARAM_ECT 3
+#define PARAM_KTE 3  // caveat: internally we treat kTe as Ecut
+#define PARAM_DNS 4
+#define PARAM_KTB 5
+#define PARAM_FRA 6
+#define PARAM_INC 7
 
-#define XILLTABLE_NTHCOMP_N_GAM 13
-#define XILLTABLE_NTHCOMP_N_AFE 4
-#define XILLTABLE_NTHCOMP_N_LXI 15
-#define XILLTABLE_NTHCOMP_N_KTE 12
-#define XILLTABLE_NTHCOMP_N_INCL 10
-
-// #define XILLTABLE_num_param_vals { XILLTABLE_N_GAM, XILLTABLE_N_AFE,  XILLTABLE_N_LXI, XILLTABLE_N_ECT,  XILLTABLE_N_INCL}
+#define NAME_GAM "Gamma"
+#define NAME_AFE "A_Fe"
+#define NAME_LXI "logXi"
+#define NAME_ECT "Ecut"
+#define NAME_KTE "kTe"
+#define NAME_KTB "kTbb"
+#define NAME_DNS "Dens"
+#define NAME_ACO "A_CO"
+#define NAME_FRA "Frac"
+#define NAME_INC "Incl"
 
 
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
 #define XILLTABLE_DENS_FILENAME "xillverD-5.fits"
 #define XILLTABLE_NTHCOMP_FILENAME "xillver-comp.fits"
+#define XILLTABLE_NS_FILENAME "xillverNS.fits"
+#define XILLTABLE_CO_FILENAME "xillverCO.fits"
 
 /** get a new and empty rel table (structure will be allocated)  */
-xillTable* new_xillTable(int n_gam, int n_afe, int n_lxi, int n_ect, int n_incl, int* status);
+xillTable *new_xillTable(int num_param, int *status);
 
 /* destroy the relline table structure */
 void free_xillTable(xillTable* tab);
@@ -65,8 +71,14 @@ void free_xill_spec(xill_spec* spec);
 
 void free_cached_xillTable(void);
 
+void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, int *status);
+
 char* get_init_xillver_table(xillTable** tab, xillParam* param, int* status);
 
-void norm_xillver_spec(xill_spec* spec, double incl);
+void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname);
+
+void norm_xillver_spec(xill_spec *spec, double incl);
+
+int is_6dim_table(int model_type);
 
 #endif /* XILLTABLE_H_ */
