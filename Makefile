@@ -37,31 +37,43 @@ clean:
 	rm -rf $(model_dir)
 	rm -f relxill_model_v*.tgz
 
-MODEL_VERSION = x.y.z
-MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
+MODEL_VERSION = undef
+#MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
+
+
+.PHONY: compilemodel
+compilemodel: test_sta
+
+	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION)$(DEV).tgz)
+
+	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
+#	echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; '
+	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v
+	cp $(model_dir)/$(MODEL_TAR_NAME) .
+	rm -f $(model_dir)/*.c $(model_dir)/*.h
+	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
 
 
 .PHONY: model
-model:
-
-	make clean
-
+model: test_sta
 	mkdir -p $(model_dir)
 	rm -f $(model_dir)/*
 	cp -v $(model_files) $(model_dir)
 
-	make $(LINK_TARGET)
+	$(eval MODEL_VERSION := $(shell ./test_sta version))
+	make compilemodel MODEL_VERSION=$(MODEL_VERSION)
 
+
+.PHONY: model-dev
+model-dev: test_sta
+	mkdir -p $(model_dir)
+	rm -f $(model_dir)/*
+	cp -v $(model_files) $(model_dir)
+	cat modelfiles/lmodel_relxill_devel.dat >> build/lmodel_relxill.dat
 
 	$(eval MODEL_VERSION := $(shell ./test_sta version))
-	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION).tgz)
+	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=dev
 
-	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
-	echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; ' 
-	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v 
-	cp $(model_dir)/$(MODEL_TAR_NAME) .
-#	rm -f $(model_dir)/*.c $(model_dir)/*.h
-	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
 
 
 
