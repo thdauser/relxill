@@ -160,19 +160,6 @@ void check_relxill_error(const char* const func, const char* const msg, int* sta
 	}
 }
 
-void get_version_number(char** vstr, int* status){
-
-	if (strcmp(version_dev,"")==0){
-		if (asprintf(vstr, "%i.%i.%i", version_major, version_minor, version_build) == -1){
-			RELXILL_ERROR("failed to get version number",status);
-		}
-	} else {
-		if (asprintf(vstr, "%i.%i.%i%s", version_major, version_minor, version_build, version_dev) == -1){
-			RELXILL_ERROR("failed to get version number",status);
-		}
-	}
-}
-
 /**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
 int binary_search_float(const float *arr, int n, float val) {

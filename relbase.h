@@ -36,7 +36,7 @@
 #define version_major 1
 #define version_minor 3
 #define version_build 6
-#define version_dev ""
+#define version_dev "-1"
 
 /** path to all RELXILL tables */
 #define RELXILL_TABLE_PATH "./"
@@ -103,6 +103,9 @@ typedef struct{
 } str_relb_func;
 
 /****** FUNCTION DEFINITIONS ******/
+
+/* get the current version number */
+void get_version_number(char** vstr, int* status);
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
 rel_spec* relbase(double* ener, const int n_ener,relParam* param, xillTable* xill_tab, int* status);

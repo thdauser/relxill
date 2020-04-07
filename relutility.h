@@ -71,9 +71,6 @@ void get_log_grid(double* ener, int n_ener, double emin, double emax);
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_lin_grid(double* ener, int n_ener, double emin, double emax);
 
-/* get the current version number */
-void get_version_number(char** vstr, int* status);
-
 /* print relxill error message */
 void relxill_error(const char* const func, const char* const msg, int* status);
 

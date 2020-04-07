@@ -1986,6 +1986,22 @@ void free_cache(){
     cli_delete_list(&cache_syspar);
 }
 
+
+
+void get_version_number(char** vstr, int* status){
+
+    if (strcmp(version_dev,"")==0){
+        if (asprintf(vstr, "%i.%i.%i", version_major, version_minor, version_build) == -1){
+            RELXILL_ERROR("failed to get version number",status);
+        }
+    } else {
+        if (asprintf(vstr, "%i.%i.%i%s", version_major, version_minor, version_build, version_dev) == -1){
+            RELXILL_ERROR("failed to get version number",status);
+        }
+    }
+}
+
+
 /*** struct timeval start, end;
 	long mtime, seconds, useconds;
 	gettimeofday(&start, NULL);
