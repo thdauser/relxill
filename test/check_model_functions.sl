@@ -1,9 +1,15 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
-%%% put this to 1 if also the model in "lmodel_relxill_devel.dat"
-%%% should be tested
+%%% call the routine like "./check_model_functions.sl DEV"
+%%% if also the model in "lmodel_relxill_devel.dat" should 
+%%% be tested
 variable TEST_DEVEL = 0; 
+
+if (__argc>1 && __argv[1]=="DEV"){
+   TEST_DEVEL = 1;
+}
+
 
 _traceback=1;
 
@@ -921,6 +927,7 @@ define check_caching(){ %{{{
    ff_arr["relxilllpD"] = [std_rel_param, "h","refl_frac", std_xill_param, "logN" ];
    if (TEST_DEVEL==1){
        ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
+       ff_arr["relxillNS"] = [std_rel_param, "logN", "kTbb"];
    }
    
    variable ff, params;
