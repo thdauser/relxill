@@ -338,9 +338,9 @@ relSysPar* get_system_parameters(relParam* param, int* status){
 		// now add (i.e., prepend) the current calculation to the cache
 		set_cache_syspar(&cache_syspar, param, sysPar,status);
 
-		if (is_debug_run() && *status==EXIT_SUCCESS){
-			printf(" DEBUG:  The count of the SYSPAR-Cache  is  %i \n",cli_count_elements(cache_syspar));
-		}
+		if (is_debug_run() && *status==EXIT_SUCCESS) {
+            printf(" DEBUG:  Adding new SYSPAR values to cache; the count is  %i \n", cli_count_elements(cache_syspar));
+        }
 	}
 
 	free(ca_info);
@@ -412,10 +412,10 @@ rel_cosne* new_rel_cosne(int nzones, int n_incl, int*status){
 
 	int ii;
 
-	for (ii=0; ii<spec->n_zones; ii++){
-		spec->dist[ii] = (double*) malloc ( n_incl * sizeof(double) );
+	for (ii=0; ii<spec->n_zones; ii++) {
+        spec->dist[ii] = (double *) malloc(spec->n_cosne * sizeof(double));
         CHECK_MALLOC_RET_STATUS(spec->dist[ii], status, spec)
-	}
+    }
 
 	return spec;
 }

@@ -313,7 +313,7 @@ cache_info* cli_check_cache(cnode* head, inpar* inp, cnode* (*check_cache) (cach
     	// (+) we need to set the cursor->next=NULL
     	if (next != NULL && c>=CLI_NMAX-1) {
     		if (is_debug_run()) {
-    			printf(" DEBUG: Cached Reach its limit \n");
+    			printf(" DEBUG: Cached reached its limiting size of %i\n",CLI_NMAX);
     		}
     		cli_delete_list(&next);
     		cursor->next = NULL;
