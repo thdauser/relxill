@@ -55,33 +55,41 @@ static void check_parameter_bounds(relParam* param, int* status){
 	const double rout_max = 1000.0;
 
 	if (param->rout<=param->rin){
-		printf(" *** error : Rin >= Rout not possible, please set the parameters  \n");
+		printf(" *** relxill error : Rin >= Rout not possible, please set the parameters correctly  \n");
 		*status=EXIT_FAILURE;
 	}
 
 	double rms = kerr_rms(param->a);
 	if (param->rin < rms){
 		if (!warned_rms){
-			printf(" *** warning : Rin < ISCO, resetting Rin=ISCO; please set your limits properly \n");
+			printf(" *** relxill warning : Rin < ISCO, resetting Rin=ISCO; please set your limits properly \n");
 			warned_rms=1;
 		}
 		param->rin = rms;
 	}
 
 	if (param->a >0.9982){
-		printf(" *** Error : Spin a > 0.9982, model evaluation failed \n");
+		printf(" *** relxill error : Spin a > 0.9982, model evaluation failed \n");
 		*status = EXIT_FAILURE;
 		return;
 	}
 
 	if (param->a <-1){
-		printf(" *** Error : Spin a < -1, model evaluation failed \n");
+		printf(" *** relxill error : Spin a < -1, model evaluation failed \n");
 		*status = EXIT_FAILURE;
 		return;
 	}
 
 
-	if (param->rout <= param->rin){
+    if (param->incl < 3*M_PI/180 || param->incl > 87*M_PI/180){
+        printf(" *** relxill error : incl %.3f  is not in the required range between 3-87 deg, model evaluation failed \n",
+                param->incl*180/M_PI);
+        *status = EXIT_FAILURE;
+        return;
+    }
+
+
+    if (param->rout <= param->rin){
 		printf(" *** Error : Rout <= Rin, model evaluation failed \n");
 		*status = EXIT_FAILURE;
 		return;
