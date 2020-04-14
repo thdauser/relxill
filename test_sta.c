@@ -326,6 +326,12 @@ int main(int argc, char *argv[]){
         if (do_all || do_relxill){
             status=EXIT_SUCCESS;
             std_eval_relxill(&status,n);
+            CHECK_STATUS_BREAK(status)
+            if (status==EXIT_SUCCESS) {
+                printf("     ---> successful \n");
+            }
+            bugtest_eval_relxill(&status);
+            CHECK_STATUS_BREAK(status)
             if (status==EXIT_SUCCESS) {
                 printf("     ---> successful \n");
             }

@@ -406,6 +406,44 @@ void std_eval_relxill(int *status, int n) {
 
 }
 
+
+/** standard evaluation of the relxill model **/
+void bugtest_eval_relxill(int *status) {
+
+    printf("\n ==> Evaluating RELXILL MODEL \n");
+    /* set the parameters */
+    int n_param = NUM_PARAM_RELXILL;
+    double inp_par[NUM_PARAM_RELXILL];
+    set_std_param_relxill(inp_par);
+    CHECK_STATUS_VOID(*status)
+
+    int n = 1;
+
+    /* create an energy grid */
+    int n_ener = 3000;
+    double ener[n_ener + 1];
+    get_log_grid(ener, n_ener + 1, 0.1, 1000.0);
+
+    /* call the relline model */
+    double photar[n_ener];
+
+    printf(" TESTING if we can evaluate an Inclination NOT tabulated: \n");
+
+    int ii;
+    for (ii = 0; ii < n; ii++) {
+            inp_par[4] = 89.0;
+            inp_par[5] = -1.0 - 1.0 * ii / (n - 1) * 5;
+            tdrelxill(ener, n_ener, photar, inp_par, n_param, status);
+    }
+    tdrelxill(ener, n_ener, photar, inp_par, n_param, status);
+
+    if (*status==EXIT_FAILURE){
+        printf ("  .... no!  (so everything is good)\n");
+        *status=EXIT_SUCCESS;
+    }
+}
+
+
 /** standard evaluation of the relxill model **/
 void std_eval_relxill_nthcomp(int *status, int n) {
 

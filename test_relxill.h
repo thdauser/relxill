@@ -37,6 +37,8 @@ void set_std_param_relconvlp(double *inp_par);
 
 void set_std_param_relxill(double *inp_par);
 
+void bugtest_eval_relxill(int *status);
+
 void set_std_param_relxill_nthcomp(double *inp_par);
 
 void set_std_param_relxilldens(double *inp_par);
