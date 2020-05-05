@@ -12,7 +12,7 @@ INCLUDES = -I/usr/include -I${HEADAS}/include
 
 objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o test_relxill.o
 headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h test_relxill.h xilltable.h relcache.h
-sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxill.c xilltable.c donthcomp.c relcache.c 
+sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxill.c xilltable.c donthcomp.c relcache.c test_xilltab.c
 
 model_dir = ./build/
 model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
@@ -22,6 +22,7 @@ LINK_TARGET = test_sta
 .PHONY:all
 all:
 	make test_sta
+
 
 $(LINK_TARGET): $(objects)
 	gcc -o $@ $^ $(LDFLAGS) 
@@ -77,7 +78,7 @@ model-dev: test_sta
 
 
 
-.PHONY: valgrind, gdb
+.PHONY: valgrind,gdb
 valgrind:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta

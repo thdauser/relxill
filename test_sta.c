@@ -19,6 +19,7 @@
 #include "relutility.h"
 #include "reltable.h"
 #include "test_relxill.h"
+#include "test_xilltab.c"
 
 #define LIMIT_PREC 1e-6
 
@@ -304,6 +305,8 @@ int main(int argc, char *argv[]){
 
 		if (do_all){
 			do_std_test(&status);
+
+			test_xilltables();
 		}
 
 		status=EXIT_SUCCESS;

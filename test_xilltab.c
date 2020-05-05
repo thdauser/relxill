@@ -15,9 +15,8 @@
 
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
-#include "relbase.h"
-#include "relutility.h"
 #include "test_relxill.h"
+#include "relbase.h"
 
 
 static void test_new_xilltable(int *status) {
@@ -156,7 +155,7 @@ static void test_all_xilltables(int *status) {
 
 }
 
-int main(int argc, char *argv[]) {
+void test_xilltables(void ) {
     char *buf;
     int status = EXIT_SUCCESS;
 
@@ -171,10 +170,10 @@ int main(int argc, char *argv[]) {
     test_all_spec(&status);
 
     if (status != EXIT_SUCCESS) {
-        printf(" *** TESTING NOT SUCCESSFUL \n");
+        printf(" *** TESTING XILLVER TABLES NOT SUCCESSFUL \n");
         printf("\n *** Cleaning up and freeing cached structures\n");
     } else {
-        printf(" *** TESTING SUCCESSFUL \n");
+        printf(" *** TESTING XILLVER TABLES SUCCESSFUL \n");
     }
 
 }
