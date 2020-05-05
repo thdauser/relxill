@@ -25,8 +25,8 @@ build:
 test:
   stage: test
   script:
-    - ./test_sta > test_output.log
-    - cd test/ && ./check_model_functions.sl  >> ../test_output.log
+    - ./test_sta 
+    - cd test/ && ./check_model_functions.sl  > ../test_output.log
   only:
    - master
   artifacts:
