@@ -171,10 +171,11 @@ static void set_parindex_from_parname(int *pindex, char **pname, int n, int *sta
             }
         }
 
-        if (pindex[ii] == -1) {
-            RELXILL_ERROR(" parameter not found in xillver table \n", status);
-            printf("    trying to find parameter %s, but was not found in xillver table \n", pname[ii]);
-        }
+      if (pindex[ii] == -1) {
+        RELXILL_ERROR(" parameter given in xillver table not found\n", status);
+        printf("    parameter ** %s ** from xillver table, not known to relxill \n", pname[ii]);
+        printf("    please make sure you downloaded the correct table \n");
+      }
     }
 
 }

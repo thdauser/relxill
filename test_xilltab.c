@@ -67,17 +67,17 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
     printf("\n *** TEST: initializing xilltable %s  ...  ", fname);
 
-    assert(tab->n_ener > 0);
+    if (*status==EXIT_SUCCESS) {
+      assert(tab->n_ener > 0);
 
-
-    int ii;
-    for (ii = 0; ii < tab->num_param; ii++) {
+      int ii;
+      for (ii = 0; ii < tab->num_param; ii++) {
         assert(tab->num_param_vals[ii] > 0);
+      }
+
+      assert(tab->num_param > 0);
+      test_tab_num_param(param, status, tab);
     }
-
-    assert(tab->num_param > 0);
-    test_tab_num_param(param, status, tab);
-
 
     print_status_outcome(status);
 
