@@ -390,7 +390,7 @@ static float *get_dat(xillTable *tab, int i0, int i1, int i2, int i3, int i4, in
 }
 
 
-static fitsfile *open_xillver_tab(char *filename, int *status) {
+fitsfile *open_fits_table_stdpath(char *filename, int *status) {
 
     CHECK_STATUS_RET(*status, NULL)
 
@@ -404,14 +404,13 @@ static fitsfile *open_xillver_tab(char *filename, int *status) {
 
     // open the file
     if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
-        CHECK_RELXILL_ERROR("opening of the xillver table failed", status);
+        CHECK_RELXILL_ERROR("opening of the table failed", status);
         printf("    either the full path given (%s) is wrong \n", fullfilename);
         printf("    or you need to download the table ** %s **  from \n", filename);
         printf("    http://www.sternwarte.uni-erlangen.de/research/relxill/ \n");
         return NULL;
     }
 
-    // free(fullfilename);
 
     return fptr;
 }
@@ -426,7 +425,7 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
 
     print_version_number(status);
 
-    fptr = open_xillver_tab(filename, status);
+    fptr = open_fits_table_stdpath(filename, status);
 
     assert(tab == NULL);
 
@@ -466,7 +465,7 @@ load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, i
 
     // open the fits file if not already open
     if (*fptr == NULL) {
-        *fptr = open_xillver_tab(fname, status);
+        *fptr = open_fits_table_stdpath(fname, status);
         CHECK_STATUS_VOID(*status)
     }
 
