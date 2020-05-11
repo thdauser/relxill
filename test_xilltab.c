@@ -85,6 +85,8 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
 static void test_spec_norm(xill_spec *spec, int *status) {
 
+  CHECK_STATUS_VOID(*status)
+
     printf("\n *** TEST: check Spectrum normalization ...  ");
 
     int ii;

@@ -1997,12 +1997,13 @@ void free_cache(){
 
 void get_version_number(char** vstr, int* status){
 
+  *vstr = (char*) malloc(30*sizeof(char));
     if (strcmp(version_dev,"")==0){
-        if (asprintf(vstr, "%i.%i.%i", version_major, version_minor, version_build) == -1){
+        if (sprintf(*vstr, "%i.%i.%i", version_major, version_minor, version_build) == -1){
             RELXILL_ERROR("failed to get version number",status);
         }
     } else {
-        if (asprintf(vstr, "%i.%i.%i%s", version_major, version_minor, version_build, version_dev) == -1){
+        if (sprintf(*vstr, "%i.%i.%i%s", version_major, version_minor, version_build, version_dev) == -1){
             RELXILL_ERROR("failed to get version number",status);
         }
     }

@@ -237,8 +237,8 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 	relTable* tab = (*inp_tab);
 	fitsfile *fptr=NULL;
 
-	char* fullfilename=NULL;
-	char* extname=NULL;
+	char fullfilename[999];
+	char extname[99];
 
 	do{ // Errot handling loop
 		if (tab != NULL){
@@ -254,7 +254,7 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 		assert(tab->arr!=NULL);
 
 		// get the full filename
-		if (asprintf(&fullfilename, "%s/%s", get_relxill_table_path() ,filename) == -1){
+		if (sprintf(fullfilename, "%s/%s", get_relxill_table_path() ,filename) == -1){
 			RELXILL_ERROR("failed to construct full path the rel table",status);
 			break;
 		}
@@ -280,7 +280,7 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 		for (ii=0; ii<tab->n_a; ii++){
 			for (jj=0; jj<tab->n_mu0; jj++){
 
-				if (asprintf(&extname, "%i_%i", ii+1,jj+1) == -1){
+				if (sprintf(extname, "%i_%i", ii+1,jj+1) == -1){
 					RELXILL_ERROR("failed to construct full path the rel table",status);
 					break;
 				}
@@ -288,7 +288,7 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 				assert(tab->arr[ii][jj]==NULL);
 				int nhdu = (ii)*tab->n_mu0+jj+4;
 				tab->arr[ii][jj] = load_single_relDat(fptr, extname, nhdu, status);
-				free(extname);
+
 				if (*status!=EXIT_SUCCESS){
 					RELXILL_ERROR("failed to load data from the rel table into memory",status);
 					break;
@@ -304,11 +304,9 @@ void read_relline_table(char* filename, relTable** inp_tab, int* status){
 	} else {
 		free_relTable(tab);
 	}
-	free(fullfilename);
 
 	if (fptr!=NULL) {fits_close_file(fptr,status);}
 
-	return;
 }
 
 lpDat* load_single_lpDat(fitsfile* fptr, int n_h, int n_rad, int rownum, int* status){
@@ -322,9 +320,9 @@ lpDat* load_single_lpDat(fitsfile* fptr, int n_h, int n_rad, int rownum, int* st
 	int colnum_del_inc;
 
 
-	char* colname_h=NULL;
-	char* colname_del=NULL;
-	char* colname_del_inc=NULL;
+	char colname_h[100];
+	char colname_del[100];
+	char colname_del_inc[100];
 
 	LONGLONG nelem;
     int anynul=0;
@@ -347,26 +345,23 @@ lpDat* load_single_lpDat(fitsfile* fptr, int n_h, int n_rad, int rownum, int* st
     nelem = (LONGLONG) n_rad;
 	for (ii=0; ii<n_h; ii++){
 
-		if (asprintf(&colname_h, "h%i", ii+1) == -1){
+		if (sprintf(colname_h, "h%i", ii+1) == -1){
 			RELXILL_ERROR("failed to construct colname of the lp table",status);
 			return NULL;
 		}
 		if(fits_get_colnum(fptr, CASEINSEN, colname_h, &colnum_h, status)) return NULL;
-		free(colname_h);
 
-		if (asprintf(&colname_del, "del%i", ii+1) == -1){
+		if (sprintf(colname_del, "del%i", ii+1) == -1){
 			RELXILL_ERROR("failed to construct colname of the lp table",status);
 			return NULL;
 		}
 		if(fits_get_colnum(fptr, CASEINSEN, colname_del, &colnum_del, status)) return NULL;
-		free(colname_del);
 
-		if (asprintf(&colname_del_inc, "del_inc%i", ii+1) == -1){
+		if (sprintf(colname_del_inc, "del_inc%i", ii+1) == -1){
 			RELXILL_ERROR("failed to construct colname of the lp table",status);
 			return NULL;
 		}
 		if(fits_get_colnum(fptr, CASEINSEN, colname_del_inc, &colnum_del_inc, status)) return NULL;
-		free(colname_del_inc);
 
 	    fits_read_col(fptr, TFLOAT, colnum_h, rownum, 1, nelem ,&nullval,dat->intens[ii], &anynul, status);
 	    fits_read_col(fptr, TFLOAT, colnum_del, rownum, 1, nelem ,&nullval,dat->del[ii], &anynul, status);
@@ -386,7 +381,7 @@ void read_lp_table(char* filename, lpTable** inp_tab, int* status){
 	lpTable* tab = (*inp_tab);
 	fitsfile *fptr=NULL;
 
-	char* fullfilename=NULL;
+	char fullfilename[999];
 
 	do{ // Errot handling loop
 		if (tab != NULL){
@@ -402,7 +397,7 @@ void read_lp_table(char* filename, lpTable** inp_tab, int* status){
 		assert(tab->dat!=NULL);
 
 		// get the full filename
-		if (asprintf(&fullfilename, "%s/%s", get_relxill_table_path(),filename) == -1){
+		if (sprintf(fullfilename, "%s/%s", get_relxill_table_path(),filename) == -1){
 			RELXILL_ERROR("failed to construct full path the lp table",status);
 			break;
 		}
@@ -442,11 +437,9 @@ void read_lp_table(char* filename, lpTable** inp_tab, int* status){
 	} else {
 		free_lpTable(tab);
 	}
-	free(fullfilename);
 
 	if (fptr!=NULL) {fits_close_file(fptr,status);}
 
-	return;
 }
 
 static void free_relDat(relDat* dat, int nr){
