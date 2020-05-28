@@ -1,6 +1,9 @@
 # -*- mode: Make -*-
 
-CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3
+RELXILL_SOURCE_DIR = ./
+
+CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3 -DRELXILL_SOURCE_DIR='"${RELXILL_SOURCE_DIR}"'
+
 LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
 
 
