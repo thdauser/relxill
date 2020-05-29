@@ -857,8 +857,46 @@ void zeroArray(double* arr, int n){
   }
 }
 
-void multiplyArray(double* arr, int n, double factor){
-  for (int jj=0; jj<n; jj++){
+void multiplyArray(double* arr, int n, double factor) {
+  for (int jj = 0; jj < n; jj++) {
     arr[jj] *= factor;
   }
+}
+
+
+// for x0 and xn ascending, calculate the mean at xn  (x0 has n0+1 bins and xn has nn+1 bins)
+void rebin_mean_flux(double *xn, double *yn, int nn, double *x0, double *y0, int n0, int *status) {
+  if (xn[0] > xn[nn] || x0[0] > x0[n0]) {
+    RELXILL_ERROR(" *** grid in wrong order", status);
+    return;
+  }
+  /* if (xn[0]<x0[n0-1] || xn[nn-1]>x0[0]){
+     RELXILL_ERROR(" *** new grid is larger than the input grid",status);
+     return;
+   } */
+
+  int ii = 1; // we start at one, as we always need one bin lower than the xn[0] bin
+  for (int in = 0; in < nn; in++) {  // only go to the second to last bin
+
+    yn[ii] = 0.0; // set it zero by default
+
+    double xn_m = 0.5 * (xn[in] + xn[in + 1]);
+    while (0.5 * (x0[ii - 1] + x0[ii]) < xn_m) {
+      ii++;
+      if (ii >= n0) {
+        break;
+      }
+    }
+    ii--;
+
+    double x0_m_lo = 0.5 * (x0[ii - 1] + x0[ii]);
+    double x0_m_hi = 0.5 * (x0[ii] + x0[ii + 1]);
+
+    if (xn_m > x0_m_lo && xn_m <= x0_m_hi) {
+      double ifac_r = (xn_m - x0_m_lo) / (x0_m_hi - x0_m_lo);
+      yn[in] = interp_lin_1d(ifac_r, y0[ii - 1], y0[ii]);
+    }
+
+  }
+
 }

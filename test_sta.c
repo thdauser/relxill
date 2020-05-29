@@ -29,6 +29,7 @@ void printVersionNumber(int *status) {
   printf("%s",buf);
   free(buf);
 }
+
 int main(int argc, char *argv[]){
 
 	int status = EXIT_SUCCESS;
