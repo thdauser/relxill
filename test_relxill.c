@@ -39,6 +39,29 @@ void set_std_param_xillverco(double *inp_par) {
     inp_par[7] = -1.0;   // refl. frac.
 }
 
+
+void set_std_param_xillver_dens_nthcomp(double *inp_par) {
+  inp_par[0] = 2.1;    // Gamma
+  inp_par[1] = 1.0;    // Afe
+  inp_par[2] = 60.0;  // kTe
+  inp_par[3] = 17;  // logN
+  inp_par[4] = 0.0;    // logxi
+  inp_par[5] = 0.;     // redshift
+  inp_par[6] = 45.0;   // inclination
+  inp_par[7] = -1.0;   // refl. frac.
+}
+
+void set_std_param_xillver_nthcomp(double *inp_par) {
+  inp_par[0] = 2.1;    // Gamma
+  inp_par[1] = 1.0;    // Afe
+  inp_par[2] = 60.0;  // kTe
+  inp_par[3] = 0.0;    // logxi
+  inp_par[4] = 0.;     // redshift
+  inp_par[5] = 45.0;   // inclination
+  inp_par[6] = -1.0;   // refl. frac.
+}
+
+
 void set_std_param_relline(double *inp_par) {
     inp_par[0] = 6.4;
     inp_par[1] = 3.0;
@@ -267,6 +290,21 @@ xillParam *get_std_param_xillver_co(int *status) {
     return init_par_xillver_co(inp_par, n_param, status);
 }
 
+xillParam *get_std_param_xillver_nthcomp(int *status) {
+  int n_param = NUM_PARAM_XILLVER_NTHCOMP;
+  double *inp_par = (double *) malloc(sizeof(double) * n_param);
+  CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
+  set_std_param_xillver_nthcomp(inp_par);
+  return init_par_xillver(inp_par, n_param, status);  // this is bad design, but kTe and Ecut are identical in the code
+}
+
+xillParam *get_std_param_xillver_dens_nthcomp(int *status) {
+  int n_param = NUM_PARAM_XILLVERDENS_NTHCOMP;
+  double *inp_par = (double *) malloc(sizeof(double) * n_param);
+  CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
+  set_std_param_xillver_dens_nthcomp(inp_par);
+  return init_par_xillver_dens_nthcomp(inp_par, n_param, status);
+}
 
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n) {
@@ -756,7 +794,6 @@ void std_eval_relline_lp(int *status, int n) {
 
 }
 
-/** standard evaluation of the relline model **/
 void std_eval_xillver(int *status, int n) {
 
     printf("\n ==> Evaluating XILLVER MODEL \n");
@@ -780,11 +817,32 @@ void std_eval_xillver(int *status, int n) {
         CHECK_STATUS_VOID(*status)
     }
 
-    // test output
-    // save_xillver_spectrum(ener,photar,n_ener,"test_xillver_spectrum.dat");
+}
 
+void std_eval_xillver_nthcomp(int *status, int n) {
+
+  printf("\n ==> Evaluating xillverCp MODEL \n");
+  /* set the parameters */
+  int n_param = NUM_PARAM_XILLVER_NTHCOMP;
+  double inp_par[n_param];
+  set_std_param_xillver_nthcomp(inp_par);
+  CHECK_STATUS_VOID(*status)
+
+  /* create an energy grid */
+  int n_ener = 2000;
+  double ener[n_ener + 1];
+  get_log_grid(ener, n_ener + 1, 0.08, 500.0);
+
+
+  double photar[n_ener];
+  int ii;
+  for (ii = 0; ii < n; ii++) {
+    tdxillver_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
+    CHECK_STATUS_VOID(*status)
+  }
 
 }
+
 
 /** standard evaluation of the relxillNS model **/
 void std_eval_relxill_ns(int *status, int n) {
@@ -826,4 +884,71 @@ void std_eval_relxill_co(int *status, int n) {
     double photar[n_ener];
 
     tdrelxillco(ener, n_ener, photar, inp_par, n_param, status);
+}
+
+/** standard evaluation of the relxillD model **/
+void std_eval_relxilldens_nthcomp(int *status, int n) {
+
+  printf("\n ==> Evaluating relxillDCp MODEL \n");
+  /* set the parameters */
+  int n_param = NUM_PARAM_RELXILLDENS_NTHCOMP;
+  double inp_par[n_param];
+  set_std_param_relxilldens(inp_par);
+  CHECK_STATUS_VOID(*status)
+
+  /* create an energy grid */
+  int n_ener = 4000;
+  double ener[n_ener + 1];
+  get_log_grid(ener, n_ener + 1, 0.1, 1000.0);
+
+  /* call the relline model */
+  double photar[n_ener];
+  tdrelxilldens_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
+
+}
+
+/** standard evaluation of the relxillD model **/
+void std_eval_relxilllpdens_nthcomp(int *status, int n) {
+
+  printf("\n ==> Evaluating relxilllpDCp MODEL \n");
+  /* set the parameters */
+  int n_param = NUM_PARAM_RELXILLLPDENS_NTHCOMP;
+  double inp_par[n_param];
+  set_std_param_relxilllpdens(inp_par);
+  CHECK_STATUS_VOID(*status)
+
+  /* create an energy grid */
+  int n_ener = 4000;
+  double ener[n_ener + 1];
+  get_log_grid(ener, n_ener + 1, 0.1, 1000.0);
+
+  /* call the relline model */
+  double photar[n_ener];
+  tdrelxilllpdens_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
+
+}
+
+void std_eval_xillver_dens_nthcomp(int *status, int n) {
+
+  printf("\n ==> Evaluating xillverDCp MODEL \n");
+  /* set the parameters */
+  int n_param = NUM_PARAM_XILLVERDENS_NTHCOMP;
+  double inp_par[n_param];
+  set_std_param_xillver_dens_nthcomp(inp_par);
+  CHECK_STATUS_VOID(*status)
+
+  /* create an energy grid */
+  int n_ener = 2000;
+  double ener[n_ener + 1];
+  get_log_grid(ener, n_ener + 1, 0.08, 500.0);
+
+
+  /* call the relline model */
+  double photar[n_ener];
+  int ii;
+  for (ii = 0; ii < n; ii++) {
+    tdxillverdens_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
+    CHECK_STATUS_VOID(*status)
+  }
+
 }

@@ -37,7 +37,7 @@ _traceback=1;
 
 variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
 		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
-variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO"];
+variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO","relxillDCp","relxilllpDCp","xillverDCp"];
 if (TEST_DEVEL==1){
    ALL_FF= [ALL_FF,additional_FF];
 }

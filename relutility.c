@@ -56,7 +56,9 @@ void relxill_warning(const char* const msg){
 
 int is_xill_model(int model_type){
     if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)
-        || (model_type == MOD_TYPE_XILLVERNS) || (model_type == MOD_TYPE_XILLVERCO)) {
+        || (model_type == MOD_TYPE_XILLVERNS) || (model_type == MOD_TYPE_XILLVERCO)
+        || (model_type == MOD_TYPE_XILLVERDENS_NTHCOMP)
+        || (model_type == MOD_TYPE_XILLVER_NTHCOMP)) {
 		return 1;
 	} else {
 		return 0;

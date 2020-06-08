@@ -174,12 +174,29 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 	param->incl  = inp_par[5]; // is given in degrees !!
 	param->refl_frac = inp_par[6];
 
-	// TODO: check parameter bounds here as well
-/*	check_parameter_bounds_xillver(param,status);
-	CHECK_STATUS_RET(*status,NULL); */
-
 	return param;
 }
+
+xillParam* init_par_xillver_nthcomp(const double* inp_par, const int n_parameter, int* status){
+
+  // fill in parameters
+  xillParam* param = new_xillParam(MOD_TYPE_XILLVER_NTHCOMP,PRIM_SPEC_NTHCOMP,status);
+  CHECK_STATUS_RET(*status, NULL)
+
+  assert(n_parameter == NUM_PARAM_XILLVER_NTHCOMP);
+
+  param->gam   = inp_par[0];
+  param->afe   = inp_par[1];
+  param->ect  = inp_par[2];   // is kTe internally
+  param->lxi   = inp_par[3];
+  param->dens  = 15; // logN
+  param->z     = inp_par[4];
+  param->incl  = inp_par[5]; // is given in degrees !!
+  param->refl_frac = inp_par[6];
+
+  return param;
+}
+
 
 xillParam* init_par_xillver_ns(const double* inp_par, const int n_parameter, int* status){
 
@@ -246,30 +263,6 @@ xillParam* init_par_xillver_dens(const double* inp_par, const int n_parameter, i
 	param->ect   = 300.0;
 	param->dens  = inp_par[2];
 	param->lxi   = inp_par[3];
-	param->z     = inp_par[4];
-	param->incl  = inp_par[5]; // is given in degrees !!
-	param->refl_frac = inp_par[6];
-
-	// TODO: check parameter bounds here as well
-/*	check_parameter_bounds_xillver(param,status);
-	CHECK_STATUS_RET(*status,NULL); */
-
-	return param;
-}
-
-xillParam* init_par_xillver_nthcomp(const double* inp_par, const int n_parameter, int* status){
-
-	// fill in parameters
-	xillParam* param = new_xillParam(MOD_TYPE_XILLVER,PRIM_SPEC_NTHCOMP,status);
-    CHECK_STATUS_RET(*status, NULL)
-
-	assert(n_parameter == NUM_PARAM_XILLVER);
-
-	param->gam   = inp_par[0];
-	param->afe   = inp_par[1];
-	param->ect   = inp_par[2]; // important: this is kte in this model now!!
-	param->lxi   = inp_par[3];
-	param->dens  = 15; // logN
 	param->z     = inp_par[4];
 	param->incl  = inp_par[5]; // is given in degrees !!
 	param->refl_frac = inp_par[6];
@@ -606,6 +599,111 @@ void init_par_relxilllp_dens(relParam** rel_param, xillParam** xill_param, const
 	return;
 }
 
+
+xillParam* init_par_xillver_dens_nthcomp(const double* inp_par, const int n_parameter, int* status){
+
+  // fill in parameters
+  xillParam* param = new_xillParam(MOD_TYPE_XILLVERDENS_NTHCOMP,PRIM_SPEC_ECUT,status);
+  CHECK_STATUS_RET(*status, NULL)
+
+  assert(n_parameter == NUM_PARAM_XILLVERDENS_NTHCOMP);
+
+  param->gam   = inp_par[0];
+  param->afe   = inp_par[1];
+  param->ect   = inp_par[2];
+  param->dens  = inp_par[3];
+  param->lxi   = inp_par[4];
+  param->z     = inp_par[5];
+  param->incl  = inp_par[6]; // is given in degrees !!
+  param->refl_frac = inp_par[7];
+
+  // TODO: check parameter bounds here as well
+/*	check_parameter_bounds_xillver(param,status);
+	CHECK_STATUS_RET(*status,NULL); */
+
+  return param;
+}
+
+
+
+void init_par_relxilldens_nthcomp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+  // fill in parameters
+  relParam* param = new_relParam(MOD_TYPE_RELXILL,EMIS_TYPE_BKN,status);
+  CHECK_STATUS_VOID(*status)
+
+  /** only set the MODEL TYPE RELXILL DENS for xillver **/
+  xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLDENS_NTHCOMP,PRIM_SPEC_NTHCOMP,status);
+  CHECK_STATUS_VOID(*status)
+
+  assert(n_parameter == NUM_PARAM_RELXILLDENS_NTHCOMP);
+
+  param->emis1 = inp_par[0];
+  param->emis2 = inp_par[1];
+  param->rbr   = inp_par[2];
+  param->a     = inp_par[3];
+  param->incl  = inp_par[4]*M_PI/180;
+  param->rin   = inp_par[5];
+  param->rout  = inp_par[6];
+  param->z     = inp_par[7];
+  xparam->z    = inp_par[7];
+
+  xparam->gam   = inp_par[8];
+  xparam->lxi   = inp_par[9];
+  xparam->afe   = inp_par[10];
+  xparam->ect   = inp_par[11];
+  xparam->dens  = inp_par[12];
+
+  xparam->refl_frac = inp_par[13];
+  xparam->fixReflFrac = 0;
+
+
+  check_parameter_bounds(param,status);
+  CHECK_STATUS_VOID(*status)
+
+  *rel_param  = param;
+  *xill_param = xparam;
+
+}
+
+void init_par_relxilllp_dens_nthcomp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status){
+
+  // fill in parameters
+  relParam* param = new_relParam(MOD_TYPE_RELXILLLP,EMIS_TYPE_LP,status);
+  CHECK_STATUS_VOID(*status)
+
+  xillParam* xparam = new_xillParam(MOD_TYPE_RELXILLLPDENS_NTHCOMP,PRIM_SPEC_NTHCOMP,status);
+  CHECK_STATUS_VOID(*status)
+
+  assert(n_parameter == NUM_PARAM_RELXILLLPDENS_NTHCOMP);
+
+  param->height = inp_par[0];
+  param->a      = inp_par[1];
+  param->incl   = inp_par[2]*M_PI/180;
+  param->rin    = inp_par[3];
+  param->rout   = inp_par[4];
+  param->z      = inp_par[5];
+  xparam->z     = inp_par[5];
+
+  param->gamma  = inp_par[6];
+  xparam->gam   = inp_par[6];
+  xparam->lxi   = inp_par[7];
+  xparam->afe   = inp_par[8];
+  xparam->ect   = inp_par[9];
+  xparam->dens  = inp_par[10];
+
+  xparam->refl_frac = inp_par[11];
+  xparam->fixReflFrac = (int) (inp_par[12]+0.5); // make sure there is nor problem with integer conversion
+
+  param->beta = 0.0;
+
+  check_parameter_bounds(param,status);
+  CHECK_STATUS_VOID(*status)
+
+  *rel_param  = param;
+  *xill_param = xparam;
+
+}
 
 relParam* init_par_relline(const double* inp_par, const int n_parameter, int* status){
 
@@ -1013,6 +1111,62 @@ void tdrelxilllpdens(const double* ener0, const int n_ener0, double* photar, con
 
 }
 
+
+
+/** RELXILL DENS MODEL FUNCTION **/
+void tdrelxilldens_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+  xillParam* xill_param = NULL;
+  relParam* rel_param = NULL;
+
+  init_par_relxilldens_nthcomp(&rel_param,&xill_param,parameter,n_parameter,status);
+  CHECK_STATUS_VOID(*status)
+
+  double* ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+
+  relxill_kernel(ener, photar, n_ener0, xill_param, rel_param,status);
+  CHECK_STATUS_VOID(*status)
+
+  free(ener);
+  free_xillParam(xill_param);
+  free_relParam(rel_param);
+
+}
+
+
+/** XSPEC RELXILLLP MODEL FUNCTION **/
+void tdrelxilllpdens_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+  xillParam* xill_param = NULL;
+  relParam* rel_param = NULL;
+
+  init_par_relxilllp_dens_nthcomp(&rel_param,&xill_param,parameter,n_parameter,status);
+  CHECK_STATUS_VOID(*status)
+
+
+  double* ener = (double*) ener0;
+  double flux[n_ener0];
+
+  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param,status);
+  CHECK_STATUS_VOID(*status)
+
+  double* ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0 , rel_param->z,status);
+  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+
+  free_xillParam(xill_param);
+  free_relParam(rel_param);
+  free(ener_shifted);
+
+}
+
+/** XSPEC XILLVER DENS MODEL FUNCTION **/
+void tdxillverdens_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status){
+
+  xillParam* param_struct = init_par_xillver_dens_nthcomp(parameter,n_parameter,status);
+  CHECK_STATUS_VOID(*status)
+
+  xillver_base(ener0, n_ener0, photar, param_struct, status);
+}
 
 
 /** XSPEC XILLVER MODEL FUNCTION **/
@@ -1554,4 +1708,37 @@ void lmodrelxilllpionnthcomp(const double* ener0, const int n_ener0, const doubl
 
 	if (status!=EXIT_SUCCESS)
 	RELXILL_ERROR("evaluating relxilllpionCp model failed",&status);
+}
+
+// XSpec local model function (defined in the lmodel*.dat file)
+void lmodxillverdensnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+  const int n_parameter = 8;
+  int status = EXIT_SUCCESS;
+  tdxillverdens_nthcomp(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+  if (status!=EXIT_SUCCESS)
+    RELXILL_ERROR("evaluating xillverDCp model failed",&status);
+}
+
+// XSpec local model function (defined in the lmodel*.dat file)
+void lmodrelxilllpdensnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+  const int n_parameter = 13;
+  int status = EXIT_SUCCESS;
+  tdrelxilllpdens_nthcomp(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+  if (status!=EXIT_SUCCESS)
+    RELXILL_ERROR("evaluating relxilllpDCp model failed",&status);
+}
+
+// XSpec local model function (defined in the lmodel*.dat file)
+void lmodrelxilldensnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+
+  const int n_parameter = 14;
+  int status = EXIT_SUCCESS;
+  tdrelxilldens_nthcomp(ener0, n_ener0, photar, parameter, n_parameter, &status);
+
+  if (status!=EXIT_SUCCESS)
+    RELXILL_ERROR("evaluating relxill_dens model failed",&status);
 }

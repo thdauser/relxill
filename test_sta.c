@@ -240,6 +240,7 @@ int main(int argc, char *argv[]){
 	int do_relxilllpnthcomp = 0;
 	int do_relxilllpionnthcomp = 0;
 	int do_relconv = 0;
+	int do_xillver = 0;
 
 	if (argc>=2){
 		if (strcmp(argv[1],"version")==0){
@@ -288,6 +289,9 @@ int main(int argc, char *argv[]){
         } else if (strcmp(argv[1], "relxilllpionCp") == 0) {
             do_relxilllpionnthcomp = 1;
             do_all = 0;
+        } else if (strcmp(argv[1], "xillver") == 0) {
+          do_xillver = 1;
+          do_all = 0;
         }
 
 
@@ -304,10 +308,11 @@ int main(int argc, char *argv[]){
 		free(buf);
 
 		if (do_all){
-			do_std_test(&status);
+          do_std_test(&status);
 
-			test_xilltables();
-		}
+          test_xilltables();
+
+        }
 
 		status=EXIT_SUCCESS;
 		if (do_all || do_relline){
@@ -349,10 +354,16 @@ int main(int argc, char *argv[]){
 
 		}
 
-		if (do_all) {
-			std_eval_xillver(&status,1);
-            CHECK_STATUS_BREAK(status)
-			printf("     ---> successful \n");
+		if (do_all | do_xillver ) {
+          test_xilltables();
+          CHECK_STATUS_BREAK(status)
+          std_eval_xillver(&status,1);
+          CHECK_STATUS_BREAK(status)
+          std_eval_xillver_nthcomp(&status,1);
+          CHECK_STATUS_BREAK(status)
+          std_eval_xillver_dens_nthcomp(&status,1);
+          CHECK_STATUS_BREAK(status)
+          printf("     ---> successful \n");
 
 		}
 
@@ -375,15 +386,19 @@ int main(int argc, char *argv[]){
 			printf("     ---> successful \n");
 		}
 
-		if (do_all || do_relxillnthcomp){
-			std_eval_relxill_nthcomp(&status,n);
-            CHECK_STATUS_BREAK(status)
-			printf("     ---> successful \n");
+      if (do_all || do_relxillnthcomp){
+          std_eval_relxill_nthcomp(&status,n);
+          CHECK_STATUS_BREAK(status)
+          std_eval_relxilldens_nthcomp(&status,n);
+          CHECK_STATUS_BREAK(status)
+          printf("     ---> successful \n");
 		}
 
 		if (do_all || do_relxilllpnthcomp){
 			std_eval_relxilllp_nthcomp(&status,n);
             CHECK_STATUS_BREAK(status)
+          std_eval_relxilllpdens_nthcomp(&status,n);
+          CHECK_STATUS_BREAK(status)
 			printf("     ---> successful \n");
 		}
 

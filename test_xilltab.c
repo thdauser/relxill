@@ -47,25 +47,14 @@ static void print_status_outcome(const int *status) {
     }
 }
 
-static void test_tab_num_param(const xillParam *param, int *status, const xillTable *tab) {
-    printf("     - number of parameters: %i ", tab->num_param);
-    int dim_expect = 5;
-    if (is_6dim_table(param->model_type)) {
-        dim_expect = 6;
-    }
-    printf(" [expected: %i] ", dim_expect);
-    if (tab->num_param != dim_expect) {
-        *status = EXIT_FAILURE;
-    }
-}
 
 static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
+  printf("\n *** TEST: initializing xilltable %s  ...  \n", fname);
 
     xillTable *tab = NULL;
     init_xillver_table(fname, &tab, param, status);
 
-    printf("\n *** TEST: initializing xilltable %s  ...  ", fname);
 
     if (*status==EXIT_SUCCESS) {
       assert(tab->n_ener > 0);
@@ -76,7 +65,7 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
       }
 
       assert(tab->num_param > 0);
-      test_tab_num_param(param, status, tab);
+      printf(" number of params: %i\n",tab->num_param);
     }
 
     print_status_outcome(status);
@@ -128,13 +117,21 @@ static void test_get_spec(int *status, xillParam *param) {
 
 static void test_all_spec(int *status) {
 
-    xillParam *param;
+  xillParam *param;
 
-    // param = get_std_param_xillver(status);
-    //  test_get_spec(status, param);
+  param = get_std_param_xillver(status);
+  test_get_spec(status, param);
 
-    param = get_std_param_xillver_co(status);
-    test_get_spec(status, param);
+  param = get_std_param_xillver_co(status);
+  test_get_spec(status, param);
+
+  param = get_std_param_xillver_nthcomp(status);
+  test_get_spec(status, param);
+
+  param = get_std_param_xillver_dens_nthcomp(status);
+  test_get_spec(status, param);
+
+
 
 
 }
@@ -152,6 +149,9 @@ static void test_all_xilltables(int *status) {
     param = get_std_param_xillver_co(status);
     test_init_xilltable(XILLTABLE_CO_FILENAME, param, status);
 
+  /** -1- xillver Dens Cp (6dim table) **/
+  param = get_std_param_xillver_dens_nthcomp(status);
+  test_init_xilltable(XILLTABLE_NTHCOMP_FILENAME, param, status);
 
     putenv("DEBUG_RELXILL=0");
 

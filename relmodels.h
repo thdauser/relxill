@@ -40,6 +40,10 @@
 #define MOD_TYPE_XILLVER 0
 #define NUM_PARAM_XILLVER 7
 
+#define MOD_TYPE_XILLVER_NTHCOMP 100
+#define NUM_PARAM_XILLVER_NTHCOMP 7
+
+
 #define MOD_TYPE_RELXILL -1
 #define NUM_PARAM_RELXILL 13
 
@@ -76,6 +80,14 @@
 #define MOD_TYPE_XILLVERNS -101
 #define NUM_PARAM_XILLVERNS 7
 
+#define MOD_TYPE_XILLVERDENS_NTHCOMP 1000
+#define NUM_PARAM_XILLVERDENS_NTHCOMP 8
+
+#define MOD_TYPE_RELXILLDENS_NTHCOMP -1000
+#define NUM_PARAM_RELXILLDENS_NTHCOMP 14
+
+#define MOD_TYPE_RELXILLLPDENS_NTHCOMP -1001
+#define NUM_PARAM_RELXILLLPDENS_NTHCOMP 13
 
 /****  TYPE DEFINITIONS ****/
 
@@ -121,6 +133,14 @@ void tdxillverco(const double *ener0, const int n_ener0, double *photar, const d
 void tdrelxillco(const double *ener0, const int n_ener0, double *photar, const double *parameter, const int n_parameter,
                  int *status);
 
+// Dens & Nthcomp Model
+xillParam* init_par_xillver_dens_nthcomp(const double* inp_par, const int n_parameter, int* status);
+void init_par_relxilldens_nthcomp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status);
+void init_par_relxilllp_dens_nthcomp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status);
+void tdrelxilldens_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxilllpdens_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdxillverdens_nthcomp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+
 /* get the version number text on the screen (if not already printed before */
 void print_version_number(int* status);
 
@@ -162,5 +182,9 @@ void lmodrelxillnthcomp(const double* ener0, const int n_ener0, const double* pa
 void lmodrelxilllpnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodrelxilllpionnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 void lmodxillvernthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+
+void lmodxillverdensnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+void lmodrelxilllpdensnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
+void lmodrelxilldensnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init);
 
 #endif /* MODELS_H_ */

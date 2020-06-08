@@ -132,25 +132,27 @@ static int is_dens_model(int model_type) {
     }
 }
 
+
 int is_6dim_table(int model_type) {
-    if (is_co_model(model_type)) {
+    if (is_co_model(model_type)  ) {
         return 1;
     } else {
         return 0;
     }
 }
 
-static int get_num_param(xillParam *param) {
+static int get_num_param_auto(fitsfile* fptr, int* status) {
 
-    int model_type = param->model_type;
+  CHECK_STATUS_RET(*status,0);
 
-    int num_param = XILLTABLE_N_PARAM;
-    if (is_6dim_table(model_type)) {
-        num_param = 6;
-    }
+  // get the number of rows
+  long n;
+  fits_get_num_rows(fptr, &n, status);
+  relxill_check_fits_error(status);
 
-    return num_param;
+  return (int) n;
 }
+
 
 /* routine to get the pointer to the pre-defined parameter index array
  * (i.e. with this we know which parameter relates to the input parameters ) */
@@ -429,29 +431,30 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
 
     assert(tab == NULL);
 
-    int num_param = get_num_param(param);  // need a routine to get the number of parameters here
+  int num_param = get_num_param_auto(fptr,status);
+  CHECK_STATUS_VOID(*status);
 
-    /** =1= allocate space for the new table  **/
-    tab = new_xillTable(num_param, status);
+  /** =1= allocate space for the new table  **/
+  tab = new_xillTable(num_param, status);
 
-    /** =2= now load the energy grid **/
-    get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
+  /** =2= now load the energy grid **/
+  get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
 
-    /** =3= and now the stored parameter values (also check if the correct number of parameters) **/
-    get_xilltable_parameters(fptr, tab, param, status);
+  /** =3= and now the stored parameter values (also check if the correct number of parameters) **/
+  get_xilltable_parameters(fptr, tab, param, status);
 
-    /** =4= finally set up the complete data structure **/
-    init_xilltable_data_struct(tab, status);
+  /** =4= finally set up the complete data structure **/
+  init_xilltable_data_struct(tab, status);
 
-    if (*status == EXIT_SUCCESS) {
-        // assign the value
-        (*inp_tab) = tab;
-    } else {
-        printf(" *** error *** initializing of the XILLVER table %s failed \n", filename);
-        free_xillTable(tab);
-    }
+  if (*status == EXIT_SUCCESS) {
+    // assign the value
+    (*inp_tab) = tab;
+  } else {
+    printf(" *** error *** initializing of the XILLVER table %s failed \n", filename);
+    free_xillTable(tab);
+  }
 
-    if (fptr != NULL) { fits_close_file(fptr, status); }
+  if (fptr != NULL) { fits_close_file(fptr, status); }
 
 }
 

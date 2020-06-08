@@ -27,6 +27,8 @@
 
 void set_std_param_xillver(double *inp_par);
 
+void set_std_param_xillver_nthcomp(double *inp_par);
+
 void set_std_param_xillverco(double *inp_par);
 
 void set_std_param_relline(double *inp_par);
@@ -62,6 +64,10 @@ void set_std_param_relxillco(double *inp_par);
 xillParam *get_std_param_xillver(int *status);
 
 xillParam *get_std_param_xillver_co(int *status);
+
+xillParam *get_std_param_xillver_nthcomp(int *status);
+
+xillParam *get_std_param_xillver_dens_nthcomp(int *status);
 
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n);
@@ -101,11 +107,16 @@ void std_eval_relline_lp(int *status, int n);
 
 /** standard evaluation of the relline model **/
 void std_eval_xillver(int *status, int n);
+void std_eval_xillver_nthcomp(int *status, int n);
 
 /** standard evaluation of the relxillNS model **/
 void std_eval_relxill_ns(int *status, int n);
 
 /** standard evaluation of the relxillCO model **/
 void std_eval_relxill_co(int *status, int n);
+
+void std_eval_xillver_dens_nthcomp(int *status, int n);
+void std_eval_relxilllpdens_nthcomp(int *status, int n);
+void std_eval_relxilldens_nthcomp(int *status, int n);
 
 #endif //RELXILL_TEST_RELXILL_H
