@@ -101,6 +101,7 @@ static void test_get_spec(int *status, xillParam *param) {
     xill_spec *spec = get_xillver_spectra(param, status);
     if (*status != EXIT_SUCCESS) {
         printf("\n *** ERROR trying to load the spectrum \n");
+        return;
     }
 
     assert(spec->n_ener > 0);
@@ -117,6 +118,7 @@ static void test_get_spec(int *status, xillParam *param) {
 
 static void test_all_spec(int *status) {
 
+  CHECK_STATUS_VOID(*status);
   xillParam *param;
 
   param = get_std_param_xillver(status);
@@ -157,6 +159,22 @@ static void test_all_xilltables(int *status) {
 
 }
 
+static void testLoadingNonExistingTable(int *status) {
+
+  xillParam *param;
+
+  char* nonExistingFilename = "no_table_has_this_name_1234.fits";
+
+  param = get_std_param_xillver(status);
+  int statusFailing = EXIT_SUCCESS;
+  test_init_xilltable(nonExistingFilename, param, &statusFailing);
+
+  if (statusFailing == EXIT_SUCCESS){
+    *status = EXIT_FAILURE;
+    printf(" TEST: *** error : loading a non-existing table did not result in an error\n");
+  }
+}
+
 void test_xilltables(void ) {
     char *buf;
     int status = EXIT_SUCCESS;
@@ -170,6 +188,8 @@ void test_xilltables(void ) {
     test_all_xilltables(&status);
 
     test_all_spec(&status);
+
+    testLoadingNonExistingTable(&status);
 
     if (status != EXIT_SUCCESS) {
         printf(" *** TESTING XILLVER TABLES NOT SUCCESSFUL \n");
