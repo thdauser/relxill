@@ -351,6 +351,16 @@ define check_neg_nthcomp_mod_single(ff,ff_dens){ %{{{
 %}}}
 
 
+define set_default_dens_cutoff(ff){ %{{{
+   if (string_match(ff,"Cp")){
+      set_par("*.kTe",30.0);
+   }
+   
+   if (get_params("*.Ecut")[0]!=NULL){
+      set_par("*.Ecut",300.0);
+   }   
+}
+%}}}
 
 define check_dens_mod_single(ff,ff_dens){ %{{{
    
@@ -366,18 +376,55 @@ define check_dens_mod_single(ff,ff_dens){ %{{{
    
    fit_fun_default(ff_dens);
    set_par("*.logN",15);
+   set_default_dens_cutoff(ff_dens);   
    val0 = eval_fun_keV (lo,hi);
-      
-   fit_fun_default(ff);
-   set_par("*.Ecut",300.0);
-   val1 = eval_fun_keV (lo,hi);
    
+   fit_fun_default(ff);
+   set_default_dens_cutoff(ff);   
+   val1 = eval_fun_keV (lo,hi);
+
    simple_plot(lo,hi,val0,val1;;__qualifiers());
 
    putenv("RELXILL_NUM_RZONES");
 
    variable gn = goodness(val0,val1);
    vmessage("    -> %s goodness value: %.3e",
+	    ff_dens, gn);
+   return gn;
+}
+%}}}
+
+
+
+define check_dens_mod_single_shouldChange(ff_dens){ %{{{
+   
+%   variable lxi = 2.0;
+   
+   variable lo,hi;
+   variable val0, val1;
+   (lo,hi) = log_grid(0.5,500,4000);
+   
+   if (string_match(ff_dens,"lpD")){
+      putenv("RELXILL_NUM_RZONES=1");
+   }
+   
+   fit_fun_default(ff_dens);
+   set_default_dens_cutoff(ff_dens);
+   set_par("*.logN",15);
+   val0 = eval_fun_keV (lo,hi);
+
+      
+   set_par("*.logN",18);
+   val1 = eval_fun_keV (lo,hi);
+
+   val1 *= sum(val0)/sum(val1);
+   
+   simple_plot(lo,hi,val0,val1;;__qualifiers());
+
+   putenv("RELXILL_NUM_RZONES");
+
+   variable gn = goodness(val0,val1);
+   vmessage("    -> %s goodness value: %.3e (should fail)",
 	    ff_dens, gn);
    return gn;
 }
@@ -741,16 +788,26 @@ define check_dens_mod(){ %{{{
    counter++;
    vmessage("\n### %i ### testing HIGH DENSITY MODELS: ###",counter);
    
-   variable ff = ["xillver","relxill","relxilllp"];
-   variable ff_dens = ["xillverD","relxillD","relxilllpD"];
+   variable ff = ["xillver","relxill","relxilllp","xillverCp","relxillCp"];
+   variable ff_dens = ["xillverD","relxillD","relxilllpD","xillverDCp","relxillDCp"];
    
    variable ii,n = length(ff);
    
    _for ii(0,n-1,1){
-      if (check_dens_mod_single(ff[ii],ff_dens[ii];nopl) > goodness_lim*0.1){
-	vmessage(" *** error: there seems to be a problem with the HIGH DENSITY MODEL %s ",ff_dens[ii]);
+
+      if (check_dens_mod_single_shouldChange(ff_dens[ii];nopl) < goodness_lim*0.1){
+	 vmessage(" *** error: there seems to be a problem with the HIGH DENSITY MODEL %s ",ff_dens[ii]);
+	 vmessage(" ***        -> density parameter does not seem to have an effect ",ff_dens[ii]); 
 	 return EXIT_FAILURE;
       }
+
+      if (check_dens_mod_single(ff[ii],ff_dens[ii];nopl) > goodness_lim*0.1){
+	 vmessage(" *** error: there seems to be a problem with the HIGH DENSITY MODEL %s ",ff_dens[ii]);
+	 vmessage(" ***        -> it does not agree with the normal version for logN=15 as it should ",ff_dens[ii]);
+	 sleep(60);
+	 return EXIT_FAILURE;
+      }
+
    }
 
    
