@@ -121,8 +121,15 @@ static void test_all_spec(int *status) {
   CHECK_STATUS_VOID(*status);
   xillParam *param;
 
+  putenv("DEBUG_RELXILL=1");
+
+  param = get_std_param_xillver_dens_nthcomp(status);
+  param->dens=17.0;
+  test_get_spec(status, param);
+
   param = get_std_param_xillver(status);
   test_get_spec(status, param);
+  free(param);
 
   param = get_std_param_xillver_co(status);
   test_get_spec(status, param);
@@ -133,7 +140,10 @@ static void test_all_spec(int *status) {
   param = get_std_param_xillver_dens_nthcomp(status);
   test_get_spec(status, param);
 
+  param->dens=17.0;
+  test_get_spec(status, param);
 
+  putenv("DEBUG_RELXILL=0");
 
 
 }
@@ -155,7 +165,7 @@ static void test_all_xilltables(int *status) {
   param = get_std_param_xillver_dens_nthcomp(status);
   test_init_xilltable(XILLTABLE_NTHCOMP_FILENAME, param, status);
 
-    putenv("DEBUG_RELXILL=0");
+  putenv("DEBUG_RELXILL=0");
 
 }
 

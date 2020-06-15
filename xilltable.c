@@ -866,7 +866,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
     CHECK_STATUS_RET(*status, NULL)
 
-    if (is_dens_model(param->model_type)) {
+    if (is_dens_model(param->model_type) && (param->prim_type == PRIM_SPEC_ECUT )) {
         if (cached_xill_tab_dens == NULL) {
             init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
         }

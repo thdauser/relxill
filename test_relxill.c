@@ -44,7 +44,7 @@ void set_std_param_xillver_dens_nthcomp(double *inp_par) {
   inp_par[0] = 2.1;    // Gamma
   inp_par[1] = 1.0;    // Afe
   inp_par[2] = 60.0;  // kTe
-  inp_par[3] = 17;  // logN
+  inp_par[3] = 15;  // logN
   inp_par[4] = 0.0;    // logxi
   inp_par[5] = 0.;     // redshift
   inp_par[6] = 45.0;   // inclination

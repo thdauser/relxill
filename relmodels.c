@@ -603,7 +603,7 @@ void init_par_relxilllp_dens(relParam** rel_param, xillParam** xill_param, const
 xillParam* init_par_xillver_dens_nthcomp(const double* inp_par, const int n_parameter, int* status){
 
   // fill in parameters
-  xillParam* param = new_xillParam(MOD_TYPE_XILLVERDENS_NTHCOMP,PRIM_SPEC_ECUT,status);
+  xillParam* param = new_xillParam(MOD_TYPE_XILLVERDENS_NTHCOMP,PRIM_SPEC_NTHCOMP,status);
   CHECK_STATUS_RET(*status, NULL)
 
   assert(n_parameter == NUM_PARAM_XILLVERDENS_NTHCOMP);
