@@ -787,9 +787,17 @@ define check_dens_mod(){ %{{{
    
    counter++;
    vmessage("\n### %i ### testing HIGH DENSITY MODELS: ###",counter);
+
+   variable ff = ["xillver","relxill","relxilllp"];
+   variable ff_dens = ["xillverD","relxillD","relxilllpD"];
+
    
-   variable ff = ["xillver","relxill","relxilllp","xillverCp","relxillCp"];
-   variable ff_dens = ["xillverD","relxillD","relxilllpD","xillverDCp","relxillDCp"];
+   variable ff_dev = ["xillverCp","relxillCp"];
+   variable ff_dev_dens = ["xillverDCp","relxillDCp"];
+   if (TEST_DEVEL==1){
+      ff = [ff, ff_dev];
+      ff_dens = [ff_dens, ff_dev_dens];      
+   }
    
    variable ii,n = length(ff);
    
