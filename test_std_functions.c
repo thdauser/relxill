@@ -228,6 +228,8 @@ static void testInterpolationRoutines(int *status) {
 }
 void testStdFunctions(int* status) {
 
+  printf("\n### TESTING Standard Functions ###\n");
+
   testRellineTableValues(status);
 
   testLPTableValues(status);

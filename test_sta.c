@@ -23,15 +23,14 @@
 #include "test_rellp.h"
 #include "test_std_functions.h"
 
-int printVersionNumber(int *status) {
+void printVersionNumber(int *status) {
   char* buf;
   get_version_number(&buf, status);
   printf("%s",buf);
   free(buf);
-  return (*status);
 }
 int main(int argc, char *argv[]){
-	char *buf;
+
 	int status = EXIT_SUCCESS;
 
 
@@ -55,7 +54,7 @@ int main(int argc, char *argv[]){
 
 	if (argc>=2){
 		if (strcmp(argv[1],"version")==0){
-          status = printVersionNumber(&status);
+          printVersionNumber(&status);
           return status;
 		}
 
@@ -115,9 +114,7 @@ int main(int argc, char *argv[]){
 	}
 
 	do{
-		get_version_number(&buf,&status);
-		printf("\n === Starting RELXILL Version %s === \n\n",buf);
-		free(buf);
+      print_version_number(&status);
 
       if (do_all) {
         testStdFunctions(&status);
@@ -129,11 +126,12 @@ int main(int argc, char *argv[]){
       }
 
       if (do_all){
-        testStdFunctions(&status);
+
 
         test_xilltables();
       }
 
+<<<<<<< HEAD
 		status=EXIT_SUCCESS;
 		if (do_all || do_relline){
             status=EXIT_SUCCESS;
@@ -142,6 +140,16 @@ int main(int argc, char *argv[]){
                 printf("     ---> successful \n");
             }
 		}
+=======
+
+      if (do_all || do_relline){
+        status=EXIT_SUCCESS;
+        std_eval_relline(&status,n);
+        if (status==EXIT_SUCCESS) {
+          printf("     ---> successful \n");
+        }
+      }
+>>>>>>> 2702d6f... clean up return-rad tests
 
 		if (do_all || do_rellinelp){
             status=EXIT_SUCCESS;
@@ -249,18 +257,18 @@ int main(int argc, char *argv[]){
         }
 
 
-        printf("\n ==> Cleaning up and freeing cached structures\n");
 		free_cached_tables();
         free_cache();
 
 	} while(0);
 
 	if(status!=EXIT_SUCCESS){
-		printf(" *** TESTING NOT SUCCESSFUL \n");
+		printf("\n### TESTING NOT SUCCESSFUL \n");
 		// free tables
-		printf( "\n *** Cleaning up and freeing cached structures\n");
 		free_cached_tables();
 		free_cache();
+	} else {
+      printf("\n### TESTING SUCCESSFUL \n");
 	}
 
   return status;
