@@ -182,6 +182,12 @@ void rebin_mean_flux(double *x0, double *y0, int n0, double *xn, double *yn, int
 // energy shift from the primary source to the observer
 double calc_g_inf(double height, double a);
 
+double calcSum(const double *array, int n_array);
+double calcSumInEnergyBand(const double *array, int n_array, double* ener, double valLo, double valHi);
+
+void normSpec(double* spec, int n_ener);
+
+
 void zeroArray(double* arr, int n);
 void multiplyArray(double* arr, int n, double factor);
 

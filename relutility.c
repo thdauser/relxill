@@ -900,3 +900,47 @@ void rebin_mean_flux(double *xn, double *yn, int nn, double *x0, double *y0, int
   }
 
 }
+
+
+/* Function: calculate the sum of an array
+ *
+ */
+double calcSum(const double *array, int n_array) {
+  double testSum = 0.0;
+  for (int jj=0; jj<n_array; jj++){
+    testSum += array[jj];
+  }
+  return testSum;
+}
+
+/*
+ * ener has n_array+1 bins
+ */
+double calcSumInEnergyBand(const double *array, int n_array, double* ener, double valLo, double valHi) {
+  double testSum = 0.0;
+  for (int jj=0; jj<n_array; jj++){
+    if ( ener[jj]>=valLo && ener[jj+1]<=valHi) {
+      testSum += array[jj];
+    }
+  }
+  return testSum;
+}
+
+
+void normSpec(double* spec, int n_ener){
+
+  double sumSpec=0.0;
+
+  for (int ii=0; ii<n_ener; ii++){
+    sumSpec += spec[ii];
+  }
+  for (int ii=0; ii<n_ener; ii++) {
+    spec[ii] /= sumSpec;
+  }
+}
+
+void setArrayToZero(double* arr, int n) {
+  for (int jj = 0; jj < n; jj++) {
+    arr[jj] = 0.0;
+  }
+}

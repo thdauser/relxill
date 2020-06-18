@@ -896,32 +896,36 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
  *  ener has length n+1 and is the energy array
  * **/
 static void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
-                              int re_rel, int re_xill, int izone, int *status) {
+                              int re_rel, int re_xill, int izone, specCache* cache, int *status) {
 
-	long m=0;
-	switch(n)	{
-		case 512:  m = 9; break;
-		case 1024: m = 10; break;
-		case 2048: m = 11; break;
-		case 4096: m = 12; break;
-		case 8192: m = 13; break;
-		default: *status=EXIT_FAILURE; printf(" *** error: Number of Bins %i not allowed in Convolution!! \n",n);break;
-	}
-    CHECK_STATUS_VOID(*status)
+  long m=0;
+  switch(n)	{
+      case 512:  m = 9; break;
+      case 1024: m = 10; break;
+      case 2048: m = 11; break;
+      case 4096: m = 12; break;
+      case 8192: m = 13; break;
+      default: *status=EXIT_FAILURE; printf(" *** error: Number of Bins %i not allowed in Convolution!! \n",n);break;
+    }
+  CHECK_STATUS_VOID(*status)
+
+  // needs spec cache to be set up
+  assert(cache!=NULL);
+
 
 	/* need to find out where the 1keV for the filter is, which defines if energies are blue or redshifted*/
-	if (save_1eV_pos==0 ||
-		(! ( (ener[save_1eV_pos]<=1.0) &&
-		(ener[save_1eV_pos+1]>1.0)  ))){
-		save_1eV_pos = binary_search(ener,n+1,1.0);
-	}
+  if (save_1eV_pos==0 ||
+      (! ( (ener[save_1eV_pos]<=1.0) &&
+          (ener[save_1eV_pos+1]>1.0)  ))){
+    save_1eV_pos = binary_search(ener,n+1,1.0);
+  }
 
 
-	int ii;
-	int irot;
-	double xcomb[n]; double ycomb[n];
+  int ii;
+  int irot;
+  double xcomb[n]; double ycomb[n];
 
-	/**********************************************************************/
+  /**********************************************************************/
 	/** cache either the relat. or the xillver part, as only one of the
 	 * two changes most of the time (reduce time by 1/3 for convolution) **/
 	/**********************************************************************/
@@ -980,6 +984,46 @@ static void print_angle_dist(rel_cosne* spec, int izone){
 
 }
 
+/* Function: calcFFTNormFactor
+ * Synopsis: calculate the normalization of the FFT, which is defined to keep the normalization of the
+ *           input spectrum and and the relat. smearging
+ * Take the sum in the given energy band of interested, to avoid problems at the border of the FFT
+ * convolution.
+ */
+double calcFFTNormFactor(const double *ener, const double *fxill, const double *frel, const double *fout, int n) {
+
+  double sum_relline = 0.0;
+  double sum_xillver = 0.0;
+  double sum_conv = 0.0;
+  for (int jj = 0; jj < n; jj++) {
+    if (ener[jj] >= EMIN_XILLVER && ener[jj + 1] < EMAX_XILLVER) {
+      sum_xillver += fxill[jj];
+      sum_relline += frel[jj];
+      sum_conv += fout[jj];
+    }
+  }
+
+  return sum_relline * sum_xillver / sum_conv;
+}
+
+void normalizeFFTOutput(const double *ener, const double *fxill, const double *frel, double *fout, int n) {
+  double norm_fac = calcFFTNormFactor(ener, fxill, frel, fout, n);
+
+  for (int ii=0; ii<n; ii++){
+    fout[ii] *= norm_fac;
+  }
+
+
+}
+void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
+                                   int re_rel, int re_xill, int izone, specCache* spec_cache_ptr, int *status){
+
+
+  fft_conv_spectrum(ener, fxill, frel, fout, n, re_rel, re_xill, izone, spec_cache_ptr, status);
+
+  normalizeFFTOutput(ener, fxill, frel, fout, n);
+
+}
 
 static void calc_xillver_angdep(double *xill_flux, xill_spec *xill_spec, const double *dist, const int *status) {
 
@@ -1091,6 +1135,17 @@ static void renorm_xill_spec(double* spec , int n, double lxi, double dens){
 }
 
 
+void get_std_relxill_energy_grid(int *n_ener, double **ener, int *status) {
+  if (global_ener_std == NULL) {
+    global_ener_std = (double *) malloc((N_ENER_CONV + 1) * sizeof(double));
+    CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
+    get_log_grid(global_ener_std, (N_ENER_CONV + 1), EMIN_RELXILL, EMAX_RELXILL);
+  }
+  (*n_ener) = N_ENER_CONV;
+  (*ener) = global_ener_std;
+
+}
+
 /** BASIC RELCONV FUNCTION : convole any input spectrum with the relbase kernel
  *  (ener has the length n_ener+1)
  *  **/
@@ -1123,7 +1178,7 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 	init_specCache(&spec_cache,status);
     CHECK_STATUS_VOID(*status)
 	fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out,  n_ener,
-			1,1,0,status);
+			1,1,0,spec_cache, status);
     CHECK_STATUS_VOID(*status)
 
 	// need to renormalize the convolution? (not that only LP has a physical norm!!)
@@ -1137,29 +1192,50 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 }
 
 
-/** BASIC RELXILL KERNEL FUNCTION : convole a xillver spectrum with the relbase kernel
+/*
+ * Function: get_xillver_angdep_spec
+ * Synopsis: Calculate the Angle Weighted Xillver Spectrum on the Standard Relxill Spectrum
+ * Input:  ener[n_ener]
+ *         rel_dist[n_incl]
+ *         xill_spec
+ * Output: o_xill_flux  (needs to be allocated, will be overwritten)
+ *  [reason for the required allocation is that this will be called in a large
+ *   loop and otherwise we would need to allocate a 3000 bin array very often]
+ */
+void get_xillver_angdep_spec(double *o_xill_flux, int n_ener, double *ener, double *rel_dist, xill_spec *xill_spec, int *status) {
+
+  double xill_angdist_inp[xill_spec->n_ener];
+
+  calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
+
+  rebin_spectrum(ener, o_xill_flux, n_ener,
+                 xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
+
+}
+
+
+
+
+/*
+ * BASIC RELXILL KERNEL FUNCTION : convolve a xillver spectrum with the relbase kernel
  * (ener has the length n_ener+1)
- *  **/
+*/
+void relxill_kernel(double *ener_inp,
+                    double *spec_inp,
+                    int n_ener_inp,
+                    xillParam *xill_param,
+                    relParam *rel_param,
+                    int *status) {
 
-void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillParam* xill_param, relParam* rel_param, int* status ){
+  /** only do the calculation once **/
+  int n_ener;
+  double *ener;
+  get_std_relxill_energy_grid(&n_ener, &ener, status);
+  assert(ener != NULL);
 
-	/* get the (fixed!) energy grid for a RELLINE for a convolution
-	 * -> as we do a simple FFT, we can now take into account that we
-	 *    need it to be number = 2^N */
-
-	/** only do the calculation once **/
-	if (global_ener_std == NULL){
-      global_ener_std = (double*) malloc((n_ener_std+1) * sizeof(double));
-        CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
-		get_log_grid(global_ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
-	}
-	int n_ener = n_ener_std;
-	double* ener = global_ener_std;
-
-
-	xillTable* xill_tab = NULL;
-	get_init_xillver_table(&xill_tab,xill_param,status);
-    CHECK_STATUS_VOID(*status)
+  xillTable *xill_tab = NULL;
+  get_init_xillver_table(&xill_tab, xill_param, status);
+  CHECK_STATUS_VOID(*status);
 
 	// in case of an ionization gradient, we need to update the number of zones
 	if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) ){
@@ -1174,7 +1250,6 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 
 	/*** LOOP OVER THE RADIAL ZONES ***/
 	double xill_flux[n_ener];
-	double xill_angdist_inp[xill_tab->n_ener];
 	double conv_out[n_ener];
 	double single_spec_inp[n_ener_inp];
 	for (ii=0; ii<n_ener;ii++){
@@ -1221,7 +1296,7 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
         CHECK_STATUS_VOID(*status)
 
 		/* init the xillver spectrum structure **/
-		xill_spec* xill_spec = NULL;
+		xill_spec* xill_spec_table = NULL;
 
 
 		// currently only working for the LP version (as relxill always has just 1 zone)
@@ -1237,11 +1312,15 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 		}
 
 
-		int jj;
 		for (ii=0; ii<rel_profile->n_zones;ii++){
 			assert(spec_cache!=NULL);
 
-			// now calculate the reflection spectra for each zone (using the angular distribution)
+          /** avoid problems where no relxill bin falls into an ionization bin **/
+          if (calcSum(rel_profile->flux[ii],rel_profile->n_ener) < 1e-12) {
+            continue;
+          }
+
+          // now calculate the reflection spectra for each zone (using the angular distribution)
 			assert(rel_profile->rel_cosne != NULL);
 			if (is_debug_run()==1){
 				print_angle_dist(rel_profile->rel_cosne,ii);
@@ -1264,79 +1343,57 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 				xill_param->ect = ecut_primary * get_rzone_energ_shift(rel_param,rzone, del_emit ) ;
 			}
 
-			// if we have an ionization gradient defined, we need to set the xlxi to the value of the current zone
-			if (ion!=NULL){
-				xill_param->lxi = ion->lxi[ii];
-			}
+          // if we have an ionization gradient defined, we need to set the xlxi to the value of the current zone
+          if (ion != NULL) {
+            xill_param->lxi = ion->lxi[ii];
+          }
 
-			// call the function which calculates the xillver spectrum
-			//  - always need to re-compute if we have an ionization gradient, TODO: better caching here
-//			if (recompute_xill || ion!=NULL){
-			if (recompute_xill){
-				if (spec_cache->xill_spec[ii]!=NULL){
-					free_xill_spec(spec_cache->xill_spec[ii]);
-				}
-				spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param,status);
-			}
-			xill_spec = spec_cache->xill_spec[ii];
+          // call the function which calculates the xillver spectrum
+          //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
+          if (recompute_xill) {
+            if (spec_cache->xill_spec[ii] != NULL) {
+              free_xill_spec(spec_cache->xill_spec[ii]);
+            }
+            spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param, status);
+          }
+          xill_spec_table = spec_cache->xill_spec[ii];
 
-			// get angular distribution
-            calc_xillver_angdep(xill_angdist_inp, xill_spec,
-                                rel_profile->rel_cosne->dist[ii], status);
-
-			rebin_spectrum(ener,xill_flux,n_ener,
-					xill_spec->ener, xill_angdist_inp, xill_spec->n_ener );
+          get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
 
 
-			/** convolve the spectrum **
-			 * (important for the convolution: need to recompute fft for xillver
-			 *  always if rel changes, as the angular distribution changes !!)
-			 */
-			fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out,  n_ener,
-					recompute_rel, 1, ii, status);
-            CHECK_STATUS_VOID(*status)
+          // convolve the spectrum **
+          //(important for the convolution: need to recompute fft for xillver
+          //always if rel changes, as the angular distribution changes !!)
+          fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener,
+                            recompute_rel, 1, ii, spec_cache, status);
+          CHECK_STATUS_VOID(*status);
+
+          double normFacFFT = calcFFTNormFactor(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener);
+
+          // rebin to the output grid
+          rebin_spectrum(ener_inp, single_spec_inp, n_ener_inp, ener, conv_out, n_ener);
 
 
 
-			double test_sum_relline = 0.0;
-			double test_sum_xillver = 0.0;
-			double test_sum_relxill = 0.0;
-			for (jj=0; jj<n_ener;jj++){
-				if (ener[jj] > EMIN_XILLVER && ener[jj+1] < EMAX_XILLVER  ){
-					test_sum_relline += rel_profile->flux[ii][jj];
-					test_sum_relxill += conv_out[jj];
-					test_sum_xillver += xill_flux[jj];
-				}
-			}
+          // renorm the spectrum (such that it is independent of xi and density)
+          renorm_xill_spec(single_spec_inp, n_ener_inp, xill_param->lxi, xill_param->dens);
 
-			// rebin to the output grid
-			rebin_spectrum(ener_inp,single_spec_inp,n_ener_inp, ener, conv_out, n_ener);
+          // add it to the final output spectrum
+          for (int jj = 0; jj < n_ener_inp; jj++) {
+            spec_inp[jj] += single_spec_inp[jj] * normFacFFT;
+          }
 
-
-			/** avoid problems where no relxill bin falls into an ionization bin **/
-			if (test_sum_relline < 1e-12){
-				continue;
-			}
-
-			// renorm the spectrum (such that it is independent of xi and density)
-			renorm_xill_spec(single_spec_inp, n_ener_inp, xill_param->lxi, xill_param->dens);
-
-			// add it to the final output spectrum
-			for (jj=0; jj<n_ener_inp;jj++){
-				spec_inp[jj] += single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
-			}
-
-			if (is_debug_run() && rel_profile->n_zones <= 10 ){
-                char vstr[200];
-				double test_flu[n_ener_inp];
-				for (jj=0; jj<n_ener_inp;jj++){
-					test_flu[jj] = single_spec_inp[jj]*test_sum_relline*test_sum_xillver/test_sum_relxill;
-				}
-                if (sprintf(vstr, "test_relxill_spec_zones_%03i.dat", ii + 1) == -1) {
-					RELXILL_ERROR("failed to get filename",status);
-				}
-				save_xillver_spectrum(ener_inp,test_flu,n_ener_inp,vstr);
-			}
+          if (is_debug_run() && rel_profile->n_zones <= 10) {
+            char vstr[200];
+            double test_flu[n_ener_inp];
+            for (int jj = 0; jj < n_ener_inp; jj++) {
+              test_flu[jj] = single_spec_inp[jj] * normFacFFT;
+            }
+            if (sprintf(vstr, "test_relxill_spec_zones_%03i.dat", ii + 1) == -1) {
+              RELXILL_ERROR("failed to get filename", status);
+            }
+            save_xillver_spectrum(ener_inp, test_flu, n_ener_inp, vstr);
+          }
 
 		} /**** END OF LOOP OVER RADIAL ZONES [ii] *****/
 
