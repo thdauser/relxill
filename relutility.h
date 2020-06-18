@@ -51,6 +51,9 @@
 		return retval;\
 	}
 
+#define PRINT_RELXILL_TEST_MSG_DEFAULT() (print_relxill_test_msg(__func__,""))
+#define PRINT_RELXILL_TEST_MSG(msg) (print_relxill_test_msg(__func__,msg))
+
 /**************************/
 /** Function Definitions **/
 /**************************/
@@ -82,6 +85,10 @@ void check_relxill_error(const char* const func, const char* const msg, int* sta
 
 /** check and report FITS error   */
 void relxill_check_fits_error(const int *status);
+
+void print_relxill_test_msg(const char* const func, const char* const msg);
+
+void print_relxill_test_result(int status);
 
 /* inverse binary search */
 int inv_binary_search(const double *arr, int n, double val);

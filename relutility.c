@@ -110,6 +110,19 @@ void check_relxill_error(const char* const func, const char* const msg, int* sta
 	}
 }
 
+void print_relxill_test_msg(const char* const func, const char* const msg){
+  printf(" TEST: %s %s", func, msg);
+}
+
+void print_relxill_test_result(int status){
+  if(status==EXIT_SUCCESS){
+    printf("   --> OK\n");
+  } else {
+    printf("   --> ERROR\n");
+    CHECK_RELXILL_DEFAULT_ERROR(&status);
+  }
+}
+
 /**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
 int binary_search_float(const float *arr, int n, float val) {
