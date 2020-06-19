@@ -143,9 +143,9 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
     int ind_a = binary_search_float(tab->a, tab->n_a, (float) a);
     int ind_mu0 = binary_search_float(tab->mu0, tab->n_mu0, (float) mu0);
 
-    double ifac_a = (a - tab->a[ind_a]) /
+    float ifac_a = ( (float) a - tab->a[ind_a]) /
                     (tab->a[ind_a + 1] - tab->a[ind_a]);
-    double ifac_mu0 = (mu0 - tab->mu0[ind_mu0]) /
+    float ifac_mu0 = ( (float) mu0 - tab->mu0[ind_mu0]) /
                       (tab->mu0[ind_mu0 + 1] - tab->mu0[ind_mu0]);
 
     // we perform tests that the input values are consistent when loading the parameters

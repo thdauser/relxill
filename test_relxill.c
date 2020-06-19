@@ -428,7 +428,11 @@ void std_eval_relxill(int *status, int n) {
     /* call the relline model */
     double photar[n_ener];
 
-    int ii;
+    // evaluate relxill on a grid point
+  inp_par[3] = 0.15;
+  tdrelxill(ener, n_ener, photar, inp_par, n_param, status);
+
+  int ii;
     for (ii = 0; ii < n; ii++) {
         if (n > 1) {
             inp_par[3] = 1.0 * ii / (n - 1) * 0.998 * 2 - 0.998;
