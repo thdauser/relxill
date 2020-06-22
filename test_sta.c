@@ -131,16 +131,6 @@ int main(int argc, char *argv[]){
         test_xilltables();
       }
 
-<<<<<<< HEAD
-		status=EXIT_SUCCESS;
-		if (do_all || do_relline){
-            status=EXIT_SUCCESS;
-			std_eval_relline(&status,n);
-			if (status==EXIT_SUCCESS) {
-                printf("     ---> successful \n");
-            }
-		}
-=======
 
       if (do_all || do_relline){
         status=EXIT_SUCCESS;
@@ -149,16 +139,15 @@ int main(int argc, char *argv[]){
           printf("     ---> successful \n");
         }
       }
->>>>>>> 2702d6f... clean up return-rad tests
 
-		if (do_all || do_rellinelp){
-            status=EXIT_SUCCESS;
-			std_eval_relline_lp(&status,1);
-            if (status==EXIT_SUCCESS) {
-                printf("     ---> successful \n");
-            }
-		}
-
+      if (do_all || do_rellinelp){
+        status=EXIT_SUCCESS;
+        std_eval_relline_lp(&status,1);
+        if (status==EXIT_SUCCESS) {
+          printf("     ---> successful \n");
+        }
+      }
+      
         if (do_all || do_relxill){
             status=EXIT_SUCCESS;
             std_eval_relxill(&status,n);

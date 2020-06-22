@@ -16,14 +16,22 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+#include "test_relxill.h"
+#include "relreturn.h"
+#include "test_relreturn.h"
 #include "test_std_functions.h"
 
 #include "relutility.h"
 #include "relbase.h"
 #define LIMIT_PREC 1e-6
+
+specCache* dummy_spec_cache = NULL;
+
+
+
+void testRellineTableValues(int* status){
 /** test the currently implemented relline table
  ** [current version used: rel_table_v0.4e]   */
-void testRellineTableValues(int* status){
 
   PRINT_RELXILL_TEST_MSG(RELTABLE_FILENAME);
 
@@ -226,6 +234,63 @@ static void testInterpolationRoutines(int *status) {
   print_relxill_test_result(*status);
 
 }
+
+
+void testNormalizationFFTConvolution(int* status){
+
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  rel_spec* rel_profile = NULL;
+  double* xill_spec = NULL;
+  init_std_relXill_spec(&rel_profile, &xill_spec, status);
+
+  assert(rel_profile!=NULL);
+  assert(xill_spec!=NULL);
+
+  double sumProfile     = calcSum(rel_profile->flux[0], rel_profile->n_ener);
+  double sumProfileXill = calcSumInEnergyBand(xill_spec, rel_profile->n_ener,rel_profile->ener, EMIN_XILLVER,EMAX_XILLVER);
+
+  if ( fabs(sumProfile-1) > 1e-8){
+    RELXILL_ERROR("relativistc relline convolution not normalized to 1", status);
+  }
+
+  // requirements; spec_cache needs to be allocated for the FFT to work
+  init_specCache(&dummy_spec_cache, status);
+  CHECK_STATUS_VOID(*status);
+
+  assert(rel_profile->n_zones==1);
+  int izone = 0;
+
+  double spec_conv_out[rel_profile->n_ener];
+  convolveSpectrumFFTNormalized(rel_profile->ener, xill_spec, rel_profile->flux[izone], spec_conv_out,
+                                rel_profile->n_ener, 1, 1, izone, dummy_spec_cache, status);
+
+  double sumProfileAfter = calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener,rel_profile->ener, EMIN_XILLVER,EMAX_XILLVER);
+
+  // now do the test (standard relline HAS to be normalized to 1)
+  if ( fabs(sumProfileXill-sumProfileAfter)>1e-8 ){
+    RELXILL_ERROR("convolution not normalized ", status);
+  }
+
+  rel_profile->flux[izone][1000] = 1000.0;
+  convolveSpectrumFFTNormalized(rel_profile->ener, xill_spec, rel_profile->flux[izone], spec_conv_out,
+                                rel_profile->n_ener, 1, 1, izone, dummy_spec_cache, status);
+
+  double sumProfileAfterWrong = calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener,rel_profile->ener, EMIN_XILLVER,EMAX_XILLVER);
+  // now do the test (standard relline HAS to be normalized to 1)
+  if ( fabs(sumProfileXill-sumProfileAfterWrong)<1e-8 ){
+    RELXILL_ERROR("convolution wrongly normalized ", status);
+    printf(" the relativistic convolution is not normalized to 1 \n ");
+    printf(" but still the convoluation is normalized, which should not be the case\n ");
+  }
+
+
+  free(xill_spec);
+  print_relxill_test_result(*status);
+
+}
+
+
 void testStdFunctions(int* status) {
 
   printf("\n### TESTING Standard Functions ###\n");
@@ -240,4 +305,8 @@ void testStdFunctions(int* status) {
 
   testRebinMeanFlux(status);
 
+  testNormalizationFFTConvolution(status);
+
 }
+
+
