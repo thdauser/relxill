@@ -87,7 +87,7 @@ void relxill_check_fits_error(const int *status) {
 
 
 /** calculate the gravitational redshift **/
-double grav_redshift(relParam* param){
+double grav_redshift(const relParam* param){
 	if (param->emis_type==EMIS_TYPE_LP){
 		return 1.0 / sqrt( 1.0 - 2*param->height /
 				(param->height*param->height + param->a*param->a))-1.0;

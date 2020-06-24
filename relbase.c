@@ -1364,23 +1364,16 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
             CHECK_STATUS_VOID(*status)
 		}
 
-			// lastely, we make the spectrum normalization independent of the ionization parameter
 		for (ii=0; ii<n_ener_inp; ii++){
-			/**		spec_inp[ii] /= pow(10,xill_param->lxi);  // RE-NORMALIZATION is now done before
-			if (fabs(xill_param->dens - 15) > 1e-6 ){
-				spec_inp[ii] /= pow(10,xill_param->dens - 15);
-			} **/
 			spec_cache->out_spec->flux[ii] = spec_inp[ii];
 		}
 	} /************* END OF THE HUGE COMPUTATION ********************/
-
-
 
 	/** add a primary spectral component and normalize according to the given refl_frac parameter**/
 	add_primary_component(ener_inp,n_ener_inp,spec_inp,rel_param,xill_param, status);
 }
 
-double getPrimarySpectrumNormalizationWrtXillver(const double *pl_flux_xill,
+static double getPrimarySpectrumNormalizationWrtXillver(const double *pl_flux_xill,
                                                  const double *ener,
                                                  int n_ener) {/** 2 **  get the normalization of the spectrum with respect to xillver **/
   /** everything is normalized to 10^15 cm^3 **/
@@ -1394,73 +1387,100 @@ double getPrimarySpectrumNormalizationWrtXillver(const double *pl_flux_xill,
   double norm_pl = norm_xill / sum_pl;   // normalization defined, e.g., in Appendix of Dauser+2016
   return norm_pl;
 }
-/** function adding a primary component with the proper norm to the flux **/
-void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param,
-		xillParam* xill_param, int* status){
 
-	double pl_flux[n_ener];
 
-	int ii;
-	double pl_flux_xill[n_ener_xill];
+/** PRINT the reflection strength; it is calculated between RSTRENGTH_EMIN and RSTRENGTH_EMAX **/
+static void printReflectionStrengthInfo(double *ener,  int n_ener, const double *flu, relParam *rel_param, xillParam *xill_param,
+                                 const double *pl_flux,   lpReflFrac *struct_refl_frac) {
 
-	/** need to create an energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-	if (ener_xill == NULL){
-		ener_xill = (double*) malloc( (n_ener_xill+1) * sizeof(double));
-        CHECK_MALLOC_VOID_STATUS(ener_xill, status)
-		get_log_grid(ener_xill,n_ener_xill+1,ener_xill_norm_lo,ener_xill_norm_hi);
-	}
 
-	/** note that in case of the nthcomp model Ecut is in the frame of the primary source
+  // todo: all this to be set by a ENV
+  int imin = binary_search(ener,n_ener+1,RSTRENGTH_EMIN);
+  int imax = binary_search(ener,n_ener+1,RSTRENGTH_EMAX);
+
+  double sum_pl = 0.0;
+  double sum = 0.0;
+  for (int ii=imin; ii<=imax; ii++){
+      sum_pl += pl_flux[ii];
+      sum += flu[ii];
+  }
+
+  printf("For a = %.3f and h = %.2f rg", rel_param->a,rel_param->height);
+  if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) || rel_param->beta>1e-6){
+      printf(" and beta=%.3f v/c", rel_param->beta);
+  }
+  printf(": \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",	struct_refl_frac->refl_frac,sum/sum_pl);
+  printf(" - %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
+  printf(" - gravitational redshift from the observer to the primary source is %.3f\n",grav_redshift(rel_param) );
+}
+
+
+void calculatePrimarySpectrum(double *pl_flux_xill, const relParam *rel_param, const xillParam *xill_param, int *status) {
+
+  if (xill_param->prim_type == PRIM_SPEC_ECUT ){
+    /** note that in case of the nthcomp model Ecut is in the frame of the primary source
 	    but for the bkn_powerlaw it is given in the observer frame */
 
-	/** 1 **  calculate the primary spectrum  **/
-	if (xill_param->prim_type == PRIM_SPEC_ECUT ){
 
-		/** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
-		/**    (in case of the nthcomp primary continuum ect is actually kte ) **/
-		double ecut_rest = xill_param->ect;
+      /** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
+      /**    (in case of the nthcomp primary continuum ect is actually kte ) **/
+      double ecut_rest = xill_param->ect;
 
-		for (ii=0; ii<n_ener_xill; ii++){
-			pl_flux_xill[ii] = exp(1.0/ecut_rest) *
-		             pow(0.5*(ener_xill[ii]+ener_xill[ii+1]),-xill_param->gam) *
-		             exp( -0.5*(ener_xill[ii]+ener_xill[ii+1])/ecut_rest) *
-		             (ener_xill[ii+1] - ener_xill[ii]);
-		}
-
-	} else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
-		double nthcomp_param[5];
-		/** important, kTe is given in the primary source frame, so we have to add the redshift here
-		 *     however, only if the REL model **/
-		double z=0.0;
-		if (rel_param != NULL &&rel_param->emis_type==EMIS_TYPE_LP ){
-			z = grav_redshift(rel_param);
-		}
-		get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
-		c_donthcomp(ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
-
-	} else if (xill_param->prim_type == PRIM_SPEC_BB) {
-
-		double en;
-		for (ii=0; ii<n_ener_xill; ii++){
-			en = 0.5*(ener_xill[ii]+ener_xill[ii+1]);
-			pl_flux_xill[ii] = en*en / ( pow(xill_param->kTbb,4) * (exp(en/xill_param->kTbb) - 1 ) )*
+      for (int ii=0; ii<n_ener_xill; ii++){
+          pl_flux_xill[ii] = exp(1.0/ecut_rest) *
+                pow(0.5*(ener_xill[ii]+ener_xill[ii+1]),-xill_param->gam) *
+                exp( -0.5*(ener_xill[ii]+ener_xill[ii+1])/ecut_rest) *
                 (ener_xill[ii+1] - ener_xill[ii]);
-		}
-	} else {
-		RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
-		return;
-	}
+        }
 
+    } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
 
-	double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill, ener_xill, n_ener_xill);
+    double nthcomp_param[5];
+      /** important, kTe is given in the primary source frame, so we have to add the redshift here
+		 *     however, only if the REL model **/
+      double z=0.0;
+      if (rel_param != NULL &&rel_param->emis_type==EMIS_TYPE_LP ){
+          z = grav_redshift(rel_param);
+        }
+      get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
+      c_donthcomp(ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
 
-  /** bin the primary continuum onto the given grid **/
+    } else if (xill_param->prim_type == PRIM_SPEC_BB) {
+
+      double en;
+      for (int ii=0; ii<n_ener_xill; ii++){
+          en = 0.5*(ener_xill[ii]+ener_xill[ii+1]);
+          pl_flux_xill[ii] = en*en / ( pow(xill_param->kTbb,4) * (exp(en/xill_param->kTbb) - 1 ) );
+        }
+    } else {
+      RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
+    }
+}
+/** function adding a primary component with the proper norm to the flux **/
+void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param, xillParam* xill_param, int* status){
+
+  double pl_flux[n_ener];
+  double pl_flux_xill[n_ener_xill];
+
+	/** need to create an energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
+  if (ener_xill == NULL){
+      ener_xill = (double*) malloc( (n_ener_xill+1) * sizeof(double));
+      CHECK_MALLOC_VOID_STATUS(ener_xill, status)
+      get_log_grid(ener_xill,n_ener_xill+1,ener_xill_norm_lo,ener_xill_norm_hi);
+    }
+
+  calculatePrimarySpectrum(pl_flux_xill, rel_param, xill_param, status);
+
+  // need to calculate this on the given Xillver Grid
+  double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill, ener_xill, n_ener_xill);
+
+  /** bin the primary continuum onto the Input grid **/
 	rebin_spectrum( ener, pl_flux,n_ener, ener_xill, pl_flux_xill, n_ener_xill);
 
 	/** 2 **  decide if we need to do relat. calculations **/
 	if (is_xill_model(xill_param->model_type) ){
 
-		for (ii=0; ii<n_ener; ii++){
+		for (int ii=0; ii<n_ener; ii++){
 			pl_flux[ii] *= norm_pl;
 			flu[ii] *= fabs(xill_param->refl_frac);
 		}
@@ -1480,8 +1500,6 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			 *  spin of the primary source, in this case for the physical
 			 *  value from Rin to Rout          						 */
 			xill_param->refl_frac = struct_refl_frac->refl_frac;
-		} else {
-
 		}
 
 		/** 4 ** and apply it to primary and reflected spectra **/
@@ -1490,8 +1508,6 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
 
 
-
-			 // calculate the fraction of photons hitting the accretion disk
 			 /** if the user sets the refl_frac parameter manually, we need to calculate the ratio
 			  *  to end up with the correct normalization
 			  */
@@ -1499,12 +1515,12 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
  			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam);
 
-			for (ii=0; ii<n_ener; ii++) {
+			for (int ii=0; ii<n_ener; ii++) {
 				pl_flux[ii] *= norm_pl * prim_fac;
 				flu[ii] *= norm_fac_refl;
 			}
 		} else {
-			for (ii=0; ii<n_ener; ii++){
+			for (int ii=0; ii<n_ener; ii++){
 				pl_flux[ii] *= norm_pl;
 				flu[ii] *= fabs(xill_param->refl_frac);
 			}
@@ -1512,29 +1528,8 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 		/** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
 		if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type==EMIS_TYPE_LP)) {
-
-			/** the reflection strength is calculated between RSTRENGTH_EMIN and RSTRENGTH_EMAX **/
-			// todo: all this to be set by a qualifier
-
-			int imin = binary_search(ener,n_ener+1,RSTRENGTH_EMIN);
-			int imax = binary_search(ener,n_ener+1,RSTRENGTH_EMAX);
-
-			double sum_pl = 0.0;
-			double sum = 0.0;
-			for (ii=imin; ii<=imax; ii++){
-				sum_pl += pl_flux[ii];
-				sum += flu[ii];
-			}
-
-			printf("For a = %.3f and h = %.2f rg", rel_param->a,rel_param->height);
-			if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) || rel_param->beta>1e-6){
-				printf(" and beta=%.3f v/c", rel_param->beta);
-			}
-			printf(": \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",	struct_refl_frac->refl_frac,sum/sum_pl);
-			printf(" - %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh*100);
-			printf(" - gravitational redshift from the observer to the primary source is %.3f\n",grav_redshift(rel_param) );
-			// TODO: add the movement of the source here
-		}
+			printReflectionStrengthInfo(ener, n_ener, flu, rel_param, xill_param, pl_flux, struct_refl_frac);
+        }
 
 		/** free the reflection fraction structure **/
 		free(struct_refl_frac);
@@ -1546,7 +1541,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 
 	/** 6 ** add power law component only if desired (i.e., refl_frac > 0)**/
 	  if (xill_param->refl_frac >= 0) {
-	     for (ii=0; ii<n_ener; ii++) {
+	     for (int ii=0; ii<n_ener; ii++) {
 	        flu[ii] += pl_flux[ii];
 	     }
 	  }

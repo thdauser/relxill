@@ -138,7 +138,7 @@ void FFT_R2CT(short int dir,long m,double *x,double *y);
 void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double* flu0, int nbins0);
 
 /** calculate the gravitational redshift **/
-double grav_redshift(relParam* param);
+double grav_redshift(const relParam* param);
 
 /** get the relxill table path (dynamically from env variable)  **/
 char* get_relxill_table_path( void );
