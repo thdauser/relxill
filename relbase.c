@@ -43,7 +43,7 @@ enum {
 double* global_ener_xill = NULL;
 
 const int n_ener_std = N_ENER_CONV;
-double* ener_std = NULL;
+double* global_ener_std = NULL;
 
 specCache* spec_cache = NULL;
 
@@ -1108,13 +1108,13 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 
 	// always do the convolution on this grid
 	/** only do the calculation once **/
-	if (ener_std == NULL){
-		ener_std = (double*) malloc( (n_ener_std+1) * sizeof(double));
-        CHECK_MALLOC_VOID_STATUS(ener_std, status)
-		get_log_grid(ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
+	if (global_ener_std == NULL){
+      global_ener_std = (double*) malloc((n_ener_std+1) * sizeof(double));
+        CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
+		get_log_grid(global_ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
 	}
 	int n_ener = n_ener_std;
-	double* ener = ener_std;
+	double* ener = global_ener_std;
 
 	rel_spec* rel_profile = relbase(ener, n_ener, rel_param, NULL, status);
 
@@ -1154,13 +1154,13 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	 *    need it to be number = 2^N */
 
 	/** only do the calculation once **/
-	if (ener_std == NULL){
-		ener_std = (double*) malloc( (n_ener_std+1) * sizeof(double));
-        CHECK_MALLOC_VOID_STATUS(ener_std, status)
-		get_log_grid(ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
+	if (global_ener_std == NULL){
+      global_ener_std = (double*) malloc((n_ener_std+1) * sizeof(double));
+        CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
+		get_log_grid(global_ener_std, (n_ener_std+1), EMIN_RELXILL, EMAX_RELXILL);
 	}
 	int n_ener = n_ener_std;
-	double* ener = ener_std;
+	double* ener = global_ener_std;
 
 
 	xillTable* xill_tab = NULL;
@@ -1748,15 +1748,11 @@ void free_cached_tables(void){
 
 	free_str_relb_func(&cached_str_relb_func);
 
-<<<<<<< HEAD
 	free_specCache();
-=======
+
   free(global_ener_std);
   free(global_ener_xill);
->>>>>>> 569b923... additional refactoring
 
-	free(ener_std);
-	free(ener_xill);
 }
 
 relSysPar* new_relSysPar(int nr, int ng, int* status){
