@@ -40,7 +40,7 @@ const double ener_xill_norm_hi = 1000;
 enum {
     n_ener_xill = 3000
 };
-double* ener_xill = NULL;
+double* global_ener_xill = NULL;
 
 const int n_ener_std = N_ENER_CONV;
 double* ener_std = NULL;
@@ -1382,7 +1382,7 @@ static double getPrimarySpectrumNormalizationWrtXillver(const double *pl_flux_xi
 
   double sum_pl = 0.0;
   for (int ii=0; ii<n_ener_xill; ii++){
-       sum_pl += pl_flux_xill[ii] * 0.5*(ener_xill[ii] + ener_xill[ii+1]) * 1e20 * keV2erg;
+       sum_pl += pl_flux_xill[ii] * 0.5*(global_ener_xill[ii] + global_ener_xill[ii+1]) * 1e20 * keV2erg;
   }
   double norm_pl = norm_xill / sum_pl;   // normalization defined, e.g., in Appendix of Dauser+2016
   return norm_pl;
@@ -1417,6 +1417,8 @@ static void printReflectionStrengthInfo(double *ener,  int n_ener, const double 
 
 void calculatePrimarySpectrum(double *pl_flux_xill, const relParam *rel_param, const xillParam *xill_param, int *status) {
 
+  assert(global_ener_xill!=NULL);
+
   if (xill_param->prim_type == PRIM_SPEC_ECUT ){
     /** note that in case of the nthcomp model Ecut is in the frame of the primary source
 	    but for the bkn_powerlaw it is given in the observer frame */
@@ -1428,9 +1430,9 @@ void calculatePrimarySpectrum(double *pl_flux_xill, const relParam *rel_param, c
 
       for (int ii=0; ii<n_ener_xill; ii++){
           pl_flux_xill[ii] = exp(1.0/ecut_rest) *
-                pow(0.5*(ener_xill[ii]+ener_xill[ii+1]),-xill_param->gam) *
-                exp( -0.5*(ener_xill[ii]+ener_xill[ii+1])/ecut_rest) *
-                (ener_xill[ii+1] - ener_xill[ii]);
+                pow(0.5*(global_ener_xill[ii]+global_ener_xill[ii+1]), -xill_param->gam) *
+                exp( -0.5*(global_ener_xill[ii]+global_ener_xill[ii+1])/ecut_rest) *
+                (global_ener_xill[ii+1] - global_ener_xill[ii]);
         }
 
     } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
@@ -1443,39 +1445,44 @@ void calculatePrimarySpectrum(double *pl_flux_xill, const relParam *rel_param, c
           z = grav_redshift(rel_param);
         }
       get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
-      c_donthcomp(ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
+      c_donthcomp(global_ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
 
     } else if (xill_param->prim_type == PRIM_SPEC_BB) {
 
       double en;
       for (int ii=0; ii<n_ener_xill; ii++){
-          en = 0.5*(ener_xill[ii]+ener_xill[ii+1]);
+          en = 0.5*(global_ener_xill[ii]+global_ener_xill[ii+1]);
           pl_flux_xill[ii] = en*en / ( pow(xill_param->kTbb,4) * (exp(en/xill_param->kTbb) - 1 ) );
         }
     } else {
       RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
     }
 }
-/** function adding a primary component with the proper norm to the flux **/
-void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param, xillParam* xill_param, int* status){
+
+void set_stdNormXillverEnerygrid(int* status){
+  if (global_ener_xill == NULL){
+    global_ener_xill = (double*) malloc((n_ener_xill+1) * sizeof(double));
+    CHECK_MALLOC_VOID_STATUS(global_ener_xill, status);
+    get_log_grid(global_ener_xill, n_ener_xill+1, ener_xill_norm_lo, ener_xill_norm_hi);
+  }
+}
+
+void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param,
+		xillParam* xill_param, int* status){
 
   double pl_flux[n_ener];
   double pl_flux_xill[n_ener_xill];
 
-	/** need to create an energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-  if (ener_xill == NULL){
-      ener_xill = (double*) malloc( (n_ener_xill+1) * sizeof(double));
-      CHECK_MALLOC_VOID_STATUS(ener_xill, status)
-      get_log_grid(ener_xill,n_ener_xill+1,ener_xill_norm_lo,ener_xill_norm_hi);
-    }
-
+	/** need to create a spcific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
+  set_stdNormXillverEnerygrid(status);
+  CHECK_STATUS_VOID(*status);
   calculatePrimarySpectrum(pl_flux_xill, rel_param, xill_param, status);
 
   // need to calculate this on the given Xillver Grid
-  double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill, ener_xill, n_ener_xill);
+  double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill, global_ener_xill, n_ener_xill);
 
   /** bin the primary continuum onto the Input grid **/
-	rebin_spectrum( ener, pl_flux,n_ener, ener_xill, pl_flux_xill, n_ener_xill);
+	rebin_spectrum(ener, pl_flux, n_ener, global_ener_xill, pl_flux_xill, n_ener_xill);
 
 	/** 2 **  decide if we need to do relat. calculations **/
 	if (is_xill_model(xill_param->model_type) ){
@@ -1736,7 +1743,12 @@ void free_cached_tables(void){
 
 	free_str_relb_func(&cached_str_relb_func);
 
+<<<<<<< HEAD
 	free_specCache();
+=======
+  free(global_ener_std);
+  free(global_ener_xill);
+>>>>>>> 569b923... additional refactoring
 
 	free(ener_std);
 	free(ener_xill);
