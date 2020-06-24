@@ -1380,6 +1380,20 @@ void relxill_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, xillPara
 	add_primary_component(ener_inp,n_ener_inp,spec_inp,rel_param,xill_param, status);
 }
 
+double getPrimarySpectrumNormalizationWrtXillver(const double *pl_flux_xill,
+                                                 const double *ener,
+                                                 int n_ener) {/** 2 **  get the normalization of the spectrum with respect to xillver **/
+  /** everything is normalized to 10^15 cm^3 **/
+  double norm_xill = 1e15 / 4.0 / M_PI;
+  double keV2erg = 1.602177e-09;
+
+  double sum_pl = 0.0;
+  for (int ii=0; ii<n_ener_xill; ii++){
+       sum_pl += pl_flux_xill[ii] * 0.5*(ener_xill[ii] + ener_xill[ii+1]) * 1e20 * keV2erg;
+  }
+  double norm_pl = norm_xill / sum_pl;   // normalization defined, e.g., in Appendix of Dauser+2016
+  return norm_pl;
+}
 /** function adding a primary component with the proper norm to the flux **/
 void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param,
 		xillParam* xill_param, int* status){
@@ -1438,19 +1452,9 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 	}
 
 
+	double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill, ener_xill, n_ener_xill);
 
-	/** 2 **  get the normalization of the spectrum with respect to xillver **/
-	/** everything is normalized to 10^15 cm^3 **/
-	double norm_xill = 1e15 / 4.0 / M_PI;
-	double keV2erg = 1.602177e-09;
-
-	double sum_pl = 0.0;
-	for (ii=0; ii<n_ener_xill; ii++){
-	     sum_pl += pl_flux_xill[ii] * 0.5*(ener_xill[ii] + ener_xill[ii+1]) * 1e20 * keV2erg;
-	}
-	double norm_pl = norm_xill / sum_pl;   // normalization defined, e.g., in Appendix of Dauser+2016
-
-	/** bin the primary continuum onto the given grid **/
+  /** bin the primary continuum onto the given grid **/
 	rebin_spectrum( ener, pl_flux,n_ener, ener_xill, pl_flux_xill, n_ener_xill);
 
 	/** 2 **  decide if we need to do relat. calculations **/
@@ -1515,7 +1519,7 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 			int imin = binary_search(ener,n_ener+1,RSTRENGTH_EMIN);
 			int imax = binary_search(ener,n_ener+1,RSTRENGTH_EMAX);
 
-			sum_pl = 0.0;
+			double sum_pl = 0.0;
 			double sum = 0.0;
 			for (ii=imin; ii<=imax; ii++){
 				sum_pl += pl_flux[ii];
