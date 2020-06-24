@@ -1429,7 +1429,8 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 		double en;
 		for (ii=0; ii<n_ener_xill; ii++){
 			en = 0.5*(ener_xill[ii]+ener_xill[ii+1]);
-			pl_flux_xill[ii] = en*en / ( pow(xill_param->kTbb,4) * (exp(en/xill_param->kTbb) - 1 ) );
+			pl_flux_xill[ii] = en*en / ( pow(xill_param->kTbb,4) * (exp(en/xill_param->kTbb) - 1 ) )*
+                (ener_xill[ii+1] - ener_xill[ii]);
 		}
 	} else {
 		RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
