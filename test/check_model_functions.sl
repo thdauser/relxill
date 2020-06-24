@@ -1012,7 +1012,21 @@ define check_caching(){ %{{{
 }
 %}}}
 
+define isFitfunDevModel(ff){ %{{{
+   if (length(where(ff==additional_FF))>0){
+      return 1;
+   } else {
+      return 0;
+   }
+}
+%}}}
+
 define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
+
+   %% skip test if we do not have the DEV model installed
+   if (TEST_DEVEL == 0 && isFitfunDevModel(ff)){
+	 return 0.0;
+   }
    
    variable val0,val1;
    
@@ -1048,6 +1062,12 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
    val0 =  eval_fun_keV(lo0,hi0);
    val0 = val0/sum(val0)*sum(val1);
       
+   if (not qualifier_exists("nopl")){
+      xlog;ylog;
+      hplot(lo0,hi0,val1);
+      ohplot(lo0,hi0,val0);
+   }
+   
    variable gn = goodness(val1,val0/sum(val0)*sum(val1));
    vmessage("   -> primary continum %s for reflection model %s  [gn=%.2e]",ff_cont,ff,gn);
 
@@ -1184,21 +1204,23 @@ define check_prim_cont(){ %{{{
    assoc["Ecut"]  = "HighECut";
    variable assocD = Assoc_Type[String_Type];   
    assocD["gamma"] = "PhoIndex";
-   variable assocCp = Assoc_Type[String_Type];   
+   variable assocCp = Assoc_Type[String_Type];
    assocCp["gamma"] = "Gamma";
    assocCp["kTe"] = "kT_e";
-   
+   variable assocBB = Assoc_Type[String_Type];
+   assocBB["kTbb"] = "kT";
 
-   variable ff =      ["relxill","relxilllp","relxillD","relxilllpD","relxillCp","relxilllpCp","xillver","xillverD","xillverCp"];
-   variable ff_cont = ["cutoffpl","cutoffpl","cutoffpl","cutoffpl","nthComp","nthComp","cutoffpl","cutoffpl","nthComp"];
-   variable arr_assoc=[assoc,assoc,assocD,assocD,assocCp,assocCp,assoc,assocD,assocCp];
+   variable ff =      ["relxill","relxilllp","relxillD","relxilllpD","relxillCp","relxilllpCp","xillver","xillverD","xillverCp","relxillNS","xillverNS"];
+   variable ff_cont = ["cutoffpl","cutoffpl","cutoffpl","cutoffpl","nthComp","nthComp","cutoffpl","cutoffpl","nthComp","bbody","bbody"];
+   variable arr_assoc=[assoc,assoc,assocD,assocD,assocCp,assocCp,assoc,assocD,assocCp,assocBB,assocBB];
    
    
    variable ii,n = length(ff);
    
    _for ii(0,n-1,1){
-      if (not (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]) < goodness_lim)){
-	vmessage(" *** error: there seems to be a problem with the PRIMARY CONTINUUM in  MODEL %s ",ff[ii]);
+      if (not (check_prim_cont_single(ff[ii],ff_cont[ii],arr_assoc[ii]; nopl) < goodness_lim)){
+	 vmessage(" *** error: there seems to be a problem with the PRIMARY CONTINUUM in  MODEL %s ",ff[ii]);
+	 sleep(10);
 	 return EXIT_FAILURE;
       }
    }
