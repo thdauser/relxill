@@ -1471,24 +1471,26 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
 		xillParam* xill_param, int* status){
 
   double pl_flux[n_ener];
-  double pl_flux_xill[n_ener_xill];
+  double pl_flux_xill[n_ener_xill]; // global energy grid
 
-	/** need to create a spcific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
+  /** need to create a spcific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
   set_stdNormXillverEnerygrid(status);
   CHECK_STATUS_VOID(*status);
   calculatePrimarySpectrum(pl_flux_xill, rel_param, xill_param, status);
 
-  // need to calculate this on the given Xillver Grid
-  double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill, global_ener_xill, n_ener_xill);
+  double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill, global_ener_xill, n_ener_xill); // need to calculate this on the given Global Xillver Grid
 
   /** bin the primary continuum onto the Input grid **/
-	rebin_spectrum(ener, pl_flux, n_ener, global_ener_xill, pl_flux_xill, n_ener_xill);
+  rebin_spectrum(ener, pl_flux, n_ener, global_ener_xill, pl_flux_xill, n_ener_xill);
 
-	/** 2 **  decide if we need to do relat. calculations **/
+  for (int ii=0; ii<n_ener; ii++) {
+    pl_flux[ii] *= norm_pl;
+  }
+
+    /** 2 **  decide if we need to do relat. calculations **/
 	if (is_xill_model(xill_param->model_type) ){
 
-		for (int ii=0; ii<n_ener; ii++){
-			pl_flux[ii] *= norm_pl;
+      for (int ii=0; ii<n_ener; ii++) {
 			flu[ii] *= fabs(xill_param->refl_frac);
 		}
 	} else {
@@ -1523,12 +1525,11 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
  			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam);
 
 			for (int ii=0; ii<n_ener; ii++) {
-				pl_flux[ii] *= norm_pl * prim_fac;
+				pl_flux[ii] *= prim_fac;
 				flu[ii] *= norm_fac_refl;
 			}
 		} else {
 			for (int ii=0; ii<n_ener; ii++){
-				pl_flux[ii] *= norm_pl;
 				flu[ii] *= fabs(xill_param->refl_frac);
 			}
 		}
