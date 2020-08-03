@@ -889,7 +889,17 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
     return spec;
 }
 
+char *getXilltableNameUsingAlternativeIfNotExisting(char* stdname, char* altname, int *status) {
+  char* nthcompFileName = stdname;
 
+  if (checkIfTableExists(nthcompFileName,status) == 0) {
+    nthcompFileName = altname;
+    if (is_debug_run()) {
+      printf(" *** warning: did not find standard table %s, trying to use alternatively %s \n",stdname, altname);
+    }
+  }
+  return nthcompFileName;
+}
 /** load the xillver table and return its filename **/
 char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 

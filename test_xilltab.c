@@ -150,16 +150,16 @@ static void test_all_spec(int *status) {
 
 static void test_all_xilltables(int *status) {
 
-    xillParam *param;
-    putenv("DEBUG_RELXILL=1");
+  xillParam *param;
+  putenv("DEBUG_RELXILL=1");
 
-    /** -1- xillver (5dim table) **/
-    param = get_std_param_xillver(status);
-    test_init_xilltable(XILLTABLE_FILENAME, param, status);
+  /** -1- xillver (5dim table) **/
+  param = get_std_param_xillver(status);
+  test_init_xilltable(XILLTABLE_FILENAME, param, status);
 
-    /** -2- xillver CO  (6dim table) **/
-    param = get_std_param_xillver_co(status);
-    test_init_xilltable(XILLTABLE_CO_FILENAME, param, status);
+  /** -2- xillver CO  (6dim table) **/
+  param = get_std_param_xillver_co(status);
+  test_init_xilltable(XILLTABLE_CO_FILENAME, param, status);
 
   /** -1- xillver Dens Cp (6dim table) **/
   param = get_std_param_xillver_dens_nthcomp(status);
@@ -190,6 +190,8 @@ static void testCheckForExistingTable(int* status){
 
   CHECK_STATUS_VOID(*status);
 
+  printf(" TEST: checking for table existence ");
+
   char* nonExistingTable = "no_table_has_this_name_1234.fits";
   if (checkIfTableExists(nonExistingTable, status) != 0 ){
     *status=EXIT_FAILURE;
@@ -201,6 +203,29 @@ static void testCheckForExistingTable(int* status){
     *status=EXIT_FAILURE;
     printf(" TEST: *** error : trying to open table %s failed\n", existingTable);
   }
+
+  print_status_outcome(status);
+
+}
+
+static void testLoadingAlternativeTable(int* status){
+
+  printf(" TEST: loading alternative table ");
+
+  CHECK_STATUS_VOID(*status);
+  char* existingTable = XILLTABLE_FILENAME;
+  char* nonExistingTable = "no_table_has_this_name_1234.fits";
+
+  char *tableName = getXilltableNameUsingAlternativeIfNotExisting(
+      nonExistingTable, existingTable,status);
+
+  if (checkIfTableExists(tableName, status) != 1 ){
+    *status=EXIT_FAILURE;
+    printf(" TEST: *** error : trying loading alternative table %s instead of %s failed\n",
+        existingTable, nonExistingTable);
+  }
+
+  print_status_outcome(status);
 
 }
 
@@ -221,6 +246,8 @@ void test_xilltables(void ) {
   testLoadingNonExistingTable(&status);
 
   testCheckForExistingTable(&status);
+
+  testLoadingAlternativeTable(&status);
 
   if (status != EXIT_SUCCESS) {
     printf(" *** TESTING XILLVER TABLES NOT SUCCESSFUL \n");
