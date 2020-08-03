@@ -28,6 +28,7 @@ char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_KTE, 
 xillTable *cached_xill_tab = NULL;
 xillTable *cached_xill_tab_dens = NULL;
 xillTable *cached_xill_tab_nthcomp = NULL;
+xillTable *cached_xill_tab_dens_nthcomp = NULL;
 xillTable *cached_xill_tab_ns = NULL;
 xillTable *cached_xill_tab_co = NULL;
 
@@ -47,6 +48,17 @@ static int is_co_model(int model_type) {
     } else {
         return 0;
     }
+}
+
+static int is_CpD_model(int model_type){
+  if ((model_type == MOD_TYPE_RELXILLDENS_NTHCOMP) ||
+      (model_type == MOD_TYPE_RELXILLLPDENS_NTHCOMP) ||
+      (model_type == MOD_TYPE_XILLVERDENS_NTHCOMP )
+      ) {
+    return 1;
+  } else {
+    return 0;
+  }
 }
 
 static int get_num_elem(const int *n_parvals, int npar) {
@@ -928,12 +940,28 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
         *tab = cached_xill_tab_co;
         return XILLTABLE_CO_FILENAME;
 
+    } else if (is_CpD_model(param->model_type)) {
+
+      if (cached_xill_tab_dens_nthcomp == NULL) {
+        init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_dens_nthcomp, param, status);
+        CHECK_STATUS_RET(*status, NULL)
+      }
+      *tab = cached_xill_tab_dens_nthcomp;
+      return XILLTABLE_NTHCOMP_FILENAME;
+
     } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
-        if (cached_xill_tab_nthcomp == NULL) {
-            init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_nthcomp, param, status);
-        }
-        *tab = cached_xill_tab_nthcomp;
-        return XILLTABLE_NTHCOMP_FILENAME;
+
+      // currently we have a new and also an older table for the nthcomp version (one includes more
+      // densities, but is not in the standard distribution
+      char *nthcompFileName = getXilltableNameUsingAlternativeIfNotExisting(
+          XILLTABLE_NTHCOMP_FILENAME, XILLTABLE_NTHCOMP_FILENAME_OLD,status);
+
+      if (cached_xill_tab_nthcomp == NULL) {
+          init_xillver_table(nthcompFileName, &cached_xill_tab_nthcomp, param, status);
+      }
+
+      *tab = cached_xill_tab_nthcomp;
+      return nthcompFileName;
 
     } else {
 
