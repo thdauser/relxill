@@ -1457,6 +1457,7 @@ void calculatePrimarySpectrum(double *pl_flux_xill, const relParam *rel_param, c
     for (int ii=0; ii<n_ener_xill; ii++){
           en = 0.5*(global_ener_xill[ii]+global_ener_xill[ii+1]);
           pl_flux_xill[ii] = en*en / ( pow(xill_param->kTbb,4) * (exp(en/xill_param->kTbb) - 1 ) );
+          pl_flux_xill[ii] *= (global_ener_xill[ii+1] - global_ener_xill[ii]);
         }
     } else {
       RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",status);
