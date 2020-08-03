@@ -391,30 +391,58 @@ static float *get_dat(xillTable *tab, int i0, int i1, int i2, int i3, int i4, in
     return tab->data_storage[index];
 }
 
+char* getFullPathTableName(char* filename, int* status){
+
+  int MAXSIZE = 1000;
+  char* fullfilename = malloc(sizeof(char*)*MAXSIZE);
+
+  if (sprintf(fullfilename, "%s/%s", get_relxill_table_path(), filename) == -1) {
+    RELXILL_ERROR("failed to construct full path the rel table", status);
+    return NULL;
+  }
+
+  return fullfilename;
+
+}
+
+int checkIfTableExists(char* filename, int* status) {
+
+  char *fullfilename = getFullPathTableName(filename, status);
+  CHECK_STATUS_RET(*status, 0);
+
+  fitsfile *fptr = NULL;
+  int statusTableExists = EXIT_SUCCESS;
+  int tableExists = 0;
+
+  if (fits_open_table(&fptr, fullfilename, READONLY, &statusTableExists) == 0) {
+    tableExists = 1;
+  }
+
+  if (fptr!=NULL){
+    fits_close_file(fptr, &statusTableExists);
+  }
+
+  return tableExists;
+}
 
 fitsfile *open_fits_table_stdpath(char *filename, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+  CHECK_STATUS_RET(*status, NULL)
 
-    fitsfile *fptr = NULL;
-    char fullfilename[500];
-    // get the full filename
-    if (sprintf(fullfilename, "%s/%s", get_relxill_table_path(), filename) == -1) {
-        RELXILL_ERROR("failed to construct full path the rel table", status);
-        return NULL;
-    }
+  char* fullfilename = getFullPathTableName(filename, status);
+  CHECK_STATUS_RET(*status, NULL);
 
-    // open the file
-    if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
-        CHECK_RELXILL_ERROR("opening of the table failed", status);
-        printf("    either the full path given (%s) is wrong \n", fullfilename);
-        printf("    or you need to download the table ** %s **  from \n", filename);
-        printf("    http://www.sternwarte.uni-erlangen.de/research/relxill/ \n");
-        return NULL;
-    }
+  fitsfile *fptr = NULL;
+  if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
+    RELXILL_ERROR("opening of the table failed", status);
+    printf("    either the full path given (%s) is wrong \n", fullfilename);
+    printf("    or you need to download the table ** %s **  from \n", filename);
+    printf("    http://www.sternwarte.uni-erlangen.de/research/relxill/ \n");
+  }
 
+  free(fullfilename);
 
-    return fptr;
+  return fptr;
 }
 
 /** load the complete relline table */
@@ -428,6 +456,7 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
     print_version_number(status);
 
     fptr = open_fits_table_stdpath(filename, status);
+    CHECK_STATUS_VOID(*status);
 
     assert(tab == NULL);
 

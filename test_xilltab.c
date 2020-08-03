@@ -52,23 +52,23 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
   printf("\n *** TEST: initializing xilltable %s  ...  \n", fname);
 
-    xillTable *tab = NULL;
-    init_xillver_table(fname, &tab, param, status);
+  xillTable *tab = NULL;
+  init_xillver_table(fname, &tab, param, status);
 
 
-    if (*status==EXIT_SUCCESS) {
-      assert(tab->n_ener > 0);
+  if (*status==EXIT_SUCCESS) {
+    assert(tab->n_ener > 0);
 
-      int ii;
-      for (ii = 0; ii < tab->num_param; ii++) {
-        assert(tab->num_param_vals[ii] > 0);
-      }
-
-      assert(tab->num_param > 0);
-      printf(" number of params: %i\n",tab->num_param);
+    int ii;
+    for (ii = 0; ii < tab->num_param; ii++) {
+      assert(tab->num_param_vals[ii] > 0);
     }
 
-    print_status_outcome(status);
+    assert(tab->num_param > 0);
+    printf(" number of params: %i\n",tab->num_param);
+  }
+
+  print_status_outcome(status);
 
 }
 
@@ -183,29 +183,50 @@ static void testLoadingNonExistingTable(int *status) {
     *status = EXIT_FAILURE;
     printf(" TEST: *** error : loading a non-existing table did not result in an error\n");
   }
+
+}
+
+static void testCheckForExistingTable(int* status){
+
+  CHECK_STATUS_VOID(*status);
+
+  char* nonExistingTable = "no_table_has_this_name_1234.fits";
+  if (checkIfTableExists(nonExistingTable, status) != 0 ){
+    *status=EXIT_FAILURE;
+    printf(" TEST: *** error : test for a not existing table has failed\n");
+  }
+
+  char* existingTable = XILLTABLE_FILENAME;
+  if (checkIfTableExists(existingTable, status) != 1 ){
+    *status=EXIT_FAILURE;
+    printf(" TEST: *** error : trying to open table %s failed\n", existingTable);
+  }
+
 }
 
 void test_xilltables(void ) {
-    char *buf;
-    int status = EXIT_SUCCESS;
+  char *buf;
+  int status = EXIT_SUCCESS;
 
-    get_version_number(&buf, &status);
-    printf("\n === Testing XILLVER with RELXILL Version %s === \n\n", buf);
-    free(buf);
+  get_version_number(&buf, &status);
+  printf("\n === Testing XILLVER with RELXILL Version %s === \n\n", buf);
+  free(buf);
 
-    test_new_xilltable(&status);
+  test_new_xilltable(&status);
 
-    test_all_xilltables(&status);
+  test_all_xilltables(&status);
 
-    test_all_spec(&status);
+  test_all_spec(&status);
 
-    testLoadingNonExistingTable(&status);
+  testLoadingNonExistingTable(&status);
 
-    if (status != EXIT_SUCCESS) {
-        printf(" *** TESTING XILLVER TABLES NOT SUCCESSFUL \n");
-        printf("\n *** Cleaning up and freeing cached structures\n");
-    } else {
-        printf(" *** TESTING XILLVER TABLES SUCCESSFUL \n");
-    }
+  testCheckForExistingTable(&status);
+
+  if (status != EXIT_SUCCESS) {
+    printf(" *** TESTING XILLVER TABLES NOT SUCCESSFUL \n");
+    printf("\n *** Cleaning up and freeing cached structures\n");
+  } else {
+    printf(" *** TESTING XILLVER TABLES SUCCESSFUL \n");
+  }
 
 }

@@ -81,6 +81,8 @@ void norm_xillver_spec(xill_spec *spec, double incl);
 
 fitsfile* open_fits_table_stdpath(char* filename, int* status);
 
+int checkIfTableExists(char* filename, int* status);
+
 int is_6dim_table(int model_type);
 
 #endif /* XILLTABLE_H_ */
