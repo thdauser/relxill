@@ -62,6 +62,7 @@ static int comp_sys_param(relParam* cpar, relParam* par){
 	if (comp_single_param_val(par->emis2,cpar->emis2)) return 1;
 	if (comp_single_param_val(par->gamma,cpar->gamma)) return 1;
 	if (comp_single_param_val(par->height,cpar->height)) return 1;
+  if (comp_single_param_val(par->htop,cpar->htop)) return 1;
 	if (comp_single_param_val(par->incl,cpar->incl)) return 1;
 	if (comp_single_param_val(par->beta,cpar->beta)) return 1;
 	if (comp_single_param_val(par->rin,cpar->rin)) return 1;
@@ -108,6 +109,7 @@ void set_cached_rel_param(relParam* par, relParam** ca_rel_param, int* status){
 	(*ca_rel_param)->emis2 = par->emis2;
 	(*ca_rel_param)->gamma = par->gamma;
 	(*ca_rel_param)->height = par->height;
+  (*ca_rel_param)->htop = par->htop;
 	(*ca_rel_param)->incl = par->incl;
 	(*ca_rel_param)->beta = par->beta;
 
