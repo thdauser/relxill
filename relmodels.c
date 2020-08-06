@@ -20,13 +20,13 @@
 
 int version_number_printed=0;
 
-static void check_negative_radii(double* r, double a){
+static void setNegativeRadiiToRisco(double* r, double a){
 	if (*r<0){
 		*r = -1.0*(*r)*kerr_rms(a);
 	}
 }
 
-static void check_negative_height(double* h, double a){
+static void setNegativeHeightToRplus(double* h, double a){
 	if (*h<0){
 		*h = -1.0*(*h)*kerr_rplus(a);
 	}
@@ -48,9 +48,9 @@ int warned_height = 0;
 static void check_parameter_bounds(relParam* param, int* status){
 
 	// first set the Radii to positive value
-	check_negative_radii(&(param->rin), param->a);
-	check_negative_radii(&(param->rout), param->a);
-	check_negative_radii(&(param->rbr), param->a);
+  setNegativeRadiiToRisco(&(param->rin), param->a);
+  setNegativeRadiiToRisco(&(param->rout), param->a);
+  setNegativeRadiiToRisco(&(param->rbr), param->a);
 
 	const double rout_max = 1000.0;
 
@@ -131,27 +131,26 @@ static void check_parameter_bounds(relParam* param, int* status){
 		}
 	}
 
-
-	// TODO: also check Rbreak here?
-
 	/** check height values (only applies to LP emissivity **/
-	if (param->emis_type == EMIS_TYPE_LP) {
-		check_negative_height(&(param->height), param->a);
-		double h_fac = 1.1;
-		double r_event = kerr_rplus(param->a);
-		if ( (h_fac*r_event - param->height ) > 1e-4){
-			if (!warned_rms){
-				printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n",h_fac);
-				printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",h_fac);
-				printf("      Height= %.3f  ;  r_event=%.3f \n",param->height,r_event);
-				printf("      Setting    h =  1.1*r_event  = %.3f \n",r_event*h_fac);
-				param->height = r_event*h_fac;
-				warned_height = 1;
-			}
+  if (param->emis_type == EMIS_TYPE_LP) {
+    setNegativeHeightToRplus(&(param->height), param->a);
+    setNegativeHeightToRplus(&(param->htop), param->a);
+
+    double h_fac = 1.1;
+    double r_event = kerr_rplus(param->a);
+    if ( (h_fac*r_event - param->height ) > 1e-4){
+      if (!warned_rms){
+        printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n",h_fac);
+        printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",h_fac);
+        printf("      Height= %.3f  ;  r_event=%.3f \n",param->height,r_event);
+        printf("      Setting    h =  1.1*r_event  = %.3f \n",r_event*h_fac);
+        param->height = r_event*h_fac;
+        warned_height = 1;
+      }
 
 
-		}
-	}
+    }
+  }
 
 
 
@@ -677,25 +676,26 @@ void init_par_relxilllp_dens_nthcomp(relParam** rel_param, xillParam** xill_para
 
   assert(n_parameter == NUM_PARAM_RELXILLLPDENS_NTHCOMP);
 
-  param->height = inp_par[0];
-  param->a      = inp_par[1];
-  param->incl   = inp_par[2]*M_PI/180;
-  param->rin    = inp_par[3];
-  param->rout   = inp_par[4];
-  param->z      = inp_par[5];
-  xparam->z     = inp_par[5];
+  param->a      = inp_par[0];
+  param->incl   = inp_par[1]*M_PI/180;
+  param->rin    = inp_par[2];
+  param->rout   = inp_par[3];
+  param->height = inp_par[4];
+  param->htop   = inp_par[5];
+  param->beta   = inp_par[6];
 
-  param->gamma  = inp_par[6];
-  xparam->gam   = inp_par[6];
-  xparam->lxi   = inp_par[7];
-  xparam->afe   = inp_par[8];
-  xparam->ect   = inp_par[9];
-  xparam->dens  = inp_par[10];
+  param->gamma  = inp_par[7];
+  xparam->gam   = param->gamma;
+  xparam->lxi   = inp_par[8];
+  xparam->afe   = inp_par[9];
+  xparam->ect   = inp_par[10];
+  xparam->dens  = inp_par[11];
 
-  xparam->refl_frac = inp_par[11];
-  xparam->fixReflFrac = (int) (inp_par[12]+0.5); // make sure there is nor problem with integer conversion
+  xparam->refl_frac = inp_par[12];
+  xparam->fixReflFrac = (int) (inp_par[13]+0.5); // make sure there is no problem with integer conversion
 
-  param->beta = 0.0;
+  param->z      = inp_par[4];
+  xparam->z     = param->z;
 
   check_parameter_bounds(param,status);
   CHECK_STATUS_VOID(*status)
@@ -1724,7 +1724,7 @@ void lmodxillverdensnthcomp(const double* ener0, const int n_ener0, const double
 // XSpec local model function (defined in the lmodel*.dat file)
 void lmodrelxilllpdensnthcomp(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
 
-  const int n_parameter = 13;
+  const int n_parameter = 15;
   int status = EXIT_SUCCESS;
   tdrelxilllpdens_nthcomp(ener0, n_ener0, photar, parameter, n_parameter, &status);
 

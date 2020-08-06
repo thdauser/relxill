@@ -53,23 +53,24 @@
 /****** TYPE DEFINITIONS ******/
 
 typedef struct{
-	int model_type;
-	int emis_type;
-	double a;
-	double incl;
-	double emis1;
-	double emis2;
-	double rbr;
-	double rin;
-	double rout;
-	double lineE;
-	double z;
-	double height;
-	double gamma;
-	double beta;
-	int limb;
-	int do_renorm_relline;
-	int num_zones;
+  int model_type;
+  int emis_type;
+  double a;
+  double incl;
+  double emis1;
+  double emis2;
+  double rbr;
+  double rin;
+  double rout;
+  double lineE;
+  double z;
+  double height;
+  double htop;
+  double gamma;
+  double beta;
+  int limb;
+  int do_renorm_relline;
+  int num_zones;
 } relParam;
 
 typedef struct{

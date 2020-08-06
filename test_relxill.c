@@ -189,6 +189,24 @@ void set_std_param_relxilllpdens(double *inp_par) {
     inp_par[11] = 1.0;   // fixReflFrac
 }
 
+void set_std_param_relxilllpdens_nthcomp(double *inp_par) {
+  inp_par[0] = 0.998; // a
+  inp_par[1] = 60.0;  // incl
+  inp_par[2] = -1.0;  // rin
+  inp_par[3] = 400.;  // rout
+  inp_par[4] = 3.0;   // height
+  inp_par[5] = 20.0;   // htop
+  inp_par[6] = 0.1;   // beta
+  inp_par[7] = 2.1;   // pl Index
+  inp_par[8] = 0.0;   // logxi
+  inp_par[9] = 1.0;   // Afe
+  inp_par[10] = 100.0; // kTe
+  inp_par[11] = 16.0; // logN
+  inp_par[12] = -1.0;   // refl_frac
+  inp_par[13] = 1.0;   // fixReflFrac
+  inp_par[14] = 0.0;    // redshift
+}
+
 
 void set_std_param_relline_lp(double *inp_par) {
     inp_par[0] = 1.0;
@@ -918,7 +936,7 @@ void std_eval_relxilllpdens_nthcomp(int *status, int n) {
   /* set the parameters */
   int n_param = NUM_PARAM_RELXILLLPDENS_NTHCOMP;
   double inp_par[n_param];
-  set_std_param_relxilllpdens(inp_par);
+  set_std_param_relxilllpdens_nthcomp(inp_par);
   CHECK_STATUS_VOID(*status)
 
   /* create an energy grid */
