@@ -201,7 +201,7 @@ void get_emis_jet_extended(relParam* param, double* emis, double* del_emit, doub
   double hbase = param->height;
 
   int nh = 100;
-  double heightArray[nh];
+  double heightArray[nh+1];
   get_log_grid(heightArray, nh, hbase, param->htop);
 
   double singleEmis[n_r];
@@ -210,11 +210,15 @@ void get_emis_jet_extended(relParam* param, double* emis, double* del_emit, doub
     emis[jj] = 0.0;
   }
 
-  for (int ii = 0; ii < nh; ii++){
-    double currentHeight = 0.5*(heightArray[ii]+heightArray[ii+1]);
-    double currentBeta = jetSpeedConstantAccel(beta100Rg, currentHeight, hbase);
+  double height[nh];
+  double beta[nh];
 
-    get_emis_jet_point_source(param, currentHeight, currentBeta, singleEmis, del_emit, del_inc, re, n_r,
+  for (int ii = 0; ii < nh; ii++){
+
+    height[ii] = 0.5*(heightArray[ii]+heightArray[ii+1]);
+    beta[ii] = jetSpeedConstantAccel(beta100Rg, height[ii], hbase);
+
+    get_emis_jet_point_source(param, height[ii], beta[ii], singleEmis, del_emit, del_inc, re, n_r,
                               cached_lp_table, ind_a, ifac_a, status);
 
     // assuming an constant luminosity in the frame of the jet
@@ -225,6 +229,11 @@ void get_emis_jet_extended(relParam* param, double* emis, double* del_emit, doub
     }
 
 
+  }
+
+
+  if (is_debug_run() ){
+    save_radial_profile("test_rellxill_heightVelocityProfile.txt", height, beta, nh);
   }
 
 }

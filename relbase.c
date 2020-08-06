@@ -1574,12 +1574,11 @@ void save_relline_profile(rel_spec* spec){
 	if (fclose(fp)) exit(1);
 }
 
-/** print the relline profile   **/
-static void save_emis_profile(double* rad, double* intens, int n_rad){
+/** save any radial profile in text file   **/
+void save_radial_profile(char* foutName, double* rad, double* intens, int n_rad){
 
-	FILE* fp =  fopen ( "test_emis_profile.dat","w+" );
-	int ii;
-	for (ii=0; ii<n_rad; ii++){
+	FILE* fp =  fopen ( foutName ,"w+" );
+	for (int ii=0; ii<n_rad; ii++){
 		fprintf(fp, " %e \t %e \n",rad[ii],intens[ii]);
 	}
 	if (fclose(fp)) exit(1);
@@ -1664,7 +1663,7 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 		relSysPar* sysPar = get_system_parameters(param,status);
 
 		if (is_debug_run() && sysPar!=NULL){
-			save_emis_profile(sysPar->re, sysPar->emis, sysPar->nr);
+          save_radial_profile("test_emis_profile.txt", sysPar->re, sysPar->emis, sysPar->nr);
 		}
 
 		// init the spectra where we store the flux

@@ -115,6 +115,8 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status);
 
 void save_relline_profile(rel_spec* spec);
 
+void save_radial_profile(char* foutName, double* rad, double* intens, int n_rad);
+
 void free_cached_tables(void );
 
 relSysPar* new_relSysPar(int nr, int ng, int* status);
