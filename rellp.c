@@ -40,7 +40,10 @@ static void get_emis_bkn(double* emis, double* re,int nr,
 }
 
 
-static void get_emis_jet_point_source(relParam* param, double* emis, double* del_emit, double* del_inc,
+/*
+ * ignores param->height and param->beta
+ */
+static void get_emis_jet_point_source(relParam* param, double height, double beta, double* emis, double* del_emit, double* del_inc,
 		double* re, int n_r, lpTable* tab, int ind_a, double ifac_a, int* status){
 
 	lpDat* dat[2];
@@ -51,8 +54,8 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 	int ii;
 	for (ii=0; ii<2; ii++){
 		dat[ii] = tab->dat[ind_a+ii];
-		ind_h[ii] = binary_search_float(dat[ii]->h,tab->n_h,param->height);
-		ifac_h[ii]   = (param->height-dat[ii]->h[ind_h[ii]])/
+		ind_h[ii] = binary_search_float(dat[ii]->h,tab->n_h, (float) height);
+		ifac_h[ii]   = (height-dat[ii]->h[ind_h[ii]])/
 					   (dat[ii]->h[ind_h[ii]+1]-dat[ii]->h[ind_h[ii]]);
 
 		// make sure the incident angle is defined as positive value (otherwise the interpolation
@@ -138,13 +141,91 @@ static void get_emis_jet_point_source(relParam* param, double* emis, double* del
 		del_inc[ii] = interp_lin_1d(inter_r, jet_del_inc[kk], jet_del_inc[kk+1]);
 
 	    /** multiply by the additional factor gi^gamma (see Dauser et al., 2013) **/
-		 emis[ii] *= pow(gi_potential_lp(re[ii],param->a,param->height,param->beta,del_emit[ii]), param->gamma);
+		 emis[ii] *= pow(gi_potential_lp(re[ii],param->a,height,beta,del_emit[ii]), param->gamma);
 
 	     // take the beaming of the jet into account (see Dauser et al., 2013)
 	     if (param->beta > 1e-6) {
-	        emis[ii] *= pow(doppler_factor(del_emit[ii],param->beta),2);
+	        emis[ii] *= pow(doppler_factor(del_emit[ii],beta),2);
 	     }
 	}
+
+}
+
+static int modelPointsource(relParam* param){
+  double htopPrecLimit = 1e-3;
+  if (fabs(param->htop ) <=1.0 || ( param->htop+htopPrecLimit <= param->height)  ){
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+
+/*
+ * Calculate the velocity (in units of c) for a given height, hbase and a given
+ * velocity (beta) at 100Rg. Specfici definitions are:
+ *  - beta is defined as the velocity at 100r_g above the jet base at hbase
+ *  - we assume constant acceleration such that currentBeta=bet100
+ */
+double jetSpeedConstantAccel(double beta100, double height, double hbase){
+
+
+  const double HEIGHT_REF = 100.0;  // in units of Rg
+
+  double rel_gamma = 1.0/sqrt(1-pow(beta100,2));
+  double acceleration = 1.0/HEIGHT_REF* (sqrt(1 + pow(rel_gamma*beta100, 2))  - 1  );
+
+  double x = height-hbase;
+  double t = sqrt(pow(x,2) + 2*x/acceleration);
+
+  // speed for constant accel in SRT
+  double beta = acceleration*t / sqrt(1 + (pow(acceleration*t, 2)));
+
+  return beta;
+}
+
+
+/*
+ *  The extended emission is calculated for a certain set of parameters / definitions
+ *  - if htop <= heigh=hbase we assume it's a point-like jet
+ *  - the meaning of beta for the extended jet is the velocity at 100Rg, in case the
+ *    profile is of interest, it will be output in the debug mode
+ */
+void get_emis_jet_extended(relParam* param, double* emis, double* del_emit, double* del_inc,
+                                      double* re, int n_r, lpTable* tab, int ind_a, double ifac_a, int* status) {
+
+
+  // check and set the parameters as defined for the extended jet
+  assert(param->height < param->htop);
+  double beta100Rg = param->beta;
+  double hbase = param->height;
+
+  int nh = 100;
+  double heightArray[nh];
+  get_log_grid(heightArray, nh, hbase, param->htop);
+
+  double singleEmis[n_r];
+
+  for (int jj; jj<n_r; jj++){
+    emis[jj] = 0.0;
+  }
+
+  for (int ii = 0; ii < nh; ii++){
+    double currentHeight = 0.5*(heightArray[ii]+heightArray[ii+1]);
+    double currentBeta = jetSpeedConstantAccel(beta100Rg, currentHeight, hbase);
+
+    get_emis_jet_point_source(param, currentHeight, currentBeta, singleEmis, del_emit, del_inc, re, n_r,
+                              cached_lp_table, ind_a, ifac_a, status);
+
+    // assuming an constant luminosity in the frame of the jet
+    double heightSegmentIntegrationFactor = (heightArray[ii+1] - heightArray[ii]) / (param->htop - hbase);
+
+    for (int jj; jj<n_r; jj++){
+      emis[jj] = singleEmis[jj]*heightSegmentIntegrationFactor;
+    }
+
+
+  }
 
 }
 
@@ -163,16 +244,19 @@ void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_i
 	// calculate the emissivity
 	assert(emis!=NULL);
 
-	int ind_a   = binary_search_float(cached_lp_table->a,cached_lp_table->n_a,param->a);
+	int ind_a   = binary_search_float(cached_lp_table->a,cached_lp_table->n_a,(float) param->a);
 	double ifac_a   = (param->a-cached_lp_table->a[ind_a])/
 				   (cached_lp_table->a[ind_a+1]-cached_lp_table->a[ind_a]);
 
 
-	// TODO: make it possible for an extended jet
-	get_emis_jet_point_source(param, emis, del_emit, del_inc, re, n_r,
-			cached_lp_table, ind_a, ifac_a,status);
+	if (modelPointsource(param)) {
+      get_emis_jet_point_source(param, param->height, param->beta, emis, del_emit, del_inc, re, n_r,
+                                cached_lp_table, ind_a, ifac_a, status);
+    } else {
+	  get_emis_jet_extended(param, emis, del_emit, del_inc, re, n_r,
+                            cached_lp_table, ind_a, ifac_a, status);
+	}
 
-	return;
 }
 
 

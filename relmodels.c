@@ -1426,6 +1426,8 @@ relParam* new_relParam(int model_type, int emis_type, int* status){
 	param->height = 0.0;
 	param->gamma = PARAM_DEFAULT;
 	param->beta = 0.0; // special case, in order to prevent strange results
+  param->height = PARAM_DEFAULT;
+  param->htop = 0.0;
 	param->limb = 0;
 
 	// this is set by the environment variable "RELLINE_PHYSICAL_NORM"
