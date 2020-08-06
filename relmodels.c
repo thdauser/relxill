@@ -694,7 +694,7 @@ void init_par_relxilllp_dens_nthcomp(relParam** rel_param, xillParam** xill_para
   xparam->refl_frac = inp_par[12];
   xparam->fixReflFrac = (int) (inp_par[13]+0.5); // make sure there is no problem with integer conversion
 
-  param->z      = inp_par[4];
+  param->z      = inp_par[14];
   xparam->z     = param->z;
 
   check_parameter_bounds(param,status);

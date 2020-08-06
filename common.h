@@ -134,6 +134,8 @@ typedef struct{
   double* del_emit;   // angle under which the photon is emitted from the primary source
   double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
 
+  double del_emit_ad_max; // maximal emission angle to hit the outer disk (as tabulated, no photons cross the disk)
+
 } emisProfile;
 
 typedef struct{
@@ -151,9 +153,10 @@ typedef struct{
 
   emisProfile* emis;
 
+
   double refl_frac;  // can be averaged for extended sources
-  double del_ad_risco; // delta of the photon where it would hit the ISCO (irrespective of Rin)
-  double del_ad_rmax;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
+//  double del_ad_risco; // delta of the photon where it would hit the ISCO (irrespective of Rin)
+  double del_ad_max;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
 
   int limb_law;
 
@@ -162,11 +165,9 @@ typedef struct{
 
 typedef struct{
 	double refl_frac;
-	double refl_frac_norm;
 	double f_bh;
 	double f_ad;
 	double f_inf;
-	double f_ad_norm;
 } lpReflFrac;
 
 /** angles (cosne) and their distribution over the radial zones **/

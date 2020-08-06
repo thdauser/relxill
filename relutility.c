@@ -124,7 +124,7 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	 *   - for the reflection fraction we therefore need to convert from
 	 *     the moving source (which the disk observer sees) into the
 	 *     local frame
-	 *   -> therefore we need to calculate the abberation fro -beta
+	 *   -> therefore we need to calculate the abberation of -beta
 	 */
 	if (param->beta>1e-6) {
 	     del_bh = relat_abberation(del_bh, -1.*param->beta);
@@ -138,11 +138,7 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	str->f_ad  = 0.5*(cos(del_bh) - cos(del_ad));
 	/** photons are not allowed to cross the disk
 	 *  (so they only reach infinity if they don't hit the disk plane) */
-	str->f_inf = 0.5*(1.0 + cos(sysPar->del_ad_rmax));
-
-	/** fraction of photons which would hit the maximally
-	 *  simulated accretion disk. Do not change this with BETA (!) */
-	str->f_ad_norm = 0.5*(cos(sysPar->del_ad_risco) - cos(sysPar->del_ad_rmax));
+	str->f_inf = 0.5*(1.0 + cos(sysPar->emis->del_emit_ad_max));
 
 	// photons are not allowed to crosstalk the disk plane
 	if (str->f_inf > 0.5){
@@ -150,7 +146,6 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	}
 	
 	str->refl_frac = str->f_ad/str->f_inf;
-	str->refl_frac_norm = str->f_ad_norm/str->f_inf;
 
 	return str;
 }

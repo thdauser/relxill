@@ -22,12 +22,11 @@
 #include "relutility.h"
 
 // calculate the angles of emission from the primary source to git Rin and Rout
-void get_ad_del_lim(relParam* param, relSysPar* sysPar, int* status);
+// void get_ad_del_lim(relParam* param, relSysPar* sysPar, int* status);
 
 emisProfile* calc_emis_profile(double* r, int nr, relParam* param, int* status);
 
-void get_emis_jet(relParam* param, double* emis, double* del_emit, double* del_inc,
-		double* re, int n_r, int* status);
+void get_emis_jet(emisProfile*, relParam* param, int* status);
 
 void free_cached_lpTable(void);
 

@@ -296,12 +296,6 @@ static relSysPar* calculate_system_parameters(relParam* param, int* status){
 	}
 
 
-	// if we are in LP Geometry, we also need primary source emission angle to hit Rin and Rout
-	if (param->emis_type==EMIS_TYPE_LP){
-		get_ad_del_lim(param, sysPar, status);
-	}
-
-
 	// get emissivity profile
 	sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
 
@@ -1663,7 +1657,7 @@ rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xi
 		relSysPar* sysPar = get_system_parameters(param,status);
 
 		if (is_debug_run() && sysPar!=NULL){
-          save_radial_profile("test_emis_profile.txt", sysPar->re, sysPar->emis, sysPar->nr);
+          save_radial_profile("test_emis_profile.txt", sysPar->re, sysPar->emis->emis, sysPar->nr);
 		}
 
 		// init the spectra where we store the flux
@@ -1771,6 +1765,8 @@ emisProfile* new_emisProfile(double* re, int nr, int* status) {
   emis->del_inc = (double *) malloc(nr * sizeof(double));
   CHECK_MALLOC_RET_STATUS(emis->del_inc, status, emis)
 
+  emis->del_emit_ad_max = 0.0;
+
   return emis;
 }
 
@@ -1834,8 +1830,8 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 
 	sysPar->limb_law = 0;
 
-	sysPar->del_ad_risco=0;
-	sysPar->del_ad_rmax=M_PI/2;
+//	sysPar->del_ad_risco=0;
+//	sysPar->del_ad_rmax=M_PI/2;
 
 	return sysPar;
 }
