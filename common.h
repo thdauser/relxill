@@ -125,29 +125,37 @@ typedef struct{
 
 }xillTable;
 
+/** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
+typedef struct{
+
+  double* re;
+  int nr;
+  double* emis;       // intensity on the surface of the accretion disc
+  double* del_emit;   // angle under which the photon is emitted from the primary source
+  double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
+
+} emisProfile;
 
 typedef struct{
-    int nr;
+  int nr;
     int ng;
 
-    double *re;
-    double *gmin;
-    double *gmax;
-    double *gstar;
-    double *d_gstar;  // bin width for each gstar value
+  double *re;
+  double *gmin;
+  double *gmax;
+  double *gstar;
+  double *d_gstar;  // bin width for each gstar value
 
-    double ***trff;
-    double ***cosne;
+  double ***trff;
+  double ***cosne;
 
-    /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
-	double* emis;       // intensity on the surface of the accretion disc
-	double* del_emit;   // angle under which the photon is emitted from the primary source
-	double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
+  emisProfile* emis;
 
-	double del_ad_risco; // delta of the photon where it would hit the ISCO (irrespective of Rin)
-	double del_ad_rmax;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
+  double refl_frac;  // can be averaged for extended sources
+  double del_ad_risco; // delta of the photon where it would hit the ISCO (irrespective of Rin)
+  double del_ad_rmax;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
 
-	int limb_law;
+  int limb_law;
 
 } relSysPar;
 

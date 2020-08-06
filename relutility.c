@@ -115,8 +115,8 @@ lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
 	 *             should be Rin=r_isco & Rout=1000rg  **/
 
 	// get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
-	double del_bh  = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
-	double del_ad = sysPar->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
+	double del_bh  = sysPar->emis->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
+	double del_ad = sysPar->emis->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
 
 	/** calculate the coordinate transformation / relat abberation
 	 *   - an observer on the accretion disk sees the rays from
@@ -758,13 +758,15 @@ ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, in
 
 		// we need the emissivity profile (should be cached, so no extra effort required here)
 		relSysPar* sysPar = get_system_parameters(rel_param,status);
-		assert(sysPar->emis!=NULL);
-		inv_rebin_mean(sysPar->re, sysPar->emis, sysPar->nr, rmean, emis_zones, n,  status);
-		inv_rebin_mean(sysPar->re, sysPar->del_inc, sysPar->nr, rmean, del_inc, n,  status);
-		inv_rebin_mean(sysPar->re, sysPar->del_emit, sysPar->nr, rmean, ion->del_emit, n,  status);
+		emisProfile* emis_profile = sysPar->emis;
+
+		assert(emis_profile->del_inc!=NULL);
+		inv_rebin_mean(emis_profile->re, emis_profile->emis, sysPar->nr, rmean, emis_zones, n,  status);
+		inv_rebin_mean(emis_profile->re, emis_profile->del_inc, sysPar->nr, rmean, del_inc, n,  status);
+		inv_rebin_mean(emis_profile->re, emis_profile->del_emit, sysPar->nr, rmean, ion->del_emit, n,  status);
 
 		// calculate the maximal ionization assuming r^-3 and SS73 alpha disk
-		double lxi_max = cal_lxi_max_ss73(sysPar->re, sysPar->emis, sysPar->nr, rin, status);
+		double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->nr, rin, status);
 
 		// the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
 		double fac_lxi_norm = xlxi0 - lxi_max; // subtraction instead of division because of the log

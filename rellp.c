@@ -287,35 +287,37 @@ void get_ad_del_lim(relParam* param, relSysPar* sysPar, int* status) {
 }
 
 
-void calc_emis_profile(double* emis, double* del_emit, double* del_inc, double* re, int nr, relParam* param, int* status){
+emisProfile* calc_emis_profile(double* re, int nr, relParam* param, int* status){
 
-	CHECK_STATUS_VOID(*status);
+	CHECK_STATUS_RET(*status, NULL);
+
+	emisProfile* emis = new_emisProfile(re, nr, status);
 
 	double invalid_angle = -1.0;
 
 	/**  *** Broken Power Law Emissivity ***  **/
 	if (param->emis_type==EMIS_TYPE_BKN){
 
-		get_emis_bkn(emis, re, nr,
+		get_emis_bkn(emis->emis, emis->re, emis->nr,
 				param->emis1,param->emis2,param->rbr);
 		// set the angles in this case to a default value
 		int ii;
 		for (ii=0; ii<nr; ii++){
-			del_emit[ii] = invalid_angle;
-			del_inc[ii] = invalid_angle;
+			emis->del_emit[ii] = invalid_angle;
+			emis->del_inc[ii] = invalid_angle;
 		}
 
 	/**  *** Lamp Post Emissivity ***  **/
 	} else if (param->emis_type==EMIS_TYPE_LP){
 
-		// if (redo_get_emis_lp(param, cached_param, sysPar)){  // XXX Currently we always re-do it if we get here
-		get_emis_jet(param,emis, del_emit, del_inc,
+      // TODO: it does not work for an extended jet to calculate del_emis and del_inc
+		get_emis_jet(param,emis->emis, emis->del_emit, emis->del_inc,
 				re, nr, status);
 	} else {
 
 		RELXILL_ERROR(" calculation of emissivity profile not possible \n",status);
 		printf("   -> emis_type=%i not known \n",param->emis_type);
-		return;
+		return NULL;
 	}
 
 
@@ -323,7 +325,7 @@ void calc_emis_profile(double* emis, double* del_emit, double* del_inc, double* 
 		RELXILL_ERROR("calculating the emissivity profile failed due to previous error", status);
 	}
 
-	return;
+	return emis;
 }
 
 void free_cached_lpTable(void){

@@ -303,7 +303,7 @@ static relSysPar* calculate_system_parameters(relParam* param, int* status){
 
 
 	// get emissivity profile
-	calc_emis_profile(sysPar->emis, sysPar->del_emit, sysPar->del_inc, sysPar->re, sysPar->nr, param, status);
+	sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
 
 	if (*status!=EXIT_SUCCESS){
 		RELXILL_ERROR("failed to calculate the system parameters",status);
@@ -850,7 +850,7 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 	       	set_str_relbf(cached_str_relb_func,
 	       			sysPar->re[ii], sysPar->gmin[ii],sysPar->gmax[ii],
 	       			sysPar->trff[ii],sysPar->cosne[ii],
-					sysPar->emis[ii], sysPar->limb_law );
+					sysPar->emis->emis[ii], sysPar->limb_law );
 
 	        /** INTEGRATION
 	         *   [remember: defintion of Xillver/Relxill is 1/2 * Speith Code]
@@ -1755,6 +1755,27 @@ void free_cached_tables(void){
 
 }
 
+
+emisProfile* new_emisProfile(double* re, int nr, int* status) {
+
+  emisProfile* emis = (emisProfile*) malloc( sizeof(emisProfile) );
+  CHECK_MALLOC_RET_STATUS(emis, status, NULL)
+
+  emis->re = re;
+  emis->nr = nr;
+
+  emis->emis = (double *) malloc(nr * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(emis->emis, status, emis)
+  emis->del_emit = (double *) malloc(nr * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(emis->del_emit, status, emis)
+  emis->del_inc = (double *) malloc(nr * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(emis->del_inc, status, emis)
+
+  return emis;
+}
+
+
+
 relSysPar* new_relSysPar(int nr, int ng, int* status){
 	relSysPar* sysPar = (relSysPar*) malloc( sizeof(relSysPar) );
     CHECK_MALLOC_RET_STATUS(sysPar, status, NULL)
@@ -1769,13 +1790,7 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 	sysPar->gmax = (double*) malloc (nr*sizeof(double));
     CHECK_MALLOC_RET_STATUS(sysPar->gmax, status, sysPar)
 
-
-	sysPar->emis = (double*) malloc (nr*sizeof(double));
-    CHECK_MALLOC_RET_STATUS(sysPar->emis, status, sysPar)
-	sysPar->del_emit = (double*) malloc (nr*sizeof(double));
-    CHECK_MALLOC_RET_STATUS(sysPar->del_emit, status, sysPar)
-	sysPar->del_inc = (double*) malloc (nr*sizeof(double));
-    CHECK_MALLOC_RET_STATUS(sysPar->del_inc, status, sysPar)
+    sysPar->emis = NULL;
 
 	sysPar->gstar = (double*) malloc (ng*sizeof(double));
     CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
@@ -1825,6 +1840,16 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 	return sysPar;
 }
 
+
+void free_emisProfile(emisProfile* emis_profile) {
+  if (emis_profile != NULL) {
+    free(emis_profile->emis);
+    free(emis_profile->del_emit);
+    free(emis_profile->del_inc);
+    free(emis_profile);
+  }
+}
+
 void free_relSysPar(relSysPar* sysPar){
 	if (sysPar!=NULL){
 		free(sysPar->re);
@@ -1833,9 +1858,7 @@ void free_relSysPar(relSysPar* sysPar){
 		free(sysPar->gstar);
 		free(sysPar->d_gstar);
 
-		free(sysPar->emis);
-		free(sysPar->del_emit);
-		free(sysPar->del_inc);
+		free_emisProfile(sysPar->emis);
 
 		if(sysPar->trff != NULL){
 			int ii;
