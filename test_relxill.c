@@ -194,16 +194,16 @@ void set_std_param_relxilllpdens_nthcomp(double *inp_par) {
   inp_par[1] = 60.0;  // incl
   inp_par[2] = -1.0;  // rin
   inp_par[3] = 400.;  // rout
-  inp_par[4] = 3.0;   // height
-  inp_par[5] = 20.0;   // htop
-  inp_par[6] = 0.1;   // beta
+  inp_par[4] = 6.0;   // height
+  inp_par[5] = 0.0;   // htop
+  inp_par[6] = 0.0;   // beta
   inp_par[7] = 2.1;   // pl Index
-  inp_par[8] = 0.0;   // logxi
+  inp_par[8] = 3.1;   // logxi
   inp_par[9] = 1.0;   // Afe
   inp_par[10] = 100.0; // kTe
-  inp_par[11] = 16.0; // logN
-  inp_par[12] = -1.0;   // refl_frac
-  inp_par[13] = 1.0;   // fixReflFrac
+  inp_par[11] = 15.0; // logN
+  inp_par[12] = 3.0;   // refl_frac
+  inp_par[13] = 0.0;   // fixReflFrac
   inp_par[14] = 0.0;    // redshift
 }
 
@@ -947,6 +947,11 @@ void std_eval_relxilllpdens_nthcomp(int *status, int n) {
   /* call the relline model */
   double photar[n_ener];
   tdrelxilllpdens_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
+
+
+  printf("  -> %e \n", photar[0]);
+  assert(photar[0]>1e-10);
+
 
 }
 
