@@ -242,6 +242,7 @@ int main(int argc, char *argv[]){
 	int do_relxilllpionnthcomp = 0;
 	int do_relconv = 0;
 	int do_xillver = 0;
+	int do_emisTest = 0;
 
 	if (argc>=2){
 		if (strcmp(argv[1],"version")==0){
@@ -293,6 +294,9 @@ int main(int argc, char *argv[]){
         } else if (strcmp(argv[1], "xillver") == 0) {
           do_xillver = 1;
           do_all = 0;
+        } else if (strcmp(argv[1], "emisTest") == 0) {
+          do_emisTest = 1;
+          do_all = 0;
         }
 
 
@@ -308,18 +312,19 @@ int main(int argc, char *argv[]){
 		printf("\n === Starting RELXILL Version %s === \n\n",buf);
 		free(buf);
 
-		if (do_all){
+      if (do_all) {
+        do_std_test(&status);
+      }
+
+      if (do_all || do_emisTest){
           test_rellp(&status);
-          CHECK_STATUS_BREAK(status);
-		}
+        CHECK_STATUS_BREAK(status);
+      }
 
-		if (do_all){
-          do_std_test(&status);
+      if (do_all){
 
-
-          test_xilltables();
-
-        }
+        test_xilltables();
+      }
 
 		status=EXIT_SUCCESS;
 		if (do_all || do_relline){
