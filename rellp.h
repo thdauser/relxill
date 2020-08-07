@@ -20,6 +20,7 @@
 
 #include "relbase.h"
 #include "relutility.h"
+#include "common.h"
 
 #define NHBINS_VERTICALLY_EXTENDED_SOURCE 100
 
@@ -41,6 +42,10 @@ typedef struct{
 emisProfile* calc_emis_profile(double* r, int nr, relParam* param, int* status);
 
 void get_emis_jet(emisProfile*, relParam* param, int* status);
+
+int modelLampPostPointsource(relParam* param);
+
+////////////
 
 void free_cached_lpTable(void);
 

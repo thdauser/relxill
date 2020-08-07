@@ -216,9 +216,9 @@ static void calc_emis_jet_point_source(emisProfile* emisProf, relParam* param, d
 
 }
 
-static int modelPointsource(relParam* param){
+int modelLampPostPointsource(relParam* param){
   double htopPrecLimit = 1e-3;
-  if (fabs(param->htop ) <=1.0 || ( param->htop+htopPrecLimit <= param->height)  ){
+  if ( (fabs(param->htop ) <=1.0) || ( param->htop-htopPrecLimit <= param->height)  ){
     return 1;
   } else {
     return 0;
@@ -346,7 +346,7 @@ void get_emis_jet(emisProfile* emis_profile, relParam* param, int* status){
 	double ifac_a   = (param->a-cached_lp_table->a[ind_a])/
 				   (cached_lp_table->a[ind_a+1]-cached_lp_table->a[ind_a]);
 
-  if (modelPointsource(param)) {
+  if (modelLampPostPointsource(param)) {
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, cached_lp_table, ind_a, ifac_a, status);
   } else {
     calc_emis_jet_extended(emis_profile, param, cached_lp_table, ind_a, ifac_a, status);

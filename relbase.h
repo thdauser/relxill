@@ -154,6 +154,4 @@ int comp_xill_param(xillParam* cpar, xillParam* par);
 /** free the CLI cache **/
 void free_cache( void );
 
-emisProfile* new_emisProfile(double* re, int nr, int* status);
-
 #endif /* RELBASE_H_ */

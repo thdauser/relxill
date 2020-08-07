@@ -24,9 +24,9 @@ set(SOURCE_FILES
         reltable.h
         relutility.c
         relutility.h
-        xilltable.c
-        xilltable.h
-        test_relxill.c test_relxill.h)
+        xilltable.c    xilltable.h
+        test_relxill.c test_relxill.h
+        test_rellp.c test_rellp.h)
 
 set(EXEC_FILES
         test_sta

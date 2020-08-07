@@ -20,6 +20,7 @@
 #include "reltable.h"
 #include "test_relxill.h"
 #include "test_xilltab.c"
+#include "test_rellp.h"
 
 #define LIMIT_PREC 1e-6
 
@@ -308,7 +309,13 @@ int main(int argc, char *argv[]){
 		free(buf);
 
 		if (do_all){
+          test_rellp(&status);
+          CHECK_STATUS_BREAK(status);
+		}
+
+		if (do_all){
           do_std_test(&status);
+
 
           test_xilltables();
 

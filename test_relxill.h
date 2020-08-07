@@ -69,6 +69,8 @@ xillParam *get_std_param_xillver_nthcomp(int *status);
 
 xillParam *get_std_param_xillver_dens_nthcomp(int *status);
 
+void get_std_param_relxilllpDCp(relParam** rel_param, xillParam** xill_param, int *status);
+
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n);
 

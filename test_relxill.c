@@ -324,6 +324,18 @@ xillParam *get_std_param_xillver_dens_nthcomp(int *status) {
   return init_par_xillver_dens_nthcomp(inp_par, n_param, status);
 }
 
+
+void get_std_param_relxilllpDCp(relParam** rel_param, xillParam** xill_param, int *status) {
+  int n_param = NUM_PARAM_RELXILLLPDENS_NTHCOMP;
+  double *inp_par = (double *) malloc(sizeof(double) * n_param);
+  CHECK_MALLOC_VOID_STATUS(inp_par, status)
+
+  set_std_param_relxilllpdens_nthcomp(inp_par);
+  init_par_relxilllp_dens_nthcomp(rel_param, xill_param, inp_par, n_param, status);
+
+}
+
+
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n) {
 
