@@ -306,7 +306,7 @@ void calc_emis_jet_extended(emisProfile* emisProf, relParam* param, lpTable* tab
     // assuming a constant luminosity in the frame of the jet
     double heightIntegrationFactor = (source->heightArr[ii+1] - source->heightArr[ii]) / (param->htop - param->height);
 
-    for (int jj; jj<emisProf->nr; jj++){
+    for (int jj=0; jj<emisProf->nr; jj++){
       emisProf->emis[jj] = emisProfSingle->emis[jj]*heightIntegrationFactor;
     }
 
