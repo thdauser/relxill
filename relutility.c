@@ -580,7 +580,7 @@ void rebin_spectrum(double* ener, double* flu, int nbins, double* ener0, double*
 int do_renorm_model(relParam* rel_param){
 
 
-	int renorm = 0;
+	int renorm;
 
 	if ( is_relxill_model(rel_param->model_type) ){
 			if (rel_param->emis_type == EMIS_TYPE_LP){
@@ -839,13 +839,13 @@ double calc_g_inf(double height, double a) {
 
 
 void zeroArray(double* arr, int n){
-  for (int jj; jj<n; jj++){
+  for (int jj=0; jj<n; jj++){
     arr[jj] = 0.0;
   }
 }
 
 void multiplyArray(double* arr, int n, double factor){
-  for (int jj; jj<n; jj++){
+  for (int jj=0; jj<n; jj++){
     arr[jj] *= factor;
   }
 }
