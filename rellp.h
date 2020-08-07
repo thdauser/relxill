@@ -21,6 +21,20 @@
 #include "relbase.h"
 #include "relutility.h"
 
+#define NHBINS_VERTICALLY_EXTENDED_SOURCE 100
+
+
+
+typedef struct{
+
+  double* heightArr;  //nh+1 bins
+  double* heightMean;
+  double* beta;
+  int nh;
+
+} extPrimSource;
+
+
 // calculate the angles of emission from the primary source to git Rin and Rout
 // void get_ad_del_lim(relParam* param, relSysPar* sysPar, int* status);
 
@@ -30,14 +44,15 @@ void get_emis_jet(emisProfile*, relParam* param, int* status);
 
 void free_cached_lpTable(void);
 
-typedef struct{
-	double a;
-	double height;
-	double gamma;
-	double rin;
-	double rout;
-	double* emis;
-	int n_rad;
-}lpParam;
+lpReflFrac* new_lpReflFrac(int* status);
+void free_lpReflFrac(lpReflFrac** str);
+
+emisProfile* new_emisProfile(double* re, int nr, int* status);
+void free_emisProfile(emisProfile* emis_profile);
+
+extPrimSource* new_extendedPrimarySource(int nh, int* status);
+void free_extendedPrimarySource (extPrimSource* source);
+
+
 
 #endif /* RELLP_H_ */

@@ -94,8 +94,7 @@ int binary_search_float(const float *arr, int n, float val);
 
 int binary_search(const double *arr, int n, double val);
 
-/** calculate the reflection fraction **/
-lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status);
+double relat_abberation(double del,double beta);
 
 /** trapez integration around a single bin (returns only r*dr*PI!) **/
 double trapez_integ_single(double* re, int ii, int nr);
@@ -171,5 +170,11 @@ ion_grad* new_ion_grad(double* r, int n, int* status);
 
 /** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
 void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int nn, int* status);
+
+// energy shift from the primary source to the observer
+double calc_g_inf(double height, double a);
+
+void zeroArray(double* arr, int n);
+void multiplyArray(double* arr, int n, double factor);
 
 #endif /* RELUTILITY_H_ */

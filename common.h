@@ -125,6 +125,15 @@ typedef struct{
 
 }xillTable;
 
+
+typedef struct{
+  double refl_frac;
+  double f_bh;
+  double f_ad;
+  double f_inf;
+} lpReflFrac;
+
+
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
 typedef struct{
 
@@ -134,7 +143,8 @@ typedef struct{
   double* del_emit;   // angle under which the photon is emitted from the primary source
   double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
 
-  double del_emit_ad_max; // maximal emission angle to hit the outer disk (as tabulated, no photons cross the disk)
+  lpReflFrac* returnFracs;
+  double normFactorPrimSpec;  // determined from the f_inf and g_inf, the factor to multiply the direct radiation with
 
 } emisProfile;
 
@@ -153,22 +163,12 @@ typedef struct{
 
   emisProfile* emis;
 
-
-  double refl_frac;  // can be averaged for extended sources
-//  double del_ad_risco; // delta of the photon where it would hit the ISCO (irrespective of Rin)
   double del_ad_max;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
 
   int limb_law;
 
 } relSysPar;
 
-
-typedef struct{
-	double refl_frac;
-	double f_bh;
-	double f_ad;
-	double f_inf;
-} lpReflFrac;
 
 /** angles (cosne) and their distribution over the radial zones **/
 typedef struct{

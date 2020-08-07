@@ -97,58 +97,11 @@ double grav_redshift(const relParam* param){
 	}
 }
 
-static double relat_abberation(double del,double beta) {
+double relat_abberation(double del,double beta) {
 	return acos( (cos(del)-beta) / (1-beta*cos(del)));
 }
 
 
-/** calculate the reflection fraction as defined in Dauser+2016 **/
-lpReflFrac* calc_refl_frac(relSysPar* sysPar, relParam* param, int* status){
-
-	// in case there is no relativity information, the refl_frac is 1
-	if (param==NULL){
-		printf(" *** Warning: can not calculate reflection fraction as no relat. parameters are given \n");
-		return NULL;
-	}
-
-	/** important: get the radial values for which the RELLINE is calculated
-	 *             should be Rin=r_isco & Rout=1000rg  **/
-
-	// get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
-	double del_bh  = sysPar->emis->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rin)];
-	double del_ad = sysPar->emis->del_emit[inv_binary_search(sysPar->re, sysPar->nr, param->rout)];
-
-	/** calculate the coordinate transformation / relat abberation
-	 *   - an observer on the accretion disk sees the rays from
-	 *     del_bh up to del_ad
-	 *   - for the reflection fraction we therefore need to convert from
-	 *     the moving source (which the disk observer sees) into the
-	 *     local frame
-	 *   -> therefore we need to calculate the abberation of -beta
-	 */
-	if (param->beta>1e-6) {
-	     del_bh = relat_abberation(del_bh, -1.*param->beta);
-	     del_ad = relat_abberation(del_ad, -1.*param->beta);
-	}
-
-	lpReflFrac* str = (lpReflFrac*) malloc (sizeof(lpReflFrac));
-    CHECK_MALLOC_RET_STATUS(str, status, NULL)
-
-	str->f_bh  = 0.5*(1.0 - cos(del_bh));
-	str->f_ad  = 0.5*(cos(del_bh) - cos(del_ad));
-	/** photons are not allowed to cross the disk
-	 *  (so they only reach infinity if they don't hit the disk plane) */
-	str->f_inf = 0.5*(1.0 + cos(sysPar->emis->del_emit_ad_max));
-
-	// photons are not allowed to crosstalk the disk plane
-	if (str->f_inf > 0.5){
-	  str->f_inf = 0.5;
-	}
-	
-	str->refl_frac = str->f_ad/str->f_inf;
-
-	return str;
-}
 
 void check_relxill_error(const char* const func, const char* const msg, int* status){
 	if (*status!=EXIT_SUCCESS){
@@ -879,3 +832,20 @@ void inv_rebin_mean(double* x0, double* y0, int n0, double*  xn, double* yn, int
 
 }
 
+double calc_g_inf(double height, double a) {
+  return sqrt(1.0 - (2 * height /
+      (height * height + a * a)));
+}
+
+
+void zeroArray(double* arr, int n){
+  for (int jj; jj<n; jj++){
+    arr[jj] = 0.0;
+  }
+}
+
+void multiplyArray(double* arr, int n, double factor){
+  for (int jj; jj<n; jj++){
+    arr[jj] *= factor;
+  }
+}

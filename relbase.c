@@ -1466,8 +1466,10 @@ void set_stdNormXillverEnerygrid(int* status){
   }
 }
 
+
+
 void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_param,
-		xillParam* xill_param, int* status){
+                           xillParam* xill_param, int* status){
 
   double pl_flux[n_ener];
   double pl_flux_xill[n_ener_xill]; // global energy grid
@@ -1486,72 +1488,56 @@ void add_primary_component(double* ener, int n_ener, double* flu, relParam* rel_
     pl_flux[ii] *= norm_pl;
   }
 
-    /** 2 **  decide if we need to do relat. calculations **/
-	if (is_xill_model(xill_param->model_type) ){
+  /** 2 **  decide if we need to do relat. calculations **/
+  if (is_xill_model(xill_param->model_type) ){
 
-      for (int ii=0; ii<n_ener; ii++) {
-			flu[ii] *= fabs(xill_param->refl_frac);
-		}
-	} else {
+    for (int ii=0; ii<n_ener; ii++) {
+      flu[ii] *= fabs(xill_param->refl_frac);
+    }
+  } else {
 
-		assert(rel_param!=NULL);
+    /** 4 ** and apply it to primary and reflected spectra **/
+    if (rel_param->emis_type == EMIS_TYPE_LP) {
 
-		// should be cached, as it has been calculated before
-		relSysPar* sysPar = get_system_parameters(rel_param, status);
+      assert(rel_param!=NULL);
 
-		/** 3 **  calculate predicted reflection fraction and check if we want to use this value **/
-		lpReflFrac* struct_refl_frac = calc_refl_frac(sysPar, rel_param,status);
-        CHECK_STATUS_VOID(*status)
-
-		if ((xill_param->fixReflFrac==1)||(xill_param->fixReflFrac==2)) {
-			/** set the reflection fraction calculated from the height and
-			 *  spin of the primary source, in this case for the physical
-			 *  value from Rin to Rout          						 */
-			xill_param->refl_frac = struct_refl_frac->refl_frac;
-		}
-
-		/** 4 ** and apply it to primary and reflected spectra **/
-		if (rel_param->emis_type == EMIS_TYPE_LP) {
-			double g_inf = sqrt( 1.0 - ( 2*rel_param->height /
-					(rel_param->height*rel_param->height + rel_param->a*rel_param->a)) );
+      // get emisProfile from sysPar (should be cached, as it has been calculated before)
+      emisProfile* emis = get_system_parameters(rel_param, status)->emis;
 
 
-			 /** if the user sets the refl_frac parameter manually, we need to calculate the ratio
-			  *  to end up with the correct normalization
-			  */
-			double norm_fac_refl = (fabs(xill_param->refl_frac))/struct_refl_frac->refl_frac;
+      /* if the user sets the refl_frac parameter manually, we need to calculate the ratio
+       * to end up with the correct normalization
+       * */
+      if (xill_param->fixReflFrac==0){
+        double norm_fac_refl = (fabs(xill_param->refl_frac))/emis->returnFracs->refl_frac;
+        multiplyArray(flu, n_ener, norm_fac_refl);
+      }
 
- 			double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf,xill_param->gam);
+      multiplyArray(pl_flux, n_ener, emis->normFactorPrimSpec);
 
-			for (int ii=0; ii<n_ener; ii++) {
-				pl_flux[ii] *= prim_fac;
-				flu[ii] *= norm_fac_refl;
-			}
-		} else {
-			for (int ii=0; ii<n_ener; ii++){
-				flu[ii] *= fabs(xill_param->refl_frac);
-			}
-		}
+      /** 5 ** if desired, we output the reflection fraction and strength (as defined in Dauser+2016) **/
+      if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type==EMIS_TYPE_LP)) {
+        printReflectionStrengthInfo(ener, n_ener, flu, rel_param, xill_param, pl_flux, emis->returnFracs);
+      }
 
-		/** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
-		if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type==EMIS_TYPE_LP)) {
-			printReflectionStrengthInfo(ener, n_ener, flu, rel_param, xill_param, pl_flux, struct_refl_frac);
-        }
+    } else {
+      for (int ii=0; ii<n_ener; ii++){
+        flu[ii] *= fabs(xill_param->refl_frac);
+      }
+    }
 
-		/** free the reflection fraction structure **/
-		free(struct_refl_frac);
 
-	}
+  }
 
 
 
 
-	/** 6 ** add power law component only if desired (i.e., refl_frac > 0)**/
-	  if (xill_param->refl_frac >= 0) {
-	     for (int ii=0; ii<n_ener; ii++) {
-	        flu[ii] += pl_flux[ii];
-	     }
-	  }
+  /** 6 ** add power law component only if desired (i.e., refl_frac > 0)**/
+  if (xill_param->refl_frac >= 0) {
+    for (int ii=0; ii<n_ener; ii++) {
+      flu[ii] += pl_flux[ii];
+    }
+  }
 
 }
 
@@ -1750,27 +1736,6 @@ void free_cached_tables(void){
 }
 
 
-emisProfile* new_emisProfile(double* re, int nr, int* status) {
-
-  emisProfile* emis = (emisProfile*) malloc( sizeof(emisProfile) );
-  CHECK_MALLOC_RET_STATUS(emis, status, NULL)
-
-  emis->re = re;
-  emis->nr = nr;
-
-  emis->emis = (double *) malloc(nr * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(emis->emis, status, emis)
-  emis->del_emit = (double *) malloc(nr * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(emis->del_emit, status, emis)
-  emis->del_inc = (double *) malloc(nr * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(emis->del_inc, status, emis)
-
-  emis->del_emit_ad_max = 0.0;
-
-  return emis;
-}
-
-
 
 relSysPar* new_relSysPar(int nr, int ng, int* status){
 	relSysPar* sysPar = (relSysPar*) malloc( sizeof(relSysPar) );
@@ -1830,21 +1795,9 @@ relSysPar* new_relSysPar(int nr, int ng, int* status){
 
 	sysPar->limb_law = 0;
 
-//	sysPar->del_ad_risco=0;
-//	sysPar->del_ad_rmax=M_PI/2;
-
 	return sysPar;
 }
 
-
-void free_emisProfile(emisProfile* emis_profile) {
-  if (emis_profile != NULL) {
-    free(emis_profile->emis);
-    free(emis_profile->del_emit);
-    free(emis_profile->del_inc);
-    free(emis_profile);
-  }
-}
 
 void free_relSysPar(relSysPar* sysPar){
 	if (sysPar!=NULL){
