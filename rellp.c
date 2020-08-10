@@ -207,7 +207,7 @@ static void calc_emis_jet_point_source(emisProfile* emisProf, relParam* param, d
   }
 
   // del_emit for the largest radius of the table (need for refl_frac)
-  double del_emit_ad_max = jet_del[0];
+  double del_emit_ad_max = jet_del[tab->n_rad-1];
   emisProf->returnFracs = calc_refl_frac(emisProf, del_emit_ad_max, param, status);
 
   assert(emisProf->returnFracs!=NULL);
@@ -250,19 +250,23 @@ double jetSpeedConstantAccel(double beta100, double height, double hbase){
 }
 
 // get the extended source geometry in height and allocate necessary parameters
-static extPrimSource* getExtendedJetGeom(const relParam *param, int* status) {
+extPrimSource* getExtendedJetGeom(const relParam *param, int* status) {
 
   extPrimSource* source = new_extendedPrimarySource(NHBINS_VERTICALLY_EXTENDED_SOURCE, status);
   CHECK_MALLOC_RET_STATUS(source, status, source);
 
-  get_log_grid(source->heightArr, source->nh, param->height, param->htop);
+  get_log_grid(source->heightArr, source->nh+1, param->height, param->htop);
 
   // check and set the parameters as defined for the extended jet
   assert(param->height < param->htop);
   double beta100Rg = param->beta;
   for (int ii=0; ii<source->nh; ii++) {
     source->heightMean[ii] = 0.5 * (source->heightArr[ii] + source->heightArr[ii + 1]);
-    source->beta[ii] = jetSpeedConstantAccel(beta100Rg, source->heightMean[ii], param->height);;
+    if (beta100Rg>1e-6) {
+      source->beta[ii] = jetSpeedConstantAccel(beta100Rg, source->heightMean[ii], param->height);;
+    } else {
+      source->beta[ii] = 0.0;
+    }
   }
 
   return source;
@@ -307,7 +311,11 @@ void calc_emis_jet_extended(emisProfile* emisProf, relParam* param, lpTable* tab
     double heightIntegrationFactor = (source->heightArr[ii+1] - source->heightArr[ii]) / (param->htop - param->height);
 
     for (int jj=0; jj<emisProf->nr; jj++){
-      emisProf->emis[jj] = emisProfSingle->emis[jj]*heightIntegrationFactor;
+      emisProf->emis[jj] += emisProfSingle->emis[jj]*heightIntegrationFactor;
+
+      emisProf->del_inc[jj] += emisProfSingle->del_inc[jj]*heightIntegrationFactor;
+      emisProf->del_emit[jj] += emisProfSingle->del_emit[jj]*heightIntegrationFactor;
+
     }
 
     addSingleReturnFractions(emisProf->returnFracs, emisProfSingle->returnFracs, heightIntegrationFactor);
@@ -316,8 +324,6 @@ void calc_emis_jet_extended(emisProfile* emisProf, relParam* param, lpTable* tab
 
     free_lpReflFrac(&(emisProfSingle->returnFracs));
   }
-
-  // add the averaged/integrated refl frac and normalization to the emis profile structure
 
 
   if (is_debug_run() ){

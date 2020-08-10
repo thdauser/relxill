@@ -22,7 +22,7 @@
 #include "relutility.h"
 #include "common.h"
 
-#define NHBINS_VERTICALLY_EXTENDED_SOURCE 100
+#define NHBINS_VERTICALLY_EXTENDED_SOURCE 50
 
 
 
@@ -44,6 +44,8 @@ emisProfile* calc_emis_profile(double* r, int nr, relParam* param, int* status);
 void get_emis_jet(emisProfile*, relParam* param, int* status);
 
 int modelLampPostPointsource(relParam* param);
+
+extPrimSource* getExtendedJetGeom(const relParam *param, int* status);
 
 ////////////
 
