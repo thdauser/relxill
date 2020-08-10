@@ -17,8 +17,6 @@
 */
 
 #include "test_relxill.h"
-#include "relreturn.h"
-#include "test_relreturn.h"
 #include "test_std_functions.h"
 
 #include "relutility.h"
