@@ -642,7 +642,7 @@ static double cal_lxi(double dens, double emis){
 // determine the radius of maximal ionization
 static double cal_lxi_max_ss73(double* re, double* emis, int nr, double rin, int* status){
 
-    CHECK_STATUS_RET(*status, 0.0)
+    CHECK_STATUS_RET(*status, 0.0);
 
 	double rad_max_lxi  = pow((11./9.),2) * rin;  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
 
@@ -688,10 +688,10 @@ static void lxi_set_to_xillver_bounds(double* pt_lxi){
 
 ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, int type, double* rgrid, int n, int* status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
 	ion_grad* ion = new_ion_grad(rgrid, n, status);
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
 	double rmean[n];
 	double del_inc[n];

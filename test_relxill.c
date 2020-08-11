@@ -367,7 +367,7 @@ void std_eval_relline(int *status, int n) {
     int n_param = NUM_PARAM_RELLINE;
     double inp_par[NUM_PARAM_RELLINE];
     set_std_param_relline(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 300;
@@ -403,7 +403,7 @@ void std_eval_relconv(int *status, int n) {
     int n_param = NUM_PARAM_RELCONV;
     double inp_par[NUM_PARAM_RELCONV];
     set_std_param_relconv(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 2000;
@@ -437,7 +437,7 @@ void std_eval_relconvlp(int *status, int n) {
     int n_param = NUM_PARAM_RELCONVLP;
     double inp_par[NUM_PARAM_RELCONVLP];
     set_std_param_relconvlp(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 2000;
@@ -471,7 +471,7 @@ void std_eval_relxill(int *status, int n) {
     int n_param = NUM_PARAM_RELXILL;
     double inp_par[NUM_PARAM_RELXILL];
     set_std_param_relxill(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 3000;
@@ -510,7 +510,7 @@ void bugtest_eval_relxill(int *status) {
     int n_param = NUM_PARAM_RELXILL;
     double inp_par[NUM_PARAM_RELXILL];
     set_std_param_relxill(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     int n = 1;
 
@@ -547,7 +547,7 @@ void std_eval_relxill_nthcomp(int *status, int n) {
     int n_param = NUM_PARAM_RELXILL;
     double inp_par[NUM_PARAM_RELXILL];
     set_std_param_relxill_nthcomp(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 3000;
@@ -581,7 +581,7 @@ void std_eval_relxilldens(int *status, int n) {
     int n_param = NUM_PARAM_RELXILL;
     double inp_par[NUM_PARAM_RELXILL];
     set_std_param_relxilldens(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 4000;
@@ -610,7 +610,7 @@ void std_eval_relxilllp(int *status, int n) {
     int n_param = NUM_PARAM_RELXILLLP;
     double inp_par[NUM_PARAM_RELXILLLP];
     set_std_param_relxilllp(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 100;
@@ -668,7 +668,7 @@ void std_eval_relxilllpion(int *status, int n) {
     int n_param = NUM_PARAM_RELXILLLPION;
     double inp_par[NUM_PARAM_RELXILLLPION];
     set_std_param_relxilllpion(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 1000;
@@ -715,7 +715,7 @@ void std_eval_relxilllp_nthcomp(int *status, int n) {
     int n_param = NUM_PARAM_RELXILLLP;
     double inp_par[NUM_PARAM_RELXILLLP];
     set_std_param_relxilllp_nthcomp(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 100;
@@ -749,7 +749,7 @@ void std_eval_relxilllpion_nthcomp(int *status, int n) {
     int n_param = NUM_PARAM_RELXILLLPION;
     double inp_par[NUM_PARAM_RELXILLLPION];
     set_std_param_relxilllpion_nthcomp(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 100;
@@ -780,7 +780,7 @@ void std_eval_relxilllpdens(int *status, int n) {
     int n_param = NUM_PARAM_RELXILLLP;
     double inp_par[NUM_PARAM_RELXILLLP];
     set_std_param_relxilllpdens(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 100;
@@ -826,7 +826,7 @@ void std_eval_relline_lp(int *status, int n) {
     int n_param = NUM_PARAM_RELLINELP;
     double inp_par_lp[n_param];
     set_std_param_relline_lp(inp_par_lp);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 600;
@@ -845,7 +845,7 @@ void std_eval_relline_lp(int *status, int n) {
         tdrellinelp(ener, n_ener, photar, inp_par_lp, n_param, status);
         inp_par_lp[2] = 0.998;
         tdrellinelp(ener, n_ener, photar, inp_par_lp, n_param, status);
-        CHECK_STATUS_VOID(*status)
+        CHECK_STATUS_VOID(*status);
     }
 
 
@@ -858,7 +858,7 @@ void std_eval_xillver(int *status, int n) {
     int n_param = NUM_PARAM_XILLVER;
     double inp_par[n_param];
     set_std_param_xillver(inp_par);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     /* create an energy grid */
     int n_ener = 2000;
@@ -871,7 +871,7 @@ void std_eval_xillver(int *status, int n) {
     int ii;
     for (ii = 0; ii < n; ii++) {
         tdxillver(ener, n_ener, photar, inp_par, n_param, status);
-        CHECK_STATUS_VOID(*status)
+        CHECK_STATUS_VOID(*status);
     }
 
 }
@@ -883,7 +883,7 @@ void std_eval_xillver_nthcomp(int *status, int n) {
   int n_param = NUM_PARAM_XILLVER_NTHCOMP;
   double inp_par[n_param];
   set_std_param_xillver_nthcomp(inp_par);
-  CHECK_STATUS_VOID(*status)
+  CHECK_STATUS_VOID(*status);
 
   /* create an energy grid */
   int n_ener = 2000;
@@ -895,7 +895,7 @@ void std_eval_xillver_nthcomp(int *status, int n) {
   int ii;
   for (ii = 0; ii < n; ii++) {
     tdxillver_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
   }
 
 }
@@ -951,7 +951,7 @@ void std_eval_relxilldens_nthcomp(int *status, int n) {
   int n_param = NUM_PARAM_RELXILLDENS_NTHCOMP;
   double inp_par[n_param];
   set_std_param_relxilldens(inp_par);
-  CHECK_STATUS_VOID(*status)
+  CHECK_STATUS_VOID(*status);
 
   /* create an energy grid */
   int n_ener = 4000;
@@ -972,7 +972,7 @@ void std_eval_relxilllpdens_nthcomp(int *status, int n) {
   int n_param = NUM_PARAM_RELXILLLPDENS_NTHCOMP;
   double inp_par[n_param];
   set_std_param_relxilllpdens_nthcomp(inp_par);
-  CHECK_STATUS_VOID(*status)
+  CHECK_STATUS_VOID(*status);
 
   /* create an energy grid */
   int n_ener = 4000;
@@ -997,7 +997,7 @@ void std_eval_xillver_dens_nthcomp(int *status, int n) {
   int n_param = NUM_PARAM_XILLVERDENS_NTHCOMP;
   double inp_par[n_param];
   set_std_param_xillver_dens_nthcomp(inp_par);
-  CHECK_STATUS_VOID(*status)
+  CHECK_STATUS_VOID(*status);
 
   /* create an energy grid */
   int n_ener = 2000;
@@ -1010,7 +1010,7 @@ void std_eval_xillver_dens_nthcomp(int *status, int n) {
   int ii;
   for (ii = 0; ii < n; ii++) {
     tdxillverdens_nthcomp(ener, n_ener, photar, inp_par, n_param, status);
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
   }
 
 }

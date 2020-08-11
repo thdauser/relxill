@@ -193,7 +193,7 @@ cnode* cli_create(cdata* data,cnode* next, int* status) {
 
 
 cnode* cli_prepend(cnode* head,cdata* data, int* status){
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
     cnode* new_node = cli_create(data,head, status);
     head = new_node;
     return head;
@@ -293,7 +293,7 @@ cnode* check_cache_relpar(cache_info* ca_info, inpar* inp, cnode* node){
 
 cache_info* cli_check_cache(cnode* head, inpar* inp, cnode* (*check_cache) (cache_info*, inpar*, cnode*) , int* status){
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
 	cache_info* ca_info = init_cache_info(head, status);
     CHECK_MALLOC_RET_STATUS(ca_info, status, NULL)
@@ -332,7 +332,7 @@ cache_info* cli_check_cache(cnode* head, inpar* inp, cnode* (*check_cache) (cach
 // prepend new node and set parameters
 cnode* add_node_to_cache(cnode* head, relParam* relpar, xillParam* xillpar, int* status){
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
 	cdata* data = init_cdata(status);
 
@@ -358,7 +358,7 @@ cnode* add_node_to_cache(cnode* head, relParam* relpar, xillParam* xillpar, int*
 
 void set_cache_relbase(cnode** pt_head, relParam* param, rel_spec* spec, int* status){
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
 
 	cnode* old_head = *pt_head;
@@ -376,7 +376,7 @@ void set_cache_relbase(cnode** pt_head, relParam* param, rel_spec* spec, int* st
 
 void set_cache_syspar(cnode** pt_head, relParam* param, relSysPar* syspar, int* status){
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
 	// prepend new node and set parameters
 	cnode* new_head = add_node_to_cache(*pt_head,param,NULL,status);
@@ -396,7 +396,7 @@ void set_cache_syspar(cnode** pt_head, relParam* param, relSysPar* syspar, int* 
 
 cdata* init_cdata(int* status){
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
     cdata* data = (cdata*)malloc(sizeof(cdata));
     CHECK_MALLOC_RET_STATUS(data, status, NULL)

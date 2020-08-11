@@ -152,12 +152,12 @@ int main(int argc, char *argv[]){
         if (do_all || do_relxill){
             status=EXIT_SUCCESS;
             std_eval_relxill(&status,n);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
             if (status==EXIT_SUCCESS) {
                 printf("     ---> successful \n");
             }
             bugtest_eval_relxill(&status);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
             if (status==EXIT_SUCCESS) {
                 printf("     ---> successful \n");
             }
@@ -165,22 +165,22 @@ int main(int argc, char *argv[]){
 
         if (do_relconv){
 			std_eval_relconv(&status,1);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
 			std_eval_relconvlp(&status,1);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 
 		}
 
 		if (do_all | do_xillver ) {
           test_xilltables();
-          CHECK_STATUS_BREAK(status)
+          CHECK_STATUS_BREAK(status);
           std_eval_xillver(&status,1);
-          CHECK_STATUS_BREAK(status)
+          CHECK_STATUS_BREAK(status);
           std_eval_xillver_nthcomp(&status,1);
-          CHECK_STATUS_BREAK(status)
+          CHECK_STATUS_BREAK(status);
           std_eval_xillver_dens_nthcomp(&status,1);
-          CHECK_STATUS_BREAK(status)
+          CHECK_STATUS_BREAK(status);
           printf("     ---> successful \n");
 
 		}
@@ -200,48 +200,48 @@ int main(int argc, char *argv[]){
 
         if (do_all || do_relxilllp) {
 			std_eval_relxilllp(&status,n);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}
 
       if (do_all || do_relxillnthcomp){
           std_eval_relxill_nthcomp(&status,n);
-          CHECK_STATUS_BREAK(status)
+          CHECK_STATUS_BREAK(status);
           std_eval_relxilldens_nthcomp(&status,n);
-          CHECK_STATUS_BREAK(status)
+          CHECK_STATUS_BREAK(status);
           printf("     ---> successful \n");
 		}
 
 		if (do_all || do_relxilllpnthcomp){
 			std_eval_relxilllp_nthcomp(&status,n);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
           std_eval_relxilllpdens_nthcomp(&status,n);
-          CHECK_STATUS_BREAK(status)
+          CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}
 
 		if (do_all || do_relxilldens){
 			std_eval_relxilldens(&status,n);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
 			printf("     ---> successful \n");
 		}
 
 		if (do_all || do_relxilllpdens){
 			std_eval_relxilllpdens(&status,n);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
             printf("     ---> successful \n");
         }
 
         if (do_all || do_relxilllpion) {
             std_eval_relxilllpion(&status, n);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
             printf("     ---> successful \n");
 
         }
 
         if (do_all || do_relxilllpionnthcomp) {
             std_eval_relxilllpion_nthcomp(&status, n);
-            CHECK_STATUS_BREAK(status)
+            CHECK_STATUS_BREAK(status);
             printf("     ---> successful \n");
 
         }

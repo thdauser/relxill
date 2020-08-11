@@ -31,13 +31,13 @@
 #define CHECK_RELXILL_DEFAULT_ERROR(status) (check_relxill_error(__func__, "function evaluation failed",status))
 
 #define CHECK_STATUS_RET(status, retval) \
- if (EXIT_SUCCESS!=status) return(retval);
+ if (EXIT_SUCCESS!=status) return(retval)
 
 #define CHECK_STATUS_VOID(status)  \
- if (EXIT_SUCCESS!=status) return;
+ if (EXIT_SUCCESS!=status) return
 
 #define CHECK_STATUS_BREAK(status) \
- if (EXIT_SUCCESS!=status) break;
+ if (EXIT_SUCCESS!=status) break
 
 #define CHECK_MALLOC_VOID_STATUS(a,status) \
 	if (NULL==a) { \

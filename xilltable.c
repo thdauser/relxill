@@ -78,7 +78,7 @@ static int get_num_elem(const int *n_parvals, int npar) {
 
 static void init_xilltable_data_struct(xillTable *tab, int *status) {
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
 
     tab->num_elements = get_num_elem(tab->num_param_vals, tab->num_param);
@@ -208,7 +208,7 @@ void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parna
 /** read the parameters of the xillver FITS table   */
 static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *param, int *status) {
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     int extver = 0;
     fits_movnam_hdu(fptr, BINARY_TBL, "PARAMETERS", extver, status);
@@ -264,7 +264,7 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
                       status);
 
 
-        CHECK_STATUS_BREAK(*status)
+        CHECK_STATUS_BREAK(*status);
     }
 
     // set the index of each parameter according to the NAME column we found in the table
@@ -289,7 +289,7 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
 // static void get_reltable_axis(int nrows, float** val, char* extname, char* colname, fitsfile* fptr, int* status){
 static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *fptr, int *status) {
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     int extver = 0;
     fits_movnam_hdu(fptr, BINARY_TBL, "ENERGIES", extver, status);
@@ -329,7 +329,7 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
 
 static float *get_xill_param_vals_array(xillParam *param, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
     float *param_vals = (float *) malloc(N_PARAM_MAX * sizeof(float));
     CHECK_MALLOC_RET_STATUS(param_vals, status, NULL)
@@ -348,7 +348,7 @@ static float *get_xill_param_vals_array(xillParam *param, int *status) {
 
 static int *xillInd_from_parInput(xillParam *param, xillTable *tab, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
     // store the input in a variable
     float *inp_param_vals = get_xill_param_vals_array(param, status);
 
@@ -439,7 +439,7 @@ int checkIfTableExists(char* filename, int* status) {
 
 fitsfile *open_fits_table_stdpath(char *filename, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL)
+  CHECK_STATUS_RET(*status, NULL);
 
   char* fullfilename = getFullPathTableName(filename, status);
   CHECK_STATUS_RET(*status, NULL);
@@ -460,7 +460,7 @@ fitsfile *open_fits_table_stdpath(char *filename, int *status) {
 /** load the complete relline table */
 void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, int *status) {
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     xillTable *tab = (*inp_tab);
     fitsfile *fptr = NULL;
@@ -505,12 +505,12 @@ static void
 load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, int jj, int kk, int ll, int mm,
                  int *status) {
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     // open the fits file if not already open
     if (*fptr == NULL) {
         *fptr = open_fits_table_stdpath(fname, status);
-        CHECK_STATUS_VOID(*status)
+        CHECK_STATUS_VOID(*status);
     }
 
     int extver = 0;
@@ -546,7 +546,7 @@ load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, i
 
 static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, int *status) {
 
-    CHECK_STATUS_VOID(*status)
+    CHECK_STATUS_VOID(*status);
 
     // =2=  check if the necessary spectra are loaded (we only open the file once)
     fitsfile *fptr = NULL;
@@ -580,7 +580,7 @@ static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, i
 
                             if (get_dat(tab, nn, ii, jj, kk, ll, mm) == NULL) {
                                 load_single_spec(fname, &fptr, tab, nn, ii, jj, kk, ll, mm, status);
-                                CHECK_STATUS_VOID(*status)
+                                CHECK_STATUS_VOID(*status);
                             }
 
                         }
@@ -601,7 +601,7 @@ static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, i
 
 xill_spec *new_xill_spec(int n_incl, int n_ener, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
     xill_spec *spec = (xill_spec *) malloc(sizeof(xill_spec));
     CHECK_MALLOC_RET_STATUS(spec, status, NULL)
@@ -809,7 +809,7 @@ static void check_boundarys_ecut(xillTable *tab, const xillParam *param, double 
 
 static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
     xill_spec *spec = NULL;
     if (is_xill_model(param->model_type)) {
@@ -915,7 +915,7 @@ char *getXilltableNameUsingAlternativeIfNotExisting(char* stdname, char* altname
 /** load the xillver table and return its filename **/
 char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
     if (is_dens_model(param->model_type) && (param->prim_type == PRIM_SPEC_ECUT )) {
         if (cached_xill_tab_dens == NULL) {
@@ -927,7 +927,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
     } else if (is_ns_model(param->model_type)) {
         if (cached_xill_tab_ns == NULL) {
             init_xillver_table(XILLTABLE_NS_FILENAME, &cached_xill_tab_ns, param, status);
-            CHECK_STATUS_RET(*status, NULL)
+            CHECK_STATUS_RET(*status, NULL);
         }
         *tab = cached_xill_tab_ns;
         return XILLTABLE_NS_FILENAME;
@@ -935,7 +935,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
     } else if (is_co_model(param->model_type)) {
         if (cached_xill_tab_co == NULL) {
             init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, param, status);
-            CHECK_STATUS_RET(*status, NULL)
+            CHECK_STATUS_RET(*status, NULL);
         }
         *tab = cached_xill_tab_co;
         return XILLTABLE_CO_FILENAME;
@@ -944,7 +944,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
       if (cached_xill_tab_dens_nthcomp == NULL) {
         init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_dens_nthcomp, param, status);
-        CHECK_STATUS_RET(*status, NULL)
+        CHECK_STATUS_RET(*status, NULL);
       }
       *tab = cached_xill_tab_dens_nthcomp;
       return XILLTABLE_NTHCOMP_FILENAME;
@@ -978,12 +978,12 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
  *  (decides if the table needs to be initialized and/or more data loaded          */
 xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
 
     xillTable *tab = NULL;
     char *fname = get_init_xillver_table(&tab, param, status);
 
-    CHECK_STATUS_RET(*status, NULL)
+    CHECK_STATUS_RET(*status, NULL);
     assert(fname != NULL);
 
     // =1=  get the inidices
