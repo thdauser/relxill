@@ -19,8 +19,6 @@
 #ifndef RELXILL_TEST_STA_C_TEST_STD_FUNCTIONS_H_
 #define RELXILL_TEST_STA_C_TEST_STD_FUNCTIONS_H_
 
-void testStdFunctions(int* status);
-
-
+void testStdFunctions(int *status);
 
 #endif //RELXILL_TEST_STA_C_TEST_STD_FUNCTIONS_H_

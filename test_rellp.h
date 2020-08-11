@@ -21,6 +21,6 @@
 #include "rellp.h"
 #include "test_relxill.h"
 
-void test_rellp(int* status);
+void test_rellp(int *status);
 
 #endif //RELXILL_TEST_RELLP_H

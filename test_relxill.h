@@ -69,7 +69,7 @@ xillParam *get_std_param_xillver_nthcomp(int *status);
 
 xillParam *get_std_param_xillver_dens_nthcomp(int *status);
 
-void get_std_param_relxilllpDCp(relParam** rel_param, xillParam** xill_param, int *status);
+void get_std_param_relxilllpDCp(relParam **rel_param, xillParam **xill_param, int *status);
 
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n);
@@ -121,13 +121,12 @@ void std_eval_xillver_dens_nthcomp(int *status, int n);
 void std_eval_relxilllpdens_nthcomp(int *status, int n);
 void std_eval_relxilldens_nthcomp(int *status, int n);
 
-xill_spec* get_std_xill_spec(int* status);
+xill_spec *get_std_xill_spec(int *status);
 rel_spec *get_stdRelProfile(int *status);
-void get_RelProfileConstEmisZones(rel_spec** p_rel_profile, relParam** p_rel_param, int nzones, int *status);
+void get_RelProfileConstEmisZones(rel_spec **p_rel_profile, relParam **p_rel_param, int nzones, int *status);
 
-void init_std_relXill_spec(rel_spec** rel_profile, double** xill_spec_output, int* status);
+void init_std_relXill_spec(rel_spec **rel_profile, double **xill_spec_output, int *status);
 
-void test_stdEvaluationFluxes(int* status);
-
+void test_stdEvaluationFluxes(int *status);
 
 #endif //RELXILL_TEST_RELXILL_H

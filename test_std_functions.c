@@ -23,58 +23,56 @@
 #include "relbase.h"
 #define LIMIT_PREC 1e-6
 
-specCache* dummy_spec_cache = NULL;
+specCache *dummy_spec_cache = NULL;
 
-
-
-void testRellineTableValues(int* status){
+void testRellineTableValues(int *status) {
 /** test the currently implemented relline table
  ** [current version used: rel_table_v0.4e]   */
 
   PRINT_RELXILL_TEST_MSG(RELTABLE_FILENAME);
 
-  relTable* tab=NULL;
+  relTable *tab = NULL;
 
-    // load the table
-    read_relline_table(RELTABLE_FILENAME, &tab, status);
-    CHECK_RELXILL_ERROR("loading the rel table failed", status);
-    CHECK_STATUS_VOID(*status);
+  // load the table
+  read_relline_table(RELTABLE_FILENAME, &tab, status);
+  CHECK_RELXILL_ERROR("loading the rel table failed", status);
+  CHECK_STATUS_VOID(*status);
 
-    // test certain values
-    assert(tab != NULL);
-    assert(tab->arr != NULL);
+  // test certain values
+  assert(tab != NULL);
+  assert(tab->arr != NULL);
 
-    double aref_val = 0.9829549;
-    if (fabs(tab->a[RELTABLE_NA - 2] - aref_val) > LIMIT_PREC) {
-        printf(" testing spin: expecting value of %f, but found %f\n",
-               aref_val, tab->a[RELTABLE_NA - 2]);
-        RELXILL_ERROR("values in rel table not correct", status);
+  double aref_val = 0.9829549;
+  if (fabs(tab->a[RELTABLE_NA - 2] - aref_val) > LIMIT_PREC) {
+    printf(" testing spin: expecting value of %f, but found %f\n",
+           aref_val, tab->a[RELTABLE_NA - 2]);
+    RELXILL_ERROR("values in rel table not correct", status);
+  }
+
+  double mu0ref_val = 0.09476821;
+  if (fabs(tab->mu0[1] - mu0ref_val) > LIMIT_PREC) {
+    printf(" testing mu0: expecting value of %f, but found %f\n", mu0ref_val, tab->mu0[1]);
+    RELXILL_ERROR("values in rel table not correct", status);
+  }
+
+  const int n = 5;
+  const float ref_val[5] = {(float) 985.76074, (float) 0.01127052,
+                            (float) 0.01120779, (float) 0.01121218, (float) 0.03022655};
+  const float val[5] = {
+      tab->arr[0][0]->r[1],
+      tab->arr[0][0]->trff1[0][0],
+      tab->arr[0][0]->trff1[0][1],
+      tab->arr[0][0]->trff1[1][0],
+      tab->arr[0][1]->trff1[1][0]
+  };
+  int ii;
+  for (ii = 0; ii < n; ii++) {
+    if (fabsf(ref_val[ii] - val[ii]) > LIMIT_PREC) {
+      printf(" testing rel table: expecting value of %f, but found %f\n", ref_val[ii], val[ii]);
+      RELXILL_ERROR("values in rel table not correct", status);
+      continue;
     }
-
-    double mu0ref_val = 0.09476821;
-    if (fabs(tab->mu0[1] - mu0ref_val) > LIMIT_PREC) {
-        printf(" testing mu0: expecting value of %f, but found %f\n", mu0ref_val, tab->mu0[1]);
-        RELXILL_ERROR("values in rel table not correct", status);
-    }
-
-    const int n = 5;
-    const float ref_val[5] = {(float) 985.76074, (float) 0.01127052,
-                              (float) 0.01120779, (float) 0.01121218, (float) 0.03022655};
-    const float val[5] = {
-            tab->arr[0][0]->r[1],
-            tab->arr[0][0]->trff1[0][0],
-            tab->arr[0][0]->trff1[0][1],
-            tab->arr[0][0]->trff1[1][0],
-            tab->arr[0][1]->trff1[1][0]
-    };
-    int ii;
-    for (ii = 0; ii < n; ii++) {
-        if (fabsf(ref_val[ii] - val[ii]) > LIMIT_PREC) {
-            printf(" testing rel table: expecting value of %f, but found %f\n", ref_val[ii], val[ii]);
-            RELXILL_ERROR("values in rel table not correct", status);
-            continue;
-        }
-    }
+  }
 
 
   // free memory
@@ -82,14 +80,13 @@ void testRellineTableValues(int* status){
 
   print_relxill_test_result(*status);
 
-
 }
 /** test the currently implemented relline table
  ** [current version used: rel_table_v0.4e]   */
-void testLPTableValues(int* status){
+void testLPTableValues(int *status) {
 
   PRINT_RELXILL_TEST_MSG(LPTABLE_FILENAME);
-  lpTable* tab=NULL;
+  lpTable *tab = NULL;
 
   // load the table
   read_lp_table(LPTABLE_FILENAME, &tab, status);
@@ -134,26 +131,26 @@ void testLPTableValues(int* status){
 
   print_relxill_test_result(*status);
 }
-static void testRebinSpectrum(int* status){
+static void testRebinSpectrum(int *status) {
 
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   int n0 = 6;
   int n = 5;
   double ener0[] = {1, 3, 4, 5, 6, 7, 9};
-	double val0[] =  {1,1,1,2,1,1};
+  double val0[] = {1, 1, 1, 2, 1, 1};
 
-	double ener[] =  {0.5,2,4,5.5,7.5,8};
-	double val[n];
+  double ener[] = {0.5, 2, 4, 5.5, 7.5, 8};
+  double val[n];
 
-	rebin_spectrum(ener,val,n,ener0,val0,n0);
+  rebin_spectrum(ener, val, n, ener0, val0, n0);
 
-	double val_ref[5];
-	val_ref[0] = 0.5;
-	val_ref[1] = 0.5+1;
-	val_ref[2] = 1.0+1.0;
-	val_ref[3] = 1.0+1.0+0.25;
-	val_ref[4] = 0.25;
+  double val_ref[5];
+  val_ref[0] = 0.5;
+  val_ref[1] = 0.5 + 1;
+  val_ref[2] = 1.0 + 1.0;
+  val_ref[3] = 1.0 + 1.0 + 0.25;
+  val_ref[4] = 0.25;
 
   for (int ii = 0; ii < n; ii++) {
     if (fabs(val[ii] - val_ref[ii]) > LIMIT_PREC) {
@@ -199,74 +196,73 @@ static void testInterpolationRoutines(int *status) {
 
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
-
   double ifac = 0.2;
   double rlo = 1.0;
   double rhi = 2.0;
   double val_1d = 1.2;
   if (fabs(interp_lin_1d(ifac, rlo, rhi) - val_1d) > LIMIT_PREC) {
-		RELXILL_ERROR(" TEST-ERROR: 1d interpolation does not produce the expected result",status);
-	}
+    RELXILL_ERROR(" TEST-ERROR: 1d interpolation does not produce the expected result", status);
+  }
 
+  double ifac1 = 0.4;
+  double ifac2 = 0.8;
+  double r11 = 1.0;
+  double r12 = 2.0;
+  double r21 = 2.0;
+  double r22 = 4.0;
+  double val_2d = 2.52;
+  if (fabs(interp_lin_2d(ifac1, ifac2, r11, r12, r21, r22) - val_2d) > LIMIT_PREC) {
+    RELXILL_ERROR(" TEST-ERROR: 2d interpolation does not produce the expected result", status);
+    printf(" VALUE=%e instead of %e \n", interp_lin_2d(ifac1, ifac2, r11, r12, r21, r22), val_2d);
+  }
 
-	double ifac1 = 0.4;
-	double ifac2 = 0.8;
-	double r11 = 1.0;
-	double r12 = 2.0;
-	double r21 = 2.0;
-	double r22 = 4.0;
-	double val_2d = 2.52;
-	if (fabs(interp_lin_2d(ifac1,ifac2,r11,r12,r21,r22)-val_2d) > LIMIT_PREC){
-		RELXILL_ERROR(" TEST-ERROR: 2d interpolation does not produce the expected result",status);
-		printf(" VALUE=%e instead of %e \n",interp_lin_2d(ifac1,ifac2,r11,r12,r21,r22),val_2d);
-	}
-
-    float rf11 = (float) 1.0;
-    float rf12 = (float) 2.0;
-    float rf21 = (float) 2.0;
-    float rf22 = (float) 4.0;
-	if (fabs(interp_lin_2d_float(ifac1,ifac2,rf11,rf12,rf21,rf22)-val_2d) > LIMIT_PREC){
-		RELXILL_ERROR(" TEST-ERROR: 2d interpolation (float) does not produce the expected result",status);
-	}
+  float rf11 = (float) 1.0;
+  float rf12 = (float) 2.0;
+  float rf21 = (float) 2.0;
+  float rf22 = (float) 4.0;
+  if (fabs(interp_lin_2d_float(ifac1, ifac2, rf11, rf12, rf21, rf22) - val_2d) > LIMIT_PREC) {
+    RELXILL_ERROR(" TEST-ERROR: 2d interpolation (float) does not produce the expected result", status);
+  }
 
   print_relxill_test_result(*status);
 
 }
 
-
-void testNormalizationFFTConvolution(int* status){
+void testNormalizationFFTConvolution(int *status) {
 
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
-  rel_spec* rel_profile = NULL;
-  double* xill_spec = NULL;
+  rel_spec *rel_profile = NULL;
+  double *xill_spec = NULL;
   init_std_relXill_spec(&rel_profile, &xill_spec, status);
 
-  assert(rel_profile!=NULL);
-  assert(xill_spec!=NULL);
+  assert(rel_profile != NULL);
+  assert(xill_spec != NULL);
 
-  double sumProfile     = calcSum(rel_profile->flux[0], rel_profile->n_ener);
-  double sumProfileXill = calcSumInEnergyBand(xill_spec, rel_profile->n_ener,rel_profile->ener, EMIN_XILLVER,EMAX_XILLVER);
+  double sumProfile = calcSum(rel_profile->flux[0], rel_profile->n_ener);
+  double sumProfileXill =
+      calcSumInEnergyBand(xill_spec, rel_profile->n_ener, rel_profile->ener, EMIN_XILLVER, EMAX_XILLVER);
 
-  if ( fabs(sumProfile-1) > 1e-8){
+  if (fabs(sumProfile - 1) > 1e-8) {
     RELXILL_ERROR("relativistc relline convolution not normalized to 1", status);
   }
 
   // requirements; spec_cache needs to be allocated for the FFT to work
-  specCache* dummy_spec_cache = init_globalSpecCache(status);
+  specCache *dummy_spec_cache = init_globalSpecCache(status);
   CHECK_STATUS_VOID(*status);
 
-  assert(rel_profile->n_zones==1);
+  assert(rel_profile->n_zones == 1);
   int izone = 0;
 
   double spec_conv_out[rel_profile->n_ener];
   convolveSpectrumFFTNormalized(rel_profile->ener, xill_spec, rel_profile->flux[izone], spec_conv_out,
                                 rel_profile->n_ener, 1, 1, izone, dummy_spec_cache, status);
 
-  double sumProfileAfter = calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener,rel_profile->ener, EMIN_XILLVER,EMAX_XILLVER);
+  double sumProfileAfter =
+      calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener, rel_profile->ener, EMIN_XILLVER, EMAX_XILLVER);
 
   // now do the test (standard relline HAS to be normalized to 1)
-  if ( fabs(sumProfileXill-sumProfileAfter)>1e-8 ){
+  if (fabs(sumProfileXill - sumProfileAfter) > 1e-8) {
     RELXILL_ERROR("convolution not normalized ", status);
   }
 
@@ -274,22 +270,21 @@ void testNormalizationFFTConvolution(int* status){
   convolveSpectrumFFTNormalized(rel_profile->ener, xill_spec, rel_profile->flux[izone], spec_conv_out,
                                 rel_profile->n_ener, 1, 1, izone, dummy_spec_cache, status);
 
-  double sumProfileAfterWrong = calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener,rel_profile->ener, EMIN_XILLVER,EMAX_XILLVER);
+  double sumProfileAfterWrong =
+      calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener, rel_profile->ener, EMIN_XILLVER, EMAX_XILLVER);
   // now do the test (standard relline HAS to be normalized to 1)
-  if ( fabs(sumProfileXill-sumProfileAfterWrong)<1e-8 ){
+  if (fabs(sumProfileXill - sumProfileAfterWrong) < 1e-8) {
     RELXILL_ERROR("convolution wrongly normalized ", status);
     printf(" the relativistic convolution is not normalized to 1 \n ");
     printf(" but still the convoluation is normalized, which should not be the case\n ");
   }
-
 
   free(xill_spec);
   print_relxill_test_result(*status);
 
 }
 
-
-void testStdFunctions(int* status) {
+void testStdFunctions(int *status) {
 
   printf("\n### TESTING Standard Functions ###\n");
 

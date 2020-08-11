@@ -21,79 +21,73 @@
 #include "relbase.h"
 #include "relutility.h"
 
-
-
 /** a single element in the RELLINE table array */
-typedef struct{
-	float* r;
-	float* gmin;
-	float* gmax;
-	float** trff1;
-	float** trff2;
-	float** cosne1;
-	float** cosne2;
-}relDat;
+typedef struct {
+  float *r;
+  float *gmin;
+  float *gmax;
+  float **trff1;
+  float **trff2;
+  float **cosne1;
+  float **cosne2;
+} relDat;
 
 /** the RELLINE table structure */
-typedef struct{
-	float* a; // spin
-	int n_a;
+typedef struct {
+  float *a; // spin
+  int n_a;
 
-	float* mu0; // inclination
-	int n_mu0;
+  float *mu0; // inclination
+  int n_mu0;
 
-	relDat*** arr; // relline data array
+  relDat ***arr; // relline data array
 
-	// dimensions of relline array
-	int n_r;
-	int n_g;
+  // dimensions of relline array
+  int n_r;
+  int n_g;
 
-}relTable;
-
-
+} relTable;
 
 /** the LAMP POST single data structure */
-typedef struct{
-	float* h; // height
+typedef struct {
+  float *h; // height
 
-	float* rad; // radius
+  float *rad; // radius
 
-	float** intens;
-	float** del;
-	float** del_inc;
+  float **intens;
+  float **del;
+  float **del_inc;
 
-}lpDat;
+} lpDat;
 
 /** the LAMP POST table structure */
-typedef struct{
-	float* a; // spin
-	int n_a;
-	int n_h;
-	int n_rad;
-	lpDat** dat;
-}lpTable;
-
+typedef struct {
+  float *a; // spin
+  int n_a;
+  int n_h;
+  int n_rad;
+  lpDat **dat;
+} lpTable;
 
 /* create a new LP table */
-lpTable* new_lpTable(int n_a, int n_h, int n_intens, int* status);
+lpTable *new_lpTable(int n_a, int n_h, int n_intens, int *status);
 
 /* destroy the LP table structure */
-void free_lpTable(lpTable* tab);
+void free_lpTable(lpTable *tab);
 
 /* destroy the LP dat structure */
-void free_lpDat(lpDat* dat, int nh);
+void free_lpDat(lpDat *dat, int nh);
 
 /* create a new relline table structure */
-relTable* new_relTable(int n_a, int n_mu0, int n_r, int n_g, int* status);
+relTable *new_relTable(int n_a, int n_mu0, int n_r, int n_g, int *status);
 
 /* destroy the relline table structure */
-void free_relTable(relTable* tab);
+void free_relTable(relTable *tab);
 
 /* routine to read the RELLINE table */
-void read_relline_table(char* filename, relTable** tab, int* status);
+void read_relline_table(char *filename, relTable **tab, int *status);
 
 /* routine to read the LP table */
-void read_lp_table(char* filename, lpTable** inp_tab, int* status);
-
+void read_lp_table(char *filename, lpTable **inp_tab, int *status);
 
 #endif /* RELTABLE_H_ */

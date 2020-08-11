@@ -52,7 +52,7 @@
 
 /****** TYPE DEFINITIONS ******/
 
-typedef struct{
+typedef struct {
   int model_type;
   int emis_type;
   double a;
@@ -73,84 +73,81 @@ typedef struct{
   int num_zones;
 } relParam;
 
-typedef struct{
-	double gam;
-	double afe;
-	double lxi;
-	double ect;
-	double incl;
-	double z;
-	double refl_frac;
-	double dens;
-	double ion_grad_index;
-	double kTbb;
-	double frac_pl_bb;
-	int ion_grad_type;
-	int fixReflFrac;
-	int model_type;
-	int prim_type;
+typedef struct {
+  double gam;
+  double afe;
+  double lxi;
+  double ect;
+  double incl;
+  double z;
+  double refl_frac;
+  double dens;
+  double ion_grad_index;
+  double kTbb;
+  double frac_pl_bb;
+  int ion_grad_type;
+  int fixReflFrac;
+  int model_type;
+  int prim_type;
 } xillParam;
 
-
-typedef struct{
-	double* lxi;
-	double* fx;
-	double* r;
-	double* del_emit;
-	int nbins;
+typedef struct {
+  double *lxi;
+  double *fx;
+  double *r;
+  double *del_emit;
+  int nbins;
 } ion_grad;
 
 /** the XILLVER table structure */
-typedef struct{
+typedef struct {
 
-	float* elo;
-	float* ehi;
-	int n_ener;
+  float *elo;
+  float *ehi;
+  int n_ener;
 
-    int num_param;        // number of parameters (basically the dimension of the table)
-    int *num_param_vals;   // number of values given for each parameter
+  int num_param;        // number of parameters (basically the dimension of the table)
+  int *num_param_vals;   // number of values given for each parameter
 
-    // information on the inclination is stored separately (the last parameter in the table)
-	int n_incl;
-    float *incl;
+  // information on the inclination is stored separately (the last parameter in the table)
+  int n_incl;
+  float *incl;
 
-    /* need to identify the meaning of each parameter here [index in the array]
-     * (see routine "get_xill_param_vals_array" */
-    int *param_index;  // lenth is N_PARAM_MAX
+  /* need to identify the meaning of each parameter here [index in the array]
+   * (see routine "get_xill_param_vals_array" */
+  int *param_index;  // lenth is N_PARAM_MAX
 
-    float **param_vals;    // array to store the parameter values (as given in the table)
+  float **param_vals;    // array to store the parameter values (as given in the table)
 
-    float **data_storage;   // storage of a n-dim table (n_elements spectra with n_ener bins each)
-    int num_elements;
+  float **data_storage;   // storage of a n-dim table (n_elements spectra with n_ener bins each)
+  int num_elements;
 
-}xillTable;
+} xillTable;
 
-
-typedef struct{
+typedef struct {
   double refl_frac;
   double f_bh;
   double f_ad;
   double f_inf;
 } lpReflFrac;
 
-
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
-typedef struct{
+typedef struct {
 
-  double* re;
+  double *re;
   int nr;
-  double* emis;       // intensity on the surface of the accretion disc
-  double* del_emit;   // angle under which the photon is emitted from the primary source
-  double* del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
+  double *emis;       // intensity on the surface of the accretion disc
+  double *del_emit;   // angle under which the photon is emitted from the primary source
+  double *del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
 
-  lpReflFrac* returnFracs;
+  lpReflFrac *returnFracs;
   double normFactorPrimSpec;  // determined from the f_inf and g_inf, the factor to multiply the direct radiation with
 
 } emisProfile;
 
-typedef struct{
+typedef struct {
   int nr;
-    int ng;
+  int ng;
 
   double *re;
   double *gmin;
@@ -161,7 +158,7 @@ typedef struct{
   double ***trff;
   double ***cosne;
 
-  emisProfile* emis;
+  emisProfile *emis;
 
   double del_ad_max;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
 
@@ -169,53 +166,50 @@ typedef struct{
 
 } relSysPar;
 
-
 /** angles (cosne) and their distribution over the radial zones **/
-typedef struct{
-	int n_cosne;
-	int n_zones;
-	double* cosne;
-	double** dist;      // [n_zones][n_cosne]
+typedef struct {
+  int n_cosne;
+  int n_zones;
+  double *cosne;
+  double **dist;      // [n_zones][n_cosne]
 } rel_cosne;
 
-typedef struct{
-	int n_ener;
-	int n_zones;
-	double* rgrid;      // length=n_zones + 1
-	double* ener;       // length=n_ener +1
-	double** flux;      // [n_zones][n_ener]
-	rel_cosne* rel_cosne;
+typedef struct {
+  int n_ener;
+  int n_zones;
+  double *rgrid;      // length=n_zones + 1
+  double *ener;       // length=n_ener +1
+  double **flux;      // [n_zones][n_ener]
+  rel_cosne *rel_cosne;
 } rel_spec;
 
+typedef struct {
+  double *ener;  // has n_ener+1 elements
+  double *incl;  // has n_incl elements
+  double **flu;  // [n_incl,n_ener+1]
+  int n_ener;
+  int n_incl;
+} xill_spec;
 
-typedef struct{
-	double* ener;  // has n_ener+1 elements
-	double* incl;  // has n_incl elements
-	double** flu;  // [n_incl,n_ener+1]
-	int n_ener;
-	int n_incl;
-}xill_spec;
-
-
-typedef struct{
-	int n_ener;
-	double* ener;
-	double* flux;
+typedef struct {
+  int n_ener;
+  double *ener;
+  double *flux;
 } out_spec;
 
-typedef struct{
-	int nzones;   // number of zones actually stored there
-	int n_cache;  // number of array (nzones <= n_cache !!)
-	int n_ener;
-	double*** fft_xill;  // dimensions [n_cache,2,n_ener]
-	double*** fft_rel;   // dimensions [n_cache,2,n_ener]
-	xill_spec** xill_spec;
-	out_spec* out_spec;
+typedef struct {
+  int nzones;   // number of zones actually stored there
+  int n_cache;  // number of array (nzones <= n_cache !!)
+  int n_ener;
+  double ***fft_xill;  // dimensions [n_cache,2,n_ener]
+  double ***fft_rel;   // dimensions [n_cache,2,n_ener]
+  xill_spec **xill_spec;
+  out_spec *out_spec;
 } specCache;
 
 
 /******************************/
 /* define the c_donthcomp function here */
-void c_donthcomp(double *ear, int ne, double* param, double *photar);
+void c_donthcomp(double *ear, int ne, double *param, double *photar);
 
 #endif /* COMMON_H_ */
