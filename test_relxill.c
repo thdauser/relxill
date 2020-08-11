@@ -335,6 +335,29 @@ void get_std_param_relxilllpDCp(relParam** rel_param, xillParam** xill_param, in
 
 }
 
+relParam* get_std_param_relline(int* status){
+  int n_param = NUM_PARAM_RELLINE;
+  double inp_par[NUM_PARAM_RELLINE];
+  set_std_param_relline(inp_par);
+  return init_par_relline(inp_par, n_param, status);
+}
+
+relParam* get_std_param_relxill(int* status){
+  int n_param = NUM_PARAM_RELXILL;
+  double inp_par[NUM_PARAM_RELXILL];
+  set_std_param_relxill(inp_par);
+
+  xillParam *xill_param = NULL;
+  relParam* rel_param = NULL;
+
+  init_par_relxill(&rel_param,&xill_param,inp_par,n_param,status);
+  CHECK_STATUS_RET(*status,NULL);
+
+  assert(is_relxill_model(rel_param->model_type));
+
+  return rel_param;
+}
+
 
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n) {
@@ -992,4 +1015,142 @@ void std_eval_xillver_dens_nthcomp(int *status, int n) {
 
 }
 
+
+xill_spec* get_std_xill_spec(int* status){
+  xillParam* xill_param = get_std_param_xillver(status);
+  xill_spec* xill_spec = get_xillver_spectra(xill_param, status);
+  return xill_spec;
+}
+
+void get_RelProfileConstEmisZones(rel_spec** p_rel_profile, relParam** p_rel_param, int nzones, int *status) {
+
+  // relline is per default re-normalized, but we need to test the physical normalization here
+  putenv("RELLINE_PHYSICAL_NORM=1");
+
+  *p_rel_param  = get_std_param_relline(status);
+  (*p_rel_param)->num_zones = nzones;
+  // set emissivity to constant
+  (*p_rel_param)->emis1=0.0;
+  (*p_rel_param)->emis2=0.0;
+
+  int n_ener;
+  double* ener;
+  get_std_relxill_energy_grid(&n_ener, &ener, status);
+
+  *p_rel_profile = relbase(ener, n_ener, *p_rel_param, NULL, status);
+  putenv("RELLINE_PHYSICAL_NORM=0");
+
+}
+
+
+rel_spec *get_stdRelProfile(int *status) {
+
+  relParam*  rel_param  = get_std_param_relline(status);
+
+  int n_ener;
+  double* ener;
+  get_std_relxill_energy_grid(&n_ener, &ener, status);
+
+  return relbase(ener, n_ener, rel_param, NULL, status);
+}
+
+
+void init_std_relXill_spec(rel_spec** rel_profile, double** xill_spec_output, int* status){
+
+  CHECK_STATUS_VOID(*status);
+
+  *rel_profile = get_stdRelProfile(status);
+
+  double* xill_flux = malloc(sizeof(double)* (*rel_profile)->n_ener);
+  CHECK_MALLOC_VOID_STATUS(xill_flux,status);
+
+  xill_spec* xill_spec_table = get_std_xill_spec(status);
+  rebin_spectrum((*rel_profile)->ener, xill_flux, (*rel_profile)->n_ener, xill_spec_table->ener, xill_spec_table->flu[0], xill_spec_table->n_ener );
+  *xill_spec_output = xill_flux;
+
+}
+
+
+
+double calc_FluxInStdBand(const double* flux, double* ener, const int n){
+
+  const double ELO_REF_RELPROFILE = 0.1;
+  const double EHI_REF_RELPROFILE = 1.0;
+
+  return calcSumInEnergyBand(flux, n, ener, ELO_REF_RELPROFILE, EHI_REF_RELPROFILE);
+}
+
+
+double calc_RelatFluxInStdBand(const rel_spec* spec){
+
+  assert(spec->n_zones==1);
+  return calc_FluxInStdBand(spec->flux[0], spec->ener, spec->n_ener);
+}
+
+double calc_XillverFluxInStdBand(const double* xillverSpec, double* ener, int n){
+
+  return calc_FluxInStdBand(xillverSpec, ener, n);
+}
+
+void compareReferenceFlux(double flux, double refFlux, int* status){
+
+  const double PREC = 1e-6;
+
+  CHECK_STATUS_VOID(*status);
+
+  if (fabs(flux-refFlux)>PREC){
+    RELXILL_ERROR("failed comparing the calculated flux to the reference flux",status);
+    printf("  expecting a flux of %e, but calculated %e \n",refFlux, flux);
+  }
+
+}
+
+int test_stdEvaluationRelatFlux(const rel_spec *rel_profile) {
+
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  int status = EXIT_SUCCESS;
+
+  const double ReferenceRelatStdFlux = 8.371512e-01;
+  double relatFlux = calc_RelatFluxInStdBand(rel_profile);
+  compareReferenceFlux(relatFlux, ReferenceRelatStdFlux, &status);
+
+  print_relxill_test_result(status);
+  return status;
+}
+
+int test_stdEvaluationXillverFlux(const double *xill_spec, const rel_spec *rel_profile) {
+
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  int status = EXIT_SUCCESS;
+
+  const double ReferenceXillverStdFlux = 1.802954e+01;
+  double xillFlux = calc_XillverFluxInStdBand(xill_spec, rel_profile->ener, rel_profile->n_ener);
+  compareReferenceFlux(xillFlux, ReferenceXillverStdFlux, &status);
+
+  print_relxill_test_result(status);
+  return status;
+}
+
+
+void test_stdEvaluationFluxes(int* status){
+
+  CHECK_STATUS_VOID(*status);
+
+  PRINT_RELXILL_TEST_MSG("  : \n");
+
+  rel_spec* rel_profile = NULL;
+  double* xill_spec = NULL;
+  init_std_relXill_spec(&rel_profile, &xill_spec, status);
+
+  int relStatus =  test_stdEvaluationRelatFlux(rel_profile);
+
+  int xillStatus = test_stdEvaluationXillverFlux(xill_spec, rel_profile);
+
+
+  if ((relStatus != EXIT_SUCCESS) || (xillStatus != EXIT_SUCCESS)){
+    *status=EXIT_FAILURE;
+  }
+}
 
