@@ -253,7 +253,7 @@ void testNormalizationFFTConvolution(int* status){
   }
 
   // requirements; spec_cache needs to be allocated for the FFT to work
-  init_specCache(&dummy_spec_cache, status);
+  specCache* dummy_spec_cache = init_globalSpecCache(status);
   CHECK_STATUS_VOID(*status);
 
   assert(rel_profile->n_zones==1);

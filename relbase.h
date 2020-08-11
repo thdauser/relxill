@@ -137,7 +137,7 @@ void free_rel_spec(rel_spec* spec);
 rel_spec* new_rel_spec(int nzones, const int n_ener, int*status);
 
 /** caching routines **/
-void init_specCache(specCache** spec, int* status);
+specCache* init_globalSpecCache(int* status);
 void free_specCache(void);
 void free_fft_cache(double*** sp,int n1, int n2);
 void free_out_spec(out_spec* spec);
@@ -153,5 +153,16 @@ int comp_xill_param(xillParam* cpar, xillParam* par);
 
 /** free the CLI cache **/
 void free_cache( void );
+
+void get_xillver_angdep_spec(double *o_xill_flux, int n_ener, double *ener, double *rel_dist, xill_spec *xill_spec, int *status);
+
+void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
+                                   int re_rel, int re_xill, int izone, specCache* local_spec_cache, int *status);
+
+void get_std_relxill_energy_grid(int *n_ener, double **ener, int *status);
+
+void renorm_xill_spec(double *spec, int n, double lxi, double dens);
+
+void set_stdNormXillverEnerygrid(int* status);
 
 #endif /* RELBASE_H_ */

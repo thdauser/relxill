@@ -889,6 +889,66 @@ void relline_profile(rel_spec* spec, relSysPar* sysPar, int* status){
 
 }
 
+static specCache* new_specCache(int n_cache, int n_ener, int* status){
+
+
+
+  specCache* spec = (specCache*) malloc(sizeof(specCache));
+  CHECK_MALLOC_RET_STATUS(spec, status, NULL)
+
+  spec->n_cache = n_cache;
+  spec->nzones = 0;
+  spec->n_ener = n_ener;
+
+  spec->fft_xill = (double***) malloc (sizeof(double**)*n_cache);
+  CHECK_MALLOC_RET_STATUS(spec->fft_xill, status, NULL)
+
+  spec->fft_rel = (double***) malloc (sizeof(double**)*n_cache);
+  CHECK_MALLOC_RET_STATUS(spec->fft_rel, status, NULL)
+
+  spec->xill_spec = (xill_spec**) malloc(sizeof(xill_spec*)*n_cache);
+  CHECK_MALLOC_RET_STATUS(spec->xill_spec, status, NULL)
+
+
+  int ii; int jj;
+  int m = 2;
+  for (ii=0; ii<n_cache; ii++){
+    spec->fft_xill[ii] = (double**) malloc (sizeof(double*)*m);
+    CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii], status, NULL)
+    spec->fft_rel[ii] = (double**) malloc (sizeof(double*)*m);
+    CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii], status, NULL)
+
+    for (jj=0; jj<m; jj++){
+      spec->fft_xill[ii][jj] = (double*) malloc (sizeof(double)*n_ener);
+      CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii][jj], status, NULL)
+      spec->fft_rel[ii][jj] = (double*) malloc (sizeof(double)*n_ener);
+      CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii][jj], status, NULL)
+    }
+
+    spec->xill_spec[ii] = NULL;
+
+  }
+
+  spec->out_spec = NULL;
+
+  return spec;
+}
+
+
+static void init_specCache(specCache** spec, int* status){
+
+  if ((*spec)==NULL){
+    (*spec) = new_specCache(N_ZONES_MAX,N_ENER_CONV,status);
+  }
+}
+
+specCache* init_globalSpecCache(int* status){
+  init_specCache(&spec_cache, status);
+  CHECK_RELXILL_ERROR("failed initializing glocal Spec Cache", status);
+  return spec_cache;
+}
+
+
 /** convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
  *  fout: gives the output
  *  f1 input (reflection) specrum
@@ -1124,7 +1184,7 @@ static void renorm_model(const double *flu0, double *flu, int nbins) {
 }
 
 
-static void renorm_xill_spec(double* spec , int n, double lxi, double dens){
+void renorm_xill_spec(double* spec , int n, double lxi, double dens){
   int ii;
 	for (ii=0; ii<n; ii++){
 		spec[ii] /= pow(10,lxi);
@@ -1175,7 +1235,7 @@ void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam
 	rebin_spectrum(ener,rebin_flux,n_ener,
 			ener_inp, spec_inp, n_ener_inp );
 	// convolve the spectrum
-	init_specCache(&spec_cache,status);
+	init_globalSpecCache(status);
     CHECK_STATUS_VOID(*status)
 	fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out,  n_ener,
 			1,1,0,spec_cache, status);
@@ -1916,50 +1976,6 @@ void free_fft_cache(double*** sp, int n1, int n2){
 }
 
 
-static specCache* new_specCache(int n_cache, int n_ener, int* status){
-
-
-
-	specCache* spec = (specCache*) malloc(sizeof(specCache));
-    CHECK_MALLOC_RET_STATUS(spec, status, NULL)
-
-	spec->n_cache = n_cache;
-	spec->nzones = 0;
-	spec->n_ener = n_ener;
-
-	spec->fft_xill = (double***) malloc (sizeof(double**)*n_cache);
-    CHECK_MALLOC_RET_STATUS(spec->fft_xill, status, NULL)
-
-	spec->fft_rel = (double***) malloc (sizeof(double**)*n_cache);
-    CHECK_MALLOC_RET_STATUS(spec->fft_rel, status, NULL)
-
-	spec->xill_spec = (xill_spec**) malloc(sizeof(xill_spec*)*n_cache);
-    CHECK_MALLOC_RET_STATUS(spec->xill_spec, status, NULL)
-
-
-	int ii; int jj;
-	int m = 2;
-	for (ii=0; ii<n_cache; ii++){
-		spec->fft_xill[ii] = (double**) malloc (sizeof(double*)*m);
-        CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii], status, NULL)
-		spec->fft_rel[ii] = (double**) malloc (sizeof(double*)*m);
-        CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii], status, NULL)
-
-		for (jj=0; jj<m; jj++){
-			spec->fft_xill[ii][jj] = (double*) malloc (sizeof(double)*n_ener);
-            CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii][jj], status, NULL)
-			spec->fft_rel[ii][jj] = (double*) malloc (sizeof(double)*n_ener);
-            CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii][jj], status, NULL)
-		}
-
-		spec->xill_spec[ii] = NULL;
-
-	}
-
-	spec->out_spec = NULL;
-
-	return spec;
-}
 
 
 out_spec *init_out_spec(int n_ener, const double *ener, int *status) {
@@ -2023,12 +2039,6 @@ void free_specCache(void){
 
 }
 
-void init_specCache(specCache** spec, int* status){
-
-	if ((*spec)==NULL){
-		(*spec) = new_specCache(N_ZONES_MAX,N_ENER_CONV,status);
-	}
-}
 
 void free_cache(){
     cli_delete_list(&cache_relbase);
