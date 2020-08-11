@@ -688,10 +688,10 @@ static void lxi_set_to_xillver_bounds(double* pt_lxi){
 
 ion_grad* calc_ion_gradient(relParam* rel_param, double xlxi0, double xindex, int type, double* rgrid, int n, int* status) {
 
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	ion_grad* ion = new_ion_grad(rgrid, n, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	double rmean[n];
 	double del_inc[n];

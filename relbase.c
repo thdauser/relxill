@@ -115,9 +115,9 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 	// load tables
     if (ptr_rellineTable == NULL) {
 		print_version_number(status);
-        CHECK_STATUS_RET(*status, NULL);
+        CHECK_STATUS_RET(*status,NULL);
         read_relline_table(RELTABLE_FILENAME, &ptr_rellineTable, status);
-        CHECK_STATUS_RET(*status, NULL);
+        CHECK_STATUS_RET(*status,NULL);
     }
     relTable *tab = ptr_rellineTable;
 	assert(tab!=NULL);
@@ -137,7 +137,7 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 	// get a structure to store the values from the interpolation in the A-MU0-plane
 	if (cached_tab_sysPar == NULL){
 		cached_tab_sysPar = new_relSysPar(tab->n_r,tab->n_g,status);
-        CHECK_STATUS_RET(*status, NULL);
+        CHECK_STATUS_RET(*status,NULL);
     }
 
     int ind_a = binary_search_float(tab->a, tab->n_a, (float) a);
@@ -199,7 +199,7 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 
 	//  need to initialize and allocate memory
 	relSysPar* sysPar = new_relSysPar(N_FRAD,tab->n_g,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 	get_fine_radial_grid(rin,rout,sysPar);
 
 	/** we do not have rmax=1000.0 in the table, but just values close to it so let's do this trick**/
@@ -231,7 +231,7 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 					RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid",status);
 					printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
 							sysPar->re[ii], RELTABLE_MAX_R);
-                    CHECK_STATUS_RET(*status, NULL);
+                    CHECK_STATUS_RET(*status,NULL);
 				}
 			}
 		}
@@ -245,7 +245,7 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 			RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid",status);
 			printf("   --> radius %.4e not found in [%.4e,%.4e]  \n",
 					sysPar->re[ii],cached_tab_sysPar->re[ind_tabr+1],cached_tab_sysPar->re[ind_tabr]);
-            CHECK_STATUS_RET(*status, NULL);
+            CHECK_STATUS_RET(*status,NULL);
 		}
 
 		for (jj=0; jj<sysPar->ng; jj++){
@@ -281,14 +281,14 @@ static relSysPar* interpol_relTable(double a, double mu0, double rin, double rou
 /* function to get the system parameters */
 static relSysPar* calculate_system_parameters(relParam* param, int* status){
 
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	// only re-do the interpolation if rmin,rmax,a,mu0 changed
 	// or if the cached parameters are NULL
 
 	double mu0 = cos(param->incl);
 	relSysPar* sysPar = interpol_relTable(param->a,mu0,param->rin,param->rout,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 
 	if (param->limb!=0){
@@ -309,13 +309,13 @@ static relSysPar* calculate_system_parameters(relParam* param, int* status){
 
 relSysPar* get_system_parameters(relParam* param, int* status){
 
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	inpar* sysinp = set_input_syspar(param,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	cache_info* ca_info = cli_check_cache(cache_syspar, sysinp, check_cache_syspar, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	relSysPar* sysPar = NULL;
 	if (ca_info->syscache==1){
@@ -1742,7 +1742,7 @@ int redo_relbase_calc(relParam* rel_param, relParam* ca_rel_param){
 
 rel_spec* relbase(double* ener, const int n_ener, relParam* param, xillTable* xill_tab, int* status){
 
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	inpar* inp = set_input(ener,n_ener,param,NULL, status);
 

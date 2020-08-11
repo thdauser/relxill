@@ -160,7 +160,7 @@ xillParam* init_par_xillver(const double* inp_par, const int n_parameter, int* s
 
 	// fill in parameters
 	xillParam* param = new_xillParam(MOD_TYPE_XILLVER,PRIM_SPEC_ECUT,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_XILLVER);
 
@@ -180,7 +180,7 @@ xillParam* init_par_xillver_nthcomp(const double* inp_par, const int n_parameter
 
   // fill in parameters
   xillParam* param = new_xillParam(MOD_TYPE_XILLVER_NTHCOMP,PRIM_SPEC_NTHCOMP,status);
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status,NULL);
 
   assert(n_parameter == NUM_PARAM_XILLVER_NTHCOMP);
 
@@ -226,7 +226,7 @@ xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int
 
     // fill in parameters
     xillParam *param = new_xillParam(MOD_TYPE_XILLVERCO, PRIM_SPEC_ECUT, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
     assert(n_parameter == NUM_PARAM_XILLVERCO);
 
@@ -253,7 +253,7 @@ xillParam* init_par_xillver_dens(const double* inp_par, const int n_parameter, i
 
 	// fill in parameters
 	xillParam* param = new_xillParam(MOD_TYPE_XILLVERDENS,PRIM_SPEC_ECUT,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_XILLVER);
 
@@ -603,7 +603,7 @@ xillParam* init_par_xillver_dens_nthcomp(const double* inp_par, const int n_para
 
   // fill in parameters
   xillParam* param = new_xillParam(MOD_TYPE_XILLVERDENS_NTHCOMP,PRIM_SPEC_NTHCOMP,status);
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status,NULL);
 
   assert(n_parameter == NUM_PARAM_XILLVERDENS_NTHCOMP);
 
@@ -709,7 +709,7 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELLINE,EMIS_TYPE_BKN,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_RELLINE);
 
@@ -725,7 +725,7 @@ relParam* init_par_relline(const double* inp_par, const int n_parameter, int* st
 	param->limb  = (int) (inp_par[9] + 0.5);
 
 	check_parameter_bounds(param,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	return param;
 }
@@ -734,7 +734,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELCONV,EMIS_TYPE_BKN,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_RELCONV);
 
@@ -751,7 +751,7 @@ relParam* init_par_relconv(const double* inp_par, const int n_parameter, int* st
 
 
 	check_parameter_bounds(param,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	return param;
 }
@@ -760,7 +760,7 @@ relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int*
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELLINELP,EMIS_TYPE_LP,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_RELLINELP);
 
@@ -777,7 +777,7 @@ relParam* init_par_relline_lp(const double* inp_par, const int n_parameter, int*
 	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	return param;
 }
@@ -786,7 +786,7 @@ relParam* init_par_relconv_lp(const double* inp_par, const int n_parameter, int*
 
 	// fill in parameters
 	relParam* param = new_relParam(MOD_TYPE_RELCONVLP,EMIS_TYPE_LP,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	assert(n_parameter == NUM_PARAM_RELCONVLP);
 
@@ -803,7 +803,7 @@ relParam* init_par_relconv_lp(const double* inp_par, const int n_parameter, int*
 	param->beta = 0.0;
 
 	check_parameter_bounds(param,status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status,NULL);
 
 	return param;
 }
