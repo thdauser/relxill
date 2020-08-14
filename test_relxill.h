@@ -59,6 +59,8 @@ void set_std_param_relxilllpion_nthcomp(double *inp_par);
 
 void set_std_param_relxillns(double *inp_par);
 
+void set_std_param_relxill_bbret(double *inp_par);
+
 void set_std_param_relxillco(double *inp_par);
 
 xillParam *get_std_param_xillver(int *status);

@@ -18,7 +18,6 @@
 #ifndef RELUTILITY_H_
 #define RELUTILITY_H_
 
-#include "relbase.h"
 #include "xilltable.h"
 
 
@@ -119,9 +118,9 @@ int is_relxill_model(int model_type);
 int is_debug_run(void);
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-void get_rzone_grid(double rmin, double rmax, double *rgrid, int nzones, double h);
+double *get_rzone_grid(double rmin, double rmax, int nzones, double h, int *status);
 
-void get_rgrid(double *ener, int n_ener, double emin, double emax);
+void getLogGrid(double *ener, int n_ener, double emin, double emax);
 
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener);
@@ -193,7 +192,13 @@ double calcSumInEnergyBand(const double *array, int n_array, double *ener, doubl
 
 void normSpec(double *spec, int n_ener);
 
-void zeroArray(double *arr, int n);
+void setArrayToZero(double *arr, int n);
 void multiplyArray(double *arr, int n, double factor);
+
+EnerGrid *new_EnerGrid(int *status);
+
+Spectrum *new_Spectrum(int *status);
+void free_Spectrum(Spectrum **spec);
+Spectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
 #endif /* RELUTILITY_H_ */

@@ -11,3 +11,6 @@ build
 .settings
 *.tgz
 cmake-build-test
+debug-*.fits
+testrr-*fits
+cmake-build-debug

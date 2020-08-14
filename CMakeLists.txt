@@ -6,7 +6,8 @@ set(CMAKE_C_STANDARD 11)
 include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ")
+set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
 
 
 set(SOURCE_FILES
@@ -27,12 +28,12 @@ set(SOURCE_FILES
         xilltable.c    xilltable.h
         test_relxill.c test_relxill.h
         test_rellp.c test_rellp.h
+        relphysics.c relphysics.h
         test_std_functions.c test_std_functions.h)
 
 
 set(EXEC_FILES
         test_sta
-        test_xilltab
         )
 
 foreach (execfile ${EXEC_FILES})

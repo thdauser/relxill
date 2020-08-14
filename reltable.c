@@ -148,7 +148,6 @@ static void get_reltable_axis(int nrows, float **val, char *extname, char *colna
   LONGLONG nelem = (LONGLONG) n;
   fits_read_col(fptr, TFLOAT, colnum, 1, 1, nelem, &nullval, *val, &anynul, status);
 
-  return;
 }
 
 /**     */

@@ -18,7 +18,6 @@
 #include "relbase.h"
 #include "relutility.h"
 #include "reltable.h"
-#include "test_relxill.h"
 #include "test_xilltab.c"
 #include "test_rellp.h"
 #include "test_std_functions.h"

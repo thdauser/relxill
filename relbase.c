@@ -276,7 +276,6 @@ static relSysPar *interpol_relTable(double a, double mu0, double rin, double rou
  *   Input: relParam* param   Output: relSysPar* system_parameter_struct
  */
 
-
 /* function to get the system parameters */
 static relSysPar *calculate_system_parameters(relParam *param, int *status) {
 
@@ -405,13 +404,13 @@ rel_cosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 }
 
 /** initialize the rel_spec structure **/
-static void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab,
+static void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab, double *radialZones,
                           double **pt_ener, const int n_ener, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   /** in case of the relxill-LP model multiple zones are used **/
-  int nzones = param->num_zones; ///  get_num_zones(param->model_type, param->emis_type, ION_GRAD_TYPE_CONST);
+  int nzones = param->num_zones;
 
   if ((*spec) == NULL) {
     (*spec) = new_rel_spec(nzones, n_ener, status);
@@ -438,7 +437,7 @@ static void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab,
     }
   }
 
-  get_rzone_grid(param->rin, param->rout, (*spec)->rgrid, nzones, param->height);
+  (*spec)->rgrid = radialZones;
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
@@ -757,6 +756,9 @@ static void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const in
   /** only renormalize if not the relxill model or not a lamp post model **/
 
   if (do_renorm_model(rel_param)) {
+    if (is_debug_run()) {
+      printf(" DEBUG: re-normalizing output spectrum\n");
+    }
     for (ii = 0; ii < spec->n_zones; ii++) {
       for (jj = 0; jj < spec->n_ener; jj++) {
         spec->flux[ii][jj] /= sum;
@@ -785,6 +787,7 @@ int static get_cosne_bin(double mu, rel_cosne *dat) {
 
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func *cached_str_relb_func = NULL;
+
 void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -937,6 +940,7 @@ specCache *init_globalSpecCache(int *status) {
  *  f1 input (reflection) specrum
  *  f2 filter
  *  ener has length n+1 and is the energy array
+ *  requirements: needs "spec_cache" to be set up
  * **/
 static void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
                               int re_rel, int re_xill, int izone, specCache *cache, int *status) {
@@ -962,7 +966,6 @@ static void fft_conv_spectrum(double *ener, const double *fxill, const double *f
   // needs spec cache to be set up
   assert(cache != NULL);
 
-
   /* need to find out where the 1keV for the filter is, which defines if energies are blue or redshifted*/
   if (save_1eV_pos == 0 ||
       (!((ener[save_1eV_pos] <= 1.0) &&
@@ -983,26 +986,25 @@ static void fft_conv_spectrum(double *ener, const double *fxill, const double *f
   /** #1: for the xillver part **/
   if (re_xill) {
     for (ii = 0; ii < n; ii++) {
-      spec_cache->fft_xill[izone][0][ii] = fxill[ii] / (ener[ii + 1] - ener[ii]);
-      spec_cache->fft_xill[izone][1][ii] = 0.0;
+      cache->fft_xill[izone][0][ii] = fxill[ii] / (ener[ii + 1] - ener[ii]);
+      cache->fft_xill[izone][1][ii] = 0.0;
     }
-    FFT_R2CT(1, m, spec_cache->fft_xill[izone][0], spec_cache->fft_xill[izone][1]);
+    FFT_R2CT(1, m, cache->fft_xill[izone][0], cache->fft_xill[izone][1]);
   }
-  double *x1 = spec_cache->fft_xill[izone][0];
-  double *y1 = spec_cache->fft_xill[izone][1];
+  double *x1 = cache->fft_xill[izone][0];
+  double *y1 = cache->fft_xill[izone][1];
 
   /** #2: for the relat. part **/
   if (re_rel) {
     for (ii = 0; ii < n; ii++) {
       irot = (ii - save_1eV_pos + n) % n;
-      spec_cache->fft_rel[izone][0][irot] = frel[ii] / (ener[ii + 1] - ener[ii]);
-      spec_cache->fft_rel[izone][1][ii] = 0.0;
+      cache->fft_rel[izone][0][irot] = frel[ii] / (ener[ii + 1] - ener[ii]);
+      cache->fft_rel[izone][1][ii] = 0.0;
     }
-    FFT_R2CT(1, m, spec_cache->fft_rel[izone][0], spec_cache->fft_rel[izone][1]);
+    FFT_R2CT(1, m, cache->fft_rel[izone][0], cache->fft_rel[izone][1]);
   }
-  double *x2 = spec_cache->fft_rel[izone][0];
-  double *y2 = spec_cache->fft_rel[izone][1];
-
+  double *x2 = cache->fft_rel[izone][0];
+  double *y2 = cache->fft_rel[izone][1];
 
   /* complex multiplication
    * (we need the real part, so we already use the output variable here
@@ -1199,14 +1201,9 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
    *    need it to be number = 2^N */
 
   // always do the convolution on this grid
-  /** only do the calculation once **/
-  if (global_ener_std == NULL) {
-    global_ener_std = (double *) malloc((n_ener_std + 1) * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
-    get_log_grid(global_ener_std, (n_ener_std + 1), EMIN_RELXILL, EMAX_RELXILL);
-  }
-  int n_ener = n_ener_std;
-  double *ener = global_ener_std;
+  int n_ener;
+  double *ener;
+  get_std_relxill_energy_grid(&n_ener, &ener, status);
 
   rel_spec *rel_profile = relbase(ener, n_ener, rel_param, NULL, status);
 
@@ -1217,8 +1214,8 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   double conv_out[n_ener];
   rebin_spectrum(ener, rebin_flux, n_ener,
                  ener_inp, spec_inp, n_ener_inp);
-  // convolve the spectrum
-  init_globalSpecCache(status);
+
+  specCache* spec_cache = init_globalSpecCache(status);
   CHECK_STATUS_VOID(*status);
   fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
                     1, 1, 0, spec_cache, status);
@@ -1293,7 +1290,6 @@ void relxill_kernel(double *ener_inp,
   }
 
   /*** LOOP OVER THE RADIAL ZONES ***/
-  double xill_flux[n_ener];
   double conv_out[n_ener];
   double single_spec_inp[n_ener_inp];
   for (ii = 0; ii < n_ener; ii++) {
@@ -1341,6 +1337,7 @@ void relxill_kernel(double *ener_inp,
 
     /* init the xillver spectrum structure **/
     xill_spec *xill_spec_table = NULL;
+    double xill_flux[n_ener];
 
 
     // currently only working for the LP version (as relxill always has just 1 zone)
@@ -1374,7 +1371,6 @@ void relxill_kernel(double *ener_inp,
       // (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
       //  session the number of zones is reset)
       if (rel_profile->n_zones == 1) {
-//			if (rel_profile->n_zones==1 || get_num_zones(rel_param->model_type,rel_param->emis_type, xill_param->ion_grad_type)==1){
         xill_param->ect = ecut0;
       } else {
         // choose the (linear) middle of the radial zone
@@ -1468,23 +1464,58 @@ void relxill_kernel(double *ener_inp,
   add_primary_component(ener_inp, n_ener_inp, spec_inp, rel_param, xill_param, status);
 }
 
-static double getPrimarySpectrumNormalizationWrtXillver(const double *pl_flux_xill) {
-/* get the normalization of the spectrum with respect to xillver
+void set_stdNormXillverEnerygrid(int *status) {
+  if (global_ener_xill == NULL) {
+    global_ener_xill = (double *) malloc((N_ENER_XILLVER + 1) * sizeof(double));
+    CHECK_MALLOC_VOID_STATUS(global_ener_xill, status)
+    get_log_grid(global_ener_xill, N_ENER_XILLVER + 1, EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
+  }
+}
+
+EnerGrid *get_stdXillverEnergygrid(int *status) {
+  CHECK_STATUS_RET(*status, NULL);
+
+  set_stdNormXillverEnerygrid(status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  EnerGrid *egrid = new_EnerGrid(status);
+  egrid->ener = global_ener_xill;
+  egrid->nbins = N_ENER_XILLVER;
+
+  return egrid;
+}
+
+double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status) {
+  /* get the normalization of the spectrum with respect to xillver
  *  - everything is normalized using dens=10^15 cm^3
  *  - normalization defined, e.g., in Appendix of Dauser+2016
  *  - needs to be calculated on the specific energy grid (defined globally)
  */
+
+  set_stdNormXillverEnerygrid(status);
   assert(global_ener_xill != NULL);
 
-  double norm_xill = 1e15 / 4.0 / M_PI;
   double keV2erg = 1.602177e-09;
 
-  double sum_pl = 0.0;
-  for (int ii = 0; ii < n_ener_xill; ii++) {
-    sum_pl += pl_flux_xill[ii] * 0.5 * (global_ener_xill[ii] + global_ener_xill[ii + 1]) * 1e20 * keV2erg;
+  // need this to make sure no floating point problems arise
+  double floatCompFactor = 1e-6;
+
+  if (ener[n] < (EMAX_XILLVER_NORMALIZATION - floatCompFactor)
+      || ener[0] > (EMIN_XILLVER_NORMALIZATION + floatCompFactor)) {
+    RELXILL_ERROR("can not calculate the primary spectrum normalization", status);
+    printf("  the given energy grid from %e keV to %e keV does not cover the boundaries\n", ener[0], ener[n]);
+    printf("  from [%e,%e] necessary for the calcualtion\n", EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
+    return 0.0;
   }
-  double norm_pl = norm_xill / sum_pl;
-  return norm_pl;
+
+  double sum_pl = 0.0;
+  for (int ii = 0; ii < n; ii++) {
+    if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii] <= EMAX_XILLVER_NORMALIZATION) {
+      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg;
+    }
+  }
+  double norm_xillver_table = 1e15 / 4.0 / M_PI;
+  return sum_pl / norm_xillver_table;
 }
 
 static void printReflectionStrengthInfo(double *ener,
@@ -1518,10 +1549,8 @@ static void printReflectionStrengthInfo(double *ener,
   printf(" - gravitational redshift from the observer to the primary source is %.3f\n", grav_redshift(rel_param));
 }
 
-void calculatePrimarySpectrum(double *pl_flux_xill,
-                              const relParam *rel_param,
-                              const xillParam *xill_param,
-                              int *status) {
+void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
+                              const relParam *rel_param, const xillParam *xill_param, int *status) {
 
   CHECK_STATUS_VOID(*status);
   assert(global_ener_xill != NULL);
@@ -1530,37 +1559,36 @@ void calculatePrimarySpectrum(double *pl_flux_xill,
     /** note that in case of the nthcomp model Ecut is in the frame of the primary source
 	    but for the bkn_powerlaw it is given in the observer frame */
 
-
     /** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
     /**    (in case of the nthcomp primary continuum ect is actually kte ) **/
     double ecut_rest = xill_param->ect;
 
-    for (int ii = 0; ii < n_ener_xill; ii++) {
+    for (int ii = 0; ii < n_ener; ii++) {
       pl_flux_xill[ii] = exp(1.0 / ecut_rest) *
-          pow(0.5 * (global_ener_xill[ii] + global_ener_xill[ii + 1]), -xill_param->gam) *
-          exp(-0.5 * (global_ener_xill[ii] + global_ener_xill[ii + 1]) / ecut_rest) *
-          (global_ener_xill[ii + 1] - global_ener_xill[ii]);
+          pow(0.5 * (ener[ii] + ener[ii + 1]), -xill_param->gam) *
+          exp(-0.5 * (ener[ii] + ener[ii + 1]) / ecut_rest) *
+          (ener[ii + 1] - ener[ii]);
     }
 
   } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
 
     double nthcomp_param[5];
     /** important, kTe is given in the primary source frame, so we have to add the redshift here
-       *     however, only if the REL model **/
+		 *     however, only if the REL model **/
     double z = 0.0;
     if (rel_param != NULL && rel_param->emis_type == EMIS_TYPE_LP) {
       z = grav_redshift(rel_param);
     }
     get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
-    c_donthcomp(global_ener_xill, n_ener_xill, nthcomp_param, pl_flux_xill);
+    c_donthcomp(ener, n_ener, nthcomp_param, pl_flux_xill);
 
   } else if (xill_param->prim_type == PRIM_SPEC_BB) {
 
     double en;
-    for (int ii = 0; ii < n_ener_xill; ii++) {
-      en = 0.5 * (global_ener_xill[ii] + global_ener_xill[ii + 1]);
+    for (int ii = 0; ii < n_ener; ii++) {
+      en = 0.5 * (ener[ii] + ener[ii + 1]);
       pl_flux_xill[ii] = en * en / (pow(xill_param->kTbb, 4) * (exp(en / xill_param->kTbb) - 1));
-      pl_flux_xill[ii] *= (global_ener_xill[ii + 1] - global_ener_xill[ii]);
+      pl_flux_xill[ii] *= (ener[ii + 1] - ener[ii]);
     }
   } else {
     RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",
@@ -1568,32 +1596,24 @@ void calculatePrimarySpectrum(double *pl_flux_xill,
   }
 }
 
-void set_stdNormXillverEnerygrid(int *status) {
-  if (global_ener_xill == NULL) {
-    global_ener_xill = (double *) malloc((n_ener_xill + 1) * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(global_ener_xill, status)
-    get_log_grid(global_ener_xill, n_ener_xill + 1, ener_xill_norm_lo, ener_xill_norm_hi);
-  }
-}
-
 void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
                            xillParam *xill_param, int *status) {
 
   double pl_flux[n_ener];
-  double pl_flux_xill[n_ener_xill]; // global energy grid
 
   /** need to create a spcific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-  set_stdNormXillverEnerygrid(status);
+  EnerGrid *egrid = get_stdXillverEnergygrid(status);
   CHECK_STATUS_VOID(*status);
-  calculatePrimarySpectrum(pl_flux_xill, rel_param, xill_param, status);
+  double pl_flux_xill[egrid->nbins]; // global energy grid
+  calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, status);
 
-  double norm_pl = getPrimarySpectrumNormalizationWrtXillver(pl_flux_xill); // calculated on Global Xillver Grid
+  double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, status);
 
   /** bin the primary continuum onto the Input grid **/
-  rebin_spectrum(ener, pl_flux, n_ener, global_ener_xill, pl_flux_xill, n_ener_xill);
+  rebin_spectrum(ener, pl_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
 
   for (int ii = 0; ii < n_ener; ii++) {
-    pl_flux[ii] *= norm_pl;
+    pl_flux[ii] *= primarySpecNormFactor;
   }
 
   /** 2 **  decide if we need to do relat. calculations **/
@@ -1604,40 +1624,49 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     }
   } else {
 
+    assert(rel_param != NULL);
+
+    // should be cached, as it has been calculated before
+    relSysPar *sysPar = get_system_parameters(rel_param, status);
+
+    lpReflFrac *struct_refl_frac = sysPar->emis->returnFracs;
+
+    if ((xill_param->fixReflFrac == 1) || (xill_param->fixReflFrac == 2)) {
+      /** set the reflection fraction calculated from the height and
+       *  spin of the primary source, in this case for the physical
+       *  value from Rin to Rout          						 */
+      xill_param->refl_frac = struct_refl_frac->refl_frac;
+    }
+
     /** 4 ** and apply it to primary and reflected spectra **/
     if (rel_param->emis_type == EMIS_TYPE_LP) {
-
-      assert(rel_param != NULL);
-
-      // get emisProfile from sysPar (should be cached, as it has been calculated before)
-      emisProfile *emis = get_system_parameters(rel_param, status)->emis;
+      double g_inf = sqrt(1.0 - (2 * rel_param->height /
+          (rel_param->height * rel_param->height + rel_param->a * rel_param->a)));
 
 
-      /* if the user sets the refl_frac parameter manually, we need to calculate the ratio
-       * to end up with the correct normalization
-       * */
-      if (xill_param->fixReflFrac == 0) {
-        double norm_fac_refl = (fabs(xill_param->refl_frac)) / emis->returnFracs->refl_frac;
-        multiplyArray(flu, n_ener, norm_fac_refl);
+      /** if the user sets the refl_frac parameter manually, we need to calculate the ratio
+       *  to end up with the correct normalization
+       */
+      double norm_fac_refl = (fabs(xill_param->refl_frac)) / struct_refl_frac->refl_frac;
+
+      double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_param->gam);
+
+      for (int ii = 0; ii < n_ener; ii++) {
+        pl_flux[ii] *= prim_fac;
+        flu[ii] *= norm_fac_refl;
       }
-
-      multiplyArray(pl_flux, n_ener, emis->normFactorPrimSpec);
-
-      /** 5 ** if desired, we output the reflection fraction and strength (as defined in Dauser+2016) **/
-      if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type == EMIS_TYPE_LP)) {
-        printReflectionStrengthInfo(ener, n_ener, flu, rel_param, xill_param, pl_flux, emis->returnFracs);
-      }
-
     } else {
       for (int ii = 0; ii < n_ener; ii++) {
         flu[ii] *= fabs(xill_param->refl_frac);
       }
     }
 
+    /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
+    if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type == EMIS_TYPE_LP)) {
+      printReflectionStrengthInfo(ener, n_ener, flu, rel_param, xill_param, pl_flux, struct_refl_frac);
+    }
+
   }
-
-
-
 
   /** 6 ** add power law component only if desired (i.e., refl_frac > 0)**/
   if (xill_param->refl_frac >= 0) {
@@ -1646,19 +1675,6 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     }
   }
 
-}
-
-/** print the relline profile   **/
-void save_relline_profile(rel_spec *spec) {
-
-  if (spec == NULL) return;
-
-  FILE *fp = fopen("test_relline_profile.dat", "w+");
-  int ii;
-  for (ii = 0; ii < spec->n_ener; ii++) {
-    fprintf(fp, " %e \t %e \t %e \n", spec->ener[ii], spec->ener[ii + 1], spec->flux[0][ii]);
-  }
-  if (fclose(fp)) exit(1);
 }
 
 /** save any radial profile in text file   **/
@@ -1723,13 +1739,34 @@ int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param) {
 
 }
 
+
+/** print the relline profile   **/
+void save_relline_profile(rel_spec *spec, int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  if (spec == NULL) return;
+
+  FILE *fp = fopen("test_relline_profile.dat", "w+");
+  for (int ii = 0; ii < spec->n_ener; ii++) {
+    fprintf(fp, " %e \t %e \t %e \n", spec->ener[ii], spec->ener[ii + 1], spec->flux[0][ii]);
+  }
+  if (fclose(fp)) exit(1);
+
+}
+
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
  * optinal input: xillver grid
  * output: photar(n_ener)     */
-
-rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status) {
+rel_spec *relbase_multizone(double *ener,
+                            const int n_ener,
+                            relParam *param,
+                            xillTable *xill_tab,
+                            double *radialZones,
+                            int nzones,
+                            int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -1737,7 +1774,6 @@ rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xi
 
   // check caching here and also re-set the cached parameter values
   cache_info *ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
-
 
   // set a pointer to the spectrum
   rel_spec *spec = NULL;
@@ -1749,11 +1785,12 @@ rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xi
     relSysPar *sysPar = get_system_parameters(param, status);
 
     if (is_debug_run() && sysPar != NULL) {
-      save_radial_profile("test_emis_profile.txt", sysPar->re, sysPar->emis->emis, sysPar->nr);
+      save_radial_profile("test_emis_profile.txt", sysPar->emis->re, sysPar->emis->emis, sysPar->nr);
     }
 
     // init the spectra where we store the flux
-    init_rel_spec(&spec, param, xill_tab, &ener, n_ener, status);
+    param->num_zones = nzones;
+    init_rel_spec(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
 
     // calculate line profile (returned units are 'cts/bin')
     relline_profile(spec, sysPar, status);
@@ -1762,7 +1799,7 @@ rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xi
     renorm_relline_profile(spec, param, status);
 
     if (is_debug_run()) {
-      save_relline_profile(spec);
+      save_relline_profile(spec, status);
     }
 
     // last step: store parameters and cached rel_spec (this prepends a new node to the cache)
@@ -1786,6 +1823,13 @@ rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xi
   return spec;
 }
 
+rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status) {
+
+  double *rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
+
+  return relbase_multizone(ener, n_ener, param, xill_tab, rgrid, param->num_zones, status);
+}
+
 void free_rel_cosne(rel_cosne *spec) {
   if (spec != NULL) {
     //	free(spec->ener);  we do not need this, as only a pointer for ener is assigned
@@ -1803,12 +1847,13 @@ void free_rel_cosne(rel_cosne *spec) {
 
 void free_rel_spec(rel_spec *spec) {
   if (spec != NULL) {
-    free(spec->ener);  // we do not need this, as only a pointer for ener is assigned
     free(spec->rgrid);
     if (spec->flux != NULL) {
       int ii;
       for (ii = 0; ii < spec->n_zones; ii++) {
-        free(spec->flux[ii]);
+        if (spec->flux[ii] != NULL) {
+          free(spec->flux[ii]);
+        }
       }
     }
     free(spec->flux);
@@ -1856,7 +1901,6 @@ relSysPar *new_relSysPar(int nr, int ng, int *status) {
 
   sysPar->gstar = (double *) malloc(ng * sizeof(double));
   CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
-
 
   // we already set the values as they are fixed
   int ii;
@@ -2032,16 +2076,3 @@ void get_version_number(char **vstr, int *status) {
     }
   }
 }
-
-
-/*** struct timeval start, end;
-	long mtime, seconds, useconds;
-	gettimeofday(&start, NULL);
-gettimeofday(&end, NULL);
-
-    seconds  = end.tv_sec  - start.tv_sec;
-    useconds = end.tv_usec - start.tv_usec;
-
-    mtime = ((seconds) * 1000*1000 + useconds) + 0.5;
-
-    printf("Elapsed time: %ld micro seconds\n", mtime); ***/

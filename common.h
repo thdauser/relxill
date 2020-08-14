@@ -32,6 +32,8 @@
 /** define Emissivity Model Type **/
 #define EMIS_TYPE_BKN 1
 #define EMIS_TYPE_LP 2
+#define EMIS_TYPE_ALPHA 3
+#define EMIS_TYPE_CONST 4
 /***************************************/
 
 /** define primary spectrum Type **/
@@ -89,6 +91,7 @@ typedef struct {
   int fixReflFrac;
   int model_type;
   int prim_type;
+  double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end
 } xillParam;
 
 typedef struct {
@@ -166,6 +169,7 @@ typedef struct {
 
 } relSysPar;
 
+
 /** angles (cosne) and their distribution over the radial zones **/
 typedef struct {
   int n_cosne;
@@ -206,6 +210,21 @@ typedef struct {
   xill_spec **xill_spec;
   out_spec *out_spec;
 } specCache;
+
+typedef struct {
+
+  double *ener;
+  int nbins;
+
+} EnerGrid;
+
+typedef struct {
+
+  int nbins;
+  double *ener;  // has nbins+1
+  double *flux; // has length
+
+} Spectrum;
 
 
 /******************************/

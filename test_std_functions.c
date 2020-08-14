@@ -21,6 +21,7 @@
 
 #include "relutility.h"
 #include "relbase.h"
+#include "relphysics.h"
 #define LIMIT_PREC 1e-6
 
 specCache *dummy_spec_cache = NULL;
@@ -228,7 +229,68 @@ static void testInterpolationRoutines(int *status) {
 
 }
 
+static double getRatioRelProfileAndRingArea(rel_spec *rprofile, int ii, double spin) {
+
+  // proper area times the emissivity
+  double propArea = calc_proper_area_ring(rprofile->rgrid[ii], rprofile->rgrid[ii + 1], spin);
+
+  double relFlux = calcSum(rprofile->flux[ii], rprofile->n_ener);
+
+  return relFlux / propArea;
+}
+
+void compare_relatFluxToAreaRatioWithReference(double averageRatio, double referenceRatio, int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  /* As we still expect some relat. effects testing for a high precision will lead to
+   * errors, while the normalization is correct. Therefore we choose simply a weaker
+   * criterion, which can be fulfilled considering GR.
+   */
+  double PREC = 0.1;
+
+  if (fabs(averageRatio - referenceRatio) > PREC) {
+    RELXILL_ERROR("failed comparing the calculated ratio of the relline flux to the expectation", status);
+    printf("  expecting a ratio of %e, but calculated %e \n", referenceRatio, averageRatio);
+
+  }
+
+}
+
+void testRellineNormalizationConvergence(int *status) {
+  /* Define criterion: for large radii the normalization of the convolution should
+   * converge towards 1/4 of the proper are of the respective radial ring
+   * [definition of rel-_table_v0.5a]
+   */
+
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  int nzones = 100;
+
+  rel_spec *rel_profile = NULL;
+  relParam *rel_param = NULL;
+  get_RelProfileConstEmisZones(&rel_profile, &rel_param, nzones, status);
+
+  assert(rel_profile->n_zones > 10); // make sure we have enough zones
+
+  double beginOuterRadii = 10.;
+  int indexBeginOuterRadii = binary_search(rel_profile->rgrid, rel_profile->n_zones, beginOuterRadii);
+
+  double averageRatio = 0.0;
+  double contributingFactorOfEachZone = 1.0 / ((double) (rel_profile->n_zones - indexBeginOuterRadii + 1));
+  for (int ii = indexBeginOuterRadii; ii < rel_profile->n_zones; ii++) {
+    averageRatio += getRatioRelProfileAndRingArea(rel_profile, ii, rel_param->a) * contributingFactorOfEachZone;
+  }
+
+  double referenceRatio = 1.0;
+  compare_relatFluxToAreaRatioWithReference(averageRatio, referenceRatio, status);
+
+  print_relxill_test_result(*status);
+}
+
 void testNormalizationFFTConvolution(int *status) {
+
+  CHECK_STATUS_VOID(*status);
 
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
@@ -299,6 +361,10 @@ void testStdFunctions(int *status) {
   testRebinMeanFlux(status);
 
   testNormalizationFFTConvolution(status);
+
+  testRellineNormalizationConvergence(status);
+
+  test_stdEvaluationFluxes(status);
 
 }
 

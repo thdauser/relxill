@@ -13,9 +13,9 @@ COMPILE.c = gcc
 
 INCLUDES = -I/usr/include -I${HEADAS}/include 
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o test_relxill.o test_rellp.o test_std_functions.o
-headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h test_relxill.h xilltable.h relcache.h test_rellp.h test_std_functions.h
-sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxill.c xilltable.c donthcomp.c relcache.c test_xilltab.c test_rellp.c test_std_functions.c
+objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o test_relxill.o relphysics.o test_rellp.o test_std_functions.o
+headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h test_relxill.h xilltable.h relcache.h relphysics.h test_rellp.h test_std_functions.h
+sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxill.c xilltable.c donthcomp.c relcache.c test_xilltab.c relphysics.c test_rellp.c test_std_functions.c
 
 model_dir = ./build/
 model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
@@ -24,7 +24,9 @@ LINK_TARGET = test_sta
 
 .PHONY:all
 all:
+	echo $(objects)
 	make test_sta
+
 
 
 $(LINK_TARGET): $(objects)
@@ -40,6 +42,7 @@ clean:
 	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat *.log
 	rm -rf $(model_dir)
 	rm -f relxill_model_v*.tgz
+	rm -f debug-*fits testrr-*.fits
 
 MODEL_VERSION = undef
 #MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
@@ -81,7 +84,7 @@ model-dev: test_sta
 
 
 
-.PHONY: valgrind,gdb
+.PHONY: valgrind
 valgrind:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
@@ -92,6 +95,7 @@ valgrind-relxilllp:
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
 	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxilllp
 
+.PHONY: gdb
 gdb:
 	make clean
 	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta

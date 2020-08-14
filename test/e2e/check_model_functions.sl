@@ -48,7 +48,7 @@ variable sum_name = "plot_check_model_functions_sum.pdf";
 variable counter = 0;
 
 variable lo0, hi0;
-(lo0,hi0) = log_grid(0.5,1000,3000);
+(lo0,hi0) = log_grid(0.1,1000,3000);
 
 %%% generally useful functions %%% 
 
@@ -1124,6 +1124,9 @@ define check_xilltab_implementation_single(ff,tabname){ %{{{
 define check_refl_frac_single(ff){ %{{{
    
    variable val0,val1,valr;
+ 
+   variable lo0, hi0;
+   (lo0, hi0) = log_grid(0.1,10,1000);  %% if we choose something larger than 10, we bet a problem with low numbers from the bbret model
    
    fit_fun_default(ff);
    set_par("*.refl_frac",1.0,0,-10,10);
@@ -1134,7 +1137,18 @@ define check_refl_frac_single(ff){ %{{{
 
    set_par("*.refl_frac",-1,0,-10,10);
    valr =  eval_fun_keV(lo0,hi0);
-      
+
+   if (qualifier_exists("plot")){
+      xlog;%ylog;
+      variable ind=where(val1!=0);
+      hplot(lo0[ind],hi0[ind],(val0[ind]+valr[ind])/val1[ind]);
+      xlog;ylog;
+%      hplot(lo0,hi0,val1);
+%      ohplot(lo0,hi0,val0);
+%      ohplot(lo0,hi0,valr);
+%      sleep(100);
+   }
+   
    return goodness(val1,val0+valr);
 }
 %}}}
@@ -1265,7 +1279,7 @@ define check_refl_frac(){ %{{{
    counter++;
    vmessage("\n### %i ### testing REFLECTION FRACTION PARAMTERS: ###",counter);
    
-   variable ff = ["relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD",
+   variable ff = [ "relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD",
 		  "relxillCp","relxilllpCp","xillverCp"];
    
    variable ii,n = length(ff);
@@ -1362,8 +1376,10 @@ define print_refl_frac(){ %{{{
 }
 %}}}
 
+if (check_refl_frac() != EXIT_SUCCESS) exit;
 
-if (eval_test_notable() != EXIT_SUCCESS) exit;
+
+%if (eval_test_notable() != EXIT_SUCCESS) exit;
 
 if (eval_test() != EXIT_SUCCESS) exit;
 

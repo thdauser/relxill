@@ -18,7 +18,7 @@
 #ifndef RELBASE_H_
 #define RELBASE_H_
 
-#define _GNU_SOURCE
+#define _GNU_SOURCE  // seems necessary for standard Makefile
 
 #include "common.h"
 
@@ -35,7 +35,7 @@
 
 #define version_major 1
 #define version_minor 3
-#define version_build 10
+#define version_build 11
 #define version_dev "-1"
 
 /** path to all RELXILL tables */
@@ -56,6 +56,11 @@
 #define LPTABLE_FILENAME "rel_lp_table_v0.5b.fits"
 #define LPTABLE_NR 100
 
+/** dimensions of the RR table */
+#define RETURNRAD_TABLE_NR 50
+#define RETURNRAD_TABLE_NG 20
+#define RETURNRAD_TABLE_FILENAME "table_returnRad_v20200506.fits"
+
 
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
@@ -66,14 +71,15 @@
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
 #define EMIN_RELXILL 0.00035  // minimal energy of the convolution (in keV)
 #define EMAX_RELXILL 2000.0 // minimal energy of the convolution (in keV)
+#define EMIN_XILLVER_NORMALIZATION 0.1
+#define EMAX_XILLVER_NORMALIZATION 1000.0
 #define EMIN_XILLVER 0.01
-#define EMAX_XILLVER 1000.0
+#define EMAX_XILLVER EMAX_XILLVER_NORMALIZATION
+#define N_ENER_XILLVER 3000
 
 /** minimal and maximal energy for reflection strength calculation **/
 #define RSTRENGTH_EMIN 20.0
 #define RSTRENGTH_EMAX 40.0
-
-/** file to (additionally) store the version number **/
 
 /****** TYPE DEFINITIONS ******/
 
@@ -111,9 +117,17 @@ rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xi
 /** calculate the relline profile(s) for all given zones **/
 void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status);
 
-void save_relline_profile(rel_spec *spec);
+void save_relline_profile(rel_spec *spec, int* status);
 
 void save_radial_profile(char *foutName, double *rad, double *intens, int n_rad);
+
+rel_spec *relbase_multizone(double *ener,
+                            const int n_ener,
+                            relParam *param,
+                            xillTable *xill_tab,
+                            double *radialZones,
+                            int nzones,
+                            int *status);
 
 void free_cached_tables(void);
 
@@ -175,6 +189,9 @@ void get_std_relxill_energy_grid(int *n_ener, double **ener, int *status);
 
 void renorm_xill_spec(double *spec, int n, double lxi, double dens);
 
+double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status);
+
 void set_stdNormXillverEnerygrid(int *status);
+EnerGrid *get_stdXillverEnergygrid(int *status);
 
 #endif /* RELBASE_H_ */

@@ -249,7 +249,7 @@ xillParam *init_par_xillver_dens(const double *inp_par, const int n_parameter, i
   xillParam *param = new_xillParam(MOD_TYPE_XILLVERDENS, PRIM_SPEC_ECUT, status);
   CHECK_STATUS_RET(*status, NULL);
 
-  assert(n_parameter == NUM_PARAM_XILLVER);
+  assert(n_parameter == NUM_PARAM_XILLVERDENS);
 
   param->gam = inp_par[0];
   param->afe = inp_par[1];
@@ -267,11 +267,7 @@ xillParam *init_par_xillver_dens(const double *inp_par, const int n_parameter, i
   return param;
 }
 
-void init_par_relxill(relParam **rel_param,
-                      xillParam **xill_param,
-                      const double *inp_par,
-                      const int n_parameter,
-                      int *status) {
+void init_par_relxill(relParam **rel_param, xillParam **xill_param, const double *inp_par, const int n_parameter, int *status) {
 
   // fill in parameters
   relParam *param = new_relParam(MOD_TYPE_RELXILL, EMIS_TYPE_BKN, status);
@@ -976,7 +972,6 @@ void tdrelxillns(const double *ener0,
   init_par_relxill_ns(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  // int n_ener = (int) n_ener0;
   double *ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
 
   relxill_kernel(ener, photar, n_ener0, xill_param, rel_param, status);

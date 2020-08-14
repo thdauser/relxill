@@ -144,7 +144,7 @@ void set_std_param_relxilldens(double *inp_par) {
 
 void set_std_param_relxilllp(double *inp_par) {
   inp_par[0] = -1.1;   // height
-  inp_par[1] = 0.9798; // a
+  inp_par[1] = 0.998; // a
   inp_par[2] = 60.0;  // incl
   inp_par[3] = -1.0;  // rin
   inp_par[4] = 1000.;  // rout
@@ -262,11 +262,26 @@ void set_std_param_relxillns(double *inp_par) {
   inp_par[5] = -1.0;
   inp_par[6] = 400.;
   inp_par[7] = 0.0;   // redshift
-  inp_par[8] = 2.0;   // kTbb
+  inp_par[8] = 1.0;   // kTbb
   inp_par[9] = 2.0;   // logxi
   inp_par[10] = 1.0;   // Afe
   inp_par[11] = 15.0; // logN
   inp_par[12] = 3.0;   // refl_frac
+}
+
+void set_std_param_relxill_bbret(double *inp_par) {
+  inp_par[0] = 0.998;
+  inp_par[1] = 60.0;
+  inp_par[2] = -1.0;
+  inp_par[3] = 1000.;
+  inp_par[4] = 0.0;   // redshift
+  inp_par[5] = 1.0;   // kTbb
+  inp_par[6] = 2.0;   // logxi
+  inp_par[7] = 1.0;   // Afe
+  inp_par[8] = 15.0; // logN
+  inp_par[9] = 1.0;   // refl_frac
+  inp_par[10] = 1;   // fixReflFrac
+  inp_par[11] = 1.4;   // shiftTmaxRRad
 }
 
 void set_std_param_relxillco(double *inp_par) {
@@ -276,7 +291,7 @@ void set_std_param_relxillco(double *inp_par) {
   inp_par[3] = 0.998;
   inp_par[4] = 60.0;
   inp_par[5] = -1.0;
-  inp_par[6] = 400.;
+  inp_par[6] = 1000.;  // Rout
   inp_par[7] = 0.0;   // redshift
   inp_par[8] = 2.0;   // gamma
   inp_par[9] = 10.0;  // A_CO
@@ -598,7 +613,7 @@ void std_eval_relxilllp(int *status, int n) {
   CHECK_STATUS_VOID(*status);
 
   /* create an energy grid */
-  int n_ener = 100;
+  int n_ener = 1000;
   double ener[n_ener + 1];
   get_log_grid(ener, n_ener + 1, 0.1, 1000.0);
 

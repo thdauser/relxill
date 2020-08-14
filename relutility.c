@@ -205,6 +205,14 @@ int is_relxill_model(int model_type) {
   }
 }
 
+int is_returnrad_model(int model_type) {
+  if (model_type == MOD_TYPE_RELXILLBBRET) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 /** trapez integration around a single bin
  *  caveat: only returns half of the full 2*PI*r*dr due to computational speed**/
 double trapez_integ_single(double *re, int ii, int nr) {
@@ -226,7 +234,12 @@ double gstar2ener(double g, double gmin, double gmax, double ener) {
 }
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-void get_rzone_grid(double rmin, double rmax, double *rgrid, int nzones, double h) {
+double *get_rzone_grid(double rmin, double rmax, int nzones, double h, int *status) {
+
+  CHECK_STATUS_RET(*status, NULL);
+
+  double *rgrid = malloc(sizeof(double) * (nzones + 1));
+  CHECK_MALLOC_RET_STATUS(rgrid, status, rgrid)
 
   if (nzones == 1) {
     rgrid[0] = rmin;
@@ -262,7 +275,8 @@ void get_rzone_grid(double rmin, double rmax, double *rgrid, int nzones, double 
     }
 
   }
-  return;
+
+  return rgrid;
 }
 
 /** get the relxill table path (dynamically from env variable)  **/
@@ -312,7 +326,7 @@ void get_log_grid(double *ener, int n_ener, double emin, double emax) {
 }
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
-void get_rgrid(double *ener, int n_ener, double emin, double emax) {
+void getLogGrid(double *ener, int n_ener, double emin, double emax) {
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
     ener[ii] = 1.0 * ii / (n_ener - 1) * (1.0 / emax - 1.0 / emin) + 1.0 / emin;
@@ -471,7 +485,6 @@ void FFT_R2CT(short int dir, long m, double *x, double *y) {
     }
   }
 
-  return;
 }
 
 /** get the number of zones on which we calculate the relline-spectrum **/
@@ -577,7 +590,7 @@ int do_renorm_model(relParam *rel_param) {
   int renorm;
 
   if (is_relxill_model(rel_param->model_type)) {
-    if (rel_param->emis_type == EMIS_TYPE_LP) {
+    if (rel_param->emis_type == EMIS_TYPE_LP || is_returnrad_model(rel_param->model_type)) {
       renorm = 0;
     } else {
       renorm = 1;
@@ -830,11 +843,12 @@ double calc_g_inf(double height, double a) {
       (height * height + a * a)));
 }
 
-void zeroArray(double *arr, int n) {
+void setArrayToZero(double *arr, int n) {
   for (int jj = 0; jj < n; jj++) {
     arr[jj] = 0.0;
   }
 }
+
 
 void multiplyArray(double *arr, int n, double factor) {
   for (int jj = 0; jj < n; jj++) {
@@ -867,6 +881,10 @@ void rebin_mean_flux(double *xn, double *yn, int nn, double *x0, double *y0, int
     }
     ii--;
 
+    if (ii == 0) {  // at the lowest bin, we need to extrapolate
+      ii = 1;
+    }
+
     double x0_m_lo = 0.5 * (x0[ii - 1] + x0[ii]);
     double x0_m_hi = 0.5 * (x0[ii] + x0[ii + 1]);
 
@@ -878,6 +896,7 @@ void rebin_mean_flux(double *xn, double *yn, int nn, double *x0, double *y0, int
   }
 
 }
+
 
 /* Function: calculate the sum of an array
  *
@@ -915,8 +934,46 @@ void normSpec(double *spec, int n_ener) {
   }
 }
 
-void setArrayToZero(double *arr, int n) {
-  for (int jj = 0; jj < n; jj++) {
-    arr[jj] = 0.0;
+
+
+EnerGrid *new_EnerGrid(int *status) {
+
+  EnerGrid *egrid = malloc(sizeof(EnerGrid));
+  CHECK_MALLOC_RET_STATUS(egrid, status, egrid)
+  return egrid;
+}
+
+Spectrum *new_Spectrum(int *status) {
+
+  Spectrum *spec = malloc(sizeof(Spectrum));
+  CHECK_MALLOC_RET_STATUS(spec, status, spec)
+  return spec;
+}
+
+void free_Spectrum(Spectrum **spec) {
+
+  if (*spec != NULL) {
+    free((*spec)->ener);
+    free((*spec)->flux);
+    free(*spec);
   }
+
+}
+
+Spectrum *getNewSpec(double emin, double emax, int nbins, int *status) {
+
+  double *ener = malloc(sizeof(double) * (nbins + 1));
+  double *flux = malloc(sizeof(double) * nbins);
+
+  Spectrum *spec = new_Spectrum(status);
+
+  get_log_grid(ener, nbins + 1, emin, emax);
+
+  setArrayToZero(flux, nbins);
+
+  spec->nbins = nbins;
+  spec->ener = ener;
+  spec->flux = flux;
+
+  return spec;
 }

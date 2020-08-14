@@ -74,6 +74,9 @@
 #define MOD_TYPE_RELXILLNS -30
 #define NUM_PARAM_RELXILLNS 13
 
+#define MOD_TYPE_RELXILLBBRET -300
+#define NUM_PARAM_RELXILLBBRET 12
+
 #define MOD_TYPE_XILLVERNS -101
 #define NUM_PARAM_XILLVERNS 7
 
@@ -84,6 +87,7 @@
 #define NUM_PARAM_RELXILLDENS_NTHCOMP 14
 
 #define MOD_TYPE_RELXILLLPDENS_NTHCOMP -1002
+
 #define NUM_PARAM_RELXILLLPDENS_NTHCOMP 15
 
 /****  TYPE DEFINITIONS ****/
@@ -105,34 +109,19 @@ void init_par_relxill(relParam **rel_param,
                       const int n_parameter,
                       int *status);
 
+void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status);
+
+void init_par_relxill_bbret(relParam **rel_param, xillParam **xill_param, const double *inp_par, const int n_parameter, int *status);
+
 /** basic xillver model function **/
 void xillver_base(const double *ener0, const int n_ener0, double *photar, xillParam *param_struct, int *status);
 
 /** internal MODEL FUNCTIONS **/
-void tdrelline(const double *ener,
-               const int n_ener,
-               double *photar,
-               const double *parameter,
-               const int n_parameter,
-               int *status);
-void tdrellinelp(const double *ener,
-                 const int n_ener,
-                 double *photar,
-                 const double *parameter,
-                 const int n_parameter,
-                 int *status);
-void tdrelxill(const double *ener0,
-               const int n_ener0,
-               double *photar,
-               const double *parameter,
-               const int n_parameter,
-               int *status);
-void tdrelxilllp(const double *ener0,
-                 const int n_ener0,
-                 double *photar,
-                 const double *parameter,
-                 const int n_parameter,
-                 int *status);
+
+void tdrelline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
 void tdrelxilllpion(const double *ener0,
                     const int n_ener0,
                     double *photar,

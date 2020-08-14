@@ -290,7 +290,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 
   emisProfile *emisProfSingle = new_emisProfile(emisProf->re, emisProf->nr, status);
 
-  zeroArray(emisProf->emis, emisProf->nr);
+  setArrayToZero(emisProf->emis, emisProf->nr);
   emisProf->returnFracs = new_lpReflFrac(status);
   emisProf->normFactorPrimSpec = 0.0;
 
@@ -478,4 +478,25 @@ void free_emisProfile(emisProfile *emis_profile) {
 
     free(emis_profile);
   }
+}
+
+
+static void get_emis_alphadisk(double *emis, double *re, int n) {
+
+  for (int ii = 0; ii < n; ii++) {
+    emis[ii] = 1. / pow(re[ii], 3) * (1 - 1. / sqrt(re[ii] / re[0]));
+  }
+
+  // normalized to 1?
+
+}
+
+static void get_emis_constant(double *emis, double *re, int n) {
+
+  for (int ii = 0; ii < n; ii++) {
+    emis[ii] = 1.0;
+  }
+
+  // normalized to 1?
+
 }

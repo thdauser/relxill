@@ -22,8 +22,6 @@
 #include "relutility.h"
 
 #define CACHE_LIMIT 1e-8
-//const double cache_limit = 1e-8;
-
 
 /****** TYPEDEF******/
 

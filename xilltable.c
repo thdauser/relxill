@@ -34,7 +34,7 @@ xillTable *cached_xill_tab_co = NULL;
 
 // todo: put "is model func" in relmodels.c and better structure?
 static int is_ns_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS)) {
+  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) || model_type == MOD_TYPE_RELXILLBBRET) {
     return 1;
   } else {
     return 0;
@@ -972,6 +972,8 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 
   // =3= interpolate values
   xill_spec *spec = interp_xill_table(tab, param, ind, status);
+
+  CHECK_RELXILL_DEFAULT_ERROR(status);
 
   free(ind);
   return spec;
