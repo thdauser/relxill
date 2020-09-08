@@ -1631,11 +1631,17 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
     lpReflFrac *struct_refl_frac = sysPar->emis->returnFracs;
 
-    if ((xill_param->fixReflFrac == 1) || (xill_param->fixReflFrac == 2)) {
+    if ( xill_param->fixReflFrac > 0 ) {
       /** set the reflection fraction calculated from the height and
        *  spin of the primary source, in this case for the physical
        *  value from Rin to Rout          						 */
       xill_param->refl_frac = struct_refl_frac->refl_frac;
+
+      // special case, if set to "3", it will return only the reflected spectrum
+      // with the normalization as predicted
+      if (xill_param->fixReflFrac == 3){
+        xill_param->refl_frac = - struct_refl_frac->refl_frac;
+      }
     }
 
     /** 4 ** and apply it to primary and reflected spectra **/

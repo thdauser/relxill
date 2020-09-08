@@ -131,6 +131,14 @@ define set_params_xillver(pars){ %{{{
    
 }
 %}}}
+define isLpModel(ff){ %{{{
+   if (string_matches(ff,"relxilllp")!=NULL){
+      return 1;
+   } else {
+      return 0;
+   }
+}
+%}}}
 
 
    
@@ -1187,25 +1195,77 @@ define check_iongrad_mod(){ %{{{
 %}}}
 
 
-define ncheck_fix_refl_frac_single(ff){ %{{{
+define ncheck_refl_frac_single(ff){ %{{{
    
-%   vmessage("   -> reflection fraction in %s",ff);
    variable val0,val1,valr;
    
    fit_fun_default(ff);
    
    set_par("*.refl_frac",1,0,-10,10);
-%   set_par("*.fixReflFrac",0);
    val1 =  eval_fun_keV(lo0,hi0);
 
-%   set_par("*.fixReflFrac",1);
    set_par("*.refl_frac",-1,0,-10,10);
-%   set_par("*.fixReflFrac",0);
    val0 =  eval_fun_keV(lo0,hi0);
    
    return goodness(val1,val0);
 }
 %}}}
+
+
+define ncheck_fixReflFrac_working(ff){ %{{{
+   
+   variable val0,val1,valr;
+   
+   fit_fun_default(ff);
+   
+   set_par("*.fixReflFrac",0);
+   set_par("*.refl_frac",0.1);
+   val1 =  eval_fun_keV(lo0,hi0);
+
+   set_par("*.fixReflFrac",1);
+   val0 =  eval_fun_keV(lo0,hi0);
+   
+   return goodness(val1,val0);
+}
+%}}}
+
+
+define ncheck_fixReflFrac_onlyRefl(ff){ %{{{
+   
+   variable val0,val1,valr;
+   
+   fit_fun_default(ff);
+   
+   set_par("*.fixReflFrac",1);
+   val1 =  eval_fun_keV(lo0,hi0);
+
+   set_par("*.fixReflFrac",3);
+   val0 =  eval_fun_keV(lo0,hi0);
+   
+   return goodness(val1,val0);
+}
+%}}}
+
+define check_fixReflFrac(ff){ %{{{
+   
+   variable val0,val1,valp;
+   
+   fit_fun_default(ff);
+
+   set_par("*.fixReflFrac",1);
+   val1 =  eval_fun_keV(lo0,hi0);
+
+   set_par("*.fixReflFrac",3);
+   val0 =  eval_fun_keV(lo0,hi0);
+
+   set_par("*.fixReflFrac",0);
+   set_par("*.refl_frac",0);
+   valp =  eval_fun_keV(lo0,hi0);
+
+   return goodness(val1,val0+valp);
+}
+%}}}
+
 
 define check_prim_cont(){ %{{{
    
@@ -1292,9 +1352,26 @@ define check_refl_frac(){ %{{{
 	vmessage(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s (goodness %e)",ff[ii],goodn);
 	 return EXIT_FAILURE;
       }
-      if (ncheck_fix_refl_frac_single(ff[ii]) < goodness_lim){
+      if (ncheck_refl_frac_single(ff[ii]) < goodness_lim){
 	 vmessage(" *** error: there seems to be a problem with the reflection fraction (no difference between 1 and -1) in  MODEL %s ",ff[ii]);
 	 return EXIT_FAILURE;
+      }
+      
+      
+      if (isLpModel(ff[ii])) {
+	 vmessage("    + fixReflFrac parameter in %s",ff[ii]);
+	 if (check_fixReflFrac(ff[ii]) > goodness_lim){
+	    vmessage(" *** error: there seems to be a problem with the fixReflFrac parameter in  MODEL %s ",ff[ii]);
+	    return EXIT_FAILURE;
+	 }
+	 if (ncheck_fixReflFrac_working(ff[ii]) < goodness_lim){
+	    vmessage(" *** error: there seems to be a problem with the fixReflFrac parameter (no difference 0 and 1) in  MODEL %s ",ff[ii]);
+	    return EXIT_FAILURE;
+	 }
+	 if (ncheck_fixReflFrac_onlyRefl(ff[ii]) < goodness_lim){
+	    vmessage(" *** error: there seems to be a problem with the fixReflFrac parameter (no difference between 1 and -1) in  MODEL %s ",ff[ii]);
+	    return EXIT_FAILURE;
+	 }
       }
    }
    
@@ -1375,8 +1452,6 @@ define print_refl_frac(){ %{{{
    return EXIT_SUCCESS;
 }
 %}}}
-
-if (check_refl_frac() != EXIT_SUCCESS) exit;
 
 
 %if (eval_test_notable() != EXIT_SUCCESS) exit;
