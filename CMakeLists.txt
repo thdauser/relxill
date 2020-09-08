@@ -29,7 +29,12 @@ set(SOURCE_FILES
         test_relxill.c test_relxill.h
         test_rellp.c test_rellp.h
         relphysics.c relphysics.h
-        test_std_functions.c test_std_functions.h)
+        test_std_functions.c test_std_functions.h
+        relreturn_datastruct.c relreturn_datastruct.h
+        relreturn_table.c relreturn_table.h
+        test_relreturn.c test_relreturn.h
+        relreturn.c relreturn.h
+        )
 
 
 set(EXEC_FILES
