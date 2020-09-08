@@ -30,6 +30,12 @@ set(SOURCE_FILES
         test_rellp.c test_rellp.h
         relphysics.c relphysics.h
         test_std_functions.c test_std_functions.h
+        )
+
+
+# add additional source files of development models not included in the master
+# branch
+set(SOURCE_FILES ${SOURCE_FILES}
         relreturn_datastruct.c relreturn_datastruct.h
         relreturn_table.c relreturn_table.h
         test_relreturn.c test_relreturn.h
