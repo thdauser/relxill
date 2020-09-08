@@ -267,7 +267,11 @@ xillParam *init_par_xillver_dens(const double *inp_par, const int n_parameter, i
   return param;
 }
 
-void init_par_relxill(relParam **rel_param, xillParam **xill_param, const double *inp_par, const int n_parameter, int *status) {
+void init_par_relxill(relParam **rel_param,
+                      xillParam **xill_param,
+                      const double *inp_par,
+                      const int n_parameter,
+                      int *status) {
 
   // fill in parameters
   relParam *param = new_relParam(MOD_TYPE_RELXILL, EMIS_TYPE_BKN, status);
@@ -1933,18 +1937,24 @@ void lmodrelxilldensnthcomp(const double *ener0,
     RELXILL_ERROR("evaluating relxill_dens model failed", &status);
 }
 
-
 /** XSPEC RELXILL NS MODEL FUNCTION **/
-void lmodrelxillbbret(const double* ener0, const int n_ener0, const double* parameter, int ifl, double* photar, double* photer, const char* init){
+void lmodrelxillbbret(const double *ener0,
+                      const int n_ener0,
+                      const double *parameter,
+                      int ifl,
+                      double *photar,
+                      double *photer,
+                      const char *init) {
 
-  const int n_parameter = 12;
   int status = EXIT_SUCCESS;
 #ifdef tdrelxillbbret
+  const int n_parameter = 12;
   tdrelxillbbret(ener0, n_ener0, photar, parameter, n_parameter, &status);
-  if (status!=EXIT_SUCCESS)
+  if (status!=EXIT_SUCCESS) {
     RELXILL_ERROR("evaluating relxillBBret model failed",&status);
+  }
 #else
-  RELXILL_ERROR("this fit-function is not included in the current model version",&status);
+  RELXILL_ERROR("this fit-function is not included in the current model version", &status);
 #endif
 
 }
