@@ -8,6 +8,7 @@
       <option name="INDENT_INSIDE_CODE_BLOCK" value="2" />
       <option name="KEEP_STRUCTURES_IN_ONE_LINE" value="true" />
       <option name="KEEP_CASE_EXPRESSIONS_IN_ONE_LINE" value="true" />
+      <option name="KEEP_DIRECTIVE_AT_FIRST_COLUMN" value="false" />
       <option name="FUNCTION_NON_TOP_AFTER_RETURN_TYPE_WRAP" value="0" />
       <option name="FUNCTION_TOP_AFTER_RETURN_TYPE_WRAP" value="0" />
       <option name="FUNCTION_PARAMETERS_WRAP" value="5" />
@@ -31,6 +32,8 @@
       </rules>
     </Objective-C-extensions>
     <codeStyleSettings language="ObjectiveC">
+      <option name="KEEP_FIRST_COLUMN_COMMENT" value="false" />
+      <option name="KEEP_CONTROL_STATEMENT_IN_ONE_LINE" value="false" />
       <option name="KEEP_BLANK_LINES_IN_DECLARATIONS" value="1" />
       <option name="KEEP_BLANK_LINES_IN_CODE" value="1" />
       <option name="KEEP_BLANK_LINES_BEFORE_RBRACE" value="1" />
@@ -41,10 +44,12 @@
       <option name="BLANK_LINES_AROUND_METHOD_IN_INTERFACE" value="0" />
       <option name="ALIGN_MULTILINE_BINARY_OPERATION" value="false" />
       <option name="BINARY_OPERATION_SIGN_ON_NEXT_LINE" value="true" />
+      <option name="KEEP_SIMPLE_METHODS_IN_ONE_LINE" value="false" />
       <option name="FOR_STATEMENT_WRAP" value="1" />
       <option name="ASSIGNMENT_WRAP" value="1" />
       <option name="IF_BRACE_FORCE" value="3" />
       <option name="DOWHILE_BRACE_FORCE" value="3" />
+      <option name="WHILE_BRACE_FORCE" value="3" />
       <option name="FOR_BRACE_FORCE" value="3" />
       <indentOptions>
         <option name="INDENT_SIZE" value="2" />
