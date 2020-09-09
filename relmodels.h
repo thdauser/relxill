@@ -111,8 +111,6 @@ void init_par_relxill(relParam **rel_param,
 
 void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status);
 
-void init_par_relxill_bbret(relParam **rel_param, xillParam **xill_param, const double *inp_par, const int n_parameter, int *status);
-
 /** basic xillver model function **/
 void xillver_base(const double *ener0, const int n_ener0, double *photar, xillParam *param_struct, int *status);
 
@@ -404,5 +402,13 @@ void lmodrelxilldensnthcomp(const double *ener0,
                             double *photar,
                             double *photer,
                             const char *init);
+
+void lmodrelxillbbret(const double *ener0,
+                      const int n_ener0,
+                      const double *parameter,
+                      int ifl,
+                      double *photar,
+                      double *photer,
+                      const char *init);
 
 #endif /* MODELS_H_ */
