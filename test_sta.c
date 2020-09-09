@@ -101,6 +101,10 @@ int main(int argc, char *argv[]) {
     } else if (strcmp(argv[1], "emisTest") == 0) {
       do_emisTest = 1;
       do_all = 0;
+#ifdef test_relreturn // this is not in the main branch, so we can only use it if it is defined
+      } else if (strcmp(argv[1], "relreturn") == 0) {
+        do_all = 0;
+#endif
     }
 
   }
@@ -115,6 +119,7 @@ int main(int argc, char *argv[]) {
 
     if (do_all) {
       testStdFunctions(&status);
+      test_xilltables();
     }
 
     if (do_all || do_emisTest) {
@@ -122,10 +127,11 @@ int main(int argc, char *argv[]) {
       CHECK_STATUS_BREAK(status);
     }
 
-    if (do_all) {
-
-      test_xilltables();
+#ifdef test_relreturn // this is not in the main branch, so we can only use it if it is defined
+    if (strcmp(argv[1], "relreturn") == 0) {
+      test_relreturn(&status);
     }
+#endif
 
     if (do_all || do_relline) {
       status = EXIT_SUCCESS;
