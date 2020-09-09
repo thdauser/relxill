@@ -94,6 +94,10 @@
 
 
 /**** FUNCTION DEFINITIONS ****/
+
+void check_parameter_bounds(relParam *param, int *status);
+double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status);
+
 relParam *init_par_relline(const double *inp_par, const int n_parameter, int *status);
 relParam *init_par_relline_lp(const double *inp_par, const int n_parameter, int *status);
 relParam *init_par_relconv(const double *inp_par, const int n_parameter, int *status);

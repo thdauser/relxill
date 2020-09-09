@@ -45,7 +45,7 @@ void print_version_number(int *status) {
 int warned_rms = 0;
 int warned_height = 0;
 
-static void check_parameter_bounds(relParam *param, int *status) {
+void check_parameter_bounds(relParam *param, int *status) {
 
   // first set the Radii to positive value
   setNegativeRadiiToRisco(&(param->rin), param->a);
@@ -925,7 +925,7 @@ static void init_flux_array(const int n_ener0, double *flux) {
 }
 
 /** shift the spectrum such that we can calculate the line for 1 keV **/
-static double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status) {
+double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status) {
 
   double *ener1keV = (double *) malloc((n_ener + 1) * sizeof(double));
   CHECK_MALLOC_RET_STATUS(ener1keV, status, NULL)
