@@ -22,7 +22,6 @@
 #include "relmodels.h"
 #include "relreturn.h"
 #include "test_relxill.h"
-#include "test_std_functions.h"
 
 #ifndef RELXILL_SOURCE_DIR
 #error: RELXILL_SOURCE_DIR is not defined
@@ -787,4 +786,8 @@ void test_relreturn(void ) {
 
 }
 
+int main(int argc, char *argv[]) {
 
+  test_relreturn();
+
+}

@@ -47,6 +47,9 @@ set(EXEC_FILES
         test_sta
         )
 
+set(EXEC_FILES ${EXEC_FILES} test_relreturn)
+
+
 foreach (execfile ${EXEC_FILES})
     add_executable(${execfile} ${execfile}.c ${SOURCE_FILES})
     target_link_libraries(${execfile} m cfitsio)
