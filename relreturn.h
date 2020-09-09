@@ -71,14 +71,26 @@ double * getXillverPrimaryBBodyNormalized(double kTbb, double* spec_in, double* 
 
 double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb, double * spec_in, double* spec_bb, double* ener, int n_ener, int* status);
 
-double* scaledXillverPrimaryBBodyHighener(double kTbb, double* spec_in, double* ener, int n_ener, int* status);
+double *scaledXillverPrimaryBBodyHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
-void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec* rel_profile, const returnSpec2D *returnSpec,
-                                         double *xill_flux_returnrad, int izone, int* status);
+void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec *rel_profile, const returnSpec2D *returnSpec,
+                                         double *xill_flux_returnrad, int izone, int *status);
 
 void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
 void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
 
-double* getTemperatureProfileDiskZones(returnFracIpol* dat, double Rin, double Tin, int* status);
+double *getTemperatureProfileDiskZones(returnFracIpol *dat, double Rin, double Tin, int *status);
+
+void init_par_relxill_bbret(relParam **rel_param,
+                            xillParam **xill_param,
+                            const double *inp_par,
+                            int n_parameter,
+                            int *status);
+void tdrelxillbbret(const double *ener0,
+                    int n_ener0,
+                    double *photar,
+                    const double *parameter,
+                    int n_parameter,
+                    int *status);
 
 #endif //RELXILL__RELRETURN_H_

@@ -603,13 +603,70 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
 
 }
 
+// MAIN function (to be moved to relmodels.c once the model is finished)
+void init_par_relxill_bbret(relParam **rel_param,
+                            xillParam **xill_param,
+                            const double *inp_par,
+                            const int n_parameter,
+                            int *status) {
 
+  // fill in parameters
+  relParam *param = new_relParam(MOD_TYPE_RELXILLBBRET, EMIS_TYPE_CONST, status);
+  CHECK_STATUS_VOID(*status);
 
-/*** Routines for the Power Law Case ***/
+  xillParam *xparam = new_xillParam(MOD_TYPE_RELXILLBBRET, PRIM_SPEC_BB, status);
+  CHECK_STATUS_VOID(*status);
 
-/*static void calc_rr_emis_ring(void){
+  assert(n_parameter == NUM_PARAM_RELXILLBBRET);
 
-  printf(" I am empty \n");
+  param->a = inp_par[0];
+  param->incl = inp_par[1] * M_PI / 180;
+  param->rin = inp_par[2];
+  param->rout = inp_par[3];
+  param->z = inp_par[4];
+  xparam->z = inp_par[4];
 
-}*/
+  xparam->kTbb = inp_par[5];
+  xparam->lxi = inp_par[6];
+  xparam->afe = inp_par[7];
+  xparam->ect = 0.0; // Ecut does not make sense for BB
+  xparam->dens = inp_par[8];
+
+  xparam->refl_frac = inp_par[9];
+  xparam->fixReflFrac = (int) (inp_par[10] + 0.5); // make sure there is nor problem with integer conversion
+  xparam->shiftTmaxRRet = inp_par[11];
+
+  check_parameter_bounds(param, status);
+  CHECK_STATUS_VOID(*status);
+
+  *rel_param = param;
+  *xill_param = xparam;
+
+}
+
+/** RELXILL MODEL FUNCTION for the BB returning radiation **/
+void tdrelxillbbret(const double *ener0,
+                    const int n_ener0,
+                    double *photar,
+                    const double *parameter,
+                    const int n_parameter,
+                    int *status) {
+
+  xillParam *xill_param = NULL;
+  relParam *rel_param = NULL;
+
+  init_par_relxill_bbret(&rel_param, &xill_param, parameter, n_parameter, status);
+  CHECK_STATUS_VOID(*status);
+
+  double *ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
+
+  relxill_bb_kernel(ener, photar, n_ener0, xill_param, rel_param, 0, status);
+  CHECK_STATUS_VOID(*status);
+
+  free(ener);
+  free_xillParam(xill_param);
+  free_relParam(rel_param);
+
+}
+
 
