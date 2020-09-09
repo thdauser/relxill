@@ -397,7 +397,6 @@ static void testReturnfractionsRadialGridWhenChangingRin(int* status){
 
 }
 
-
 static void testReturnfractionsInterpolationForDifferentSpins(int* status){
 
   CHECK_STATUS_VOID(*status);
@@ -412,7 +411,11 @@ static void testReturnfractionsInterpolationForDifferentSpins(int* status){
   for (int ii=0; ii<nspin; ii++){
 
     double Rin = kerr_rms(spin[ii]);
-    returnFracIpol* dat = get_rr_fractions(spin[ii], Rin, Rout, status);
+    returnFracIpol *dat = get_rr_fractions(spin[ii], Rin, Rout, status);
+
+    assert(dat != NULL);
+
+    printf(" this test is missing any useful actions \n");
     // TODO: Test missing here
   }
 
@@ -733,9 +736,9 @@ static void testDifferentSpinValues(int* status) {
     // printf("\n    -> testing spin=%.3e ", spinArray[ii]);
     tdrelxillbbret(spec->ener, spec->nbins, spec->flux, inp_par, n_param, status);
 
-    if (! (calcSum(spec->flux, spec->nbins)>=0) ){
+    if (calcSum(spec->flux, spec->nbins) < 0) {
       printf("\n  *** error: testing spin=%.3e failed (summed output flux = %e ) \n",
-          spinArray[ii], calcSum(spec->flux, spec->nbins));
+             spinArray[ii], calcSum(spec->flux, spec->nbins));
       *status = EXIT_FAILURE;
       break;
     }
@@ -783,3 +786,5 @@ void test_relreturn(void ) {
   testDifferentSpinValues(&status);
 
 }
+
+
