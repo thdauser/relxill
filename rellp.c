@@ -333,6 +333,28 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 
 }
 
+
+static void get_emis_alphadisk(double *emis, double *re, int n) {
+
+  for (int ii = 0; ii < n; ii++) {
+    emis[ii] = 1. / pow(re[ii], 3) * (1 - 1. / sqrt(re[ii] / re[0]));
+  }
+
+  // normalized to 1?
+
+}
+
+static void get_emis_constant(double *emis, int n) {
+
+  for (int ii = 0; ii < n; ii++) {
+    emis[ii] = 1.0;
+  }
+
+  // normalized to 1?
+
+}
+
+
 /*
  * LAMP POST GEOMETRY  --- MAIN ROUTINE
  */
@@ -379,6 +401,12 @@ emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status)
       emis->del_emit[ii] = invalid_angle;
       emis->del_inc[ii] = invalid_angle;
     }
+
+  } else if (param->emis_type == EMIS_TYPE_ALPHA) {
+    get_emis_alphadisk(emis->emis, re, nr);
+
+  } else if (param->emis_type == EMIS_TYPE_CONST) {
+    get_emis_constant(emis->emis, nr);
 
     /**  *** Lamp Post Emissivity ***  **/
   } else if (param->emis_type == EMIS_TYPE_LP) {
@@ -480,23 +508,3 @@ void free_emisProfile(emisProfile *emis_profile) {
   }
 }
 
-
-static void get_emis_alphadisk(double *emis, double *re, int n) {
-
-  for (int ii = 0; ii < n; ii++) {
-    emis[ii] = 1. / pow(re[ii], 3) * (1 - 1. / sqrt(re[ii] / re[0]));
-  }
-
-  // normalized to 1?
-
-}
-
-static void get_emis_constant(double *emis, double *re, int n) {
-
-  for (int ii = 0; ii < n; ii++) {
-    emis[ii] = 1.0;
-  }
-
-  // normalized to 1?
-
-}
