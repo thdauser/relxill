@@ -870,7 +870,7 @@ void rebin_mean_flux(double *xn, double *yn, int nn, double *x0, double *y0, int
   int ii = 1; // we start at one, as we always need one bin lower than the xn[0] bin
   for (int in = 0; in < nn; in++) {  // only go to the second to last bin
 
-    yn[ii] = 0.0; // set it zero by default
+    yn[in] = 0.0; // set it zero by default
 
     double xn_m = 0.5 * (xn[in] + xn[in + 1]);
     while (0.5 * (x0[ii - 1] + x0[ii]) < xn_m) {
