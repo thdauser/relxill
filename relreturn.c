@@ -74,7 +74,7 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
   if (is_debug_run()) {
     fits_rr_write_2Dspec("!debug-testrr-rframe-rr-bbody.fits", returnSpec->specRet, ener, nener,
                          dat->rlo, dat->rhi, dat->nrad, dat, status);
-    fits_rr_write_2Dspec("!debug-testrr-rframe-prim-bbody.fits",returnSpec->specPri, ener, nener,
+    fits_rr_write_2Dspec("!debug-testrr-rframe-prim-bbody.fits", returnSpec->specPri, ener, nener,
                          dat->rlo, dat->rhi, dat->nrad, dat, status);
   }
 
@@ -84,15 +84,79 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
 
 }
 
+/*** Routines for the corona / PL case ***/
+
+static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
+                                               emisProfile *emisInput,
+                                               double gamma,
+                                               int irad,
+                                               int *status) {
+
+  // loop over all zones to get the emissivity incident on this one zone irad
+
+  int ng = dat->tabData->ng;
+  int nrad = dat->nrad;
+
+  // need to have emisInput on the radial zone grid
+  // [poor test, as radial grid could still be different]
+  assert(emisInput->nr == dat->nrad);
+
+  double emis_r[nrad];
+  double gfac[ng];
+
+  for (int ii = 0; ii < nrad; ii++) {
+
+    get_gfac_grid(gfac, dat->tabData->gmin[irad][ii], dat->tabData->gmax[irad][ii], ng);
+
+    emis_r[ii] = 0.0;
+    for (int jj = 0; jj < ng; jj++) {
+      emis_r[ii] += pow(gfac[jj], gamma) * dat->tabData->frac_g[irad][ii][jj];
+    }
+
+    emis_r[ii] *= dat->frac_i[irad][ii] * emisInput->emis[ii] * dat->tabData->f_ret[ii];
+  }
+
+  double emisZone = calcSum(emis_r, nrad);
+
+  return emisZone;
+}
+
+emisProfile *get_rrad_emis_corona(double *re, int nr, relParam *param, int *status) {
+
+  CHECK_STATUS_RET(*status, NULL);
+
+  returnFracIpol *dat = get_rr_fractions(param->a, param->rin, param->rout, status);
+
+  double rmeanZone[dat->nrad];
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    rmeanZone[ii] = 0.5 * (dat->rlo[ii] + dat->rhi[ii]);
+  }
+  emisProfile *emisInput = new_emisProfile(rmeanZone, dat->nrad, status); // think about free memeory etc
+  get_emis_jet(emisInput, param, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  emisProfile *emisReturn = new_emisProfile(rmeanZone, dat->nrad, status); // think about free memeory etc
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    emisReturn->emis[ii] = calc_rrad_emis_corona_singleZone(dat, emisInput, param->gamma, ii, status);
+  }
+
+  emisProfile *emisReturnRebinned = new_emisProfile(re, nr, status);
+
+
+  // rebin to (typically finer) emissivity grid
+  interpolEmisProfile(emisReturnRebinned, emisReturn);
+
+}
+
 /*** Routines for the Black Body Case ***/
 
-static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec, double temp,
-    double* gfac, int ng, const double* frac_g){
-// loop over all gfac and calculate the spectrum for each
+static void calc_rr_bbspec_gzone(double *ener, int nener, double *spec, double temp,
+                                 double *gfac, int ng, const double *frac_g) {
+  // loop over all gfac and calculate the spectrum for each
   double spec_g[nener];
   for (int kk = 0; kk < ng; kk++) {
     bbody_spec(ener, nener, spec_g, temp, gfac[kk]);
-    for (int jj=0; jj<nener; jj++){
+    for (int jj = 0; jj < nener; jj++) {
       spec[jj] += spec_g[jj] * frac_g[kk];
     }
   }
