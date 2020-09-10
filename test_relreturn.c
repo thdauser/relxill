@@ -585,8 +585,7 @@ static void testSingleZoneRframeReflectSpectrum(int* status){
 static void test_rr_bbody_lmod(int* status){
 
   CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG( "(switching on DEBUG=1)\n" );
-  putenv("DEBUG_RELXILL=1");
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   double Tin = 1.0;
   double spin = 0.86;
@@ -627,8 +626,6 @@ static void test_rr_bbody_lmod(int* status){
   relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
   fits_write_spec("!testrr-spec-rr-bbody-reflect.fits",ener, photar, n_ener, status);
 
-
-  putenv("DEBUG_RELXILL=0");
 
   print_relxill_test_result(*status);
 }
@@ -688,6 +685,7 @@ static void testEvaluateRelxillbbret(int* status) {
 
   CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG("(switching on DEBUG=1)\n");
+  putenv("DEBUG_RELXILL=1");
 
   /* set the parameters */
   enum {n_param = NUM_PARAM_RELXILLBBRET};
@@ -732,7 +730,7 @@ static void testDifferentSpinValues(int* status) {
 
   for (int ii=0; ii< nspin; ii++){
     inp_par[0] = spinArray[ii];
-    // printf("\n    -> testing spin=%.3e ", spinArray[ii]);
+    printf("\n    -> testing spin=%.3e ", spinArray[ii]);
     tdrelxillbbret(spec->ener, spec->nbins, spec->flux, inp_par, n_param, status);
 
     if (calcSum(spec->flux, spec->nbins) < 0) {
