@@ -73,6 +73,7 @@ typedef struct {
   int limb;
   int do_renorm_relline;
   int num_zones;
+  int return_rad;
 } relParam;
 
 typedef struct {

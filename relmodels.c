@@ -1515,6 +1515,7 @@ relParam *new_relParam(int model_type, int emis_type, int *status) {
   param->height = PARAM_DEFAULT;
   param->htop = 0.0;
   param->limb = 0;
+  param->return_rad = 0;
 
   // this is set by the environment variable "RELLINE_PHYSICAL_NORM"
   param->do_renorm_relline = do_renorm_model(param);
