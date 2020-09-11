@@ -27,8 +27,6 @@
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
 
-#define NUM_PARAM_RELXILLBBRET 12
-
 // Function definitions
 static double **get_returnrad_specs(double *ener_inp,
                                     int nener_inp,

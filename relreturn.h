@@ -22,6 +22,8 @@
 #include "relreturn_table.h"
 #include "relreturn_datastruct.h"
 
+#define NUM_PARAM_RELXILLBBRET 12
+
 typedef struct {
 
   double *ener;  // n+1 elements

@@ -711,17 +711,17 @@ static void testEvaluateRelxillbbret(int* status) {
 
 }
 
-static void testDifferentSpinValues(int* status) {
+static void testBBretDifferentSpinValues(int *status) {
 
   CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
-  Spectrum* spec = getNewSpec(0.1,100,1000, status);
+  Spectrum *spec = getNewSpec(0.1, 100, 1000, status);
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
 
   /* set the parameters */
-  enum {n_param = NUM_PARAM_RELXILLBBRET};
+  enum { n_param = NUM_PARAM_RELXILLBBRET };
   double inp_par[n_param];
   set_std_param_relxill_bbret(inp_par);
   CHECK_STATUS_VOID(*status);
@@ -762,6 +762,14 @@ static void invertArray(double *vals, int n) {
     vals[ii] = storage[ii];
   }
 
+}
+
+/* ******* test_coronaRet ******** */
+
+static void set_std_param_relxilllpRet(double *inp_par) {
+  set_std_param_relxilllp(inp_par);
+  inp_par[0] = 3;   // height
+  inp_par[12] = 1;
 }
 
 static void testRebinEmisProfiles(int *status) {
@@ -812,8 +820,62 @@ static void testRebinEmisProfiles(int *status) {
 
 }
 
+static void evalLmodRelxilllpRet(int *status) {
+
+  CHECK_STATUS_VOID(*status);
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  enum { n_param = NUM_PARAM_RELXILLLPRET };
+  double inp_par[n_param];
+  set_std_param_relxilllpRet(inp_par);
+  CHECK_STATUS_VOID(*status);
+
+  Spectrum *spec = getNewSpec(0.1, 100, 1000, status);
+  CHECK_RELXILL_DEFAULT_ERROR(status);
+
+  tdrelxilllpret(spec->ener, spec->nbins, spec->flux, inp_par, n_param, status);
+  CHECK_RELXILL_DEFAULT_ERROR(status);
+
+  fits_write_spec("!testrr-spec-relxilllpret.fits", spec->ener, spec->flux, spec->nbins, status);
+
+  print_relxill_test_result(*status);
+
+}
+
+
 //  ======= MAIN ========   //
 
+void test_general(int *status) {
+
+  returnTable *tab = get_returnRadTable(status);
+
+  testReturnRadTableNormlizationAndRadialGrid(tab, status);
+
+  testReturnfractionsRadialGridWhenChangingRin(status);
+
+  // testReturnfractionsInterpolationForDifferentSpins(&status);
+
+}
+
+void test_bbodyRet(int *status) {
+
+  testTemperatureProfile(status);
+  testDiskbbSpec(status);
+  testReturnRadBBodySpec(status);
+  testSingleZoneRframeReflectSpectrum(status);
+  test_rr_bbody_lmod(status);
+  testSecondEvalReturnsIdenticalResults(status);
+  testEvaluateRelxillbbret(status);
+  testBBretDifferentSpinValues(status);
+
+}
+
+void test_coronaRet(int *status) {
+
+  testRebinEmisProfiles(status);
+  evalLmodRelxilllpRet(status);
+
+}
 
 void test_relreturn(void) {
   char *buf;
@@ -823,31 +885,11 @@ void test_relreturn(void) {
   printf("\n### Testing RETURN RADIATION ###\n");
   free(buf);
 
-  returnTable *tab = get_returnRadTable(&status);
+  test_general(&status);
 
-  testReturnRadTableNormlizationAndRadialGrid(tab, &status);
+  test_coronaRet(&status);
 
-  testRebinEmisProfiles(&status);
-
-  testTemperatureProfile(&status);
-
-  testReturnfractionsRadialGridWhenChangingRin(&status);
-
-  // testReturnfractionsInterpolationForDifferentSpins(&status);
-
-  testDiskbbSpec(&status);
-
-  testReturnRadBBodySpec(&status);
-
-  testSingleZoneRframeReflectSpectrum(&status);
-
-  test_rr_bbody_lmod(&status);
-
-  testSecondEvalReturnsIdenticalResults(&status);
-
-  testEvaluateRelxillbbret(&status);
-
-  testDifferentSpinValues(&status);
+  //  test_bbodyRet(&status);
 
 }
 

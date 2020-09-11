@@ -22,7 +22,6 @@
 #include "relmodels.h"
 #include "relutility.h"
 
-#define NUM_PARAM_RELXILLLPRET NUM_PARAM_RELXILLLP+1
 
 static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
                                                emisProfile *emisInput,
@@ -176,23 +175,25 @@ void init_par_relxill_ret(relParam **rel_param,
 
   assert(n_parameter == NUM_PARAM_RELXILLLPRET);
 
-  param->a = inp_par[0];
-  param->incl = inp_par[1] * M_PI / 180;
-  param->rin = inp_par[2];
-  param->rout = inp_par[3];
-  param->z = inp_par[4];
-  xparam->z = inp_par[4];
+  param->height = inp_par[0];
+  param->a = inp_par[1];
+  param->incl = inp_par[2] * M_PI / 180;
+  param->rin = inp_par[3];
+  param->rout = inp_par[4];
+  param->z = inp_par[5];
+  xparam->z = inp_par[5];
 
-  xparam->kTbb = inp_par[5];
-  xparam->lxi = inp_par[6];
-  xparam->afe = inp_par[7];
-  xparam->ect = 0.0; // Ecut does not make sense for BB
-  xparam->dens = inp_par[8];
+  param->gamma = inp_par[6];
+  xparam->gam = inp_par[6];
+  xparam->lxi = inp_par[7];
+  xparam->afe = inp_par[8];
+  xparam->ect = inp_par[9];
+  xparam->dens = 15.0;
 
-  xparam->refl_frac = inp_par[9];
-  xparam->fixReflFrac = (int) (inp_par[10] + 0.5); // make sure there is nor problem with integer conversion
-  xparam->shiftTmaxRRet = inp_par[11];
+  xparam->refl_frac = inp_par[10];
+  xparam->fixReflFrac = (int) (inp_par[11] + 0.5); // make sure there is nor problem with integer conversion
 
+  param->beta = 0.0;
   param->return_rad = (int) (inp_par[12] + 0.5); // make sure there is nor problem with integer conversion
 
   check_parameter_bounds(param, status);
@@ -205,10 +206,10 @@ void init_par_relxill_ret(relParam **rel_param,
 
 /** RELXILL MODEL FUNCTION for the BB returning radiation **/
 void tdrelxilllpret(const double *ener0,
-                    const int n_ener0,
+                    int n_ener0,
                     double *photar,
                     const double *parameter,
-                    const int n_parameter,
+                    int n_parameter,
                     int *status) {
 
   xillParam *xill_param = NULL;

@@ -21,14 +21,17 @@
 
 #include "relbase.h"
 #include "common.h"
+#include "relmodels.h"
+
+#define NUM_PARAM_RELXILLLPRET 13
 
 void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status);
 
 void tdrelxilllpret(const double *ener0,
-                    const int n_ener0,
+                    int n_ener0,
                     double *photar,
                     const double *parameter,
-                    const int n_parameter,
+                    int n_parameter,
                     int *status);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
