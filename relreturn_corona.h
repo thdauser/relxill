@@ -19,8 +19,16 @@
 #ifndef RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 #define RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 
+#include "relbase.h"
 #include "common.h"
 
 void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status);
+
+void tdrelxilllpret(const double *ener0,
+                    const int n_ener0,
+                    double *photar,
+                    const double *parameter,
+                    const int n_parameter,
+                    int *status);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_CORONA_H_

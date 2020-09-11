@@ -23,12 +23,18 @@
 #include "relutility.h"
 #include "relphysics.h"
 #include "relreturn_datastruct.h"
-#include "relreturn_corona.h"
+#include "relmodels.h"
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
 
+#define NUM_PARAM_RELXILLBBRET 12
+
 // Function definitions
-static double **get_returnrad_specs(double *ener_inp, int nener_inp, returnFracIpol *dat,const double *temperature, int *status);
+static double **get_returnrad_specs(double *ener_inp,
+                                    int nener_inp,
+                                    returnFracIpol *dat,
+                                    const double *temperature,
+                                    int *status);
 static double **get_bbody_specs(double *ener, int nener, returnFracIpol *dat, double *temperature, int *status);
 
 void normalizeFluxRrad(int nrad, int nener, const double *ener, double **spec);
@@ -670,4 +676,20 @@ void tdrelxillbbret(const double *ener0,
 
 }
 
+void lmodrelxillbbret(const double *ener0,
+                      const int n_ener0,
+                      const double *parameter,
+                      int ifl,
+                      double *photar,
+                      double *photer,
+                      const char *init) {
+
+  int status = EXIT_SUCCESS;
+  const int n_parameter = 12;
+  tdrelxillbbret(ener0, n_ener0, photar, parameter, n_parameter, &status);
+  if (status != EXIT_SUCCESS) {
+    RELXILL_ERROR("evaluating relxillBBret model failed", &status);
+  }
+
+}
 

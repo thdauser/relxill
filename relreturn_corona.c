@@ -19,11 +19,10 @@
 #include "relreturn_corona.h"
 
 #include "relreturn_datastruct.h"
-#include "relphysics.h"
+#include "relmodels.h"
 #include "relutility.h"
-#include "relbase.h"
-#include "common.h"
-#include "relreturn.h"
+
+#define NUM_PARAM_RELXILLLPRET NUM_PARAM_RELXILLLP+1
 
 static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
                                                emisProfile *emisInput,
@@ -175,7 +174,7 @@ void init_par_relxill_ret(relParam **rel_param,
   xillParam *xparam = new_xillParam(MOD_TYPE_RELXILLLPRET, PRIM_SPEC_ECUT, status);
   CHECK_STATUS_VOID(*status);
 
-  assert(n_parameter == NUM_PARAM_RELXILLBBRET);
+  assert(n_parameter == NUM_PARAM_RELXILLLPRET);
 
   param->a = inp_par[0];
   param->incl = inp_par[1] * M_PI / 180;
@@ -194,6 +193,8 @@ void init_par_relxill_ret(relParam **rel_param,
   xparam->fixReflFrac = (int) (inp_par[10] + 0.5); // make sure there is nor problem with integer conversion
   xparam->shiftTmaxRRet = inp_par[11];
 
+  param->return_rad = (int) (inp_par[12] + 0.5); // make sure there is nor problem with integer conversion
+
   check_parameter_bounds(param, status);
   CHECK_STATUS_VOID(*status);
 
@@ -203,12 +204,12 @@ void init_par_relxill_ret(relParam **rel_param,
 }
 
 /** RELXILL MODEL FUNCTION for the BB returning radiation **/
-void tdrelxillret(const double *ener0,
-                  const int n_ener0,
-                  double *photar,
-                  const double *parameter,
-                  const int n_parameter,
-                  int *status) {
+void tdrelxilllpret(const double *ener0,
+                    const int n_ener0,
+                    double *photar,
+                    const double *parameter,
+                    const int n_parameter,
+                    int *status) {
 
   xillParam *xill_param = NULL;
   relParam *rel_param = NULL;
@@ -227,4 +228,19 @@ void tdrelxillret(const double *ener0,
 
 }
 
+void lmodrelxilllpret(const double *ener0,
+                      const int n_ener0,
+                      const double *parameter,
+                      int ifl,
+                      double *photar,
+                      double *photer,
+                      const char *init) {
 
+  int status = EXIT_SUCCESS;
+  const int n_parameter = 13;
+  tdrelxilllpret(ener0, n_ener0, photar, parameter, n_parameter, &status);
+  if (status != EXIT_SUCCESS) {
+    RELXILL_ERROR("evaluating relxilllpRet model failed", &status);
+  }
+
+}
