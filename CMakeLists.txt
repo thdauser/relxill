@@ -38,7 +38,6 @@ set(SOURCE_FILES
 set(SOURCE_FILES ${SOURCE_FILES}
         relreturn_datastruct.c relreturn_datastruct.h
         relreturn_table.c relreturn_table.h
-        test_relreturn.c test_relreturn.h
         relreturn.c relreturn.h
         relreturn_corona.c relreturn_corona.h
         )
