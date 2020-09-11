@@ -74,9 +74,6 @@
 #define MOD_TYPE_RELXILLNS -30
 #define NUM_PARAM_RELXILLNS 13
 
-#define MOD_TYPE_RELXILLBBRET -300
-#define NUM_PARAM_RELXILLBBRET 12
-
 #define MOD_TYPE_XILLVERNS -101
 #define NUM_PARAM_XILLVERNS 7
 
@@ -89,6 +86,10 @@
 #define MOD_TYPE_RELXILLLPDENS_NTHCOMP -1002
 
 #define NUM_PARAM_RELXILLLPDENS_NTHCOMP 15
+
+// unpublished models
+#define MOD_TYPE_RELXILLBBRET -300
+#define MOD_TYPE_RELXILLLPRET -310
 
 /****  TYPE DEFINITIONS ****/
 
@@ -407,12 +408,5 @@ void lmodrelxilldensnthcomp(const double *ener0,
                             double *photer,
                             const char *init);
 
-void lmodrelxillbbret(const double *ener0,
-                      const int n_ener0,
-                      const double *parameter,
-                      int ifl,
-                      double *photar,
-                      double *photer,
-                      const char *init);
 
 #endif /* MODELS_H_ */

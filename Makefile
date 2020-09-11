@@ -20,6 +20,8 @@ sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxil
 model_dir = ./build/
 model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
 
+unpublished_model_files = relreturn.c relreturn.h relreturn_corona.c  relreturn_corona.h  relreturn_datastruct.c  relreturn_datastruct.h  relreturn_table.c  relreturn_table.h
+
 LINK_TARGET = test_sta
 
 .PHONY:all
@@ -54,7 +56,7 @@ compilemodel: test_sta
 	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION)$(DEV).tgz)
 
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
-#	echo 'require("xspec"); load_xspec_local_models("."); fit_fun("relxill"); () = eval_fun(1,2); exit; '
+
 	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
 	rm -f $(model_dir)/*.c $(model_dir)/*.h
@@ -81,6 +83,16 @@ model-dev: test_sta
 	$(eval MODEL_VERSION := $(shell ./test_sta version))
 	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=dev
 
+.PHONY: model-nonpublic
+model-nonpublic: test_sta
+	mkdir -p $(model_dir)
+	rm -f $(model_dir)/*
+	cp -v $(model_files) $(model_dir)
+	cp -v $(unpublished_model_files) $(model_dir)
+	cat modelfiles/lmodel_relxill_devel.dat >> build/lmodel_relxill.dat
+
+	$(eval MODEL_VERSION := $(shell ./test_sta version))
+	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=nonpublic
 
 
 
