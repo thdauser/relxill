@@ -350,20 +350,15 @@ relParam *get_std_param_relline(int *status) {
   return init_par_relline(inp_par, n_param, status);
 }
 
-relParam *get_std_param_relxill(int *status) {
-  int n_param = NUM_PARAM_RELXILL;
-  double inp_par[NUM_PARAM_RELXILL];
-  set_std_param_relxill(inp_par);
+void get_std_param_relxilllp(relParam **p_rel_param, xillParam **p_xill_param, int *status) {
+  int n_param = NUM_PARAM_RELXILLLP;
+  double inp_par[NUM_PARAM_RELXILLLP];
+  set_std_param_relxilllp(inp_par);
 
-  xillParam *xill_param = NULL;
-  relParam *rel_param = NULL;
+  init_par_relxilllp(p_rel_param, p_xill_param, inp_par, n_param, status);
+  CHECK_STATUS_VOID(*status);
 
-  init_par_relxill(&rel_param, &xill_param, inp_par, n_param, status);
-  CHECK_STATUS_RET(*status, NULL);
-
-  assert(is_relxill_model(rel_param->model_type));
-
-  return rel_param;
+  assert(is_relxill_model((*p_rel_param)->model_type));
 }
 
 /** standard evaluation of the relline model **/
