@@ -22,6 +22,7 @@
 #include "relmodels.h"
 #include "relreturn.h"
 #include "test_relxill.h"
+#include "relreturn_corona.h"
 
 #ifndef RELXILL_SOURCE_DIR
 #error: RELXILL_SOURCE_DIR is not defined
