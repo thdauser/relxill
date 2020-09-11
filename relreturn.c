@@ -121,6 +121,66 @@ static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
   return emisZone;
 }
 
+/* function: interpolEmisProfile
+ * uses an emissivity profile (with radius ascending) and interpolates it (logarithmically)
+ * onto a grid of descending radial values (as required by the relconv/relxill kernel)
+ */
+void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status) {
+
+  double *re = emisReb->re;
+
+  assert(re[0] > re[1]); // output requires a descending grid :-(
+
+  // verify that the input-grid is ascending
+  assert(emis0->re[1] > emis0->re[0]);
+  double *r0 = emis0->re;
+
+  int ind_kmin = binary_search(r0, emis0->nr, re[emisReb->nr - 1]);
+  assert(ind_kmin >= 0);
+
+  if (ind_kmin >= emis0->nr - 2) {
+    RELXILL_ERROR("interpolating emissivity profile failed", status);
+    printf("  -> smallest radial value of new grid [%e] is above the second largest of the original radial grid [%e]\n",
+           re[0], r0[emis0->nr - 2]);
+    printf("     Rin and Rout have to be further apart \n");
+    return;
+  }
+
+  int kk = ind_kmin;
+  for (int ii = emisReb->nr - 1; ii >= 0; ii--) {
+    while ((re[ii] >= r0[kk + 1])) {
+      kk++;
+      if (kk == emis0->nr - 1) {
+        if (re[ii] - RELTABLE_MAX_R <= 1e-6) {
+          kk = emis0->nr - 2;
+          break;
+        } else {
+          RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
+          printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
+                 re[ii], RELTABLE_MAX_R);
+          CHECK_STATUS_VOID(*status);
+        }
+      }
+    }
+
+    // for larger angles logarithmic interpolation works slightly better
+    double inter_r;
+    if (emis0->del_emit[kk] / M_PI * 180.0 <= 75.0) {
+      inter_r = (re[ii] - r0[kk]) / (r0[kk + 1] - r0[kk]);
+    } else {
+      inter_r = (log(re[ii]) - log(r0[kk])) /
+          (log(r0[kk + 1]) - log(r0[kk]));
+    }
+
+    //  log grid for the intensity (due to the function profile)
+    emisReb->emis[ii] = interp_log_1d(inter_r, emis0->emis[kk], emis0->emis[kk + 1]);
+
+    emisReb->del_emit[ii] = interp_lin_1d(inter_r, emis0->del_emit[kk], emis0->del_emit[kk + 1]);
+    emisReb->del_inc[ii] = interp_lin_1d(inter_r, emis0->del_inc[kk], emis0->del_inc[kk + 1]);
+
+  }
+}
+
 emisProfile *get_rrad_emis_corona(double *re, int nr, relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -144,8 +204,14 @@ emisProfile *get_rrad_emis_corona(double *re, int nr, relParam *param, int *stat
 
 
   // rebin to (typically finer) emissivity grid
-  interpolEmisProfile(emisReturnRebinned, emisReturn);
+  interpolEmisProfile(emisReturnRebinned, emisReturn, status);
 
+  free_emisProfile(emisReturn);
+  free_emisProfile(emisInput);
+
+  CHECK_STATUS_RET(*status, emisReturnRebinned);
+
+  return emisReturnRebinned;
 }
 
 /*** Routines for the Black Body Case ***/

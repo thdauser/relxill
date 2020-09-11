@@ -93,4 +93,6 @@ void tdrelxillbbret(const double *ener0,
                     int n_parameter,
                     int *status);
 
+void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status);
+
 #endif //RELXILL__RELRETURN_H_

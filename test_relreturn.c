@@ -266,6 +266,7 @@ static double* integSpecArea(double** spec, int n_ener, double spin, const retur
   return areaIntegSpec;
 }
 
+
 static int checkTemperatureProfile(double* temperature, int n){
 
   if (! (temperature[0]>=0.0)){
@@ -745,10 +746,75 @@ static void testDifferentSpinValues(int* status) {
 
 }
 
+void save_emisProfile(char *fname, emisProfile *emis) {
+  save_radial_profile(fname, emis->re, emis->emis, emis->nr);
+}
+
+static void invertArray(double *vals, int n) {
+
+  double storage[n];
+  for (int ii = 0; ii < n; ii++) {
+    storage[n - ii - 1] = vals[ii];
+  }
+
+  for (int ii = 0; ii < n; ii++) {
+    vals[ii] = storage[ii];
+  }
+
+}
+
+static void testRebinEmisProfiles(int *status) {
+
+  CHECK_STATUS_VOID(*status);
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  double precRebinCoarse = 0.05;
+
+  xillParam *xill_param = NULL;
+  relParam *rel_param = NULL;
+  get_std_param_relxilllp(&rel_param, &xill_param, status);
+
+  relSysPar *sysPar = get_system_parameters(rel_param, status);
+
+  returnFracIpol *dat = get_rr_fractions(rel_param->a, rel_param->rin, rel_param->rout, status);
+  double rmean[dat->nrad]; // descending grid
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    rmean[dat->nrad - ii - 1] = 0.5 * (dat->rlo[ii] + dat->rhi[ii]);
+  }
+  emisProfile *emisCoarse = calc_emis_profile(rmean, dat->nrad, rel_param, status);
+  invertArray(emisCoarse->re, emisCoarse->nr);
+  invertArray(emisCoarse->emis, emisCoarse->nr);
+
+  emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, status);
+  emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, status);
+  interpolEmisProfile(emisRebin, emisCoarse, status);
+
+  if (*status == EXIT_SUCCESS) {
+
+    save_emisProfile("test_emisCoarse.dat", emisCoarse);
+    save_emisProfile("test_emisFineReference.dat", emisFineReference);
+    save_emisProfile("test_emisRebin.dat", emisRebin);
+
+    for (int ii = 20; ii < emisRebin->nr;
+         ii++) {  // last bin in coarse grid deviates, so skio, as it is not the interpolation
+      if (is_debug_run()) {
+        printf(" rad: %.3e :  %e (ref=%e, ratio=%e) \n",
+               emisRebin->re[ii], emisRebin->emis[ii], emisFineReference->emis[ii],
+               emisRebin->emis[ii] / emisFineReference->emis[ii]);
+      }
+      assert(fabs(emisRebin->emis[ii] / emisFineReference->emis[ii] - 1) < precRebinCoarse);
+    }
+
+  }
+
+  print_relxill_test_result(*status);
+
+}
+
 //  ======= MAIN ========   //
 
 
-void test_relreturn(void ) {
+void test_relreturn(void) {
   char *buf;
   int status = EXIT_SUCCESS;
 
@@ -756,11 +822,11 @@ void test_relreturn(void ) {
   printf("\n### Testing RETURN RADIATION ###\n");
   free(buf);
 
-
-
-  returnTable* tab = get_returnRadTable(&status);
+  returnTable *tab = get_returnRadTable(&status);
 
   testReturnRadTableNormlizationAndRadialGrid(tab, &status);
+
+  testRebinEmisProfiles(&status);
 
   testTemperatureProfile(&status);
 
