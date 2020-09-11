@@ -489,6 +489,10 @@ emisProfile *new_emisProfile(double *re, int nr, int *status) {
   emis->del_inc = (double *) malloc(nr * sizeof(double));
   CHECK_MALLOC_RET_STATUS(emis->del_inc, status, emis)
 
+  for (int ii = 0; ii < nr; ii++) {
+    emis->emis[ii] = 0.0;
+  }
+
   emis->normFactorPrimSpec = 0.0;
 
   emis->returnFracs = NULL;
