@@ -139,6 +139,25 @@ define isLpModel(ff){ %{{{
    }
 }
 %}}}
+define selectModelByType(ff, strType){ %{{{
+   variable ii, n = length(ff);
+   variable selectedFf = String_Type[0];
+   _for ii(0, n-1){
+      if (string_match(ff[ii], strType) != 0){
+	 selectedFf = [selectedFf, ff[ii]];
+      }
+   }
+   return selectedFf;
+}
+%}}}
+define getAllRelxillTypeModels(){ %{{{
+   return selectModelByType(ALL_FF, "relxill");
+}
+%}}}
+define getAllXillverTypeModels(){ %{{{
+   return selectModelByType(ALL_FF, "xillver");   
+}
+%}}}
 
 
    
@@ -1341,7 +1360,9 @@ define check_refl_frac(){ %{{{
    
    variable ff = [ "relxill","relxilllp","relxillD","relxilllpD","xillver","xillverD",
 		  "relxillCp","relxilllpCp","xillverCp"];
-   
+
+   ff = [getAllXillverTypeModels, getAllRelxillTypeModels()];
+         
    variable ii,n = length(ff);
    
    variable goodn;
@@ -1452,6 +1473,8 @@ define print_refl_frac(){ %{{{
    return EXIT_SUCCESS;
 }
 %}}}
+
+if (check_refl_frac() != EXIT_SUCCESS) exit;
 
 
 %if (eval_test_notable() != EXIT_SUCCESS) exit;
