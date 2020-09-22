@@ -987,7 +987,6 @@ void tdrelxillns(const double *ener0,
 
 }
 
-/** RELXILL MODEL FUNCTION for the xillverCO table  **/
 void tdrelxillco(const double *ener0, const int n_ener0, double *photar, const double *parameter,
                  const int n_parameter, int *status) {
 
@@ -1550,7 +1549,7 @@ xillParam *new_xillParam(int model_type, int prim_type, int *status) {
   param->z = PARAM_DEFAULT;
   param->refl_frac = PARAM_DEFAULT;
   param->fixReflFrac = -1;
-  param->dens = PARAM_DEFAULT;
+  param->dens = 15;  // the standard value for every table, given in "log-units"
   param->frac_pl_bb = PARAM_DEFAULT;
   param->kTbb = PARAM_DEFAULT;
   param->ion_grad_type = ION_GRAD_TYPE_CONST; // no ion grad
@@ -1743,7 +1742,6 @@ void lmodxillverns(const double *ener0,
     RELXILL_ERROR("evaluating xillverNS model failed", &status);
 }
 
-/** XSPEC XILLVER CO MODEL FUNCTION **/
 void lmodxillverco(const double *ener0, const int n_ener0, const double *parameter, int ifl,
                    double *photar, double *photer, const char *init) {
 
