@@ -1791,7 +1791,7 @@ rel_spec *relbase_multizone(double *ener,
     relSysPar *sysPar = get_system_parameters(param, status);
 
     if (is_debug_run() && sysPar != NULL) {
-      save_radial_profile("test_emis_profile.txt", sysPar->emis->re, sysPar->emis->emis, sysPar->nr);
+      save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->nr);
     }
 
     // init the spectra where we store the flux
