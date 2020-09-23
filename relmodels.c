@@ -1307,16 +1307,6 @@ void xillver_base(const double *ener0, const int n_ener0, double *photar, xillPa
 
   rebin_spectrum(ener, flux, n_ener, spec->ener, spec->flu[0], spec->n_ener);
 
-  int ii;
-
-  for (ii = 0; ii < n_ener0; ii++) {
-    // we make the spectrum normalization independent of the ionization
-    flux[ii] /= pow(10, param_struct->lxi);
-    if (fabs(param_struct->dens - 15) > 1e-6) {
-      flux[ii] /= pow(10, param_struct->dens - 15);
-    }
-  }
-
   add_primary_component(ener, n_ener, flux, NULL, param_struct, status);
 
   double *ener_shifted = shift_energ_spec_1keV(ener, n_ener, 1.0, param_struct->z, status);

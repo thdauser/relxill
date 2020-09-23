@@ -483,13 +483,65 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
     free_xillTable(tab);
   }
 
-  if (fptr != NULL) { fits_close_file(fptr, status); }
+  if (fptr != NULL) {
+    fits_close_file(fptr, status);
+  }
 
 }
 
-static void
-load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, int jj, int kk, int ll, int mm,
-                 int *status) {
+/** check if the given parameter index is in the xillver table
+ *  -1 : not found
+ *  ii : return index where this value is found in the param_index array  **/
+static int getParameterTableIndex(xillTable *tab, int ind) {
+
+  int ii;
+  for (ii = 0; ii < tab->num_param; ii++) {
+    if (tab->param_index[ii] == ind) {
+      return ii;
+    }
+  }
+  return -1;
+}
+
+// convert the index from the (actual) xillver FITS table parameter
+// extension to out (strange!) universal parameter index which can
+// handle 5dim and 6dim tables
+static int convertTo6dimTableIndex(int num_param, int indexTable) {
+  assert(num_param == 6 || num_param == 5);
+  if (num_param == 5) {
+    indexTable++; // for 5dim, the first index is left empty
+  }
+  return indexTable;
+}
+
+static void normalizeXillverSpecLogxiDensity(float *spec,
+                                             xillTable *tab,
+                                             double density,
+                                             double logxi,
+                                             const int *indVals,
+                                             int array) {
+
+  int ind_dens = getParameterTableIndex(tab, PARAM_DNS);
+  int ind_lxi = getParameterTableIndex(tab, PARAM_LXI);
+
+  int ind_dens_6dim = convertTo6dimTableIndex(tab->num_param, ind_dens);
+  int ind_lxi_6dim = convertTo6dimTableIndex(tab->num_param, ind_lxi);
+
+  // ind==-1 if parameter not contained
+  if (ind_dens >= 0) {
+    density = tab->param_vals[ind_dens][indVals[ind_dens_6dim]];
+
+  }
+  if (ind_lxi >= 0) {
+    logxi = tab->param_vals[ind_lxi][indVals[ind_lxi_6dim]];
+  }
+
+  renorm_xill_spec(spec, tab->n_ener, logxi, density);
+
+}
+
+static void load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, double defDensity, double defLogxi,
+                             int nn, int ii, int jj, int kk, int ll, int mm, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -525,10 +577,23 @@ load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, int nn, int ii, i
     return;
   }
 
+  const int n_array = 6;
+  int indexArray[] = {nn, ii, jj, kk, ll, mm};
+  normalizeXillverSpecLogxiDensity(spec, tab, defDensity, defLogxi, indexArray, n_array);
+
   set_dat(spec, tab, nn, ii, jj, kk, ll, mm);
 }
 
-static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, int *status) {
+// Default values from the param-structure, as those are set to the value the table is calculated
+// with, even if the model does not have a lxi or density parameter
+static double getDefaultDensity(xillParam *param) {
+  return param->dens;
+}
+static double getDefaultLogxi(xillParam *param) {
+  return param->lxi;
+}
+
+static void check_xillTable_cache(char *fname, xillParam *param, xillTable *tab, const int *ind, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -553,6 +618,9 @@ static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, i
     istart = 1;
   }
 
+  double defDensity = getDefaultDensity(param);
+  double defLogxi = getDefaultLogxi(param);
+
   for (nn = i0lo; nn <= i0hi; nn++) { // for 5dim this is a dummy loop
     for (ii = ind[istart]; ii <= ind[istart] + 1; ii++) {
       for (jj = ind[istart + 1]; jj <= ind[istart + 1] + 1; jj++) {
@@ -562,7 +630,7 @@ static void check_xillTable_cache(char *fname, xillTable *tab, const int *ind, i
             for (mm = 0; mm < tab->n_incl; mm++) {
 
               if (get_dat(tab, nn, ii, jj, kk, ll, mm) == NULL) {
-                load_single_spec(fname, &fptr, tab, nn, ii, jj, kk, ll, mm, status);
+                load_single_spec(fname, &fptr, tab, defDensity, defLogxi, nn, ii, jj, kk, ll, mm, status);
                 CHECK_STATUS_VOID(*status);
               }
 
@@ -753,27 +821,13 @@ static void interp_6d_tab(xillTable *tab, double *flu, int n_ener,
   }
 }
 
-/** check if the given parameter index is in the xillver table
- *  -1 : not found
- *  ii : return index where this value is found in the param_index array  **/
-static int is_in_xilltable(xillTable *tab, int ind) {
-
-  int ii;
-  for (ii = 0; ii < tab->num_param; ii++) {
-    if (tab->param_index[ii] == ind) {
-      return ii;
-    }
-  }
-  return -1;
-}
-
 /** check boundary of the Ecut parameter  (grav. redshift can lead to the code asking
  *  for an Ecut not tabulated, although actually observed ecut is larger
  *  Input: tab, param
  *  Output fac         **/
 static void check_boundarys_ecut(xillTable *tab, const xillParam *param, double *fac) {
   // first need to make sure ECUT is a parameter in the table
-  int index_ect = is_in_xilltable(tab, PARAM_ECT);
+  int index_ect = getParameterTableIndex(tab, PARAM_ECT);
   if (index_ect >= 0) {
     if (param->ect <= tab->param_vals[tab->param_index[index_ect]][0]) {
       fac[index_ect] = 0.0;
@@ -978,7 +1032,9 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 }
 
 /** the main routine for the xillver table: returns a spectrum for the given parameters
- *  (decides if the table needs to be initialized and/or more data loaded          */
+ *  - decides if the table needs to be initialized and/or more data loaded
+ *  - automatically normalizes  the spectra to logN=1e15 and logXi=0
+ * */
 xill_spec *get_xillver_spectra(xillParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -993,7 +1049,7 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
   int *ind = xillInd_from_parInput(param, tab, status);
 
   // =2=  check if the necessary spectra are loaded (we only open the file once)
-  check_xillTable_cache(fname, tab, ind, status);
+  check_xillTable_cache(fname, param, tab, ind, status);
 
   // =3= interpolate values
   xill_spec *spec = interp_xill_table(tab, param, ind, status);

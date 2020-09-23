@@ -106,6 +106,7 @@ xillParam *init_par_xillver(const double *inp_par, const int n_parameter, int *s
 xillParam *init_par_xillver_nthcomp(const double *inp_par, const int n_parameter, int *status);
 xillParam *init_par_xillver_ns(const double *inp_par, const int n_parameter, int *status);
 xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int *status);
+xillParam *init_par_xillver_dens(const double *inp_par, const int n_parameter, int *status);
 
 void init_par_relxill(relParam **rel_param,
                       xillParam **xill_param,

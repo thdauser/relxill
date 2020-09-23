@@ -36,7 +36,7 @@
 #define version_major 1
 #define version_minor 3
 #define version_build 11
-#define version_dev "-4"
+#define version_dev "-5"
 
 /** path to all RELXILL tables */
 #define RELXILL_TABLE_PATH "./"
@@ -187,7 +187,7 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
 
 void get_std_relxill_energy_grid(int *n_ener, double **ener, int *status);
 
-void renorm_xill_spec(double *spec, int n, double lxi, double dens);
+void renorm_xill_spec(float *spec, int n, double lxi, double dens);
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status);
 

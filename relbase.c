@@ -1170,7 +1170,7 @@ static void renorm_model(const double *flu0, double *flu, int nbins) {
 
 }
 
-void renorm_xill_spec(double *spec, int n, double lxi, double dens) {
+void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
   int ii;
   for (ii = 0; ii < n; ii++) {
     spec[ii] /= pow(10, lxi);
@@ -1412,11 +1412,6 @@ void relxill_kernel(double *ener_inp,
 
       // rebin to the output grid
       rebin_spectrum(ener_inp, single_spec_inp, n_ener_inp, ener, conv_out, n_ener);
-
-
-
-      // renorm the spectrum (such that it is independent of xi and density)
-      renorm_xill_spec(single_spec_inp, n_ener_inp, xill_param->lxi, xill_param->dens);
 
       // add it to the final output spectrum
       for (int jj = 0; jj < n_ener_inp; jj++) {
