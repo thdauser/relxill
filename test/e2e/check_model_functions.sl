@@ -1140,6 +1140,8 @@ define check_xilltab_implementation_single(ff,tabname){ %{{{
       hplot(lo0,hi0,val1);
       ohplot(lo0,hi0,valr);
       sleep(10);      
+      hplot(lo0,hi0,val1/valr);
+      sleep(10);      
    }
    
    return goodness(val1,valr);
@@ -1474,10 +1476,8 @@ define print_refl_frac(){ %{{{
 }
 %}}}
 
-if (check_refl_frac() != EXIT_SUCCESS) exit;
 
-
-%if (eval_test_notable() != EXIT_SUCCESS) exit;
+%%%%%%%% TEST  %%%%%%%%%%%%
 
 if (eval_test() != EXIT_SUCCESS) exit;
 

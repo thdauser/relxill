@@ -234,6 +234,7 @@ xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int
   param->incl = inp_par[6]; // is given in degrees !!
   param->refl_frac = inp_par[7];
 
+  param->dens = 17.0;
   param->lxi = 0.0;       // interestingly this model does not have an ionization
 
   // TODO: check parameter bounds here as well
@@ -382,6 +383,9 @@ void init_par_relxill_co(relParam **rel_param, xillParam **xill_param, const dou
   xparam->refl_frac = inp_par[13];
 
   xparam->fixReflFrac = 0;
+
+  xparam->dens = 17.;
+  xparam->lxi = 0.0;       // interestingly this model does not have an ionization
 
   check_parameter_bounds(param, status);
   CHECK_STATUS_VOID(*status);
