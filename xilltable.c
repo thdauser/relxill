@@ -112,12 +112,16 @@ xillTable *new_xillTable(int num_param, int *status) {
   tab->param_index = (int *) malloc(sizeof(int) * num_param);
   CHECK_MALLOC_RET_STATUS(tab->param_index, status, NULL)
 
+  tab->param_names = (char **) malloc(sizeof(char *) * num_param);
+  CHECK_MALLOC_RET_STATUS(tab->param_index, status, NULL)
+
   tab->param_vals = (float **) malloc(sizeof(float *) * num_param);
   CHECK_MALLOC_RET_STATUS(tab->param_vals, status, NULL)
 
   int ii;
   for (ii = 0; ii < num_param; ii++) {
     tab->param_vals[ii] = NULL;
+    tab->param_names[ii] = NULL;
   }
 
   tab->elo = NULL;
@@ -234,11 +238,11 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
 
   // get the name
   for (ii = 0; ii < tab->num_param; ii++) {
-    xilltab_parname[ii] = (char *) malloc(sizeof(char) * 32);
-    CHECK_MALLOC_VOID_STATUS(xilltab_parname[ii], status)
+    tab->param_names[ii] = (char *) malloc(sizeof(char) * 8);
+    CHECK_MALLOC_VOID_STATUS(tab->param_names, status)
   }
   fits_read_col(fptr, TINT, colnum_n, 1, 1, tab->num_param, &nullval, tab->num_param_vals, &anynul, status);
-  fits_read_col(fptr, TSTRING, 1, 1, 1, tab->num_param, strnull, xilltab_parname, &anynul, status);
+  fits_read_col(fptr, TSTRING, 1, 1, 1, tab->num_param, strnull, tab->param_names, &anynul, status);
 
   for (ii = 0; ii < tab->num_param; ii++) {
     /** the we load the parameter values **/
@@ -258,16 +262,11 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
   }
 
   // set the index of each parameter according to the NAME column we found in the table
-  set_parindex_from_parname(tab->param_index, xilltab_parname, tab->num_param, status);
+  set_parindex_from_parname(tab->param_index, tab->param_names, tab->num_param, status);
 
   if (is_debug_run()) {
-    print_xilltable_parameters(tab, xilltab_parname);
+    print_xilltable_parameters(tab, tab->param_names);
   }
-
-  for (ii = 0; ii < tab->num_param; ii++) { // let's free the memory
-    free(xilltab_parname[ii]);
-  }
-  free(xilltab_parname);
 
   // now we set a pointer to the inclination separately (assuming it is the last parameter)
   tab->incl = tab->param_vals[tab->num_param - 1];
@@ -357,6 +356,7 @@ static int *xillInd_from_parInput(xillParam *param, xillTable *tab, int *status)
       ind[ii] = tab->num_param_vals[ii] - 2;
     }
   }
+
   free(inp_param_vals);
 
   return ind;
@@ -786,6 +786,27 @@ static void check_boundarys_ecut(xillTable *tab, const xillParam *param, double 
   }
 }
 
+static void resetInpvalsToBoundaries(char *pname, float *p_inpVal, float tabValLo, float tabValHi) {
+
+  float inpVal = *p_inpVal;
+  if (inpVal < tabValLo) {
+    if (is_debug_run()) {
+      printf(" *** warning: paramter %s=%e below lowest table value, restetting to %e\n",
+             pname, inpVal, tabValLo);
+    }
+    inpVal = tabValLo;
+  } else if (inpVal > tabValHi) {
+    if (is_debug_run()) {
+      printf("\n *** warning: paramter %s=%e above largest table value, restetting to %e\n",
+             pname, inpVal, tabValHi);
+    }
+    inpVal = tabValHi;
+  }
+
+  *p_inpVal = inpVal;
+
+}
+
 static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -824,13 +845,17 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
   for (ii = 0; ii < nfac; ii++) {
     // need the index
     pind = tab->param_index[ii];
+
+    resetInpvalsToBoundaries(tab->param_names[ii], &(inp_param_vals[pind]), tab->param_vals[ii][0],
+                             tab->param_vals[ii][tab->num_param_vals[ii] - 1]);
+
     fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
         (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
 
-/*        if (is_debug_run()) {
-            printf("\n [%i] par_index=%i  : parval = %.2e (index=%i), determining fac = %.2e ",
-                   ii, pind, inp_param_vals[pind], ind[ii], fac[ii]);
-        } */
+    if (is_debug_run()) {
+      printf("\n [%i] %s (par_index=%i)  : parval = %.2e (index=%i), determining fac = %.2e ",
+             ii, tab->param_names[ii], pind, inp_param_vals[pind], ind[ii], fac[ii]);
+    }
   }
 
   free(inp_param_vals);
@@ -1007,9 +1032,13 @@ void free_xillTable(xillTable *tab) {
     if (tab->param_vals != NULL) {
       for (ii = 0; ii < tab->num_param; ii++) {
         free(tab->param_vals[ii]);
+
+        free(tab->param_names[ii]);
       }
-      free(tab->param_vals);
+
     }
+    free(tab->param_vals);
+    free(tab->param_names);
 
     free(tab->num_param_vals);
     free(tab->param_index);

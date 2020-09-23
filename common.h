@@ -120,6 +120,7 @@ typedef struct {
   /* need to identify the meaning of each parameter here [index in the array]
    * (see routine "get_xill_param_vals_array" */
   int *param_index;  // lenth is N_PARAM_MAX
+  char **param_names; // name of each parameter
 
   float **param_vals;    // array to store the parameter values (as given in the table)
 
