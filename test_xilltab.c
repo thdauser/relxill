@@ -155,6 +155,9 @@ static void testEvaluateAllXillverSpecNonZero(int *status) {
   param = get_std_param_xillver(status);
   test_get_spec(status, "xillver", param);
 
+  param = get_std_param_xillver_dens(status);
+  test_get_spec(status, "xillverD", param);
+
   param = get_std_param_xillver_co(status);
   test_get_spec(status, "xillverCO", param);
 
@@ -190,6 +193,9 @@ static void testAllXilltables(int *status) {
   putenv("DEBUG_RELXILL=1");
 
   param = get_std_param_xillver(status);
+  testAutomaticLoadingTable(param, status);
+
+  param = get_std_param_xillver_dens(status);
   testAutomaticLoadingTable(param, status);
 
   param = get_std_param_xillver_co(status);
@@ -274,6 +280,38 @@ static void testLoadingAlternativeTable(int *status) {
 
 }
 
+static void testNormfacBand(xill_spec **spec, double elo, double ehi, double prec, int *status) {
+
+  double sum0 = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, elo, ehi);
+  double sum1 = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, elo, ehi);
+
+  double fraction = sum0 / sum1 - 1;
+
+  assert(fabs(fraction) < prec);
+
+}
+
+static void testRenormXilltableDensLogxi(int *status) {
+
+  CHECK_STATUS_VOID(*status);
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  xillParam *param;
+
+  xill_spec *spec[2];
+  param = get_std_param_xillver_dens_nthcomp(status);
+  spec[0] = get_xillver_spectra(param, status);
+
+  test_get_spec(status, "xillverDCp", param);
+  param->dens = 15.5;
+  spec[1] = get_xillver_spectra(param, status);
+
+  testNormfacBand(spec, 30.0, 80.0, 0.01, status);
+
+  print_status_outcome(status);
+
+}
+
 void test_xilltables(int *status) {
   char *buf;
   if (*status != EXIT_SUCCESS) {
@@ -291,15 +329,17 @@ void test_xilltables(int *status) {
 
   testLoadingNonExistingTable(status);
 
+  testLoadingAlternativeTable(status);
+
   testCheckForExistingTable(status);
 
   testAllXilltables(status);
 
   testEvaluateAllXillverSpecNonZero(status);
 
-  testLoadingAlternativeTable(status);
+  testRenormXilltableDensLogxi(status);
 
-  if (status != EXIT_SUCCESS) {
+  if (*status != EXIT_SUCCESS) {
     printf(" *** TESTING XILLVER TABLES NOT SUCCESSFUL \n");
     printf("\n *** Cleaning up and freeing cached structures\n");
   } else {

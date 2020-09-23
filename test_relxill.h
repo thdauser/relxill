@@ -71,6 +71,8 @@ xillParam *get_std_param_xillver_co(int *status);
 
 xillParam *get_std_param_xillver_ns(int *status);
 
+xillParam *get_std_param_xillver_dens(int *status);
+
 xillParam *get_std_param_xillver_nthcomp(int *status);
 
 xillParam *get_std_param_xillver_dens_nthcomp(int *status);

@@ -28,6 +28,16 @@ void set_std_param_xillver(double *inp_par) {
   inp_par[6] = -1.0;   // refl. frac.
 }
 
+void set_std_param_xillver_dens(double *inp_par) {
+  inp_par[0] = 2.1;    // Gamma
+  inp_par[1] = 1.0;    // Afe
+  inp_par[2] = 15.0;  // logN
+  inp_par[3] = 0.0;    // logxi
+  inp_par[4] = 0.;     // redshift
+  inp_par[5] = 45.0;   // inclination
+  inp_par[6] = -1.0;   // refl. frac.
+}
+
 void set_std_param_xillverns(double *inp_par) {
   inp_par[0] = 2.0;    // kTB
   inp_par[1] = 1.0;    // Afe
@@ -317,6 +327,14 @@ xillParam *get_std_param_xillver(int *status) {
   CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
   set_std_param_xillver(inp_par);
   return init_par_xillver(inp_par, n_param, status);
+}
+
+xillParam *get_std_param_xillver_dens(int *status) {
+  int n_param = NUM_PARAM_XILLVERDENS;
+  double *inp_par = (double *) malloc(sizeof(double) * n_param);
+  CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
+  set_std_param_xillver_dens(inp_par);
+  return init_par_xillver_dens(inp_par, n_param, status);
 }
 
 xillParam *get_std_param_xillver_co(int *status) {
