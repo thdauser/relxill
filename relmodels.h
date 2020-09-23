@@ -103,9 +103,8 @@ relParam *init_par_relline(const double *inp_par, const int n_parameter, int *st
 relParam *init_par_relline_lp(const double *inp_par, const int n_parameter, int *status);
 relParam *init_par_relconv(const double *inp_par, const int n_parameter, int *status);
 xillParam *init_par_xillver(const double *inp_par, const int n_parameter, int *status);
-
+xillParam *init_par_xillver_nthcomp(const double *inp_par, const int n_parameter, int *status);
 xillParam *init_par_xillver_ns(const double *inp_par, const int n_parameter, int *status);
-
 xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int *status);
 
 void init_par_relxill(relParam **rel_param,

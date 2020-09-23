@@ -31,6 +31,8 @@ void set_std_param_xillver_nthcomp(double *inp_par);
 
 void set_std_param_xillverco(double *inp_par);
 
+void set_std_param_xillverns(double *inp_par);
+
 void set_std_param_relline(double *inp_par);
 
 void set_std_param_relconv(double *inp_par);
@@ -66,6 +68,8 @@ void set_std_param_relxillco(double *inp_par);
 xillParam *get_std_param_xillver(int *status);
 
 xillParam *get_std_param_xillver_co(int *status);
+
+xillParam *get_std_param_xillver_ns(int *status);
 
 xillParam *get_std_param_xillver_nthcomp(int *status);
 

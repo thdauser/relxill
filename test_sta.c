@@ -119,7 +119,7 @@ int main(int argc, char *argv[]) {
 
     if (do_all) {
       testStdFunctions(&status);
-      test_xilltables();
+      test_xilltables(&status);
     }
 
     if (do_all || do_emisTest) {
@@ -173,7 +173,7 @@ int main(int argc, char *argv[]) {
     }
 
     if (do_all | do_xillver) {
-      test_xilltables();
+      test_xilltables(&status);
       CHECK_STATUS_BREAK(status);
       std_eval_xillver(&status, 1);
       CHECK_STATUS_BREAK(status);

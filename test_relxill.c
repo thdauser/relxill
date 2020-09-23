@@ -28,6 +28,16 @@ void set_std_param_xillver(double *inp_par) {
   inp_par[6] = -1.0;   // refl. frac.
 }
 
+void set_std_param_xillverns(double *inp_par) {
+  inp_par[0] = 2.0;    // kTB
+  inp_par[1] = 1.0;    // Afe
+  inp_par[2] = 15.0;  // logN
+  inp_par[3] = 1.0;    // logxi
+  inp_par[4] = 0.;     // redshift
+  inp_par[5] = 45.0;   // inclination
+  inp_par[6] = -1.0;   // refl. frac.
+}
+
 void set_std_param_xillverco(double *inp_par) {
   inp_par[0] = 2.1;    // Gamma
   inp_par[1] = 5.0;    // A_CO
@@ -317,12 +327,22 @@ xillParam *get_std_param_xillver_co(int *status) {
   return init_par_xillver_co(inp_par, n_param, status);
 }
 
+xillParam *get_std_param_xillver_ns(int *status) {
+  int n_param = NUM_PARAM_XILLVERNS;
+  double *inp_par = (double *) malloc(sizeof(double) * n_param);
+  CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
+  set_std_param_xillverns(inp_par);
+  return init_par_xillver_ns(inp_par, n_param, status);
+}
+
 xillParam *get_std_param_xillver_nthcomp(int *status) {
   int n_param = NUM_PARAM_XILLVER_NTHCOMP;
   double *inp_par = (double *) malloc(sizeof(double) * n_param);
   CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
   set_std_param_xillver_nthcomp(inp_par);
-  return init_par_xillver(inp_par, n_param, status);  // this is bad design, but kTe and Ecut are identical in the code
+  return init_par_xillver_nthcomp(inp_par,
+                                  n_param,
+                                  status);  // this is bad design, but kTe and Ecut are identical in the code
 }
 
 xillParam *get_std_param_xillver_dens_nthcomp(int *status) {
@@ -838,7 +858,8 @@ void std_eval_relline_lp(int *status, int n) {
 
 void std_eval_xillver(int *status, int n) {
 
-  printf("\n ==> Evaluating XILLVER MODEL \n");
+  CHECK_STATUS_VOID(*status);
+  printf(" ==> Evaluating Xillver MODEL \n");
   /* set the parameters */
   int n_param = NUM_PARAM_XILLVER;
   double inp_par[n_param];
@@ -863,7 +884,8 @@ void std_eval_xillver(int *status, int n) {
 
 void std_eval_xillver_nthcomp(int *status, int n) {
 
-  printf("\n ==> Evaluating xillverCp MODEL \n");
+  CHECK_STATUS_VOID(*status);
+  printf(" ==> Evaluating xillverCp MODEL \n");
   /* set the parameters */
   int n_param = NUM_PARAM_XILLVER_NTHCOMP;
   double inp_par[n_param];
@@ -973,7 +995,8 @@ void std_eval_relxilllpdens_nthcomp(int *status, int n) {
 
 void std_eval_xillver_dens_nthcomp(int *status, int n) {
 
-  printf("\n ==> Evaluating xillverDCp MODEL \n");
+  CHECK_STATUS_VOID(*status);
+  printf(" ==> Evaluating xillverDCp MODEL \n");
   /* set the parameters */
   int n_param = NUM_PARAM_XILLVERDENS_NTHCOMP;
   double inp_par[n_param];

@@ -18,7 +18,19 @@
 #include "relbase.h"
 #include "test_relxill.h"
 
-static void test_new_xilltable(int *status) {
+static void print_status_outcome(const int *status) {
+  if (*status != EXIT_SUCCESS) {
+    printf("  FAILED \n\n");
+  } else {
+    printf("  SUCCESSFUL \n\n");
+  }
+}
+
+static void testCreateNewXilltable(int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   int dim[] = {5, 6};
   int ndim = 2;
@@ -30,21 +42,10 @@ static void test_new_xilltable(int *status) {
     free_xillTable(tab);
   }
 
-  if (*status == EXIT_SUCCESS) {
-    printf("\n *** TEST: setting up new XILLVER Table structure successful \n");
-  } else {
-    printf("\n *** TEST ERROR *** setting up new XILLVER Table structure NOT successful \n");
-  }
+  print_status_outcome(status);
 
 }
 
-static void print_status_outcome(const int *status) {
-  if (*status != EXIT_SUCCESS) {
-    printf("  FAILED \n\n");
-  } else {
-    printf("  SUCCESSFUL \n\n");
-  }
-}
 
 static void test_tab_num_param(const xillParam *param, int *status, const xillTable *tab) {
   printf("     - number of parameters: %i ", tab->num_param);
@@ -58,12 +59,13 @@ static void test_tab_num_param(const xillParam *param, int *status, const xillTa
   }
 }
 
-static void test_init_xilltable(char *fname, xillParam *param, int *status) {
+static void testInitializeXillverTableCorrectly(int *status) {
+
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   xillTable *tab = NULL;
-  init_xillver_table(fname, &tab, param, status);
-
-  printf("\n *** TEST: initializing xilltable %s  ...  ", fname);
+  xillParam *param = get_std_param_xillver(status);
+  init_xillver_table(XILLTABLE_FILENAME, &tab, param, status);
 
   if (*status == EXIT_SUCCESS) {
     assert(tab->n_ener > 0);
@@ -82,11 +84,9 @@ static void test_init_xilltable(char *fname, xillParam *param, int *status) {
 
 }
 
-static void test_spec_norm(xill_spec *spec, const int *status) {
+static void test_spec_norm(xill_spec *spec, int *status) {
 
   CHECK_STATUS_VOID(*status);
-
-  printf("\n *** TEST: check Spectrum normalization ...  ");
 
   int ii;
   int jj;
@@ -95,17 +95,39 @@ static void test_spec_norm(xill_spec *spec, const int *status) {
 
   for (jj = 0; jj < spec->n_incl; jj++) {
     for (ii = 0; ii < spec->n_ener; ii++) {
+      assert(spec->flu[jj][ii] >= 0);
       sum += spec->flu[jj][ii];
     }
   }
 
-  printf("SUM = %.4e \n\n", sum);
+  printf("Sum = %.4e ", sum);
+
+  if (sum < 1e-8) {
+    *status = EXIT_FAILURE;
+    printf("\n *** normalization of spectrum seems wrong \n");
+    assert(sum >= 1e-8);
+  }
 
 }
 
-static void test_get_spec(int *status, xillParam *param) {
+static void testAutomaticLoadingTable(xillParam *param, int *status) {
 
-  printf("\n *** TEST: loading Spectrum from Storage (model type = %i) ...   ",
+  xillTable *tab = NULL;
+  char *fname = get_init_xillver_table(&tab, param, status);
+
+  printf("  -> loaded table for model type = %i: ", param->model_type);
+  assert(fname != NULL);
+  printf("%s\n\n", fname);
+
+  assert(tab != NULL);
+
+}
+
+static void test_get_spec(int *status, char *specName, xillParam *param) {
+
+  CHECK_STATUS_VOID(*status);
+
+  printf("\n - loading spec for model %s (type = %i): ", specName,
          param->model_type);
 
   xill_spec *spec = get_xillver_spectra(param, status);
@@ -116,75 +138,70 @@ static void test_get_spec(int *status, xillParam *param) {
   assert(spec->n_ener > 0);
   assert(spec->n_incl > 0);
 
-  print_status_outcome(status);
-
   test_spec_norm(spec, status);
-
   free_xill_spec(spec);
+
 }
 
-static void test_all_spec(int *status) {
+static void testEvaluateAllXillverSpecNonZero(int *status) {
 
   CHECK_STATUS_VOID(*status);
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
   xillParam *param;
 
-  putenv("DEBUG_RELXILL=1");
-
-  param = get_std_param_xillver_dens_nthcomp(status);
-  param->dens = 17.0;
-  test_get_spec(status, param);
+  //putenv("DEBUG_RELXILL=1");
 
   param = get_std_param_xillver(status);
-  test_get_spec(status, param);
-  free(param);
-
+  test_get_spec(status, "xillver", param);
 
   param = get_std_param_xillver_co(status);
-  test_get_spec(status, param);
-  free(param);
+  test_get_spec(status, "xillverCO", param);
+
+  param = get_std_param_xillver_ns(status);
+  test_get_spec(status, "xillverNS", param);
 
   param = get_std_param_xillver_nthcomp(status);
-  test_get_spec(status, param);
-  free(param);
+  test_get_spec(status, "xillverCp", param);
 
   param = get_std_param_xillver_dens_nthcomp(status);
-  test_get_spec(status, param);
-  free(param);
-
-  param->dens = 17.0;
-  test_get_spec(status, param);
+  test_get_spec(status, "xillverDCp", param);
 
   putenv("DEBUG_RELXILL=0");
 
+  if (param != NULL) {
+    param->dens = 17.0;
+  }
+  test_get_spec(status, "xillverDCp (dens=1e17)", param);
+
+  free(param);
+
+  print_status_outcome(status);
 
 }
 
-static void test_all_xilltables(int *status) {
+static void testAllXilltables(int *status) {
 
   CHECK_STATUS_VOID(*status);
   xillParam *param;
 
+  PRINT_RELXILL_TEST_MSG(" output tables and parameters \n");
+
   putenv("DEBUG_RELXILL=1");
 
-  param = get_std_param_xillver_dens_nthcomp(status);
-  param->dens = 17.0;
-  test_get_spec(status, param);
-
   param = get_std_param_xillver(status);
-  test_get_spec(status, param);
-  free(param);
+  testAutomaticLoadingTable(param, status);
 
   param = get_std_param_xillver_co(status);
-  test_get_spec(status, param);
+  testAutomaticLoadingTable(param, status);
 
-  param = get_std_param_xillver_nthcomp(status);
-  test_get_spec(status, param);
+  param = get_std_param_xillver_ns(status);
+  testAutomaticLoadingTable(param, status);
 
   param = get_std_param_xillver_dens_nthcomp(status);
-  test_get_spec(status, param);
+  testAutomaticLoadingTable(param, status);
 
-  param->dens = 17.0;
-  test_get_spec(status, param);
+  free(param);
 
   putenv("DEBUG_RELXILL=0");
 
@@ -192,18 +209,24 @@ static void test_all_xilltables(int *status) {
 
 static void testLoadingNonExistingTable(int *status) {
 
+  CHECK_STATUS_VOID(*status);
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
   xillParam *param;
 
   char *nonExistingFilename = "no_table_has_this_name_1234.fits";
 
   param = get_std_param_xillver(status);
   int statusFailing = EXIT_SUCCESS;
-  test_init_xilltable(nonExistingFilename, param, &statusFailing);
+  xillTable *tab = NULL;
+  init_xillver_table(nonExistingFilename, &tab, param, &statusFailing);
 
   if (statusFailing == EXIT_SUCCESS) {
     *status = EXIT_FAILURE;
-    printf(" TEST: *** error : loading a non-existing table did not result in an error\n");
+    printf("\n *** error : loading a non-existing table did not result in an error\n");
   }
+
+  print_status_outcome(status);
 
 }
 
@@ -231,9 +254,10 @@ static void testCheckForExistingTable(int *status) {
 
 static void testLoadingAlternativeTable(int *status) {
 
+  CHECK_STATUS_VOID(*status);
+
   printf(" TEST: loading alternative table ");
 
-  CHECK_STATUS_VOID(*status);
   char *existingTable = XILLTABLE_FILENAME;
   char *nonExistingTable = "no_table_has_this_name_1234.fits";
 
@@ -250,25 +274,30 @@ static void testLoadingAlternativeTable(int *status) {
 
 }
 
-void test_xilltables(void) {
+void test_xilltables(int *status) {
   char *buf;
-  int status = EXIT_SUCCESS;
+  if (*status != EXIT_SUCCESS) {
+    printf(" *** SKIP testing Xilltables as an error occured previously! \n\n");
+    return;
+  }
 
-  get_version_number(&buf, &status);
+  get_version_number(&buf, status);
   printf("\n === Testing XILLVER with RELXILL Version %s === \n\n", buf);
   free(buf);
 
-  test_new_xilltable(&status);
+  testCreateNewXilltable(status);
 
-  test_all_xilltables(&status);
+  testInitializeXillverTableCorrectly(status);
 
-  test_all_spec(&status);
+  testLoadingNonExistingTable(status);
 
-  testLoadingNonExistingTable(&status);
+  testCheckForExistingTable(status);
 
-  testCheckForExistingTable(&status);
+  testAllXilltables(status);
 
-  testLoadingAlternativeTable(&status);
+  testEvaluateAllXillverSpecNonZero(status);
+
+  testLoadingAlternativeTable(status);
 
   if (status != EXIT_SUCCESS) {
     printf(" *** TESTING XILLVER TABLES NOT SUCCESSFUL \n");
