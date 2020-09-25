@@ -67,7 +67,11 @@ define check_xilltab_implementation_single(ff,tabname){
    
    fit_fun(ff);
    set_par("*.refl_frac",-1.0);
-
+   
+   if (get_params("*.logxi")[0] != NULL){
+      set_par("*.logxi",3.0);
+   }
+   
    if (string_matches(ff,"NS")!=NULL){
       set_par("*.kTbb",2.1);      
    } else {
@@ -85,6 +89,8 @@ define check_xilltab_implementation_single(ff,tabname){
    set_params_xillver(pars);
    variable valr =  eval_fun_keV(lo0,hi0);
    valr *=  sum(val1) / sum(valr);
+
+   list_par;
    
    fits_write_binary_table(sprintf("%srefdat_%s.fits",dir,ff),
 			   "REFDATA",
@@ -99,4 +105,4 @@ define check_xilltab_implementation_single(ff,tabname){
 variable ff = __argv[1];
 variable ff_tab = __argv[2];
 
-check_xilltab_implementation_single(ff,ff_tab)
+check_xilltab_implementation_single(ff,ff_tab);

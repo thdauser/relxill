@@ -1123,7 +1123,11 @@ define check_xilltab_implementation_single(ff,tabname){ %{{{
    
    fit_fun_default(ff);
    set_par("*.refl_frac",-1.0);
-
+   
+   if (get_params("*.logxi")[0] != NULL){
+      set_par("*.logxi",3.0); % we want to be on a grid point
+   }
+      
    if (string_matches(ff,"NS")!=NULL){
       set_par("*.kTbb",2.1);
    } else {
@@ -1478,6 +1482,7 @@ define print_refl_frac(){ %{{{
 
 
 %%%%%%%% TEST  %%%%%%%%%%%%
+
 
 if (eval_test() != EXIT_SUCCESS) exit;
 
