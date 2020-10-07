@@ -1,7 +1,7 @@
 # relxill CI jobs
 
 before_script:
-  - source /data/system/software/softwarescript.bash && source /data/system/software/softwarescript_Xray.bash
+  - source /software/profile.in
   - export RELXILL_TABLE_PATH="/userdata/data/dauser/relline_tables"
 
 stages:
