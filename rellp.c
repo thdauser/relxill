@@ -324,7 +324,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
     free_lpReflFrac(&(emisProfSingle->returnFracs));
   }
 
-  if (is_debug_run()) {
+  if (shouldOutfilesBeWritten()) {
     save_radial_profile("test_rellxill_heightVelocityProfile.txt", source->heightMean, source->beta, source->nh);
   }
 

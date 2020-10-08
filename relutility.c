@@ -303,6 +303,20 @@ int is_debug_run(void) {
   return 0;
 }
 
+/** check if we are currently debugging the model **/
+int shouldOutfilesBeWritten(void) {
+  char *env;
+  env = getenv("RELXILL_WRITE_OUTFILES");
+  if (env != NULL) {
+    int debug = atof(env);
+    if (debug == 1) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+
 /** check if we should return the relline/relconv physical norm from ENV **/
 int do_not_normalize_relline(void) {
   char *env;

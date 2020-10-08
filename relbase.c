@@ -788,6 +788,26 @@ int static get_cosne_bin(double mu, rel_cosne *dat) {
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func *cached_str_relb_func = NULL;
 
+static double calculate_radiallyResolvedFluxObs(str_relb_func* relb_func, rel_spec* spec, double weight) {
+
+  double integRadialFlux = 0.0;
+  for (int jj = 0; jj <= spec->n_ener; jj++) {
+    integRadialFlux += integ_relline_bin(cached_str_relb_func, spec->ener[jj], spec->ener[jj + 1]);
+  }
+
+  integRadialFlux *= weight;
+
+  return integRadialFlux;
+
+}
+
+static void write_radiallyResolvedFluxObs(double* rad, double* intens, int n_rad) {
+  char* fname = "test_relline_radialFluxProfile.dat";
+  assert(intens!=NULL);
+  save_radial_profile(fname, rad, intens, n_rad);
+}
+
+
 void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -799,6 +819,13 @@ void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status) {
 
   if (cached_str_relb_func == NULL) {
     cached_str_relb_func = new_str_relb_func(sysPar, status);
+  }
+
+  // store the (energy)-integrated flux in an array for debugging
+  double* radialFlux = NULL;
+  if (shouldOutfilesBeWritten()){
+    radialFlux = (double*) malloc(sizeof(double)* sysPar->nr) ;
+    CHECK_MALLOC_VOID_STATUS(radialFlux, status)
   }
 
   int ii;
@@ -848,6 +875,11 @@ void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status) {
         spec->flux[izone][jj] += tmp_var * weight;
       }
 
+      if (shouldOutfilesBeWritten() && spec->n_zones==1){
+        assert(radialFlux!=NULL);
+        radialFlux[ii] = calculate_radiallyResolvedFluxObs(cached_str_relb_func, spec, weight);
+      }
+
       /** only calculate the distribution if we need it here  **/
       if (spec->rel_cosne != NULL) {
         int kk;
@@ -874,6 +906,10 @@ void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status) {
   /** we need to free the structure as it points to the currently cached sysPar structure
        which is freed if the cache is full and therefore causes "invalid reads" **/
   free_str_relb_func(&cached_str_relb_func);
+
+  if (shouldOutfilesBeWritten()){
+    write_radiallyResolvedFluxObs(sysPar->re, radialFlux, sysPar->nr);
+  }
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
@@ -1363,7 +1399,7 @@ void relxill_kernel(double *ener_inp,
 
       // now calculate the reflection spectra for each zone (using the angular distribution)
       assert(rel_profile->rel_cosne != NULL);
-      if (is_debug_run() == 1) {
+      if ( shouldOutfilesBeWritten() ) {
         print_angle_dist(rel_profile->rel_cosne, ii);
       }
 
@@ -1418,7 +1454,7 @@ void relxill_kernel(double *ener_inp,
         spec_inp[jj] += single_spec_inp[jj] * normFacFFT;
       }
 
-      if (is_debug_run() && rel_profile->n_zones <= 10) {
+      if (shouldOutfilesBeWritten() && rel_profile->n_zones <= 10) {
         char vstr[200];
         double test_flu[n_ener_inp];
         for (int jj = 0; jj < n_ener_inp; jj++) {
@@ -1785,7 +1821,7 @@ rel_spec *relbase_multizone(double *ener,
     // initialize parameter values
     relSysPar *sysPar = get_system_parameters(param, status);
 
-    if (is_debug_run() && sysPar != NULL) {
+    if (shouldOutfilesBeWritten() && sysPar != NULL) {
       save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->nr);
     }
 
@@ -1799,7 +1835,7 @@ rel_spec *relbase_multizone(double *ener,
     // normalize it and calculate the angular distribution (if necessary)
     renorm_relline_profile(spec, param, status);
 
-    if (is_debug_run()) {
+    if (shouldOutfilesBeWritten()) {
       save_relline_profile(spec, status);
     }
 

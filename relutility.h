@@ -201,4 +201,6 @@ Spectrum *new_Spectrum(int *status);
 void free_Spectrum(Spectrum **spec);
 Spectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
+int shouldOutfilesBeWritten(void);
+
 #endif /* RELUTILITY_H_ */
