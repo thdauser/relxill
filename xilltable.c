@@ -900,8 +900,10 @@ static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int 
     // need the index
     pind = tab->param_index[ii];
 
-    resetInpvalsToBoundaries(tab->param_names[ii], &(inp_param_vals[pind]), tab->param_vals[ii][0],
-                             tab->param_vals[ii][tab->num_param_vals[ii] - 1]);
+    if ( ! (( !is_xill_model(param->model_type)) &&  (tab->param_index[ii] == PARAM_INC ))) {
+      resetInpvalsToBoundaries(tab->param_names[ii], &(inp_param_vals[pind]), tab->param_vals[ii][0],
+                               tab->param_vals[ii][tab->num_param_vals[ii] - 1]);
+    }
 
     fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
         (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
