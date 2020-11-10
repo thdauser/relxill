@@ -352,8 +352,6 @@ static void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener
   xill_spec* xillSpecTable = get_xillver_spectra(xill_param, status);
   get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_cosne_dist, xillSpecTable, status);
 
-  renorm_xill_spec(xill_flux, n_ener, xill_param->lxi, xill_param->dens);
-
 }
 
 
