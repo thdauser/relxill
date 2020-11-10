@@ -296,6 +296,10 @@ static relSysPar *calculate_system_parameters(relParam *param, int *status) {
   // get emissivity profile
   sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
 
+#ifdef get_rrad_emis_corona
+  sysPar->emisReturn = get_rrad_emis_corona(sysPar->re, sysPar->nr, param, status);
+#endif
+
   if (*status != EXIT_SUCCESS) {
     RELXILL_ERROR("failed to calculate the system parameters", status);
   }
@@ -1935,6 +1939,7 @@ relSysPar *new_relSysPar(int nr, int ng, int *status) {
   CHECK_MALLOC_RET_STATUS(sysPar->gmax, status, sysPar)
 
   sysPar->emis = NULL;
+  sysPar->emisReturn = NULL;
 
   sysPar->gstar = (double *) malloc(ng * sizeof(double));
   CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
