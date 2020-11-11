@@ -21,6 +21,7 @@
 #include "relreturn_datastruct.h"
 #include "relmodels.h"
 #include "relutility.h"
+#include "relbase.h"
 
 
 static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,

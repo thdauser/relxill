@@ -19,7 +19,6 @@
 #include "test_relreturn.h"
 
 #include "relbase.h"
-#include "relmodels.h"
 #include "relreturn.h"
 #include "test_relxill.h"
 #include "relreturn_corona.h"
@@ -270,9 +269,9 @@ static double* integSpecArea(double** spec, int n_ener, double spin, const retur
 
 static int checkTemperatureProfile(double* temperature, int n){
 
-  if (! (temperature[0]>=0.0)){
+  if (temperature[0] < 0.0) {
     printf("\n *** error: lowest bin of temperature profile is %f  and NOT >=0 as expected \n",
-        temperature[0]);
+           temperature[0]);
     return EXIT_FAILURE;
   }
 
@@ -772,6 +771,7 @@ static void set_std_param_relxilllpRet(double *inp_par) {
   inp_par[12] = 1;
 }
 
+
 static void testRebinEmisProfiles(int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -820,6 +820,40 @@ static void testRebinEmisProfiles(int *status) {
 
 }
 
+static void returnEmisProfileLoaded(int *status) {
+
+  CHECK_STATUS_VOID(*status);
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  relParam *rel_param = get_std_param_rellinelp(status);
+  relSysPar *sysPar = get_system_parameters(rel_param, status);
+
+  assert(sysPar->emisReturn != NULL);
+
+  print_relxill_test_result(*status);
+
+}
+
+static void returnEmisLineProfileCalculation(int *status) {
+
+  CHECK_STATUS_VOID(*status);
+  PRINT_RELXILL_TEST_MSG_DEFAULT();
+
+  relParam *rel_param = get_std_param_rellinelp(status);
+
+  Spectrum *spec = getNewSpec(0.1, 100, 1000, status);
+
+  rel_spec *rel_profile = relbase(spec->ener, spec->nbins, rel_param, NULL, status);
+  CHECK_STATUS_VOID(*status);
+
+  assert(rel_profile->n_zones == 1);
+
+  assert(calcSum(rel_profile->flux[0], rel_profile->n_ener) > 1e-8);
+
+  print_relxill_test_result(*status);
+
+}
+
 static void evalLmodRelxilllpRet(int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -853,7 +887,7 @@ void test_general(int *status) {
 
   testReturnfractionsRadialGridWhenChangingRin(status);
 
-  // testReturnfractionsInterpolationForDifferentSpins(&status);
+  testReturnfractionsInterpolationForDifferentSpins(status);
 
 }
 
@@ -874,6 +908,8 @@ void test_coronaRet(int *status) {
 
   testRebinEmisProfiles(status);
   evalLmodRelxilllpRet(status);
+  returnEmisProfileLoaded(status);
+  returnEmisLineProfileCalculation(status);
 
 }
 

@@ -28,6 +28,8 @@
 #include "xilltable.h"
 #include "relcache.h"
 
+#define RRAD
+
 #ifdef RRAD
 #include "relreturn_corona.h"
 #endif
