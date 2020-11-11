@@ -13,14 +13,21 @@ COMPILE.c = gcc
 
 INCLUDES = -I/usr/include -I${HEADAS}/include 
 
-objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o test_relxill.o relphysics.o test_rellp.o test_std_functions.o
-headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h test_relxill.h xilltable.h relcache.h relphysics.h test_rellp.h test_std_functions.h
-sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxill.c xilltable.c donthcomp.c relcache.c test_xilltab.c relphysics.c test_rellp.c test_std_functions.c
+std_objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o test_relxill.o relphysics.o test_rellp.o test_std_functions.o
+std_headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h test_relxill.h xilltable.h relcache.h relphysics.h test_rellp.h test_std_functions.h
+std_sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxill.c xilltable.c donthcomp.c relcache.c test_xilltab.c relphysics.c test_rellp.c test_std_functions.c
 
 model_dir = ./build/
 model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
 
-unpublished_model_files = relreturn.c relreturn.h relreturn_corona.c  relreturn_corona.h  relreturn_datastruct.c  relreturn_datastruct.h  relreturn_table.c  relreturn_table.h
+unpublished_model_files_source = relreturn.c relreturn_corona.c relreturn_datastruct.c  relreturn_table.c 
+unpublished_model_files_header = relreturn.h relreturn_corona.h relreturn_datastruct.h  relreturn_table.h
+unpublished_model_files_objects = relreturn.o relreturn_corona.o relreturn_datastruct.o  relreturn_table.o
+unpublished_model_files = $(unpublished_model_files_source) $(unpublished_model_files_header)
+
+objects = $(std_objects) $(unpublished_model_files_objects)
+headers = $(std_headers) $(unpublished_model_files_header)
+sourcefiles = $(std_sourcefiles) $(unpublished_model_files_source)
 
 LINK_TARGET = test_sta
 
