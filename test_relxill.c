@@ -388,6 +388,13 @@ relParam *get_std_param_relline(int *status) {
   return init_par_relline(inp_par, n_param, status);
 }
 
+relParam *get_std_param_rellinelp(int *status) {
+  int n_param = NUM_PARAM_RELLINELP;
+  double inp_par[NUM_PARAM_RELLINELP];
+  set_std_param_relline_lp(inp_par);
+  return init_par_relline_lp(inp_par, n_param, status);
+}
+
 void get_std_param_relxilllp(relParam **p_rel_param, xillParam **p_xill_param, int *status) {
   int n_param = NUM_PARAM_RELXILLLP;
   double inp_par[NUM_PARAM_RELXILLLP];

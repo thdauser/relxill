@@ -77,6 +77,10 @@ xillParam *get_std_param_xillver_nthcomp(int *status);
 
 xillParam *get_std_param_xillver_dens_nthcomp(int *status);
 
+relParam *get_std_param_rellinelp(int *status);
+
+relParam *get_std_param_relline(int *status);
+
 void get_std_param_relxilllpDCp(relParam **rel_param, xillParam **xill_param, int *status);
 
 void get_std_param_relxilllp(relParam **rel_param, xillParam **xill_param, int *status);
