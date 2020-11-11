@@ -296,8 +296,13 @@ static relSysPar *calculate_system_parameters(relParam *param, int *status) {
   // get emissivity profile
   sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
 
-#ifdef get_rrad_emis_corona
-  sysPar->emisReturn = get_rrad_emis_corona(sysPar->re, sysPar->nr, param, status);
+#ifdef RRAD
+  if (param->return_rad == 1) {
+    sysPar->emisReturn = get_rrad_emis_corona(sysPar->re, sysPar->nr, param, status);
+    for (int ii=0; ii < sysPar->nr; ii++){
+      sysPar->emis->emis[ii] += sysPar->emisReturn->emis[ii];
+    }
+  }
 #endif
 
   if (*status != EXIT_SUCCESS) {
