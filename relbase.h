@@ -28,6 +28,9 @@
 #include "xilltable.h"
 #include "relcache.h"
 
+#ifdef RRAD
+#include "relreturn_corona.h"
+#endif
 
 /*********** DEFINE STATEMENTS *********/
 
