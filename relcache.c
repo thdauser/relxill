@@ -65,7 +65,12 @@ static int comp_sys_param(relParam *cpar, relParam *par) {
   if (comp_single_param_val(par->rin, cpar->rin)) return 1;
   if (comp_single_param_val(par->rbr, cpar->rbr)) return 1;
   if (comp_single_param_val(par->rout, cpar->rout)) return 1;
-  if (par->limb != cpar->limb) return 1;
+  if (par->limb != cpar->limb) {
+    return 1;
+  }
+  if (par->return_rad != cpar->return_rad) {
+    return 1;
+  }
 
   return 0;
 }
@@ -75,18 +80,37 @@ int comp_rel_param(relParam *cpar, relParam *par) {
   if (cpar == NULL) return 1;
 
   // first check all system parameters
-  if (comp_sys_param(cpar, par)) return 1;
+  if (comp_sys_param(cpar, par)) {
+    return 1;
+  }
 
-  if (comp_single_param_val((double) par->emis_type, (double) cpar->emis_type)) return 1;
-  if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) return 1;
+  if (comp_single_param_val((double) par->emis_type, (double) cpar->emis_type)) {
+    return 1;
+  }
+  if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) {
+    return 1;
+  }
 
-  if (comp_single_param_val(par->z, cpar->z)) return 1;
-  if (comp_single_param_val(par->lineE, cpar->lineE)) return 1;
+  if (comp_single_param_val(par->z, cpar->z)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->lineE, cpar->lineE)) {
+    return 1;
+  }
 
-  if (par->do_renorm_relline != cpar->do_renorm_relline) return 1;
+  if (par->do_renorm_relline != cpar->do_renorm_relline) {
+    return 1;
+  }
+
+  if (par->return_rad != cpar->return_rad) {
+    return 1;
+  }
+
 
   /** also check if the number of zones changed **/
-  if (par->num_zones != cpar->num_zones) return 1;
+  if (par->num_zones != cpar->num_zones) {
+    return 1;
+  }
 
   return 0;
 }
@@ -122,6 +146,8 @@ void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
 
   (*ca_rel_param)->do_renorm_relline = par->do_renorm_relline;
   (*ca_rel_param)->num_zones = par->num_zones;
+
+  (*ca_rel_param)->return_rad = par->return_rad;
 
 }
 
