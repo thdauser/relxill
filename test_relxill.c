@@ -226,7 +226,7 @@ void set_std_param_relxilllpdens_nthcomp(double *inp_par) {
 }
 
 void set_std_param_relline_lp(double *inp_par) {
-  inp_par[0] = 1.0;
+  inp_par[0] = 6.4;
   inp_par[1] = 3.0;
   inp_par[2] = 0.998;
   inp_par[3] = 30.0;
@@ -406,6 +406,18 @@ void get_std_param_relxilllp(relParam **p_rel_param, xillParam **p_xill_param, i
   assert(is_relxill_model((*p_rel_param)->model_type));
 }
 
+int isFluxNormalized(double *flux, int n) {
+  double integ_flux = calcSum(flux, n);
+  double integ_flux_norm = 1.0;
+  if (fabs(integ_flux - integ_flux_norm) < 1e-6) {
+    return 1;
+  } else {
+    printf(" *** error: integ flux: %.3e, but expected to be %.3e\n",
+           integ_flux, integ_flux_norm);
+    return 0;
+  }
+}
+
 /** standard evaluation of the relline model **/
 void std_eval_relline(int *status, int n) {
 
@@ -430,14 +442,8 @@ void std_eval_relline(int *status, int n) {
       tdrelline(ener, n_ener, photar, inp_par, n_param, status);
     }
   } else {
-    inp_par[8] = 0.0;
     tdrelline(ener, n_ener, photar, inp_par, n_param, status);
-    inp_par[8] = 1.0;
-    tdrelline(ener, n_ener, photar, inp_par, n_param, status);
-    inp_par[8] = 2.0;
-    tdrelline(ener, n_ener, photar, inp_par, n_param, status);
-    inp_par[8] = 0.0;
-    tdrelline(ener, n_ener, photar, inp_par, n_param, status);
+    assert(isFluxNormalized(photar, n_ener) == 1);
   }
 }
 
@@ -868,16 +874,10 @@ void std_eval_relline_lp(int *status, int n) {
   double photar[n_ener];
   int ii;
   for (ii = 0; ii < n; ii++) {
-//		tdrellinelp(ener,n_ener,photar,inp_par_lp,n_param,status);
-    inp_par_lp[2] = 0.998;
     tdrellinelp(ener, n_ener, photar, inp_par_lp, n_param, status);
-    tdrellinelp(ener, n_ener, photar, inp_par_lp, n_param, status);
-    inp_par_lp[2] = 0.99;
-    tdrellinelp(ener, n_ener, photar, inp_par_lp, n_param, status);
-    inp_par_lp[2] = 0.998;
-    tdrellinelp(ener, n_ener, photar, inp_par_lp, n_param, status);
-    CHECK_STATUS_VOID(*status);
+    assert(isFluxNormalized(photar, n_ener) == 1);
   }
+  CHECK_STATUS_VOID(*status);
 
 }
 
