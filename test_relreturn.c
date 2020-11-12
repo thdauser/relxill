@@ -826,8 +826,13 @@ static void returnEmisProfileLoaded(int *status) {
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   relParam *rel_param = get_std_param_rellinelp(status);
-  relSysPar *sysPar = get_system_parameters(rel_param, status);
 
+  rel_param->return_rad = 0;
+  relSysPar *sysPar = get_system_parameters(rel_param, status);
+  assert(sysPar->emisReturn == NULL);
+
+  rel_param->return_rad = 1;
+  sysPar = get_system_parameters(rel_param, status);
   assert(sysPar->emisReturn != NULL);
 
   print_relxill_test_result(*status);
@@ -840,14 +845,15 @@ static void returnEmisLineProfileCalculation(int *status) {
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   relParam *rel_param = get_std_param_rellinelp(status);
+  //rel_param->return_rad=0;
 
-  Spectrum *spec = getNewSpec(0.1, 100, 1000, status);
+  Spectrum *spec = getNewSpec(0.05, 10, 1000, status);
 
+  rel_param->return_rad = 1;
   rel_spec *rel_profile = relbase(spec->ener, spec->nbins, rel_param, NULL, status);
   CHECK_STATUS_VOID(*status);
 
   assert(rel_profile->n_zones == 1);
-
   assert(calcSum(rel_profile->flux[0], rel_profile->n_ener) > 1e-8);
 
   print_relxill_test_result(*status);
