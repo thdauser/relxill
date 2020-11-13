@@ -300,7 +300,7 @@ static relSysPar *calculate_system_parameters(relParam *param, int *status) {
   if (param->return_rad == 1) {
     sysPar->emisReturn = get_rrad_emis_corona(sysPar->re, sysPar->nr, param, status);
     for (int ii=0; ii < sysPar->nr; ii++){
-      sysPar->emis->emis[ii] += sysPar->emisReturn->emis[ii];
+      //sysPar->emis->emis[ii] += sysPar->emisReturn->emis[ii];
     }
   }
 #endif
@@ -1833,7 +1833,7 @@ rel_spec *relbase_multizone(double *ener,
     if (shouldOutfilesBeWritten() && sysPar != NULL) {
       save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
       if (sysPar->emisReturn != NULL){
-        save_radial_profile("test_emis_profile.dat", sysPar->emisReturn->re,
+        save_radial_profile("test_emis_profile_rrad.dat", sysPar->emisReturn->re,
                             sysPar->emisReturn->emis, sysPar->emisReturn->nr);
       }
     }

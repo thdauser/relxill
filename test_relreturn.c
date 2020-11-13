@@ -750,18 +750,6 @@ void save_emisProfile(char *fname, emisProfile *emis) {
   save_radial_profile(fname, emis->re, emis->emis, emis->nr);
 }
 
-static void invertArray(double *vals, int n) {
-
-  double storage[n];
-  for (int ii = 0; ii < n; ii++) {
-    storage[n - ii - 1] = vals[ii];
-  }
-
-  for (int ii = 0; ii < n; ii++) {
-    vals[ii] = storage[ii];
-  }
-
-}
 
 /* ******* test_coronaRet ******** */
 
@@ -779,9 +767,7 @@ static void testRebinEmisProfiles(int *status) {
 
   double precRebinCoarse = 0.05;
 
-  xillParam *xill_param = NULL;
-  relParam *rel_param = NULL;
-  get_std_param_relxilllp(&rel_param, &xill_param, status);
+  relParam *rel_param = get_std_param_rellinelp(status);
 
   relSysPar *sysPar = get_system_parameters(rel_param, status);
 
@@ -791,8 +777,8 @@ static void testRebinEmisProfiles(int *status) {
     rmean[dat->nrad - ii - 1] = 0.5 * (dat->rlo[ii] + dat->rhi[ii]);
   }
   emisProfile *emisCoarse = calc_emis_profile(rmean, dat->nrad, rel_param, status);
-  invertArray(emisCoarse->re, emisCoarse->nr);
-  invertArray(emisCoarse->emis, emisCoarse->nr);
+  // invertArray(emisCoarse->re, emisCoarse->nr);
+  // invertArray(emisCoarse->emis, emisCoarse->nr);
 
   emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, status);
   emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, status);
@@ -805,7 +791,7 @@ static void testRebinEmisProfiles(int *status) {
     save_emisProfile("test_emisRebin.dat", emisRebin);
 
     for (int ii = 20; ii < emisRebin->nr;
-         ii++) {  // last bin in coarse grid deviates, so skio, as it is not the interpolation
+         ii++) {  // last bin in coarse grid deviates, so skip, as it is not the interpolation
       if (is_debug_run()) {
         printf(" rad: %.3e :  %e (ref=%e, ratio=%e) \n",
                emisRebin->re[ii], emisRebin->emis[ii], emisFineReference->emis[ii],
@@ -845,6 +831,9 @@ static void returnEmisLineProfileCalculation(int *status) {
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   relParam *rel_param = get_std_param_rellinelp(status);
+  rel_param->a = 0.998;
+  rel_param->height = 5;
+
   //rel_param->return_rad=0;
 
   Spectrum *spec = getNewSpec(0.05, 10, 1000, status);
@@ -913,8 +902,8 @@ void test_bbodyRet(int *status) {
 void test_coronaRet(int *status) {
 
   testRebinEmisProfiles(status);
-  evalLmodRelxilllpRet(status);
-  returnEmisProfileLoaded(status);
+  //evalLmodRelxilllpRet(status);
+  //returnEmisProfileLoaded(status);
   returnEmisLineProfileCalculation(status);
 
 }

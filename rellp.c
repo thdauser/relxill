@@ -156,6 +156,7 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, d
   int n_r = emisProf->nr;
 
   // get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
+  assert(re[n_r - 1] < re[0]);
   int ind_rmin = binary_search(jet_rad, tab->n_rad, re[n_r - 1]);
   assert(ind_rmin > 0);
   int kk = ind_rmin;
@@ -479,6 +480,7 @@ emisProfile *new_emisProfile(double *re, int nr, int *status) {
   emisProfile *emis = (emisProfile *) malloc(sizeof(emisProfile));
   CHECK_MALLOC_RET_STATUS(emis, status, NULL)
 
+  assert(re[0] > re[nr - 1]); // emissivity profile requires descending radial grid
   emis->re = re;
   emis->nr = nr;
 

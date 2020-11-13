@@ -203,4 +203,6 @@ Spectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
 int shouldOutfilesBeWritten(void);
 
+void invertArray(double *vals, int n);
+
 #endif /* RELUTILITY_H_ */

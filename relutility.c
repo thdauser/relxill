@@ -991,3 +991,16 @@ Spectrum *getNewSpec(double emin, double emax, int nbins, int *status) {
 
   return spec;
 }
+
+void invertArray(double *vals, int n) {
+
+  double storage[n];
+  for (int ii = 0; ii < n; ii++) {
+    storage[n - ii - 1] = vals[ii];
+  }
+
+  for (int ii = 0; ii < n; ii++) {
+    vals[ii] = storage[ii];
+  }
+
+}
