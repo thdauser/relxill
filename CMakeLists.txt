@@ -25,11 +25,11 @@ set(SOURCE_FILES
         reltable.h
         relutility.c
         relutility.h
-        xilltable.c    xilltable.h
+        xilltable.c xilltable.h
         test_relxill.c test_relxill.h
         test_rellp.c test_rellp.h
         relphysics.c relphysics.h
-        test_std_functions.c test_std_functions.h)
+        test_std_functions.c test_std_functions.h cppmodels.cpp cppmodels.h)
 
 
 set(EXEC_FILES
@@ -37,7 +37,7 @@ set(EXEC_FILES
         )
 
 foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES})
+    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES} test_cpp.cpp)
     target_link_libraries(${execfile} m cfitsio)
 endforeach (execfile ${EXEC_FILES})
 
