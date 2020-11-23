@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.15)
-project(relxill C)
+project(relxill)
 
 set(CMAKE_C_STANDARD 11)
 
@@ -7,7 +7,7 @@ include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
 
 set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
 
 
 set(SOURCE_FILES
@@ -29,15 +29,26 @@ set(SOURCE_FILES
         test_relxill.c test_relxill.h
         test_rellp.c test_rellp.h
         relphysics.c relphysics.h
-        test_std_functions.c test_std_functions.h cppmodels.cpp cppmodels.h)
+        test_std_functions.c test_std_functions.h
+        cppmodels.cpp cppmodels.h
+        )
 
 
 set(EXEC_FILES
         test_sta
         )
 
+set(EXEC_FILES_CPP
+        test_cpp
+        )
+
 foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES} test_cpp.cpp)
+    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES})
+    target_link_libraries(${execfile} m cfitsio)
+endforeach (execfile ${EXEC_FILES})
+
+foreach (execfile ${EXEC_FILES_CPP})
+    add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES})
     target_link_libraries(${execfile} m cfitsio)
 endforeach (execfile ${EXEC_FILES})
 

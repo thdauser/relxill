@@ -19,14 +19,29 @@
 #ifndef RELXILL__CPPMODELS_H_
 #define RELXILL__CPPMODELS_H_
 
+#include <string>
+
 extern "C" {
 #include "relbase.h"
 }
+#include "cppmodels.h"
 
-//class cppmodels{
-//
-//};
+namespace relxill {
 
-void eval_model(Spectrum &spec, Parameters &pars);
+class Parameters {
+
+};
+
+class LocalModel {
+ private:
+  std::string name{};
+  // Parameters par{};
+
+ public:
+  void eval_model();
+
+};
+
+}
 
 #endif //RELXILL__CPPMODELS_H_

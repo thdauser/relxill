@@ -18,6 +18,10 @@
 
 #include "cppmodels.h"
 
+using namespace relxill;
+
 int main() {
+
+  LocalModel lmod_relxill = LocalModel{}; //("relxill", NUM_PARAM_RELXILL);
 
 }
