@@ -20,15 +20,72 @@
 #define RELXILL__CPPMODELS_H_
 
 #include <string>
+#include <map>
+#include <vector>
+#include <xsTypes.h>
 
 extern "C" {
 #include "relbase.h"
 }
-#include "cppmodels.h"
+
+typedef RealArray Array;
 
 namespace relxill {
 
-class Parameters {
+//class ModelType{};
+//class LineModel: ModelType{};
+//class ConvModel: ModelType{};
+//class XillModel: ModelType{};
+//class RelxillModel: ModelType{};
+
+enum class RelxillModel {
+  Relxill,
+  RelxillLp
+} RelxillModel;
+
+enum class LineModel {
+  Relline,
+  RellineLp
+} LineModel;
+
+enum IrradiationType {
+  BknPowerlaw,
+  LampPost,
+  BlackBody
+};
+
+enum PrimarySpecType {
+  CutoffPl,
+  Nthcomp,
+  Blackbody
+};
+
+class Param {
+ public:
+  Param(double inp_val, std::string inp_name) :
+      val{inp_val}, name{inp_name} {
+  }
+
+ private:
+  double val;
+  std::string name{};
+};
+
+class RelParameters {
+
+ private:
+  Param a{0.998, "a"};
+  Param rin{-1, "Rin"};
+};
+
+class Parameters : RelParameters {
+ public:
+  Parameters(Array values, std::vector<std::string> pnames) {
+    // ....
+  }
+
+ private:
+  std::map<std::string, double> param{};
 
 };
 
@@ -41,6 +98,42 @@ class LocalModel {
   void eval_model();
 
 };
+
+class Spectrum {
+ public:
+  Spectrum(const Array energy, const Array flu) :
+      energyArray{energy}, fluxArray{flu} {
+  }
+
+  Array energy() {
+    return energyArray;
+  }
+
+  Array flux() {
+    return fluxArray;
+  }
+
+ private:
+  const Array energyArray;
+  const Array fluxArray;
+};
+
+template<typename T_Model>
+//, typename T_Irradiation, typename T_PrimeSpec>
+void eval_model_xspec(T_Model model, std::string name, const Array &energy, const Array &flux,
+                      const Array &parameter, std::vector<std::string> par_names) {
+
+  Spectrum spec{energy, flux};
+  Parameters pars{parameter, par_names};
+
+  if (typeid(model) == typeid(LineModel)) {
+    puts("I am LINE ");
+  } else if (typeid(model) == typeid(RelxillModel)) {
+    puts(" I am RELXILL ");
+  }
+
+  puts(" not doing anything ");
+}
 
 }
 

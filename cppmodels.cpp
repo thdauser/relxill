@@ -17,3 +17,22 @@
 */
 
 
+#include "cppmodels.h"
+
+relxill::IrradiationType T_Irrad;
+relxill::PrimarySpecType T_PrimeSpec;
+
+extern "C" {
+void lmodcpprelxill(const Array &energy, const Array &parameter,
+                    int spectrum, Array &flux, Array &fluxError,
+                    const string &init) {
+
+  const std::vector<std::string> names = {"a", "Rin"};
+
+  relxill::eval_model_xspec(relxill::RelxillModel::Relxill, energy, flux, parameter, names);
+  // Model code:  Should resize flux RealArray to energy.size()-1.
+  // Do the same for fluxError array if calculating errors, otherwise
+  // leave it at size 0.
+}
+
+}
