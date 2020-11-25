@@ -21,6 +21,7 @@
 
 #include <string>
 #include <map>
+#include <utility>
 #include <vector>
 #include <xsTypes.h>
 
@@ -28,103 +29,152 @@ extern "C" {
 #include "relbase.h"
 }
 
-typedef RealArray Array;
+#include "src/cppparameters.h"
 
 namespace relxill {
 
-//class ModelType{};
-//class LineModel: ModelType{};
-//class ConvModel: ModelType{};
-//class XillModel: ModelType{};
-//class RelxillModel: ModelType{};
+enum class ModelName {
+  relline,
+  relxill,
+  relxilllp
+};
 
-enum class RelxillModel {
-  Relxill,
-  RelxillLp
-} RelxillModel;
+enum class T_Model {
+  LineModel,
+  ConvModel,
+  XillModel,
+  RelxillModel
+};
 
-enum class LineModel {
-  Relline,
-  RellineLp
-} LineModel;
-
-enum IrradiationType {
+enum class T_Irrad {
   BknPowerlaw,
   LampPost,
-  BlackBody
+  BlackBody,
+  None
 };
 
-enum PrimarySpecType {
+enum class T_PrimSpec {
   CutoffPl,
   Nthcomp,
-  Blackbody
+  Blackbody,
+  None
 };
 
-class Param {
+class ModelInfo {
  public:
-  Param(double inp_val, std::string inp_name) :
-      val{inp_val}, name{inp_name} {
+  ModelInfo(T_Model type, T_Irrad irrad, T_PrimSpec prim)
+      : m_type{type}, m_irradiation{irrad}, m_primeSpec{prim} {
+  }
+
+  void all_models() {
+
   }
 
  private:
-  double val;
-  std::string name{};
+  T_Model m_type{};
+  T_Irrad m_irradiation{};
+  T_PrimSpec m_primeSpec{};
 };
 
-class RelParameters {
+typedef std::vector<std::string> StringVector;
 
- private:
-  Param a{0.998, "a"};
-  Param rin{-1, "Rin"};
-};
+// TODO:: I think this should be done in the "lmod" call (for everything else we can use something better)
+class ModelParameters {
 
-class Parameters : RelParameters {
  public:
-  Parameters(Array values, std::vector<std::string> pnames) {
-    // ....
+  static ModelParameters &instance() {
+    static auto *instance = new ModelParameters();
+    return *instance;
+  }
+
+  StringVector getModelInfo(ModelName name) {
+    return m_param.at(name);
+  }
+
+  std::unordered_map<ModelName, StringVector> all() const {
+    return m_param;
   }
 
  private:
-  std::map<std::string, double> param{};
+  ModelParameters() = default;  //hidden constructor and destructor
+  ~ModelParameters() = default;
+  const std::unordered_map<ModelName, StringVector> m_param =
+      {
+          {ModelName::relline, {"a", "Rin", "Rout"}},
+          {ModelName::relxill, {"a", "Rin", "Rout", "lxi", "refl_frac"}}
+      };
 
 };
+
+class LocalModels {
+
+ public:
+  static LocalModels &instance() {
+    static auto *instance = new LocalModels();
+    return *instance;
+  }
+
+  ModelInfo getModelInfo(ModelName name) {
+    return m_models.at(name);
+  }
+
+  std::unordered_map<ModelName, ModelInfo> all() const {
+    return m_models;
+  }
+
+ private:
+  LocalModels() = default;  //hidden constructor and destructor
+  ~LocalModels() = default;
+  const std::unordered_map<ModelName, ModelInfo> m_models =
+      {
+          {ModelName::relline, ModelInfo(T_Model::LineModel, T_Irrad::BknPowerlaw, T_PrimSpec::None)},
+          {ModelName::relxill, ModelInfo(T_Model::RelxillModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)}
+      };
+
+};
+
+//class LineModel: ModelInfo{
+// private:
+//  T_Irrad m_irradiation{};
+//};
+//class XillModel: ModelInfo{
+// private:
+//  T_PrimSpec m_primeSpec{};
+//};
+//class RelxillModel: LineModel, XillModel{ };
+//class ConvModel: ModelInfo{};
+//class XillModel: ModelInfo{};
+
 
 class LocalModel {
- private:
-  std::string name{};
-  // Parameters par{};
 
  public:
-  void eval_model();
-
-};
-
-class Spectrum {
- public:
-  Spectrum(const Array energy, const Array flu) :
-      energyArray{energy}, fluxArray{flu} {
-  }
-
-  Array energy() {
-    return energyArray;
-  }
-
-  Array flux() {
-    return fluxArray;
+  LocalModel(ModelName name, std::vector<std::string> par_names) {
+    model = ModelInfo(name);
   }
 
  private:
-  const Array energyArray;
-  const Array fluxArray;
+  ModelInfo model;
+  Parameters par{};
+
 };
 
 template<typename T_Model>
 //, typename T_Irradiation, typename T_PrimeSpec>
-void eval_model_xspec(T_Model model, std::string name, const Array &energy, const Array &flux,
+void eval_model_xspec(T_Model model, const Array &energy, const Array &flux,
                       const Array &parameter, std::vector<std::string> par_names) {
 
+  relxill::LocalModels::instance().getModelInfo(model);
+
+  //lmod{model, parameter};
+
   Spectrum spec{energy, flux};
-  Parameters pars{parameter, par_names};
+  Parameters pars{parameter, std::move(par_names)};
+
+
+
+  //  eval_model(lmod, spec);
+
 
   if (typeid(model) == typeid(LineModel)) {
     puts("I am LINE ");
@@ -136,5 +186,4 @@ void eval_model_xspec(T_Model model, std::string name, const Array &energy, cons
 }
 
 }
-
 #endif //RELXILL__CPPMODELS_H_

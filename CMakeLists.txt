@@ -3,6 +3,8 @@ project(relxill)
 
 set(CMAKE_C_STANDARD 11)
 
+set(CMAKE_CXX_STANDARD 17)
+
 include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
 
@@ -31,7 +33,7 @@ set(SOURCE_FILES
         relphysics.c relphysics.h
         test_std_functions.c test_std_functions.h
         cppmodels.cpp cppmodels.h
-        )
+        src/cppparameters.h)
 
 
 set(EXEC_FILES

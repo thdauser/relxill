@@ -16,23 +16,33 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-
 #include "cppmodels.h"
 
-relxill::IrradiationType T_Irrad;
-relxill::PrimarySpecType T_PrimeSpec;
+
+
+//class Global {
+// public:
+//  Global(){
+//    m_models[ModelName::relline] = ModelInfo{T_Model::LineModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl};
+//
+//  }
+//
+// private:
+//  const std::map<ModelName, ModelInfo> m_models;
+//}
+//        {ModelName::relxill, {T_Model::RelxillModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl}},
+
+
+
+std::map<ModelName, ModelInfo> models;
 
 extern "C" {
 void lmodcpprelxill(const Array &energy, const Array &parameter,
                     int spectrum, Array &flux, Array &fluxError,
                     const string &init) {
 
-  const std::vector<std::string> names = {"a", "Rin"};
+  eval_model_xspec(ModelName::relxill, energy, flux, parameter);
 
-  relxill::eval_model_xspec(relxill::RelxillModel::Relxill, energy, flux, parameter, names);
-  // Model code:  Should resize flux RealArray to energy.size()-1.
-  // Do the same for fluxError array if calculating errors, otherwise
-  // leave it at size 0.
 }
 
 }
