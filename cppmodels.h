@@ -19,24 +19,44 @@
 #ifndef RELXILL__CPPMODELS_H_
 #define RELXILL__CPPMODELS_H_
 
+#include <valarray>
 #include <string>
-#include <map>
+#include <unordered_map>
 #include <utility>
 #include <vector>
-#include <xsTypes.h>
 
-extern "C" {
-#include "relbase.h"
-}
+// #include <xsTypes.h>
 
-#include "src/cppparameters.h"
+//extern "C" {
+//#include "relbase.h"
+//}
 
-namespace relxill {
+// #include "cppparameters.h"
+
+// namespace relxill {
 
 enum class ModelName {
   relline,
   relxill,
   relxilllp
+};
+
+enum class XPar {
+  linee,
+  index1,
+  index2,
+  rbr,
+  a,
+  rin,
+  rout,
+  incl,
+  z,
+  limb,
+  gamma,
+  logxi,
+  afe,
+  ecut,
+  refl_frac
 };
 
 enum class T_Model {
@@ -60,51 +80,84 @@ enum class T_PrimSpec {
   None
 };
 
+typedef std::vector<std::string> StringVector;
+typedef std::vector<XPar> ModelParamVector;
+// typedef RealArray Array;
+
+typedef std::valarray<double> Array;
+typedef std::string string;
+
 class ModelInfo {
  public:
-  ModelInfo(T_Model type, T_Irrad irrad, T_PrimSpec prim)
-      : m_type{type}, m_irradiation{irrad}, m_primeSpec{prim} {
+  ModelInfo(ModelParamVector par, T_Model type, T_Irrad irrad, T_PrimSpec prim)
+      : m_param{std::move(par)}, m_type{type}, m_irradiation{irrad}, m_primeSpec{prim} {
   }
 
   void all_models() {
+  }
 
+  [[nodiscard]] T_Model type() const {
+    return m_type;
+  }
+
+  [[nodiscard]] bool is_model_type(T_Model const model_type) const {
+    return typeid(model_type) == typeid(m_type);
   }
 
  private:
+  ModelParamVector m_param{};
   T_Model m_type{};
   T_Irrad m_irradiation{};
   T_PrimSpec m_primeSpec{};
 };
 
-typedef std::vector<std::string> StringVector;
 
-// TODO:: I think this should be done in the "lmod" call (for everything else we can use something better)
-class ModelParameters {
+//class XspecInputParameters {
+//
+// public:
+//  static XspecInputParameters &instance() {
+//    static auto *instance = new XspecInputParameters();
+//    return *instance;
+//  }
+//
+//  std::vector<XPar> get(ModelName name) const {
+//    return m_param.at(name);
+//  }
+//
+//  void add(ModelName name, std::vector<XPar> params){
+//    m_param.try_emplace(name, params);
+//  }
+//
+// private:
+//  XspecInputParameters() = default;  //hidden constructor and destructor
+//  ~XspecInputParameters() = default;
+//  std::unordered_map<ModelName, ModelParamVector> m_param;
+//};
 
- public:
-  static ModelParameters &instance() {
-    static auto *instance = new ModelParameters();
-    return *instance;
-  }
 
-  StringVector getModelInfo(ModelName name) {
-    return m_param.at(name);
-  }
+//class XspecParamStrings {
+//
+// public:
+//  static XspecParamStrings &instance() {
+//    static auto *instance = new XspecParamStrings();
+//    return *instance;
+//  }
+//
+//  std::string get(InputParam id) const {
+//    return m_strings.at(id);
+//  }
+//
+//
+// private:
+//  XspecParamStrings() = default;  //hidden constructor and destructor
+//  ~XspecParamStrings() = default;
+//  std::unordered_map<InputParam, std::string> m_strings ={
+//      {InputParam::index1, "Index1"}
+//
+//  };
+//};
 
-  std::unordered_map<ModelName, StringVector> all() const {
-    return m_param;
-  }
 
- private:
-  ModelParameters() = default;  //hidden constructor and destructor
-  ~ModelParameters() = default;
-  const std::unordered_map<ModelName, StringVector> m_param =
-      {
-          {ModelName::relline, {"a", "Rin", "Rout"}},
-          {ModelName::relxill, {"a", "Rin", "Rout", "lxi", "refl_frac"}}
-      };
-
-};
 
 class LocalModels {
 
@@ -127,8 +180,39 @@ class LocalModels {
   ~LocalModels() = default;
   const std::unordered_map<ModelName, ModelInfo> m_models =
       {
-          {ModelName::relline, ModelInfo(T_Model::LineModel, T_Irrad::BknPowerlaw, T_PrimSpec::None)},
-          {ModelName::relxill, ModelInfo(T_Model::RelxillModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)}
+          {ModelName::relline,
+           ModelInfo({
+                         XPar::linee,
+                         XPar::index1,
+                         XPar::index2,
+                         XPar::rbr,
+                         XPar::a,
+                         XPar::incl,
+                         XPar::rin,
+                         XPar::rout,
+                         XPar::z,
+                         XPar::limb
+                     },
+                     T_Model::LineModel, T_Irrad::BknPowerlaw, T_PrimSpec::None)
+          },
+
+          {ModelName::relxill,
+           ModelInfo({
+                         XPar::index1,
+                         XPar::index2,
+                         XPar::rbr,
+                         XPar::a,
+                         XPar::incl,
+                         XPar::rin,
+                         XPar::rout,
+                         XPar::z,
+                         XPar::gamma,
+                         XPar::logxi,
+                         XPar::afe,
+                         XPar::ecut,
+                         XPar::refl_frac
+                     },
+                     T_Model::RelxillModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)}
       };
 
 };
@@ -146,44 +230,32 @@ class LocalModels {
 //class XillModel: ModelInfo{};
 
 
-class LocalModel {
-
- public:
-  LocalModel(ModelName name, std::vector<std::string> par_names) {
-    model = ModelInfo(name);
-  }
-
- private:
-  ModelInfo model;
-  Parameters par{};
-
-};
-
-template<typename T_Model>
-//, typename T_Irradiation, typename T_PrimeSpec>
-void eval_model_xspec(T_Model model, const Array &energy, const Array &flux,
-                      const Array &parameter, std::vector<std::string> par_names) {
-
-  relxill::LocalModels::instance().getModelInfo(model);
-
-  //lmod{model, parameter};
-
-  Spectrum spec{energy, flux};
-  Parameters pars{parameter, std::move(par_names)};
+//class LocalModel {
+//
+// public:
+//  LocalModel(ModelName name, std::vector<std::string> par_names) {
+//    model = ModelInfo(name);
+//  }
+//
+// private:
+//  ModelInfo model;
+//  Parameters par{};
+//
+//};
 
 
 
-  //  eval_model(lmod, spec);
+extern "C" {
+[[maybe_unused]] void lmodcpprelline(const Array &energy, const Array &parameter,
+                                     int spectrum, Array &flux, Array &fluxError,
+                                     const string &init);
 
-
-  if (typeid(model) == typeid(LineModel)) {
-    puts("I am LINE ");
-  } else if (typeid(model) == typeid(RelxillModel)) {
-    puts(" I am RELXILL ");
-  }
-
-  puts(" not doing anything ");
+[[maybe_unused]] void lmodcpprelxill(const Array &energy, const Array &parameter,
+                                     int spectrum, Array &flux, Array &fluxError,
+                                     const string &init);
 }
 
-}
+// } // namespace relxill
+
+
 #endif //RELXILL__CPPMODELS_H_

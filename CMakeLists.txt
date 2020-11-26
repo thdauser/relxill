@@ -3,7 +3,9 @@ project(relxill)
 
 set(CMAKE_C_STANDARD 11)
 
-set(CMAKE_CXX_STANDARD 17)
+#set(CMAKE_CXX_STANDARD 17)
+
+set(CMAKE_CXX_FLAGS "-std=c++17")
 
 include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
@@ -33,8 +35,11 @@ set(SOURCE_FILES
         relphysics.c relphysics.h
         test_std_functions.c test_std_functions.h
         cppmodels.cpp cppmodels.h
-        src/cppparameters.h)
+        cppparameters.h)
 
+set(SOURCE_FILES_CPP
+        # cppmodels.cpp cppmodels.h
+        )
 
 set(EXEC_FILES
         test_sta
@@ -50,9 +55,9 @@ foreach (execfile ${EXEC_FILES})
 endforeach (execfile ${EXEC_FILES})
 
 foreach (execfile ${EXEC_FILES_CPP})
-    add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES})
-    target_link_libraries(${execfile} m cfitsio)
-endforeach (execfile ${EXEC_FILES})
+    add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES_CPP})
+    # target_link_libraries(${execfile} m cfitsio)
+endforeach (execfile ${EXEC_FILES_CPP})
 
 target_link_libraries(test_sta m)
 target_link_libraries(test_sta cfitsio)

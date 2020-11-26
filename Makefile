@@ -20,7 +20,9 @@ sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxil
 model_dir = ./build/
 model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
 
-unpublished_model_files = relreturn.c relreturn.h relreturn_corona.c  relreturn_corona.h  relreturn_datastruct.c  relreturn_datastruct.h  relreturn_table.c  relreturn_table.h
+unpublished_model_files = relreturn.c relreturn.h relreturn_corona.c  relreturn_corona.h  relreturn_datastruct.c  relreturn_datastruct.h  relreturn_table.c  relreturn_table.h 
+
+cpp_model_files = cppmodels.cpp cppmodels.h cppparameters.h
 
 LINK_TARGET = test_sta
 
@@ -83,6 +85,17 @@ model-dev: test_sta
 	$(eval MODEL_VERSION := $(shell ./test_sta version))
 	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=dev
 
+.PHONY: model-cpp
+model-cpp: test_sta
+	mkdir -p $(model_dir)
+	rm -f $(model_dir)/*
+	cp -v $(model_files) $(model_dir)
+	cp -v $(cpp_model_files) $(model_dir)
+	cp modelfiles/lmodel_relxill_cpp.dat build/lmodel_relxill.dat
+
+	$(eval MODEL_VERSION := $(shell ./test_sta version))
+	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=cpp
+	
 .PHONY: model-nonpublic
 model-nonpublic: test_sta
 	mkdir -p $(model_dir)

@@ -20,29 +20,46 @@
 
 
 
-//class Global {
-// public:
-//  Global(){
-//    m_models[ModelName::relline] = ModelInfo{T_Model::LineModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl};
-//
-//  }
-//
-// private:
-//  const std::map<ModelName, ModelInfo> m_models;
-//}
-//        {ModelName::relxill, {T_Model::RelxillModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl}},
+// namespace  relxill{
+
+void eval_model_xspec(ModelName model, const Array &energy, const Array &flux, const Array &parameter) {
+
+  auto const model_info = LocalModels::instance().getModelInfo(model);
+
+  //lmod{model, parameter};
+
+  // Spectrum spec{energy, flux};
+  //  Parameters pars{parameter, std::move(par_names)};
 
 
+  switch (model_info.type()) {
+    case T_Model::LineModel:puts("I am LINE ");
+      break;
+    case T_Model::RelxillModel:puts(" I am RELXILL ");
+      break;
+    case T_Model::ConvModel:puts(" I am CONV ");
+      break;
+    case T_Model::XillModel:puts(" I am XILL ");
+      break;
+  }
 
-std::map<ModelName, ModelInfo> models;
+}
 
 extern "C" {
-void lmodcpprelxill(const Array &energy, const Array &parameter,
-                    int spectrum, Array &flux, Array &fluxError,
-                    const string &init) {
 
+[[maybe_unused]] void lmodcpprelline(const Array &energy, const Array &parameter,
+                                     int spectrum, Array &flux, Array &fluxError,
+                                     const string &init) {
+  eval_model_xspec(ModelName::relline, energy, flux, parameter);
+}
+
+[[maybe_unused]] void lmodcpprelxill(const Array &energy, const Array &parameter,
+                                     int spectrum, Array &flux, Array &fluxError,
+                                     const string &init) {
   eval_model_xspec(ModelName::relxill, energy, flux, parameter);
-
 }
 
 }
+
+// }   // namespace relxill
+

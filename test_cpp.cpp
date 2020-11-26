@@ -16,12 +16,34 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "cppmodels.h"
+// #include "cppmodels.h"
+#include <valarray>
+#include <string>
 
-using namespace relxill;
+// namespace relxill{
+
+typedef std::valarray<double> Array;
+
+class LmodTest {
+
+ public:
+  //  const Array energy{0.1, 1.0, 10.0};
+  const Array energy;
+  Array flux{0.0, 0.0, 0.0};
+  Array empty{};
+};
 
 int main() {
 
-  LocalModel lmod_relxill = LocalModel{}; //("relxill", NUM_PARAM_RELXILL);
+  auto spec = LmodTest();
+  int ispec = 0;
+  // const string empty_string = "";
+  std::string empty_string = "Ein String";
+  Array def_param;
+  def_param.resize(10);
 
+  //lmodcpprelline(spec.energy, def_param, ispec, spec.flux, spec.empty, empty_string);
+
+  return EXIT_SUCCESS;
 }
+// } // namespace relxill
