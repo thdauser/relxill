@@ -24,6 +24,7 @@
 
 #include <vector>
 #include <unordered_map>
+#include <iostream>
 
 class LmodTest {
 
@@ -31,21 +32,23 @@ class LmodTest {
   const Array energy{0.1, 1.0, 10.0};
   Array flux{0.0, 0.0, 0.0};
   Array parameter{0.0, 0.0, 0.0};
+  const std::unordered_map<ModelName, std::string> all_models{
+      {ModelName::relline, "relline"},
+      {ModelName::relxill, "relxill"},
+      {ModelName::relconv, "relconv"},
+      {ModelName::xillver, "xillver"}
+  };
+
 };
 
-TEST_CASE(" Execute all local models", "[execute]") {
+TEST_CASE(" Execute local models", "[model]") {
 
   LmodTest inp{};
 
-  std::unordered_map<ModelName, std::string> models{
-      {ModelName::relline, "relline"},
-      {ModelName::relxill, "relxill"},
-      {ModelName::relxilllp, "relxilllp"},
-  };
+  for (const auto &elem: inp.all_models) {
 
-  for (const auto &elem: models) {
-
-    DYNAMIC_SECTION("Looped section: " << elem.second) {
+    DYNAMIC_SECTION(" testing model: " << elem.second) {
+      std::cout << "- model: " << elem.second << std::endl;
       eval_model_xspec(elem.first, inp.energy, inp.flux, inp.parameter);
       REQUIRE(inp.flux[0] >= 0.0);
     }

@@ -31,70 +31,17 @@
 //#include "relbase.h"
 //}
 
-// #include "cppparameters.h"
+#include "cppparameters.h"
 
 // namespace relxill {
 
-enum class ModelName {
-  relline,
-  relxill,
-  relxilllp
-};
 
-enum class XPar {
-  linee,
-  index1,
-  index2,
-  rbr,
-  a,
-  rin,
-  rout,
-  incl,
-  z,
-  limb,
-  gamma,
-  logxi,
-  afe,
-  ecut,
-  refl_frac
-};
+class ModelType {
 
-enum class T_Model {
-  LineModel,
-  ConvModel,
-  XillModel,
-  RelxillModel
-};
-
-enum class T_Irrad {
-  BknPowerlaw,
-  LampPost,
-  BlackBody,
-  None
-};
-
-enum class T_PrimSpec {
-  CutoffPl,
-  Nthcomp,
-  Blackbody,
-  None
-};
-
-typedef std::vector<std::string> StringVector;
-typedef std::vector<XPar> ModelParamVector;
-// typedef RealArray Array;
-
-typedef std::valarray<double> Array;
-typedef std::string string;
-
-class ModelInfo {
  public:
-  ModelInfo(ModelParamVector par, T_Model type, T_Irrad irrad, T_PrimSpec prim)
-      : m_param{std::move(par)}, m_type{type}, m_irradiation{irrad}, m_primeSpec{prim} {
-  }
-
-  void all_models() {
-  }
+  ModelType(T_Model type, T_Irrad irrad, T_PrimSpec prim)
+      : m_type{type}, m_irradiation{irrad}, m_primeSpec{prim} {
+  };
 
   [[nodiscard]] T_Model type() const {
     return m_type;
@@ -105,70 +52,35 @@ class ModelInfo {
   }
 
  private:
-  ModelParamVector m_param{};
-  T_Model m_type{};
-  T_Irrad m_irradiation{};
-  T_PrimSpec m_primeSpec{};
+  const T_Model m_type;
+  const T_Irrad m_irradiation;
+  const T_PrimSpec m_primeSpec;
 };
 
+// TODO: make the inheritance the other way around (no need for parameters)
+class ModelInfo : ModelType {
+ public:
+  ModelInfo(ModelParamVector _par, T_Model type, T_Irrad irrad, T_PrimSpec prim)
+      : m_param{std::move(_par)}, ModelType(type, irrad, prim) {
+  }
 
-//class XspecInputParameters {
-//
-// public:
-//  static XspecInputParameters &instance() {
-//    static auto *instance = new XspecInputParameters();
-//    return *instance;
-//  }
-//
-//  std::vector<XPar> get(ModelName name) const {
-//    return m_param.at(name);
-//  }
-//
-//  void add(ModelName name, std::vector<XPar> params){
-//    m_param.try_emplace(name, params);
-//  }
-//
-// private:
-//  XspecInputParameters() = default;  //hidden constructor and destructor
-//  ~XspecInputParameters() = default;
-//  std::unordered_map<ModelName, ModelParamVector> m_param;
-//};
+  const ModelParamVector &parameters() const {
+    return m_param;
+  }
 
+ private:
+  ModelParamVector m_param{};
+};
 
-//class XspecParamStrings {
-//
-// public:
-//  static XspecParamStrings &instance() {
-//    static auto *instance = new XspecParamStrings();
-//    return *instance;
-//  }
-//
-//  std::string get(InputParam id) const {
-//    return m_strings.at(id);
-//  }
-//
-//
-// private:
-//  XspecParamStrings() = default;  //hidden constructor and destructor
-//  ~XspecParamStrings() = default;
-//  std::unordered_map<InputParam, std::string> m_strings ={
-//      {InputParam::index1, "Index1"}
-//
-//  };
-//};
-
-
-
-class LocalModels {
+class ModelDatabase {
 
  public:
-  static LocalModels &instance() {
-    static auto *instance = new LocalModels();
+  static ModelDatabase &instance() {
+    static auto *instance = new ModelDatabase();
     return *instance;
   }
 
   ModelInfo getModelInfo(ModelName name) {
-    //if (std::any_of(m_models.begin(), m_models.end(), ))
     return m_models.at(name);
   }
 
@@ -177,8 +89,8 @@ class LocalModels {
   }
 
  private:
-  LocalModels() = default;  //hidden constructor and destructor
-  ~LocalModels() = default;
+  ModelDatabase() = default;  //hidden constructor and destructor
+  ~ModelDatabase() = default;
   const std::unordered_map<ModelName, ModelInfo> m_models =
       {
           {ModelName::relline,
@@ -194,7 +106,7 @@ class LocalModels {
                          XPar::z,
                          XPar::limb
                      },
-                     T_Model::LineModel, T_Irrad::BknPowerlaw, T_PrimSpec::None)
+                     T_Model::Line, T_Irrad::BknPowerlaw, T_PrimSpec::None)
           },
 
           {ModelName::relxill,
@@ -213,38 +125,55 @@ class LocalModels {
                          XPar::ecut,
                          XPar::refl_frac
                      },
-                     T_Model::RelxillModel, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)}
+                     T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
+
+          {ModelName::relconv,
+           ModelInfo({
+                         XPar::index1,
+                         XPar::index2,
+                         XPar::rbr,
+                         XPar::a,
+                         XPar::incl,
+                         XPar::rin,
+                         XPar::rout,
+                         XPar::z,
+                         XPar::gamma
+                     },
+                     T_Model::Conv, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
+
+          {ModelName::xillver,
+           ModelInfo({
+                         XPar::index1,
+                         XPar::index2,
+                         XPar::rbr,
+                         XPar::a,
+                         XPar::incl,
+                         XPar::rin,
+                         XPar::rout,
+                         XPar::z,
+                         XPar::gamma,
+                         XPar::logxi,
+                         XPar::afe,
+                         XPar::ecut,
+                         XPar::refl_frac
+                     },
+                     T_Model::Xill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
       };
 
 };
 
-//class LineModel: ModelInfo{
-// private:
-//  T_Irrad m_irradiation{};
-//};
-//class XillModel: ModelInfo{
-// private:
-//  T_PrimSpec m_primeSpec{};
-//};
-//class RelxillModel: LineModel, XillModel{ };
-//class ConvModel: ModelInfo{};
-//class XillModel: ModelInfo{};
+class LocalModel {
 
+  LocalModel(const ParamMap &par, const ModelInfo &info)
+      : m_param{par}, m_info{info} {
+  };
 
-//class LocalModel {
-//
-// public:
-//  LocalModel(ModelName name, std::vector<std::string> par_names) {
-//    model = ModelInfo(name);
-//  }
-//
-// private:
-//  ModelInfo model;
-//  Parameters par{};
-//
-//};
+ private:
+  ParamMap m_param;
+  const ModelInfo m_info;
+};
 
-void eval_model_xspec(ModelName model, const Array &energy, const Array &flux, const Array &parameter);
+void eval_model_xspec(ModelName model, const Array &energy, const Array &flux, const Array &param_values);
 
 extern "C" {
 [[maybe_unused]] void lmodcpprelline(const Array &energy, const Array &parameter,
