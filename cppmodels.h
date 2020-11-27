@@ -71,8 +71,13 @@ class ModelType {
 };
 
 
-// TODO: make the inheritance the other way around (no need for parameters)
 class ModelDefinition {
+  /*
+   * contains information to define one local model fully:
+   *  - the input parameter array
+   *  - the type of the model (class "ModelType")
+   *
+   */
  public:
   ModelDefinition(ModelParamVector _par, ModelType _type)
       : m_param{std::move(_par)}, m_model{_type} {
@@ -91,15 +96,13 @@ class ModelDefinition {
   const ModelType m_model;
 };
 
-/*  == Class ModelDatabase ==
- *
- * not a real class, but rather a global database (container) for all possible
- * local models with:
- *  - input parameters as given in the order in the lmodel.dat file
- *  - specify the type of the model, including it's relevant physical components
- *
- */
 class ModelDatabase {
+  /*
+   * not a real class, but rather a global database (container) for all possible
+   * local models with, using instances of the class "ModelDefinition":
+   *  - input parameters as given in the order in the lmodel.dat file
+   *  - specify the type of the model, including it's relevant physical components
+   */
 
  public:
   static ModelDatabase &instance() {
