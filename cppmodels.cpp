@@ -56,41 +56,21 @@ void xillver_model() {
   //  xillver_base(ener0, n_ener0, photar, xill_param, status);
 }
 
-void xspec_wrapper_eval_model(ModelName model, const Array &energy, const Array &flux, const Array &parameter) {
+void xspec_wrapper_eval_model(ModelName model_name, const Array &energy, const Array &flux, const Array &parameter) {
 
   try {
-    auto const model_database = ModelDatabase::instance().getInfo(model);
+    auto const model_definition = ModelDatabase::instance().get(model_name);
 
-    // use a "LocalModel" class which contains
-    // - parameter array
-    // - model type / id
-    auto param_map = ParamMap(model_database.parameters(), parameter);
+    ModelParams params{model_definition.input_parameters(), parameter};
+
+    LocalModel model{params, model_definition.model_info()};
+    model.eval_model(energy, flux);
 
   } catch (std::out_of_range &e) {
     std::cout << " *** relxill-error: required model not found in database " << std::endl;
     throw e;
   }
 
-}
-
-void eval_model(LocalModel model, const Array &energy, const Array &flux) {
-
-  switch (model.type()) {
-    case T_Model::Line:puts(" I am LINE ");
-      line_model();
-      break;
-
-    case T_Model::Relxill:puts(" I am RELXILL ");
-      relxill_model();
-      break;
-
-    case T_Model::Conv:puts(" I am CONV ");
-      conv_model();
-
-    case T_Model::Xill:puts(" I am XILL ");
-      xillver_model();
-      break;
-  }
 }
 
 extern "C" {

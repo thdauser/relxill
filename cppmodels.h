@@ -43,9 +43,19 @@ class ModelType {
       : m_type{type}, m_irradiation{irrad}, m_primeSpec{prim} {
   };
 
-  //  ModelType(T_Model type)
-  //      : ModelType(type, T_Irrad::None, T_PrimSpec::None)
-  //  {};
+  //  ModelType(const ModelType& other)
+  //      : m_type{ other.m_type }, m_irradiation{ other.m_irradiation }, m_primeSpec{ other.m_primeSpec }
+  //  { }
+  //
+  //  ModelType &operator=(const ModelType& other)
+  //      : m_type{ other.m_type }, m_irradiation{ other.m_irradiation }, m_primeSpec{ other.m_primeSpec }{
+  //    if (this != &other){
+  //      ModelType tmp{ other };
+  //      std::swap(m_type, other.m_type);
+  //    }
+  //    return *this;
+  //  }
+
 
   ModelType(T_Model type, T_Irrad irrad)
       : ModelType(type, irrad, T_PrimSpec::None) {
@@ -63,11 +73,10 @@ class ModelType {
     return typeid(model_type) == typeid(m_type);
   }
 
-
  private:
-  const T_Model m_type;
-  const T_Irrad m_irradiation;
-  const T_PrimSpec m_primeSpec;
+  T_Model m_type;
+  T_Irrad m_irradiation;
+  T_PrimSpec m_primeSpec;
 };
 
 
@@ -87,7 +96,7 @@ class ModelDefinition {
     return m_param;
   }
 
-  const ModelType &model() {
+  ModelType model_info() const {
     return m_model;
   }
 
@@ -110,7 +119,7 @@ class ModelDatabase {
     return *instance;
   }
 
-  ModelDefinition getInfo(ModelName name) {
+  ModelDefinition get(ModelName name) {
     return m_models.at(name);
   }
 
@@ -176,18 +185,12 @@ class ModelDatabase {
 
           {ModelName::xillver,
            ModelDefinition({
-                               XPar::index1,
-                               XPar::index2,
-                               XPar::rbr,
-                               XPar::a,
-                               XPar::incl,
-                               XPar::rin,
-                               XPar::rout,
-                               XPar::z,
                                XPar::gamma,
-                               XPar::logxi,
                                XPar::afe,
                                XPar::ecut,
+                               XPar::logxi,
+                               XPar::z,
+                               XPar::incl,
                                XPar::refl_frac
                            },
                            ModelType(T_Model::Xill, T_PrimSpec::CutoffPl))
@@ -196,15 +199,55 @@ class ModelDatabase {
 
 };
 
+void line_model();
+void relxill_model();
+void conv_model();
+void xillver_model();
+
 class LocalModel {
 
-  LocalModel(const ParamMap &par, const ModelDefinition &info)
+ public:
+  LocalModel(const ModelParams &par, const ModelType &info)
       : m_param{par}, m_info{info} {
+
   };
 
+  LocalModel(const ModelType &info)
+      : m_param{}, m_info{info} {
+
+  };
+
+  // TODO: make this work:
+  //
+  //  LocalModel(ModelName model_name, const Array &parameters)  {
+  //    auto model_definition = ModelDatabase::instance().get(model_name);
+  //    m_param = ModelParams(model_definition.input_parameters(), parameters);
+  //    m_info = model_definition.model_info();
+  //  };
+
+  void eval_model(const Array &energy, const Array &flux) {
+
+    switch (m_info.type()) {
+      case T_Model::Line:puts(" I am LINE ");
+        line_model();
+        break;
+
+      case T_Model::Relxill:puts(" I am RELXILL ");
+        relxill_model();
+        break;
+
+      case T_Model::Conv:puts(" I am CONV ");
+        conv_model();
+
+      case T_Model::Xill:puts(" I am XILL ");
+        xillver_model();
+        break;
+    }
+  }
+
  private:
-  ParamMap m_param;
-  const ModelDefinition m_info;
+  ModelParams m_param;
+  ModelType m_info;
 };
 
 void xspec_wrapper_eval_model(ModelName model, const Array &energy, const Array &flux, const Array &parameter);

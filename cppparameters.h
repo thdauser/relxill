@@ -21,6 +21,8 @@
 
 #include <string>
 #include <xsTypes.h>
+#include <cassert>
+#include <iostream>
 
 enum class ModelName {
   relline,
@@ -77,16 +79,17 @@ typedef std::string string;
 
 typedef RealArray Array;
 
-class ParamMap {
+class ModelParams {
 
  public:
-  ParamMap() = default;
-  ~ParamMap() = default;
+  ModelParams() = default;
+  ~ModelParams() = default;
 
-  ParamMap(ModelParamVector pars, Array values) {
+  ModelParams(ModelParamVector pars, Array values) {
+    std::cout << pars.size() << "--- " << values.size() << std::endl;
     assert(pars.size() == values.size());
     for (int ii = 0; ii < pars.size(); ii++) {
-      m_param[pars[ii]] = values[ii];
+      m_param.at(pars[ii]) = values[ii];
     }
   }
 
@@ -99,99 +102,22 @@ class ParamMap {
       {XPar::linee, 1.0},
       {XPar::index1, 3.0},
       {XPar::index2, 3.0},
-      {XPar::a, 0.998}
+      {XPar::a, 0.998},
+      {XPar::rin, -1.0},
+      {XPar::rbr, 30},
+      {XPar::rout, 400},
+      {XPar::incl, 30},
+      {XPar::logxi, 3.0},
+      {XPar::afe, 1.0},
+      {XPar::refl_frac, 1.0},
+      {XPar::limb, 0.0},
+      {XPar::z, 0.0},
+      {XPar::gamma, 2.0},
+      {XPar::ecut, 300}
   };
 
 };
 
-//
-//class RelParameter{
-//
-//  void linee(double _v){  m_a = _v;  }
-//  void a(double _v){  m_a = _v;  }
-//  void a(double _v){  m_a = _v;  }
-//
-//  void set(XPar pname, double val){
-//    switch(pname){
-//
-//      case XPar::linee:     m_linee=val;     break;
-//      case XPar::index1:    m_index1=val;    break;
-//      case XPar::index2:    m_index2=val;    break;
-//      case XPar::rbr:       m_rbr=val;       break;
-//      case XPar::a:         m_a=val;         break;
-//      case XPar::rin:       m_rin=val;       break;
-//      case XPar::rout:      m_rout=val;      break;
-//      case XPar::incl:      m_incl=val;      break;
-//      case XPar::z:         m_z=val;         break;
-//      case XPar::gamma:     m_gamma=val;     break;
-//      case XPar::logxi:     m_logxi=val;     break;
-//      case XPar::afe:       m_afe=val;       break;
-//      case XPar::ecut:      m_ecut=val;      break;
-//      case XPar::refl_frac: m_refl_frac=val; break;
-//
-//      case XPar::limb:      m_limb=static_cast<int>(val);     break;
-//
-//    }
-//
-//  }
-//
-// private:
-//  double m_linee{1.0};
-//  double m_a{0.988};
-//  double m_index1{3.0};
-//  double m_index2{3.0};
-//  double m_rin{-1.0};
-//  double m_rbr{10.0};
-//  double m_rout{400.0};
-//  double m_incl{40.0};
-//  double m_z{0.0};
-//  double m_gamma{2.0};
-//  double m_logxi{3.0};
-//  double m_afe{1.0};
-//  double m_ecut{100.0};
-//  double m_refl_frac{1.0};
-//
-//  int    m_limb{0};
-//
-//};
 
-//class Parameters : RelParameter  {
-// public:
-//  Parameters() = default;
-//  Parameters(Array values, std::vector<ModelName> pnames) {
-//  }
-//
-//
-//
-//
-// private:
-//  std::map<std::string, double> param{
-//      {"a", 0.998}
-//
-//  };
-//
-//};
-//
-
-
-//
-//class Spectrum {
-// public:
-//  Spectrum(const Array energy, const Array flu) :
-//      energyArray{energy}, fluxArray{flu} {
-//  }
-//
-//  Array energy() {
-//    return energyArray;
-//  }
-//
-//  Array flux() {
-//    return fluxArray;
-//  }
-//
-// private:
-//  const Array energyArray;
-//  const Array fluxArray;
-//};
 
 #endif //RELXILL_SRC_CPPPARAMETERS_H_

@@ -32,28 +32,42 @@ class LmodTest {
   const Array energy{0.1, 1.0, 10.0};
   Array flux{0.0, 0.0, 0.0};
   Array parameter{0.0, 0.0, 0.0};
-  const std::unordered_map<ModelName, std::string> all_models{
-      {ModelName::relline, "relline"},
-      {ModelName::relxill, "relxill"},
-      {ModelName::relconv, "relconv"},
-      {ModelName::xillver, "xillver"}
-  };
 
 };
 
-TEST_CASE(" Execute local models", "[model]") {
+const std::unordered_map<ModelName, std::string> all_models{
+    {ModelName::relxill, "relxill"},
+    {ModelName::relline, "relline"},
+    {ModelName::relconv, "relconv"},
+    {ModelName::xillver, "xillver"}
+};
 
+
+//TEST_CASE(" Execute local models", "[model]") {
+//
+//
+//  LmodTest inp{};
+//
+//  for (const auto &elem: all_models) {
+//
+//    DYNAMIC_SECTION(" testing model: " << elem.second) {
+//      std::cout << "- model: " << elem.second << std::endl;
+//      xspec_wrapper_eval_model(elem.first, inp.energy, inp.flux, inp.parameter);
+//      REQUIRE(inp.flux[0] >= 0.0);
+//    }
+//
+//  }
+//}
+
+TEST_CASE(" Execute relxill ") {
   LmodTest inp{};
 
-  for (const auto &elem: inp.all_models) {
+  auto const model_definition = ModelDatabase::instance().get(ModelName::relxill);
 
-    DYNAMIC_SECTION(" testing model: " << elem.second) {
-      std::cout << "- model: " << elem.second << std::endl;
-      xspec_warpper_eval_model(elem.first, inp.energy, inp.flux, inp.parameter);
-      REQUIRE(inp.flux[0] >= 0.0);
-    }
+  LocalModel model{model_definition.model_info()};
+  model.eval_model(inp.energy, inp.flux);
+  REQUIRE(inp.flux[0] >= 0.0);
 
-  }
 }
 
 #endif //RELXILL_TEST_UNIT_TESTS_EXECMODEL_H_
