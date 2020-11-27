@@ -3,7 +3,7 @@ project(relxill)
 
 set(CMAKE_C_STANDARD 11)
 
-#set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 17)
 
 set(CMAKE_CXX_FLAGS "-std=c++17")
 
@@ -11,7 +11,8 @@ include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
 
 set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PROJECT_ROOT_DIR}")
 
 
 set(SOURCE_FILES
@@ -38,7 +39,7 @@ set(SOURCE_FILES
         cppparameters.h)
 
 set(SOURCE_FILES_CPP
-        # cppmodels.cpp cppmodels.h
+        cppmodels.cpp cppmodels.h
         )
 
 set(EXEC_FILES
@@ -56,8 +57,5 @@ endforeach (execfile ${EXEC_FILES})
 
 foreach (execfile ${EXEC_FILES_CPP})
     add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES_CPP})
-    # target_link_libraries(${execfile} m cfitsio)
+    target_link_libraries(${execfile} m cfitsio)
 endforeach (execfile ${EXEC_FILES_CPP})
-
-target_link_libraries(test_sta m)
-target_link_libraries(test_sta cfitsio)

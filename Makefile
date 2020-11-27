@@ -31,7 +31,9 @@ all:
 	echo $(objects)
 	make test_sta
 
-
+.PHONY:cpp
+cpp:
+	
 
 $(LINK_TARGET): $(objects)
 	gcc -o $@ $^ $(LDFLAGS) 

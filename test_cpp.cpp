@@ -16,7 +16,7 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-// #include "cppmodels.h"
+#include "cppmodels.h"
 #include <valarray>
 #include <string>
 
@@ -27,22 +27,21 @@ typedef std::valarray<double> Array;
 class LmodTest {
 
  public:
-  //  const Array energy{0.1, 1.0, 10.0};
-  const Array energy;
+  const Array energy{0.1, 1.0, 10.0};
   Array flux{0.0, 0.0, 0.0};
   Array empty{};
 };
 
 int main() {
 
+
   auto spec = LmodTest();
   int ispec = 0;
-  // const string empty_string = "";
-  std::string empty_string = "Ein String";
+  const string empty_string = "";
   Array def_param;
   def_param.resize(10);
 
-  //lmodcpprelline(spec.energy, def_param, ispec, spec.flux, spec.empty, empty_string);
+  lmodcpprelline(spec.energy, def_param, ispec, spec.flux, spec.empty, empty_string);
 
   return EXIT_SUCCESS;
 }
