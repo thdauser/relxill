@@ -49,7 +49,7 @@ TEST_CASE(" Execute local models", "[model]") {
 
     DYNAMIC_SECTION(" testing model: " << elem.second) {
       std::cout << "- model: " << elem.second << std::endl;
-      eval_model_xspec(elem.first, inp.energy, inp.flux, inp.parameter);
+      xspec_warpper_eval_model(elem.first, inp.energy, inp.flux, inp.parameter);
       REQUIRE(inp.flux[0] >= 0.0);
     }
 
