@@ -168,6 +168,7 @@ class LocalModels {
   }
 
   ModelInfo getModelInfo(ModelName name) {
+    //if (std::any_of(m_models.begin(), m_models.end(), ))
     return m_models.at(name);
   }
 
@@ -243,7 +244,7 @@ class LocalModels {
 //
 //};
 
-
+void eval_model_xspec(ModelName model, const Array &energy, const Array &flux, const Array &parameter);
 
 extern "C" {
 [[maybe_unused]] void lmodcpprelline(const Array &energy, const Array &parameter,

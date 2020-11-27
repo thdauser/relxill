@@ -14,6 +14,8 @@ set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PROJECT_ROOT_DIR}")
 
+## testing setup
+find_package(Catch2 REQUIRED)
 
 set(SOURCE_FILES
         common.h
@@ -50,6 +52,7 @@ set(EXEC_FILES_CPP
         test_cpp
         )
 
+
 foreach (execfile ${EXEC_FILES})
     add_executable(${execfile} ${execfile}.c ${SOURCE_FILES})
     target_link_libraries(${execfile} m cfitsio)
@@ -59,3 +62,10 @@ foreach (execfile ${EXEC_FILES_CPP})
     add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES_CPP})
     target_link_libraries(${execfile} m cfitsio)
 endforeach (execfile ${EXEC_FILES_CPP})
+
+
+## testing setup
+set(test_execname tests)
+add_executable(${test_execname} test/unit/${test_execname}.cpp ${SOURCE_FILES_CPP} test/unit/tests-execmodel.cpp)
+target_link_libraries(${test_execname} m cfitsio)
+target_link_libraries(${test_execname} Catch2::Catch2)

@@ -18,29 +18,36 @@
 
 #include "cppmodels.h"
 
-
+#include <stdexcept>
+#include <iostream>
 
 // namespace  relxill{
 
 void eval_model_xspec(ModelName model, const Array &energy, const Array &flux, const Array &parameter) {
 
-  auto const model_info = LocalModels::instance().getModelInfo(model);
+  try {
+    auto const model_info = LocalModels::instance().getModelInfo(model);
 
-  //lmod{model, parameter};
+    //lmod{model, parameter};
 
-  // Spectrum spec{energy, flux};
-  //  Parameters pars{parameter, std::move(par_names)};
+    // Spectrum spec{energy, flux};
+    //  Parameters pars{parameter, std::move(par_names)};
 
 
-  switch (model_info.type()) {
-    case T_Model::LineModel:puts("I am LINE ");
-      break;
-    case T_Model::RelxillModel:puts(" I am RELXILL ");
-      break;
-    case T_Model::ConvModel:puts(" I am CONV ");
-      break;
-    case T_Model::XillModel:puts(" I am XILL ");
-      break;
+    switch (model_info.type()) {
+      case T_Model::LineModel:puts("I am LINE ");
+        break;
+      case T_Model::RelxillModel:puts(" I am RELXILL ");
+        break;
+      case T_Model::ConvModel:puts(" I am CONV ");
+        break;
+      case T_Model::XillModel:puts(" I am XILL ");
+        break;
+    }
+
+  } catch (std::out_of_range &e) {
+    std::cout << " *** relxill-error: required model not found in database " << std::endl;
+    throw e;
   }
 
 }
@@ -50,7 +57,7 @@ extern "C" {
 [[maybe_unused]] void lmodcpprelline(const Array &energy, const Array &parameter,
                                      int spectrum, Array &flux, Array &fluxError,
                                      const string &init) {
-  eval_model_xspec(ModelName::relline, energy, flux, parameter);
+  eval_model_xspec(ModelName::relxilllp, energy, flux, parameter);
 }
 
 [[maybe_unused]] void lmodcpprelxill(const Array &energy, const Array &parameter,
