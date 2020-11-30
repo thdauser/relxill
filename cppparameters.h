@@ -79,6 +79,24 @@ typedef std::string string;
 
 typedef RealArray Array;
 
+class ParamInputException : public std::exception {
+ public:
+  ParamInputException() = default;
+
+  explicit ParamInputException(const std::string &_msg) {
+    m_msg += _msg;
+  }
+
+ private:
+  [[nodiscard]] const char *what() const noexcept override {
+    //return "blbl";
+    return m_msg.c_str();
+  }
+
+ private:
+  std::string m_msg{"*** input parmeter error: "};
+};
+
 class ModelParams {
 
  public:
@@ -87,7 +105,9 @@ class ModelParams {
 
   ModelParams(ModelParamVector pars, Array values) {
     std::cout << pars.size() << "--- " << values.size() << std::endl;
-    assert(pars.size() == values.size());
+    if (pars.size() != values.size()) {
+      throw ParamInputException("wrong number of input parameters ");
+    }
     for (int ii = 0; ii < pars.size(); ii++) {
       m_param.at(pars[ii]) = values[ii];
     }

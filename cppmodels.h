@@ -209,12 +209,10 @@ class LocalModel {
  public:
   LocalModel(const ModelParams &par, const ModelType &info)
       : m_param{par}, m_info{info} {
-
   };
 
-  LocalModel(const ModelType &info)
-      : m_param{}, m_info{info} {
-
+  explicit LocalModel(const ModelType &info)
+      : LocalModel(ModelParams(), info) {
   };
 
   // TODO: make this work:
@@ -238,6 +236,7 @@ class LocalModel {
 
       case T_Model::Conv:puts(" I am CONV ");
         conv_model();
+        break;
 
       case T_Model::Xill:puts(" I am XILL ");
         xillver_model();
