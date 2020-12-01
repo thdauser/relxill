@@ -45,6 +45,11 @@ void print_version_number(int *status) {
 int warned_rms = 0;
 int warned_height = 0;
 
+void relline(const double *ener1keV,
+             const double *photar,
+             const int n_ener,
+             const relParam *param_struct,
+             const int *status);
 void check_parameter_bounds(relParam *param, int *status) {
 
   // first set the Radii to positive value
@@ -1319,6 +1324,15 @@ void xillver_base(const double *ener0, const int n_ener0, double *photar, xillPa
   free(ener_shifted);
 }
 
+void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *param_struct, int *status) {
+
+  rel_spec *spec = relbase(ener1keV, n_ener, param_struct, NULL, status);
+
+  for (int ii = 0; ii < n_ener; ii++) {
+    photar[ii] = spec->flux[0][ii];
+  }
+}
+
 /** XSPEC RELLINE MODEL FUNCTION **/
 void tdrelline(const double *ener,
                const int n_ener,
@@ -1335,15 +1349,11 @@ void tdrelline(const double *ener,
   CHECK_STATUS_VOID(*status);
 
   // call the function which calculates the line (assumes a line at 1keV!)
-  rel_spec *spec = relbase(ener1keV, n_ener, param_struct, NULL, status);
+  relline_base(ener1keV, photar, n_ener, param_struct, status);
+
   free_relParam(param_struct);
   free(ener1keV);
   CHECK_STATUS_VOID(*status);
-
-  int ii;
-  for (ii = 0; ii < n_ener; ii++) {
-    photar[ii] = spec->flux[0][ii];
-  }
 
 }
 

@@ -114,17 +114,42 @@ void init_par_relxill(relParam **rel_param,
                       const int n_parameter,
                       int *status);
 
-void init_par_relxilllp(relParam** rel_param, xillParam** xill_param, const double* inp_par, const int n_parameter, int* status);
+void init_par_relxilllp(relParam **rel_param,
+                        xillParam **xill_param,
+                        const double *inp_par,
+                        const int n_parameter,
+                        int *status);
 
 /** basic xillver model function **/
 void xillver_base(const double *ener0, const int n_ener0, double *photar, xillParam *param_struct, int *status);
 
-/** internal MODEL FUNCTIONS **/
+void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *param_struct, int *status);
 
-void tdrelline(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
-void tdrellinelp(const double* ener, const int n_ener, double* photar, const double* parameter, const int n_parameter, int* status);
-void tdrelxill(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
-void tdrelxilllp(const double* ener0, const int n_ener0, double* photar, const double* parameter, const int n_parameter, int* status);
+/** internal MODEL FUNCTIONS **/
+void tdrelline(const double *ener,
+               const int n_ener,
+               double *photar,
+               const double *parameter,
+               const int n_parameter,
+               int *status);
+void tdrellinelp(const double *ener,
+                 const int n_ener,
+                 double *photar,
+                 const double *parameter,
+                 const int n_parameter,
+                 int *status);
+void tdrelxill(const double *ener0,
+               const int n_ener0,
+               double *photar,
+               const double *parameter,
+               const int n_parameter,
+               int *status);
+void tdrelxilllp(const double *ener0,
+                 const int n_ener0,
+                 double *photar,
+                 const double *parameter,
+                 const int n_parameter,
+                 int *status);
 void tdrelxilllpion(const double *ener0,
                     const int n_ener0,
                     double *photar,
