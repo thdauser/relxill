@@ -38,7 +38,7 @@ set(SOURCE_FILES
         relphysics.c relphysics.h
         test_std_functions.c test_std_functions.h
         cppmodels.cpp cppmodels.h
-        cppparameters.h)
+        cppparameters.h cppspectrum.h cpptypes.h)
 
 set(SOURCE_FILES_CPP
         cppmodels.cpp cppmodels.h

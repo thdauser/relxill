@@ -46,27 +46,45 @@
 //
 //}
 
+struct TestSpec {
+  const Array energy{0.1, 1.0, 10.0};
+  Array flux{0.0, 0.0, 0.0};
+} testSpec;
+
+TEST_CASE(" Spectrum Class") {
+
+  Spectrum spec(testSpec.energy, testSpec.flux);
+
+  DYNAMIC_SECTION(" test initial array without operations ") {
+    REQUIRE(typeid(spec.energy()) == typeid(Array));
+    REQUIRE(typeid(spec.flux()) == typeid(Array));
+
+    REQUIRE(typeid(spec.energy_double()[0]) == typeid(double));
+    REQUIRE(typeid(spec.flux_double()[0]) == typeid(double));
+  }
+
+}
 
 TEST_CASE(" Execute local models", "[model]") {
 
-  struct TestSpec {
-    const Array energy{0.1, 1.0, 10.0};
-    Array flux{0.0, 0.0, 0.0};
-  } testSpec;
-
   const std::unordered_map<ModelName, std::string> all_models{
-      //    {ModelName::relxill, "relxill"},
-      //    {ModelName::relline, "relline"},
-      {ModelName::relconv, "relconv"}
-      //    {ModelName::xillver, "xillver"}
+      {ModelName::relxill, "relxill"},
+      {ModelName::relline, "relline"},
+      {ModelName::relconv, "relconv"},
+      {ModelName::xillver, "xillver"}
   };
+
+  Spectrum spec(testSpec.energy, testSpec.flux);
 
   for (const auto &elem: all_models) {
 
-    DYNAMIC_SECTION(" testing model: " << elem.second) {
-      LocalModel testModel{ModelDatabase.instance().get(elem.first)};
-      std::cout << "- model: " << elem.second << std::endl;
-      testModel.eval_model(testSpec.energy, testSpec.flux);
+    auto model_name_type = elem.first;
+    auto model_name_string = elem.second;
+
+    DYNAMIC_SECTION(" testing model: " << model_name_string) {
+      LocalModel testModel{model_name_type};
+      std::cout << "- test model: " << elem.second << std::endl;
+      testModel.eval_model(spec);
       REQUIRE(testSpec.flux[0] >= 0.0);
     }
 

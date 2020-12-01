@@ -80,23 +80,24 @@ class ModelType {
 };
 
 
+/**
+ * contains information to define one local model fully:
+ *  - the input parameter array
+ *  - the type of the model (class "ModelType")
+ *
+ */
 class ModelDefinition {
-  /*
-   * contains information to define one local model fully:
-   *  - the input parameter array
-   *  - the type of the model (class "ModelType")
-   *
-   */
+
  public:
   ModelDefinition(ModelParamVector _par, ModelType _type)
       : m_param{std::move(_par)}, m_model{_type} {
   }
 
-  const ModelParamVector &input_parameters() const {
+  [[nodiscard]] const ModelParamVector &input_parameters() const {
     return m_param;
   }
 
-  ModelType model_info() const {
+  [[nodiscard]] ModelType model_info() const {
     return m_model;
   }
 
@@ -105,13 +106,13 @@ class ModelDefinition {
   const ModelType m_model;
 };
 
+/**
+ * not a real class, but rather a global database (container) for all possible
+ * local models with, using instances of the class "ModelDefinition":
+ *  - input parameters as given in the order in the lmodel.dat file
+ *  - specify the type of the model, including it's relevant physical components
+ */
 class ModelDatabase {
-  /*
-   * not a real class, but rather a global database (container) for all possible
-   * local models with, using instances of the class "ModelDefinition":
-   *  - input parameters as given in the order in the lmodel.dat file
-   *  - specify the type of the model, including it's relevant physical components
-   */
 
  public:
   static ModelDatabase &instance() {
@@ -199,47 +200,39 @@ class ModelDatabase {
 
 };
 
-void line_model();
-void relxill_model();
-void conv_model();
-void xillver_model();
+void line_model(Spectrum spectrum);
+void relxill_model(const Spectrum &spectrum);
+void conv_model(const Spectrum &spectrum);
+void xillver_model(const Spectrum &spectrum);
 
 class LocalModel {
 
  public:
-  LocalModel(const ModelParams &par, const ModelType &info)
-      : m_param{par}, m_info{info} {
+  LocalModel(const ModelParams &par, ModelName model_name)
+      : m_param{par}, m_info{ModelDatabase::instance().get(model_name).model_info()} {
   };
 
-  explicit LocalModel(const ModelType &info)
-      : LocalModel(ModelParams(), info) {
+  explicit LocalModel(ModelName model_name) :
+      LocalModel(ModelParams(), model_name) {
   };
 
-  // TODO: make this work:
-  //
-  //  LocalModel(ModelName model_name, const Array &parameters)  {
-  //    auto model_definition = ModelDatabase::instance().get(model_name);
-  //    m_param = ModelParams(model_definition.input_parameters(), parameters);
-  //    m_info = model_definition.model_info();
-  //  };
-
-  void eval_model(const Array &energy, const Array &flux) {
+  void eval_model(const Spectrum &spectrum) {
 
     switch (m_info.type()) {
       case T_Model::Line:puts(" I am LINE ");
-        line_model();
+        line_model(spectrum);
         break;
 
       case T_Model::Relxill:puts(" I am RELXILL ");
-        relxill_model();
+        relxill_model(spectrum);
         break;
 
       case T_Model::Conv:puts(" I am CONV ");
-        conv_model();
+        conv_model(spectrum);
         break;
 
       case T_Model::Xill:puts(" I am XILL ");
-        xillver_model();
+        xillver_model(spectrum);
         break;
     }
   }

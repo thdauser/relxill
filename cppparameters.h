@@ -20,9 +20,10 @@
 #define RELXILL_SRC_CPPPARAMETERS_H_
 
 #include <string>
-#include <xsTypes.h>
 #include <cassert>
 #include <iostream>
+
+#include "cppspectrum.h" //only to get the typedef of Array
 
 enum class ModelName {
   relline,
@@ -70,14 +71,8 @@ enum class XPar {
   refl_frac
 };
 
-typedef std::vector<std::string> StringVector;
 typedef std::vector<XPar> ModelParamVector;
-// typedef RealArray Array;
 
-typedef std::valarray<double> Array;
-typedef std::string string;
-
-typedef RealArray Array;
 
 class ParamInputException : public std::exception {
  public:
@@ -104,7 +99,6 @@ class ModelParams {
   ~ModelParams() = default;
 
   ModelParams(ModelParamVector pars, Array values) {
-    std::cout << pars.size() << "--- " << values.size() << std::endl;
     if (pars.size() != values.size()) {
       throw ParamInputException("wrong number of input parameters ");
     }
