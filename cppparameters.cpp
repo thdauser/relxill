@@ -17,7 +17,10 @@
 */
 
 #include "cppparameters.h"
+extern "C" {
 #include "relmodels.h"
+#include "relutility.h"
+}
 
 /**
  * function maps the new C++ model type definition to the C-integers
