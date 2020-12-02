@@ -24,6 +24,8 @@
 
 void LocalModel::line_model(CppSpectrum &spectrum) {
 
+  puts(" I am LINE ");
+
   // get the relevant parameters
   relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
 

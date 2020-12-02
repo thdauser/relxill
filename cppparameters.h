@@ -110,7 +110,8 @@ class ModelParams {
       {XPar::ecut, 300},
       {XPar::height, 6.0},
       {XPar::htop, 6.0},
-      {XPar::beta, 0.0}
+      {XPar::beta, 0.0},
+      {XPar::return_rad, 0.0}
   };
 
 };

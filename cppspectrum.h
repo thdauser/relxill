@@ -29,9 +29,9 @@ typedef RealArray Array; // using the Xspec defined std::valarray type
 class CppSpectrum {
 
  public:
-  CppSpectrum(Array _energy, Array &_flux)
+  CppSpectrum(const Array &_energy, Array &_flux)
   // need to allocate the energy grid, as Xspec requires it to be constant and we may shift it in energy
-      : m_ener{std::move(_energy)},
+      : m_ener{_energy},
         m_flux{_flux} {
     // recommended by Xspec (https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html)
     m_flux.resize(_energy.size() - 1);

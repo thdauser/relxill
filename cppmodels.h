@@ -66,8 +66,7 @@ class LocalModel {
 
     try {
       switch (m_info.type()) {
-        case T_Model::Line:puts(" I am LINE ");
-          line_model(spectrum);
+        case T_Model::Line:line_model(spectrum);
           break;
 
         case T_Model::Relxill:puts(" I am RELXILL ");
@@ -85,6 +84,7 @@ class LocalModel {
 
     } catch (std::exception &e) {
       puts(" *** relxill-error : evaluating model failed ");
+      throw e;
     }
 
   }
