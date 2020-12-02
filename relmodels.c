@@ -1292,7 +1292,7 @@ void xillver_base(const double *ener0, const int n_ener0, double *photar, xillPa
 
 
   // call the function which calculates the xillver spectrum
-  xill_spec *spec = get_xillver_spectra(param_struct, status);
+  xillSpec *spec = get_xillver_spectra(param_struct, status);
   CHECK_STATUS_VOID(*status);
 
   // =4= rebin to the input grid

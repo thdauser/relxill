@@ -650,11 +650,11 @@ static void check_xillTable_cache(char *fname, xillParam *param, xillTable *tab,
 
 }
 
-xill_spec *new_xill_spec(int n_incl, int n_ener, int *status) {
+xillSpec *new_xill_spec(int n_incl, int n_ener, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  xill_spec *spec = (xill_spec *) malloc(sizeof(xill_spec));
+  xillSpec *spec = (xillSpec *) malloc(sizeof(xillSpec));
   CHECK_MALLOC_RET_STATUS(spec, status, NULL)
 
   spec->n_ener = n_ener;
@@ -680,7 +680,7 @@ xill_spec *new_xill_spec(int n_incl, int n_ener, int *status) {
   return spec;
 }
 
-void free_xill_spec(xill_spec *spec) {
+void free_xill_spec(xillSpec *spec) {
   if (spec != NULL) {
     free(spec->ener);
     free(spec->incl);
@@ -861,11 +861,11 @@ static void resetInpvalsToBoundaries(char *pname, float *p_inpVal, float tabValL
 
 }
 
-static xill_spec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
+static xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  xill_spec *spec = NULL;
+  xillSpec *spec = NULL;
   if (is_xill_model(param->model_type)) {
     spec = new_xill_spec(1, tab->n_ener, status);
   } else {
@@ -1037,7 +1037,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
  *  - decides if the table needs to be initialized and/or more data loaded
  *  - automatically normalizes  the spectra to logN=1e15 and logXi=0
  * */
-xill_spec *get_xillver_spectra(xillParam *param, int *status) {
+xillSpec *get_xillver_spectra(xillParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -1054,7 +1054,7 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
   check_xillTable_cache(fname, param, tab, ind, status);
 
   // =3= interpolate values
-  xill_spec *spec = interp_xill_table(tab, param, ind, status);
+  xillSpec *spec = interp_xill_table(tab, param, ind, status);
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
@@ -1062,7 +1062,7 @@ xill_spec *get_xillver_spectra(xillParam *param, int *status) {
   return spec;
 }
 
-void norm_xillver_spec(xill_spec *spec, double incl) {
+void norm_xillver_spec(xillSpec *spec, double incl) {
 
   /** adds the proper flux normalization for a semi-infinate slab
    *  under inclination angle incl */

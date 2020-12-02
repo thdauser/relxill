@@ -1044,9 +1044,9 @@ void std_eval_xillver_dens_nthcomp(int *status, int n) {
 
 }
 
-xill_spec *get_std_xill_spec(int *status) {
+xillSpec *get_std_xill_spec(int *status) {
   xillParam *xill_param = get_std_param_xillver(status);
-  xill_spec *xill_spec = get_xillver_spectra(xill_param, status);
+  xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
   return xill_spec;
 }
 
@@ -1090,7 +1090,7 @@ void init_std_relXill_spec(rel_spec **rel_profile, double **xill_spec_output, in
   double *xill_flux = malloc(sizeof(double) * (*rel_profile)->n_ener);
   CHECK_MALLOC_VOID_STATUS(xill_flux, status);
 
-  xill_spec *xill_spec_table = get_std_xill_spec(status);
+  xillSpec *xill_spec_table = get_std_xill_spec(status);
   rebin_spectrum((*rel_profile)->ener,
                  xill_flux,
                  (*rel_profile)->n_ener,
