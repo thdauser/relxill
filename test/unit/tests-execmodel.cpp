@@ -48,14 +48,10 @@
 
 class TestSpec {
  public:
-  TestSpec() :
-      test_spec{CppSpectrum(energy, flux)} {
-  };
-
+  TestSpec() = default;
  public:
   const Array energy{0.1, 1.0, 10.0};
   Array flux{0.0, 0.0, 0.0};
-  CppSpectrum test_spec;
 };
 
 TEST_CASE(" Spectrum Class") {
