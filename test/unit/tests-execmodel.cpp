@@ -46,14 +46,22 @@
 //
 //}
 
-struct TestSpec {
+class TestSpec {
+ public:
+  TestSpec() :
+      test_spec{CppSpectrum(energy, flux)} {
+  };
+
+ public:
   const Array energy{0.1, 1.0, 10.0};
   Array flux{0.0, 0.0, 0.0};
-} testSpec;
+  CppSpectrum test_spec;
+};
 
 TEST_CASE(" Spectrum Class") {
 
-  Spectrum spec(testSpec.energy, testSpec.flux);
+  TestSpec test_spec{};
+  CppSpectrum spec(test_spec.energy, test_spec.flux);
 
   DYNAMIC_SECTION(" test initial array without operations ") {
     REQUIRE(typeid(spec.energy()) == typeid(Array));
@@ -74,7 +82,9 @@ TEST_CASE(" Execute local models", "[model]") {
       {ModelName::xillver, "xillver"}
   };
 
-  Spectrum spec(testSpec.energy, testSpec.flux);
+  TestSpec test_spec{};
+
+  CppSpectrum spec(test_spec.energy, test_spec.flux);
 
   for (const auto &elem: all_models) {
 
@@ -85,7 +95,7 @@ TEST_CASE(" Execute local models", "[model]") {
       LocalModel testModel{model_name_type};
       std::cout << "- test model: " << elem.second << std::endl;
       testModel.eval_model(spec);
-      REQUIRE(testSpec.flux[0] >= 0.0);
+      REQUIRE(spec.flux()[0] >= 0.0);
     }
 
   }

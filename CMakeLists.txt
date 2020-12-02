@@ -37,20 +37,14 @@ set(SOURCE_FILES
         test_rellp.c test_rellp.h
         relphysics.c relphysics.h
         test_std_functions.c test_std_functions.h
-        cppmodels.cpp cppmodels.h
-        cppparameters.h cppspectrum.h cpptypes.h)
+         )
 
 set(SOURCE_FILES_CPP
-        cppmodels.cpp cppmodels.h
-        )
+        ${SOURCE_FILES} cppmodels.cpp cppmodels.h cppparameters.h cppspectrum.h cppTypes.h cppModelDatabase.h cppparameters.cpp)
 
-set(EXEC_FILES
-        test_sta
-        )
+set(EXEC_FILES test_sta)
 
-set(EXEC_FILES_CPP
-        test_cpp
-        )
+set(EXEC_FILES_CPP test_cpp)
 
 
 foreach (execfile ${EXEC_FILES})

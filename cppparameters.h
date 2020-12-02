@@ -24,34 +24,8 @@
 #include <iostream>
 
 #include "cppspectrum.h" //only to get the typedef of Array
-
-enum class ModelName {
-  relline,
-  relxill,
-  relconv,
-  xillver
-};
-
-enum class T_Model {
-  Line,
-  Conv,
-  Xill,
-  Relxill
-};
-
-enum class T_Irrad {
-  BknPowerlaw,
-  LampPost,
-  BlackBody,
-  None
-};
-
-enum class T_PrimSpec {
-  CutoffPl,
-  Nthcomp,
-  Blackbody,
-  None
-};
+#include "cppTypes.h"
+#include "common.h"
 
 enum class XPar {
   linee,
@@ -68,12 +42,18 @@ enum class XPar {
   logxi,
   afe,
   ecut,
-  refl_frac
+  refl_frac,
+  height,
+  htop,
+  beta,
+  return_rad
 };
 
 typedef std::vector<XPar> ModelParamVector;
 
-
+/**
+ * exception if anything is wrong with the input parameters
+ */
 class ParamInputException : public std::exception {
  public:
   ParamInputException() = default;
@@ -84,13 +64,13 @@ class ParamInputException : public std::exception {
 
  private:
   [[nodiscard]] const char *what() const noexcept override {
-    //return "blbl";
     return m_msg.c_str();
   }
 
  private:
-  std::string m_msg{"*** input parmeter error: "};
+  std::string m_msg{"*** input parameter error: "};
 };
+
 
 class ModelParams {
 
@@ -107,7 +87,7 @@ class ModelParams {
     }
   }
 
-  auto &operator[](const XPar &name) {
+  auto &operator[](const XPar &name) const {
     return m_param.at(name);
   }
 
@@ -127,11 +107,19 @@ class ModelParams {
       {XPar::limb, 0.0},
       {XPar::z, 0.0},
       {XPar::gamma, 2.0},
-      {XPar::ecut, 300}
+      {XPar::ecut, 300},
+      {XPar::height, 6.0},
+      {XPar::htop, 6.0},
+      {XPar::beta, 0.0}
   };
 
 };
 
+// *** Function Definitions ***
+int convertModelType(ModelName name);
+int convertIrradType(T_Irrad name);
+int convertPrimSpecType(T_PrimSpec name);
 
+relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 
 #endif //RELXILL_SRC_CPPPARAMETERS_H_
