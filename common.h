@@ -170,8 +170,7 @@ typedef struct {
 
   int limb_law;
 
-} relSysPar;
-
+} RelSysPar;
 
 /** angles (cosne) and their distribution over the radial zones **/
 typedef struct {
@@ -179,7 +178,7 @@ typedef struct {
   int n_zones;
   double *cosne;
   double **dist;      // [n_zones][n_cosne]
-} rel_cosne;
+} RelCosne;
 
 typedef struct {
   int n_ener;
@@ -187,7 +186,7 @@ typedef struct {
   double *rgrid;      // length=n_zones + 1
   double *ener;       // length=n_ener +1
   double **flux;      // [n_zones][n_ener]
-  rel_cosne *rel_cosne;
+  RelCosne *rel_cosne;
 } rel_spec;
 
 typedef struct {
@@ -196,13 +195,13 @@ typedef struct {
   double **flu;  // [n_incl,n_ener+1]
   int n_ener;
   int n_incl;
-} xill_spec;
+} xillSpec;
 
 typedef struct {
   int n_ener;
   double *ener;
   double *flux;
-} out_spec;
+} OutSpec;
 
 typedef struct {
   int nzones;   // number of zones actually stored there
@@ -210,8 +209,8 @@ typedef struct {
   int n_ener;
   double ***fft_xill;  // dimensions [n_cache,2,n_ener]
   double ***fft_rel;   // dimensions [n_cache,2,n_ener]
-  xill_spec **xill_spec;
-  out_spec *out_spec;
+  xillSpec **xill_spec;
+  OutSpec *out_spec;
 } specCache;
 
 typedef struct {

@@ -115,7 +115,7 @@ void get_version_number(char **vstr, int *status);
 rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status);
 
 /** calculate the relline profile(s) for all given zones **/
-void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status);
+void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status);
 
 void save_relline_profile(rel_spec *spec, int* status);
 
@@ -131,9 +131,9 @@ rel_spec *relbase_multizone(double *ener,
 
 void free_cached_tables(void);
 
-relSysPar *new_relSysPar(int nr, int ng, int *status);
+RelSysPar *new_relSysPar(int nr, int ng, int *status);
 
-void free_relSysPar(relSysPar *sysPar);
+void free_relSysPar(RelSysPar *sysPar);
 
 void relxill_kernel(double *ener_inp,
                     double *spec_inp,
@@ -144,7 +144,7 @@ void relxill_kernel(double *ener_inp,
 
 void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam *rel_param, int *status);
 
-relSysPar *get_system_parameters(relParam *param, int *status);
+RelSysPar *get_system_parameters(relParam *param, int *status);
 
 /** function adding a primary component with the proper norm to the flux **/
 void add_primary_component(double *ener,
@@ -161,9 +161,9 @@ rel_spec *new_rel_spec(int nzones, const int n_ener, int *status);
 specCache *init_globalSpecCache(int *status);
 void free_specCache(void);
 void free_fft_cache(double ***sp, int n1, int n2);
-void free_out_spec(out_spec *spec);
+void free_out_spec(OutSpec *spec);
 
-out_spec *init_out_spec(int n_ener, const double *ener, int *status);
+OutSpec *init_out_spec(int n_ener, const double *ener, int *status);
 
 int redo_xillver_calc(relParam *rel_param, xillParam *xill_param, relParam *ca_rel, xillParam *ca_xill);
 int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param);
@@ -179,7 +179,7 @@ void get_xillver_angdep_spec(double *o_xill_flux,
                              int n_ener,
                              double *ener,
                              double *rel_dist,
-                             xill_spec *xill_spec,
+                             xillSpec *xill_spec,
                              int *status);
 
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,

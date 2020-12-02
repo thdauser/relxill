@@ -84,7 +84,7 @@ static void testInitializeXillverTableCorrectly(int *status) {
 
 }
 
-static void test_spec_norm(xill_spec *spec, int *status) {
+static void test_spec_norm(xillSpec *spec, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -130,7 +130,7 @@ static void test_get_spec(int *status, char *specName, xillParam *param) {
   printf("\n - loading spec for model %s (type = %i): ", specName,
          param->model_type);
 
-  xill_spec *spec = get_xillver_spectra(param, status);
+  xillSpec *spec = get_xillver_spectra(param, status);
   if (*status != EXIT_SUCCESS) {
     printf("\n *** ERROR trying to load the spectrum \n");
   }
@@ -280,7 +280,7 @@ static void testLoadingAlternativeTable(int *status) {
 
 }
 
-static void testNormfacBand(xill_spec **spec, double elo, double ehi, double prec, int *status) {
+static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec, int *status) {
 
   double sum0 = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, elo, ehi);
   double sum1 = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, elo, ehi);
@@ -298,7 +298,7 @@ static void testRenormXilltableDensLogxi(int *status) {
 
   xillParam *param;
 
-  xill_spec *spec[2];
+  xillSpec *spec[2];
   param = get_std_param_xillver_dens_nthcomp(status);
   spec[0] = get_xillver_spectra(param, status);
 
