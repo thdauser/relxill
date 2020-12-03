@@ -6,7 +6,7 @@ refdir_xilltab = refdata_xillverTable
 #### testing ####
 test:
 	make test-refdata
-	make testfunctionality
+	make test-functionality
 
 test-refdata:
 	make clean-test-refdata
