@@ -60,6 +60,6 @@ endforeach (execfile ${EXEC_FILES_CPP})
 
 ## testing setup
 set(test_execname tests)
-add_executable(${test_execname} test/unit/${test_execname}.cpp ${SOURCE_FILES_CPP} test/unit/tests-execmodel.cpp)
+add_executable(${test_execname} test/unit/${test_execname}.cpp ${SOURCE_FILES_CPP} test/unit/tests-execmodel.cpp test/unit/test-cppspectrum.cpp)
 target_link_libraries(${test_execname} m cfitsio)
 target_link_libraries(${test_execname} Catch2::Catch2)

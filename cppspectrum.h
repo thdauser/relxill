@@ -45,8 +45,8 @@ class CppSpectrum {
     return m_flux;
   }
 
-  [[nodiscard]] int nener_bins() const {
-    return m_ener.size();
+  [[nodiscard]] size_t nener_bins() const {   // array holds nener+1 bins, as bin_lo and bin_hi are combined
+    return m_ener.size() - 1;
   }
 
   /**
@@ -54,7 +54,7 @@ class CppSpectrum {
    * all values copied from the energy() function
    */
   [[nodiscard]] double *energy_double() {
-    convert_array2double(m_ener, m_ener_double);
+    convert_array2double(m_ener, &m_ener_double);
     return m_ener_double;
   }
 
@@ -63,7 +63,7 @@ class CppSpectrum {
    * all values copied from the flux() function
    */
   [[nodiscard]] double *flux_double() {
-    convert_array2double(m_flux, m_flux_double);
+    convert_array2double(m_flux, &m_flux_double);
     return m_flux_double;
   }
 
@@ -89,8 +89,8 @@ class CppSpectrum {
   }
 
  private:
-  Array m_ener{};
-  Array m_flux{};
+  Array m_ener;
+  Array m_flux;
   double *m_ener_double{nullptr};
   double *m_flux_double{nullptr};
 
@@ -102,14 +102,15 @@ class CppSpectrum {
  * @return ptr_double_array
  *
  */
-  static void convert_array2double(const Array &array, double *ptr_double_array) {
+  static void convert_array2double(const Array &array, double **ptr_double_array) {
 
     int n = array.size();
-    if (!ptr_double_array) {
-      ptr_double_array = new double[n];
+    if (!*ptr_double_array) {
+      *ptr_double_array = new double[n];
     }
+    assert(*ptr_double_array);
     for (int ii = 0; ii < n; ii++) {
-      ptr_double_array[ii] = array[ii];
+      (*ptr_double_array)[ii] = array[ii];
     }
   }
 

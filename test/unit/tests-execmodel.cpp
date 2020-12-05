@@ -16,9 +16,6 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#ifndef RELXILL_TEST_UNIT_TESTS_EXECMODEL_H_
-#define RELXILL_TEST_UNIT_TESTS_EXECMODEL_H_
-
 #include "catch2/catch.hpp"
 #include "../../cppmodels.h"
 
@@ -27,47 +24,14 @@
 #include <iostream>
 
 
-
-//TEST_CASE(" Execute local models", "[model]") {
-//
-//
-//  LmodTest inp{};
-//
-//  for (const auto &elem: all_models) {
-//
-//    DYNAMIC_SECTION(" testing model: " << elem.second) {
-//      std::cout << "- model: " << elem.second << std::endl;
-//      xspec_wrapper_eval_model(elem.first, inp.energy, inp.flux, inp.parameter);
-//      REQUIRE(inp.flux[0] >= 0.0);
-//    }
-//
-//  }
-//
-//
-//}
-
 class TestSpec {
  public:
   TestSpec() = default;
  public:
-  const Array energy{0.1, 1.0, 10.0};
-  Array flux{0.0, 0.0, 0.0};
+  const Array energy{0.1, 1.0, 3.0, 10.0};
+  Array flux{0.0, 1.0, 0.0};
 };
 
-TEST_CASE(" Spectrum Class") {
-
-  TestSpec test_spec{};
-  CppSpectrum spec(test_spec.energy, test_spec.flux);
-
-  DYNAMIC_SECTION(" test initial array without operations ") {
-    REQUIRE(typeid(spec.energy()) == typeid(Array));
-    REQUIRE(typeid(spec.flux()) == typeid(Array));
-
-    REQUIRE(typeid(spec.energy_double()[0]) == typeid(double));
-    REQUIRE(typeid(spec.flux_double()[0]) == typeid(double));
-  }
-
-}
 
 TEST_CASE(" Execute local models", "[model]") {
 
@@ -115,4 +79,3 @@ TEST_CASE(" Execute local models", "[model]") {
 //  REQUIRE(lmod.flux[0] >= 0.0);
 //}
 
-#endif //RELXILL_TEST_UNIT_TESTS_EXECMODEL_H_

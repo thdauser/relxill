@@ -37,7 +37,7 @@ int main() {
 
   auto spec = LmodTest();
   int ispec = 0;
-  const string empty_string = "";
+  const string empty_string;
   Array def_param;
   def_param.resize(10);
 

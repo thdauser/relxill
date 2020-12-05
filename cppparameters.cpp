@@ -81,7 +81,7 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
   param->emis_type = convertIrradType(model_info.irradiation());
 
   param->a = params[XPar::a];
-  param->incl = params[XPar::incl];
+  param->incl = params[XPar::incl] * M_PI / 180;  // conversion to rad is heritage from the old code
   param->emis1 = params[XPar::index1];
   param->emis2 = params[XPar::index2];
   param->rbr = params[XPar::rbr];

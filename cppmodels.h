@@ -58,7 +58,7 @@ class LocalModel {
   void line_model(CppSpectrum &spectrum);
 
   /**
-   * Evaluate the LocalModel (as defined in the class) and overwrite the "flux" array
+   * Evaluate the LocalModel and overwrite the "flux" array
    * of Spectrum with the output values
    * @param spectrum
    */
