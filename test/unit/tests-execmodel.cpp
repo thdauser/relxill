@@ -23,7 +23,6 @@
 #include <unordered_map>
 #include <iostream>
 
-
 class TestSpec {
  public:
   TestSpec() = default;
@@ -32,6 +31,13 @@ class TestSpec {
   Array flux{0.0, 1.0, 0.0};
 };
 
+
+//double sum_flux(const CppSpectrum &spec){
+//
+//
+//  return std::accumulate(std::begin(spec.flux()), std::end(spec.flux()), 0.0);
+//
+//}
 
 TEST_CASE(" Execute local models", "[model]") {
 
@@ -55,7 +61,7 @@ TEST_CASE(" Execute local models", "[model]") {
       LocalModel testModel{model_name_type};
       std::cout << "- test model: " << elem.second << std::endl;
       testModel.eval_model(spec);
-      REQUIRE(spec.flux()[0] >= 0.0);
+      REQUIRE(spec.flux().max() >= 0.0);
     }
 
   }
