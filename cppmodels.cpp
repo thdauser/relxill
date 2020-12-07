@@ -86,13 +86,13 @@ void xspec_wrapper_eval_model(ModelName model_name, const Array &energy, Array &
 
 extern "C" {
 
-[[maybe_unused]] void lmodcpprelline(const Array &energy, const Array &parameter,
+void lmodcpprelline(const Array &energy, const Array &parameter,
                                      int spectrum, Array &flux, Array &fluxError,
                                      const string &init) {
   xspec_wrapper_eval_model(ModelName::relline, energy, flux, parameter);
 }
 
-[[maybe_unused]] void lmodcpprelxill(const Array &energy, const Array &parameter,
+void lmodcpprelxill(const Array &energy, const Array &parameter,
                                      int spectrum, Array &flux, Array &fluxError,
                                      const string &init) {
   xspec_wrapper_eval_model(ModelName::relxill, energy, flux, parameter);

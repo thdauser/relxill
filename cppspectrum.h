@@ -104,12 +104,12 @@ class CppSpectrum {
  */
   static void convert_array2double(const Array &array, double **ptr_double_array) {
 
-    int n = array.size();
+    size_t n = array.size();
     if (!*ptr_double_array) {
       *ptr_double_array = new double[n];
     }
     assert(*ptr_double_array);
-    for (int ii = 0; ii < n; ii++) {
+    for (size_t ii = 0; ii < n; ii++) {
       (*ptr_double_array)[ii] = array[ii];
     }
   }
@@ -120,7 +120,7 @@ class CppSpectrum {
    *   created from the Array) and therefore should stay private
    */
   static void write_double2array(Array &array, const double *double_array) {
-    for (int ii = 0; ii < array.size(); ii++) {
+    for (size_t ii = 0; ii < array.size(); ii++) {
       array[ii] = double_array[ii];
     }
   }

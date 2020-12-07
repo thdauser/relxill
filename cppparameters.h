@@ -22,6 +22,7 @@
 #include <string>
 #include <cassert>
 #include <iostream>
+#include <unordered_map>
 
 #include "cppspectrum.h" //only to get the typedef of Array
 #include "cppTypes.h"
@@ -82,7 +83,7 @@ class ModelParams {
     if (pars.size() != values.size()) {
       throw ParamInputException("wrong number of input parameters ");
     }
-    for (int ii = 0; ii < pars.size(); ii++) {
+    for (size_t ii = 0; ii < pars.size(); ii++) {
       m_param.at(pars[ii]) = values[ii];
     }
   }

@@ -91,19 +91,19 @@ class LocalModel {
 
  private:
   ModelParams m_param;
-  ModelInfo m_info;
   ModelName m_name;
+  ModelInfo m_info;
 };
 
 
 void xspec_wrapper_eval_model(ModelName model, const Array &energy, const Array &flux, const Array &parameter);
 
 extern "C" {
-[[maybe_unused]] void lmodcpprelline(const Array &energy, const Array &parameter,
+void lmodcpprelline(const Array &energy, const Array &parameter,
                                      int spectrum, Array &flux, Array &fluxError,
                                      const string &init);
 
-[[maybe_unused]] void lmodcpprelxill(const Array &energy, const Array &parameter,
+void lmodcpprelxill(const Array &energy, const Array &parameter,
                                      int spectrum, Array &flux, Array &fluxError,
                                      const string &init);
 }
