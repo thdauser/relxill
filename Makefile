@@ -22,7 +22,7 @@ model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles
 
 unpublished_model_files = relreturn.c relreturn.h relreturn_corona.c  relreturn_corona.h  relreturn_datastruct.c  relreturn_datastruct.h  relreturn_table.c  relreturn_table.h 
 
-cpp_model_files = cppmodels.cpp cppmodels.h cppparameters.h
+cpp_model_files = $(wildcard cpp*.cpp) $(wildcard cpp*.h)
 
 LINK_TARGET = test_sta
 
@@ -100,7 +100,8 @@ model-cpp: test_sta
 
 	$(eval MODEL_VERSION := $(shell ./test_sta version))
 	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=cpp
-	
+
+
 .PHONY: model-nonpublic
 model-nonpublic: test_sta
 	mkdir -p $(model_dir)
