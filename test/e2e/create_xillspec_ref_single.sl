@@ -13,7 +13,7 @@ require("xspec");
 load_xspec_local_models(modlib);
 require("isisscripts");
 
-variable dir = "refdat/";
+variable dir = "refdata_xillverTable/";
 
 _traceback=1;
 

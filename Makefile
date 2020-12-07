@@ -31,9 +31,6 @@ all:
 	echo $(objects)
 	make test_sta
 
-.PHONY:cpp
-cpp:
-
 .PHONY: test
 test:
 	cd test/e2e && make test
