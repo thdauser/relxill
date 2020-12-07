@@ -28,13 +28,13 @@ class TestSpec {
   TestSpec() = default;
  public:
   const Array energy{0.1, 1.0, 3.0, 10.0};
-  Array flux{0.0, 1.0, 0.0};
+  Array flux{1.0, 1.0, 10.0, 0.0};
 };
 
 /*
  * Testing of cppspectrum.h
  */
-TEST_CASE(" Spectrum Class") {
+TEST_CASE(" Spectrum Class", "[basic]") {
 
   TestSpec test_spec{};
   CppSpectrum spec(test_spec.energy, test_spec.flux);
@@ -48,7 +48,7 @@ TEST_CASE(" Spectrum Class") {
   }
 
   DYNAMIC_SECTION(" is the given number of energy bins correct (equal flux bins)") {
-    REQUIRE(spec.nener_bins() == spec.flux().size());
+    REQUIRE(spec.nener_bins() == spec.flux().size() - 1);
     REQUIRE(spec.nener_bins() == spec.energy().size() - 1);
   }
 

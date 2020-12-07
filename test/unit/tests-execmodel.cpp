@@ -28,7 +28,7 @@ class TestSpec {
   TestSpec() = default;
  public:
   const Array energy{0.1, 1.0, 3.0, 10.0};
-  Array flux{0.0, 1.0, 0.0};
+  Array flux{0.0, 1.0, 0.0, 0.0};
 };
 
 

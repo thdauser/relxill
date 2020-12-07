@@ -33,9 +33,22 @@ class CppSpectrum {
   // need to allocate the energy grid, as Xspec requires it to be constant and we may shift it in energy
       : m_ener{_energy},
         m_flux{_flux} {
+    assert(_energy.size()
+               == _flux.size()); // Xspec Local Model Convention, although last flux bin will be chopped (see below)
     // recommended by Xspec (https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html)
-    m_flux.resize(_energy.size() - 1);
+    //  m_flux.resize(_flux.size() - 1);
+
+
+    // double arrays have the same size as the input Array
+    m_ener_double = new double[m_ener.size()];
+    m_flux_double = new double[m_flux.size()];
+
   };
+
+  ~CppSpectrum() {
+    delete[] m_ener_double;
+    delete[] m_flux_double;
+  }
 
   [[nodiscard]] Array energy() const {
     return m_ener;
@@ -54,7 +67,7 @@ class CppSpectrum {
    * all values copied from the energy() function
    */
   [[nodiscard]] double *energy_double() {
-    convert_array2double(m_ener, &m_ener_double);
+    convert_array2double(m_ener, m_ener_double);
     return m_ener_double;
   }
 
@@ -63,7 +76,7 @@ class CppSpectrum {
    * all values copied from the flux() function
    */
   [[nodiscard]] double *flux_double() {
-    convert_array2double(m_flux, &m_flux_double);
+    convert_array2double(m_flux, m_flux_double);
     return m_flux_double;
   }
 
@@ -76,6 +89,7 @@ class CppSpectrum {
       write_double2array(m_ener, m_ener_double);
       write_double2array(m_flux, m_flux_double);
     } else {
+      puts(" *** relxill-error: double-arrays of the spectrum not allocated ");
       throw std::bad_alloc(); //" copying of double arrays in Spectrum failed, as they are not allocated ");
     }
 
@@ -102,16 +116,13 @@ class CppSpectrum {
  * @return ptr_double_array
  *
  */
-  static void convert_array2double(const Array &array, double **ptr_double_array) {
+  static void convert_array2double(const Array &array, double *double_array) {
 
-    size_t n = array.size();
-    if (!*ptr_double_array) {
-      *ptr_double_array = new double[n];
+    assert(double_array);
+    for (int ii = 0; ii < array.size(); ii++) {
+      double_array[ii] = array[ii];
     }
-    assert(*ptr_double_array);
-    for (size_t ii = 0; ii < n; ii++) {
-      (*ptr_double_array)[ii] = array[ii];
-    }
+
   }
 
   /**

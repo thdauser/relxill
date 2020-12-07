@@ -34,7 +34,7 @@ void LocalModel::line_model(CppSpectrum &spectrum) {
 
   int status = EXIT_SUCCESS;
 
-  relline_base(spectrum.energy_double(), spectrum.flux_double(), spectrum.nener_bins(), rel_param, &status);
+ relline_base(spectrum.energy_double(), spectrum.flux_double(), spectrum.nener_bins(), rel_param, &status);
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();
@@ -43,6 +43,7 @@ void LocalModel::line_model(CppSpectrum &spectrum) {
   // need to (internally) copy the values from the double-array to the Array structures
   spectrum.copy_doubleArrays2array();
 
+  delete rel_param;
 }
 
 void relxill_model(const CppSpectrum &spectrum) {
@@ -79,6 +80,9 @@ void xspec_wrapper_eval_model(ModelName model_name, const Array &energy, Array &
 
   } catch (std::out_of_range &e) {
     std::cout << " *** relxill-error: required model not found in database " << std::endl;
+    throw e;
+  } catch (std::bad_alloc &e) {
+    std::cout << " *** relxill-error: allocation error " << std::endl;
     throw e;
   }
 
