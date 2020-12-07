@@ -33,7 +33,10 @@ all:
 
 .PHONY:cpp
 cpp:
-	
+
+.PHONY: test
+test:
+	cd test/e2e && make test
 
 $(LINK_TARGET): $(objects)
 	gcc -o $@ $^ $(LDFLAGS) 

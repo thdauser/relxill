@@ -1579,14 +1579,14 @@ static void printReflectionStrengthInfo(double *ener,
     sum += flu[ii];
   }
 
-  printf("For a = %.3f and h = %.2f rg", rel_param->a, rel_param->height);
+  printf("For a = %.3f, Rin = %.3f, and h = %.2f rg", rel_param->a, rel_param->rin, rel_param->height);
   if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) || rel_param->beta > 1e-6) {
     printf(" and beta=%.3f v/c", rel_param->beta);
   }
   printf(": \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
          struct_refl_frac->refl_frac,
          sum / sum_pl);
-  printf(" - %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh * 100);
+  printf(" - photons falling into the black hole or plunging region: %.2f%%\n", struct_refl_frac->f_bh * 100);
   printf(" - gravitational redshift from the observer to the primary source is %.3f\n", grav_redshift(rel_param));
 }
 
