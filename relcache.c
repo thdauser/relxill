@@ -457,6 +457,7 @@ static void free_cdata(cdata **pt_data) {
     free_rel_spec(data->relbase_spec);
     free_relxill_cache(data->relxill_cache);
     free_relSysPar(data->relSysPar);
+    free(data);
   }
 
 }
