@@ -376,13 +376,11 @@ rel_spec *new_rel_spec(int nzones, const int n_ener, int *status) {
     CHECK_MALLOC_RET_STATUS(spec->flux[ii], status, spec)
   }
 
-  spec->rgrid = (double *) malloc((spec->n_zones + 1) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(spec->rgrid, status, spec)
-
   spec->ener = (double *) malloc((spec->n_ener + 1) * sizeof(double));
   CHECK_MALLOC_RET_STATUS(spec->ener, status, spec)
 
-  spec->rel_cosne = NULL;
+  spec->rgrid = NULL; // will be allocated later
+  spec->rel_cosne = NULL; // will be allocated later (only if need)
 
   return spec;
 }
@@ -1261,7 +1259,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   rebin_spectrum(ener, rebin_flux, n_ener,
                  ener_inp, spec_inp, n_ener_inp);
 
-  specCache* spec_cache = init_globalSpecCache(status);
+  spec_cache = init_globalSpecCache(status);
   CHECK_STATUS_VOID(*status);
   fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
                     1, 1, 0, spec_cache, status);
@@ -1898,6 +1896,7 @@ void free_rel_cosne(RelCosne *spec) {
 
 void free_rel_spec(rel_spec *spec) {
   if (spec != NULL) {
+    free(spec->ener);
     free(spec->rgrid);
     if (spec->flux != NULL) {
       int ii;
