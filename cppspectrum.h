@@ -33,11 +33,9 @@ class CppSpectrum {
   // need to allocate the energy grid, as Xspec requires it to be constant and we may shift it in energy
       : m_ener{_energy},
         m_flux{_flux} {
-    assert(_energy.size()
-               == _flux.size()); // Xspec Local Model Convention, although last flux bin will be chopped (see below)
-    // recommended by Xspec (https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html)
-    //  m_flux.resize(_flux.size() - 1);
-
+    // Xspec Local Model Convention, although last flux bin will be chopped (see below)
+    assert(_energy.size() == _flux.size());
+    // (https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html)
 
     // double arrays have the same size as the input Array
     m_ener_double = new double[m_ener.size()];
@@ -58,8 +56,8 @@ class CppSpectrum {
     return m_flux;
   }
 
-  [[nodiscard]] size_t nener_bins() const {   // array holds nener+1 bins, as bin_lo and bin_hi are combined
-    return m_ener.size() - 1;
+  [[nodiscard]] int nener_bins() const {   // array holds nener+1 bins, as bin_lo and bin_hi are combined
+    return static_cast<int>(m_ener.size()) - 1;
   }
 
   /**
@@ -103,8 +101,8 @@ class CppSpectrum {
   }
 
  private:
-  Array m_ener;
-  Array m_flux;
+  Array m_ener{};
+  Array m_flux{};
   double *m_ener_double{nullptr};
   double *m_flux_double{nullptr};
 

@@ -34,7 +34,9 @@ void LocalModel::line_model(CppSpectrum &spectrum) {
 
   int status = EXIT_SUCCESS;
 
- relline_base(spectrum.energy_double(), spectrum.flux_double(), spectrum.nener_bins(), rel_param, &status);
+  auto flux_double = spectrum.flux_double();
+
+  relline_base(spectrum.energy_double(), flux_double, spectrum.nener_bins(), rel_param, &status);
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();

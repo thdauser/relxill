@@ -96,7 +96,7 @@ class LocalModel {
 };
 
 
-void xspec_wrapper_eval_model(ModelName model, const Array &energy, const Array &flux, const Array &parameter);
+void xspec_wrapper_eval_model(ModelName model, const Array &energy, Array &flux, const Array &parameter);
 
 extern "C" {
 void lmodcpprelline(const Array &energy, const Array &parameter,

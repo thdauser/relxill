@@ -23,9 +23,9 @@
 #include <unordered_map>
 #include <iostream>
 
-class TestSpec {
+class SimpleSpec {
  public:
-  TestSpec() = default;
+  SimpleSpec() = default;
  public:
   const Array energy{0.1, 1.0, 3.0, 10.0};
   Array flux{1.0, 1.0, 10.0, 0.0};
@@ -36,7 +36,7 @@ class TestSpec {
  */
 TEST_CASE(" Spectrum Class", "[basic]") {
 
-  TestSpec test_spec{};
+  SimpleSpec test_spec{};
   CppSpectrum spec(test_spec.energy, test_spec.flux);
 
   DYNAMIC_SECTION(" test initial array without operations ") {
@@ -72,7 +72,7 @@ TEST_CASE(" Spectrum Class", "[basic]") {
 
 TEST_CASE(" Spectrum Class:  shifting of the energy grid ") {
 
-  TestSpec test_spec{};
+  SimpleSpec test_spec{};
   CppSpectrum spec(test_spec.energy, test_spec.flux);
 
   double ener0 = spec.energy()[0];
