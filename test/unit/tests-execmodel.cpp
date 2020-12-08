@@ -157,6 +157,8 @@ TEST_CASE(" Execute local models", "[model]") {
 
   }
 
+  free_cache(); // TODO: find a better place to free the cache
+
 }
 
 
