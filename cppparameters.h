@@ -79,10 +79,7 @@ class ModelParams {
   ModelParams() = default;
   ~ModelParams() = default;
 
-  ModelParams(ModelParamVector pars, Array values) {
-    if (pars.size() != values.size()) {
-      throw ParamInputException("wrong number of input parameters ");
-    }
+  ModelParams(ModelParamVector pars, const double *values) {
     for (size_t ii = 0; ii < pars.size(); ii++) {
       m_param.at(pars[ii]) = values[ii];
     }

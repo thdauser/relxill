@@ -26,113 +26,54 @@ typedef RealArray Array; // using the Xspec defined std::valarray type
 
 
 
-class CppSpectrum {
+class XspecSpectrum {
 
  public:
-  CppSpectrum(const Array &_energy, Array &_flux)
+  XspecSpectrum(const double *_energy, double *_flux, int _nbins_xspec)
   // need to allocate the energy grid, as Xspec requires it to be constant and we may shift it in energy
-      : m_ener{_energy},
-        m_flux{_flux} {
-    // Xspec Local Model Convention, although last flux bin will be chopped (see below)
-    assert(_energy.size() == _flux.size());
-    // (https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html)
-
-    // double arrays have the same size as the input Array
-    m_ener_double = new double[m_ener.size()];
-    m_flux_double = new double[m_flux.size()];
-
+      : m_flux{_flux}, m_num_flux_bins{_nbins_xspec} {
+    m_ener = new double[n_energy()];
+    for (int ii = 0; ii < n_energy(); ii++) {
+      m_ener[ii] = _energy[ii];
+    }
   };
 
-  ~CppSpectrum() {
-    delete[] m_ener_double;
-    delete[] m_flux_double;
-  }
-
-  [[nodiscard]] Array energy() const {
+  [[nodiscard]] double *energy() const {
     return m_ener;
   }
 
-  [[nodiscard]] Array flux() const {
+  [[nodiscard]] double *flux() const {
     return m_flux;
   }
 
-  [[nodiscard]] int nener_bins() const {   // array holds nener+1 bins, as bin_lo and bin_hi are combined
-    return static_cast<int>(m_ener.size()) - 1;
+  [[nodiscard]] int n_energy() const {   // array holds num_bins+1 bins, as bin_lo and bin_hi are combined
+    return m_num_flux_bins + 1;
+  }
+
+  [[nodiscard]] int num_flux_bins() const {   // array holds nener+1 bins, as bin_lo and bin_hi are combined
+    return m_num_flux_bins;
   }
 
   /**
-   * get the energy as double array, it will be allocated at the first call and always
-   * all values copied from the energy() function
+   * shift the spectrum in redshift and for a line at line for 1 keV
    */
-  [[nodiscard]] double *energy_double() {
-    convert_array2double(m_ener, m_ener_double);
-    return m_ener_double;
-  }
-
-  /**
-   * get the flux as double array, it will be allocated at the first call and always
-   * all values copied from the flux() function
-   */
-  [[nodiscard]] double *flux_double() {
-    convert_array2double(m_flux, m_flux_double);
-    return m_flux_double;
-  }
-
-  /**
-   * copy values from the double array to the Array
-   * @throws std::bad_alloc if the double arrays are not allocated
-   */
-  void copy_doubleArrays2array() {
-    if (m_flux_double && m_ener_double) {
-      write_double2array(m_ener, m_ener_double);
-      write_double2array(m_flux, m_flux_double);
-    } else {
-      puts(" *** relxill-error: double-arrays of the spectrum not allocated ");
-      throw std::bad_alloc(); //" copying of double arrays in Spectrum failed, as they are not allocated ");
+  void shift_energy_grid_1keV(double line_energy, double z) const {
+    for (int ii = 0; ii < m_num_flux_bins + 1; ii++) {
+      m_ener[ii] *= (1 + z) / line_energy;
     }
-
   }
 
   /**
-   * shift the spectrum such that we can calculate the line for 1 keV
+   * shift the spectrum in redshift
    */
-  void shift_energy_grid_1keV(double line_energy, double z) {
-    m_ener *= (1 + z) / line_energy;
+  void shift_energy_grid(double line_energy, double z) const {
+    shift_energy_grid_1keV(1.0, z);
   }
 
  private:
-  Array m_ener{};
-  Array m_flux{};
-  double *m_ener_double{nullptr};
-  double *m_flux_double{nullptr};
-
-  /**
- * Converts a C++ container "Array" into a double-array, which is necessary for C-code.
- * The routine needs to copy the array and all single values. If ptr_double_array==nullptr
- * it will be created, otherwise it is assumed that it is correctly allocated to array.size()
- * @param array
- * @return ptr_double_array
- *
- */
-  static void convert_array2double(const Array &array, double *double_array) {
-
-    assert(double_array);
-    for (int ii = 0; ii < array.size(); ii++) {
-      double_array[ii] = array[ii];
-    }
-
-  }
-
-  /**
-   * write values from the double-array into the Array
-   * - potentially dangerous, if used outside this scope (i.e., if the double array was not
-   *   created from the Array) and therefore should stay private
-   */
-  static void write_double2array(Array &array, const double *double_array) {
-    for (size_t ii = 0; ii < array.size(); ii++) {
-      array[ii] = double_array[ii];
-    }
-  }
+  double *m_ener{nullptr};
+  double *m_flux{nullptr};
+  int m_num_flux_bins;
 
 };
 

@@ -39,10 +39,10 @@ extern "C" {
 
 
 
-void line_model(ModelParams param, CppSpectrum spectrum);
-void relxill_model(const CppSpectrum &spectrum);
-void conv_model(const CppSpectrum &spectrum);
-void xillver_model(const CppSpectrum &spectrum);
+void line_model(ModelParams param, XspecSpectrum spectrum);
+void relxill_model(const XspecSpectrum &spectrum);
+void conv_model(const XspecSpectrum &spectrum);
+void xillver_model(const XspecSpectrum &spectrum);
 
 class LocalModel {
 
@@ -55,14 +55,14 @@ class LocalModel {
       LocalModel(ModelParams(), model_name) {
   };
 
-  void line_model(CppSpectrum &spectrum);
+  void line_model(const XspecSpectrum &spectrum);
 
   /**
    * Evaluate the LocalModel and overwrite the "flux" array
    * of Spectrum with the output values
    * @param spectrum
    */
-  void eval_model(CppSpectrum &spectrum) {
+  void eval_model(XspecSpectrum &spectrum) {
 
     try {
       switch (m_info.type()) {
@@ -95,18 +95,17 @@ class LocalModel {
   ModelInfo m_info;
 };
 
-
 void xspec_wrapper_eval_model(ModelName model, const Array &energy, Array &flux, const Array &parameter);
 
-extern "C" {
-void lmodcpprelline(const Array &energy, const Array &parameter,
-                                     int spectrum, Array &flux, Array &fluxError,
-                                     const string &init);
-
-void lmodcpprelxill(const Array &energy, const Array &parameter,
-                                     int spectrum, Array &flux, Array &fluxError,
-                                     const string &init);
-}
+//extern "C" {
+//void lmodcpprelline(const Array &energy, const Array &parameter,
+//                                     int spectrum, Array &flux, Array &fluxError,
+//                                     const string &init);
+//
+//void lmodcpprelxill(const Array &energy, const Array &parameter,
+//                                     int spectrum, Array &flux, Array &fluxError,
+//                                     const string &init);
+//}
 
 // } // namespace relxill
 
