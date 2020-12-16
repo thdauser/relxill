@@ -61,9 +61,9 @@ compilemodel: test_sta
 
 	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
 
-	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v
+	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relline"); () = eval_fun([1,2],[2,3]); exit; ' | isis 
 	cp $(model_dir)/$(MODEL_TAR_NAME) .
-	rm -f $(model_dir)/*.c $(model_dir)/*.h
+#	rm -f $(model_dir)/*.c $(model_dir)/*.h
 	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
 
 

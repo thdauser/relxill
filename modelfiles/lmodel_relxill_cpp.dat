@@ -1,4 +1,4 @@
-relline       10  0.         1.e20            C_lmodcpprelline     add  0
+relline       10  0.         1.e20            c_lmodcpprelline     add  0
 lineE   keV     6.4   0.01    0.1     10.0       100.0     100.0
 Index1   " "    3.    -10.    -10.    10.       10.       -0.1
 Index2   " "    3.    -10.    -10.    10.       10.       -0.1
@@ -10,7 +10,7 @@ Rout " "    400.  1.     1.     400.      1000.      -0.1
 z        " "    0.    0.      0.      10.       10.       -0.001
 limb     " "     0.      0.      0.      2.      2.      -1.
 
-relxill       13  0.         1.e20            C_lmodcpprelxill     add  0
+relxill       13  0.         1.e20            c_lmodcpprelxill     add  0
 Index1   " "    3.     -10.     -10.       10.       10.       -0.1
 Index2   " "    3.     -10.     -10.       10.       10.       -0.1
 Rbr      " "   15.0      1.0      1.0     400.     1000.       -0.1

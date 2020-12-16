@@ -43,13 +43,20 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
   delete rel_param;
 }
 
-void relxill_model(const XspecSpectrum &spectrum) {
-  //  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
+void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
+
+  // get the relevant parameters
+  // relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
+  // relParam *xill_param = getXillParamStruct(m_param, m_name, m_info);
+
+
+  //int status = EXIT_SUCCESS;
+  //relxill_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), xill_param, rel_param, &status);
   //  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
   //  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
 }
 
-void conv_model(const XspecSpectrum &spectrum) {
+void LocalModel::conv_model(const XspecSpectrum &spectrum) {
   // shift the spectrum such that we can calculate the line for 1 keV
   //  double *ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z, status);
   //  CHECK_STATUS_VOID(*status);
@@ -57,12 +64,25 @@ void conv_model(const XspecSpectrum &spectrum) {
   //  relconv_kernel(ener1keV, photar, n_ener, rel_param, status);
 }
 
-void xillver_model(const XspecSpectrum &spectrum) {
+void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
   //  xillver_base(ener0, n_ener0, photar, xill_param, status);
 }
 
-void xspec_C_wrapper_eval_model(ModelName model_name, const double *xspec_energy, double *xspec_flux,
-                                int num_flux_bins, const double *parameter) {
+/**
+ * Wrapper function, which can be called from any C-type local model function as
+ * required by Xspec
+ * @param model_name: unique name of the model
+ * @param parameter: input parameter array (size can be determined from the model definition for the model_name)
+ * @param xspec_energy[num_flux_bins]: input energy grid
+ * @param xspec_flux[num_flux_bins]: - flux array (already allocated), used to return the calculated values
+ *                    - for convolution models this is also the input flux
+ * @param num_flux_bins
+ */
+void xspec_C_wrapper_eval_model(ModelName model_name,
+                                const double *parameter,
+                                double *xspec_flux,
+                                int num_flux_bins,
+                                const double *xspec_energy) {
 
   try {
     auto const model_definition = ModelDatabase::instance().get(model_name);
@@ -70,7 +90,7 @@ void xspec_C_wrapper_eval_model(ModelName model_name, const double *xspec_energy
 
     LocalModel model{params, model_name};
 
-    XspecSpectrum spectrum{xspec_energy, xspec_flux, num_flux_bins};
+    XspecSpectrum spectrum{xspec_energy, xspec_flux, static_cast<size_t>(num_flux_bins)};
     model.eval_model(spectrum);
 
   } catch (std::exception &e) {
@@ -78,10 +98,4 @@ void xspec_C_wrapper_eval_model(ModelName model_name, const double *xspec_energy
     throw e;
   }
 
-}
-
-extern "C"
-void lmodcpprelline(const double *energy, int Nflux, const double *parameter,
-                    int spectrum, double *flux, double *fluxError, const char *init) {
-  xspec_C_wrapper_eval_model(ModelName::relline, energy, flux, Nflux, parameter);
 }

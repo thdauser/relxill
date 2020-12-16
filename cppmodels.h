@@ -25,8 +25,6 @@
 #include <utility>
 #include <vector>
 
-// #include <xsTypes.h>
-
 extern "C" {
 #include "common.h"
 #include "relmodels.h"
@@ -56,6 +54,9 @@ class LocalModel {
   };
 
   void line_model(const XspecSpectrum &spectrum);
+  void relxill_model(const XspecSpectrum &spectrum);
+  void conv_model(const XspecSpectrum &spectrum);
+  void xillver_model(const XspecSpectrum &spectrum);
 
   /**
    * Evaluate the LocalModel and overwrite the "flux" array
@@ -95,7 +96,16 @@ class LocalModel {
   ModelInfo m_info;
 };
 
-void xspec_wrapper_eval_model(ModelName model, const Array &energy, Array &flux, const Array &parameter);
+void xspec_C_wrapper_eval_model(ModelName model_name,
+                                const double *parameter,
+                                double *xspec_flux,
+                                int num_flux_bins,
+                                const double *xspec_energy);
+
+
+//extern "C" void lmodcpprelline(const double *energy, int Nflux, const double *parameter,
+//                    int spectrum, double *flux, double *fluxError, const char *init);
+//
 
 //extern "C" {
 //void lmodcpprelline(const Array &energy, const Array &parameter,

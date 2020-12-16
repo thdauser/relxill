@@ -40,7 +40,7 @@ set(SOURCE_FILES
          )
 
 set(SOURCE_FILES_CPP
-        ${SOURCE_FILES} cppmodels.cpp cppmodels.h cppparameters.h cppspectrum.h cppTypes.h cppModelDatabase.h cppparameters.cpp)
+        ${SOURCE_FILES} cppmodels.cpp cppmodels.h cppparameters.h cppspectrum.h cppTypes.h cppModelDatabase.h cppparameters.cpp cpp_wrapper_xspec_lmodels.cpp)
 
 set(EXEC_FILES test_sta)
 

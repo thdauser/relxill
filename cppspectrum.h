@@ -29,14 +29,19 @@ typedef RealArray Array; // using the Xspec defined std::valarray type
 class XspecSpectrum {
 
  public:
-  XspecSpectrum(const double *_energy, double *_flux, int _nbins_xspec)
-  // need to allocate the energy grid, as Xspec requires it to be constant and we may shift it in energy
+  XspecSpectrum(const double *_energy, double *_flux, size_t _nbins_xspec)
       : m_flux{_flux}, m_num_flux_bins{_nbins_xspec} {
+    // need to allocate the energy grid, as we are not allowed to change the original energy grid
+    // (Xspec requires it to be constant, but we need to shift it in energy)
     m_ener = new double[n_energy()];
-    for (int ii = 0; ii < n_energy(); ii++) {
+    for (size_t ii = 0; ii < n_energy(); ii++) {
       m_ener[ii] = _energy[ii];
     }
   };
+
+  ~XspecSpectrum() {
+    delete (m_ener);
+  }
 
   [[nodiscard]] double *energy() const {
     return m_ener;
@@ -46,7 +51,7 @@ class XspecSpectrum {
     return m_flux;
   }
 
-  [[nodiscard]] int n_energy() const {   // array holds num_bins+1 bins, as bin_lo and bin_hi are combined
+  [[nodiscard]] size_t n_energy() const {   // array holds num_bins+1 bins, as bin_lo and bin_hi are combined
     return m_num_flux_bins + 1;
   }
 
@@ -58,7 +63,7 @@ class XspecSpectrum {
    * shift the spectrum in redshift and for a line at line for 1 keV
    */
   void shift_energy_grid_1keV(double line_energy, double z) const {
-    for (int ii = 0; ii < m_num_flux_bins + 1; ii++) {
+    for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
       m_ener[ii] *= (1 + z) / line_energy;
     }
   }
@@ -73,7 +78,7 @@ class XspecSpectrum {
  private:
   double *m_ener{nullptr};
   double *m_flux{nullptr};
-  int m_num_flux_bins;
+  size_t m_num_flux_bins;
 
 };
 
