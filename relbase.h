@@ -18,7 +18,9 @@
 #ifndef RELBASE_H_
 #define RELBASE_H_
 
+#ifndef _GNU_SOURCE
 #define _GNU_SOURCE  // seems necessary for standard Makefile
+#endif
 
 #include "common.h"
 
