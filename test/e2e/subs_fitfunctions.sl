@@ -60,6 +60,21 @@ define fit_fun_default(ff){ %{{{
 %}}}
 
 
+define randomize_params() { %{{{
+   variable p = get_params();
+   
+   variable i;   
+   for (i = 0; i < length(p); i++)   {
+      if (p[i].freeze == 0 and p[i].tie == NULL) {
+	 p[i].value = rand_flat (p[i].min, p[i].max);
+      }
+   }
+   
+   set_params(p);
+}
+%}}}
+
+
 
 
 define selectModelByType(ff, strType){ %{{{
