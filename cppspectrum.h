@@ -71,7 +71,7 @@ class XspecSpectrum {
   /**
    * shift the spectrum in redshift
    */
-  void shift_energy_grid(double line_energy, double z) const {
+  void shift_energy_grid_redshift(double z) const {
     shift_energy_grid_1keV(1.0, z);
   }
 

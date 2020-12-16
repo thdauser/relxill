@@ -30,10 +30,21 @@ extern "C" {
  */
 int convertModelType(ModelName name) {
   switch (name) {
-    case ModelName::relxill: return MOD_TYPE_RELXILL;
     case ModelName::relline: return MOD_TYPE_RELLINE;
     case ModelName::relconv: return MOD_TYPE_RELCONV;
+    case ModelName::rellinelp: return MOD_TYPE_RELLINELP;
+    case ModelName::relconvlp: return MOD_TYPE_RELCONVLP;
+    case ModelName::relxill  : return MOD_TYPE_RELXILL;
+    case ModelName::relxillCp: return MOD_TYPE_RELXILL;
+    case ModelName::relxillD: return MOD_TYPE_RELXILLDENS;
+    case ModelName::relxilllp: return MOD_TYPE_RELXILLLP;
+    case ModelName::relxilllpCp: return MOD_TYPE_RELXILLLP;
+    case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
+    case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
+    case ModelName::relxilllpionCp: return MOD_TYPE_RELXILLLPION;
     case ModelName::xillver: return MOD_TYPE_XILLVER;
+    case ModelName::xillverCp: return MOD_TYPE_XILLVER_NTHCOMP;
+    case ModelName::xillverD: return MOD_TYPE_XILLVERDENS;
   }
   puts(" *** relxill-error: converting model name to integer failed ");
   exit(EXIT_FAILURE);
@@ -72,10 +83,9 @@ int convertPrimSpecType(T_PrimSpec name) {
   exit(EXIT_FAILURE);
 }
 
-/* get a new relbase parameter structure and initialize it */
+/* get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES*/
 relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info) {
-  auto *param = new relParam; //(relParam *) malloc(sizeof(relParam));
-
+  auto *param = new relParam;
 
   param->model_type = convertModelType(model_name);
   param->emis_type = convertIrradType(model_info.irradiation());
@@ -107,9 +117,31 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
   }
 
   // set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
-  //  -> note as this is onl for relat. models, in case of an ion gradient this needs to be updated
   param->num_zones = get_num_zones(param->model_type, param->emis_type, ION_GRAD_TYPE_CONST);
 
   return param;
 }
 
+/* get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES */
+xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info) {
+  auto *param = new xillParam;
+
+  param->model_type = convertModelType(model_name);
+  param->prim_type = convertPrimSpecType(model_info.primeSpec());
+
+  param->gam = params[XPar::gamma];
+  param->afe = params[XPar::afe];
+  param->lxi = params[XPar::logxi];
+  param->ect = params[XPar::ecut];
+  param->incl = params[XPar::incl];
+  param->z = params[XPar::z];
+  param->refl_frac = params[XPar::refl_frac];
+  param->fixReflFrac = static_cast<int>(lround(params[XPar::fixReflFrac]));
+  param->dens = params[XPar::dens];
+  param->frac_pl_bb = params[XPar::frac_pl_bb];
+  param->kTbb = params[XPar::kTbb];
+  param->ion_grad_type = static_cast<int>(lround(params[XPar::ion_grad_type]));
+  param->ion_grad_index = params[XPar::ion_grad_index];
+
+  return param;
+}

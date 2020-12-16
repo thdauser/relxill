@@ -24,9 +24,20 @@
  */
 enum class ModelName {
   relline,
-  relxill,
+  rellinelp,
   relconv,
-  xillver
+  relconvlp,
+  relxill,
+  relxillCp,
+  relxillD,
+  relxilllp,
+  relxilllpCp,
+  relxilllpD,
+  relxilllpion,
+  relxilllpionCp,
+  xillver,
+  xillverD,
+  xillverCp
 };
 
 enum class T_Irrad {

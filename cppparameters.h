@@ -41,13 +41,19 @@ enum class XPar {
   limb,
   gamma,
   logxi,
+  dens,
   afe,
   ecut,
   refl_frac,
+  fixReflFrac,
   height,
   htop,
   beta,
-  return_rad
+  return_rad,
+  frac_pl_bb,
+  kTbb,
+  ion_grad_type,
+  ion_grad_index
 };
 
 typedef std::vector<XPar> ModelParamVector;
@@ -100,8 +106,10 @@ class ModelParams {
       {XPar::rout, 400},
       {XPar::incl, 30},
       {XPar::logxi, 3.0},
+      {XPar::dens, 15.0},
       {XPar::afe, 1.0},
       {XPar::refl_frac, 1.0},
+      {XPar::fixReflFrac, -1},
       {XPar::limb, 0.0},
       {XPar::z, 0.0},
       {XPar::gamma, 2.0},
@@ -109,7 +117,11 @@ class ModelParams {
       {XPar::height, 6.0},
       {XPar::htop, 6.0},
       {XPar::beta, 0.0},
-      {XPar::return_rad, 0.0}
+      {XPar::return_rad, 0.0},
+      {XPar::frac_pl_bb, -1.0},
+      {XPar::kTbb, -1.0},
+      {XPar::ion_grad_type, ION_GRAD_TYPE_CONST},
+      {XPar::ion_grad_index, 0.0}
   };
 
 };
@@ -120,5 +132,6 @@ int convertIrradType(T_Irrad name);
 int convertPrimSpecType(T_PrimSpec name);
 
 relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
+xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 
 #endif //RELXILL_SRC_CPPPARAMETERS_H_

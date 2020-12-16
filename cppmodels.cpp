@@ -45,15 +45,20 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
 
 void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
-  // get the relevant parameters
-  // relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
-  // relParam *xill_param = getXillParamStruct(m_param, m_name, m_info);
+  relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
+  xillParam *xill_param = getXillParamStruct(m_param, m_name, m_info);
 
+  spectrum.shift_energy_grid_redshift(rel_param->z);
 
-  //int status = EXIT_SUCCESS;
-  //relxill_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), xill_param, rel_param, &status);
-  //  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  //  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  int status = EXIT_SUCCESS;
+  relxill_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), xill_param, rel_param, &status);
+
+  if (status != EXIT_SUCCESS) {
+    throw std::exception();
+  }
+
+  delete rel_param;
+  delete xill_param;
 }
 
 void LocalModel::conv_model(const XspecSpectrum &spectrum) {
