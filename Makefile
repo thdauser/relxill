@@ -54,6 +54,9 @@ MODEL_VERSION = undef
 #MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 
 
+xspec_wrapper_lmodels.cpp: modelfiles/lmodel_relxill_cpp.dat
+	./create_wrapper_xspec.py $< $@
+
 .PHONY: compilemodel
 compilemodel: test_sta
 
@@ -88,7 +91,7 @@ model-dev: test_sta
 	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=dev
 
 .PHONY: model-cpp
-model-cpp: test_sta
+model-cpp: xspec_wrapper_lmodels.cpp
 	mkdir -p $(model_dir)
 	rm -f $(model_dir)/*
 	cp -v $(model_files) $(model_dir)

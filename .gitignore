@@ -4,6 +4,8 @@
 *.cproject
 *.o
 test_sta
+xspec_wrapper_lmodels.cpp
+
 .autotools
 gmon.out
 test*.dat
@@ -16,3 +18,4 @@ testrr-*fits
 cmake-build-debug
 html
 latex
+venv
