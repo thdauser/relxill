@@ -22,7 +22,7 @@ model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles
 
 unpublished_model_files = relreturn.c relreturn.h relreturn_corona.c  relreturn_corona.h  relreturn_datastruct.c  relreturn_datastruct.h  relreturn_table.c  relreturn_table.h 
 
-cpp_model_files = $(wildcard cpp*.cpp) $(wildcard cpp*.h)
+cpp_model_files = $(wildcard cpp*.cpp) $(wildcard cpp*.h) xspec_wrapper_lmodels.cpp
 
 LINK_TARGET = test_sta
 
