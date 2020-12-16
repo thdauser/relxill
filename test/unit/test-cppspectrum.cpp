@@ -24,11 +24,11 @@
 #include <iostream>
 
 class SimpleSpec {
+
  public:
-  SimpleSpec() = default;
- public:
-  const Array energy{0.1, 1.0, 3.0, 10.0};
-  Array flux{1.0, 1.0, 10.0, 0.0};
+  double energy[4] = {0.1, 1.0, 3.0, 10.0};
+  double flux[3] = {1.0, 1.0, 10.0};
+  int n_flux_bins = 3;
 };
 
 /*
@@ -37,35 +37,19 @@ class SimpleSpec {
 TEST_CASE(" Spectrum Class", "[basic]") {
 
   SimpleSpec test_spec{};
-  CppSpectrum spec(test_spec.energy, test_spec.flux);
+  XspecSpectrum spec(test_spec.energy, test_spec.flux, test_spec.n_flux_bins);
 
   DYNAMIC_SECTION(" test initial array without operations ") {
-    REQUIRE(typeid(spec.energy()) == typeid(Array));
-    REQUIRE(typeid(spec.flux()) == typeid(Array));
+    REQUIRE(spec.energy());
+    REQUIRE(spec.flux());
 
-    REQUIRE(spec.energy_double());
-    REQUIRE(spec.flux_double());
+    REQUIRE(spec.energy());
+    REQUIRE(spec.flux());
   }
 
-  DYNAMIC_SECTION(" is the given number of energy bins correct (equal flux bins)") {
-    REQUIRE(spec.nener_bins() == spec.flux().size() - 1);
-    REQUIRE(spec.nener_bins() == spec.energy().size() - 1);
-  }
-
-  DYNAMIC_SECTION(" are Array and Double-Arrays the same") {
-    for (int ii = 0; ii < spec.nener_bins(); ii++) {
-      REQUIRE(spec.energy()[ii] == spec.energy_double()[ii]);
-      REQUIRE(spec.flux()[ii] == spec.flux_double()[ii]);
-    }
-
-  }
-
-  DYNAMIC_SECTION(" is the energy_double() returning double type") {
-    REQUIRE(typeid(spec.energy_double()[0]) != typeid(int));
-    REQUIRE(typeid(spec.flux_double()[0]) != typeid(int));
-
-    REQUIRE(typeid(spec.energy_double()[0]) == typeid(double));
-    REQUIRE(typeid(spec.flux_double()[0]) == typeid(double));
+  DYNAMIC_SECTION(" is the given number of flux bins and energy bins correctly set") {
+    REQUIRE(spec.num_flux_bins() == test_spec.n_flux_bins);
+    REQUIRE(spec.n_energy() == test_spec.n_flux_bins + 1);
   }
 
 }
@@ -73,22 +57,14 @@ TEST_CASE(" Spectrum Class", "[basic]") {
 TEST_CASE(" Spectrum Class:  shifting of the energy grid ") {
 
   SimpleSpec test_spec{};
-  CppSpectrum spec(test_spec.energy, test_spec.flux);
+  XspecSpectrum spec(test_spec.energy, test_spec.flux, test_spec.n_flux_bins);
 
   double ener0 = spec.energy()[0];
-
-  DYNAMIC_SECTION(" shifting produces valid energy arrays ") {
-    spec.shift_energy_grid_1keV(0.5, 0.0);
-    REQUIRE(spec.energy_double());
-    REQUIRE(spec.flux_double());
-  }
 
   DYNAMIC_SECTION(" shifting by line energy produces correct energies? ") {
     spec.shift_energy_grid_1keV(0.5, 0.0);
     double shifted_ener = spec.energy()[0];
     REQUIRE(shifted_ener == ener0 * 2);
-    double shifted_ener_double = spec.energy_double()[0];
-    REQUIRE(shifted_ener == shifted_ener_double);
   }
 
   DYNAMIC_SECTION(" shifting by z correct energies? ") {

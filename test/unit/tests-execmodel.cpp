@@ -25,26 +25,19 @@
 
 class DefaultSpec {
  public:
-  DefaultSpec(double emin, double emax, size_t n_bins) {
-    energy = Array(n_bins);
-    flux = Array(n_bins);
+  DefaultSpec(double emin, double emax, size_t n_bins) : num_flux_bins{n_bins} {
+    size_t n_energy = n_bins + 1;
+    energy = new double[n_energy];
+    flux = new double[n_bins];
 
-    set_log_grid(energy, emin, emax);
-
-    //   spec = new CppSpectrum(energy, flux);
+    set_log_grid(energy, n_energy, emin, emax);
   };
 
   DefaultSpec() : DefaultSpec(0.1, 1000.0, 3000) {
   };
 
-
-  //  ~DefaultSpec(){
-  //    delete spec;
-  //  }
-
   /* get a logarithmic grid from emin to emax with n_ener bins  */
-  static void set_log_grid(Array &ener, double emin, double emax) {
-    size_t n_ener = ener.size();
+  static void set_log_grid(double *ener, size_t n_ener, double emin, double emax) {
     for (int ii = 0; ii < n_ener - 1; ii++) {
       ener[ii] = 1.0 * ii / (static_cast<double>(n_ener) - 1.0) * (log(emax) - log(emin)) + log(emin);
       ener[ii] = exp(ener[ii]);
@@ -53,65 +46,71 @@ class DefaultSpec {
   }
 
  public:
-  //  CppSpectrum* spec{nullptr};
-  Array energy;
-  Array flux;
-
+  double *energy{nullptr};
+  double *flux{nullptr};
+  const size_t num_flux_bins;
 };
 
-Array get_xspec_default_parameter_array(ModelName model_name) {
+const double *get_xspec_default_parameter_array(ModelName model_name) {
 
   auto const model_parameters = ModelDatabase::instance().get(model_name).input_parameters();
 
   auto default_param_values = ModelParams();
   //  auto output_param_array = new Array[model_parameters.size()];
-  auto output_param_array = Array(model_parameters.size());
+  auto output_param_array = new double[model_parameters.size()];
 
-  for (int ii = 0; ii < output_param_array.size(); ii++) {
+  for (int ii = 0; ii < model_parameters.size(); ii++) {
     output_param_array[ii] = default_param_values[model_parameters[ii]];
   }
 
   return output_param_array;
 }
 
+double sum_flux(const double *flux, int nbins) {
 
-//double sum_flux(const CppSpectrum &spec){
-//
-//
-//  return std::accumulate(std::begin(spec.flux()), std::end(spec.flux()), 0.0);
-//
-//}
-
+  double sum = 0.0;
+  for (int ii = 0; ii < nbins; ii++) {
+    sum += flux[ii];
+  }
+  return sum;
+}
+double sum_flux(const XspecSpectrum &spec) {
+  return sum_flux(spec.flux(), spec.num_flux_bins());
+}
 
 static void test_xspec_lmod_call(ModelName model_name, DefaultSpec default_spec) {
-  Array parameters = get_xspec_default_parameter_array(model_name);
-  xspec_wrapper_eval_model(model_name, default_spec.energy, default_spec.flux, parameters);
+  const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
+  xspec_C_wrapper_eval_model(model_name,
+                             xspec_parameters,
+                             default_spec.flux,
+                             default_spec.num_flux_bins,
+                             default_spec.energy);
 
-  REQUIRE(default_spec.flux.max() >= 0.0);
+  REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) >= 0.0);
+
+  delete (xspec_parameters);
 }
 
 static void test_internal_lmod_call(ModelName model_name, const DefaultSpec &default_spec) {
   LocalModel testModel{model_name};
 
-  const auto energy = default_spec.energy;
-  auto input_flux = default_spec.flux;
-  CppSpectrum spec{energy, input_flux};
+  XspecSpectrum spec{default_spec.energy, default_spec.flux, default_spec.num_flux_bins};
 
-  REQUIRE(spec.flux().max() >= 0.0);
   testModel.eval_model(spec);
-  auto flux = spec.flux();
-  REQUIRE(flux.max() >= 0.0);
+  REQUIRE(sum_flux(spec) >= 0.0);
+  REQUIRE(sum_flux(spec) > 1e-6);
 
 }
 
+/*
+ * TEST CASE
+ */
 TEST_CASE(" default spectrum class", "[basic]") {
 
   DefaultSpec default_spec{};
 
   REQUIRE(default_spec.energy[0]);
   REQUIRE(default_spec.energy[1] > default_spec.energy[0]);
-  // REQUIRE(default_spec.spec);
-
 
   double emin = 0.5;
   double emax = 10.0;
@@ -120,17 +119,19 @@ TEST_CASE(" default spectrum class", "[basic]") {
 
   REQUIRE(own_spec.energy[0] == emin);
   REQUIRE(own_spec.energy[1] > emin);
-  REQUIRE(own_spec.energy.size() == nbins);
-  REQUIRE(own_spec.flux.size() == nbins);
-  REQUIRE(own_spec.energy[own_spec.energy.size() - 1] == emax);
+  REQUIRE(own_spec.num_flux_bins == nbins);
+  REQUIRE(own_spec.energy[own_spec.num_flux_bins] == emax);  // energy has num+1 bins
 
 }
 
+/*
+ * TEST CASE
+ */
 TEST_CASE(" Execute local models", "[model]") {
 
   const std::unordered_map<ModelName, std::string> all_models{
-      {ModelName::relline, "relline"}
-      //      {ModelName::relxill, "relxill"},
+      {ModelName::relline, "relline"},
+      {ModelName::relxill, "relxill"}
       //      {ModelName::relconv, "relconv"},
       //      {ModelName::xillver, "xillver"}
   };
@@ -160,22 +161,3 @@ TEST_CASE(" Execute local models", "[model]") {
   free_cache(); // TODO: find a better place to free the cache
 
 }
-
-
-
-//LmodTest eval_local_model(ModelName name){
-//  LmodTest inp{};
-//
-//  auto const model_definition = ModelDatabase::instance().get(ModelName::relxill);
-//
-//  LocalModel model{model_definition.model_info()};
-//  model.eval_model(inp.energy, inp.flux);
-//
-//  return inp;
-//}
-//
-//TEST_CASE(" Execute relxill ") {
-//  LmodTest lmod = eval_local_model(ModelName::relxill);
-//  REQUIRE(lmod.flux[0] >= 0.0);
-//}
-
