@@ -16,7 +16,7 @@ define get_refdata_files(){ %{{{
       ff = __argv[1];
    }
    
-   variable glob_str = sprintf("ref*_*_*.fits",ff);
+   variable glob_str = sprintf("*/*_*_ref*_*.fits",ff);
    variable fnames = glob(LMOD_REFDATA_DIR+sprintf(glob_str));
    
    return fnames[array_sort(fnames)];   
