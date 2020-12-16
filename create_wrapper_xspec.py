@@ -87,8 +87,7 @@ def get_wrapper_lmod(local_model_name):
     c_function_name = "lmod" + local_model_name
 
     return f"""
-extern "C" void {c_function_name}() 
-   ({parameter_list}) 
+extern "C" void {c_function_name}({parameter_list}) 
 {{
     {function_call}
 }} 
