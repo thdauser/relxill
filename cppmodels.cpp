@@ -22,14 +22,14 @@
 #include <stdexcept>
 #include <iostream>
 
+/*
+ *
+ */
 void LocalModel::line_model(const XspecSpectrum &spectrum) {
 
-  puts(" I am LINE ");
-
-  // get the relevant parameters
   relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
 
-  // shift the spectrum such that we can calculate the line for 1 keV
+  // relline_base calculates the line for 1keV -> shift the spectrum / energy grid accordingly
   spectrum.shift_energy_grid_1keV(rel_param->lineE, rel_param->z);
 
   int status = EXIT_SUCCESS;
@@ -43,6 +43,9 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
   delete rel_param;
 }
 
+/*
+ *
+ */
 void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
   relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
@@ -61,17 +64,41 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   delete xill_param;
 }
 
+/*
+ *
+ */
 void LocalModel::conv_model(const XspecSpectrum &spectrum) {
-  // shift the spectrum such that we can calculate the line for 1 keV
-  //  double *ener1keV = shift_energ_spec_1keV(ener, n_ener, param_struct->lineE, param_struct->z, status);
-  //  CHECK_STATUS_VOID(*status);
-  //
-  //  relconv_kernel(ener1keV, photar, n_ener, rel_param, status);
+
+  relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
+
+  // requirement of the relconv_kernel: shift the spectrum such that we can calculate for 1 keV
+  spectrum.shift_energy_grid_1keV(rel_param->lineE, rel_param->z);
+
+  int status = EXIT_SUCCESS;
+  relconv_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), rel_param, &status);
+
+  if (status != EXIT_SUCCESS) {
+    throw std::exception();
+  }
+
 }
 
+/*
+ *
+ */
 void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
-  //  xillver_base(ener0, n_ener0, photar, xill_param, status);
+
+  xillParam *xill_param = getXillParamStruct(m_param, m_name, m_info);
+
+  int status = EXIT_SUCCESS;
+  xillver_base(spectrum.energy(), spectrum.num_flux_bins(), spectrum.flux(), xill_param, &status);
+
+  if (status != EXIT_SUCCESS) {
+    throw std::exception();
+  }
+
 }
+
 
 /**
  * Wrapper function, which can be called from any C-type local model function as
@@ -99,8 +126,7 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
     model.eval_model(spectrum);
 
   } catch (std::exception &e) {
-    std::cout << " *** relxill-error: model evaluation failed " << std::endl;
-    throw e;
+    // TODO: what should we do if the evaluation fails? return zeros?
   }
 
 }

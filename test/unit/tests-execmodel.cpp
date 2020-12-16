@@ -131,9 +131,9 @@ TEST_CASE(" Execute local models", "[model]") {
 
   const std::unordered_map<ModelName, std::string> all_models{
       {ModelName::relline, "relline"},
-      {ModelName::relxill, "relxill"}
-      //      {ModelName::relconv, "relconv"},
-      //      {ModelName::xillver, "xillver"}
+      {ModelName::relxill, "relxill"},
+      {ModelName::relconv, "relconv"},
+      {ModelName::xillver, "xillver"}
   };
 
   DefaultSpec default_spec{};
@@ -144,7 +144,7 @@ TEST_CASE(" Execute local models", "[model]") {
     auto model_name_string = elem.second;
 
     DYNAMIC_SECTION(" testing model: " << model_name_string) {
-      std::cout << "- test model: " << elem.second << std::endl;
+      // std::cout << "- test model: " << elem.second << std::endl;
 
       DYNAMIC_SECTION(" xspec local model call ") {
         test_xspec_lmod_call(model_name_type, default_spec);

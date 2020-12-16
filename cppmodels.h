@@ -70,16 +70,13 @@ class LocalModel {
         case T_Model::Line:line_model(spectrum);
           break;
 
-        case T_Model::Relxill:puts(" I am RELXILL ");
-          relxill_model(spectrum);
+        case T_Model::Relxill:relxill_model(spectrum);
           break;
 
-        case T_Model::Conv:puts(" I am CONV ");
-          conv_model(spectrum);
+        case T_Model::Conv:conv_model(spectrum);
           break;
 
-        case T_Model::Xill:puts(" I am XILL ");
-          xillver_model(spectrum);
+        case T_Model::Xill:xillver_model(spectrum);
           break;
       }
 
@@ -103,21 +100,6 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
                                 const double *xspec_energy);
 
 
-//extern "C" void lmodcpprelline(const double *energy, int Nflux, const double *parameter,
-//                    int spectrum, double *flux, double *fluxError, const char *init);
-//
-
-//extern "C" {
-//void lmodcpprelline(const Array &energy, const Array &parameter,
-//                                     int spectrum, Array &flux, Array &fluxError,
-//                                     const string &init);
-//
-//void lmodcpprelxill(const Array &energy, const Array &parameter,
-//                                     int spectrum, Array &flux, Array &fluxError,
-//                                     const string &init);
-//}
-
-// } // namespace relxill
 
 
 #endif //RELXILL__CPPMODELS_H_
