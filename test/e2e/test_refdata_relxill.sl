@@ -1,6 +1,19 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Test the current model in build/ against the reference data %%%
+%
+% Usage: %  ./test_refdata_relxill.sl  [<model_name> [defparam|random] ]
+% 
+% Note, that <model_name> can be a regular expression. For example, to
+% the defparm test for only relline it would be:
+% 
+%  ./test_refdata_relxill.sl '*' defparam
+%  
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
 require("isisscripts");
 require("subs_fitfunctions.sl");
 require("fits_model_struct");
@@ -12,11 +25,14 @@ load_relxill_model_devel("build/librelxill.so");
 define get_refdata_files(){ %{{{
    %% we can load any model
    variable ff = "*";
-   if (length(__argv)>1){
-      ff = __argv[1];
-   }
+   if (length(__argv)>1){ ff = __argv[1]; }
    
-   variable glob_str = sprintf("*/*_*_ref*_*.fits",ff);
+   variable refdata_type = "*";
+   if (length(__argv)>2){
+      refdata_type = __argv[2]; 
+  }
+   
+   variable glob_str = sprintf("%s/*_%s_ref*_*.fits",ff,refdata_type);
    variable fnames = glob(LMOD_REFDATA_DIR+sprintf(glob_str));
    
    return fnames[array_sort(fnames)];   
