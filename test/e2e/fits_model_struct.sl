@@ -13,6 +13,10 @@ define fits_write_model_struct(fname){
    variable params = reduce_struct(merge_struct_arrays(get_params()),["name","value","freeze","min","max"];extract);
    variable dat = struct{bin_lo=elo,bin_hi=ehi,value=value};
 
+   if (qualifier_exists("verbose")){
+         vmessage(" - creating: %s ", fname);
+   }
+   
    variable fp = fits_open_file(fname,"c");
    fits_write_binary_table(fp,"MODEL",params);   
    fits_update_key(fp,"fitfun",ff);
