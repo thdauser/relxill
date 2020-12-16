@@ -105,8 +105,6 @@ def write_xspec_wrapper_file(outfile_name, model_names):
     file.close()
 
 
-# "modelfiles/lmodel_relxill_cpp.dat"
-# "xspec_wrapper_lmodels.cpp"
 if __name__ == '__main__':
 
     if len(sys.argv) == 3:
