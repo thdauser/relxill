@@ -18,10 +18,9 @@
 
 #include "catch2/catch.hpp"
 #include "../../cppmodels.h"
+#include "../../xspec_wrapper_lmodels.h"
 
 #include <vector>
-#include <unordered_map>
-#include <iostream>
 
 class DefaultSpec {
  public:
@@ -51,12 +50,12 @@ class DefaultSpec {
   const size_t num_flux_bins;
 };
 
+
 const double *get_xspec_default_parameter_array(ModelName model_name) {
 
   auto const model_parameters = ModelDatabase::instance().get(model_name).input_parameters();
 
   auto default_param_values = ModelParams();
-  //  auto output_param_array = new Array[model_parameters.size()];
   auto output_param_array = new double[model_parameters.size()];
 
   for (int ii = 0; ii < model_parameters.size(); ii++) {
@@ -74,33 +73,41 @@ double sum_flux(const double *flux, int nbins) {
   }
   return sum;
 }
-double sum_flux(const XspecSpectrum &spec) {
-  return sum_flux(spec.flux(), spec.num_flux_bins());
-}
+
+//double sum_flux(const XspecSpectrum &spec) {
+//  return sum_flux(spec.flux(), spec.num_flux_bins());
+//}
 
 static void test_xspec_lmod_call(ModelName model_name, DefaultSpec default_spec) {
-  const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
-  xspec_C_wrapper_eval_model(model_name,
-                             xspec_parameters,
-                             default_spec.flux,
-                             default_spec.num_flux_bins,
-                             default_spec.energy);
 
-  REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) >= 0.0);
+  try {
+    const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
 
-  delete (xspec_parameters);
-}
+    xspec_C_wrapper_eval_model(model_name,
+                               xspec_parameters,
+                               default_spec.flux,
+                               default_spec.num_flux_bins,
+                               default_spec.energy);
 
-static void test_internal_lmod_call(ModelName model_name, const DefaultSpec &default_spec) {
-  LocalModel testModel{model_name};
+    delete (xspec_parameters);
 
-  XspecSpectrum spec{default_spec.energy, default_spec.flux, default_spec.num_flux_bins};
-
-  testModel.eval_model(spec);
-  REQUIRE(sum_flux(spec) >= 0.0);
-  REQUIRE(sum_flux(spec) > 1e-6);
+    REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
+  } catch (ModelNotFound &e) {
+    WARN("Skipping test as model not implemented");
+  }
 
 }
+
+//static void test_internal_lmod_call(ModelName model_name, const DefaultSpec &default_spec) {
+//  LocalModel testModel{model_name};
+//
+//  XspecSpectrum spec{default_spec.energy, default_spec.flux, default_spec.num_flux_bins};
+//
+//  testModel.eval_model(spec);
+//  REQUIRE(sum_flux(spec) >= 0.0);
+//  REQUIRE(sum_flux(spec) > 1e-6);
+//
+//}
 
 /*
  * TEST CASE
@@ -127,33 +134,31 @@ TEST_CASE(" default spectrum class", "[basic]") {
 /*
  * TEST CASE
  */
-TEST_CASE(" Execute local models", "[model]") {
+TEST_CASE(" testing if local model is implemented", "[basic]") {
 
-  const std::unordered_map<ModelName, std::string> all_models{
-      {ModelName::relline, "relline"},
-      {ModelName::relxill, "relxill"},
-      {ModelName::relconv, "relconv"},
-      {ModelName::xillver, "xillver"}
-  };
+  for (const auto &elem: xspec_lmodel_dat) {
+    DYNAMIC_SECTION("  - model: " << elem.second.name()) {
+      REQUIRE_NOTHROW(get_xspec_default_parameter_array(elem.first));
+    }
+  }
+
+}
+
+
+/*
+ * TEST CASE
+ */
+TEST_CASE(" Execute local models", "[model]") {
 
   DefaultSpec default_spec{};
 
-  for (const auto &elem: all_models) {
+  for (const auto &elem: xspec_lmodels.names) {
 
     auto model_name_type = elem.first;
     auto model_name_string = elem.second;
 
-    DYNAMIC_SECTION(" testing model: " << model_name_string) {
-      // std::cout << "- test model: " << elem.second << std::endl;
-
-      DYNAMIC_SECTION(" xspec local model call ") {
-        test_xspec_lmod_call(model_name_type, default_spec);
-      }
-
-      DYNAMIC_SECTION(" internal model call ") {
-        test_internal_lmod_call(model_name_type, default_spec);
-      }
-
+    DYNAMIC_SECTION(" - model: " << model_name_string) {
+      test_xspec_lmod_call(model_name_type, default_spec);
     }
 
   }
