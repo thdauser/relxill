@@ -125,7 +125,10 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
     XspecSpectrum spectrum{xspec_energy, xspec_flux, static_cast<size_t>(num_flux_bins)};
     model.eval_model(spectrum);
 
+  } catch (ModelNotFound &e) {
+    puts(" model not implemented ");
   } catch (std::exception &e) {
+    puts(" an error occurred ");
     // TODO: what should we do if the evaluation fails? return zeros?
   }
 

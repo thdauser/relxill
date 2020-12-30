@@ -24,6 +24,29 @@
 #include "cppparameters.h"
 #include "cppTypes.h"
 
+// #include "xspec_wrapper_lmodels.h"
+
+
+/**
+ * exception if anything is wrong with the input parameters
+ */
+class ModelNotFound : public std::exception {
+ public:
+  ModelNotFound() = default;
+
+  explicit ModelNotFound(const std::string &_msg) {
+    m_msg += _msg;
+  }
+
+ private:
+  [[nodiscard]] const char *what() const noexcept override {
+    return m_msg.c_str();
+  }
+
+ private:
+  std::string m_msg{"*** model not found: "};
+};
+
 /**
  * contains information to define one local model fully:
  *  - the input parameter array
@@ -65,7 +88,11 @@ class ModelDatabase {
   }
 
   ModelDefinition get(ModelName name) {
-    return m_models.at(name);
+    try {
+      return m_models.at(name);
+    } catch (std::out_of_range &e) {
+      throw ModelNotFound();
+    }
   }
 
   std::unordered_map<ModelName, ModelDefinition> all() const {
@@ -73,12 +100,15 @@ class ModelDatabase {
   }
 
  private:
-  ModelDatabase() = default;  //hidden constructor and destructor
+  ModelDatabase() = default;  //hidden constructor and destructor to avoid initialization
   ~ModelDatabase() = default;
 
   const std::unordered_map<ModelName, ModelDefinition> m_models =
       {
-          {ModelName::relline,
+          //          {ModelName::relline,
+          //           ModelDefinition(xspec_model_parameters.at(ModelName::relline),ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw) )
+          //          },
+          {ModelName::rellinelp,
            ModelDefinition({
                                XPar::linee,
                                XPar::index1,
