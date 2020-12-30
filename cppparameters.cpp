@@ -136,7 +136,8 @@ xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, M
   param->gam = params[XPar::gamma];
   param->afe = params[XPar::afe];
   param->lxi = params[XPar::logxi];
-  param->ect = params[XPar::ecut];
+  param->ect = (model_info.primeSpec() == T_PrimSpec::Nthcomp) ? params[XPar::kte]
+                                                               : params[XPar::ecut];  // TODO: make kTe own parameter
   param->incl = params[XPar::incl];
   param->z = params[XPar::z];
   param->refl_frac = params[XPar::refl_frac];
