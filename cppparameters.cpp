@@ -23,7 +23,7 @@ extern "C" {
 }
 
 /**
- * function maps the new C++ model type definition to the C-integers
+ * maps the new C++ model type definition to the C-integers
  *  - TODO: use ModelName types throughout the code, then this function is obsolete
  * @param name
  * @return (int) MODEL_TYPE
@@ -51,7 +51,7 @@ int convertModelType(ModelName name) {
 }
 
 /**
- * function maps the new C++ irrad type definition to the C-integers
+ * maps the new C++ irrad type definition to the C-integers
  * @param name
  * @return (int) MODEL_TYPE
  */
@@ -68,7 +68,7 @@ int convertIrradType(T_Irrad name) {
 }
 
 /**
- * function maps the new C++ primary spectrum type definition to the C-integers
+ * maps the new C++ primary spectrum type definition to the C-integers
  * @param name
  * @return (int) MODEL_TYPE
  */
@@ -83,7 +83,9 @@ int convertPrimSpecType(T_PrimSpec name) {
   exit(EXIT_FAILURE);
 }
 
-/* get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES*/
+/**
+ * get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
+ */
 relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info) {
   auto *param = new relParam;
 
@@ -99,7 +101,7 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
   param->rout = params[XPar::rout];
   param->lineE = params[XPar::linee];
   param->z = params[XPar::z];
-  param->height = params[XPar::height];
+  param->height = params[XPar::h];
   param->gamma = params[XPar::gamma];
   param->beta = params[XPar::beta];
   param->htop = params[XPar::htop];
@@ -122,7 +124,9 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
   return param;
 }
 
-/* get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES */
+/**
+ * get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
+ */
 xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info) {
   auto *param = new xillParam;
 
@@ -136,12 +140,12 @@ xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, M
   param->incl = params[XPar::incl];
   param->z = params[XPar::z];
   param->refl_frac = params[XPar::refl_frac];
-  param->fixReflFrac = static_cast<int>(lround(params[XPar::fixReflFrac]));
-  param->dens = params[XPar::dens];
+  param->fixReflFrac = static_cast<int>(lround(params[XPar::switch_fixreflfrac]));
+  param->dens = params[XPar::logn];
   param->frac_pl_bb = params[XPar::frac_pl_bb];
-  param->kTbb = params[XPar::kTbb];
-  param->ion_grad_type = static_cast<int>(lround(params[XPar::ion_grad_type]));
-  param->ion_grad_index = params[XPar::ion_grad_index];
+  param->kTbb = params[XPar::ktbb];
+  param->ion_grad_type = static_cast<int>(lround(params[XPar::switch_ion_grad_type]));
+  param->ion_grad_index = params[XPar::xi_index];
 
   return param;
 }

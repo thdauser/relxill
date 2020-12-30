@@ -54,8 +54,7 @@ enum class XPar {
   ktbb,
   xi_index,
   switch_fixreflfrac,
-  switch_ion_grad_type,
-  switch_ion_grad_index
+  switch_ion_grad_type
 };
 
 typedef std::vector<XPar> ModelParamVector;
@@ -80,6 +79,10 @@ class ParamInputException : public std::exception {
   std::string m_msg{"*** input parameter error: "};
 };
 
+/**
+ * class storing the name and the parameter list
+ * - used by the python script from the lmodel.dat file to create the xspec_wrapper
+ */
 class XspecLmodelDatDefinition {
 
  public:
@@ -144,8 +147,7 @@ class ModelParams {
       {XPar::ktbb, -1.0},
       {XPar::xi_index, 0.0},
       {XPar::switch_fixreflfrac, -1},
-      {XPar::switch_ion_grad_type, ION_GRAD_TYPE_CONST},
-      {XPar::switch_ion_grad_index, 0.0}
+      {XPar::switch_ion_grad_type, ION_GRAD_TYPE_CONST}
   };
 
 };
