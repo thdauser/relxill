@@ -17,8 +17,9 @@ test-functionality:
 
 #### clean output data ### 
 clean-test-refdata:
-	rm -f refdata_*/*.pdf
-	rm -f refdata_*/*.par
+	rm -f refdata_*/*/*.pdf
+	rm -f refdata_*/*/*.par
+	rm -f refdata_*/*/*.tmp
 
 ####  Create the reference data #####
 refdata:

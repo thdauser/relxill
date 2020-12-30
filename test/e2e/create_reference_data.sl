@@ -138,24 +138,6 @@ define test_relxill(){ %{{{
 
 }
 %}}}
-define test_relxilllp(){ %{{{
-
-   __set_hard_limits("relxilllp","h",-100,1000);
-   fit_fun("relxilllp");
-
-   
-   set_par("*.refl_frac",1,0,-10,10);
-   fits_write_model_struct(get_refdata_filename(std_fname));
-   set_par("*.refl_frac",-1,0,-10,10);
-   fits_write_model_struct(get_refdata_filename(std_fname));
-   set_par("*.refl_frac",0);
-   fits_write_model_struct(get_refdata_filename(std_fname));   
-   set_par("*.fixReflFrac",2);
-   fits_write_model_struct(get_refdata_filename(std_fname));      
-   set_par("*.h",-1.1,0,-10,100);
-   fits_write_model_struct(get_refdata_filename(std_fname));
-}
-%}}}
 define test_parfiles(){ %{{{
    
    variable pars = glob(PAR_DIR+"*.par");
@@ -192,6 +174,24 @@ define create_random_refdata(ff, filename_refdata, num_random){ %{{{
    }
 }
 %}}}
+define create_refdata_relxilllp(filname_refdata){ %{{{
+
+   __set_hard_limits("relxilllp","h",-100,1000);
+   fit_fun("relxilllp");
+
+   
+   set_par("*.refl_frac",1,0,-10,10);
+   fits_write_model_struct(get_refdata_filename(filename_refdata));
+   set_par("*.refl_frac",-1,0,-10,10);
+   fits_write_model_struct(get_refdata_filename(filename_refdata));
+   set_par("*.refl_frac",0);
+   fits_write_model_struct(get_refdata_filename(filename_refdata));   
+   set_par("*.fixReflFrac",2);
+   fits_write_model_struct(get_refdata_filename(filename_refdata));      
+   set_par("*.h",-1.1,0,-10,100);
+   fits_write_model_struct(get_refdata_filename(filename_refdata));
+}
+%}}}
 
 %%% MAIN %%%
 
@@ -199,12 +199,14 @@ define create_random_refdata(ff, filename_refdata, num_random){ %{{{
 
 variable filename_default = "%s_defparam_refdat_%04i.fits";
 variable filename_random  = "%s_random_refdat_%04i.fits";
+variable filename_special  = "%s_special_refdat_%04i.fits";
 variable num_random_evaluations = 5;
 
 variable ff;
 foreach ff(get_implemented_fitfunctions()){
    create_default_refdata(ff, filename_default);
    create_random_refdata(ff, filename_random, num_random_evaluations);
+   create_refdata_relxilllp(filename_special);
 }
 
 %%%%%%%%%%
