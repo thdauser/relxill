@@ -171,7 +171,7 @@ class XspecModelDatabase{
     return model_definition.at(name).params();
   }
 
-  std::unordered_map<ModelName, XspecLmodelDatDefinition> all_models(ModelName name) const{
+  std::unordered_map<ModelName, XspecLmodelDatDefinition> all_models() const{
     return model_definition;
   }
 
