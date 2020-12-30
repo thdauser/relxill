@@ -30,6 +30,7 @@ class DefaultSpec {
     flux = new double[n_bins];
 
     set_log_grid(energy, n_energy, emin, emax);
+    set_input_flux();
   };
 
   DefaultSpec() : DefaultSpec(0.1, 1000.0, 3000) {
@@ -48,6 +49,11 @@ class DefaultSpec {
   double *energy{nullptr};
   double *flux{nullptr};
   const size_t num_flux_bins;
+
+ private:
+  void set_input_flux() const {
+    flux[num_flux_bins / 2] = 1.0;
+  }
 };
 
 
@@ -136,7 +142,9 @@ TEST_CASE(" default spectrum class", "[basic]") {
  */
 TEST_CASE(" testing if local model is implemented", "[basic]") {
 
-  for (const auto &elem: xspec_lmodel_dat) {
+  XspecModelDatabase database{};
+
+  for (const auto &elem: database.all_models()) {
     DYNAMIC_SECTION("  - model: " << elem.second.name()) {
       REQUIRE_NOTHROW(get_xspec_default_parameter_array(elem.first));
     }
@@ -151,11 +159,12 @@ TEST_CASE(" testing if local model is implemented", "[basic]") {
 TEST_CASE(" Execute local models", "[model]") {
 
   DefaultSpec default_spec{};
+  XspecModelDatabase database{};
 
-  for (const auto &elem: xspec_lmodels.names) {
+  for (const auto &elem: database.all_models()) {
 
     auto model_name_type = elem.first;
-    auto model_name_string = elem.second;
+    auto model_name_string = elem.second.name();
 
     DYNAMIC_SECTION(" - model: " << model_name_string) {
       test_xspec_lmod_call(model_name_type, default_spec);
@@ -165,4 +174,9 @@ TEST_CASE(" Execute local models", "[model]") {
 
   free_cache(); // TODO: find a better place to free the cache
 
+}
+
+TEST_CASE(" Execute single model", "[single]") {
+  DefaultSpec default_spec{};
+  test_xspec_lmod_call(ModelName::relconvlp, default_spec);
 }
