@@ -190,7 +190,7 @@ define create_refdata_relxilllp(filename_refdata){ %{{{
    fits_write_model_struct(get_refdata_filename(filename_refdata));      
    set_par("*.h",-1.1,0,-10,100);
    fits_write_model_struct(get_refdata_filename(filename_refdata));
-   set_par("*.fixReflFrac",1);
+   set_par("*.fixReflFrac",0);
    fits_write_model_struct(get_refdata_filename(filename_refdata));
 }
 %}}}

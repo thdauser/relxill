@@ -1,2 +1,3 @@
-refdata*/*.par
-refdata*/*.pdf
+refdata*/*/*.par
+refdata*/*/*.pdf
+refdata*/*/*.tmp
