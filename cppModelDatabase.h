@@ -28,6 +28,7 @@
 
 
 /**
+ * @class ModelNotFound:
  * exception if anything is wrong with the input parameters
  */
 class ModelNotFound : public std::exception {
@@ -105,6 +106,7 @@ class ModelDatabase {
   XspecModelDatabase lmodel_database{}; // automatically created Class
 
   // TODO: make this an own class?
+  // TODO: how to treat the high density table stuff
   const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
       {ModelName::relline, ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw)},
       {ModelName::rellinelp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
