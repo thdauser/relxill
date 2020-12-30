@@ -24,7 +24,7 @@
 #include "cppparameters.h"
 #include "cppTypes.h"
 
-// #include "xspec_wrapper_lmodels.h"
+#include "xspec_wrapper_lmodels.h"
 
 
 /**
@@ -103,11 +103,14 @@ class ModelDatabase {
   ModelDatabase() = default;  //hidden constructor and destructor to avoid initialization
   ~ModelDatabase() = default;
 
+  XspecModelDatabase lmodel_database{}; // automatically created Class
+
   const std::unordered_map<ModelName, ModelDefinition> m_models =
       {
-          //          {ModelName::relline,
-          //           ModelDefinition(xspec_model_parameters.at(ModelName::relline),ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw) )
-          //          },
+          {ModelName::relline,
+           ModelDefinition(lmodel_database.params(ModelName::relline),
+                           ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw))
+          },
           {ModelName::rellinelp,
            ModelDefinition({
                                XPar::linee,
