@@ -7,7 +7,7 @@
 % Usage: %  ./test_refdata_relxill.sl  [<model_name> [defparam|random] ]
 % 
 % Note, that <model_name> can be a regular expression. For example, to
-% the defparm test for only relline it would be:
+% the defparm test for all models, it would be:
 % 
 %  ./test_refdata_relxill.sl '*' defparam
 %  
@@ -99,6 +99,15 @@ define plot_model_comparison(fn,dat,goodness){ %{{{
    xfig_multiplot(pl,plr).render(fn+".pdf");
 }
 %}}}
+private define fits_write_model_data(fn, dat){ %{{{
+   variable fname_post = "_comparison.tmp";
+   variable filename = fn+fname_post;
+   fits_write_binary_table(filename, "MODEL", dat);
+   vmessage(" evaluted model stored at %s ", filename);
+}
+%}}}
+
+
 
 define check_single_model(fn){ %{{{
 
@@ -128,6 +137,7 @@ define check_single_model(fn){ %{{{
       save_par(fn+".par");
       
       plot_model_comparison(fn,dat,goodness);
+      fits_write_model_data(fn, dat);
    }
       
    return status;
