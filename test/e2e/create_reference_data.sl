@@ -174,7 +174,7 @@ define create_random_refdata(ff, filename_refdata, num_random){ %{{{
    }
 }
 %}}}
-define create_refdata_relxilllp(filname_refdata){ %{{{
+define create_refdata_relxilllp(filename_refdata){ %{{{
 
    __set_hard_limits("relxilllp","h",-100,1000);
    fit_fun("relxilllp");
@@ -189,6 +189,8 @@ define create_refdata_relxilllp(filname_refdata){ %{{{
    set_par("*.fixReflFrac",2);
    fits_write_model_struct(get_refdata_filename(filename_refdata));      
    set_par("*.h",-1.1,0,-10,100);
+   fits_write_model_struct(get_refdata_filename(filename_refdata));
+   set_par("*.fixReflFrac",1);
    fits_write_model_struct(get_refdata_filename(filename_refdata));
 }
 %}}}
@@ -206,7 +208,7 @@ variable ff;
 foreach ff(get_implemented_fitfunctions()){
    create_default_refdata(ff, filename_default);
    create_random_refdata(ff, filename_random, num_random_evaluations);
-   create_refdata_relxilllp(filename_special);
 }
+create_refdata_relxilllp(filename_special);
 
 %%%%%%%%%%
