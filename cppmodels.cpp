@@ -69,16 +69,20 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
  */
 void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 
+  if (calcSum(spectrum.flux(), spectrum.num_flux_bins()) <= 0.0) {
+    throw ModelEvalFailed("input flux for convolution model needs to be >0");
+  }
+
   relParam *rel_param = getRelParamStruct(m_param, m_name, m_info);
 
   // requirement of the relconv_kernel: shift the spectrum such that we can calculate for 1 keV
-  spectrum.shift_energy_grid_1keV(rel_param->lineE, rel_param->z);
+  spectrum.shift_energy_grid_redshift(rel_param->z);
 
   int status = EXIT_SUCCESS;
   relconv_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), rel_param, &status);
 
   if (status != EXIT_SUCCESS) {
-    throw std::exception();
+    throw ModelEvalFailed("executing convolution failed");
   }
 
 }
@@ -126,9 +130,9 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
     model.eval_model(spectrum);
 
   } catch (ModelNotFound &e) {
-    puts(" model not implemented ");
-  } catch (std::exception &e) {
-    puts(" an error occurred ");
+    std::cout << e.what();
+  } catch (ModelEvalFailed &e) {
+    std::cout << e.what();
     // TODO: what should we do if the evaluation fails? return zeros?
   }
 

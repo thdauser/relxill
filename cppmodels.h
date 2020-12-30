@@ -33,9 +33,27 @@ extern "C" {
 #include "cppModelDatabase.h"
 #include "cppparameters.h"
 
+/**
+ * exception if the model evaluation failed
+ */
+class ModelEvalFailed : public std::exception {
+ public:
+  ModelEvalFailed() = default;
+
+  explicit ModelEvalFailed(const std::string &_msg) {
+    m_msg += _msg;
+  }
+
+  [[nodiscard]] const char *what() const noexcept override {
+    return m_msg.c_str();
+  }
+
+ private:
+  std::string m_msg{"*** relxill-error: "};
+};
+
+
 // namespace relxill {
-
-
 
 void line_model(ModelParams param, XspecSpectrum spectrum);
 void relxill_model(const XspecSpectrum &spectrum);
@@ -65,24 +83,18 @@ class LocalModel {
    */
   void eval_model(XspecSpectrum &spectrum) {
 
-    try {
-      switch (m_info.type()) {
-        case T_Model::Line:line_model(spectrum);
-          break;
+    switch (m_info.type()) {
+      case T_Model::Line:line_model(spectrum);
+        break;
 
-        case T_Model::Relxill:relxill_model(spectrum);
-          break;
+      case T_Model::Relxill:relxill_model(spectrum);
+        break;
 
-        case T_Model::Conv:conv_model(spectrum);
-          break;
+      case T_Model::Conv:conv_model(spectrum);
+        break;
 
-        case T_Model::Xill:xillver_model(spectrum);
-          break;
-      }
-
-    } catch (std::exception &e) {
-      puts(" *** relxill-error : evaluating model failed ");
-      throw e;
+      case T_Model::Xill:xillver_model(spectrum);
+        break;
     }
 
   }

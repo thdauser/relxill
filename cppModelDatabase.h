@@ -38,7 +38,6 @@ class ModelNotFound : public std::exception {
     m_msg += _msg;
   }
 
- private:
   [[nodiscard]] const char *what() const noexcept override {
     return m_msg.c_str();
   }
@@ -89,14 +88,14 @@ class ModelDatabase {
 
   ModelDefinition get(ModelName name) {
     try {
-      return m_models.at(name);
+      return ModelDefinition(lmodel_database.params(name), lmodel_info.at(name));
     } catch (std::out_of_range &e) {
-      throw ModelNotFound();
+      throw ModelNotFound(lmodel_database.name_string(name));
     }
   }
 
-  std::unordered_map<ModelName, ModelDefinition> all() const {
-    return m_models;
+  const XspecModelDatabase &database() const {
+    return lmodel_database;
   }
 
  private:
@@ -105,76 +104,20 @@ class ModelDatabase {
 
   XspecModelDatabase lmodel_database{}; // automatically created Class
 
-  const std::unordered_map<ModelName, ModelDefinition> m_models =
-      {
-          {ModelName::relline,
-           ModelDefinition(lmodel_database.params(ModelName::relline),
-                           ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw))
-          },
-          {ModelName::rellinelp,
-           ModelDefinition({
-                               XPar::linee,
-                               XPar::index1,
-                               XPar::index2,
-                               XPar::rbr,
-                               XPar::a,
-                               XPar::incl,
-                               XPar::rin,
-                               XPar::rout,
-                               XPar::z,
-                               XPar::limb
-                           },
-                           ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw))
-          },
+  // TODO: make this an own class?
+  const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
+      {ModelName::relline, ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw)},
+      {ModelName::rellinelp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
 
-          {ModelName::relxill,
-           ModelDefinition({
-                               XPar::index1,
-                               XPar::index2,
-                               XPar::rbr,
-                               XPar::a,
-                               XPar::incl,
-                               XPar::rin,
-                               XPar::rout,
-                               XPar::z,
-                               XPar::gamma,
-                               XPar::logxi,
-                               XPar::afe,
-                               XPar::ecut,
-                               XPar::refl_frac
-                           },
-                           ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)
-           )},
+      {ModelName::relconvlp, ModelInfo(T_Model::Conv, T_Irrad::LampPost)},
+      {ModelName::relconv, ModelInfo(T_Model::Conv, T_Irrad::BknPowerlaw)},
 
-          {ModelName::relconv,
-           ModelDefinition({
-                               XPar::index1,
-                               XPar::index2,
-                               XPar::rbr,
-                               XPar::a,
-                               XPar::incl,
-                               XPar::rin,
-                               XPar::rout,
-                               XPar::z,
-                               XPar::gamma
-                           },
-                           ModelInfo(T_Model::Conv, T_Irrad::BknPowerlaw))
-          },
+      {ModelName::relxill, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
+      {ModelName::relxilllp, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
 
-          {ModelName::xillver,
-           ModelDefinition({
-                               XPar::gamma,
-                               XPar::afe,
-                               XPar::ecut,
-                               XPar::logxi,
-                               XPar::z,
-                               XPar::incl,
-                               XPar::refl_frac
-                           },
-                           ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl))
-          },
-      };
+      {ModelName::xillver, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
 
+  };
 };
 
 #endif //RELXILL__CPPMODELDATABASE_H_
