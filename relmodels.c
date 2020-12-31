@@ -1079,15 +1079,8 @@ void tdrelxilllp(const double *ener0,
   init_par_relxilllp(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  init_flux_array(n_ener0, flux);
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1110,13 +1103,8 @@ void tdrelxilllp_nthcomp(const double *ener0,
 
   init_par_relxilllp_nthcomp(&rel_param, &xill_param, parameter, n_parameter, status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1138,14 +1126,10 @@ void tdrelxilllpdens(const double *ener0,
   init_par_relxilllp_dens(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
+  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1192,14 +1176,11 @@ void tdrelxilllpdens_nthcomp(const double *ener0,
   init_par_relxilllp_dens_nthcomp(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-  CHECK_STATUS_VOID(*status);
 
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
+  CHECK_STATUS_VOID(*status);
+
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1439,14 +1420,11 @@ void tdrelxilllpion(const double *ener0,
   init_par_relxilllpion(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-  CHECK_STATUS_VOID(*status);
 
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
+  CHECK_STATUS_VOID(*status);
+
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1468,14 +1446,10 @@ void tdrelxilllpion_nthcomp(const double *ener0,
   init_par_relxilllpion_nthcomp(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
+  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
