@@ -178,5 +178,39 @@ TEST_CASE(" Execute local models", "[model]") {
 
 TEST_CASE(" Execute single model", "[single]") {
   DefaultSpec default_spec{};
-  test_xspec_lmod_call(ModelName::relconvlp, default_spec);
+  test_xspec_lmod_call(ModelName::relxilllp, default_spec);
+}
+
+TEST_CASE(" Execute Old relxilllp Model", "[old]") {
+
+  const double *xspec_parameters = get_xspec_default_parameter_array(ModelName::relxilllp);
+
+  const int n_parameter = 12;
+  int status = EXIT_SUCCESS;
+  DefaultSpec default_spec_old{};
+  tdrelxilllp(default_spec_old.flux,
+              default_spec_old.num_flux_bins,
+              default_spec_old.flux,
+              xspec_parameters,
+              n_parameter,
+              &status);
+
+  DefaultSpec default_spec_new{};
+  xspec_C_wrapper_eval_model(ModelName::relxilllp,
+                             xspec_parameters,
+                             default_spec_new.flux,
+                             default_spec_new.num_flux_bins,
+                             default_spec_new.energy);
+
+  double old_flux = sum_flux(default_spec_old.flux, default_spec_old.num_flux_bins);
+  double new_flux = sum_flux(default_spec_new.flux, default_spec_new.num_flux_bins);
+
+  std::cout << "old flux" << old_flux
+            << "  --- new flux "
+            << new_flux << std::endl;
+
+  REQUIRE(fabs(old_flux - new_flux) < 1e-8);
+
+  delete (xspec_parameters);
+
 }
