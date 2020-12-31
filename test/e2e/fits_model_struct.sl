@@ -1,14 +1,20 @@
-
-
 require("isisscripts");
-define fits_write_model_struct(fname){
-   
+
+define std_eval_model(){
    variable std_elo, std_ehi;
    (std_elo, std_ehi) = log_grid(0.1,1000,2000);
    variable elo = qualifier("elo",std_elo);
    variable ehi = qualifier("ehi",std_ehi);
    
    variable value = eval_fun_keV(elo,ehi);
+   return std_elo, std_ehi, value;
+}
+
+define fits_write_model_struct(fname){
+   
+   variable elo, ehi, value;
+   (elo, ehi, value) = std_eval_model(;;__qualifiers() );
+   
    variable ff = get_fit_fun();
    variable params = reduce_struct(merge_struct_arrays(get_params()),["name","value","freeze","min","max"];extract);
    variable dat = struct{bin_lo=elo,bin_hi=ehi,value=value};
