@@ -7,8 +7,24 @@ define std_eval_model(){
    variable ehi = qualifier("ehi",std_ehi);
    
    variable value = eval_fun_keV(elo,ehi);
+   
+   if (qualifier_exists("nuFnu")){
+      value *= (0.5*(elo+ehi))^2 / (ehi - elo );
+   }
+   
    return std_elo, std_ehi, value;
 }
+
+define std_eval_model(){
+   variable std_elo, std_ehi;
+   (std_elo, std_ehi) = log_grid(0.1,1000,2000);
+   variable elo = qualifier("elo",std_elo);
+   variable ehi = qualifier("ehi",std_ehi);
+   
+   variable value = eval_fun_keV(elo,ehi);
+   return std_elo, std_ehi, value;
+}
+
 
 define fits_write_model_struct(fname){
    
