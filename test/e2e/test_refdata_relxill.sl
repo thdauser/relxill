@@ -4,12 +4,15 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Test the current model in build/ against the reference data %%%
 %
-% Usage: %  ./test_refdata_relxill.sl  [<model_name> [defparam|random] ]
+% Usage: %  ./test_refdata_relxill.sl  [<model_name> [defparam|random] [update] ]
 % 
 % Note, that <model_name> can be a regular expression. For example, to
 % the defparm test for all models, it would be:
-% 
+%
 %  ./test_refdata_relxill.sl '*' defparam
+% 
+% If 'update' is given as a last argument, the refdata will get updated 
+% after the test. 
 %  
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
@@ -36,6 +39,15 @@ define get_refdata_files(){ %{{{
    variable fnames = glob(LMOD_REFDATA_DIR+sprintf(glob_str));
    
    return fnames[array_sort(fnames)];   
+}
+%}}}
+
+define should_refdata_get_updated(){ %{{{
+   if (__argv[-1] == "update"){
+      return 1;
+   } else {
+      return 0;
+   }
 }
 %}}}
 
@@ -139,6 +151,12 @@ define check_single_model(fn){ %{{{
       plot_model_comparison(fn,dat,goodness);
       fits_write_model_data(fn, dat);
    }
+   
+   if ( qualifier("update") == 1 ){
+      vmessage(" *** UPDATING refdata: %s", fn);
+      fits_write_model_struct(fn);
+   }
+
       
    return status;
 }
@@ -166,12 +184,13 @@ define print_summary(status){ %{{{
 %%%% MAIN %%%% 
 
 variable fnames = get_refdata_files();
+variable update_refdata = should_refdata_get_updated();
 
 variable ii, n = length(fnames);
 variable status = Int_Type[n];
 
 _for ii(0,n-1,1){
-   status[ii] = check_single_model(fnames[ii]);   
+   status[ii] = check_single_model(fnames[ii]; update=update_refdata );   
 }
 
 print_summary(status);
