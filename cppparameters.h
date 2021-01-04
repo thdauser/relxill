@@ -140,7 +140,7 @@ class ModelParams {
       {XPar::ecut, 300},
       {XPar::kte, 100},
       {XPar::h, 3.0},
-      {XPar::htop, 3.0},
+      {XPar::htop, 0.0},
       {XPar::beta, 0.0},
       {XPar::return_rad, 0.0},
       {XPar::frac_pl_bb, -1.0},
