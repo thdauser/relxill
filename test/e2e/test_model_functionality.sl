@@ -19,31 +19,18 @@ if (length(__argv)>1){
    ff = __argv[1];
 }
 
-variable modlib = "build/librelxill.so";
 
-if (stat_file(modlib) == NULL){
-   message("\n **** error : local relxill model not found ; exiting ... **** \n ");
-   exit;
-}
-
-require("xspec");
-load_xspec_local_models(modlib);
+%% assumes the model is set up at 
 require("isisscripts");
-
-__set_hard_limits("relxilllp","h",-100,1000);
-
-_traceback=1;
+require("test_setup.sl");
+require("subs_fitfunctions.sl");
 
 
-variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
-		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
-variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO","relxillDCp","relxilllpDCp","xillverDCp"];
-if (TEST_DEVEL==1){
-   ALL_FF= [ALL_FF,additional_FF];
-}
+load_relxill_model_devel(modlib);
+variable ALL_FF = get_implemented_fitfunctions(;dev=TEST_DEVEL);
 
-variable DATA_DIR = "refdata/";
-variable goodness_lim = 1e-4;
+
+ 
 variable sum_name = "plot_check_model_functions_sum.pdf";
 variable counter = 0;
 
@@ -75,23 +62,6 @@ define simple_plot(lo,hi,val0,val1){ %{{{
    variable ind = where(val1!=0);
    ylin;
    hplot(lo[ind],hi[ind],val0[ind]/val1[ind]);
-}
-%}}}
-define fit_fun_default(ff){ %{{{
-   %% only works for single model components %%
-   
-   fit_fun(ff);
-   
-   variable p,pa = get_params();   
-   variable df;
-   foreach p(pa){
-      df = eval(sprintf("%s_default(%i)",qualifier("ff0",ff),p.index-1));
-      p.value=df.value;
-      p.min=df.min;
-      p.max=df.max;
-      p.freeze=df.freeze;
-   }
-   set_params(pa);
 }
 %}}}
 define grav_redshift_prim(a,h){ %{{{
@@ -139,30 +109,7 @@ define isLpModel(ff){ %{{{
    }
 }
 %}}}
-define selectModelByType(ff, strType){ %{{{
-   variable ii, n = length(ff);
-   variable selectedFf = String_Type[0];
-   _for ii(0, n-1){
-      if (string_match(ff[ii], strType) != 0){
-	 selectedFf = [selectedFf, ff[ii]];
-      }
-   }
-   return selectedFf;
-}
-%}}}
-define getAllRelxillTypeModels(){ %{{{
-   return selectModelByType(ALL_FF, "relxill");
-}
-%}}}
-define getAllXillverTypeModels(){ %{{{
-   return selectModelByType(ALL_FF, "xillver");   
-}
-%}}}
 
-
-   
-variable EXIT_SUCCESS = 0;
-variable EXIT_FAILURE = -1;
 
 variable counter = 0;
 
@@ -1039,15 +986,6 @@ define check_caching(){ %{{{
 }
 %}}}
 
-define isFitfunDevModel(ff){ %{{{
-   if (length(where(ff==additional_FF))>0){
-      return 1;
-   } else {
-      return 0;
-   }
-}
-%}}}
-
 define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
 
    %% skip test if we do not have the DEV model installed
@@ -1116,7 +1054,7 @@ define check_xilltab_implementation_single(ff,tabname){ %{{{
    %% valr *=  sum(val1) / sum(valr);
 
    %% doing this instead 
-   variable refdat = fits_read_table(sprintf("refdat/refdat_%s.fits",ff));
+   variable refdat = fits_read_table(sprintf("%s/refdat_%s.fits",XILLVER_REFDATA_DIR,ff));
    variable lo0 = refdat.lo;
    variable hi0 = refdat.hi;
    variable valr = refdat.val;

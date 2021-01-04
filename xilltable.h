@@ -65,10 +65,10 @@ void free_xillTable(xillTable *tab);
 
 /** the main routine for the xillver table: returns a spectrum for the given parameters
  *  (decides if the table needs to be initialized and/or more data loaded          */
-xill_spec *get_xillver_spectra(xillParam *param, int *status);
+xillSpec *get_xillver_spectra(xillParam *param, int *status);
 
-xill_spec *new_xill_spec(int n_incl, int n_ener, int *status);
-void free_xill_spec(xill_spec *spec);
+xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
+void free_xill_spec(xillSpec *spec);
 
 void free_cached_xillTable(void);
 
@@ -78,7 +78,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status);
 
 void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname);
 
-void norm_xillver_spec(xill_spec *spec, double incl);
+void norm_xillver_spec(xillSpec *spec, double incl);
 
 fitsfile *open_fits_table_stdpath(char *filename, int *status);
 

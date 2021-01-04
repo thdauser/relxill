@@ -94,7 +94,7 @@ static void test_calcEmisProfileLp(int *status) {
 
   rel_param->height = 3.0;
   rel_param->htop = 3.0;
-  relSysPar *sysPar = get_system_parameters(rel_param, status);
+  RelSysPar *sysPar = get_system_parameters(rel_param, status);
   assert(sysPar->emis->normFactorPrimSpec > 0);
 
   double sumEmisPoint = sumArray(sysPar->emis->emis, sysPar->emis->nr);
@@ -103,7 +103,7 @@ static void test_calcEmisProfileLp(int *status) {
   rel_param->height = 3.0;
   rel_param->htop = 10.0;
   assert(modelLampPostPointsource(rel_param) == 0);
-  relSysPar *sysPar2 = get_system_parameters(rel_param, status);
+  RelSysPar *sysPar2 = get_system_parameters(rel_param, status);
 
   assert(sysPar2->emis->normFactorPrimSpec > 0);
   double sumEmisExt = sumArray(sysPar2->emis->emis, sysPar->emis->nr);

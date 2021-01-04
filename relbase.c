@@ -23,7 +23,7 @@ cnode *cache_syspar = NULL;
 
 /** global parameters, which can be used for several calls of the model */
 relTable *ptr_rellineTable = NULL;
-relSysPar *cached_tab_sysPar = NULL;
+RelSysPar *cached_tab_sysPar = NULL;
 
 /** caching parameters **/
 relParam *cached_rel_param = NULL;
@@ -49,7 +49,7 @@ const double GFAC_H = 5e-3;
 
 // interpolate the table in the A-MU0 plane (for one value of radius)
 static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
-                           int ind_mu0, relSysPar *sysPar, relTable *reltab) {
+                           int ind_mu0, RelSysPar *sysPar, relTable *reltab) {
   sysPar->gmin[ii] = interp_lin_2d_float(ifac_a, ifac_mu0,
                                          reltab->arr[ind_a][ind_mu0]->gmin[ii],
                                          reltab->arr[ind_a + 1][ind_mu0]->gmin[ii],
@@ -92,7 +92,7 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
 }
 
 /*  get the fine radial grid */
-static void get_fine_radial_grid(double rin, double rout, relSysPar *sysPar) {
+static void get_fine_radial_grid(double rin, double rout, RelSysPar *sysPar) {
 
   double r1 = 1.0 / sqrt(rout);
   double r2 = 1.0 / sqrt(rin);
@@ -106,7 +106,7 @@ static void get_fine_radial_grid(double rin, double rout, relSysPar *sysPar) {
 }
 
 /* function interpolating the rel table values for rin,rout,mu0,incl   */
-static relSysPar *interpol_relTable(double a, double mu0, double rin, double rout,
+static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rout,
                                     int *status) {
 
   // load tables
@@ -195,7 +195,7 @@ static relSysPar *interpol_relTable(double a, double mu0, double rin, double rou
   /****************************/
 
   //  need to initialize and allocate memory
-  relSysPar *sysPar = new_relSysPar(N_FRAD, tab->n_g, status);
+  RelSysPar *sysPar = new_relSysPar(N_FRAD, tab->n_g, status);
   CHECK_STATUS_RET(*status, NULL);
   get_fine_radial_grid(rin, rout, sysPar);
 
@@ -277,7 +277,7 @@ static relSysPar *interpol_relTable(double a, double mu0, double rin, double rou
  */
 
 /* function to get the system parameters */
-static relSysPar *calculate_system_parameters(relParam *param, int *status) {
+static RelSysPar *calculate_system_parameters(relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -285,7 +285,7 @@ static relSysPar *calculate_system_parameters(relParam *param, int *status) {
   // or if the cached parameters are NULL
 
   double mu0 = cos(param->incl);
-  relSysPar *sysPar = interpol_relTable(param->a, mu0, param->rin, param->rout, status);
+  RelSysPar *sysPar = interpol_relTable(param->a, mu0, param->rin, param->rout, status);
   CHECK_STATUS_RET(*status, NULL);
 
   if (param->limb != 0) {
@@ -312,7 +312,7 @@ static relSysPar *calculate_system_parameters(relParam *param, int *status) {
   return sysPar;
 }
 
-relSysPar *get_system_parameters(relParam *param, int *status) {
+RelSysPar *get_system_parameters(relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -322,7 +322,7 @@ relSysPar *get_system_parameters(relParam *param, int *status) {
   cache_info *ca_info = cli_check_cache(cache_syspar, sysinp, check_cache_syspar, status);
   CHECK_STATUS_RET(*status, NULL);
 
-  relSysPar *sysPar = NULL;
+  RelSysPar *sysPar = NULL;
   if (ca_info->syscache == 1) {
     // system parameter values are cached, so we can take it from there
     sysPar = ca_info->store->data->relSysPar;
@@ -376,21 +376,19 @@ rel_spec *new_rel_spec(int nzones, const int n_ener, int *status) {
     CHECK_MALLOC_RET_STATUS(spec->flux[ii], status, spec)
   }
 
-  spec->rgrid = (double *) malloc((spec->n_zones + 1) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(spec->rgrid, status, spec)
-
   spec->ener = (double *) malloc((spec->n_ener + 1) * sizeof(double));
   CHECK_MALLOC_RET_STATUS(spec->ener, status, spec)
 
-  spec->rel_cosne = NULL;
+  spec->rgrid = NULL; // will be allocated later
+  spec->rel_cosne = NULL; // will be allocated later (only if need)
 
   return spec;
 }
 
 /** get new structure to store the cosne distribution spectrum (possibly for several zones) **/
-rel_cosne *new_rel_cosne(int nzones, int n_incl, int *status) {
+RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 
-  rel_cosne *spec = (rel_cosne *) malloc(sizeof(rel_cosne));
+  RelCosne *spec = (RelCosne *) malloc(sizeof(RelCosne));
   CHECK_MALLOC_RET_STATUS(spec, status, NULL)
 
   spec->n_zones = nzones;
@@ -468,7 +466,7 @@ static void zero_rel_spec_flux(rel_spec *spec) {
 }
 
 /** relat. transfer function, which we will need to integrate over the energy bin then **/
-static str_relb_func *new_str_relb_func(relSysPar *sysPar, int *status) {
+static str_relb_func *new_str_relb_func(RelSysPar *sysPar, int *status) {
   str_relb_func *str = (str_relb_func *) malloc(sizeof(str_relb_func));
   CHECK_MALLOC_RET_STATUS(str, status, NULL)
 
@@ -790,7 +788,7 @@ static void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const in
 }
 
 /** get the bin for a certain emission angle (between [0,n_incl-1] **/
-int static get_cosne_bin(double mu, rel_cosne *dat) {
+int static get_cosne_bin(double mu, RelCosne *dat) {
   return ((int) (dat->n_cosne * (1 - mu) + 1)) - 1;
 }
 
@@ -816,8 +814,7 @@ static void write_radiallyResolvedFluxObs(double* rad, double* intens, int n_rad
   save_radial_profile(fname, rad, intens, n_rad);
 }
 
-
-void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status) {
+void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -916,7 +913,7 @@ void relline_profile(rel_spec *spec, relSysPar *sysPar, int *status) {
        which is freed if the cache is full and therefore causes "invalid reads" **/
   free_str_relb_func(&cached_str_relb_func);
 
-  if (shouldOutfilesBeWritten()){
+  if (shouldOutfilesBeWritten() && spec->n_zones == 1) {
     write_radiallyResolvedFluxObs(sysPar->re, radialFlux, sysPar->nr);
   }
 
@@ -939,7 +936,7 @@ static specCache *new_specCache(int n_cache, int n_ener, int *status) {
   spec->fft_rel = (double ***) malloc(sizeof(double **) * n_cache);
   CHECK_MALLOC_RET_STATUS(spec->fft_rel, status, NULL)
 
-  spec->xill_spec = (xill_spec **) malloc(sizeof(xill_spec *) * n_cache);
+  spec->xill_spec = (xillSpec **) malloc(sizeof(xillSpec *) * n_cache);
   CHECK_MALLOC_RET_STATUS(spec->xill_spec, status, NULL)
 
   int ii;
@@ -1067,7 +1064,7 @@ static void fft_conv_spectrum(double *ener, const double *fxill, const double *f
 
 }
 
-static void print_angle_dist(rel_cosne *spec, int izone) {
+static void print_angle_dist(RelCosne *spec, int izone) {
 
   FILE *fp = fopen("test_angle_dist.dat", "w+");
   int ii;
@@ -1075,7 +1072,9 @@ static void print_angle_dist(rel_cosne *spec, int izone) {
     fprintf(fp, " %e %e \n", spec->cosne[ii],
             spec->dist[izone][ii]);
   }
-  if (fclose(fp)) exit(1);
+  if (fclose(fp)) {
+    exit(1);
+  }
 
 }
 
@@ -1118,7 +1117,7 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
 
 }
 
-static void calc_xillver_angdep(double *xill_flux, xill_spec *xill_spec, const double *dist, const int *status) {
+static void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -1260,7 +1259,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   rebin_spectrum(ener, rebin_flux, n_ener,
                  ener_inp, spec_inp, n_ener_inp);
 
-  specCache* spec_cache = init_globalSpecCache(status);
+  spec_cache = init_globalSpecCache(status);
   CHECK_STATUS_VOID(*status);
   fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
                     1, 1, 0, spec_cache, status);
@@ -1290,7 +1289,7 @@ void get_xillver_angdep_spec(double *o_xill_flux,
                              int n_ener,
                              double *ener,
                              double *rel_dist,
-                             xill_spec *xill_spec,
+                             xillSpec *xill_spec,
                              int *status) {
 
   double xill_angdist_inp[xill_spec->n_ener];
@@ -1381,7 +1380,7 @@ void relxill_kernel(double *ener_inp,
     CHECK_STATUS_VOID(*status);
 
     /* init the xillver spectrum structure **/
-    xill_spec *xill_spec_table = NULL;
+    xillSpec *xill_spec_table = NULL;
     double xill_flux[n_ener];
 
 
@@ -1578,14 +1577,14 @@ static void printReflectionStrengthInfo(double *ener,
     sum += flu[ii];
   }
 
-  printf("For a = %.3f and h = %.2f rg", rel_param->a, rel_param->height);
+  printf("For a = %.3f, Rin = %.3f, and h = %.2f rg", rel_param->a, rel_param->rin, rel_param->height);
   if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) || rel_param->beta > 1e-6) {
     printf(" and beta=%.3f v/c", rel_param->beta);
   }
   printf(": \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
          struct_refl_frac->refl_frac,
          sum / sum_pl);
-  printf(" - %.2f%% of the photons are falling into the black hole\n", struct_refl_frac->f_bh * 100);
+  printf(" - photons falling into the black hole or plunging region: %.2f%%\n", struct_refl_frac->f_bh * 100);
   printf(" - gravitational redshift from the observer to the primary source is %.3f\n", grav_redshift(rel_param));
 }
 
@@ -1667,7 +1666,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     assert(rel_param != NULL);
 
     // should be cached, as it has been calculated before
-    relSysPar *sysPar = get_system_parameters(rel_param, status);
+    RelSysPar *sysPar = get_system_parameters(rel_param, status);
 
     lpReflFrac *struct_refl_frac = sysPar->emis->returnFracs;
 
@@ -1828,7 +1827,7 @@ rel_spec *relbase_multizone(double *ener,
 
 
     // initialize parameter values
-    relSysPar *sysPar = get_system_parameters(param, status);
+    RelSysPar *sysPar = get_system_parameters(param, status);
 
     if (shouldOutfilesBeWritten() && sysPar != NULL) {
       save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
@@ -1880,7 +1879,7 @@ rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xi
   return relbase_multizone(ener, n_ener, param, xill_tab, rgrid, param->num_zones, status);
 }
 
-void free_rel_cosne(rel_cosne *spec) {
+void free_rel_cosne(RelCosne *spec) {
   if (spec != NULL) {
     //	free(spec->ener);  we do not need this, as only a pointer for ener is assigned
     free(spec->cosne);
@@ -1897,6 +1896,7 @@ void free_rel_cosne(rel_cosne *spec) {
 
 void free_rel_spec(rel_spec *spec) {
   if (spec != NULL) {
+    free(spec->ener);
     free(spec->rgrid);
     if (spec->flux != NULL) {
       int ii;
@@ -1933,8 +1933,8 @@ void free_cached_tables(void) {
 
 }
 
-relSysPar *new_relSysPar(int nr, int ng, int *status) {
-  relSysPar *sysPar = (relSysPar *) malloc(sizeof(relSysPar));
+RelSysPar *new_relSysPar(int nr, int ng, int *status) {
+  RelSysPar *sysPar = (RelSysPar *) malloc(sizeof(RelSysPar));
   CHECK_MALLOC_RET_STATUS(sysPar, status, NULL)
 
   sysPar->ng = ng;
@@ -1992,7 +1992,7 @@ relSysPar *new_relSysPar(int nr, int ng, int *status) {
   return sysPar;
 }
 
-void free_relSysPar(relSysPar *sysPar) {
+void free_relSysPar(RelSysPar *sysPar) {
   if (sysPar != NULL) {
     free(sysPar->re);
     free(sysPar->gmin);
@@ -2051,9 +2051,9 @@ void free_fft_cache(double ***sp, int n1, int n2) {
 
 }
 
-out_spec *init_out_spec(int n_ener, const double *ener, int *status) {
+OutSpec *init_out_spec(int n_ener, const double *ener, int *status) {
 
-  out_spec *spec = (out_spec *) malloc(sizeof(out_spec));
+  OutSpec *spec = (OutSpec *) malloc(sizeof(OutSpec));
   CHECK_MALLOC_RET_STATUS(spec, status, NULL)
 
   spec->n_ener = n_ener;
@@ -2071,7 +2071,7 @@ out_spec *init_out_spec(int n_ener, const double *ener, int *status) {
   return spec;
 }
 
-void free_out_spec(out_spec *spec) {
+void free_out_spec(OutSpec *spec) {
   if (spec != NULL) {
     free(spec->ener);
     free(spec->flux);

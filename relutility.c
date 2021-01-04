@@ -728,7 +728,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
     double emis_zones[n];
 
     // we need the emissivity profile (should be cached, so no extra effort required here)
-    relSysPar *sysPar = get_system_parameters(rel_param, status);
+    RelSysPar *sysPar = get_system_parameters(rel_param, status);
     emisProfile *emis_profile = sysPar->emis;
 
     assert(emis_profile->del_inc != NULL);

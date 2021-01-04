@@ -45,6 +45,7 @@ void print_version_number(int *status) {
 int warned_rms = 0;
 int warned_height = 0;
 
+
 void check_parameter_bounds(relParam *param, int *status) {
 
   // first set the Radii to positive value
@@ -138,7 +139,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     double h_fac = 1.1;
     double r_event = kerr_rplus(param->a);
     if ((h_fac * r_event - param->height) > 1e-4) {
-      if (!warned_rms) {
+      if (!warned_height) {
         printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
         printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
                h_fac);
@@ -1079,15 +1080,8 @@ void tdrelxilllp(const double *ener0,
   init_par_relxilllp(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  init_flux_array(n_ener0, flux);
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1110,13 +1104,8 @@ void tdrelxilllp_nthcomp(const double *ener0,
 
   init_par_relxilllp_nthcomp(&rel_param, &xill_param, parameter, n_parameter, status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1138,14 +1127,10 @@ void tdrelxilllpdens(const double *ener0,
   init_par_relxilllp_dens(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
+  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1192,14 +1177,11 @@ void tdrelxilllpdens_nthcomp(const double *ener0,
   init_par_relxilllp_dens_nthcomp(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-  CHECK_STATUS_VOID(*status);
 
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
+  CHECK_STATUS_VOID(*status);
+
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1292,7 +1274,7 @@ void xillver_base(const double *ener0, const int n_ener0, double *photar, xillPa
 
 
   // call the function which calculates the xillver spectrum
-  xill_spec *spec = get_xillver_spectra(param_struct, status);
+  xillSpec *spec = get_xillver_spectra(param_struct, status);
   CHECK_STATUS_VOID(*status);
 
   // =4= rebin to the input grid
@@ -1439,14 +1421,11 @@ void tdrelxilllpion(const double *ener0,
   init_par_relxilllpion(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
-  CHECK_STATUS_VOID(*status);
 
   double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
+  CHECK_STATUS_VOID(*status);
+
 
   free_xillParam(xill_param);
   free_relParam(rel_param);
@@ -1468,14 +1447,10 @@ void tdrelxilllpion_nthcomp(const double *ener0,
   init_par_relxilllpion_nthcomp(&rel_param, &xill_param, parameter, n_parameter, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener = (double *) ener0;
-  double flux[n_ener0];
-
-  relxill_kernel(ener, flux, n_ener0, xill_param, rel_param, status);
+  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
+  relxill_kernel(ener_shifted, photar, n_ener0, xill_param, rel_param, status);
   CHECK_STATUS_VOID(*status);
 
-  double *ener_shifted = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-  rebin_spectrum(ener_shifted, photar, n_ener0, ener, flux, n_ener0);
 
   free_xillParam(xill_param);
   free_relParam(rel_param);

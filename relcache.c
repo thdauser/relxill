@@ -384,7 +384,7 @@ void set_cache_relbase(cnode **pt_head, relParam *param, rel_spec *spec, int *st
   CHECK_RELXILL_DEFAULT_ERROR(status);
 }
 
-void set_cache_syspar(cnode **pt_head, relParam *param, relSysPar *syspar, int *status) {
+void set_cache_syspar(cnode **pt_head, relParam *param, RelSysPar *syspar, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -457,6 +457,7 @@ static void free_cdata(cdata **pt_data) {
     free_rel_spec(data->relbase_spec);
     free_relxill_cache(data->relxill_cache);
     free_relSysPar(data->relSysPar);
+    free(data);
   }
 
 }

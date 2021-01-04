@@ -135,7 +135,7 @@ void std_eval_xillver_dens_nthcomp(int *status, int n);
 void std_eval_relxilllpdens_nthcomp(int *status, int n);
 void std_eval_relxilldens_nthcomp(int *status, int n);
 
-xill_spec *get_std_xill_spec(int *status);
+xillSpec *get_std_xill_spec(int *status);
 rel_spec *get_stdRelProfile(int *status);
 void get_RelProfileConstEmisZones(rel_spec **p_rel_profile, relParam **p_rel_param, int nzones, int *status);
 
