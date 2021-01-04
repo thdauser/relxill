@@ -181,6 +181,17 @@ TEST_CASE(" Execute single model", "[single]") {
   test_xspec_lmod_call(ModelName::relxilllp, default_spec);
 }
 
+static void require_equal_flux(const DefaultSpec &default_spec_old, const DefaultSpec &default_spec_new) {
+  double old_flux = sum_flux(default_spec_old.flux, default_spec_old.num_flux_bins);
+  double new_flux = sum_flux(default_spec_new.flux, default_spec_new.num_flux_bins);
+
+  std::cout << "old_flux = " << old_flux
+            << "  --- new_flux = "
+            << new_flux << std::endl;
+
+  REQUIRE(fabs(old_flux - new_flux) < 1e-8);
+}
+
 TEST_CASE(" Execute Old relxilllp Model", "[old]") {
 
   const double *xspec_parameters = get_xspec_default_parameter_array(ModelName::relxilllp);
@@ -188,7 +199,7 @@ TEST_CASE(" Execute Old relxilllp Model", "[old]") {
   const int n_parameter = 12;
   int status = EXIT_SUCCESS;
   DefaultSpec default_spec_old{};
-  tdrelxilllp(default_spec_old.flux,
+  tdrelxilllp(default_spec_old.energy,
               default_spec_old.num_flux_bins,
               default_spec_old.flux,
               xspec_parameters,
@@ -202,14 +213,35 @@ TEST_CASE(" Execute Old relxilllp Model", "[old]") {
                              default_spec_new.num_flux_bins,
                              default_spec_new.energy);
 
-  double old_flux = sum_flux(default_spec_old.flux, default_spec_old.num_flux_bins);
-  double new_flux = sum_flux(default_spec_new.flux, default_spec_new.num_flux_bins);
+  require_equal_flux(default_spec_old, default_spec_new);
 
-  std::cout << "old flux" << old_flux
-            << "  --- new flux "
-            << new_flux << std::endl;
+  delete (xspec_parameters);
 
-  REQUIRE(fabs(old_flux - new_flux) < 1e-8);
+}
+
+TEST_CASE(" Execute Old rellinelp Model", "[old]") {
+
+  const ModelName model_name = ModelName::rellinelp;
+  const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
+
+  const int n_parameter = 9;
+  int status = EXIT_SUCCESS;
+  DefaultSpec default_spec_old{};
+  tdrellinelp(default_spec_old.energy,
+              default_spec_old.num_flux_bins,
+              default_spec_old.flux,
+              xspec_parameters,
+              n_parameter,
+              &status);
+
+  DefaultSpec default_spec_new{};
+  xspec_C_wrapper_eval_model(model_name,
+                             xspec_parameters,
+                             default_spec_new.flux,
+                             default_spec_new.num_flux_bins,
+                             default_spec_new.energy);
+
+  require_equal_flux(default_spec_old, default_spec_new);
 
   delete (xspec_parameters);
 
