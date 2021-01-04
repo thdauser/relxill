@@ -11,7 +11,7 @@ set(SOURCE_FILES
         relphysics.c relphysics.h
         )
 
-set(CONFIG_FILE config.h)
+set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)
 
 set(EXEC_FILES test_sta)
 
@@ -23,8 +23,11 @@ foreach (execfile ${EXEC_FILES})
                            )
 endforeach (execfile ${EXEC_FILES})
 
-target_link_libraries(test_sta m)
-target_link_libraries(test_sta cfitsio)
+set(LIBNAME Relxill)
+add_library(${LIBNAME} ${SOURCE_FILES})
+target_include_directories(${LIBNAME} PUBLIC "${PROJECT_BINARY_DIR}")
+target_link_libraries(${LIBNAME} m cfitsio)
+
 
 
 add_custom_command(

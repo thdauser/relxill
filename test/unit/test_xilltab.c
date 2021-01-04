@@ -313,15 +313,12 @@ static void testRenormXilltableDensLogxi(int *status) {
 }
 
 void test_xilltables(int *status) {
-  char *buf;
   if (*status != EXIT_SUCCESS) {
     printf(" *** SKIP testing Xilltables as an error occured previously! \n\n");
     return;
   }
 
-  get_version_number(&buf, status);
-  printf("\n === Testing XILLVER with RELXILL Version %s === \n\n", buf);
-  free(buf);
+  printf("\n === Testing XILLVER with RELXILL Version %s === \n\n", PROJECT_VER);
 
   testCreateNewXilltable(status);
 

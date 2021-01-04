@@ -1,3 +1,4 @@
+
 set(UNIT_TEST_FILES
         test_rellp.c  test_rellp.h
         test_relxill.c  test_relxill.h
@@ -6,18 +7,18 @@ set(UNIT_TEST_FILES
         )
 
 
-
-set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)
-
 set(EXEC_FILES test-driver)
 
 foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.c ${CONFIG_FILE} ${UNIT_TEST_FILES} )
-    target_link_libraries(${execfile} m cfitsio)
+    add_executable(${execfile} ${execfile}.c ${UNIT_TEST_FILES} )
 
     target_link_libraries(${execfile} PUBLIC ${EXTRA_LIBS})
+    target_link_libraries(${execfile} PUBLIC m cfitsio)
+
     target_include_directories(${execfile} PUBLIC
-            "${EXTRA_INCLUDES}")
+            ${EXTRA_INCLUDES}
+            ${PROJECT_BINARY_DIR}
+            )
 
     target_include_directories(${execfile} PUBLIC
                            "${PROJECT_BINARY_DIR}"
