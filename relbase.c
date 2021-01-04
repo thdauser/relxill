@@ -913,7 +913,7 @@ void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status) {
        which is freed if the cache is full and therefore causes "invalid reads" **/
   free_str_relb_func(&cached_str_relb_func);
 
-  if (shouldOutfilesBeWritten()){
+  if (shouldOutfilesBeWritten() && spec->n_zones == 1) {
     write_radiallyResolvedFluxObs(sysPar->re, radialFlux, sysPar->nr);
   }
 
