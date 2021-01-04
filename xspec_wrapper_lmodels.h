@@ -25,101 +25,71 @@
 
 #include "cppparameters.h"
 
-class XspecModelDatabase {
+class XspecModelDatabase{
 
  public:
-  std::string name_string(ModelName name) const {
+  std::string name_string(ModelName name) const{
     return model_definition.at(name).name();
   }
 
-  ModelParamVector params(ModelName name) const {
+  ModelParamVector params(ModelName name) const{
     return model_definition.at(name).params();
   }
 
-  std::unordered_map<ModelName, XspecLmodelDatDefinition> all_models() const {
+  std::unordered_map<ModelName, XspecLmodelDatDefinition> all_models() const{
     return model_definition;
   }
 
  private:
   const std::unordered_map<ModelName, XspecLmodelDatDefinition> model_definition = {
-      {{ModelName::relline,
-        XspecLmodelDatDefinition("relline",
-                                 {XPar::linee, XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin,
-                                  XPar::rout, XPar::z, XPar::limb})
-       },
-       {ModelName::relconv,
-        XspecLmodelDatDefinition("relconv",
-                                 {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout,
-                                  XPar::limb})
-       },
-       {ModelName::rellinelp,
-        XspecLmodelDatDefinition("rellinelp",
-                                 {XPar::linee, XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::limb,
-                                  XPar::gamma})
-       },
-       {ModelName::relconvlp,
-        XspecLmodelDatDefinition("relconvlp",
-                                 {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::limb, XPar::gamma})
-       },
-       {ModelName::relxill,
-        XspecLmodelDatDefinition("relxill",
-                                 {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout,
-                                  XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::ecut, XPar::refl_frac})
-       },
-       {ModelName::relxilllp,
-        XspecLmodelDatDefinition("relxilllp",
-                                 {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma,
-                                  XPar::logxi, XPar::afe, XPar::ecut, XPar::refl_frac, XPar::switch_fixreflfrac})
-       },
-       {ModelName::xillver,
-        XspecLmodelDatDefinition("xillver",
-                                 {XPar::gamma, XPar::afe, XPar::ecut, XPar::logxi, XPar::z, XPar::incl,
-                                  XPar::refl_frac})
-       },
-       {ModelName::relxillD,
-        XspecLmodelDatDefinition("relxillD",
-                                 {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout,
-                                  XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::logn, XPar::refl_frac})
-       },
-       {ModelName::relxilllpD,
-        XspecLmodelDatDefinition("relxilllpD",
-                                 {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma,
-                                  XPar::logxi, XPar::afe, XPar::logn, XPar::refl_frac, XPar::switch_fixreflfrac})
-       },
-       {ModelName::xillverD,
-        XspecLmodelDatDefinition("xillverD",
-                                 {XPar::gamma, XPar::afe, XPar::logn, XPar::logxi, XPar::z, XPar::incl,
-                                  XPar::refl_frac})
-       },
-       {ModelName::relxillCp,
-        XspecLmodelDatDefinition("relxillCp",
-                                 {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout,
-                                  XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::kte, XPar::refl_frac})
-       },
-       {ModelName::relxilllpCp,
-        XspecLmodelDatDefinition("relxilllpCp",
-                                 {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma,
-                                  XPar::logxi, XPar::afe, XPar::kte, XPar::refl_frac, XPar::switch_fixreflfrac})
-       },
-       {ModelName::xillverCp,
-        XspecLmodelDatDefinition("xillverCp",
-                                 {XPar::gamma, XPar::afe, XPar::kte, XPar::logxi, XPar::z, XPar::incl, XPar::refl_frac})
-       },
-       {ModelName::relxilllpion,
-        XspecLmodelDatDefinition("relxilllpion",
-                                 {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma,
-                                  XPar::logxi, XPar::afe, XPar::ecut, XPar::beta, XPar::switch_ion_grad_type,
-                                  XPar::xi_index, XPar::refl_frac, XPar::switch_fixreflfrac})
-       },
-       {ModelName::relxilllpionCp,
-        XspecLmodelDatDefinition("relxilllpionCp",
-                                 {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma,
-                                  XPar::logxi, XPar::afe, XPar::kte, XPar::beta, XPar::switch_ion_grad_type,
-                                  XPar::xi_index, XPar::refl_frac, XPar::switch_fixreflfrac})
-       },
-      }
-  };
+  {   {ModelName::relline,
+    XspecLmodelDatDefinition("relline", {XPar::linee, XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::limb})
+   },
+   {ModelName::relconv,
+    XspecLmodelDatDefinition("relconv", {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::limb})
+   },
+   {ModelName::rellinelp,
+    XspecLmodelDatDefinition("rellinelp", {XPar::linee, XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::limb, XPar::gamma})
+   },
+   {ModelName::relconvlp,
+    XspecLmodelDatDefinition("relconvlp", {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::limb, XPar::gamma})
+   },
+   {ModelName::relxill,
+    XspecLmodelDatDefinition("relxill", {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::ecut, XPar::refl_frac})
+   },
+   {ModelName::relxilllp,
+    XspecLmodelDatDefinition("relxilllp", {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::ecut, XPar::refl_frac, XPar::switch_fixreflfrac})
+   },
+   {ModelName::xillver,
+    XspecLmodelDatDefinition("xillver", {XPar::gamma, XPar::afe, XPar::ecut, XPar::logxi, XPar::z, XPar::incl, XPar::refl_frac})
+   },
+   {ModelName::relxillD,
+    XspecLmodelDatDefinition("relxillD", {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::logn, XPar::refl_frac})
+   },
+   {ModelName::relxilllpD,
+    XspecLmodelDatDefinition("relxilllpD", {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::logn, XPar::refl_frac, XPar::switch_fixreflfrac})
+   },
+   {ModelName::xillverD,
+    XspecLmodelDatDefinition("xillverD", {XPar::gamma, XPar::afe, XPar::logn, XPar::logxi, XPar::z, XPar::incl, XPar::refl_frac})
+   },
+   {ModelName::relxillCp,
+    XspecLmodelDatDefinition("relxillCp", {XPar::index1, XPar::index2, XPar::rbr, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::kte, XPar::refl_frac})
+   },
+   {ModelName::relxilllpCp,
+    XspecLmodelDatDefinition("relxilllpCp", {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::kte, XPar::refl_frac, XPar::switch_fixreflfrac})
+   },
+   {ModelName::xillverCp,
+    XspecLmodelDatDefinition("xillverCp", {XPar::gamma, XPar::afe, XPar::kte, XPar::logxi, XPar::z, XPar::incl, XPar::refl_frac})
+   },
+   {ModelName::relxilllpion,
+    XspecLmodelDatDefinition("relxilllpion", {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::ecut, XPar::beta, XPar::switch_ion_grad_type, XPar::xi_index, XPar::refl_frac, XPar::switch_fixreflfrac})
+   },
+   {ModelName::relxilllpionCp,
+    XspecLmodelDatDefinition("relxilllpionCp", {XPar::h, XPar::a, XPar::incl, XPar::rin, XPar::rout, XPar::z, XPar::gamma, XPar::logxi, XPar::afe, XPar::kte, XPar::beta, XPar::switch_ion_grad_type, XPar::xi_index, XPar::refl_frac, XPar::switch_fixreflfrac})
+   },
+  }
+ };
 
-};
+ };
 
 #endif //RELXILL_XSPEC_WRAPPER_H_
