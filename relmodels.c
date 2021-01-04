@@ -45,11 +45,7 @@ void print_version_number(int *status) {
 int warned_rms = 0;
 int warned_height = 0;
 
-void relline(const double *ener1keV,
-             const double *photar,
-             const int n_ener,
-             const relParam *param_struct,
-             const int *status);
+
 void check_parameter_bounds(relParam *param, int *status) {
 
   // first set the Radii to positive value
@@ -143,7 +139,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     double h_fac = 1.1;
     double r_event = kerr_rplus(param->a);
     if ((h_fac * r_event - param->height) > 1e-4) {
-      if (!warned_rms) {
+      if (!warned_height) {
         printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
         printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
                h_fac);
