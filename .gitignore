@@ -13,4 +13,6 @@ build
 cmake-build-test
 debug-*.fits
 testrr-*fits
-cmake-build-debug
+cmake-*
+model
+model-build

@@ -22,6 +22,8 @@
 #define _GNU_SOURCE  // seems necessary for standard Makefile
 #endif
 
+#include "config.h"
+
 #include "common.h"
 
 #include "relutility.h"
@@ -34,11 +36,6 @@
 /*********** DEFINE STATEMENTS *********/
 
 #define PARAM_DEFAULT 0.0
-
-#define version_major 1
-#define version_minor 4
-#define version_build 0
-#define version_dev "-1"
 
 /** path to all RELXILL tables */
 #define RELXILL_TABLE_PATH "./"
