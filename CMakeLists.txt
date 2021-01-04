@@ -44,7 +44,6 @@ set(SOURCE_FILES_CPP
 
 set(EXEC_FILES test_sta)
 
-set(EXEC_FILES_CPP test_cpp)
 
 
 foreach (execfile ${EXEC_FILES})
@@ -52,10 +51,6 @@ foreach (execfile ${EXEC_FILES})
     target_link_libraries(${execfile} m cfitsio)
 endforeach (execfile ${EXEC_FILES})
 
-foreach (execfile ${EXEC_FILES_CPP})
-    add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES_CPP})
-    target_link_libraries(${execfile} m cfitsio)
-endforeach (execfile ${EXEC_FILES_CPP})
 
 
 ## testing setup
