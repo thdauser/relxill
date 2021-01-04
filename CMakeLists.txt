@@ -14,9 +14,14 @@ set(CMAKE_CXX_FLAGS "-std=c++17")
 include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
 
-configure_file(src/config.h.in config.h) # written into binary tree
+set(SRC_DIR src)
 
-add_subdirectory(src test)
+configure_file(${SRC_DIR}/config.h.in config.h) # written into binary tree
+
+list(APPEND EXTRA_LIBS Relxill)
+list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/${SRC_DIR}")
+
+add_subdirectory(${SRC_DIR} test)
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION model)
