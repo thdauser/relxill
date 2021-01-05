@@ -197,7 +197,7 @@ variable ii, n = length(fnames);
 variable status = Int_Type[n];
 
 _for ii(0,n-1,1){
-   status[ii] = check_single_model(fnames[ii]; update=update_refdata);   
+   status[ii] = check_single_model(fnames[ii]; update=update_refdata );   
 }
 
 print_summary(status);

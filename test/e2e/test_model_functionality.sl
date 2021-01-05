@@ -1,13 +1,13 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
-%%% call the routine like "./check_model_functions.sl DEV"
-%%% if also the model in "lmodel_relxill_devel.dat" should 
+%%% call the routine like "./check_model_functions.sl STABLE"
+%%% if only the stable release models "lmodel_relxill_devel.dat" should 
 %%% be tested
-variable TEST_DEVEL = 0; 
+variable TEST_DEVEL = 1;
 
-if (__argc>1 && __argv[1]=="DEV"){
-   TEST_DEVEL = 1;
+if (__argc>1 && __argv[1]=="STABLE"){
+   TEST_DEVEL = 0;
 }
 
 
@@ -1422,22 +1422,23 @@ define print_refl_frac(){ %{{{
 %%%%%%%% TEST  %%%%%%%%%%%%
 
 
-if (eval_test() != EXIT_SUCCESS) exit;
 
-if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
+if (eval_test() != EXIT_SUCCESS) exit(1);
 
-if (check_xilltab_implementation() != EXIT_SUCCESS) exit;
+if (check_relline_phys_norm() != EXIT_SUCCESS) exit(1);
 
-if (check_z() != EXIT_SUCCESS) exit;
-if (check_linee() != EXIT_SUCCESS) exit;
-if (check_conv_mod() != EXIT_SUCCESS) exit;
-if (check_dens_mod() != EXIT_SUCCESS) exit;
-if (check_prim_cont() != EXIT_SUCCESS) exit;
-if (check_nthcomp_mod() != EXIT_SUCCESS) exit;
-if (check_iongrad_mod() != EXIT_SUCCESS) exit;
+if (check_xilltab_implementation() != EXIT_SUCCESS) exit(1);
 
-if (check_refl_frac() != EXIT_SUCCESS) exit;
-if (print_refl_frac() != EXIT_SUCCESS) exit;
+if (check_z() != EXIT_SUCCESS) exit(1);
+if (check_linee() != EXIT_SUCCESS) exit(1);
+if (check_conv_mod() != EXIT_SUCCESS) exit(1);
+if (check_dens_mod() != EXIT_SUCCESS) exit(1);
+if (check_prim_cont() != EXIT_SUCCESS) exit(1);
+if (check_nthcomp_mod() != EXIT_SUCCESS) exit(1);
+if (check_iongrad_mod() != EXIT_SUCCESS) exit(1);
 
-if (check_caching() != EXIT_SUCCESS) exit;
+if (check_refl_frac() != EXIT_SUCCESS) exit(1);
+if (print_refl_frac() != EXIT_SUCCESS) exit(1);
+
+if (check_caching() != EXIT_SUCCESS) exit(1);
 

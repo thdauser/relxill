@@ -27,8 +27,7 @@
 specCache *dummy_spec_cache = NULL;
 
 void testRellineTableValues(int *status) {
-/** test the currently implemented relline table
- ** [current version used: rel_table_v0.4e]   */
+  CHECK_STATUS_VOID(*status);
 
   PRINT_RELXILL_TEST_MSG(RELTABLE_FILENAME);
 
@@ -37,7 +36,6 @@ void testRellineTableValues(int *status) {
   // load the table
   read_relline_table(RELTABLE_FILENAME, &tab, status);
   CHECK_RELXILL_ERROR("loading the rel table failed", status);
-  CHECK_STATUS_VOID(*status);
 
   // test certain values
   assert(tab != NULL);
@@ -85,6 +83,7 @@ void testRellineTableValues(int *status) {
 /** test the currently implemented relline table
  ** [current version used: rel_table_v0.4e]   */
 void testLPTableValues(int *status) {
+  CHECK_STATUS_VOID(*status);
 
   PRINT_RELXILL_TEST_MSG(LPTABLE_FILENAME);
   lpTable *tab = NULL;
@@ -134,6 +133,7 @@ void testLPTableValues(int *status) {
 }
 static void testRebinSpectrum(int *status) {
 
+  CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   int n0 = 6;
@@ -165,6 +165,7 @@ static void testRebinSpectrum(int *status) {
 }
 static void testRebinMeanFlux(int *status) {
 
+  CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   int n0 = 7;
@@ -195,6 +196,7 @@ static void testRebinMeanFlux(int *status) {
 }
 static void testInterpolationRoutines(int *status) {
 
+  CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   double ifac = 0.2;
@@ -263,6 +265,7 @@ void testRellineNormalizationConvergence(int *status) {
    * [definition of rel-_table_v0.5a]
    */
 
+  CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   int nzones = 100;

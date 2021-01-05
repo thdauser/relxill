@@ -1,59 +1,34 @@
 cmake_minimum_required(VERSION 3.15)
-project(relxill)
+
+project(relxill VERSION 1.4.20210104)
+
+
+set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
 
 set(CMAKE_CXX_STANDARD 17)
-
 set(CMAKE_CXX_FLAGS "-std=c++17")
 
 include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
 
-set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
-set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${PROJECT_ROOT_DIR}")
+set(SRC_DIR src)
+
+configure_file(${SRC_DIR}/config.h.in config.h) # written into binary tree
+
+list(APPEND EXTRA_LIBS Relxill)
+list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/${SRC_DIR}")
+
+add_subdirectory(${SRC_DIR})
+add_subdirectory(test)
+
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION model)
 
 ## testing setup
 find_package(Catch2 REQUIRED)
-
-set(SOURCE_FILES
-        common.h
-        donthcomp.c
-        relbase.c
-        relbase.h
-        relcache.c
-        relcache.h
-        rellp.c
-        rellp.h
-        relmodels.c
-        relmodels.h
-        reltable.c
-        reltable.h
-        relutility.c
-        relutility.h
-        xilltable.c xilltable.h
-        test_relxill.c test_relxill.h
-        test_rellp.c test_rellp.h
-        relphysics.c relphysics.h
-        test_std_functions.c test_std_functions.h
-         )
-
-set(SOURCE_FILES_CPP
-        ${SOURCE_FILES} cppmodels.cpp cppmodels.h cppparameters.h cppspectrum.h cppTypes.h cppModelDatabase.h cppparameters.cpp)
-
-set(EXEC_FILES test_sta)
-
-
-
-foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES})
-    target_link_libraries(${execfile} m cfitsio)
-endforeach (execfile ${EXEC_FILES})
-
-
-
-## testing setup
 set(test_execname tests)
 add_executable(${test_execname} test/unit/${test_execname}.cpp ${SOURCE_FILES_CPP} test/unit/tests-execmodel.cpp test/unit/test-cppspectrum.cpp)
 target_link_libraries(${test_execname} m cfitsio)

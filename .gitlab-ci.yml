@@ -7,32 +7,27 @@ before_script:
 stages:
   - build
   - test
-  - model
   - deploy
 
 build:
   stage: build
   script:
-    - make
     - make model
   artifacts:
     expire_in: 30 min
     paths:
       - "relxill_model_v*.tgz"
-      - "./test_sta"
-      - "build/"
+      - "bin/"
+      - "model/"
+      - "model-build/"
 
 test:
   stage: test
   script:
-    - ./test_sta 
-    - cd test/e2e/ && make test  > ../../test_output.log
+    - make test 
+    - make test-stable 
   only:
    - master
-  artifacts:
-    expire_in: 30 min
-    paths:
-      - "test_output.log"
 
 provide:
   stage: deploy

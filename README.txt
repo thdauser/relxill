@@ -9,9 +9,9 @@ software ISIS and XSPEC.
 
 (1) Installing the model:
 
-  - All to execute the compile script by "chmod u+r compile_relxill.csh"
+  - All to execute the compile script by "chmod u+x compile_relxill.sh"
 
-  - Execute "./compile_relxill.csh"
+  - Execute "./compile_relxill.sh"
 
 (2) Setting up the model environment:
 
@@ -49,7 +49,7 @@ GNU General Public License for more details.
 For a copy of the GNU General Public License see
 <http://www.gnu.org/licenses/>.
 
-Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
+Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 
 #########################################
 #########################################

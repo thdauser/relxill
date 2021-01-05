@@ -34,10 +34,7 @@ static void setNegativeHeightToRplus(double *h, double a) {
 
 void print_version_number(int *status) {
   if (version_number_printed == 0) {
-    char *buf;
-    get_version_number(&buf, status);
-    printf(" *** loading RELXILL model (version %s) *** \n", buf);
-    free(buf);
+    printf(" *** loading RELXILL model (version %s) *** \n", PROJECT_VER);
     version_number_printed = 1;
   }
 }

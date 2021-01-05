@@ -122,12 +122,8 @@ void test_rellp(int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  char *buf;
-  get_version_number(&buf, status);
-
   char *testName = "EMISSIVTIY Profile Calculation";
-  printf("\n === Testing %s with RELXILL Version %s === \n\n", testName, buf);
-  free(buf);
+  printf("\n === Testing %s with RELXILL Version %s === \n\n", testName, PROJECT_VER);
 
   test_extendedGeometryHeight(status);
 
