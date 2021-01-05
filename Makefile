@@ -8,8 +8,7 @@ BIN_DIR = "bin"
 COMPILE_SCRIPT = "compile_relxill.sh"
 
 MODEL_VERSION = "undef"
-TARGET_STANDARD = "lmodeldat"
-TARGET_DEVEL = "lmodeldat-dev"
+LMODELDAT_TARGET = "lmodeldat"
 
 TARFILE = "relxill.tgz"
 
@@ -24,15 +23,17 @@ model-dev:
 	make model-compile
 
 .PHONY: model-build
+
+model-build: export RELXILL_STABLE=
 model-build:
-	make model-build-target LMODELDAT=$(TARGET_STANDARD) DEV=
+	make model-build-target DEV=
 
 model-build-dev:
-	make model-build-target LMODELDAT=$(TARGET_DEVEL) DEV=dev
+	make model-build-target DEV=dev
 
 model-build-target:
 	make clean
-	make install-source-files LMODELDAT=$(LMODELDAT)
+	make install-source-files
 
 	$(eval MODEL_VERSION := $(shell $(BIN_DIR)/test_sta version))
 	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION)$(DEV).tgz)
@@ -45,13 +46,11 @@ model-build-target:
 
 
 model-tarball:
-
 	cd $(MODEL_DIR)/ && tar cfvz $(TARFILE) *.c *.h lmodel_relxill.dat $(COMPILE_SCRIPT) -C ../ README.txt LICENSE
 	mv $(MODEL_DIR)/$(TARFILE) .
 
 
 model-compile:
-
 	mkdir -p $(MODEL_BUILD_DIR)
 	rm -f $(MODEL_BUILD_DIR)/*
 
@@ -63,19 +62,24 @@ model-compile:
 
 
 
+# using CMakeLists.txt Definitions to build and install the model files
+.PHONY: install, install-stable, install-source-files
 
+install-stable: export RELXILL_STABLE=
+install-stable:
+	make install-source-files
 
+install:
+	make install-source-files
+	mkdir -p $(BUILD_DIR)
 
 
 install-source-files:
-	make build-source-files
-	cd $(BUILD_DIR) && cmake --build . -t $(LMODELDAT_TARGET)
-	cd $(BUILD_DIR) && cmake --install .
-
-build-source-files:
 	mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR) && cmake ../
 	cd $(BUILD_DIR) && cmake --build . -t test_sta
+	cd $(BUILD_DIR) && cmake --build . -t $(LMODELDAT_TARGET)
+	cd $(BUILD_DIR) && cmake --install .
 
 
 .PHONY: test
@@ -93,3 +97,6 @@ clean:
 	rm -rf cmake-*
 
 
+dist-clean:
+	make clean
+	rm -rf cmake-*

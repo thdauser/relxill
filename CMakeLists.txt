@@ -26,6 +26,5 @@ add_subdirectory(test)
 
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION model)
-install(FILES "${PROJECT_BINARY_DIR}/lmodel_relxill.dat" DESTINATION model)
 
 

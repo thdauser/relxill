@@ -2,6 +2,7 @@
   <dictionary name="thomas">
     <words>
       <w>anynul</w>
+      <w>cfitsio</w>
       <w>colnum</w>
       <w>extver</w>
       <w>gitignore</w>

@@ -1,4 +1,3 @@
-
 set(UNIT_TEST_FILES
         test_rellp.c  test_rellp.h
         test_relxill.c  test_relxill.h
@@ -20,8 +19,5 @@ foreach (execfile ${EXEC_FILES})
             ${PROJECT_BINARY_DIR}
             )
 
-    target_include_directories(${execfile} PUBLIC
-                           "${PROJECT_BINARY_DIR}"
-                           )
 endforeach (execfile ${EXEC_FILES})
 
