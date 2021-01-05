@@ -52,8 +52,9 @@ model-compile:
 	mkdir -p $(MODEL_BUILD_DIR)
 	rm -f $(MODEL_BUILD_DIR)/*
 
-	mv $(TARFILE) $(MODEL_BUILD_DIR)/
+	cp $(TARFILE) $(MODEL_BUILD_DIR)/
 	cd $(MODEL_BUILD_DIR) && tar xfvz $(TARFILE)
+	rm $(MODEL_BUILD_DIR)/$(TARFILE)
 	cd $(MODEL_BUILD_DIR) && chmod a+x $(COMPILE_SCRIPT)
 	cd $(MODEL_BUILD_DIR) && ./$(COMPILE_SCRIPT)
 	cd $(MODEL_BUILD_DIR) && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v
