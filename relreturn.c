@@ -349,7 +349,7 @@ static void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener
 
   CHECK_STATUS_VOID(*status);
 
-  xill_spec* xillSpecTable = get_xillver_spectra(xill_param, status);
+  xillSpec* xillSpecTable = get_xillver_spectra(xill_param, status);
   get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_cosne_dist, xillSpecTable, status);
 
 }

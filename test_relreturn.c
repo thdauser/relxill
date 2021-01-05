@@ -769,7 +769,7 @@ static void testRebinEmisProfiles(int *status) {
 
   relParam *rel_param = get_std_param_rellinelp(status);
 
-  relSysPar *sysPar = get_system_parameters(rel_param, status);
+  RelSysPar *sysPar = get_system_parameters(rel_param, status);
 
   returnFracIpol *dat = get_rr_fractions(rel_param->a, rel_param->rin, rel_param->rout, status);
   double rmean[dat->nrad]; // descending grid
@@ -814,7 +814,7 @@ static void returnEmisProfileLoaded(int *status) {
   relParam *rel_param = get_std_param_rellinelp(status);
 
   rel_param->return_rad = 0;
-  relSysPar *sysPar = get_system_parameters(rel_param, status);
+  RelSysPar *sysPar = get_system_parameters(rel_param, status);
   assert(sysPar->emisReturn == NULL);
 
   rel_param->return_rad = 1;
