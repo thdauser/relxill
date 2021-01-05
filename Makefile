@@ -45,7 +45,7 @@ model-build-target:
 
 model-tarball:
 	cd $(MODEL_DIR)/ && tar cfvz $(TARFILE) *.c *.h lmodel_relxill.dat $(COMPILE_SCRIPT) -C ../ README.txt LICENSE
-	mv $(MODEL_DIR)/$(TARFILE) .
+	cp -v $(MODEL_DIR)/$(TARFILE) .
 
 
 model-compile:
