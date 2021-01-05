@@ -1,13 +1,13 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
-%%% call the routine like "./check_model_functions.sl DEV"
-%%% if also the model in "lmodel_relxill_devel.dat" should 
+%%% call the routine like "./check_model_functions.sl STABLE"
+%%% if only the stable release models "lmodel_relxill_devel.dat" should 
 %%% be tested
-variable TEST_DEVEL = 0; 
+variable TEST_DEVEL = 1;
 
-if (__argc>1 && __argv[1]=="DEV"){
-   TEST_DEVEL = 1;
+if (__argc>1 && __argv[1]=="STABLE"){
+   TEST_DEVEL = 0;
 }
 
 

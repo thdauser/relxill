@@ -12,20 +12,18 @@ LMODELDAT_TARGET = "lmodeldat"
 
 TARFILE = "relxill.tgz"
 
-.PHONY: model, model-dev model-build-dev, model-build-target, model-compile, model-tarball
+.PHONY: model-stable, model-dev model-build-dev, model-build-target, model-compile, model-tarball
 model:
-	make model-build
-	make model-compile
-
-
-model-dev:
 	make model-build-dev
-	make model-compile
 
-.PHONY: model-build
+model-stable:
+	make model-build-stable
 
-model-build: export RELXILL_STABLE=
-model-build:
+
+
+.PHONY: model-build-stable
+model-build-stable: export RELXILL_STABLE=
+model-build-stable:
 	make model-build-target DEV=
 
 model-build-dev:
@@ -57,7 +55,7 @@ model-compile:
 	mv $(TARFILE) $(MODEL_BUILD_DIR)/
 	cd $(MODEL_BUILD_DIR) && tar xfvz $(TARFILE)
 	cd $(MODEL_BUILD_DIR) && chmod a+x $(COMPILE_SCRIPT)
-	cd $(MODEL_BUILD_DIR) && ./$(COMPILE_SCRIPT) > compile.log
+	cd $(MODEL_BUILD_DIR) && ./$(COMPILE_SCRIPT)
 	cd $(MODEL_BUILD_DIR) && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v
 
 
@@ -95,6 +93,10 @@ test-unit:
 
 test-e2e:
 	cd test/e2e && make test
+
+test-stable:
+	make model-stable
+	cd test/e2e && make test-stable
 
 
 clean:
