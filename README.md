@@ -2,14 +2,14 @@
 # relxill - Astrophysics local model for Relativistic Reflection 
 ##########################################################################
 
-Copyright 2019 Thomas Dauser, Remeis Observatory & ECAP
+Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 
 (1) GENERAL: The model description and download of released version can be found on the homepage at 
 http://www.sternwarte.uni-erlangen.de/research/relxill/  -- In order to obtain a stable version this
 is the best place to get the model from.
 
 (2) INSTALLATION: In order to install and build the model from the GIT distribution, simply run "make model". 
-It will be installed in the subdirectory "build/". After the installation, a simple test is executed. If
+It will be installed in the subdirectory "model-build/". After the installation, a simple test is executed. If
 this test succeed the model should be correctly working. This installation only works if you have a recent
 version of Heasoft installed (https://heasarc.gsfc.nasa.gov/lheasoft/).
 
