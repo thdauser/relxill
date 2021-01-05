@@ -33,6 +33,7 @@ model-build-target:
 	make clean
 	make install-source-files
 
+	echo "$(BIN_DIR)/test_sta version"
 	$(eval MODEL_VERSION := $(shell $(BIN_DIR)/test_sta version))
 	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION)$(DEV).tgz)
 
