@@ -24,15 +24,10 @@ build:
 test:
   stage: test
   script:
-    - make test > test_output.log
-    - make test-stable > test_stable_output.log
+    - make test 
+    - make test-stable 
   only:
    - master
-  artifacts:
-    expire_in: 30 min
-    paths:
-      - "test_output.log"
-      - "test_stable_output.log"
 
 provide:
   stage: deploy
