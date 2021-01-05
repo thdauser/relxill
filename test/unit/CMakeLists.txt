@@ -6,7 +6,7 @@ set(UNIT_TEST_FILES
         )
 
 
-set(EXEC_FILES test-driver)
+set(EXEC_FILES run-tests)
 
 foreach (execfile ${EXEC_FILES})
     add_executable(${execfile} ${execfile}.c ${UNIT_TEST_FILES} )
@@ -21,3 +21,4 @@ foreach (execfile ${EXEC_FILES})
 
 endforeach (execfile ${EXEC_FILES})
 
+install(TARGETS ${EXEC_FILES} DESTINATION bin)

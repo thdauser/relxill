@@ -63,7 +63,7 @@ model-compile:
 
 
 # using CMakeLists.txt Definitions to build and install the model files
-.PHONY: install, install-stable, install-source-files
+.PHONY: install, install-stable, install-source-files, build
 
 install-stable: export RELXILL_STABLE=
 install-stable:
@@ -71,20 +71,31 @@ install-stable:
 
 install:
 	make install-source-files
+
+build:
 	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && cmake ../
+	cd $(BUILD_DIR) && cmake --build .
 
 
 install-source-files:
-	mkdir -p $(BUILD_DIR)
-	cd $(BUILD_DIR) && cmake ../
-	cd $(BUILD_DIR) && cmake --build . -t test_sta
-	cd $(BUILD_DIR) && cmake --build . -t $(LMODELDAT_TARGET)
+	make build
 	cd $(BUILD_DIR) && cmake --install .
 
 
 .PHONY: test
 test:
+	make test-unit
+	make test-e2e
+
+
+test-unit:
+	make install
+	bin/run-tests
+
+test-e2e:
 	cd test/e2e && make test
+
 
 clean:
 	rm -f *~ gmon.out test*.dat *.log
