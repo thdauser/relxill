@@ -4,7 +4,7 @@ define load_relxill_model_devel(modlib){
    
    if (stat_file(modlib) == NULL){
       message("\n **** error : local relxill model not found ; exiting ... **** \n ");
-      exit;
+      exit(1);
    }
    
    require("xspec");

@@ -1422,22 +1422,23 @@ define print_refl_frac(){ %{{{
 %%%%%%%% TEST  %%%%%%%%%%%%
 
 
-if (eval_test() != EXIT_SUCCESS) exit;
 
-if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
+if (eval_test() != EXIT_SUCCESS) exit(1);
 
-if (check_xilltab_implementation() != EXIT_SUCCESS) exit;
+if (check_relline_phys_norm() != EXIT_SUCCESS) exit(1);
 
-if (check_z() != EXIT_SUCCESS) exit;
-if (check_linee() != EXIT_SUCCESS) exit;
-if (check_conv_mod() != EXIT_SUCCESS) exit;
-if (check_dens_mod() != EXIT_SUCCESS) exit;
-if (check_prim_cont() != EXIT_SUCCESS) exit;
-if (check_nthcomp_mod() != EXIT_SUCCESS) exit;
-if (check_iongrad_mod() != EXIT_SUCCESS) exit;
+if (check_xilltab_implementation() != EXIT_SUCCESS) exit(1);
 
-if (check_refl_frac() != EXIT_SUCCESS) exit;
-if (print_refl_frac() != EXIT_SUCCESS) exit;
+if (check_z() != EXIT_SUCCESS) exit(1);
+if (check_linee() != EXIT_SUCCESS) exit(1);
+if (check_conv_mod() != EXIT_SUCCESS) exit(1);
+if (check_dens_mod() != EXIT_SUCCESS) exit(1);
+if (check_prim_cont() != EXIT_SUCCESS) exit(1);
+if (check_nthcomp_mod() != EXIT_SUCCESS) exit(1);
+if (check_iongrad_mod() != EXIT_SUCCESS) exit(1);
 
-if (check_caching() != EXIT_SUCCESS) exit;
+if (check_refl_frac() != EXIT_SUCCESS) exit(1);
+if (print_refl_frac() != EXIT_SUCCESS) exit(1);
+
+if (check_caching() != EXIT_SUCCESS) exit(1);
 
