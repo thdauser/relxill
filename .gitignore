@@ -7,7 +7,7 @@ test_sta
 .autotools
 gmon.out
 test*.dat
-build
+build/
 .settings
 *.tgz
 cmake-build-test
