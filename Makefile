@@ -12,21 +12,15 @@ LMODELDAT_TARGET = "lmodeldat"
 
 TARFILE = "relxill.tgz"
 
-.PHONY: model-stable, model-dev model-build-dev, model-build-target, model-compile, model-tarball
+.PHONY: model
 model:
-	make model-build-dev
+	make model-dev
 
+model-stable: export RELXILL_STABLE=
 model-stable:
-	make model-build-stable
-
-
-
-.PHONY: model-build-stable
-model-build-stable: export RELXILL_STABLE=
-model-build-stable:
 	make model-build-target DEV=
 
-model-build-dev:
+model-dev:
 	make model-build-target DEV=dev
 
 model-build-target:
