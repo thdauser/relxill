@@ -9,6 +9,11 @@ set(SOURCE_FILES
         relutility.c relutility.h
         xilltable.c xilltable.h
         relphysics.c relphysics.h
+        cppModelDatabase.h
+        cppmodels.cpp  cppmodels.h
+        cppparameters.cpp  cppparameters.h
+        cppspectrum.h
+        cppTypes.h
         )
 
 set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)
@@ -51,6 +56,15 @@ else()
 endif()
 
 add_custom_target(lmodeldat ALL DEPENDS ${LMODEL_NAME})
+
+
+add_custom_command(
+        OUTPUT xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h
+        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/create_wrapper_xspec.py ${CMAKE_CURRENT_SOURCE_DIR}/lmodel_relxill.dat xspec_wrapper_lmodels.cpp
+        DEPENDS lmodel_relxill.dat
+        )
+
+add_custom_target(xspec_wrapper ALL DEPENDS xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h)
 
 
 

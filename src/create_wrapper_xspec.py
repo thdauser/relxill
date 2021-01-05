@@ -41,16 +41,36 @@ def remove_empty_strings(list_strings):
     return list_strings
 
 
+def remove_empty_line(list_strings):
+    for string in list_strings:
+        string.lstrip()
+        print(string)
+
+    return list_strings
+
+
 def read_file_in_chunks(input_file):
     empty_line = '\n\n'
     with open(input_file, 'r') as reader:
         split_file = reader.read().split(empty_line)
 
+    #    split_file = remove_empty_line(split_file)
+
     return remove_empty_strings(split_file)
 
 
+def split_in_lines_and_remove_empty(definition):
+    lines = definition.split('\n')
+    for line in lines:
+        if len(line) < 1:
+            lines.remove(line)
+
+    return lines
+
+
 def parse_model_name(definition):
-    first_line = definition.split('\n')[0]
+    first_line = split_in_lines_and_remove_empty(definition)[0]
+    # .split('\n')[0]
 
     res = re.match(rf'.*c_{local_model_prefix}(\w+).*', first_line)
     if res is not None:
@@ -67,7 +87,7 @@ def convert_if_switch_parameter(name):
 
 def parse_param_list(definition):
     # parameter definition starts in the second line
-    param_lines = definition.split('\n')[1:]
+    param_lines = split_in_lines_and_remove_empty(definition)[1:]
 
     param_names = []
 
@@ -93,11 +113,9 @@ def get_model_names(lmodeldat_file):
 
     for single_model_definition in read_file_in_chunks(lmodeldat_file):
         model_name = parse_model_name(single_model_definition)
-        if len(model_name) > 0:
-            # model_list.append(model_name)
+        if model_name is not None:
 
             params = parse_param_list(single_model_definition)
-            #            params_list.append(params)
 
             model_definition[model_name] = params
 
