@@ -4,15 +4,18 @@ Contributions to `relxill` are very welcome. Below are a few guidelines
 on how the setup works. General information on the model can be found at
 https://www.sternwarte.uni-erlangen.de/research/relxill/
 
-If you are looking for a quick start guide, have a look at the README.
+If you are looking for a quick start guide, have a look at the README.md.
 
 
-The following topics are covered in this guide:
+####The following topics are covered in this guide:
 * general code setup
 * the build process
 * adding a new model
 * test setup 
 
+#### Requirements:
+* heasoft (for building the model)
+* isis (only for the e2e-tests)
 
 ## General Code Setup 
 
