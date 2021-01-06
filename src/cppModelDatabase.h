@@ -139,6 +139,6 @@ class ModelDatabase {
   };
 };
 
-const double *get_xspec_default_parameter_array(ModelName model_name);
+
 
 #endif //RELXILL__CPPMODELDATABASE_H_

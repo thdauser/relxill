@@ -32,8 +32,7 @@ xillTable *cached_xill_tab_dens_nthcomp = NULL;
 xillTable *cached_xill_tab_ns = NULL;
 xillTable *cached_xill_tab_co = NULL;
 
-// todo: put "is model func" in relmodels.c and better structure?
-static int is_ns_model(int model_type) {
+int is_ns_model(int model_type) {
   if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) || model_type == MOD_TYPE_RELXILLBBRET) {
     return 1;
   } else {
@@ -41,7 +40,7 @@ static int is_ns_model(int model_type) {
   }
 }
 
-static int is_co_model(int model_type) {
+int is_co_model(int model_type) {
   if ((model_type == MOD_TYPE_RELXILLCO) || (model_type == MOD_TYPE_XILLVERCO)) {
     return 1;
   } else {
@@ -49,7 +48,7 @@ static int is_co_model(int model_type) {
   }
 }
 
-static int is_CpD_model(int model_type) {
+int is_CpD_model(int model_type) {
   if ((model_type == MOD_TYPE_RELXILLDENS_NTHCOMP) ||
       (model_type == MOD_TYPE_RELXILLLPDENS_NTHCOMP) ||
       (model_type == MOD_TYPE_XILLVERDENS_NTHCOMP)
@@ -993,6 +992,8 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
   } else if (is_co_model(param->model_type)) {
     if (cached_xill_tab_co == NULL) {
+      assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
+      assert(param->lxi == 0); // the CO_Table does not have an ionization
       init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, param, status);
       CHECK_STATUS_RET(*status, NULL);
     }

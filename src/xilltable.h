@@ -88,4 +88,8 @@ char *getXilltableNameUsingAlternativeIfNotExisting(char *stdname, char *altname
 
 int is_6dim_table(int model_type);
 
+int is_ns_model(int model_type);
+int is_co_model(int model_type);
+int is_CpD_model(int model_type);
+
 #endif /* XILLTABLE_H_ */

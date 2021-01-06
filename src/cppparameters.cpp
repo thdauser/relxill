@@ -132,6 +132,7 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
   return param;
 }
 
+
 /**
  * get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
@@ -146,15 +147,22 @@ xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, M
   param->lxi = params[XPar::logxi];
   param->ect = (model_info.primeSpec() == T_PrimSpec::Nthcomp) ? params[XPar::kte]
                                                                : params[XPar::ecut];  // TODO: make kTe own parameter
+  param->dens = params[XPar::logn];
   param->incl = params[XPar::incl];
   param->z = params[XPar::z];
   param->refl_frac = params[XPar::refl_frac];
   param->fixReflFrac = static_cast<int>(lround(params[XPar::switch_fixreflfrac]));
-  param->dens = params[XPar::logn];
   param->frac_pl_bb = params[XPar::frac_pl_bb];
   param->kTbb = params[XPar::ktbb];
   param->ion_grad_type = static_cast<int>(lround(params[XPar::switch_ion_grad_type]));
   param->ion_grad_index = params[XPar::xi_index];
+
+  // special definition of the xillver-co table
+  if(is_co_model(param->model_type)){
+    param->dens = 17;
+    param->afe = params[XPar::a_co];
+    param->lxi = 0.0;
+  }
 
   return param;
 }
@@ -173,7 +181,7 @@ const double *get_xspec_default_parameter_array(ModelName model_name) {
   auto default_param_values = ModelParams();
   auto output_param_array = new double[model_parameters.size()];
 
-  for (int ii = 0; ii < model_parameters.size(); ii++) {
+  for (size_t ii = 0; ii < model_parameters.size(); ii++) {
     output_param_array[ii] = default_param_values[model_parameters[ii]];
   }
 
