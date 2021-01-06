@@ -217,15 +217,16 @@ variable filename_random  = "%s_random_refdat_%04i.fits";
 variable filename_special  = "%s_special_refdat_%04i.fits";
 variable num_random_evaluations = 5;
 
-variable all_fit_functions = get_implemented_fitfunctions();
+variable all_fit_functions = get_implemented_fitfunctions(;only_dev);
 
 variable ff;
 foreach ff(all_fit_functions){
    counter = 0;
+   message(ff);
    create_default_refdata(ff, filename_default);
    create_random_refdata(ff, filename_random, num_random_evaluations);
 }
-counter = 0;
-create_refdata_relxilllp(filename_special);
+%counter = 0;
+%create_refdata_relxilllp(filename_special);
 
 %%%%%%%%%%
