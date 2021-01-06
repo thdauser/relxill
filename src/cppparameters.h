@@ -161,5 +161,6 @@ int convertPrimSpecType(T_PrimSpec name);
 
 relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
+const double *get_xspec_default_parameter_array(ModelName model_name);
 
 #endif //RELXILL_SRC_CPPPARAMETERS_H_

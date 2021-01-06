@@ -60,13 +60,18 @@ class ModelDefinition {
       : m_param{std::move(_par)}, m_model{_type} {
   }
 
-  [[nodiscard]] const ModelParamVector &input_parameters() const {
+  [[nodiscard]] const ModelParamVector &parameter_names() const {
     return m_param;
   }
 
   [[nodiscard]] ModelInfo model_info() const {
     return m_model;
   }
+
+  [[nodiscard]] T_Model type() const {
+    return m_model.type();
+  }
+
 
  private:
   ModelParamVector m_param{};
@@ -87,7 +92,7 @@ class ModelDatabase {
     return *instance;
   }
 
-  ModelDefinition get(ModelName name) {
+  ModelDefinition get_model_definition(ModelName name) {
     try {
       return ModelDefinition(lmodel_database.params(name), lmodel_info.at(name));
     } catch (std::out_of_range &e) {
@@ -95,9 +100,6 @@ class ModelDatabase {
     }
   }
 
-  const XspecModelDatabase &database() const {
-    return lmodel_database;
-  }
 
  private:
   ModelDatabase() = default;  //hidden constructor and destructor to avoid initialization
@@ -136,5 +138,7 @@ class ModelDatabase {
 
   };
 };
+
+const double *get_xspec_default_parameter_array(ModelName model_name);
 
 #endif //RELXILL__CPPMODELDATABASE_H_

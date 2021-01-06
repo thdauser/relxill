@@ -108,26 +108,26 @@ void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
  * Wrapper function, which can be called from any C-type local model function as
  * required by Xspec
  * @param model_name: unique name of the model
- * @param parameter: input parameter array (size can be determined from the model definition for the model_name)
+ * @param parameter_values: input parameter_values array (size can be determined from the model definition for the model_name)
  * @param xspec_energy[num_flux_bins]: input energy grid
  * @param xspec_flux[num_flux_bins]: - flux array (already allocated), used to return the calculated values
  *                    - for convolution models this is also the input flux
  * @param num_flux_bins
  */
 void xspec_C_wrapper_eval_model(ModelName model_name,
-                                const double *parameter,
+                                const double *parameter_values,
                                 double *xspec_flux,
                                 int num_flux_bins,
                                 const double *xspec_energy) {
 
   try {
-    auto const model_definition = ModelDatabase::instance().get(model_name);
-    ModelParams params{model_definition.input_parameters(), parameter};
+    ModelDefinition model = ModelDatabase::instance().get_model_definition(model_name);
+    ModelParams input_params{model.parameter_names(), parameter_values};
 
-    LocalModel model{params, model_name};
+    LocalModel local_model{input_params, model_name};
 
     XspecSpectrum spectrum{xspec_energy, xspec_flux, static_cast<size_t>(num_flux_bins)};
-    model.eval_model(spectrum);
+    local_model.eval_model(spectrum);
 
   } catch (ModelNotFound &e) {
     std::cout << e.what();

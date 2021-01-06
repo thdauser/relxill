@@ -16,18 +16,19 @@ set(SOURCE_FILES
         cppspectrum.h
         cppTypes.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
-        )
+        cppModelDatabase.cpp)
 ############################################
 
 set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)
 set(SOURCE_FILES ${SOURCE_FILES} ${CONFIG_FILE})
-set(EXEC_FILES test_sta)
 
-foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES} ${CONFIG_FILE} )
+set(EXEC_FILES_CPP test_sta)
+
+foreach (execfile ${EXEC_FILES_CPP})
+    add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES} ${CONFIG_FILE} )
     target_link_libraries(${execfile} m cfitsio)
     target_include_directories(${execfile} PUBLIC "${PROJECT_BINARY_DIR}" )  # necessary to find config file
-endforeach (execfile ${EXEC_FILES})
+endforeach (execfile ${EXEC_FILES_CPP})
 
 ### RELXILL LIBRARY ###
 set(LIBNAME Relxill)

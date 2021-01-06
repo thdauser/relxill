@@ -53,23 +53,24 @@ class ModelEvalFailed : public std::exception {
 };
 
 
-// namespace relxill {
-
-void line_model(ModelParams param, XspecSpectrum spectrum);
-void relxill_model(const XspecSpectrum &spectrum);
-void conv_model(const XspecSpectrum &spectrum);
-void xillver_model(const XspecSpectrum &spectrum);
 
 class LocalModel {
 
  public:
   LocalModel(const ModelParams &par, ModelName model_name)
-      : m_param{par}, m_name{model_name}, m_info{ModelDatabase::instance().get(model_name).model_info()} {
-  };
+      : m_name{model_name},
+        m_param{par},
+        m_info{ModelDatabase::instance().get_model_definition(model_name).model_info()}
+  {  };
+
+  LocalModel(double* inp_param, ModelName model_name)
+      : LocalModel( ModelParams(ModelDatabase::instance().get_model_definition(model_name).parameter_names(), inp_param),
+                    model_name )
+  {  };
 
   explicit LocalModel(ModelName model_name) :
-      LocalModel(ModelParams(), model_name) {
-  };
+      LocalModel(ModelParams(), model_name)
+  {  };
 
   void line_model(const XspecSpectrum &spectrum);
   void relxill_model(const XspecSpectrum &spectrum);
@@ -84,16 +85,16 @@ class LocalModel {
   void eval_model(XspecSpectrum &spectrum) {
 
     switch (m_info.type()) {
-      case T_Model::Line:line_model(spectrum);
+      case T_Model::Line: line_model(spectrum);
         break;
 
-      case T_Model::Relxill:relxill_model(spectrum);
+      case T_Model::Relxill: relxill_model(spectrum);
         break;
 
-      case T_Model::Conv:conv_model(spectrum);
+      case T_Model::Conv: conv_model(spectrum);
         break;
 
-      case T_Model::Xill:xillver_model(spectrum);
+      case T_Model::Xill: xillver_model(spectrum);
         break;
     }
 
@@ -106,7 +107,7 @@ class LocalModel {
 };
 
 void xspec_C_wrapper_eval_model(ModelName model_name,
-                                const double *parameter,
+                                const double *parameter_values,
                                 double *xspec_flux,
                                 int num_flux_bins,
                                 const double *xspec_energy);

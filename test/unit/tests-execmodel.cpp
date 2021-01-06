@@ -19,57 +19,12 @@
 #include "catch2/catch_amalgamated.hpp"
 #include "cppmodels.h"
 #include "xspec_wrapper_lmodels.h"
+#include "cppspectrum.h"
 
 #include <vector>
 
-class DefaultSpec {
- public:
-  DefaultSpec(double emin, double emax, size_t n_bins) : num_flux_bins{n_bins} {
-    size_t n_energy = n_bins + 1;
-    energy = new double[n_energy];
-    flux = new double[n_bins];
-
-    set_log_grid(energy, n_energy, emin, emax);
-    set_input_flux();
-  };
-
-  DefaultSpec() : DefaultSpec(0.1, 1000.0, 3000) {
-  };
-
-  /* get a logarithmic grid from emin to emax with n_ener bins  */
-  static void set_log_grid(double *ener, size_t n_ener, double emin, double emax) {
-    for (int ii = 0; ii < n_ener - 1; ii++) {
-      ener[ii] = 1.0 * ii / (static_cast<double>(n_ener) - 1.0) * (log(emax) - log(emin)) + log(emin);
-      ener[ii] = exp(ener[ii]);
-    }
-    ener[n_ener - 1] = emax; // separate case (otherwise it is only approx. emax, due to the log/exp functions)
-  }
-
- public:
-  double *energy{nullptr};
-  double *flux{nullptr};
-  const size_t num_flux_bins;
-
- private:
-  void set_input_flux() const {
-    flux[num_flux_bins / 2] = 1.0;
-  }
-};
 
 
-const double *get_xspec_default_parameter_array(ModelName model_name) {
-
-  auto const model_parameters = ModelDatabase::instance().get(model_name).input_parameters();
-
-  auto default_param_values = ModelParams();
-  auto output_param_array = new double[model_parameters.size()];
-
-  for (int ii = 0; ii < model_parameters.size(); ii++) {
-    output_param_array[ii] = default_param_values[model_parameters[ii]];
-  }
-
-  return output_param_array;
-}
 
 double sum_flux(const double *flux, int nbins) {
 

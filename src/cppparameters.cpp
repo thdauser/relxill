@@ -17,6 +17,7 @@
 */
 
 #include "cppparameters.h"
+#include "cppModelDatabase.h"
 extern "C" {
 #include "relmodels.h"
 #include "relutility.h"
@@ -156,4 +157,25 @@ xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, M
   param->ion_grad_index = params[XPar::xi_index];
 
   return param;
+}
+
+
+/**
+ * Return Default Parameters Array for a given Model
+ * It will be return as double array, the same as given as input from Xspec
+ * @param ModelName model_name
+ * @return double param_array
+ */
+const double *get_xspec_default_parameter_array(ModelName model_name) {
+
+  auto const model_parameters = ModelDatabase::instance().get_model_definition(model_name).parameter_names();
+
+  auto default_param_values = ModelParams();
+  auto output_param_array = new double[model_parameters.size()];
+
+  for (int ii = 0; ii < model_parameters.size(); ii++) {
+    output_param_array[ii] = default_param_values[model_parameters[ii]];
+  }
+
+  return output_param_array;
 }
