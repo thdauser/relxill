@@ -62,7 +62,7 @@ add_custom_command(
         OUTPUT xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h
         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/create_wrapper_xspec.py
         ${CMAKE_CURRENT_SOURCE_DIR}/lmodel_relxill.dat ${CMAKE_CURRENT_SOURCE_DIR}/xspec_wrapper_lmodels.cpp
-        DEPENDS lmodel_relxill.dat
+        DEPENDS lmodeldat
         )
 
 add_custom_target(xspec_wrapper ALL DEPENDS xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h)
