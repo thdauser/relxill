@@ -33,6 +33,39 @@ header = """/*
 """
 
 
+class ModelDefinition:
+    def __init__(self, model_definition_string):
+        self.function_name = None
+        self.model_name = None
+        self.params = None
+
+        self.set_model_and_function_name(model_definition_string)
+        self.params = self.get_param_list(model_definition_string)
+
+        self.test_definition()
+
+    def get_param_list(self, definition_string):
+        if self.model_name is not None:
+            return parse_param_list(definition_string)
+        else:
+            print(" *** error ***: could not parse the following model definition")
+            print(definition_string)
+            return None
+
+    def set_model_and_function_name(self, definition_string):
+        first_line = split_in_lines_and_remove_empty(definition_string)[0]
+
+        res = re.match(rf'.*c_({local_model_prefix}\w+).*', first_line)
+        if res is not None:
+            self.function_name = res.groups()[0]
+            self.model_name = first_line.split(' ')[0]
+
+    def test_definition(self):
+        if self.params is not None:
+            print("    - " + self.model_name + "  found " + str(len(self.params)) +
+                  " parameters \t  (function name: " + self.function_name + ")")
+
+
 def remove_empty_strings(list_strings):
     for string in list_strings:
         if len(string) <= 1:
@@ -68,17 +101,6 @@ def split_in_lines_and_remove_empty(definition):
     return lines
 
 
-def parse_model_name(definition):
-    first_line = split_in_lines_and_remove_empty(definition)[0]
-    # .split('\n')[0]
-
-    res = re.match(rf'.*c_{local_model_prefix}(\w+).*', first_line)
-    if res is not None:
-        return res.groups()[0]
-    else:
-        return None
-
-
 def convert_if_switch_parameter(name):
     if name[0] == '$':
         name = "switch_" + name[1:]
@@ -109,29 +131,19 @@ def parse_param_list(definition):
 # input:  filename for the model definition (lmodel.dat file)
 # return: list of model names
 def get_model_names(lmodeldat_file):
-    model_definition = {}
+    definition_list = []
 
-    for single_model_definition in read_file_in_chunks(lmodeldat_file):
-        model_name = parse_model_name(single_model_definition)
-        if model_name is not None:
+    for single_definition_string in read_file_in_chunks(lmodeldat_file):
+        definition_list.append(ModelDefinition(single_definition_string))
 
-            params = parse_param_list(single_model_definition)
-
-            model_definition[model_name] = params
-
-            print("    - " + model_name + "  found " + str(len(params)) + " parmeters ")
-        else:
-            print(" *** error ***: could not parse the following model definition")
-            print(single_model_definition)
-
-    return model_definition
+    return definition_list
 
 
-def get_wrapper_lmod(local_model_name):
+def get_wrapper_lmod(local_model_name, function_name):
     parameter_list = "const double *energy, int Nflux, const double *parameter, int spectrum, double *flux, double *fluxError, const char *init"
     function_call = "xspec_C_wrapper_eval_model(ModelName::" + local_model_name + ", parameter, flux, Nflux, energy);"
 
-    c_function_name = "lmod" + local_model_name
+    c_function_name = "lmod" + function_name
 
     return f"""
 extern "C" void {c_function_name}({parameter_list}) 
@@ -145,7 +157,7 @@ def write_std_header(file):
     file.write(header)
 
 
-def write_xspec_wrapper_file(outfile_name, model_names):
+def write_xspec_wrapper_file(outfile_name, model_definition):
     includes = "#include \"cppmodels.h\"\n#include \"cppparameters.h\"\n"
 
     file = open(outfile_name, "w")
@@ -153,8 +165,8 @@ def write_xspec_wrapper_file(outfile_name, model_names):
     write_std_header(file)
     file.write(includes)
 
-    for model in model_names:
-        file.write(get_wrapper_lmod(model))
+    for model in model_definition:
+        file.write(get_wrapper_lmod(model.model_name, model.function_name))
 
     file.close()
 
@@ -201,7 +213,7 @@ class XspecModelDatabase{
 
 def write_model_database(file, definition):
     for model in definition:
-        file.write(get_implemented_lmod(model, definition[model]))
+        file.write(get_implemented_lmod(model.model_name, model.params))
     file.write("  }\n };\n")
 
 
@@ -240,7 +252,7 @@ if __name__ == '__main__':
             f"\n *** creating {output_wrapper_file_cpp} and {output_wrapper_file_header} by parsing {input_lmodel_file}:")
 
         model_definition = get_model_names(input_lmodel_file)
-        write_xspec_wrapper_file(output_wrapper_file_cpp, model_definition.keys())
+        write_xspec_wrapper_file(output_wrapper_file_cpp, model_definition)
         write_xspec_implement_models(output_wrapper_file_header, model_definition)
 
     else:
