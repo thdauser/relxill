@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(relxill VERSION 1.4.20210104)
+project(relxill VERSION 1.4.20210106)
 
 
 set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
@@ -27,9 +27,3 @@ add_subdirectory(test)
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION model)
 
-## testing setup
-find_package(Catch2 REQUIRED)
-set(test_execname tests)
-add_executable(${test_execname} test/unit/${test_execname}.cpp ${SOURCE_FILES_CPP} test/unit/tests-execmodel.cpp test/unit/test-cppspectrum.cpp)
-target_link_libraries(${test_execname} m cfitsio)
-target_link_libraries(${test_execname} Catch2::Catch2)

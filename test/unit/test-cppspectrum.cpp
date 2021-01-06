@@ -17,7 +17,7 @@
 */
 
 #include "catch2/catch.hpp"
-#include "../../cppmodels.h"
+#include "cppmodels.h"
 
 #include <vector>
 #include <unordered_map>

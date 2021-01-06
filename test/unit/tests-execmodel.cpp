@@ -17,8 +17,8 @@
 */
 
 #include "catch2/catch.hpp"
-#include "../../cppmodels.h"
-#include "../../xspec_wrapper_lmodels.h"
+#include "cppmodels.h"
+#include "xspec_wrapper_lmodels.h"
 
 #include <vector>
 
