@@ -18,8 +18,7 @@ build:
     paths:
       - "relxill_model_v*.tgz"
       - "bin/"
-      - "model/"
-      - "model-build/"
+      - "build/"
 
 test:
   stage: test
