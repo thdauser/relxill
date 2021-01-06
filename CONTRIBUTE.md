@@ -84,6 +84,11 @@ therefore should only contain stable models with a stable interface.
 The tests are all collected in `test`. The main tests, which are automatically performed, 
 are in `test/unit/` and `test/e2e/`. 
 
+From the main directory, calling `make test` will run both, the unit tests and all e2e tests for all
+models (stable and development). Additionally, only the model including the stable models can be 
+tested as well with `make test-stable`. In this case, first the stable model is built, and then 
+the e2e tests are ran on this model. 
+
 #### Unit Tests (test/unit/)
 The units tests are done on C or C++ and should test
 basic functionality of the code. Those tests are ran first. To implement the tests the Catch2 
