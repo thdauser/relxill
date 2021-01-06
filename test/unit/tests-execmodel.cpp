@@ -16,7 +16,7 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "catch2/catch.hpp"
+#include "catch2/catch_amalgamated.hpp"
 #include "cppmodels.h"
 #include "xspec_wrapper_lmodels.h"
 

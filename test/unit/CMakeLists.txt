@@ -1,5 +1,5 @@
-## testing setup
-find_package(Catch2 REQUIRED)
+## testing setup (find_package(Catch2 REQUIRED) needs catch2 to be installed in gitlab)
+set(CATCH2_FILES catch2/catch_amalgamated.cpp catch2/catch_amalgamated.cpp)
 
 set(UNIT_TEST_FILES
         test_rellp.c test_rellp.h
@@ -15,10 +15,10 @@ set(EXEC_FILES run-tests tests)
 set(EXEC_FILES tests)
 
 foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.cpp ${UNIT_TEST_FILES})
+    add_executable(${execfile} ${execfile}.cpp ${UNIT_TEST_FILES} ${CATCH2_FILES})
 
     target_link_libraries(${execfile} PUBLIC ${EXTRA_LIBS})
-    target_link_libraries(${execfile} PUBLIC m cfitsio Catch2::Catch2)
+    target_link_libraries(${execfile} PUBLIC m cfitsio)
 
     target_include_directories(${execfile} PUBLIC
             ${EXTRA_INCLUDES}
