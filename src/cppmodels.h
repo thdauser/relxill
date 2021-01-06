@@ -101,8 +101,8 @@ class LocalModel {
   }
 
  private:
-  ModelParams m_param;
   ModelName m_name;
+  ModelParams m_param;
   ModelInfo m_info;
 };
 
