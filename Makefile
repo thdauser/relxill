@@ -52,7 +52,7 @@ model-compile:
 	rm $(MODEL_BUILD_DIR)/$(TARFILE)
 	cd $(MODEL_BUILD_DIR) && chmod a+x $(COMPILE_SCRIPT)
 	cd $(MODEL_BUILD_DIR) && ./$(COMPILE_SCRIPT)
-	cd $(MODEL_BUILD_DIR) && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v
+	cd $(MODEL_BUILD_DIR) && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); try{fit_fun("relxill"); () = eval_fun(1,2);} catch AnyError: { message(" *** ERROR LOADING RELXILL *** "); exit(1); };  ' | isis -v
 
 
 
