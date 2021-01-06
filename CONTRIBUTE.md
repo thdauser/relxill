@@ -58,15 +58,43 @@ in Xspec: https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 The difference is that only the public models are included in the official release of the relxill model and 
 therefore should only contain stable models with a stable interface.
 
-2) Any new parameters have to be added and initialized
+2) Any new parameters have to be added in `class XPar` and a default value defined  in 
+   `class XspecLmodelDatDefinition` (cppparameters.h)
 
-3) The model type has to be added in the `class ModelName`. 
+3) The new model name as to be added as to be added in the `class ModelName` (cppTypes.h). 
+   It is used to uniquely identify the model.
    
-4) Additionally, an unique model integer 
-   value has to be defined in `relmodels.h` (like `#define MOD_TYPE_RELXILL 123`)  and 
+4) Additionally, a unique model integer 
+   value has to be defined in relmodels.h (for example `#define MOD_TYPE_RELXILL 123`)  and 
    linked to the model, by adding it to the function `int convertModelType(ModelName name)`
    (*this part will soon be removed*).
 
-5) The final model is defined in `class ModelDatabase`
+5) The final model is defined in `class ModelDatabase` (cppModelDatabase.h), where the 
+   model type (Convolution, Relxill-Type, Line-Model, ...), 
+   irradiation type (Lamp Post, Power Law, ...), and
+   primary spectral shape (Cutoff-Powerlaw, Nthcomp, Blackbody) are set. 
+
+
 
 ## Test Setup
+
+The tests are all collected in `test`. The main tests, which are automatically performed, 
+are in `test/unit/` and `test/e2e/`. 
+
+#### Unit Tests (test/unit/)
+The units tests are done on C or C++ and should test
+basic functionality of the code. Those tests are ran first. To implement the tests the Catch2 
+framework is used. New tests can simply be added as a new .cpp file and added in CMakeLists.txt.
+Those will then be automatically compiled and run.
+
+#### e2e Tests (test/e2e/)
+End-to-end tests are based on using the fully compiled local model (in build/), which is then loaded in isis.
+Currently, the tests are split in two main functions. All tests are called from the Makefile contained
+in this directory. Executing `make test` runs all tests. *Note, these test require ISIS to be installed.*
+
+* `make test-refdata` compares all available reference data to the models which are currently installed. 
+Only models for which reference data exists are tested. The script `create_reference_data.sl` can be used 
+  to create new reference data.
+
+* `make test-functionality` calls a large isis-script, testing all functions defined in the function
+`get_implemented_fitfunctions()`. Note that the models are distinguished in stable and development.
