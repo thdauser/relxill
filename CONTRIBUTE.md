@@ -60,8 +60,13 @@ therefore should only contain stable models with a stable interface.
 
 2) Any new parameters have to be added and initialized
 
-3) The model type has to be set (will be removed)
+3) The model type has to be added in the `class ModelName`. 
+   
+4) Additionally, an unique model integer 
+   value has to be defined in `relmodels.h` (like `#define MOD_TYPE_RELXILL 123`)  and 
+   linked to the model, by adding it to the function `int convertModelType(ModelName name)`
+   (*this part will soon be removed*).
 
-4) The final model is defined in ** bla **
+5) The final model is defined in `class ModelDatabase`
 
 ## Test Setup
