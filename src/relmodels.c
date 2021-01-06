@@ -919,13 +919,6 @@ void init_par_relxilllpion_nthcomp(relParam **rel_param,
   return;
 }
 
-static void init_flux_array(const int n_ener0, double *flux) {
-  int ii;
-  for (ii = 0; ii < n_ener0; ii++) {
-    flux[ii] = 0.0;
-  }
-}
-
 /** shift the spectrum such that we can calculate the line for 1 keV **/
 double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status) {
 
