@@ -109,7 +109,7 @@ class DefaultSpec {
 
   /* get a logarithmic grid from emin to emax with n_ener bins  */
   static void set_log_grid(double *ener, size_t n_ener, double emin, double emax) {
-    for (int ii = 0; ii < n_ener - 1; ii++) {
+    for (size_t ii = 0; ii < n_ener - 1; ii++) {
       ener[ii] = 1.0 * ii / (static_cast<double>(n_ener) - 1.0) * (log(emax) - log(emin)) + log(emin);
       ener[ii] = exp(ener[ii]);
     }
