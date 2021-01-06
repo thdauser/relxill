@@ -4,8 +4,7 @@
 *.cproject
 *.o
 test_sta
-xspec_wrapper_lmodels.cpp
-
+venv/
 .autotools
 gmon.out
 test*.dat
