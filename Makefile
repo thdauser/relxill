@@ -38,7 +38,7 @@ model-build-target:
 
 
 model-tarball:
-	cd $(MODEL_DIR)/ && tar cfvz $(TARFILE) *.c *.h lmodel_relxill.dat $(COMPILE_SCRIPT) -C ../ README.txt LICENSE
+	cd $(MODEL_DIR)/ && tar cfvz $(TARFILE) *.c *.cpp *.h lmodel_relxill.dat $(COMPILE_SCRIPT) -C ../ README.txt LICENSE
 	cp -v $(MODEL_DIR)/$(TARFILE) .
 
 
