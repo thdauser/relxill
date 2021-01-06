@@ -143,10 +143,8 @@ def get_wrapper_lmod(local_model_name, function_name):
     parameter_list = "const double *energy, int Nflux, const double *parameter, int spectrum, double *flux, double *fluxError, const char *init"
     function_call = "xspec_C_wrapper_eval_model(ModelName::" + local_model_name + ", parameter, flux, Nflux, energy);"
 
-    c_function_name = "lmod" + function_name
-
     return f"""
-extern "C" void {c_function_name}({parameter_list}) 
+extern "C" void {function_name}({parameter_list}) 
 {{
     {function_call}
 }} 
