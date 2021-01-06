@@ -106,27 +106,33 @@ class ModelDatabase {
   XspecModelDatabase lmodel_database{}; // automatically created Class
 
   // TODO: make this an own class?
-  // TODO: how to treat the high density table stuff
   const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
       {ModelName::relline, ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw)},
-      {ModelName::rellinelp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
+      {ModelName::relline_lp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
 
-      {ModelName::relconvlp, ModelInfo(T_Model::Conv, T_Irrad::LampPost)},
+      {ModelName::relconv_lp, ModelInfo(T_Model::Conv, T_Irrad::LampPost)},
       {ModelName::relconv, ModelInfo(T_Model::Conv, T_Irrad::BknPowerlaw)},
 
       {ModelName::relxill, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
-      {ModelName::relxillCp, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Nthcomp)},
+      {ModelName::relxillCO, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
+      {ModelName::relxillNS, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
       {ModelName::relxillD, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
+      {ModelName::relxillCp, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Nthcomp)},
+      {ModelName::relxillDCp, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Nthcomp)},
 
       {ModelName::relxilllp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
-      {ModelName::relxilllpCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
       {ModelName::relxilllpD, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpion, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
+      {ModelName::relxilllpCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
+      {ModelName::relxilllpDCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
       {ModelName::relxilllpionCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
 
       {ModelName::xillver, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverD, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverCp, ModelInfo(T_Model::Xill, T_PrimSpec::Nthcomp)},
+      {ModelName::xillverDCp, ModelInfo(T_Model::Xill, T_PrimSpec::Nthcomp)},
+      {ModelName::xillverCO, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
+      {ModelName::xillverNS, ModelInfo(T_Model::Xill, T_PrimSpec::Blackbody)},
 
   };
 };

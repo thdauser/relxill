@@ -32,8 +32,8 @@ int convertModelType(ModelName name) {
   switch (name) {
     case ModelName::relline: return MOD_TYPE_RELLINE;
     case ModelName::relconv: return MOD_TYPE_RELCONV;
-    case ModelName::rellinelp: return MOD_TYPE_RELLINELP;
-    case ModelName::relconvlp: return MOD_TYPE_RELCONVLP;
+    case ModelName::relline_lp: return MOD_TYPE_RELLINELP;
+    case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
     case ModelName::relxill  : return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
     case ModelName::relxillD: return MOD_TYPE_RELXILLDENS;
@@ -45,8 +45,15 @@ int convertModelType(ModelName name) {
     case ModelName::xillver: return MOD_TYPE_XILLVER;
     case ModelName::xillverCp: return MOD_TYPE_XILLVER_NTHCOMP;
     case ModelName::xillverD: return MOD_TYPE_XILLVERDENS;
+    case ModelName::xillverNS: return MOD_TYPE_XILLVERNS;
+    case ModelName::xillverCO: return MOD_TYPE_XILLVERCO;
+    case ModelName::relxillNS: return MOD_TYPE_RELXILLNS;
+    case ModelName::relxillCO: return MOD_TYPE_RELXILLCO;
+    case ModelName::relxillDCp: return MOD_TYPE_RELXILLDENS_NTHCOMP;
+    case ModelName::relxilllpDCp: return MOD_TYPE_RELXILLLPDENS_NTHCOMP;
+    case ModelName::xillverDCp: return MOD_TYPE_XILLVERDENS_NTHCOMP;
   }
-  puts(" *** relxill-error: converting model name to integer failed ");
+  puts(" *** relxill-error: unknown ModelName, converting model name to integer failed ");
   exit(EXIT_FAILURE);
 }
 
