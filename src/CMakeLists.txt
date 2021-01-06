@@ -14,24 +14,11 @@ set(SOURCE_FILES
         cppparameters.cpp  cppparameters.h
         cppspectrum.h
         cppTypes.h
+        xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
         )
 
 set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)
 
-set(EXEC_FILES test_sta)
-
-foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES} ${CONFIG_FILE} )
-    target_link_libraries(${execfile} m cfitsio)
-    target_include_directories(${execfile} PUBLIC
-                           "${PROJECT_BINARY_DIR}"
-                           )
-endforeach (execfile ${EXEC_FILES})
-
-set(LIBNAME Relxill)
-add_library(${LIBNAME} ${SOURCE_FILES})
-target_include_directories(${LIBNAME} PUBLIC "${PROJECT_BINARY_DIR}")
-target_link_libraries(${LIBNAME} m cfitsio)
 
 
 # create the lmodel.dat file
@@ -58,10 +45,13 @@ endif()
 add_custom_target(lmodeldat ALL DEPENDS ${LMODEL_NAME})
 
 
+# we build everything in the actual src directory
+# note, need to give always the full path
 add_custom_command(
-        OUTPUT xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h
+        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/xspec_wrapper_lmodels.cpp ${CMAKE_CURRENT_SOURCE_DIR}/xspec_wrapper_lmodels.h
         COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/create_wrapper_xspec.py
         ${CMAKE_CURRENT_SOURCE_DIR}/lmodel_relxill.dat ${CMAKE_CURRENT_SOURCE_DIR}/xspec_wrapper_lmodels.cpp
+        COMMAND echo `pwd`
         DEPENDS lmodeldat
         )
 
@@ -69,6 +59,21 @@ add_custom_target(xspec_wrapper ALL DEPENDS xspec_wrapper_lmodels.cpp xspec_wrap
 
 
 
+set(EXEC_FILES test_sta)
+
+foreach (execfile ${EXEC_FILES})
+    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES} ${CONFIG_FILE} )
+    target_link_libraries(${execfile} m cfitsio)
+    target_include_directories(${execfile} PUBLIC "${PROJECT_BINARY_DIR}" )  # necessary to find config file
+endforeach (execfile ${EXEC_FILES})
+
+set(LIBNAME Relxill)
+add_library(${LIBNAME} ${SOURCE_FILES})
+target_include_directories(${LIBNAME} PUBLIC "${PROJECT_BINARY_DIR}")
+target_link_libraries(${LIBNAME} m cfitsio)
+
+
+###  INSTALL  ###
 install(FILES ${SOURCE_FILES} DESTINATION model)
 install(FILES
         modelfiles/compile_relxill.sh
@@ -76,5 +81,7 @@ install(FILES
         DESTINATION model)
 
 install(TARGETS ${EXEC_FILES} DESTINATION bin)
+
+
 
 
