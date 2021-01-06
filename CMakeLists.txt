@@ -21,9 +21,9 @@ configure_file(${SRC_DIR}/config.h.in config.h) # written into binary tree
 list(APPEND EXTRA_LIBS Relxill)
 list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/${SRC_DIR}")
 
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+
 add_subdirectory(${SRC_DIR})
 add_subdirectory(test)
 
-set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
-install(FILES "${PROJECT_BINARY_DIR}/config.h" DESTINATION model)
 

@@ -1,3 +1,4 @@
+### SOURCE FILES: add all model files here ###
 set(SOURCE_FILES
         common.h
         donthcomp.c
@@ -16,49 +17,10 @@ set(SOURCE_FILES
         cppTypes.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
         )
+############################################
 
 set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)
-
-
-
-# create the lmodel.dat file
-set(LMODEL_NAME lmodel_relxill.dat)
-
-if (DEFINED ENV{RELXILL_STABLE})
-    add_custom_command(
-            OUTPUT ${LMODEL_NAME}
-            COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/modelfiles/lmodel_relxill_public.dat ${CMAKE_CURRENT_SOURCE_DIR}/${LMODEL_NAME}
-            COMMAND echo " ****** Creating lmodel_relxill.dat ONLY for STABLE RELEASE MODELS ******"
-            USES_TERMINAL
-    )
-
-else()
-    add_custom_command(
-            OUTPUT ${LMODEL_NAME}
-            COMMAND cp ${CMAKE_CURRENT_SOURCE_DIR}/modelfiles/lmodel_relxill_public.dat ${CMAKE_CURRENT_SOURCE_DIR}/${LMODEL_NAME}
-            COMMAND cat ${CMAKE_CURRENT_SOURCE_DIR}/modelfiles/lmodel_relxill_devel.dat >> ${CMAKE_CURRENT_SOURCE_DIR}/${LMODEL_NAME}
-            COMMAND echo " ****** Creating lmodel_relxill.dat for ALL MODELS ******"
-            USES_TERMINAL
-    )
-endif()
-
-add_custom_target(lmodeldat ALL DEPENDS ${LMODEL_NAME})
-
-
-# we build everything in the actual src directory
-# note, need to give always the full path
-add_custom_command(
-        OUTPUT ${CMAKE_CURRENT_SOURCE_DIR}/xspec_wrapper_lmodels.cpp ${CMAKE_CURRENT_SOURCE_DIR}/xspec_wrapper_lmodels.h
-        COMMAND ${CMAKE_CURRENT_SOURCE_DIR}/create_wrapper_xspec.py
-        ${CMAKE_CURRENT_SOURCE_DIR}/lmodel_relxill.dat ${CMAKE_CURRENT_SOURCE_DIR}/xspec_wrapper_lmodels.cpp
-        COMMAND echo `pwd`
-        DEPENDS lmodeldat create_wrapper_xspec.py
-        )
-
-add_custom_target(xspec_wrapper ALL DEPENDS xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h)
-
-
-
+set(SOURCE_FILES ${SOURCE_FILES} ${CONFIG_FILE})
 set(EXEC_FILES test_sta)
 
 foreach (execfile ${EXEC_FILES})
@@ -67,18 +29,64 @@ foreach (execfile ${EXEC_FILES})
     target_include_directories(${execfile} PUBLIC "${PROJECT_BINARY_DIR}" )  # necessary to find config file
 endforeach (execfile ${EXEC_FILES})
 
+### RELXILL LIBRARY ###
 set(LIBNAME Relxill)
-add_library(${LIBNAME} ${SOURCE_FILES})
+add_library(${LIBNAME} ${SOURCE_FILES} ${CONFIG_FILE})
 target_include_directories(${LIBNAME} PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(${LIBNAME} m cfitsio)
+########################
+
+
+
+# create everything in the real source directly (and not as default the build)
+set(SRC_DIR ${CMAKE_CURRENT_SOURCE_DIR})
+
+### Target: LMODELDAT ###
+set(LMODEL_NAME lmodel_relxill.dat)
+if (DEFINED ENV{RELXILL_STABLE})
+    add_custom_command(
+            OUTPUT ${SRC_DIR}/${LMODEL_NAME}
+            COMMAND cp ${SRC_DIR}/modelfiles/lmodel_relxill_public.dat ${SRC_DIR}/${LMODEL_NAME}
+            COMMAND echo " ****** Creating lmodel_relxill.dat ONLY for STABLE RELEASE MODELS ******"
+            DEPENDS ${SRC_DIR}/modelfiles/lmodel_relxill_public.dat
+            USES_TERMINAL
+    )
+
+else()
+    add_custom_command(
+            OUTPUT ${SRC_DIR}/${LMODEL_NAME}
+            COMMAND cp ${SRC_DIR}/modelfiles/lmodel_relxill_public.dat ${SRC_DIR}/${LMODEL_NAME}
+            COMMAND cat ${SRC_DIR}/modelfiles/lmodel_relxill_devel.dat >> ${SRC_DIR}/${LMODEL_NAME}
+            COMMAND echo " ****** Creating lmodel_relxill.dat for ALL MODELS ******"
+            DEPENDS ${SRC_DIR}/modelfiles/lmodel_relxill_public.dat
+            DEPENDS ${SRC_DIR}/modelfiles/lmodel_relxill_devel.dat
+            USES_TERMINAL
+    )
+endif()
+
+add_custom_target(lmodeldat ALL DEPENDS ${LMODEL_NAME})
+#############################
+
+
+
+### Target: XSPEC_WRAPPER ###
+add_custom_command(
+        OUTPUT ${SRC_DIR}/xspec_wrapper_lmodels.cpp ${SRC_DIR}/xspec_wrapper_lmodels.h
+        COMMAND ${SRC_DIR}/create_wrapper_xspec.py
+        ${SRC_DIR}/${LMODEL_NAME} ${SRC_DIR}/xspec_wrapper_lmodels.cpp
+        COMMAND echo `pwd`
+        DEPENDS lmodeldat ${SRC_DIR}/create_wrapper_xspec.py ${SRC_DIR}/${LMODEL_NAME}
+        )
+
+add_custom_target(xspec_wrapper ALL DEPENDS xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h)
+#############################
+
+
 
 
 ###  INSTALL  ###
 install(FILES ${SOURCE_FILES} DESTINATION model)
-install(FILES
-        modelfiles/compile_relxill.sh
-        ${LMODEL_NAME}
-        DESTINATION model)
+install(FILES modelfiles/compile_relxill.sh ${LMODEL_NAME} DESTINATION model)
 
 install(TARGETS ${EXEC_FILES} DESTINATION bin)
 

@@ -2,7 +2,7 @@
 
 BUILD_DIR = "cmake-build"
 MODEL_DIR = "model"
-MODEL_BUILD_DIR = "model-build"
+MODEL_BUILD_DIR = "build"
 BIN_DIR = "bin"
 
 COMPILE_SCRIPT = "compile_relxill.sh"
@@ -40,6 +40,7 @@ model-build-target:
 model-tarball:
 	cd $(MODEL_DIR)/ && tar cfvz $(TARFILE) *.c *.cpp *.h lmodel_relxill.dat $(COMPILE_SCRIPT) -C ../ README.txt LICENSE
 	cp -v $(MODEL_DIR)/$(TARFILE) .
+	rm -rf $(MODEL_DIR)
 
 
 model-compile:
@@ -96,15 +97,14 @@ test-stable:
 
 clean:
 	rm -f *~ gmon.out test*.dat *.log
-	rm -rf $(MODEL_DIR)
-	rm -rf $(MODEL_BUILD_DIR)
-	rm -rf $(BIN_DIR)
-	rm -rf $(BUILD_DIR)
 	rm -f relxill_model_v*.tgz
 	rm -f debug-*fits testrr-*.fits
-	rm -rf cmake-*
 
 
 dist-clean:
 	make clean
 	rm -rf cmake-*
+	rm -rf $(MODEL_DIR)
+	rm -rf $(MODEL_BUILD_DIR)
+	rm -rf $(BIN_DIR)
+	rm -rf $(BUILD_DIR)/*
