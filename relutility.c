@@ -215,7 +215,7 @@ int is_returnrad_model(int model_type) {
 
 /** trapez integration around a single bin
  *  caveat: only returns half of the full 2*PI*r*dr due to computational speed**/
-double trapez_integ_single(double *re, int ii, int nr) {
+double trapez_integ_single(const double *re, int ii, int nr) {
   double dr;
   // dr is defined such that the full disk is covered once, with NO overlapping bins
   if (ii == 0) {
