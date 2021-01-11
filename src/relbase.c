@@ -763,12 +763,18 @@ static void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const in
   /** only renormalize if not the relxill model or not a lamp post model **/
 
   if (do_renorm_model(rel_param)) {
+
+    double relline_norm = 1;
+    if (is_relxill_model(rel_param->model_type) && rel_param->emis_type == EMIS_TYPE_BKN) {
+      relline_norm = norm_factor_semi_infinite_slab(rel_param->incl * 180.0 / M_PI);
+    }
+
     if (is_debug_run()) {
       printf(" DEBUG: re-normalizing output spectrum\n");
     }
     for (ii = 0; ii < spec->n_zones; ii++) {
       for (jj = 0; jj < spec->n_ener; jj++) {
-        spec->flux[ii][jj] /= sum;
+        spec->flux[ii][jj] *= relline_norm / sum;
       }
     }
   }
@@ -1078,9 +1084,10 @@ static void print_angle_dist(RelCosne *spec, int izone) {
 
 }
 
-/* Function: calcFFTNormFactor
- * Synopsis: calculate the normalization of the FFT, which is defined to keep the normalization of the
- *           input spectrum and and the relat. smearging
+/**
+ * @Function: calcFFTNormFactor
+ * @Synopsis: calculate the normalization of the FFT, which is defined to keep the normalization of the
+ *           input spectrum and the relat. smearing
  * Take the sum in the given energy band of interested, to avoid problems at the border of the FFT
  * convolution.
  */

@@ -78,6 +78,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status);
 
 void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname);
 
+double norm_factor_semi_infinite_slab(double incl_deg);
 void norm_xillver_spec(xillSpec *spec, double incl);
 
 fitsfile *open_fits_table_stdpath(char *filename, int *status);

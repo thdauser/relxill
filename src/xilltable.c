@@ -1063,13 +1063,17 @@ xillSpec *get_xillver_spectra(xillParam *param, int *status) {
   return spec;
 }
 
+double norm_factor_semi_infinite_slab(double incl_deg) {
+  return 0.5 * cos(incl_deg * M_PI / 180);
+}
+
 void norm_xillver_spec(xillSpec *spec, double incl) {
 
   /** adds the proper flux normalization for a semi-infinate slab
    *  under inclination angle incl */
-  int ii;
-  for (ii = 0; ii < spec->n_ener; ii++) {
-    spec->flu[0][ii] *= 0.5 * cos(incl * M_PI / 180);
+  double norm_factor = norm_factor_semi_infinite_slab(incl);
+  for (int ii = 0; ii < spec->n_ener; ii++) {
+    spec->flu[0][ii] *= norm_factor;
   }
 
 }
