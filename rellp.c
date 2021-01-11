@@ -68,6 +68,19 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   return str;
 }
 
+static void norm_emis_profile(const double *re, int nr, double *emis) {
+
+  double integ_area = 0.0;
+  for (int ii = 0; ii < nr; ii++) {
+    integ_area += emis[ii] * trapez_integ_single(re, ii, nr) * 2;
+  }
+
+  for (int ii = 0; ii < nr; ii++) {
+    emis[ii] /= integ_area;
+  }
+
+}
+
 /** routine for the broken power law emissivity **/
 static void get_emis_bkn(double *emis, const double *re, int nr,
                          double index1, double index2, double rbr) {
@@ -82,6 +95,8 @@ static void get_emis_bkn(double *emis, const double *re, int nr,
     }
     emis[ii] = pow(re[ii] / rbr, -alpha);
   }
+
+  norm_emis_profile(re, nr, emis);
 
 }
 
