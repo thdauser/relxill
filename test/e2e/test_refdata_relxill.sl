@@ -195,9 +195,16 @@ variable update_refdata = should_refdata_get_updated();
 
 variable ii, n = length(fnames);
 variable status = Int_Type[n];
+status[*] = EXIT_SUCCESS;
 
 _for ii(0,n-1,1){
-   status[ii] = check_single_model(fnames[ii]; update=update_refdata );   
+   
+   try {
+      status[ii] = check_single_model(fnames[ii]; update=update_refdata );
+   } catch AnyError: {      
+      vmessage(" skipping %s as fit_function not implemented ", fnames[ii]);
+      continue;
+   }
 }
 
 print_summary(status);
