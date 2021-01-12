@@ -6,8 +6,31 @@ require("fits_model_struct");
 require("subs_fitfunctions.sl");
 require("test_setup.sl");
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Crete reference data (from the model built in build/) %%%
+%
+% Usage: %  ./test_refdata_relxill.sl  [<model_name>]
+% 
+% If called without arguments, ALL fit functions are called. If 
+% a model name is given as argument, only reference data for this 
+% model is created.
+% 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+variable dry_run = 0;
 
 load_relxill_model_devel(modlib);
+
+define get_fit_functions(){ %{{{
+   if (length(__argv)>1){ 
+      return __argv[1]; 
+   } else {
+      return get_implemented_fitfunctions(;; __qualifiers() );
+   }
+}
+%}}}
+
+
 
 variable DATA_DIR = "refdata_localModels/";
 
@@ -210,23 +233,29 @@ define create_refdata_relxilllp(filename_refdata){ %{{{
 
 %%% MAIN %%%
 
-%% () = system("rm -f $DATA_DIR/*/*refdat*"$);
-
 variable filename_default = "%s_defparam_refdat_%04i.fits";
 variable filename_random  = "%s_random_refdat_%04i.fits";
 variable filename_special  = "%s_special_refdat_%04i.fits";
 variable num_random_evaluations = 5;
 
-variable all_fit_functions = get_implemented_fitfunctions(;only_dev);
+variable all_fit_functions = get_fit_functions();
 
 variable ff;
-foreach ff(all_fit_functions){
+foreach ff([all_fit_functions]){
    counter = 0;
    message(ff);
-   create_default_refdata(ff, filename_default);
-   create_random_refdata(ff, filename_random, num_random_evaluations);
+   if (dry_run==0){
+      create_default_refdata(ff, filename_default);
+      create_random_refdata(ff, filename_random, num_random_evaluations);
+   }
 }
-%counter = 0;
-%create_refdata_relxilllp(filename_special);
+
+if ( length(where(all_fit_functions=="relxilllp") ) > 0 ){
+   message("relxillp - special");
+   if (dry_run==0){
+      counter = 0;
+      create_refdata_relxilllp(filename_special);
+   }
+}
 
 %%%%%%%%%%
