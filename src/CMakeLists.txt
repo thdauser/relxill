@@ -89,7 +89,7 @@ add_custom_target(xspec_wrapper ALL DEPENDS xspec_wrapper_lmodels.cpp xspec_wrap
 install(FILES ${SOURCE_FILES} DESTINATION model)
 install(FILES modelfiles/compile_relxill.sh ${LMODEL_NAME} DESTINATION model)
 
-install(TARGETS ${EXEC_FILES} DESTINATION bin)
+install(TARGETS ${EXEC_FILES_CPP} DESTINATION bin)
 
 
 
