@@ -24,8 +24,6 @@
 #include "relphysics.h"
 #define LIMIT_PREC 1e-6
 
-specCache *dummy_spec_cache = NULL;
-
 void testRellineTableValues(int *status) {
   CHECK_STATUS_VOID(*status);
 
@@ -234,11 +232,14 @@ static void testInterpolationRoutines(int *status) {
 static double getRatioRelProfileAndRingArea(rel_spec *rprofile, int ii, double spin) {
 
   // proper area times the emissivity
-  double propArea = calc_proper_area_ring(rprofile->rgrid[ii], rprofile->rgrid[ii + 1], spin);
+  double propAreaRing = calc_proper_area_ring(rprofile->rgrid[ii], rprofile->rgrid[ii + 1], spin);
+  double propAreaFullDisk = calc_proper_area_ring(rprofile->rgrid[0], rprofile->rgrid[rprofile->n_zones], spin);
+
+  double ringAreaFraction = propAreaRing / propAreaFullDisk;
 
   double relFlux = calcSum(rprofile->flux[ii], rprofile->n_ener);
 
-  return relFlux / propArea;
+  return relFlux / ringAreaFraction;
 }
 
 void compare_relatFluxToAreaRatioWithReference(double averageRatio, double referenceRatio, int *status) {
@@ -260,24 +261,26 @@ void compare_relatFluxToAreaRatioWithReference(double averageRatio, double refer
 }
 
 void testRellineNormalizationConvergence(int *status) {
-  /* Define criterion: for large radii the normalization of the convolution should
-   * converge towards 1/4 of the proper are of the respective radial ring
-   * [definition of rel-_table_v0.5a]
+  /* Define criterion: for large radii the normalization of the line should
+   * converge towards 1/4 of the disk area fraction of the respective radial ring
+   * [definition of rel_table_v0.5a]
+   *  - note that this depends on the normalization of the bkn power law emissivity profile
    */
 
   CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
   int nzones = 100;
+  const int min_number_zones = 10;
 
   rel_spec *rel_profile = NULL;
   relParam *rel_param = NULL;
   get_RelProfileConstEmisZones(&rel_profile, &rel_param, nzones, status);
 
-  assert(rel_profile->n_zones > 10); // make sure we have enough zones
-
   double beginOuterRadii = 10.;
   int indexBeginOuterRadii = binary_search(rel_profile->rgrid, rel_profile->n_zones, beginOuterRadii);
+
+  assert(rel_profile->n_zones - indexBeginOuterRadii > min_number_zones);
 
   double averageRatio = 0.0;
   double contributingFactorOfEachZone = 1.0 / ((double) (rel_profile->n_zones - indexBeginOuterRadii + 1));
