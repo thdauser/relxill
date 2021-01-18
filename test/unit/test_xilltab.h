@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef RELXILL_TEST_XILLTAB_H
 #define RELXILL_TEST_XILLTAB_H
