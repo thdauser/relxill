@@ -1,135 +1,110 @@
 # -*- mode: Make -*-
 
-RELXILL_SOURCE_DIR = ./
+BUILD_DIR = "cmake-build"
+MODEL_DIR = "model"
+MODEL_BUILD_DIR = "build"
+BIN_DIR = "bin"
 
-CFLAGS = -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic -O3 -DRELXILL_SOURCE_DIR='"${RELXILL_SOURCE_DIR}"'
+COMPILE_SCRIPT = "compile_relxill.sh"
 
-LDFLAGS = -g -W -Wall $(LIBS) -lm -lcfitsio
+MODEL_VERSION = "undef"
+LMODELDAT_TARGET = "lmodeldat"
+
+TARFILE = "relxill.tgz"
+
+.PHONY: model
+model:
+	make model-dev
+
+model-stable: export RELXILL_STABLE=
+model-stable:
+	make model-build-target DEV=
+
+model-dev:
+	make model-build-target DEV=dev
+
+model-build-target:
+	make clean
+	make install-source-files
+
+	$(eval MODEL_VERSION := `$(BIN_DIR)/test_sta version`)
+	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION)$(DEV).tgz)
+
+	make model-tarball TARFILE=$(MODEL_TAR_NAME)
+	make model-compile TARFILE=$(MODEL_TAR_NAME)
+
+	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
 
 
-LIBS = -L${HEADAS}/lib
 
-COMPILE.c = gcc
+model-tarball:
+	cd $(MODEL_DIR)/ && tar cfvz $(TARFILE) *.c *.cpp *.h lmodel_relxill.dat $(COMPILE_SCRIPT) -C ../ README.txt LICENSE
+	cp -v $(MODEL_DIR)/$(TARFILE) .
+	rm -rf $(MODEL_DIR)
 
-INCLUDES = -I/usr/include -I${HEADAS}/include 
 
-std_objects = test_sta.o relbase.o relmodels.o relutility.o reltable.o rellp.o xilltable.o donthcomp.o relcache.o test_relxill.o relphysics.o test_rellp.o test_std_functions.o
-std_headers = relbase.h  relmodels.h relutility.h reltable.h rellp.h common.h test_relxill.h xilltable.h relcache.h relphysics.h test_rellp.h test_std_functions.h
-std_sourcefiles = relbase.c  relmodels.c relutility.c reltable.c rellp.c test_relxill.c xilltable.c donthcomp.c relcache.c test_xilltab.c relphysics.c test_rellp.c test_std_functions.c
+model-compile:
+	mkdir -p $(MODEL_BUILD_DIR)
+	rm -f $(MODEL_BUILD_DIR)/*
 
-model_dir = ./build/
-model_files = $(headers) $(sourcefiles) modelfiles/lmodel_relxill.dat modelfiles/compile_relxill.sh modelfiles/README.txt modelfiles/CHANGELOG.txt
+	cp $(TARFILE) $(MODEL_BUILD_DIR)/
+	cd $(MODEL_BUILD_DIR) && tar xfvz $(TARFILE)
+	rm $(MODEL_BUILD_DIR)/$(TARFILE)
+	cd $(MODEL_BUILD_DIR) && chmod a+x $(COMPILE_SCRIPT)
+	cd $(MODEL_BUILD_DIR) && ./$(COMPILE_SCRIPT)
+	cd $(MODEL_BUILD_DIR) && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); try{fit_fun("relxill"); () = eval_fun(1,2);} catch AnyError: { message(" *** ERROR LOADING RELXILL *** "); exit(1); };  ' | isis -v
 
-unpublished_model_files_source = relreturn.c relreturn_corona.c relreturn_datastruct.c  relreturn_table.c 
-unpublished_model_files_header = relreturn.h relreturn_corona.h relreturn_datastruct.h  relreturn_table.h
-unpublished_model_files_objects = relreturn.o relreturn_corona.o relreturn_datastruct.o  relreturn_table.o
-unpublished_model_files = $(unpublished_model_files_source) $(unpublished_model_files_header)
 
-objects = $(std_objects) $(unpublished_model_files_objects)
-headers = $(std_headers) $(unpublished_model_files_header)
-sourcefiles = $(std_sourcefiles) $(unpublished_model_files_source)
 
-LINK_TARGET = test_sta
+# using CMakeLists.txt Definitions to build and install the model files
+.PHONY: install, install-stable, install-source-files, build
 
-.PHONY:all
-all:
-	echo $(objects)
-	make test_sta
+install-stable: export RELXILL_STABLE=
+install-stable:
+	make install-source-files
+
+install:
+	make install-source-files
+
+build:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && cmake ../
+	cd $(BUILD_DIR) && cmake --build .
+
+
+install-source-files:
+	make build
+	cd $(BUILD_DIR) && cmake --install .
 
 
 .PHONY: test
 test:
+	make test-unit
+	make test-e2e
+
+
+test-unit:
+	make install
+	bin/run-tests
+
+test-e2e:
 	cd test/e2e && make test
 
+test-stable:
+	make model-stable
+	cd test/e2e && make test-stable
 
-$(LINK_TARGET): $(objects)
-	gcc -o $@ $^ $(LDFLAGS) 
-
-%.o: %.c %.h
-	gcc $(INCLUDES) $(CFLAGS) -c $<
-
-%.o: %.c
-	gcc $(INCLUDES) $(CFLAGS) -c $<
 
 clean:
-	rm -f $(objects) $(LINK_TARGET) *~ gmon.out test*.dat *.log
-	rm -rf $(model_dir)
+	rm -f *~ gmon.out test*.dat *.log
 	rm -f relxill_model_v*.tgz
 	rm -f debug-*fits testrr-*.fits
 
-MODEL_VERSION = undef
-#MODEL_TAR_NAME = relxill_model_v$(MODEL_VERSION).tgz
 
-
-.PHONY: compilemodel
-compilemodel: test_sta
-
-	$(eval MODEL_TAR_NAME := relxill_model_v$(MODEL_VERSION)$(DEV).tgz)
-
-	cd $(model_dir) && tar cfvz $(MODEL_TAR_NAME) *
-
-	cd $(model_dir) && ./compile_relxill.sh && echo 'require("xspec"); load_xspec_local_models("./librelxill.so"); fit_fun("relxill"); () = eval_fun(1,2); exit; ' | isis -v
-	cp $(model_dir)/$(MODEL_TAR_NAME) .
-	rm -f $(model_dir)/*.c $(model_dir)/*.h
-	@echo "\n  --> Built model  *** $(MODEL_TAR_NAME) *** \n"
-
-
-.PHONY: model
-model: test_sta
-	mkdir -p $(model_dir)
-	rm -f $(model_dir)/*
-	cp -v $(model_files) $(model_dir)
-
-	$(eval MODEL_VERSION := $(shell ./test_sta version))
-	make compilemodel MODEL_VERSION=$(MODEL_VERSION)
-
-
-.PHONY: model-dev
-model-dev: test_sta
-	mkdir -p $(model_dir)
-	rm -f $(model_dir)/*
-	cp -v $(model_files) $(model_dir)
-	cat modelfiles/lmodel_relxill_devel.dat >> build/lmodel_relxill.dat
-
-	$(eval MODEL_VERSION := $(shell ./test_sta version))
-	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=dev
-
-.PHONY: model-nonpublic
-model-nonpublic: test_sta
-	mkdir -p $(model_dir)
-	rm -f $(model_dir)/*
-	cp -v $(model_files) $(model_dir)
-	cp -v $(unpublished_model_files) $(model_dir)
-	cat modelfiles/lmodel_relxill_devel.dat >> build/lmodel_relxill.dat
-
-	$(eval MODEL_VERSION := $(shell ./test_sta version))
-	make compilemodel MODEL_VERSION=$(MODEL_VERSION) DEV=nonpublic
-
-
-
-.PHONY: valgrind
-valgrind:
+dist-clean:
 	make clean
-	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relconv
-
-valgrind-relxilllp:
-	make clean
-	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	valgrind --tool=memcheck --leak-check=full --show-leak-kinds=all ./test_sta relxilllp
-
-.PHONY: gdb
-gdb:
-	make clean
-	make CFLAGS="-g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic" test_sta
-	gdb --args ./test_sta relline 100
-
-ddd:
-	echo "exit" | make gdb 
-	ddd test_sta &
-
-gprof:
-	make clean
-	make CFLAGS="$(CFLAGS) -pg" LDFLAGS="$(LDFLAGS) -pg" test_sta 
-	./test_sta relxilllpion 100
-	gprof -p test_sta
+	rm -rf cmake-*
+	rm -rf $(MODEL_DIR)
+	rm -rf $(MODEL_BUILD_DIR)
+	rm -rf $(BIN_DIR)
+	rm -rf $(BUILD_DIR)/*

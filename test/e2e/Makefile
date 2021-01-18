@@ -15,6 +15,10 @@ test-refdata:
 test-functionality:
 	./test_model_functionality.sl
 
+test-stable:
+	./test_model_functionality.sl STABLE
+
+
 #### clean output data ### 
 clean-test-refdata:
 	rm -f refdata_*/*/*.pdf

@@ -4,7 +4,7 @@ define load_relxill_model_devel(modlib){
    
    if (stat_file(modlib) == NULL){
       message("\n **** error : local relxill model not found ; exiting ... **** \n ");
-      exit;
+      exit(1);
    }
    
    require("xspec");
@@ -25,6 +25,9 @@ define get_implemented_fitfunctions(){
    
    if (qualifier("dev",0) == 1 ){
       ALL_FF = [ALL_FF, additional_FF];
+   }
+   if (qualifier_exists("only_dev") ){
+      return additional_FF;
    }
    return ALL_FF;
 }

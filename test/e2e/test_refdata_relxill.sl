@@ -87,22 +87,29 @@ define plot_model_comparison(fn,dat,goodness){ %{{{
    variable ehi = dat.bin_hi;
    variable m_dat = dat.model;
    
-   pl.world(min(elo),max(elo),0.1,200;loglog);
-   plr.world(min(elo),max(elo),0.989,1.011;loglog);
+   
+   variable val_flux = dat.value/(ehi-elo)*(0.5*(elo+ehi))^2;
+   variable mod_flux = m_dat/(ehi-elo)*(0.5*(elo+ehi))^2;
+   variable ratio_flux = m_dat/dat.value;
    
    
-   pl.hplot([elo,ehi[-1]], dat.value/(ehi-elo)*(0.5*(elo+ehi))^2;
+   pl.world(min(elo),max(elo),1e-5,1e3;loglog);
+   plr.world(min(elo),max(elo),min(ratio_flux)*0.9, max(ratio_flux)*1.1;loglog);
+
+   
+   pl.hplot([elo,ehi[-1]], val_flux;
 	    loglog);
-   pl.hplot([elo,ehi[-1]], m_dat/(ehi-elo)*(0.5*(elo+ehi))^2 ;
+   pl.hplot([elo,ehi[-1]], mod_flux ;
 	    loglog, color="red", depth=-1 );
    
    plr.hplot([elo,ehi[-1]], dat.value*0+1; loglog);
    
-   plr.hplot([elo,ehi[-1]], m_dat/dat.value; loglog, color="red");
+   plr.hplot([elo,ehi[-1]], ratio_flux; loglog, color="red");
    
    pl.ylabel(" Energy Flux ");
-   plr.ylabel(" Ratio New/Old ");
    plr.xlabel("Energy [keV]" );
+
+   plr.ylabel(" Ratio New/Old ");
    
         
    add_labels(pl,goodness,fn);
@@ -188,9 +195,16 @@ variable update_refdata = should_refdata_get_updated();
 
 variable ii, n = length(fnames);
 variable status = Int_Type[n];
+status[*] = EXIT_SUCCESS;
 
 _for ii(0,n-1,1){
-   status[ii] = check_single_model(fnames[ii]; update=update_refdata );   
+   
+   try {
+      status[ii] = check_single_model(fnames[ii]; update=update_refdata );
+   } catch AnyError: {      
+      vmessage(" skipping %s as fit_function not implemented ", fnames[ii]);
+      continue;
+   }
 }
 
 print_summary(status);

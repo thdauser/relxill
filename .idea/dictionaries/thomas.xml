@@ -2,6 +2,7 @@
   <dictionary name="thomas">
     <words>
       <w>anynul</w>
+      <w>cfitsio</w>
       <w>colnum</w>
       <w>extver</w>
       <w>gitignore</w>
@@ -9,11 +10,13 @@
       <w>nspin</w>
       <w>nullval</w>
       <w>prec</w>
+      <w>relline</w>
       <w>reltable</w>
       <w>retval</w>
       <w>rmean</w>
       <w>xilltable</w>
       <w>xillver</w>
+      <w>xspec</w>
     </words>
   </dictionary>
 </component>

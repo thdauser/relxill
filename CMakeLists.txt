@@ -1,59 +1,29 @@
 cmake_minimum_required(VERSION 3.15)
-project(relxill C)
+
+project(relxill VERSION 1.4.20210118)
+
+
+set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
 
 set(CMAKE_C_STANDARD 11)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_FLAGS "-std=c++17")
 
 include_directories($ENV{HEADAS}/include/)
 link_directories($ENV{HEADAS}/lib/)
 
-set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes -pedantic ${PROJECT_ROOT_DIR}")
+set(SRC_DIR src)
+
+configure_file(${SRC_DIR}/config.h.in config.h) # written into binary tree
+
+list(APPEND EXTRA_LIBS Relxill)
+list(APPEND EXTRA_INCLUDES "${PROJECT_SOURCE_DIR}/${SRC_DIR}")
+
+set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+
+add_subdirectory(${SRC_DIR})
+add_subdirectory(test)
 
 
-set(SOURCE_FILES
-        common.h
-        donthcomp.c
-        relbase.c
-        relbase.h
-        relcache.c
-        relcache.h
-        rellp.c
-        rellp.h
-        relmodels.c
-        relmodels.h
-        reltable.c
-        reltable.h
-        relutility.c
-        relutility.h
-        xilltable.c    xilltable.h
-        test_relxill.c test_relxill.h
-        test_rellp.c test_rellp.h
-        relphysics.c relphysics.h
-        test_std_functions.c test_std_functions.h
-        )
-
-
-# add additional source files of development models not included in the master
-# branch
-set(SOURCE_FILES ${SOURCE_FILES}
-        relreturn_datastruct.c relreturn_datastruct.h
-        relreturn_table.c relreturn_table.h
-        relreturn.c relreturn.h
-        relreturn_corona.c relreturn_corona.h
-        )
-
-
-set(EXEC_FILES
-        test_sta
-        )
-
-set(EXEC_FILES ${EXEC_FILES} test_relreturn)
-
-
-foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.c ${SOURCE_FILES})
-    target_link_libraries(${execfile} m cfitsio)
-endforeach (execfile ${EXEC_FILES})
-
-target_link_libraries(test_sta m)
-target_link_libraries(test_sta cfitsio)

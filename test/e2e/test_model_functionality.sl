@@ -1,13 +1,13 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
-%%% call the routine like "./check_model_functions.sl DEV"
-%%% if also the model in "lmodel_relxill_devel.dat" should 
+%%% call the routine like "./check_model_functions.sl STABLE"
+%%% if only the stable release models "lmodel_relxill_devel.dat" should 
 %%% be tested
-variable TEST_DEVEL = 0; 
+variable TEST_DEVEL = 1;
 
-if (__argc>1 && __argv[1]=="DEV"){
-   TEST_DEVEL = 1;
+if (__argc>1 && __argv[1]=="STABLE"){
+   TEST_DEVEL = 0;
 }
 
 
@@ -591,46 +591,43 @@ define check_norm(){ %{{{
 	 continue;
       }
       
-      putenv("RENORM_RELXILL_MODEL");
       fit_fun(ff);
-      val = eval_fun_keV(1,2);
+      variable val_notset = eval_fun_keV(1,2);
       
-      stdpar = get_par("*.a");
-      
-      putenv("RENORM_RELXILL_MODEL=1");
-      set_par("*.a",stdpar*0.99);
-      () = eval_fun_keV(1,2);
-      set_par("*.a",stdpar);
-      val2 = eval_fun_keV(1,2);
-       
-      
-      putenv("RENORM_RELXILL_MODEL=0");
-      set_par("*.a",stdpar*0.99);
-      () = eval_fun_keV(1,2);
-      set_par("*.a",stdpar);
-      val3 = eval_fun_keV(1,2);
+      variable prec = 1e-5;
+      variable different_from_unity = abs(sum(val_notset) - 1.0 ) > prec;
 
-      vmessage(" *** %s : neutral (%.5e) - normalized (%.5e) - non (%.5e)",ff,sum(val2),sum(val),sum(val3));
+      vmessage(" - %s, different from unity: %.3e", ff, sum(val_notset));
+
       
-      variable refval;
+      variable status = EXIT_SUCCESS;
+
       
-      if ((string_match(ff,"lp")==0) || ( string_match(ff,"relxill")==0 )){
-	 refval = abs(sum(val2) - sum(val));
+      if (is_substr(ff, "relxill") ){	
+	 %% should always have physical normalization, does not depend
+	 %% on ENV
+	 if ( different_from_unity==0 ) {
+	    status = EXIT_FAILURE;
+	 }
+	 
+      } else if( is_substr(ff, "relline") ){	 
+	 %% by default normalized, but should change if ENV=1
+	 if ( different_from_unity==1  ) {
+	    status = EXIT_FAILURE;	    
+	 }
+	 
+	 
       } else {
-	 %% LP is non-normalized by default 	 
-	 refval = abs(sum(val) - sum(val3));
+	 vmessage(" ERROR: uncategorzied model %s", ff);
       }
-      
-      
-      if ( (abs(sum(val3)-sum(val2))<1e-5)|| refval>1e-5 ){
-	 print(refval);
-	 print(abs(sum(val3)-sum(val2)));
+
+            
+      if ( status==EXIT_FAILURE ){
 	 vmessage(" *** error: normalization test failed!");
 	 return EXIT_FAILURE;
       }
    }
-   putenv("RENORM_RELXILL_MODEL");
-
+   
    return EXIT_SUCCESS;
 }
 %}}}
@@ -642,7 +639,6 @@ define check_relline_phys_norm(){ %{{{
 
    variable ffs = ALL_FF;
    variable ff;
-   variable val,val2,val3;
    variable stdpar;
    foreach ff(ffs){
       
@@ -653,7 +649,7 @@ define check_relline_phys_norm(){ %{{{
       
       putenv("RELLINE_PHYSICAL_NORM");
       fit_fun(ff);
-      val = eval_fun_keV(1,2);
+      variable val_notset = eval_fun_keV(0.05,2);
       
       stdpar = get_par("*.a");
       
@@ -661,37 +657,49 @@ define check_relline_phys_norm(){ %{{{
       set_par("*.a",stdpar*0.99);
       () = eval_fun_keV(1,2);
       set_par("*.a",stdpar);
-      val2 = eval_fun_keV(1,2);
+      variable val_set0 = eval_fun_keV(0.05,2);
        
       
       putenv("RELLINE_PHYSICAL_NORM=1");
       set_par("*.a",stdpar*0.99);
       () = eval_fun_keV(1,2);
       set_par("*.a",stdpar);
-      val3 = eval_fun_keV(1,2);
+      variable val_set1 = eval_fun_keV(0.05,2);
 
-      %% val2: original normalization
       vmessage(" *** %s (integ flux):  not set (%.5e) - ENV=0 (%.5e) - ENV=1 (%.5e)",
-	       ff,sum(val2),sum(val),sum(val3));
+	       ff,sum(val_notset),sum(val_set0),sum(val_set1));
       
-      variable refval;
-      variable nrefval;
+      variable prec = 1e-5;
+      variable env0_changes_default = abs(sum(val_notset) - sum(val_set0)) > prec;
+      variable env1_changes_default = abs(sum(val_notset) - sum(val_set1)) > prec;
+            
+      variable status = EXIT_SUCCESS;
       
-      %% should have no effect on the relxill models (not normalized are
-      %% always normalized)
-      if (( string_match(ff,"relxill")>0 ) ){
- 	 %% there is no positive test (as there should be no difference)
-	 refval = 1.0;
-	 nrefval= abs(sum(val3) - sum(val));
+      if (is_substr(ff, "relxilllp") ){	
+	 %% should always have physical normalization, does not depend
+	 %% on ENV
+	 if (not ( env0_changes_default==0 && env1_changes_default==0 )) {
+	    status = EXIT_FAILURE;
+	 }
+	 
+      } else if( is_substr(ff, "relline") ){	 
+	 %% by default normalized, but should change if ENV=1
+	 if (not ( env0_changes_default==0 && env1_changes_default==1 ) ) {
+	    status = EXIT_FAILURE;	    
+	 }
+	 
+      } else if( is_substr(ff, "relxill") ){
+	 %% by default normalized, but should change if ENV=1 [starting v1.4.1]
+	 if ( not ( env0_changes_default==0 && env1_changes_default==1 )) {
+	    status = EXIT_FAILURE;	    
+	 }
+	 
       } else {
-	 %% LP is non-normalized by default 	 
-	 nrefval = abs(sum(val) - sum(val2));
-	 refval = abs(sum(val) - sum(val3));
+	 vmessage(" ERROR: uncategorzied model %s", ff);
       }
       
       
-      if ( (nrefval>1e-5)|| (refval<1e-5) ){
-	 vmessage(" nrefval=%.3e   --- refval=%.3e  ",nrefval,refval);
+      if (status==EXIT_FAILURE) {
 	 vmessage(" *** error: normalization test failed!");
 	 return EXIT_FAILURE;
       }
@@ -701,7 +709,6 @@ define check_relline_phys_norm(){ %{{{
    return EXIT_SUCCESS;
 }
 %}}}
-
 
 define check_linee(){ %{{{
    
@@ -1424,22 +1431,24 @@ if (check_refl_frac() != EXIT_SUCCESS) exit;
 %%%%%%%% TEST  %%%%%%%%%%%%
 
 
-if (eval_test() != EXIT_SUCCESS) exit;
 
-if (check_relline_phys_norm() != EXIT_SUCCESS) exit;
+if (eval_test() != EXIT_SUCCESS) exit(1);
 
-if (check_xilltab_implementation() != EXIT_SUCCESS) exit;
+if (check_relline_phys_norm() != EXIT_SUCCESS) exit(1);
+if (check_norm() != EXIT_SUCCESS) exit(1);
 
-if (check_z() != EXIT_SUCCESS) exit;
-if (check_linee() != EXIT_SUCCESS) exit;
-if (check_conv_mod() != EXIT_SUCCESS) exit;
-if (check_dens_mod() != EXIT_SUCCESS) exit;
-if (check_prim_cont() != EXIT_SUCCESS) exit;
-if (check_nthcomp_mod() != EXIT_SUCCESS) exit;
-if (check_iongrad_mod() != EXIT_SUCCESS) exit;
+if (check_xilltab_implementation() != EXIT_SUCCESS) exit(1);
 
-if (check_refl_frac() != EXIT_SUCCESS) exit;
-if (print_refl_frac() != EXIT_SUCCESS) exit;
+if (check_z() != EXIT_SUCCESS) exit(1);
+if (check_linee() != EXIT_SUCCESS) exit(1);
+if (check_conv_mod() != EXIT_SUCCESS) exit(1);
+if (check_dens_mod() != EXIT_SUCCESS) exit(1);
+if (check_prim_cont() != EXIT_SUCCESS) exit(1);
+if (check_nthcomp_mod() != EXIT_SUCCESS) exit(1);
+if (check_iongrad_mod() != EXIT_SUCCESS) exit(1);
 
-if (check_caching() != EXIT_SUCCESS) exit;
+if (check_refl_frac() != EXIT_SUCCESS) exit(1);
+if (print_refl_frac() != EXIT_SUCCESS) exit(1);
+
+if (check_caching() != EXIT_SUCCESS) exit(1);
 

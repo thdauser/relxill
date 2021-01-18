@@ -38,10 +38,14 @@ define fits_write_model_struct(fname){
    fits_close_file(fp);       
 }
 
+define fits_read_model_fitfun(fname){
+   return fits_read_key(fname+"[MODEL]","fitfun");
+}
+
 define fits_read_model_struct(fname){
    
    variable mo = fits_read_table(fname+"[MODEL]");
-   variable ff = fits_read_key(fname+"[MODEL]","fitfun");
+   variable ff = fits_read_model_fitfun(fname);
    variable dat = fits_read_table(fname+"[DATA]");
    
    
