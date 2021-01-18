@@ -801,6 +801,7 @@ int static get_cosne_bin(double mu, RelCosne *dat) {
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func *cached_str_relb_func = NULL;
 
+void write_relconv_outfiles(RelSysPar *sysPar, rel_spec *spec, int *status);
 static double calculate_radiallyResolvedFluxObs(str_relb_func* relb_func, rel_spec* spec, double weight) {
 
   double integRadialFlux = 0.0;
@@ -1742,7 +1743,7 @@ void save_radial_profile(char *foutName, double *rad, double *intens, int n_rad)
   if (fclose(fp)) exit(1);
 }
 
-int comp_xill_param(xillParam *cpar, xillParam *par) {
+int did_xill_param_change(xillParam *cpar, xillParam *par) {
   if (comp_single_param_val(par->afe, cpar->afe)) return 1;
   if (comp_single_param_val(par->dens, cpar->dens)) return 1;
   if (comp_single_param_val(par->ect, cpar->ect)) return 1;
@@ -1766,9 +1767,9 @@ int redo_xillver_calc(relParam *rel_param, xillParam *xill_param, relParam *ca_r
 
   int redo = 1;
 
-  if ((ca_rel_param == NULL) || (ca_xill_param == NULL)) {
-  } else {
-    redo = comp_xill_param(ca_xill_param, xill_param);
+  if ((ca_rel_param != NULL) && (ca_xill_param != NULL)) {
+
+    redo = did_xill_param_change(ca_xill_param, xill_param);
 
     /** did spin or h change (means xillver needs to be re-computed as well, due to Ecut) **/
     if (comp_single_param_val(rel_param->a, ca_rel_param->a) ||
@@ -1783,22 +1784,17 @@ int redo_xillver_calc(relParam *rel_param, xillParam *xill_param, relParam *ca_r
 
 int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param) {
 
-  int redo = 1;
-  int not_redo = 0;
-
-  if (comp_rel_param(ca_rel_param, rel_param)) {
-    return redo;
+  if (did_rel_param_change(ca_rel_param, rel_param)) {
+    return 1;
+  } else {
+    return 0;
   }
-
-  return not_redo;
 
 }
 
 
 /** print the relline profile   **/
-void save_relline_profile(rel_spec *spec, int *status) {
-
-  CHECK_STATUS_VOID(*status);
+void save_relline_profile(rel_spec *spec) {
 
   if (spec == NULL) return;
 
@@ -1849,9 +1845,6 @@ rel_spec *relbase_multizone(double *ener,
     // normalize it and calculate the angular distribution (if necessary)
     renorm_relline_profile(spec, param, status);
 
-    if (shouldOutfilesBeWritten()) {
-    }
-
     // last step: store parameters and cached rel_spec (this prepends a new node to the cache)
     set_cache_relbase(&cache_relbase, param, spec, status);
     if (is_debug_run() && *status == EXIT_SUCCESS) {
@@ -1865,12 +1858,7 @@ rel_spec *relbase_multizone(double *ener,
   }
 
   if (shouldOutfilesBeWritten()) {
-    save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
-    if (sysPar->emisReturn != NULL) {
-      save_radial_profile("test_emis_profile.dat", sysPar->emisReturn->re,
-                          sysPar->emisReturn->emis, sysPar->emisReturn->nr);
-    }
-    save_relline_profile(spec, status);
+    write_relconv_outfiles(sysPar, spec, status);
   }
 
 
@@ -1881,6 +1869,16 @@ rel_spec *relbase_multizone(double *ener,
   // CHECK_RELXILL_DEFAULT_ERROR(status);
 
   return spec;
+}
+
+
+void write_relconv_outfiles(RelSysPar *sysPar, rel_spec *spec, int *status) {
+  save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
+  if (sysPar->emisReturn != NULL) {
+    save_radial_profile("test_emis_profile.dat", sysPar->emisReturn->re,
+                        sysPar->emisReturn->emis, sysPar->emisReturn->nr);
+  }
+  save_relline_profile(spec);
 }
 
 rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status) {
