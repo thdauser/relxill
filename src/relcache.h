@@ -62,7 +62,6 @@ typedef struct inpar {
   int n_ener;
 } inpar;
 
-//typedef void (*callback)(cache_info* ca_info, input* input, cnode* node);
 
 /** set the input parameters in one single structure **/
 inpar *set_input(double *ener, int n_ener, relParam *rel_par, xillParam *xill_par, int *status);

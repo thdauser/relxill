@@ -215,15 +215,6 @@ cnode *cli_prepend(cnode *head, cdata *data, int *status) {
 }
 
 
-/* traverse the linked list */
-/*void cli_traverse(cnode* head,callback f){
-    cnode* cursor = head;
-    while(cursor != NULL) {
-        f(cursor);
-        cursor = cursor->next;
-    }
-}*/
-
 int cli_count_elements(cnode *head) {
   cnode *cursor = head;
   int nelem = 0;

@@ -1180,8 +1180,11 @@ static int is_all_cached(specCache *cache, int n_ener_inp, double *ener_inp, int
 static void check_caching_relxill(relParam *rel_param, xillParam *xill_param, int *re_rel, int *re_xill) {
 
 
-  /** always re-compute if the number of zones changed **/
-  if (cached_rel_param != NULL) {
+  /** always re-compute if
+   *  - the number of zones changed
+   *  - we are interested in some output files
+   **/
+  if ((cached_rel_param != NULL) && (shouldOutfilesBeWritten() == 0)) {
 
     if (rel_param->num_zones != cached_rel_param->num_zones) {
       if (is_debug_run()) {
@@ -1830,19 +1833,11 @@ rel_spec *relbase_multizone(double *ener,
   // set a pointer to the spectrum
   rel_spec *spec = NULL;
 
+  // initialize parameter values (has an internal cache)
+  RelSysPar *sysPar = get_system_parameters(param, status);
+  assert(sysPar != NULL);
+
   if (is_relbase_cached(ca_info) == 0) {
-
-
-    // initialize parameter values
-    RelSysPar *sysPar = get_system_parameters(param, status);
-
-    if (shouldOutfilesBeWritten() && sysPar != NULL) {
-      save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
-      if (sysPar->emisReturn != NULL){
-        save_radial_profile("test_emis_profile.dat", sysPar->emisReturn->re,
-                            sysPar->emisReturn->emis, sysPar->emisReturn->nr);
-      }
-    }
 
     // init the spectra where we store the flux
     param->num_zones = nzones;
@@ -1855,7 +1850,6 @@ rel_spec *relbase_multizone(double *ener,
     renorm_relline_profile(spec, param, status);
 
     if (shouldOutfilesBeWritten()) {
-      save_relline_profile(spec, status);
     }
 
     // last step: store parameters and cached rel_spec (this prepends a new node to the cache)
@@ -1869,6 +1863,16 @@ rel_spec *relbase_multizone(double *ener,
     }
     spec = ca_info->store->data->relbase_spec;
   }
+
+  if (shouldOutfilesBeWritten()) {
+    save_radial_profile("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
+    if (sysPar->emisReturn != NULL) {
+      save_radial_profile("test_emis_profile.dat", sysPar->emisReturn->re,
+                          sysPar->emisReturn->emis, sysPar->emisReturn->nr);
+    }
+    save_relline_profile(spec, status);
+  }
+
 
   // free the input structure
   free(inp);
