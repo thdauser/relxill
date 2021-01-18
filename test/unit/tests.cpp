@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 #define CATCH_CONFIG_MAIN  // This tells Catch to provide a main() - only do this in one cpp file
