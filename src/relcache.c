@@ -75,7 +75,7 @@ static int comp_sys_param(relParam *cpar, relParam *par) {
   return 0;
 }
 
-int comp_rel_param(relParam *cpar, relParam *par) {
+int did_rel_param_change(relParam *cpar, relParam *par) {
 
   if (cpar == NULL) return 1;
 
@@ -273,7 +273,7 @@ cnode *check_cache_syspar(cache_info *ca_info, inpar *inp, cnode *node) {
 
 cnode *check_cache_relpar(cache_info *ca_info, inpar *inp, cnode *node) {
 
-  if (comp_rel_param(node->data->par_rel, inp->rel_par) == 0) {
+  if (did_rel_param_change(node->data->par_rel, inp->rel_par) == 0) {
     // system parameters did not change in this iteration
     // however, one last check if the energy grid did change
     if (did_energy_grid_change(inp->ener, inp->n_ener, node->data->relbase_spec)) {

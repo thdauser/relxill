@@ -116,7 +116,7 @@ rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xi
 /** calculate the relline profile(s) for all given zones **/
 void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status);
 
-void save_relline_profile(rel_spec *spec, int* status);
+void save_relline_profile(rel_spec *spec);
 
 void save_radial_profile(char *foutName, double *rad, double *intens, int n_rad);
 
@@ -169,7 +169,7 @@ int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param);
 
 void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status);
 
-int comp_xill_param(xillParam *cpar, xillParam *par);
+int did_xill_param_change(xillParam *cpar, xillParam *par);
 
 /** free the CLI cache **/
 void free_cache(void);
