@@ -10,9 +10,11 @@ set(SOURCE_FILES
         relutility.c relutility.h
         xilltable.c xilltable.h
         relphysics.c relphysics.h
+        writeOutfiles.c writeOutfiles.h
+        relprofile.c relprofile.h
         cppModelDatabase.h
-        cppmodels.cpp  cppmodels.h
-        cppparameters.cpp  cppparameters.h
+        cppmodels.cpp cppmodels.h
+        cppparameters.cpp cppparameters.h
         cppspectrum.h
         cppTypes.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script

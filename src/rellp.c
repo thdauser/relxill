@@ -18,6 +18,8 @@
 
 #include "rellp.h"
 
+#include "writeOutfiles.h"
+
 lpTable *cached_lp_table = NULL;
 
 /** calculate the reflection fraction as defined in Dauser+2016 **/
@@ -340,7 +342,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
   }
 
   if (shouldOutfilesBeWritten()) {
-    save_radial_profile("test_rellxill_heightVelocityProfile.txt", source->heightMean, source->beta, source->nh);
+    write_data_to_file("test_rellxill_heightVelocityProfile.txt", source->heightMean, source->beta, source->nh);
   }
 
   free_extendedPrimarySource(source);

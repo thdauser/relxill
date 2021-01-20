@@ -18,4 +18,15 @@
 #ifndef WRITEOUTFILES_H_
 #define WRITEOUTFILES_H_
 
-#endif 
+#include "common.h"
+
+void write_binned_data_to_file(char *foutName, double *rad, double *intens, int n_rad);
+void write_data_to_file(char *foutName, double *rad, double *intens, int n_rad);
+
+void write_radiallyResolvedFluxObs(double *rad, double *intens, int n_rad);
+void write_relconv_outfiles(RelSysPar *sysPar, rel_spec *spec, int *status);
+
+void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname);
+void save_relline_profile(rel_spec *spec);
+
+#endif

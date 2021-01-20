@@ -18,6 +18,8 @@
 
 #include "relutility.h"
 
+#include "writeOutfiles.h"
+
 /** linear interpolation in 1 dimension **/
 double interp_lin_1d(double ifac_r, double rlo, double rhi) {
   return ifac_r * rhi + (1.0 - ifac_r) * rlo;
@@ -412,17 +414,6 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
   return gi / beta_fac;
 }
 
-/** print the xillver spectrum   **/
-void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname) {
-
-  FILE *fp = fopen(fname, "w+");
-  int ii;
-  for (ii = 0; ii < n_ener; ii++) {
-    fprintf(fp, " %e \t %e \t %e \n", ener[ii], ener[ii + 1], flu[ii]);
-  }
-  if (fclose(fp)) exit(1);
-}
-
 /* A simple implementation of the FFT taken from http://paulbourke.net/miscellaneous/dft/
    (uses the Radix-2 Cooley-Tukey algorithm)
 
@@ -663,16 +654,6 @@ static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin, int
   return lxi_max;
 }
 
-static void save_ion_profile(ion_grad *ion) {
-
-  FILE *fp = fopen("test_ion_grad_relxill.dat", "w+");
-  int ii;
-  for (ii = 0; ii < ion->nbins; ii++) {
-    fprintf(fp, " %e \t %e \t %e \n", ion->r[ii], ion->r[ii + 1], ion->lxi[ii]);
-  }
-  if (fclose(fp)) exit(1);
-
-}
 
 /** *** set log(xi) to obey the limits of the xillver table: TODO: check if we need to adjust the normalization as well  ***
  *  NOTE: with correctly set xpsec/isis limits, it is only possible to reach the lower boundary       **/
@@ -768,7 +749,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
   }
 
   if (is_debug_run()) {
-    save_ion_profile(ion);
+    write_binned_data_to_file("test_ion_grad_relxill.dat", ion->r, ion->lxi, ion->nbins);
   }
 
   if (*status != EXIT_SUCCESS) {
