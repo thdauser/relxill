@@ -31,6 +31,7 @@
 #include "rellp.h"
 #include "xilltable.h"
 #include "relcache.h"
+#include "relprofile.h"
 
 
 /*********** DEFINE STATEMENTS *********/
@@ -113,12 +114,7 @@ void get_version_number(char **vstr, int *status);
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
 rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status);
 
-/** calculate the relline profile(s) for all given zones **/
-void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status);
 
-void save_relline_profile(rel_spec *spec);
-
-void save_radial_profile(char *foutName, double *rad, double *intens, int n_rad);
 
 rel_spec *relbase_multizone(double *ener,
                             const int n_ener,
@@ -130,9 +126,6 @@ rel_spec *relbase_multizone(double *ener,
 
 void free_cached_tables(void);
 
-RelSysPar *new_relSysPar(int nr, int ng, int *status);
-
-void free_relSysPar(RelSysPar *sysPar);
 
 void relxill_kernel(double *ener_inp,
                     double *spec_inp,
@@ -143,7 +136,6 @@ void relxill_kernel(double *ener_inp,
 
 void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam *rel_param, int *status);
 
-RelSysPar *get_system_parameters(relParam *param, int *status);
 
 /** function adding a primary component with the proper norm to the flux **/
 void add_primary_component(double *ener,
@@ -171,7 +163,6 @@ void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status);
 
 int did_xill_param_change(xillParam *cpar, xillParam *par);
 
-/** free the CLI cache **/
 void free_cache(void);
 
 void get_xillver_angdep_spec(double *o_xill_flux,

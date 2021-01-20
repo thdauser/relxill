@@ -131,8 +131,6 @@ double doppler_factor(double del, double bet);
 /** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
 double gi_potential_lp(double r, double a, double h, double bet, double del);
 
-/** print the xillver spectrum   **/
-void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname);
 
 /* A simple implementation of the FFT taken
    from http://paulbourke.net/miscellaneous/dft/
