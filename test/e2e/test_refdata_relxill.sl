@@ -100,7 +100,7 @@ define plot_model_comparison(fn,dat,goodness){ %{{{
    pl.hplot([elo,ehi[-1]], val_flux;
 	    loglog);
    pl.hplot([elo,ehi[-1]], mod_flux ;
-	    loglog, color="red", depth=-1 );
+	    loglog, color="red", depth=-1, line=1 );
    
    plr.hplot([elo,ehi[-1]], dat.value*0+1; loglog);
    
