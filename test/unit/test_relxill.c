@@ -18,6 +18,8 @@
 
 #include "test_relxill.h"
 
+#include "writeOutfiles.h"
+
 void set_std_param_xillver(double *inp_par) {
   inp_par[0] = 2.1;    // Gamma
   inp_par[1] = 1.0;    // Afe
