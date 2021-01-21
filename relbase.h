@@ -35,7 +35,7 @@
 
 #define version_major 1
 #define version_minor 4
-#define version_build 1
+#define version_build 2
 #define version_dev ""
 
 /** path to all RELXILL tables */
