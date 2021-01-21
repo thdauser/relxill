@@ -173,8 +173,7 @@ xillParam *init_par_xillver_ns(const double *inp_par, const int n_parameter, int
   // TODO: check parameter bounds here as well
   /*	check_parameter_bounds_xillver(param,status);
       CHECK_STATUS_RET(*status,NULL); */
-
-<<<<<<< HEAD
+  
   return param;
 }
 
@@ -389,8 +388,7 @@ relParam *get_std_param_relline(int *status) {
   return init_par_relline(inp_par, n_param, status);
 }
 
-=======
->>>>>>> master
+
 xillSpec *get_std_xill_spec(int *status) {
   xillParam *xill_param = get_std_param_xillver(status);
   xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
