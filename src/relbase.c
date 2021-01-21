@@ -342,9 +342,9 @@ static void renorm_model(const double *flu0, double *flu, int nbins) {
 void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
   int ii;
   for (ii = 0; ii < n; ii++) {
-    spec[ii] /= (float) pow(10, lxi);
+    spec[ii] /= pow(10, lxi);
     if (fabs(dens - 15) > 1e-6) {
-      spec[ii] /= (float) pow(10, dens - 15);
+      spec[ii] /= pow(10, dens - 15);
     }
   }
 }
