@@ -74,8 +74,10 @@ class XspecSpectrum {
    * shift the spectrum in redshift
    */
   void shift_energy_grid_redshift(double z) const {
-    for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
-      m_ener[ii] *= (1 + z);
+    if (z > 0) {
+      for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
+        m_ener[ii] *= (1 + z);
+      }
     }
   }
 
