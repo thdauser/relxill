@@ -950,7 +950,8 @@ rel_spec *relbase_multizone(double *ener,
   }
 
   if (shouldOutfilesBeWritten()) {
-    write_relconv_outfiles(sysPar, spec, status);
+    save_emis_profiles(sysPar);
+    save_relline_profile(spec);
   }
 
 

@@ -61,44 +61,35 @@ void write_data_to_file(char *foutName, double *rad, double *intens, int n_rad) 
   }
 }
 
-void write_radiallyResolvedFluxObs(double *rad, double *intens, int n_rad) {
+void save_relline_radial_flux_profile(double *rad, double *intens, int n_rad) {
   char *fname = "test_relline_radialFluxProfile.dat";
   assert(intens != NULL);
   write_data_to_file(fname, rad, intens, n_rad);
 }
 
-
-/** print the relline profile   **/
 void save_relline_profile(rel_spec *spec) {
-
-  if (spec == NULL) return;
-
-  FILE *fp = fopen("test_relline_profile.dat", "w+");
-  for (int ii = 0; ii < spec->n_ener; ii++) {
-    fprintf(fp, " %e \t %e \t %e \n", spec->ener[ii], spec->ener[ii + 1], spec->flux[0][ii]);
-  }
-  if (fclose(fp)) exit(1);
-
-}
-
-
-void write_relconv_outfiles(RelSysPar *sysPar, rel_spec *spec, int *status) {
-  write_data_to_file("test_emis_profile.dat", sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
-  if (sysPar->emisReturn != NULL) {
-    write_data_to_file("test_emisReturn_profile.dat", sysPar->emisReturn->re,
-                       sysPar->emisReturn->emis, sysPar->emisReturn->nr);
-  }
-  save_relline_profile(spec);
+  char *fname = "test_relline_profile.dat";
+  assert(spec != NULL);
+  write_binned_data_to_file(fname, spec->ener, spec->flux[0], spec->n_ener);
 }
 
 void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname) {
+  write_binned_data_to_file(fname, ener, flu, n_ener);
+}
 
-  FILE *fp = fopen(fname, "w+");
-  int ii;
-  for (ii = 0; ii < n_ener; ii++) {
-    fprintf(fp, " %e \t %e \t %e \n", ener[ii], ener[ii + 1], flu[ii]);
-  }
-  if (fclose(fp)) {
-    exit(1);
+/**
+ * @function save_emis_profiles
+ * @param sysPar
+ * @synopsis: saves the emissivity profile, the incident one and (if exists) also
+ * the returning radiation profile
+ */
+void save_emis_profiles(RelSysPar *sysPar) {
+  assert(sysPar->emis != NULL);
+  write_data_to_file("test_emis_profile.dat",
+                     sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
+  if (sysPar->emisReturn != NULL) {
+    write_data_to_file("test_emis_profile_returnrad.dat",
+                       sysPar->emisReturn->re, sysPar->emisReturn->emis, sysPar->emisReturn->nr);
   }
 }
+
