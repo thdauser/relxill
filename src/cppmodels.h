@@ -78,22 +78,22 @@ class LocalModel {
   void xillver_model(const XspecSpectrum &spectrum);
 
   /**
-   * Evaluate the LocalModel and overwrite the "flux" array
-   * of Spectrum with the output values
+   * Evaluate the LocalModel (in the Rest Frame of the Source)
+   * (applies the redshift to the energy grid)
    * @param spectrum
+   * @output spectrum.flux
    */
   void eval_model(XspecSpectrum &spectrum) {
+
+    spectrum.shift_energy_grid_redshift(m_param[XPar::z]);
 
     switch (m_info.type()) {
       case T_Model::Line: line_model(spectrum);
         break;
-
       case T_Model::Relxill: relxill_model(spectrum);
         break;
-
       case T_Model::Conv: conv_model(spectrum);
         break;
-
       case T_Model::Xill: xillver_model(spectrum);
         break;
     }

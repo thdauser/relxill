@@ -62,13 +62,14 @@ TEST_CASE(" Spectrum Class:  shifting of the energy grid ") {
   double ener0 = spec.energy()[0];
 
   DYNAMIC_SECTION(" shifting by line energy produces correct energies? ") {
-    spec.shift_energy_grid_1keV(0.5, 0.0);
+    spec.shift_energy_grid_1keV(0.5);
     double shifted_ener = spec.energy()[0];
     REQUIRE(shifted_ener == ener0 * 2);
   }
 
   DYNAMIC_SECTION(" shifting by z correct energies? ") {
-    spec.shift_energy_grid_1keV(1.0, 0.5);
+    spec.shift_energy_grid_1keV(1.0);
+    spec.shift_energy_grid_redshift(0.5);
     double shifted_ener = spec.energy()[0];
     REQUIRE(shifted_ener == ener0 * 1.5);
   }

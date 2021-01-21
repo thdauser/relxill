@@ -61,11 +61,12 @@ class XspecSpectrum {
   }
 
   /**
-   * shift the spectrum in redshift and for a line at line for 1 keV
+   * shift the spectrum such that we can calculate if the line would be at 1keV
+   * (if the line is at 5keV, the energy grid is multiplied by 1/5)
    */
-  void shift_energy_grid_1keV(double line_energy, double z) const {
+  void shift_energy_grid_1keV(double line_energy) const {
     for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
-      m_ener[ii] *= (1 + z) / line_energy;
+      m_ener[ii] /=  line_energy;
     }
   }
 
@@ -73,7 +74,9 @@ class XspecSpectrum {
    * shift the spectrum in redshift
    */
   void shift_energy_grid_redshift(double z) const {
-    shift_energy_grid_1keV(1.0, z);
+    for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
+      m_ener[ii] *= (1 + z);
+    }
   }
 
  private:
