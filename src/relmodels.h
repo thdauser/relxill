@@ -91,181 +91,16 @@
 #define MOD_TYPE_RELXILLBBRET -300
 #define MOD_TYPE_RELXILLLPRET -310
 
-/****  TYPE DEFINITIONS ****/
-
-
 /**** FUNCTION DEFINITIONS ****/
 
 void check_parameter_bounds(relParam *param, int *status);
 double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status);
-
-relParam *init_par_relline(const double *inp_par, const int n_parameter, int *status);
-relParam *init_par_relline_lp(const double *inp_par, const int n_parameter, int *status);
-relParam *init_par_relconv(const double *inp_par, const int n_parameter, int *status);
-xillParam *init_par_xillver(const double *inp_par, const int n_parameter, int *status);
-xillParam *init_par_xillver_nthcomp(const double *inp_par, const int n_parameter, int *status);
-xillParam *init_par_xillver_ns(const double *inp_par, const int n_parameter, int *status);
-xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int *status);
-xillParam *init_par_xillver_dens(const double *inp_par, const int n_parameter, int *status);
-
-void init_par_relxill(relParam **rel_param,
-                      xillParam **xill_param,
-                      const double *inp_par,
-                      const int n_parameter,
-                      int *status);
-
-void init_par_relxilllp(relParam **rel_param,
-                        xillParam **xill_param,
-                        const double *inp_par,
-                        const int n_parameter,
-                        int *status);
 
 /** basic xillver model function **/
 void xillver_base(const double *ener0, const int n_ener0, double *photar, xillParam *param_struct, int *status);
 
 void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *param_struct, int *status);
 
-/** internal MODEL FUNCTIONS **/
-void tdrelline(const double *ener,
-               const int n_ener,
-               double *photar,
-               const double *parameter,
-               const int n_parameter,
-               int *status);
-void tdrellinelp(const double *ener,
-                 const int n_ener,
-                 double *photar,
-                 const double *parameter,
-                 const int n_parameter,
-                 int *status);
-void tdrelxill(const double *ener0,
-               const int n_ener0,
-               double *photar,
-               const double *parameter,
-               const int n_parameter,
-               int *status);
-void tdrelxilllp(const double *ener0,
-                 const int n_ener0,
-                 double *photar,
-                 const double *parameter,
-                 const int n_parameter,
-                 int *status);
-void tdrelxilllpion(const double *ener0,
-                    const int n_ener0,
-                    double *photar,
-                    const double *parameter,
-                    const int n_parameter,
-                    int *status);
-void tdxillver(const double *ener0,
-               const int n_ener0,
-               double *photar,
-               const double *parameter,
-               const int n_parameter,
-               int *status);
-void tdrelconv(const double *ener,
-               const int n_ener,
-               double *photar,
-               const double *parameter,
-               const int n_parameter,
-               int *status);
-void tdrelconvlp(const double *ener,
-                 const int n_ener,
-                 double *photar,
-                 const double *parameter,
-                 const int n_parameter,
-                 int *status);
-void tdrelxilldens(const double *ener0,
-                   const int n_ener0,
-                   double *photar,
-                   const double *parameter,
-                   const int n_parameter,
-                   int *status);
-void tdrelxilllpdens(const double *ener0,
-                     const int n_ener0,
-                     double *photar,
-                     const double *parameter,
-                     const int n_parameter,
-                     int *status);
-void tdxillverdens(const double *ener0,
-                   const int n_ener0,
-                   double *photar,
-                   const double *parameter,
-                   const int n_parameter,
-                   int *status);
-void tdrelxillns(const double *ener0,
-                 const int n_ener0,
-                 double *photar,
-                 const double *parameter,
-                 const int n_parameter,
-                 int *status);
-void tdxillverns(const double *ener0,
-                 const int n_ener0,
-                 double *photar,
-                 const double *parameter,
-                 const int n_parameter,
-                 int *status);
-
-void tdrelxill_nthcomp(const double *ener0,
-                       const int n_ener0,
-                       double *photar,
-                       const double *parameter,
-                       const int n_parameter,
-                       int *status);
-void tdrelxilllp_nthcomp(const double *ener0,
-                         const int n_ener0,
-                         double *photar,
-                         const double *parameter,
-                         const int n_parameter,
-                         int *status);
-void tdrelxilllpion_nthcomp(const double *ener0,
-                            const int n_ener0,
-                            double *photar,
-                            const double *parameter,
-                            const int n_parameter,
-                            int *status);
-void tdxillver_nthcomp(const double *ener0,
-                       const int n_ener0,
-                       double *photar,
-                       const double *parameter,
-                       const int n_parameter,
-                       int *status);
-
-void tdxillverco(const double *ener0, const int n_ener0, double *photar, const double *parameter, const int n_parameter,
-                 int *status);
-
-void tdrelxillco(const double *ener0, const int n_ener0, double *photar, const double *parameter, const int n_parameter,
-                 int *status);
-
-// Dens & Nthcomp Model
-xillParam *init_par_xillver_dens_nthcomp(const double *inp_par, const int n_parameter, int *status);
-void init_par_relxilldens_nthcomp(relParam **rel_param,
-                                  xillParam **xill_param,
-                                  const double *inp_par,
-                                  const int n_parameter,
-                                  int *status);
-void init_par_relxilllp_dens_nthcomp(relParam **rel_param,
-                                     xillParam **xill_param,
-                                     const double *inp_par,
-                                     const int n_parameter,
-                                     int *status);
-void tdrelxilldens_nthcomp(const double *ener0,
-                           const int n_ener0,
-                           double *photar,
-                           const double *parameter,
-                           const int n_parameter,
-                           int *status);
-void tdrelxilllpdens_nthcomp(const double *ener0,
-                             const int n_ener0,
-                             double *photar,
-                             const double *parameter,
-                             const int n_parameter,
-                             int *status);
-void tdxillverdens_nthcomp(const double *ener0,
-                           const int n_ener0,
-                           double *photar,
-                           const double *parameter,
-                           const int n_parameter,
-                           int *status);
 
 /* get the version number text on the screen (if not already printed before */
 void print_version_number(int *status);
@@ -278,8 +113,6 @@ void free_relParam(relParam *);
 
 xillParam *new_xillParam(int model_type, int prim_type, int *status);
 void free_xillParam(xillParam *);
-
-
 
 
 #endif /* MODELS_H_ */

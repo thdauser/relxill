@@ -113,6 +113,214 @@ void set_std_param_relxilllpdens_nthcomp(double *inp_par) {
   inp_par[14] = 0.0;    // redshift
 }
 
+xillParam *init_par_xillver(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  xillParam *param = new_xillParam(MOD_TYPE_XILLVER, PRIM_SPEC_ECUT, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_XILLVER);
+
+  param->gam = inp_par[0];
+  param->afe = inp_par[1];
+  param->ect = inp_par[2];
+  param->lxi = inp_par[3];
+  param->dens = 15; // logN
+  param->z = inp_par[4];
+  param->incl = inp_par[5]; // is given in degrees !!
+  param->refl_frac = inp_par[6];
+
+  return param;
+}
+
+xillParam *init_par_xillver_nthcomp(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  xillParam *param = new_xillParam(MOD_TYPE_XILLVER_NTHCOMP, PRIM_SPEC_NTHCOMP, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_XILLVER_NTHCOMP);
+
+  param->gam = inp_par[0];
+  param->afe = inp_par[1];
+  param->ect = inp_par[2];   // is kTe internally
+  param->lxi = inp_par[3];
+  param->dens = 15; // logN
+  param->z = inp_par[4];
+  param->incl = inp_par[5]; // is given in degrees !!
+  param->refl_frac = inp_par[6];
+
+  return param;
+}
+
+xillParam *init_par_xillver_ns(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  xillParam *param = new_xillParam(MOD_TYPE_XILLVERNS, PRIM_SPEC_BB, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_XILLVERNS);
+
+  param->kTbb = inp_par[0];
+  param->afe = inp_par[1];
+  param->ect = 0.0;        // Ecut does not make sense for a BB spectrum
+  param->lxi = inp_par[3];
+  param->dens = inp_par[2]; // logN
+  param->z = inp_par[4];
+  param->incl = inp_par[5]; // is given in degrees !!
+  param->refl_frac = inp_par[6];
+
+  // TODO: check parameter bounds here as well
+  /*	check_parameter_bounds_xillver(param,status);
+      CHECK_STATUS_RET(*status,NULL); */
+
+  return param;
+}
+
+xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  xillParam *param = new_xillParam(MOD_TYPE_XILLVERCO, PRIM_SPEC_ECUT, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_XILLVERCO);
+
+  param->gam = inp_par[0];
+  param->afe = inp_par[1]; // this is A_CO here for the xillverCO model
+  param->kTbb = inp_par[2]; //
+  param->frac_pl_bb = inp_par[3]; //
+  param->ect = inp_par[4];
+  param->z = inp_par[5];
+  param->incl = inp_par[6]; // is given in degrees !!
+  param->refl_frac = inp_par[7];
+
+  param->dens = 17.0;
+  param->lxi = 0.0;       // interestingly this model does not have an ionization
+
+  // TODO: check parameter bounds here as well
+  /*	check_parameter_bounds_xillver(param,status);
+      CHECK_STATUS_RET(*status,NULL); */
+
+  return param;
+}
+
+xillParam *init_par_xillver_dens(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  xillParam *param = new_xillParam(MOD_TYPE_XILLVERDENS, PRIM_SPEC_ECUT, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_XILLVERDENS);
+
+  param->gam = inp_par[0];
+  param->afe = inp_par[1];
+  param->ect = 300.0;
+  param->dens = inp_par[2];
+  param->lxi = inp_par[3];
+  param->z = inp_par[4];
+  param->incl = inp_par[5]; // is given in degrees !!
+  param->refl_frac = inp_par[6];
+
+  // TODO: check parameter bounds here as well
+  /*	check_parameter_bounds_xillver(param,status);
+      CHECK_STATUS_RET(*status,NULL); */
+
+  return param;
+}
+
+xillParam *init_par_xillver_dens_nthcomp(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  xillParam *param = new_xillParam(MOD_TYPE_XILLVERDENS_NTHCOMP, PRIM_SPEC_NTHCOMP, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_XILLVERDENS_NTHCOMP);
+
+  param->gam = inp_par[0];
+  param->afe = inp_par[1];
+  param->ect = inp_par[2];
+  param->dens = inp_par[3];
+  param->lxi = inp_par[4];
+  param->z = inp_par[5];
+  param->incl = inp_par[6]; // is given in degrees !!
+  param->refl_frac = inp_par[7];
+
+  // TODO: check parameter bounds here as well
+  /*	check_parameter_bounds_xillver(param,status);
+      CHECK_STATUS_RET(*status,NULL); */
+
+  return param;
+}
+
+void init_par_relxilllp_dens_nthcomp(relParam **rel_param,
+                                     xillParam **xill_param,
+                                     const double *inp_par,
+                                     const int n_parameter,
+                                     int *status) {
+
+  // fill in parameters
+  relParam *param = new_relParam(MOD_TYPE_RELXILLLP, EMIS_TYPE_LP, status);
+  CHECK_STATUS_VOID(*status);
+
+  xillParam *xparam = new_xillParam(MOD_TYPE_RELXILLLPDENS_NTHCOMP, PRIM_SPEC_NTHCOMP, status);
+  CHECK_STATUS_VOID(*status);
+
+  assert(n_parameter == NUM_PARAM_RELXILLLPDENS_NTHCOMP);
+
+  param->a = inp_par[0];
+  param->incl = inp_par[1] * M_PI / 180;
+  param->rin = inp_par[2];
+  param->rout = inp_par[3];
+  param->height = inp_par[4];
+  param->htop = inp_par[5];
+  param->beta = inp_par[6];
+
+  param->gamma = inp_par[7];
+  xparam->gam = param->gamma;
+  xparam->lxi = inp_par[8];
+  xparam->afe = inp_par[9];
+  xparam->ect = inp_par[10];
+  xparam->dens = inp_par[11];
+
+  xparam->refl_frac = inp_par[12];
+  xparam->fixReflFrac = (int) (inp_par[13] + 0.5); // make sure there is no problem with integer conversion
+
+  param->z = inp_par[14];
+  xparam->z = param->z;
+
+  check_parameter_bounds(param, status);
+  CHECK_STATUS_VOID(*status);
+
+  *rel_param = param;
+  *xill_param = xparam;
+
+}
+
+relParam *init_par_relline(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  relParam *param = new_relParam(MOD_TYPE_RELLINE, EMIS_TYPE_BKN, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_RELLINE);
+
+  param->lineE = inp_par[0];
+  param->emis1 = inp_par[1];
+  param->emis2 = inp_par[2];
+  param->rbr = inp_par[3];
+  param->a = inp_par[4];
+  param->incl = inp_par[5] * M_PI / 180;
+  param->rin = inp_par[6];
+  param->rout = inp_par[7];
+  param->z = inp_par[8];
+  param->limb = (int) (inp_par[9] + 0.5);
+
+  check_parameter_bounds(param, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  return param;
+}
+
 xillParam *get_std_param_xillver(int *status) {
   int n_param = NUM_PARAM_XILLVER;
   double *inp_par = (double *) malloc(sizeof(double) * n_param);
