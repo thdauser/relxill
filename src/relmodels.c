@@ -165,7 +165,7 @@ double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_
 }
 
 /** BASIC XILLVER MODEL FUNCTION **/
-void xillver_base(const double *ener0, const int n_ener0, double *photar, xillParam *param_struct, int *status) {
+void xillver_base(double *ener_inp, const int n_ener0, double *photar, xillParam *param_struct, int *status) {
 
 
   // call the function which calculates the xillver spectrum
@@ -178,22 +178,14 @@ void xillver_base(const double *ener0, const int n_ener0, double *photar, xillPa
   /** add the dependence on incl, assuming a semi-infinite slab **/
   norm_xillver_spec(spec, param_struct->incl);
 
-  double *ener = (double *) ener0;
-  int n_ener = (int) n_ener0;
-  double flux[n_ener];
+  rebin_spectrum(ener_inp, photar, n_ener0, spec->ener, spec->flu[0], spec->n_ener);
 
-  rebin_spectrum(ener, flux, n_ener, spec->ener, spec->flu[0], spec->n_ener);
+  add_primary_component(ener_inp, n_ener0, photar, NULL, param_struct, status);
 
-  add_primary_component(ener, n_ener, flux, NULL, param_struct, status);
+//  rebin_spectrum(ener, photar, n_ener, ener, flux, n_ener);
 
-  double *ener_shifted = shift_energ_spec_1keV(ener, n_ener, 1.0, param_struct->z, status);
-
-  rebin_spectrum(ener_shifted, photar, n_ener, ener, flux, n_ener);
-
-  /** free **/
   free_xillParam(param_struct);
   free_xill_spec(spec);
-  free(ener_shifted);
 }
 
 void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *param_struct, int *status) {

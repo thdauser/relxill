@@ -64,9 +64,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   delete xill_param;
 }
 
-/*
- *
- */
+
 void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 
   if (calcSum(spectrum.flux(), spectrum.num_flux_bins()) <= 0.0) {
@@ -87,12 +85,12 @@ void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 
 }
 
-/*
- *
- */
+
 void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
 
   xillParam *xill_param = getXillParamStruct(m_param, m_name, m_info);
+
+  spectrum.shift_energy_grid_redshift(xill_param->z);
 
   int status = EXIT_SUCCESS;
   xillver_base(spectrum.energy(), spectrum.num_flux_bins(), spectrum.flux(), xill_param, &status);
