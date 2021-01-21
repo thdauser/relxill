@@ -231,10 +231,6 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *
   char strnull[10];
   strcpy(strnull, " ");
 
-  /* allocate space for string column value */
-  char **xilltab_parname = (char **) malloc(sizeof(char *) * tab->num_param);
-  CHECK_MALLOC_VOID_STATUS(xilltab_parname, status)
-
   // get the name
   for (ii = 0; ii < tab->num_param; ii++) {
     tab->param_names[ii] = (char *) malloc(sizeof(char) * 8);
@@ -340,7 +336,7 @@ static int *xillInd_from_parInput(xillParam *param, xillTable *tab, int *status)
   float *inp_param_vals = get_xill_param_vals_array(param, status);
 
   int ii;
-  int *ind = (int *) malloc(XILLTABLE_N_PARAM * sizeof(int));
+  int *ind = (int *) malloc(tab->num_param * sizeof(int));
   CHECK_MALLOC_RET_STATUS(ind, status, NULL)
 
   for (ii = 0; ii < tab->num_param; ii++) {
