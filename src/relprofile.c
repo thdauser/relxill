@@ -896,7 +896,7 @@ void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status) {
   free_str_relb_func(&cached_str_relb_func);
 
   if (shouldOutfilesBeWritten() && spec->n_zones == 1) {
-    write_radiallyResolvedFluxObs(sysPar->re, radialFlux, sysPar->nr);
+    save_relline_radial_flux_profile(sysPar->re, radialFlux, sysPar->nr);
   }
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
