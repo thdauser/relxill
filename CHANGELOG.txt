@@ -1,3 +1,6 @@
+[1.4.20210125] small leak fixed when loading either 5 or 6 dim
+nthcomp table
+
 [1.4.20210121] fixes memory error when DCp xillver table is used
 
 [1.4.20210111] changes relxill normalization:
