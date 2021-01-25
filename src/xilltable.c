@@ -417,6 +417,8 @@ int checkIfTableExists(char *filename, int *status) {
     fits_close_file(fptr, &statusTableExists);
   }
 
+  free(fullfilename);
+
   return tableExists;
 }
 
