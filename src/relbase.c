@@ -668,6 +668,7 @@ rel_spec *relbase_multizone(double *ener,
       printf(" DEBUG:  RELBASE-Cache: re-using calculated values\n");
     }
     spec = ca_info->store->data->relbase_spec;
+    free(radialZones); // necessary is it is allocated outside this function TODO: change it!
   }
 
   if (shouldOutfilesBeWritten()) {

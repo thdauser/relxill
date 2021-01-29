@@ -412,8 +412,7 @@ void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab, double
     }
   }
 
-  int ii;
-  for (ii = 0; ii <= (*spec)->n_ener; ii++) {
+  for (int ii = 0; ii <= (*spec)->n_ener; ii++) {
     (*spec)->ener[ii] = (*pt_ener)[ii];
   }
 
@@ -421,7 +420,7 @@ void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab, double
     if ((*spec)->rel_cosne == NULL) {
       (*spec)->rel_cosne = new_rel_cosne(nzones, xill_tab->n_incl, status);
     }
-    for (ii = 0; ii < (*spec)->rel_cosne->n_cosne; ii++) {
+    for (int ii = 0; ii < (*spec)->rel_cosne->n_cosne; ii++) {
       (*spec)->rel_cosne->cosne[ii] = cos(xill_tab->incl[ii] * M_PI / 180);
     }
   }
