@@ -776,6 +776,8 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
   /** bin the primary continuum onto the Input grid **/
   rebin_spectrum(ener, pl_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
 
+  free(egrid);
+
   for (int ii = 0; ii < n_ener; ii++) {
     pl_flux[ii] *= primarySpecNormFactor;
   }

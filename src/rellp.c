@@ -129,8 +129,8 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, d
     int kk;
     for (jj = 0; jj < tab->n_h; jj++) {
       for (kk = 0; kk < tab->n_rad; kk++) {
-        dat[ii]->del_inc[jj][kk] = fabs(dat[ii]->del_inc[jj][kk]);
-        dat[ii]->del[jj][kk] = fabs(dat[ii]->del[jj][kk]);
+        dat[ii]->del_inc[jj][kk] = fabsf(dat[ii]->del_inc[jj][kk]);
+        dat[ii]->del[jj][kk] = fabsf(dat[ii]->del[jj][kk]);
       }
     }
 
@@ -261,7 +261,7 @@ double jetSpeedConstantAccel(double beta100, double height, double hbase) {
 extPrimSource *getExtendedJetGeom(const relParam *param, int *status) {
 
   extPrimSource *source = new_extendedPrimarySource(NHBINS_VERTICALLY_EXTENDED_SOURCE, status);
-  CHECK_MALLOC_RET_STATUS(source, status, source);
+  CHECK_MALLOC_RET_STATUS(source, status, source)
 
   get_log_grid(source->heightArr, source->nh + 1, param->height, param->htop);
 
@@ -271,7 +271,7 @@ extPrimSource *getExtendedJetGeom(const relParam *param, int *status) {
   for (int ii = 0; ii < source->nh; ii++) {
     source->heightMean[ii] = 0.5 * (source->heightArr[ii] + source->heightArr[ii + 1]);
     if (beta100Rg > 1e-6) {
-      source->beta[ii] = jetSpeedConstantAccel(beta100Rg, source->heightMean[ii], param->height);;
+      source->beta[ii] = jetSpeedConstantAccel(beta100Rg, source->heightMean[ii], param->height);
     } else {
       source->beta[ii] = 0.0;
     }
@@ -452,7 +452,7 @@ void free_cached_lpTable(void) {
 extPrimSource *new_extendedPrimarySource(int nh, int *status) {
 
   extPrimSource *source = malloc(sizeof(extPrimSource));
-  CHECK_MALLOC_RET_STATUS(source, status, source);
+  CHECK_MALLOC_RET_STATUS(source, status, source)
 
   source->nh = nh;
   source->heightArr = malloc(sizeof(double) * nh + 1);

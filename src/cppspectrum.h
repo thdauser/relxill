@@ -41,7 +41,7 @@ class XspecSpectrum {
   };
 
   ~XspecSpectrum() {
-    delete (m_ener);
+    delete[] m_ener;
   }
 
   [[nodiscard]] double *energy() const {
@@ -98,14 +98,19 @@ class DefaultSpec {
     set_input_flux();
   };
 
-  DefaultSpec() : DefaultSpec(0.1, 1000.0, 3000)
-  {  };
+  DefaultSpec() : DefaultSpec(0.1, 1000.0, 3000) {
+  };
+
+  ~DefaultSpec() {
+    delete[] energy;
+    delete[] flux;
+  }
 
   /**
    * return the energy and flux as an XspecSpectrum
    * @return XspecSpectrum
    */
-  [[nodiscard]] XspecSpectrum get_xspec_spectrum() const{
+  [[nodiscard]] XspecSpectrum get_xspec_spectrum() const {
     return XspecSpectrum(energy, flux, num_flux_bins);
   }
 
