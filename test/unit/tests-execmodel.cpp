@@ -38,7 +38,7 @@ double sum_flux(const double *flux, int nbins) {
 //  return sum_flux(spec.flux(), spec.num_flux_bins());
 //}
 
-static void test_xspec_lmod_call(ModelName model_name, DefaultSpec default_spec) {
+static void test_xspec_lmod_call(ModelName model_name, const DefaultSpec& default_spec) {
 
   try {
     const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
@@ -49,7 +49,7 @@ static void test_xspec_lmod_call(ModelName model_name, DefaultSpec default_spec)
                                default_spec.num_flux_bins,
                                default_spec.energy);
 
-    delete (xspec_parameters);
+    delete[] xspec_parameters;
 
     REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
   } catch (ModelNotFound &e) {
@@ -94,13 +94,18 @@ TEST_CASE(" default spectrum class", "[basic]") {
 /*
  * TEST CASE
  */
+static void test_loading_default_parameters(ModelName model_name){
+  const double* param = get_xspec_default_parameter_array(model_name);
+  delete[] param;
+}
+
 TEST_CASE(" testing if local model is implemented", "[basic]") {
 
   XspecModelDatabase database{};
 
   for (const auto &elem: database.all_models()) {
     DYNAMIC_SECTION("  - model: " << elem.second.name()) {
-      REQUIRE_NOTHROW(get_xspec_default_parameter_array(elem.first));
+      REQUIRE_NOTHROW(test_loading_default_parameters(elem.first));
     }
   }
 

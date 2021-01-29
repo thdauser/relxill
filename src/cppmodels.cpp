@@ -78,6 +78,7 @@ void LocalModel::conv_model(const XspecSpectrum &spectrum) {
     throw ModelEvalFailed("executing convolution failed");
   }
 
+  delete rel_param;
 }
 
 
@@ -92,6 +93,7 @@ void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
     throw std::exception();
   }
 
+  delete xill_param;
 }
 
 

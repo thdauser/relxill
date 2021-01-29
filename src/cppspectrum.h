@@ -98,13 +98,17 @@ class DefaultSpec {
     set_input_flux();
   };
 
-  DefaultSpec() : DefaultSpec(0.1, 1000.0, 3000) {
-  };
+  DefaultSpec() : DefaultSpec(0.1, 1000.0, 3000)
+  { };
 
   ~DefaultSpec() {
     delete[] energy;
     delete[] flux;
   }
+
+  // delete copy and move assignment constructor
+  DefaultSpec(const DefaultSpec& other) = delete;
+  DefaultSpec& operator= (const DefaultSpec& other) = delete;
 
   /**
    * return the energy and flux as an XspecSpectrum
@@ -131,6 +135,9 @@ class DefaultSpec {
 
  private:
   void set_input_flux() const {
+    for (int ii = 0; ii<num_flux_bins; ii++){
+      flux[ii] = 0.0;
+    }
     flux[num_flux_bins / 2] = 1.0;
   }
 };
