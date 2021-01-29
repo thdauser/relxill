@@ -281,7 +281,7 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, d
   double g_inf = calc_g_inf(height, param->a);
   emisProf->normFactorPrimSpec = getPrimarySpecScalingFactor(g_inf, param->gamma, emisProf->returnFracs->f_inf);
 
-  free(emis_profile_table);
+  free_emisProfile(emis_profile_table);
 
 }
 
