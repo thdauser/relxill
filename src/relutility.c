@@ -25,6 +25,12 @@ double interp_lin_1d(double ifac_r, double rlo, double rhi) {
   return ifac_r * rhi + (1.0 - ifac_r) * rlo;
 }
 
+/** linear interpolation in 1 dimension **/
+double interp_lin_1d_float(double ifac_r, float rlo, float rhi) {
+  return ifac_r * rhi + (1.0 - ifac_r) * rlo;
+}
+
+
 double interp_log_1d(double ifac_r, double rlo, double rhi) {
   return exp(ifac_r * log(rhi) + (1.0 - ifac_r) * log(rlo));
 }

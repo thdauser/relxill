@@ -121,26 +121,8 @@ static double get_ipol_factor_radius(double rlo, double rhi, double del_inci, co
   return inter_r;
 }
 
-static void determine_index_interpol_rel_table(int* ptr_index, const double* rad, int n_rad, double rad_compare, int* status){
-  int index = *ptr_index;
-  while ((rad_compare >= rad[index + 1])) {
-    index++;
-    if (index >= n_rad - 1) { //TODO: construct table such that we don't need this?
-      if (rad_compare - RELTABLE_MAX_R <= 1e-6) {
-        index = n_rad - 2;
-        break;
-      } else {
-        RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
-        printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
-               rad_compare, RELTABLE_MAX_R);
-        CHECK_STATUS_VOID(*status);
-      }
-    }
-  }
-  *ptr_index = index;
-}
 
-static void interpol_emisprofile_on_radial_grid(emisProfile *emisProf,
+/*static void interpol_emisprofile_on_radial_grid(emisProfile *emis_prof,
                                                 const lpTable *tab,
                                                 int *status,
                                                 const double *jet_rad,
@@ -148,77 +130,137 @@ static void interpol_emisprofile_on_radial_grid(emisProfile *emisProf,
                                                 const double *jet_del,
                                                 const double *jet_del_inc
 ) {
-  double* re = emisProf->re;
-  int n_r = emisProf->nr;
+  double* re = emis_prof->re;
+  int n_r = emis_prof->nr;
 
   // get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
   int ind_rmin = binary_search(jet_rad, tab->n_rad, re[ n_r- 1]);
   assert(ind_rmin > 0);
   int kk = ind_rmin;
   for (int ii = n_r - 1; ii >= 0; ii--) {
-
-    determine_index_interpol_rel_table(&kk, jet_rad, tab->n_rad, re[ii], status);
+    while ((re[ii] >= jet_rad[kk + 1])) {
+      kk++;
+      if (kk >= tab->n_rad - 1) { //TODO: construct table such that we don't need this?
+        if (re[ii] - RELTABLE_MAX_R <= 1e-6) {
+          kk = tab->n_rad - 2;
+          break;
+        } else {
+          RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
+          printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
+                 re[ii], RELTABLE_MAX_R);
+          CHECK_STATUS_VOID(*status);
+        }
+      }
+    }
 
     double inter_r = get_ipol_factor_radius(jet_rad[kk], jet_rad[kk + 1], jet_del[kk], re[ii]);
 
     //  log grid for the intensity (due to the function profile)
-    emisProf->emis[ii] = interp_log_1d(inter_r, jet_emis[kk], jet_emis[kk + 1]);
+    emis_prof->emis[ii] = interp_log_1d(inter_r, jet_emis[kk], jet_emis[kk + 1]);
 
-    emisProf->del_emit[ii] = interp_lin_1d(inter_r, jet_del[kk], jet_del[kk + 1]);
-    emisProf->del_inc[ii] = interp_lin_1d(inter_r, jet_del_inc[kk], jet_del_inc[kk + 1]);
+    emis_prof->del_emit[ii] = interp_lin_1d(inter_r, jet_del[kk], jet_del[kk + 1]);
+    emis_prof->del_inc[ii] = interp_lin_1d(inter_r, jet_del_inc[kk], jet_del_inc[kk + 1]);
+  }
+}
+*/
+
+static void interpol_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status) {
+
+  double* re = emis_prof->re;
+  int nr = emis_prof->nr;
+
+  double* re_tab = emis_prof_tab->re;
+  int nr_tab = emis_prof_tab->nr;
+
+  // get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
+  int ind_rmin = binary_search(re_tab, nr_tab, re[ nr- 1]);
+  assert(ind_rmin > 0);
+  int kk = ind_rmin;
+  for (int ii = nr - 1; ii >= 0; ii--) {
+    while ((re[ii] >= emis_prof_tab->re[kk + 1])) {
+      kk++;
+      if (kk >= nr_tab - 1) { //TODO: construct table such that we don't need this?
+        if (re[ii] - RELTABLE_MAX_R <= 1e-6) {
+          kk = nr_tab - 2;
+          break;
+        } else {
+          RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
+          printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
+                 re[ii], RELTABLE_MAX_R);
+          CHECK_STATUS_VOID(*status);
+        }
+      }
+    }
+
+    double inter_r = get_ipol_factor_radius(re_tab[kk], re_tab[kk + 1], emis_prof_tab->del_emit[kk], re[ii]);
+
+    //  log grid for the intensity (due to the function profile)
+    emis_prof->emis[ii] = interp_log_1d(inter_r, emis_prof_tab->emis[kk], emis_prof_tab->emis[kk + 1]);
+    emis_prof->del_emit[ii] = interp_lin_1d(inter_r, emis_prof_tab->del_emit[kk], emis_prof_tab->del_emit[kk + 1]);
+    emis_prof->del_inc[ii] = interp_lin_1d(inter_r, emis_prof_tab->del_inc[kk], emis_prof_tab->del_inc[kk + 1]);
   }
 }
 
-/*
- * ignores param->height and param->beta
- */
-static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, double height, double beta,
-                                       lpTable *tab, int ind_a, double ifac_a, int *status) {
 
-  lpDat *dat[2];
-  int ind_h[2];
-  double ifac_h[2];
-
-  for (int ii = 0; ii < 2; ii++) {
-    dat[ii] = tab->dat[ind_a + ii];
-    ind_h[ii] = binary_search_float(dat[ii]->h, tab->n_h, (float) height);
-    ifac_h[ii] = (height - dat[ii]->h[ind_h[ii]]) /
-        (dat[ii]->h[ind_h[ii] + 1] - dat[ii]->h[ind_h[ii]]);
-
-  }
-
-  double jet_rad[tab->n_rad];
-  double jet_emis[tab->n_rad];
-  double jet_del[tab->n_rad];
-  double jet_del_inc[tab->n_rad];
-
-  // interpolate everything for the given a-h values on the original grid
-  for (int ii = 0; ii < tab->n_rad; ii++) {
-    // #1: intensity
-    jet_emis[ii] =
+// interpolate everything for the given a-h values on the original grid
+// as h(a), first need to interpolate in h and then for a
+static void interpol_emissivity_spin_height(emisProfile *emis_profile_table,
+                                            double ifac_a,
+                                            const double *ifac_h,
+                                            const int *ind_h,
+                                            lpDat *const *dat,
+                                            const int nr) {
+  for (int ii = 0; ii < nr; ii++) {
+    emis_profile_table->emis[ii] =
         (1.0 - ifac_a) * (1.0 - ifac_h[0]) * dat[0]->intens[ind_h[0]][ii]
             + (1.0 - ifac_a) * (ifac_h[0]) * dat[0]->intens[ind_h[0] + 1][ii]
             + (ifac_a) * (1.0 - ifac_h[1]) * dat[1]->intens[ind_h[1]][ii]
             + (ifac_a) * (ifac_h[1]) * dat[1]->intens[ind_h[1] + 1][ii];
 
-    jet_del[ii] =
+    emis_profile_table->del_emit[ii] =
         (1.0 - ifac_a) * (1.0 - ifac_h[0]) * dat[0]->del[ind_h[0]][ii]
             + (1.0 - ifac_a) * (ifac_h[0]) * dat[0]->del[ind_h[0] + 1][ii]
             + (ifac_a) * (1.0 - ifac_h[1]) * dat[1]->del[ind_h[1]][ii]
             + (ifac_a) * (ifac_h[1]) * dat[1]->del[ind_h[1] + 1][ii];
 
-    jet_del_inc[ii] =
+    emis_profile_table->del_inc[ii] =
         (1.0 - ifac_a) * (1.0 - ifac_h[0]) * dat[0]->del_inc[ind_h[0]][ii]
             + (1.0 - ifac_a) * (ifac_h[0]) * dat[0]->del_inc[ind_h[0] + 1][ii]
             + (ifac_a) * (1.0 - ifac_h[1]) * dat[1]->del_inc[ind_h[1]][ii]
             + (ifac_a) * (ifac_h[1]) * dat[1]->del_inc[ind_h[1] + 1][ii];
 
-    // #2: r-grid
+  }
+}
+
+
+static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, double height, double beta,
+                                       lpTable *tab, int ind_a, double ifac_a, int *status) {
+
+  lpDat *dat[2];
+  for (int ii = 0; ii < 2; ii++) {
+    dat[ii] = tab->dat[ind_a + ii];
+  }
+
+
+  double jet_rad[tab->n_rad];
+  for (int ii = 0; ii < tab->n_rad; ii++) {
     jet_rad[ii] = interp_lin_1d(ifac_a, dat[0]->rad[ii], dat[1]->rad[ii]);
   }
 
 
-  interpol_emisprofile_on_radial_grid(emisProf, tab, status, jet_rad, jet_emis, jet_del, jet_del_inc);
+  int ind_h[2];
+  double ifac_h[2];
+  for (int ii = 0; ii < 2; ii++) {
+    ind_h[ii] = binary_search_float(dat[ii]->h, tab->n_h, (float) height);
+    ifac_h[ii] = (height - dat[ii]->h[ind_h[ii]]) /
+        (dat[ii]->h[ind_h[ii] + 1] - dat[ii]->h[ind_h[ii]]);
+  }
+
+  emisProfile* emis_profile_table = new_emisProfile(jet_rad, tab->n_rad, status);
+  interpol_emissivity_spin_height(emis_profile_table, ifac_a, ifac_h, ind_h, dat, tab->n_rad);
+
+  interpol_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
+  CHECK_STATUS_VOID(*status);
 
   for (int ii = 0; ii < emisProf->nr; ii++) {
 
@@ -232,12 +274,14 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, d
   }
 
   // del_emit for the largest radius of the table (need for refl_frac)
-  double del_emit_ad_max = jet_del[tab->n_rad - 1];
+  double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
   emisProf->returnFracs = calc_refl_frac(emisProf, del_emit_ad_max, param, status);
 
   assert(emisProf->returnFracs != NULL);
   double g_inf = calc_g_inf(height, param->a);
   emisProf->normFactorPrimSpec = getPrimarySpecScalingFactor(g_inf, param->gamma, emisProf->returnFracs->f_inf);
+
+  free(emis_profile_table);
 
 }
 

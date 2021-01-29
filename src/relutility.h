@@ -59,12 +59,13 @@
 
 /** linear interpolation in 1 dimension **/
 double interp_lin_1d(double ifac_r, double rlo, double rhi);
+double interp_lin_1d_float(double ifac_r, float rlo, float rhi);
 
 /** log interpolation in 1 dimension **/
 double interp_log_1d(double ifac_r, double rlo, double rhi);
 
 /** linear interpolation in 2 dimensions **/
-double interp_lin_2d(double ifac1, double r1lo, double r1hi, double ifac2, double r2lo, double r2hi);
+double interp_lin_2d(double ifac1, double ifac2, double r11, double r12, double r21, double r22);
 double interp_lin_2d_float(double ifac1, double ifac2, float r11, float r12, float r21, float r22);
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */

@@ -135,7 +135,7 @@ class DefaultSpec {
 
  private:
   void set_input_flux() const {
-    for (int ii = 0; ii<num_flux_bins; ii++){
+    for (size_t ii = 0; ii<num_flux_bins; ii++){
       flux[ii] = 0.0;
     }
     flux[num_flux_bins / 2] = 1.0;
