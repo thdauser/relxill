@@ -22,6 +22,7 @@
 #include "relutility.h"
 #include "relbase.h"
 #include "relphysics.h"
+#include "relxill.h"
 #define LIMIT_PREC 1e-6
 
 void testRellineTableValues(int *status) {
@@ -316,7 +317,7 @@ void testNormalizationFFTConvolution(int *status) {
   }
 
   // requirements; spec_cache needs to be allocated for the FFT to work
-  specCache *dummy_spec_cache = init_globalSpecCache(status);
+  specCache *spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
 
   assert(rel_profile->n_zones == 1);
@@ -324,7 +325,7 @@ void testNormalizationFFTConvolution(int *status) {
 
   double spec_conv_out[rel_profile->n_ener];
   convolveSpectrumFFTNormalized(rel_profile->ener, xill_spec, rel_profile->flux[izone], spec_conv_out,
-                                rel_profile->n_ener, 1, 1, izone, dummy_spec_cache, status);
+                                rel_profile->n_ener, 1, 1, izone, spec_cache, status);
 
   double sumProfileAfter =
       calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener, rel_profile->ener, EMIN_XILLVER, EMAX_XILLVER);
@@ -336,7 +337,7 @@ void testNormalizationFFTConvolution(int *status) {
 
   rel_profile->flux[izone][1000] = 1000.0;
   convolveSpectrumFFTNormalized(rel_profile->ener, xill_spec, rel_profile->flux[izone], spec_conv_out,
-                                rel_profile->n_ener, 1, 1, izone, dummy_spec_cache, status);
+                                rel_profile->n_ener, 1, 1, izone, spec_cache, status);
 
   double sumProfileAfterWrong =
       calcSumInEnergyBand(spec_conv_out, rel_profile->n_ener, rel_profile->ener, EMIN_XILLVER, EMAX_XILLVER);

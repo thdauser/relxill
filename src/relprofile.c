@@ -426,7 +426,12 @@ void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab, double
     }
   }
 
-  (*spec)->rgrid = radialZones;
+  // if the grid changed, we called new_rel_spec
+  if ((*spec)->rgrid == NULL) {
+    (*spec)->rgrid = radialZones;
+  } else {
+    free(radialZones);
+  }
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 

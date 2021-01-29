@@ -148,9 +148,13 @@ void add_primary_component(double *ener,
 void free_rel_spec(rel_spec *spec);
 rel_spec *new_rel_spec(int nzones, const int n_ener, int *status);
 
+void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
+                       int re_rel, int re_xill, int izone, specCache *cache, int *status);
+double calcFFTNormFactor(const double *ener, const double *fxill, const double *frel, const double *fout, int n);
+
 /** caching routines **/
-specCache *init_globalSpecCache(int *status);
-void free_specCache(void);
+specCache *init_global_specCache(int *status);
+void free_specCache(specCache* spec_cache);
 void free_fft_cache(double ***sp, int n1, int n2);
 void free_out_spec(OutSpec *spec);
 

@@ -184,7 +184,6 @@ void xillver_base(double *ener_inp, const int n_ener0, double *photar, xillParam
 
 //  rebin_spectrum(ener, photar, n_ener, ener, flux, n_ener);
 
-  free_xillParam(param_struct);
   free_xill_spec(spec);
 }
 
