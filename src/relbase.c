@@ -24,13 +24,7 @@ cnode *cache_relbase = NULL;
 
 
 int save_1eV_pos = 0;
-// double cached_int_romb_rad = -1.0;
 
-const double ener_xill_norm_lo = 0.1;
-const double ener_xill_norm_hi = 1000;
-enum {
-  n_ener_xill = 3000
-};
 double *global_ener_xill = NULL;
 
 const int n_ener_std = N_ENER_CONV;
@@ -261,11 +255,10 @@ static void renorm_model(const double *flu0, double *flu, int nbins) {
 }
 
 void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
-  int ii;
-  for (ii = 0; ii < n; ii++) {
-    spec[ii] /= pow(10, lxi);
+  for (int ii = 0; ii < n; ii++) {
+    spec[ii] /=  pow(10, lxi);  // do not cast to float (fails refdata)
     if (fabs(dens - 15) > 1e-6) {
-      spec[ii] /= pow(10, dens - 15);
+      spec[ii] /=  pow(10, dens - 15); // do not cast to float (fails refdata)
     }
   }
 }

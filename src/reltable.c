@@ -367,6 +367,16 @@ lpDat *load_single_lpDat(fitsfile *fptr, int n_h, int n_rad, int rownum, int *st
     CHECK_STATUS_RET(*status, NULL);
   }
 
+  int jj;
+  int kk;
+  for (jj = 0; jj < n_h; jj++) {
+    for (kk = 0; kk < n_rad; kk++) {
+      dat->del_inc[jj][kk] = fabsf(dat->del_inc[jj][kk]);
+      dat->del[jj][kk] = fabsf(dat->del[jj][kk]);
+    }
+  }
+
+
   return dat;
 }
 

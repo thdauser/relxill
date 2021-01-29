@@ -110,7 +110,7 @@ void testLPTableValues(int *status) {
   }
 
   const int n = 3;
-  const float ref_val[3] = {(float) 7.618106e-05, (float) 2.6826601, (float) -1.2509402};
+  const float ref_val[3] = {(float) 7.618106e-05, (float) 2.6826601, (float) 1.2509402};  // the table value is -1.2509402, but we read all angles as positive values
   const float val[3] = {
       tab->dat[1]->intens[2][1],
       tab->dat[1]->del[2][1],
