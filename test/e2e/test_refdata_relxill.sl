@@ -82,6 +82,7 @@ define plot_model_comparison(fn,dat,goodness){ %{{{
    
    variable pl = xfig_plot_new(15,8);
    variable plr = xfig_plot_new(15,4);
+   variable plr2 = xfig_plot_new(15,4);
    
    variable elo = dat.bin_lo;
    variable ehi = dat.bin_hi;
@@ -91,10 +92,15 @@ define plot_model_comparison(fn,dat,goodness){ %{{{
    variable val_flux = dat.value/(ehi-elo)*(0.5*(elo+ehi))^2;
    variable mod_flux = m_dat/(ehi-elo)*(0.5*(elo+ehi))^2;
    variable ratio_flux = m_dat/dat.value;
+
+   print(min(ratio_flux));
+   print(max(ratio_flux));
    
+   variable abs_ratio_flux = abs(ratio_flux - 1);
    
    pl.world(min(elo),max(elo),1e-5,1e3;loglog);
    plr.world(min(elo),max(elo),min(ratio_flux)*0.9, max(ratio_flux)*1.1;loglog);
+   plr2.world(min(elo),max(elo),1e-8,0.1;loglog);
 
    
    pl.hplot([elo,ehi[-1]], val_flux;
@@ -105,17 +111,22 @@ define plot_model_comparison(fn,dat,goodness){ %{{{
    plr.hplot([elo,ehi[-1]], dat.value*0+1; loglog);
    
    plr.hplot([elo,ehi[-1]], ratio_flux; loglog, color="red");
+
+   plr2.hplot([elo,ehi[-1]], abs_ratio_flux; loglog, color="red");
+
    
    pl.ylabel(" Energy Flux ");
    plr.xlabel("Energy [keV]" );
-
    plr.ylabel(" Ratio New/Old ");
-   
+
+   plr2.xlabel("Energy [keV]" );
+   plr2.ylabel(" Abs(Ratio-1.0) ");
+
         
    add_labels(pl,goodness,fn);
    
    
-   xfig_multiplot(pl,plr).render(fn+".pdf");
+   xfig_multiplot(pl,plr,plr2).render(fn+".pdf");
 }
 %}}}
 private define fits_write_model_data(fn, dat){ %{{{
@@ -138,7 +149,7 @@ define check_single_model(fn){ %{{{
    
    struct_filter(dat, where(dat.value != 0) );
    
-   variable ind = where(dat.bin_lo>0.2);
+   variable ind = where(900 > dat.bin_lo>0.2);
    variable goodness =  sqrt(sum((dat.model[ind]/dat.value[ind]-1)^2))/length(dat.model[ind]);
    
    () = printf(" %s  \t deviation:  %.3e ",fn, goodness);   %% GOODNESS = sqr-distance / num_bins 
