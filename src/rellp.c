@@ -23,7 +23,14 @@
 lpTable *cached_lp_table = NULL;
 
 
-/** calculate the reflection fraction as defined in Dauser+2016 **/
+/*
+ * @synopsis: calculate the reflection fraction as defined in Dauser+2016 *
+ * @input:
+ *  - emis_profile (calculated for the given Rin/Rout of the model)
+ *  - del_emit_ad_max (emission angle hitting the outer edge of the fully, simulated accretion disk,
+ *    needed to calculate fraction of photons reaching infinity, as no photons are allowed to cross the
+ *    disk plane)
+ **/
 static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_max, relParam *param, int *status) {
 
   // in case there is no relativity information, the refl_frac is 1
@@ -32,10 +39,8 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
     return NULL;
   }
 
-  /** important: get the radial values for which the RELLINE is calculated
-   *             should be Rin=r_isco & Rout=1000rg  **/
-
   // get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
+  //  -> important: get the radial values for which the RELLINE is calculated
   double del_bh = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, param->rin)];
   double del_ad = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, param->rout)];
 
@@ -50,6 +55,7 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   if (param->beta > 1e-6) {
     del_bh = relat_abberation(del_bh, -1. * param->beta);
     del_ad = relat_abberation(del_ad, -1. * param->beta);
+    del_emit_ad_max = relat_abberation(del_ad, -1. * param->beta);
   }
 
   lpReflFrac *str = new_lpReflFrac(status);
@@ -61,7 +67,7 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
    *  (so they only reach infinity if they don't hit the disk plane) */
   str->f_inf = 0.5 * (1.0 + cos(del_emit_ad_max));
 
-  // photons are not allowed to cross the disk plane
+  // photons are not allowed to cross the disk plane TODO: check if f_inf>0.5 makes (a) sense for beta>0 and is necessary anyways for beta=0
   if (str->f_inf > 0.5) {
     str->f_inf = 0.5;
   }
@@ -103,9 +109,9 @@ static void get_emis_bkn(double *emis, const double *re, int nr,
 
 }
 
-double getPrimarySpecScalingFactor(double ginf, double gamma, double f_inf) {
-  double prim_fac = f_inf / 0.5 * pow(ginf, gamma);
-  return prim_fac;
+double calc_norm_factor_primary_spectrum(double height, double a, double gamma, double f_inf) {
+  double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!)
+  return f_inf / 0.5 * pow(g_inf, gamma);
 }
 
 
@@ -121,50 +127,13 @@ static double get_ipol_factor_radius(double rlo, double rhi, double del_inci, co
   return inter_r;
 }
 
-
-/*static void interpol_emisprofile_on_radial_grid(emisProfile *emis_prof,
-                                                const lpTable *tab,
-                                                int *status,
-                                                const double *jet_rad,
-                                                const double *jet_emis,
-                                                const double *jet_del,
-                                                const double *jet_del_inc
-) {
-  double* re = emis_prof->re;
-  int n_r = emis_prof->nr;
-
-  // get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
-  int ind_rmin = binary_search(jet_rad, tab->n_rad, re[ n_r- 1]);
-  assert(ind_rmin > 0);
-  int kk = ind_rmin;
-  for (int ii = n_r - 1; ii >= 0; ii--) {
-    while ((re[ii] >= jet_rad[kk + 1])) {
-      kk++;
-      if (kk >= tab->n_rad - 1) { //TODO: construct table such that we don't need this?
-        if (re[ii] - RELTABLE_MAX_R <= 1e-6) {
-          kk = tab->n_rad - 2;
-          break;
-        } else {
-          RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
-          printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
-                 re[ii], RELTABLE_MAX_R);
-          CHECK_STATUS_VOID(*status);
-        }
-      }
-    }
-
-    double inter_r = get_ipol_factor_radius(jet_rad[kk], jet_rad[kk + 1], jet_del[kk], re[ii]);
-
-    //  log grid for the intensity (due to the function profile)
-    emis_prof->emis[ii] = interp_log_1d(inter_r, jet_emis[kk], jet_emis[kk + 1]);
-
-    emis_prof->del_emit[ii] = interp_lin_1d(inter_r, jet_del[kk], jet_del[kk + 1]);
-    emis_prof->del_inc[ii] = interp_lin_1d(inter_r, jet_del_inc[kk], jet_del_inc[kk + 1]);
-  }
+static void get_ipol_factor(const float value, const float* arr, const int n_arr, int *ind, double *ifac) {
+  (*ind) = binary_search_float(arr, n_arr, (float) value);
+  (*ifac) = (value - arr[*ind]) /
+      (arr[*ind + 1] - arr[*ind]);
 }
-*/
 
-static void interpol_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status) {
+static void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status) {
 
   double* re = emis_prof->re;
   int nr = emis_prof->nr;
@@ -204,12 +173,12 @@ static void interpol_emisprofile_on_radial_grid(emisProfile *emis_prof, const em
 
 // interpolate everything for the given a-h values on the original grid
 // as h(a), first need to interpolate in h and then for a
-static void interpol_emissivity_spin_height(emisProfile *emis_profile_table,
-                                            double ifac_a,
-                                            const double *ifac_h,
-                                            const int *ind_h,
-                                            lpDat *const *dat,
-                                            const int nr) {
+static void interpol_emisprofile_spin_height(emisProfile *emis_profile_table,
+                                             double ifac_a,
+                                             const double *ifac_h,
+                                             const int *ind_h,
+                                             lpDat *const *dat,
+                                             const int nr) {
   for (int ii = 0; ii < nr; ii++) {
     emis_profile_table->emis[ii] =
         (1.0 - ifac_a) * (1.0 - ifac_h[0]) * dat[0]->intens[ind_h[0]][ii]
@@ -232,56 +201,73 @@ static void interpol_emissivity_spin_height(emisProfile *emis_profile_table,
   }
 }
 
+/*
+ * @function:  interpol_lptable
+ * @synoposis: interpolate the LP table for a given spin and height
+ * @output: emisProfile
+ *   - the "emis" here is the photon flux, as stored in the table
+ *   - radial grid is the one of the table
+ */
+emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status){
 
-static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, double height, double beta,
-                                       lpTable *tab, int ind_a, double ifac_a, int *status) {
+  CHECK_STATUS_RET(*status, NULL);
 
-  lpDat *dat[2];
-  for (int ii = 0; ii < 2; ii++) {
-    dat[ii] = tab->dat[ind_a + ii];
-  }
+  int ind_a;
+  double ifac_a;
+  get_ipol_factor((float) a, tab->a, tab->n_a, &ind_a, &ifac_a);
 
+
+  lpDat *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
   double jet_rad[tab->n_rad];
   for (int ii = 0; ii < tab->n_rad; ii++) {
-    jet_rad[ii] = interp_lin_1d(ifac_a, dat[0]->rad[ii], dat[1]->rad[ii]);
+    jet_rad[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->rad[ii], dat_ind_a[1]->rad[ii]);
   }
 
+  emisProfile* emis_profile_table = new_emisProfile(jet_rad, tab->n_rad, status);
 
   int ind_h[2];
   double ifac_h[2];
   for (int ii = 0; ii < 2; ii++) {
-    ind_h[ii] = binary_search_float(dat[ii]->h, tab->n_h, (float) height);
-    ifac_h[ii] = (height - dat[ii]->h[ind_h[ii]]) /
-        (dat[ii]->h[ind_h[ii] + 1] - dat[ii]->h[ind_h[ii]]);
+    get_ipol_factor((float) height, dat_ind_a[ii]->h, tab->n_h, &(ind_h[ii]), &(ifac_h[ii]));
   }
 
-  emisProfile* emis_profile_table = new_emisProfile(jet_rad, tab->n_rad, status);
-  interpol_emissivity_spin_height(emis_profile_table, ifac_a, ifac_h, ind_h, dat, tab->n_rad);
+  interpol_emisprofile_spin_height(emis_profile_table, ifac_a, ifac_h, ind_h, dat_ind_a, tab->n_rad);
 
-  interpol_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
-  CHECK_STATUS_VOID(*status);
 
+  return emis_profile_table;
+}
+
+static void apply_emis_relativity_flux_corrections(emisProfile *emisProf, double a, double height, double gamma, double beta) {
   for (int ii = 0; ii < emisProf->nr; ii++) {
 
       /** multiply by the additional factor gi^gamma (see Dauser et al., 2013) **/
-    emisProf->emis[ii] *= pow(gi_potential_lp(emisProf->re[ii], param->a, height, beta, emisProf->del_emit[ii]), param->gamma);
+    emisProf->emis[ii] *= pow(gi_potential_lp(emisProf->re[ii], a, height, beta, emisProf->del_emit[ii]), gamma);
 
     // take the beaming of the jet into account (see Dauser et al., 2013)
-    if (param->beta > 1e-6) {
+    if (beta > 1e-6) {
       emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], beta), 2);
     }
   }
 
-  // del_emit for the largest radius of the table (need for refl_frac)
+}
+static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, double height, double beta,
+                                       lpTable *tab, int *status) {
+  CHECK_STATUS_VOID(*status);
+
+  emisProfile* emis_profile_table = interpol_lptable(param->a, height, tab, status);
+
+  rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
   double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
+  free_emisProfile(emis_profile_table);
+
+
+  apply_emis_relativity_flux_corrections(emisProf, param->a, height, param->gamma, beta);
+
   emisProf->returnFracs = calc_refl_frac(emisProf, del_emit_ad_max, param, status);
 
-  assert(emisProf->returnFracs != NULL);
-  double g_inf = calc_g_inf(height, param->a);
-  emisProf->normFactorPrimSpec = getPrimarySpecScalingFactor(g_inf, param->gamma, emisProf->returnFracs->f_inf);
-
-  free_emisProfile(emis_profile_table);
+  emisProf->normFactorPrimSpec =
+      calc_norm_factor_primary_spectrum(height, param->a, param->gamma, emisProf->returnFracs->f_inf);
 
 }
 
@@ -357,8 +343,6 @@ static void addSingleReturnFractions(lpReflFrac *reflFracAvg, lpReflFrac *single
 void calc_emis_jet_extended(emisProfile *emisProf,
                             relParam *param,
                             lpTable *tab,
-                            int ind_a,
-                            double ifac_a,
                             int *status) {
 
   extPrimSource *source = getExtendedJetGeom(param, status);
@@ -370,6 +354,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
   emisProf->returnFracs = new_lpReflFrac(status);
   emisProf->normFactorPrimSpec = 0.0;
 
+
   for (int ii = 0; ii < source->nh; ii++) {
 
     calc_emis_jet_point_source(emisProfSingle,
@@ -377,8 +362,6 @@ void calc_emis_jet_extended(emisProfile *emisProf,
                                source->heightMean[ii],
                                source->beta[ii],
                                tab,
-                               ind_a,
-                               ifac_a,
                                status);
 
     // assuming a constant luminosity in the frame of the jet
@@ -431,6 +414,17 @@ static void get_emis_constant(double *emis, int n) {
 }
 
 
+static lpTable* get_lp_table(int* status){
+  CHECK_STATUS_RET(*status,NULL);
+
+  if (cached_lp_table == NULL) {
+    read_lp_table(LPTABLE_FILENAME, &cached_lp_table, status);
+    CHECK_STATUS_RET(*status, NULL);
+  }
+  return cached_lp_table;
+}
+
+
 /*
  * LAMP POST GEOMETRY  --- MAIN ROUTINE
  */
@@ -438,19 +432,12 @@ void get_emis_jet(emisProfile *emis_profile, relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  if (cached_lp_table == NULL) {
-    read_lp_table(LPTABLE_FILENAME, &cached_lp_table, status);
-    CHECK_STATUS_VOID(*status);
-  }
-
-  int ind_a = binary_search_float(cached_lp_table->a, cached_lp_table->n_a, (float) param->a);
-  double ifac_a = (param->a - cached_lp_table->a[ind_a]) /
-      (cached_lp_table->a[ind_a + 1] - cached_lp_table->a[ind_a]);
+  lpTable* lp_table = get_lp_table(status);
 
   if (modelLampPostPointsource(param)) {
-    calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, cached_lp_table, ind_a, ifac_a, status);
+    calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
   } else {
-    calc_emis_jet_extended(emis_profile, param, cached_lp_table, ind_a, ifac_a, status);
+    calc_emis_jet_extended(emis_profile, param, lp_table, status);
   }
 
 }
