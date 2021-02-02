@@ -42,6 +42,8 @@ static specCache *new_specCache(int n_cache, int n_ener, int *status) {
   spec->nzones = 0;
   spec->n_ener = n_ener;
 
+  spec->conversion_factor_energyflux = NULL;
+
   spec->fft_xill = (double ***) malloc(sizeof(double **) * n_cache);
   CHECK_MALLOC_RET_STATUS(spec->fft_xill, status, NULL)
 
@@ -89,7 +91,17 @@ specCache *init_global_specCache(int *status) {
   return global_spec_cache;
 }
 
+static double* calculate_energyflux_conversion(const double* ener, int n_ener, int* status){
 
+  double* factor = (double *) malloc(sizeof(double) * n_ener );
+  CHECK_MALLOC_RET_STATUS(factor, status, NULL);
+
+  for(int ii=0; ii<n_ener; ii++){
+    factor[ii] = 0.5*(ener[ii]+ener[ii+1]) / (ener[ii+1] - ener[ii]);
+  }
+
+  return factor;
+}
 
 /** convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
  *  fout: gives the output
@@ -122,6 +134,11 @@ void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, do
   // needs spec cache to be set up
   assert(cache != NULL);
 
+  if (cache->conversion_factor_energyflux == NULL){
+    cache->conversion_factor_energyflux = calculate_energyflux_conversion(ener, n, status);
+  }
+
+
   /* need to find out where the 1keV for the filter is, which defines if energies are blue or redshifted*/
   if (save_1eV_pos == 0 ||
       (!((ener[save_1eV_pos] <= 1.0) &&
@@ -142,7 +159,7 @@ void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, do
   /** #1: for the xillver part **/
   if (re_xill) {
     for (ii = 0; ii < n; ii++) {
-      cache->fft_xill[izone][0][ii] = fxill[ii] / (ener[ii + 1] - ener[ii]);
+      cache->fft_xill[izone][0][ii] = fxill[ii] * cache->conversion_factor_energyflux[ii] ;
       cache->fft_xill[izone][1][ii] = 0.0;
     }
     FFT_R2CT(1, m, cache->fft_xill[izone][0], cache->fft_xill[izone][1]);
@@ -154,7 +171,7 @@ void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, do
   if (re_rel) {
     for (ii = 0; ii < n; ii++) {
       irot = (ii - save_1eV_pos + n) % n;
-      cache->fft_rel[izone][0][irot] = frel[ii] / (ener[ii + 1] - ener[ii]);
+      cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii]; /// (ener[ii + 1] - ener[ii]) * ener[ii];
       cache->fft_rel[izone][1][ii] = 0.0;
     }
     FFT_R2CT(1, m, cache->fft_rel[izone][0], cache->fft_rel[izone][1]);
@@ -173,7 +190,7 @@ void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, do
   FFT_R2CT(-1, m, xcomb, ycomb);
 
   for (ii = 0; ii < n; ii++) {
-    fout[ii] = xcomb[ii] * (ener[ii + 1] - ener[ii]);
+    fout[ii] = xcomb[ii] /  cache->conversion_factor_energyflux[ii]; //* (ener[ii + 1] - ener[ii]) / ener[ii];
   }
 
 }

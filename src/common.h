@@ -207,6 +207,7 @@ typedef struct {
   int nzones;   // number of zones actually stored there
   int n_cache;  // number of array (nzones <= n_cache !!)
   int n_ener;
+  double* conversion_factor_energyflux; // conversion from photons/bin to keV/keV
   double ***fft_xill;  // dimensions [n_cache,2,n_ener]
   double ***fft_rel;   // dimensions [n_cache,2,n_ener]
   xillSpec **xill_spec;

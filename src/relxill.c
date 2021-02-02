@@ -225,13 +225,13 @@ void relxill_kernel(double *ener_inp,
 
       get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
 
-
       // convolve the spectrum **
       //(important for the convolution: need to recompute fft for xillver
       //always if rel changes, as the angular distribution changes !!)
       fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener,
                         recompute_rel, 1, ii, spec_cache, status);
       CHECK_STATUS_VOID(*status);
+
 
       double normFacFFT = calcFFTNormFactor(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener);
 
@@ -253,6 +253,11 @@ void relxill_kernel(double *ener_inp,
           RELXILL_ERROR("failed to get filename", status);
         }
         save_xillver_spectrum(ener_inp, test_flu, n_ener_inp, vstr);
+
+        save_xillver_spectrum(ener, xill_flux, n_ener, "test_fft_xill.dat");
+        save_xillver_spectrum(ener,rel_profile->flux[ii], n_ener, "test_fft_rel.dat");
+        save_xillver_spectrum(ener, conv_out, n_ener, "test_fft_conv.dat");
+
       }
 
     } /**** END OF LOOP OVER RADIAL ZONES [ii] *****/

@@ -258,6 +258,7 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, d
   emisProfile* emis_profile_table = interpol_lptable(param->a, height, tab, status);
 
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
+
   double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
   free_emisProfile(emis_profile_table);
 
