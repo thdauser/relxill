@@ -92,15 +92,12 @@ define plot_model_comparison(fn,dat,goodness){ %{{{
    variable val_flux = dat.value/(ehi-elo)*(0.5*(elo+ehi))^2;
    variable mod_flux = m_dat/(ehi-elo)*(0.5*(elo+ehi))^2;
    variable ratio_flux = m_dat/dat.value;
-
-   print(min(ratio_flux));
-   print(max(ratio_flux));
    
    variable abs_ratio_flux = abs(ratio_flux - 1);
    
-   pl.world(min(elo),max(elo),1e-5,1e3;loglog);
-   plr.world(min(elo),max(elo),min(ratio_flux)*0.9, max(ratio_flux)*1.1;loglog);
-   plr2.world(min(elo),max(elo),1e-8,0.1;loglog);
+   pl.world(min(elo),max(elo)*1.1,1e-6,1e4;loglog);
+   plr.world(min(elo),max(elo)*1.1,min(ratio_flux)*0.9, max(ratio_flux)*1.1;loglog);
+   plr2.world(min(elo),max(elo)*1.1,1e-8,0.1;loglog);
 
    
    pl.hplot([elo,ehi[-1]], val_flux;

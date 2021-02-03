@@ -175,21 +175,22 @@ define test_parfiles(){ %{{{
    
 }
 %}}}
-
-private define write_all_refl_frac_combinations(filename_refdata){
+private define write_all_refl_frac_combinations(filename_refdata){ %{{{
 
    set_par("*.fixReflFrac",0);
    set_par("*.refl_frac",1,0,-10,10);
-   fits_write_model_struct(get_refdata_filename(filename_refdata));
+   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
    set_par("*.refl_frac",-1,0,-10,10);
-   fits_write_model_struct(get_refdata_filename(filename_refdata));
+   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
    set_par("*.refl_frac",0);
-   fits_write_model_struct(get_refdata_filename(filename_refdata));   
+   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );   
    set_par("*.fixReflFrac",1);
-   fits_write_model_struct(get_refdata_filename(filename_refdata));      
+   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );      
    set_par("*.fixReflFrac",0);
    
 }
+%}}}
+
 
 define create_default_refdata(ff, filename_refdata){ %{{{
  
@@ -221,13 +222,13 @@ define create_refdata_relxilllp(filename_refdata){ %{{{
    set_par("*.a",0.998);
 
    set_par("*.h",2.0,0,-100,100);
-   write_all_refl_frac_combinations(filename_refdata);
+   write_all_refl_frac_combinations(filename_refdata; verbose);
 
    set_par("*.h",30,0,-100,100);
-   write_all_refl_frac_combinations(filename_refdata);
+   write_all_refl_frac_combinations(filename_refdata; verbose);
 
    set_par("*.h",-1.1,0,-10,100);
-   write_all_refl_frac_combinations(filename_refdata);
+   write_all_refl_frac_combinations(filename_refdata; verbose);
 }
 %}}}
 
@@ -236,7 +237,7 @@ define create_refdata_relxilllp(filename_refdata){ %{{{
 variable filename_default = "%s_defparam_refdat_%04i.fits";
 variable filename_random  = "%s_random_refdat_%04i.fits";
 variable filename_special  = "%s_special_refdat_%04i.fits";
-variable num_random_evaluations = 5;
+variable num_random_evaluations = 3;
 
 variable all_fit_functions = get_fit_functions();
 
