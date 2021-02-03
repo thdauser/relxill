@@ -61,7 +61,7 @@ enum class XPar {
 typedef std::vector<XPar> ModelParamVector;
 
 /**
- * exception if anything is wrong with the input parameters
+ * @brief exception if anything is wrong with the input parameters
  */
 class ParamInputException : public std::exception {
  public:
@@ -81,7 +81,7 @@ class ParamInputException : public std::exception {
 };
 
 /**
- * class storing the name and the parameter list
+ * @brief class storing the name and the parameter list
  * - used by the python script from the lmodel.dat file to create the xspec_wrapper
  */
 class XspecSingleLmodelDefinition {

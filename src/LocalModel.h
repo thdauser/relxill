@@ -60,7 +60,7 @@ class LocalModel {
  public:
   LocalModel(const ModelParams &par, ModelName model_name)
       : m_name{model_name},
-        m_param{par},
+        m_model_params{par},
         m_info{ModelDatabase::instance().model_info(model_name)}
   {  };
 
@@ -86,7 +86,7 @@ class LocalModel {
    */
   void eval_model(XspecSpectrum &spectrum) {
 
-    spectrum.shift_energy_grid_redshift(m_param[XPar::z]);
+    spectrum.shift_energy_grid_redshift(m_model_params[XPar::z]);
 
     switch (m_info.type()) {
       case T_Model::Line: line_model(spectrum);
@@ -103,7 +103,7 @@ class LocalModel {
 
  private:
   ModelName m_name;
-  ModelParams m_param;
+  ModelParams m_model_params;
   ModelInfo m_info;
 };
 
