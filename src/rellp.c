@@ -115,7 +115,7 @@ double calc_norm_factor_primary_spectrum(double height, double a, double gamma, 
 }
 
 
-static double get_ipol_factor_radius(double rlo, double rhi, double del_inci, const double radius) {
+static double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius) {
   double inter_r;
   // for larger angles logarithmic interpolation works slightly better
   if (del_inci / M_PI * 180.0 <= 75.0) {
@@ -141,15 +141,14 @@ static void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisP
   double* re_tab = emis_prof_tab->re;
   int nr_tab = emis_prof_tab->nr;
 
-  // get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
+  // get the extent of the disk (indices are defined such that tab->r[ind] <= r < tab->r[ind+1]
   int ind_rmin = binary_search(re_tab, nr_tab, re[ nr - 1]);
 
-
-
   assert(ind_rmin > 0);
+  assert(ind_rmin < nr_tab - 1);
   int kk = ind_rmin;
   for (int ii = nr - 1; ii >= 0; ii--) {
-    while ((re[ii] >= emis_prof_tab->re[kk + 1])) {
+    while ((re[ii] >= re_tab[kk + 1])) {
       kk++;
       if (kk >= nr_tab - 1) { //TODO: construct table such that we don't need this?
         if (re[ii] - RELTABLE_MAX_R <= 1e-6) {
@@ -222,7 +221,8 @@ emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status
 
   lpDat *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
-  double jet_rad[tab->n_rad];
+  double* jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
+  CHECK_MALLOC_RET_STATUS(jet_rad,status,NULL)
   for (int ii = 0; ii < tab->n_rad; ii++) {
     jet_rad[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->rad[ii], dat_ind_a[1]->rad[ii]);
   }
@@ -263,6 +263,7 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, d
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
+  free(emis_profile_table->re); // is not freed by free_emisProfile
   free_emisProfile(emis_profile_table);
 
 
