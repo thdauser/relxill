@@ -90,24 +90,6 @@ static void norm_emis_profile(const double *re, int nr, double *emis) {
 
 }
 
-/** routine for the broken power law emissivity **/
-static void get_emis_bkn(double *emis, const double *re, int nr,
-                         double index1, double index2, double rbr) {
-
-  double alpha;
-
-  int ii;
-  for (ii = 0; ii < nr; ii++) {
-    alpha = index1;
-    if (re[ii] > rbr) {
-      alpha = index2;
-    }
-    emis[ii] = pow(re[ii] / rbr, -alpha);
-  }
-
-  norm_emis_profile(re, nr, emis);
-
-}
 
 double calc_norm_factor_primary_spectrum(double height, double a, double gamma, double f_inf) {
   double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!)
@@ -398,27 +380,6 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 }
 
 
-static void get_emis_alphadisk(double *emis, double *re, int n) {
-
-  for (int ii = 0; ii < n; ii++) {
-    emis[ii] = 1. / pow(re[ii], 3) * (1 - 1. / sqrt(re[ii] / re[0]));
-  }
-
-  // normalized to 1?
-
-}
-
-static void get_emis_constant(double *emis, int n) {
-
-  for (int ii = 0; ii < n; ii++) {
-    emis[ii] = 1.0;
-  }
-
-  // normalized to 1?
-
-}
-
-
 static lpTable* get_lp_table(int* status){
   CHECK_STATUS_RET(*status,NULL);
 
@@ -430,9 +391,55 @@ static lpTable* get_lp_table(int* status){
 }
 
 
-/*
- * LAMP POST GEOMETRY  --- MAIN ROUTINE
- */
+
+/**
+ *  @synopsis: calculate the emissivity for broken power law defined
+ *  by up to two indices
+ **/
+static void get_emis_bkn(double *emis, const double *re, int nr,
+                         double index1, double index2, double rbr) {
+
+  double alpha;
+
+  int ii;
+  for (ii = 0; ii < nr; ii++) {
+    alpha = index1;
+    if (re[ii] > rbr) {
+      alpha = index2;
+    }
+    emis[ii] = pow(re[ii] / rbr, -alpha);
+  }
+
+  norm_emis_profile(re, nr, emis);
+
+}
+
+
+/**
+ *  @synopsis: calculate the emissivity for an alpha-disk (as given
+ *  by Shakura & Sunyaev; 1973)
+ **/
+static void get_emis_alphadisk(double *emis, double *re, int n) {
+
+  for (int ii = 0; ii < n; ii++) {
+    emis[ii] = 1. / pow(re[ii], 3) * (1 - 1. / sqrt(re[ii] / re[0]));
+  }
+
+  // normalized to 1?
+
+}
+
+static void get_emis_constant(double *emis, int n) {
+  for (int ii = 0; ii < n; ii++) {
+    emis[ii] = 1.0;
+  }
+}
+
+
+/**
+  * @syopsis: calculate the emissivity profile for any jet like source
+  * (extended, lamp post, ...)
+  **/
 void get_emis_jet(emisProfile *emis_profile, relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -448,7 +455,9 @@ void get_emis_jet(emisProfile *emis_profile, relParam *param, int *status) {
 }
 
 /*
- *  MAIN ROUTINE to calculate the EMISSIVITY PROFILE
+ *  @function: calc_emis_profile
+ *  @synopsis: calculate the emissivity profile on a given radial grid,
+ *  depending the the given emis-type and parameters
  */
 emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status) {
 
@@ -490,10 +499,6 @@ emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status)
   CHECK_RELXILL_ERROR("calculating the emissivity profile failed due to previous error", status);
 
   return emis;
-}
-
-void free_cached_lpTable(void) {
-  free_lpTable(cached_lp_table);
 }
 
 
@@ -580,3 +585,6 @@ void free_emisProfile(emisProfile *emis_profile) {
   }
 }
 
+void free_cached_lpTable(void) {
+  free_lpTable(cached_lp_table);
+}
