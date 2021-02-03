@@ -826,6 +826,10 @@ void free_specCache(specCache* spec_cache) {
       free_fft_cache(spec_cache->fft_rel, spec_cache->n_cache, m);
     }
 
+    if (spec_cache->conversion_factor_energyflux != NULL){
+      free(spec_cache->conversion_factor_energyflux);
+    }
+
     free_out_spec(spec_cache->out_spec);
 
   }

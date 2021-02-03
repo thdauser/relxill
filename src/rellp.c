@@ -142,7 +142,10 @@ static void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisP
   int nr_tab = emis_prof_tab->nr;
 
   // get the extent of the disk (indices are defined such that tab->r[ind+1] <= r < tab->r[ind]
-  int ind_rmin = binary_search(re_tab, nr_tab, re[ nr- 1]);
+  int ind_rmin = binary_search(re_tab, nr_tab, re[ nr - 1]);
+
+
+
   assert(ind_rmin > 0);
   int kk = ind_rmin;
   for (int ii = nr - 1; ii >= 0; ii--) {
