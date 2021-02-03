@@ -47,39 +47,10 @@ class ModelNotFound : public std::exception {
   std::string m_msg{"*** model not found: "};
 };
 
-/**
- * contains information to define one local model fully:
- *  - the input parameter array
- *  - the type of the model (class "ModelType")
- *
- */
-class ModelDefinition {
 
- public:
-  ModelDefinition(ModelParamVector _par, ModelInfo _type)
-      : m_param{std::move(_par)}, m_model{_type} {
-  }
-
-  [[nodiscard]] const ModelParamVector &parameter_names() const {
-    return m_param;
-  }
-
-  [[nodiscard]] ModelInfo model_info() const {
-    return m_model;
-  }
-
-  [[nodiscard]] T_Model type() const {
-    return m_model.type();
-  }
-
-
- private:
-  ModelParamVector m_param{};
-  const ModelInfo m_model;
-};
 
 /**
- * not a real class, but rather a global database (container) for all possible
+ * @brief not a real class, but rather a global database (container) for all possible
  * local models with, using instances of the class "ModelDefinition":
  *  - input parameters as given in the order in the lmodel.dat file
  *  - specify the type of the model, including it's relevant physical components
@@ -87,18 +58,43 @@ class ModelDefinition {
 class ModelDatabase {
 
  public:
+  /**
+   * @brief use this instance to always and securely access
+   * the database, without needing to initialize it anywhere
+   * else
+   * @return ModelDatabase
+   */
   static ModelDatabase &instance() {
     static auto *instance = new ModelDatabase();
     return *instance;
   }
 
-  ModelDefinition get_model_definition(ModelName name) {
+  /**
+   * @brief get model info (as defined in the database)
+   * @param ModelName
+   * @return ModelInfo
+   */
+  ModelInfo model_info(ModelName name){
     try {
-      return ModelDefinition(lmodel_database.params(name), lmodel_info.at(name));
+      return lmodel_info.at(name);
     } catch (std::out_of_range &e) {
       throw ModelNotFound(lmodel_database.name_string(name));
     }
   }
+
+  /**
+   * @brief get list of Model Parameters (from lmodel.dat definition)
+   * @param ModelName
+   * @return ModelParamVector
+   */
+  ModelParamVector param_names(ModelName name){
+    try {
+      return lmodel_database.params(name);
+    } catch (std::out_of_range &e) {
+      throw ModelNotFound(lmodel_database.name_string(name));
+    }
+  }
+
 
 
  private:

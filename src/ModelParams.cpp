@@ -24,8 +24,8 @@ extern "C" {
 }
 
 /**
- * maps the new C++ model type definition to the C-integers
- *  - TODO: use ModelName types throughout the code, then this function is obsolete
+ * @brief maps the new C++ model type definition to the C-integers
+ *  // TODO: use ModelName types throughout the code, then this function is obsolete
  * @param name
  * @return (int) MODEL_TYPE
  */
@@ -59,7 +59,7 @@ int convertModelType(ModelName name) {
 }
 
 /**
- * maps the new C++ irrad type definition to the C-integers
+ * @brief maps the new C++ irrad type definition to the C-integers
  * @param name
  * @return (int) MODEL_TYPE
  */
@@ -76,7 +76,7 @@ int convertIrradType(T_Irrad name) {
 }
 
 /**
- * maps the new C++ primary spectrum type definition to the C-integers
+ * @brief maps the new C++ primary spectrum type definition to the C-integers
  * @param name
  * @return (int) MODEL_TYPE
  */
@@ -92,7 +92,7 @@ int convertPrimSpecType(T_PrimSpec name) {
 }
 
 /**
- * get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
+ * @brief get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
 relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info) {
   auto *param = new relParam;
@@ -134,7 +134,7 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
 
 
 /**
- * get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
+ * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
 xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info) {
   auto *param = new xillParam;
@@ -169,14 +169,14 @@ xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, M
 
 
 /**
- * Return Default Parameters Array for a given Model
+ * @brief Return Default Parameters Array for a given Model
  * It will be return as double array, the same as given as input from Xspec
  * @param ModelName model_name
  * @return double param_array
  */
 const double *get_xspec_default_parameter_array(ModelName model_name) {
 
-  auto const model_parameters = ModelDatabase::instance().get_model_definition(model_name).parameter_names();
+  auto const model_parameters = ModelDatabase::instance().param_names(model_name);
 
   auto default_param_values = ModelParams();
   auto output_param_array = new double[model_parameters.size()];

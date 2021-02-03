@@ -61,11 +61,11 @@ class LocalModel {
   LocalModel(const ModelParams &par, ModelName model_name)
       : m_name{model_name},
         m_param{par},
-        m_info{ModelDatabase::instance().get_model_definition(model_name).model_info()}
+        m_info{ModelDatabase::instance().model_info(model_name)}
   {  };
 
   LocalModel(const double* inp_param, ModelName model_name)
-      : LocalModel( ModelParams(ModelDatabase::instance().get_model_definition(model_name).parameter_names(), inp_param),
+      : LocalModel( ModelParams(ModelDatabase::instance().param_names(model_name), inp_param),
                     model_name )
   {  };
 
