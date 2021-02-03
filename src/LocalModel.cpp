@@ -23,7 +23,7 @@
 #include <iostream>
 
 /*
- *
+ * @brief calculate line model
  */
 void LocalModel::line_model(const XspecSpectrum &spectrum) {
 
@@ -44,7 +44,7 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
 }
 
 /*
- *
+ * @brief calculate relxill model
  */
 void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
@@ -62,7 +62,9 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   delete xill_param;
 }
 
-
+/**
+ * @brief calculate convolution of a given spectrum
+ */
 void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 
   if (calcSum(spectrum.flux(), spectrum.num_flux_bins()) <= 0.0) {
@@ -82,6 +84,9 @@ void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 }
 
 
+/**
+ * @brief calculate xillver model
+ */
 void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
 
   xillParam *xill_param = getXillParamStruct(m_param, m_name, m_info);
