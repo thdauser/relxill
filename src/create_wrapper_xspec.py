@@ -156,7 +156,7 @@ def write_std_header(file):
 
 
 def write_xspec_wrapper_file(outfile_name, model_definition):
-    includes = "#include \"cppmodels.h\"\n#include \"cppparameters.h\"\n"
+    includes = "#include \"LocalModel.h\"\n#include \"ModelParams.h\"\n"
 
     file = open(outfile_name, "w")
 
@@ -216,7 +216,7 @@ def write_model_database(file, definition):
 
 
 def write_xspec_implement_models(outfile_name, model_definition):
-    includes = "#include \"cppparameters.h\"\n"
+    includes = "#include \"ModelParams.h\"\n"
 
     file = open(outfile_name, "w")
 
