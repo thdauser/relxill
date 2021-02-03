@@ -70,7 +70,7 @@ enum class T_Model {
 };
 
 /**
- * holds information about the type of the model
+ * @function holds information about the type of the model
  * @param T_Model, T_Irrad, T_PrimSpec
  *  - T_Model: line model, convolution, xillver,...
  *  - T_Irrad: type of irradiation (e.g., lamp post)
@@ -107,6 +107,7 @@ class ModelInfo {
     return typeid(model_type) == typeid(m_type);
   }
 
+ private:
   const T_Model m_type;
   const T_Irrad m_irradiation;
   const T_PrimSpec m_primeSpec;

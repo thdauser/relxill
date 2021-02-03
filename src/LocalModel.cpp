@@ -16,8 +16,8 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "cppmodels.h"
-#include "cppspectrum.h"
+#include "LocalModel.h"
+#include "XspecSpectrum.h"
 
 #include <stdexcept>
 #include <iostream>

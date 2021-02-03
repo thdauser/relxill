@@ -13,13 +13,13 @@ set(SOURCE_FILES
         writeOutfiles.c writeOutfiles.h
         relprofile.c relprofile.h
         relxill.c relxill.h
-        cppModelDatabase.h
-        cppmodels.cpp cppmodels.h
-        cppparameters.cpp cppparameters.h
-        cppspectrum.h
-        cppTypes.h
+        ModelDatabase.h
+        LocalModel.cpp LocalModel.h
+        ModelParams.cpp ModelParams.h
+        XspecSpectrum.h
+        ModelInfo.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
-        cppModelDatabase.cpp)
+        )
 ############################################
 
 set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)

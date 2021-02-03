@@ -16,16 +16,16 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#ifndef RELXILL_SRC_CPPPARAMETERS_H_
-#define RELXILL_SRC_CPPPARAMETERS_H_
+#ifndef RELXILL_SRC_MODELPARAMS_H_
+#define RELXILL_SRC_MODELPARAMS_H_
 
 #include <string>
 #include <cassert>
 #include <iostream>
 #include <unordered_map>
 
-#include "cppspectrum.h" //only to get the typedef of Array
-#include "cppTypes.h"
+#include "XspecSpectrum.h" //only to get the typedef of Array
+#include "ModelInfo.h"
 #include "common.h"
 
 enum class XPar {
@@ -84,10 +84,10 @@ class ParamInputException : public std::exception {
  * class storing the name and the parameter list
  * - used by the python script from the lmodel.dat file to create the xspec_wrapper
  */
-class XspecLmodelDatDefinition {
+class XspecSingleLmodelDefinition {
 
  public:
-  XspecLmodelDatDefinition(std::string _name, ModelParamVector _params)
+  XspecSingleLmodelDefinition(std::string _name, ModelParamVector _params)
       : m_name{std::move(_name)}, m_params{std::move(_params)} {
   };
 
@@ -163,4 +163,4 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
 xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 const double *get_xspec_default_parameter_array(ModelName model_name);
 
-#endif //RELXILL_SRC_CPPPARAMETERS_H_
+#endif //RELXILL_SRC_MODELPARAMS_H_

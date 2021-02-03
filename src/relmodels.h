@@ -103,7 +103,7 @@ void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *
 
 
 /* get the version number text on the screen (if not already printed before */
-void print_version_number();
+void print_version_number(void);
 
 /* get a new relbase parameter structure and initialize it */
 relParam *new_relParam(int model_type, int emis_type, int *status);

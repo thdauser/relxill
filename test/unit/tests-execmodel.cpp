@@ -17,9 +17,9 @@
 */
 
 #include "catch2/catch_amalgamated.hpp"
-#include "cppmodels.h"
+#include "LocalModel.h"
 #include "xspec_wrapper_lmodels.h"
-#include "cppspectrum.h"
+#include "XspecSpectrum.h"
 
 #include <vector>
 #include <filesystem>

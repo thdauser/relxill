@@ -17,7 +17,7 @@
 */
 
 #include "catch2/catch_amalgamated.hpp"
-#include "cppmodels.h"
+#include "LocalModel.h"
 
 #include <vector>
 #include <unordered_map>

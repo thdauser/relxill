@@ -16,8 +16,8 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "cppparameters.h"
-#include "cppModelDatabase.h"
+#include "ModelParams.h"
+#include "ModelDatabase.h"
 extern "C" {
 #include "relmodels.h"
 #include "relutility.h"

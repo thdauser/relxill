@@ -31,8 +31,8 @@ extern "C" {
 #include "relxill.h"
 }
 
-#include "cppModelDatabase.h"
-#include "cppparameters.h"
+#include "ModelDatabase.h"
+#include "ModelParams.h"
 
 /**
  * exception if the model evaluation failed

@@ -21,8 +21,8 @@
 
 #include <typeinfo>
 #include <utility>
-#include "cppparameters.h"
-#include "cppTypes.h"
+#include "ModelParams.h"
+#include "ModelInfo.h"
 
 #include "xspec_wrapper_lmodels.h"
 
@@ -105,9 +105,10 @@ class ModelDatabase {
   ModelDatabase() = default;  //hidden constructor and destructor to avoid initialization
   ~ModelDatabase() = default;
 
-  XspecModelDatabase lmodel_database{}; // automatically created Class
 
-  // TODO: make this an own class?
+  // stores all scanned information from the lmodel.dat file (automatically created Class)
+  XspecModelDatabase lmodel_database{}; //
+
   const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
       {ModelName::relline, ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw)},
       {ModelName::relline_lp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
