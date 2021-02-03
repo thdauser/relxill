@@ -139,7 +139,7 @@ double gi_potential_lp(double r, double a, double h, double bet, double del);
 void FFT_R2CT(short int dir, long m, double *x, double *y);
 
 /** rebin spectrum to a given energy grid length of ener is nbins+1       **/
-void rebin_spectrum(double *ener, double *flu, int nbins, double *ener0, double *flu0, int nbins0);
+void rebin_spectrum(double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
 
 /** calculate the gravitational redshift **/
 double grav_redshift(const relParam *param);

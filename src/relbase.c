@@ -94,7 +94,7 @@ specCache *init_global_specCache(int *status) {
 static double* calculate_energyflux_conversion(const double* ener, int n_ener, int* status){
 
   double* factor = (double *) malloc(sizeof(double) * n_ener );
-  CHECK_MALLOC_RET_STATUS(factor, status, NULL);
+  CHECK_MALLOC_RET_STATUS(factor, status, NULL)
 
   for(int ii=0; ii<n_ener; ii++){
     factor[ii] = 0.5*(ener[ii]+ener[ii+1]) / (ener[ii+1] - ener[ii]);

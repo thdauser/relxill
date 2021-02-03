@@ -542,7 +542,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 /** rebin spectrum to a given energy grid
  *  length of ener is nbins+1       **/
 
-void rebin_spectrum(double *ener, double *flu, int nbins, double *ener0, double *flu0, int nbins0) {
+void rebin_spectrum(double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
 
   int ii;
   int jj;
@@ -642,9 +642,7 @@ static double cal_lxi(double dens, double emis) {
 }
 
 // determine the radius of maximal ionization
-static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin, int *status) {
-
-  CHECK_STATUS_RET(*status, 0.0);
+static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin) {
 
   double rad_max_lxi = pow((11. / 9.), 2)
       * rin;  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
@@ -725,7 +723,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
     inv_rebin_mean(emis_profile->re, emis_profile->del_emit, sysPar->nr, rmean, ion->del_emit, n, status);
 
     // calculate the maximal ionization assuming r^-3 and SS73 alpha disk
-    double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->nr, rin, status);
+    double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->nr, rin);
 
     // the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
     double fac_lxi_norm = xlxi0 - lxi_max; // subtraction instead of division because of the log
@@ -848,13 +846,6 @@ double calc_g_inf(double height, double a) {
 void setArrayToZero(double *arr, int n) {
   for (int jj = 0; jj < n; jj++) {
     arr[jj] = 0.0;
-  }
-}
-
-
-void multiplyArray(double *arr, int n, double factor) {
-  for (int jj = 0; jj < n; jj++) {
-    arr[jj] *= factor;
   }
 }
 

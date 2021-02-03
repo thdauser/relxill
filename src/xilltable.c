@@ -450,7 +450,7 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
   xillTable *tab = (*inp_tab);
   fitsfile *fptr = NULL;
 
-  print_version_number(status);
+  print_version_number();
 
   fptr = open_fits_table_stdpath(filename, status);
   CHECK_STATUS_VOID(*status);

@@ -32,7 +32,7 @@ static void setNegativeHeightToRplus(double *h, double a) {
   }
 }
 
-void print_version_number(int *status) {
+void print_version_number(void) {
   if (version_number_printed == 0) {
     printf(" *** loading RELXILL model (version %s) *** \n", PROJECT_VER);
     version_number_printed = 1;
@@ -151,18 +151,6 @@ void check_parameter_bounds(relParam *param, int *status) {
 
 }
 
-/** shift the spectrum such that we can calculate the line for 1 keV **/
-double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status) {
-
-  double *ener1keV = (double *) malloc((n_ener + 1) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ener1keV, status, NULL)
-
-  int ii;
-  for (ii = 0; ii <= n_ener; ii++) {
-    ener1keV[ii] = ener[ii] * (1 + z) / line_energ;
-  }
-  return ener1keV;
-}
 
 /** BASIC XILLVER MODEL FUNCTION **/
 void xillver_base(double *ener_inp, const int n_ener0, double *photar, xillParam *param_struct, int *status) {
@@ -233,11 +221,6 @@ relParam *new_relParam(int model_type, int emis_type, int *status) {
   return param;
 }
 
-/* free relbase parameter */
-void free_relParam(relParam *param) {
-  free(param);
-}
-
 /* get a new relbase parameter structure and initialize it */
 xillParam *new_xillParam(int model_type, int prim_type, int *status) {
   xillParam *param = (xillParam *) malloc(sizeof(xillParam));
@@ -263,9 +246,4 @@ xillParam *new_xillParam(int model_type, int prim_type, int *status) {
   param->ion_grad_index = PARAM_DEFAULT;
 
   return param;
-}
-
-/* free relbase parameter */
-void free_xillParam(xillParam *param) {
-  free(param);
 }

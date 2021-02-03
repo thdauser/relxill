@@ -93,7 +93,7 @@ static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rou
 
   // load tables
   if (ptr_rellineTable == NULL) {
-    print_version_number(status);
+    print_version_number();
     CHECK_STATUS_RET(*status, NULL);
     read_relline_table(RELTABLE_FILENAME, &ptr_rellineTable, status);
     CHECK_STATUS_RET(*status, NULL);

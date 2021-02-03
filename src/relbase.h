@@ -127,13 +127,6 @@ rel_spec *relbase_multizone(double *ener,
 void free_cached_tables(void);
 
 
-void relxill_kernel(double *ener_inp,
-                    double *spec_inp,
-                    int n_ener_inp,
-                    xillParam *xill_param,
-                    relParam *rel_param,
-                    int *status);
-
 void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam *rel_param, int *status);
 
 

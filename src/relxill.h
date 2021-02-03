@@ -18,6 +18,13 @@
 #ifndef RELXILL_H_
 #define RELXILL_H_
 
+#include "relmodels.h"
 
+void relxill_kernel(double *ener_inp,
+                    double *spec_inp,
+                    int n_ener_inp,
+                    xillParam *xill_param,
+                    relParam *rel_param,
+                    int *status);
 
 #endif
