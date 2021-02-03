@@ -114,10 +114,7 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
                                 const double *xspec_energy) {
 
   try {
-    ModelDefinition model = ModelDatabase::instance().get_model_definition(model_name);
-    ModelParams input_params{model.parameter_names(), parameter_values};
-
-    LocalModel local_model{input_params, model_name};
+    LocalModel local_model{parameter_values, model_name};
 
     XspecSpectrum spectrum{xspec_energy, xspec_flux, static_cast<size_t>(num_flux_bins)};
     local_model.eval_model(spectrum);

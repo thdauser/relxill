@@ -28,6 +28,7 @@
 extern "C" {
 #include "common.h"
 #include "relmodels.h"
+#include "relxill.h"
 }
 
 #include "cppModelDatabase.h"
@@ -63,7 +64,7 @@ class LocalModel {
         m_info{ModelDatabase::instance().get_model_definition(model_name).model_info()}
   {  };
 
-  LocalModel(double* inp_param, ModelName model_name)
+  LocalModel(const double* inp_param, ModelName model_name)
       : LocalModel( ModelParams(ModelDatabase::instance().get_model_definition(model_name).parameter_names(), inp_param),
                     model_name )
   {  };
