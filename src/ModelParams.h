@@ -84,10 +84,10 @@ class ParamInputException : public std::exception {
  * @brief class storing the name and the parameter list
  * - used by the python script from the lmodel.dat file to create the xspec_wrapper
  */
-class XspecSingleLmodelDefinition {
+class LmodelParamList {
 
  public:
-  XspecSingleLmodelDefinition(std::string _name, ModelParamVector _params)
+  LmodelParamList(std::string _name, ModelParamVector _params)
       : m_name{std::move(_name)}, m_params{std::move(_params)} {
   };
 
@@ -105,12 +105,21 @@ class XspecSingleLmodelDefinition {
 
 };
 
+/**
+ * @brief class to store all parameters of the model
+ * @remark contains default values for all parameters,
+ * which will get overwritten for the given input parameters.
+ */
 class ModelParams {
 
  public:
   ModelParams() = default;
   ~ModelParams() = default;
 
+  /**
+   * @param pars: list of parameters  (XPar)
+   * @param values: input values corresponding to the parameter list
+   */
   ModelParams(ModelParamVector pars, const double *values) {
     for (size_t ii = 0; ii < pars.size(); ii++) {
       m_param.at(pars[ii]) = values[ii];

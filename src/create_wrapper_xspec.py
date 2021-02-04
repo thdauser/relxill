@@ -174,7 +174,7 @@ def get_implemented_lmod(local_model_name, param_list):
 
     lmodel_str = \
         f"""   {{ModelName::{local_model_name},
-    XspecSingleLmodelDefinition(\"{local_model_name}\", {{"""
+    LmodelParamList(\"{local_model_name}\", {{"""
 
     separator = ""
     for par in param_list:
@@ -199,12 +199,12 @@ class XspecModelDatabase{
     return model_definition.at(name).params();
   }
 
-  std::unordered_map<ModelName, XspecSingleLmodelDefinition> all_models() const{
+  std::unordered_map<ModelName, LmodelParamList> all_models() const{
     return model_definition;
   }
 
  private:
-  const std::unordered_map<ModelName, XspecSingleLmodelDefinition> model_definition = {
+  const std::unordered_map<ModelName, LmodelParamList> model_definition = {
   {"""
     file.write(class_definition_cpp)
 

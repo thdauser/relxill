@@ -73,11 +73,6 @@ class LocalModel {
       LocalModel(ModelParams(), model_name)
   {  };
 
-  void line_model(const XspecSpectrum &spectrum);
-  void relxill_model(const XspecSpectrum &spectrum);
-  void conv_model(const XspecSpectrum &spectrum);
-  void xillver_model(const XspecSpectrum &spectrum);
-
   /**
    * Evaluate the LocalModel (in the Rest Frame of the Source)
    * (applies the redshift to the energy grid)
@@ -105,6 +100,12 @@ class LocalModel {
   ModelName m_name;
   ModelParams m_model_params;
   ModelInfo m_info;
+
+  void line_model(const XspecSpectrum &spectrum);
+  void relxill_model(const XspecSpectrum &spectrum);
+  void conv_model(const XspecSpectrum &spectrum);
+  void xillver_model(const XspecSpectrum &spectrum);
+
 };
 
 void xspec_C_wrapper_eval_model(ModelName model_name,
