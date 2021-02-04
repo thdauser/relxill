@@ -161,26 +161,20 @@ static void interpol_emisprofile_spin_height(emisProfile *emis_profile_table,
                                              double ifac_a,
                                              const double *ifac_h,
                                              const int *ind_h,
-                                             lpDat *const *dat,
+                                             lpDat *const *dat_a,
                                              const int nr) {
   for (int ii = 0; ii < nr; ii++) {
     emis_profile_table->emis[ii] =
-        (1.0 - ifac_a) * (1.0 - ifac_h[0]) * dat[0]->intens[ind_h[0]][ii]
-            + (1.0 - ifac_a) * (ifac_h[0]) * dat[0]->intens[ind_h[0] + 1][ii]
-            + (ifac_a) * (1.0 - ifac_h[1]) * dat[1]->intens[ind_h[1]][ii]
-            + (ifac_a) * (ifac_h[1]) * dat[1]->intens[ind_h[1] + 1][ii];
+        (1.0 - ifac_a) * interp_lin_1d(ifac_h[0],dat_a[0]->intens[ind_h[0]][ii],dat_a[0]->intens[ind_h[0] + 1][ii]  )
+            + (ifac_a) * interp_lin_1d(ifac_h[1],dat_a[1]->intens[ind_h[1]][ii],dat_a[1]->intens[ind_h[1] + 1][ii]  );
 
     emis_profile_table->del_emit[ii] =
-        (1.0 - ifac_a) * (1.0 - ifac_h[0]) * dat[0]->del[ind_h[0]][ii]
-            + (1.0 - ifac_a) * (ifac_h[0]) * dat[0]->del[ind_h[0] + 1][ii]
-            + (ifac_a) * (1.0 - ifac_h[1]) * dat[1]->del[ind_h[1]][ii]
-            + (ifac_a) * (ifac_h[1]) * dat[1]->del[ind_h[1] + 1][ii];
+        (1.0 - ifac_a) * interp_lin_1d(ifac_h[0],dat_a[0]->del[ind_h[0]][ii],dat_a[0]->del[ind_h[0] + 1][ii]  )
+            + (ifac_a) * interp_lin_1d(ifac_h[1],dat_a[1]->del[ind_h[1]][ii],dat_a[1]->del[ind_h[1] + 1][ii]  );
 
     emis_profile_table->del_inc[ii] =
-        (1.0 - ifac_a) * (1.0 - ifac_h[0]) * dat[0]->del_inc[ind_h[0]][ii]
-            + (1.0 - ifac_a) * (ifac_h[0]) * dat[0]->del_inc[ind_h[0] + 1][ii]
-            + (ifac_a) * (1.0 - ifac_h[1]) * dat[1]->del_inc[ind_h[1]][ii]
-            + (ifac_a) * (ifac_h[1]) * dat[1]->del_inc[ind_h[1] + 1][ii];
+        (1.0 - ifac_a) * interp_lin_1d(ifac_h[0],dat_a[0]->del_inc[ind_h[0]][ii],dat_a[0]->del_inc[ind_h[0] + 1][ii]  )
+            + (ifac_a) * interp_lin_1d(ifac_h[1],dat_a[1]->del_inc[ind_h[1]][ii],dat_a[1]->del_inc[ind_h[1] + 1][ii]  );
 
   }
 }
