@@ -20,7 +20,7 @@ set(SOURCE_FILES
         ModelInfo.h
         relreturn.c relreturn.h
         relreturn_corona.c relreturn_corona.h
-        relreturn_datastruct.c relreturn_corona.h
+        relreturn_datastruct.c relreturn_datastruct.h
         relreturn_table.c relreturn_table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
         )
