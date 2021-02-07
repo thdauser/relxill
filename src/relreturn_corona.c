@@ -250,19 +250,3 @@ void tdrelxilllpret(const double *ener0,
 
 }
 
-void lmodrelxilllpret(const double *ener0,
-                      const int n_ener0,
-                      const double *parameter,
-                      int ifl,
-                      double *photar,
-                      double *photer,
-                      const char *init) {
-
-  int status = EXIT_SUCCESS;
-  const int n_parameter = 13;
-  tdrelxilllpret(ener0, n_ener0, photar, parameter, n_parameter, &status);
-  if (status != EXIT_SUCCESS) {
-    RELXILL_ERROR("evaluating relxilllpRet model failed", &status);
-  }
-
-}
