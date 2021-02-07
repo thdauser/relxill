@@ -18,6 +18,10 @@ set(SOURCE_FILES
         ModelParams.cpp ModelParams.h
         XspecSpectrum.h
         ModelInfo.h
+        relreturn.c relreturn.h
+        relreturn_corona.c relreturn_corona.h
+        relreturn_datastruct.c relreturn_corona.h
+        relreturn_table.c relreturn_table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
         )
 ############################################

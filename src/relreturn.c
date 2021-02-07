@@ -24,6 +24,7 @@
 #include "relphysics.h"
 #include "relreturn_datastruct.h"
 #include "relmodels.h"
+#include "relxill.h"
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
 
@@ -535,7 +536,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
 
   double Tin = xill_param ->kTbb;
 
-  specCache* spec_cache = init_globalSpecCache(status);
+  specCache* spec_cache =  init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
   setArrayToZero(spec_inp, n_ener_inp);
   for (int ii = 0; ii < rel_profile->n_zones; ii++) {
@@ -606,6 +607,22 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
 
 }
 
+void set_std_param_relxill_bbret(double *inp_par) {
+  inp_par[0] = 0.998;
+  inp_par[1] = 60.0;
+  inp_par[2] = -1.0;
+  inp_par[3] = 1000.;
+  inp_par[4] = 0.0;   // redshift
+  inp_par[5] = 1.0;   // kTbb
+  inp_par[6] = 2.0;   // logxi
+  inp_par[7] = 1.0;   // Afe
+  inp_par[8] = 15.0; // logN
+  inp_par[9] = 1.0;   // refl_frac
+  inp_par[10] = 1;   // fixReflFrac
+  inp_par[11] = 1.4;   // shiftTmaxRRad
+}
+
+
 // MAIN function (to be moved to relmodels.c once the model is finished)
 void init_par_relxill_bbret(relParam **rel_param,
                             xillParam **xill_param,
@@ -647,6 +664,19 @@ void init_par_relxill_bbret(relParam **rel_param,
 
 }
 
+/** shift the spectrum such that we can calculate the line for 1 keV **/
+double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status) {
+
+  double *ener1keV = (double *) malloc((n_ener + 1) * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(ener1keV, status, NULL)
+
+  int ii;
+  for (ii = 0; ii <= n_ener; ii++) {
+    ener1keV[ii] = ener[ii] * (1 + z) / line_energ;
+  }
+  return ener1keV;
+}
+
 /** RELXILL MODEL FUNCTION for the BB returning radiation **/
 void tdrelxillbbret(const double *ener0,
                     const int n_ener0,
@@ -667,8 +697,8 @@ void tdrelxillbbret(const double *ener0,
   CHECK_STATUS_VOID(*status);
 
   free(ener);
-  free_xillParam(xill_param);
-  free_relParam(rel_param);
+  free(xill_param);
+  free(rel_param);
 
 }
 

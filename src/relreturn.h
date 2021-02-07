@@ -83,6 +83,9 @@ void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnS
 
 double *getTemperatureProfileDiskZones(returnFracIpol *dat, double Rin, double Tin, int *status);
 
+
+void set_std_param_relxill_bbret(double *inp_par);
+
 void init_par_relxill_bbret(relParam **rel_param,
                             xillParam **xill_param,
                             const double *inp_par,

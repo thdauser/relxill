@@ -22,6 +22,7 @@
 #include "relmodels.h"
 #include "relutility.h"
 #include "relbase.h"
+#include "writeOutfiles.h"
 
 
 static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
@@ -140,7 +141,7 @@ emisProfile *get_rrad_emis_corona(double *re, int nr, relParam *param, int *stat
   }
   emisProfile *emisInput = new_emisProfile(rmeanZone, dat->nrad, status); // think about free memeory etc
   get_emis_jet(emisInput, param, status);
-  save_radial_profile("test_emis_profile_input.dat", emisInput->re, emisInput->emis, emisInput->nr);
+  write_data_to_file("test_emis_profile_input.dat", emisInput->re, emisInput->emis, emisInput->nr);
   CHECK_STATUS_RET(*status, NULL);
 
   emisProfile *emisReturn = new_emisProfile(rmeanZone, dat->nrad, status); // think about free memeory etc
@@ -244,8 +245,8 @@ void tdrelxilllpret(const double *ener0,
   CHECK_STATUS_VOID(*status);
 
   free(ener);
-  free_xillParam(xill_param);
-  free_relParam(rel_param);
+  free(xill_param);
+  free(rel_param);
 
 }
 

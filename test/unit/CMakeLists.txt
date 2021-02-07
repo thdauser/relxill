@@ -10,10 +10,11 @@ set(UNIT_TEST_FILES
         test_relxill.c test_relxill.h
         test_std_functions.c test_std_functions.h
         test_xilltab.c test_xilltab.h
+        test_relreturn.c test_relreturn.h
         )
 
 
-set(EXEC_FILES run-tests)
+set(EXEC_FILES run-tests test_relreturn)
 
 set(EXEC_FILES_CPP tests)
 

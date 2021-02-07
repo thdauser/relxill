@@ -22,6 +22,7 @@
 #include "relreturn.h"
 #include "test_relxill.h"
 #include "relreturn_corona.h"
+#include "writeOutfiles.h"
 
 #ifndef RELXILL_SOURCE_DIR
 #error: RELXILL_SOURCE_DIR is not defined
@@ -747,16 +748,72 @@ static void testBBretDifferentSpinValues(int *status) {
 }
 
 void save_emisProfile(char *fname, emisProfile *emis) {
-  save_radial_profile(fname, emis->re, emis->emis, emis->nr);
+  write_data_to_file(fname, emis->re, emis->emis, emis->nr);
 }
 
 
 /* ******* test_coronaRet ******** */
 
 static void set_std_param_relxilllpRet(double *inp_par) {
-  set_std_param_relxilllp(inp_par);
   inp_par[0] = 3;   // height
+  inp_par[1] = 0.998; // a
+  inp_par[2] = 60.0;  // incl
+  inp_par[3] = -1.0;  // rin
+  inp_par[4] = 1000.;  // rout
+  inp_par[5] = 0.0;    // redshift
+  inp_par[6] = 2.1;   // pl Index
+  inp_par[7] = 0.0;   // logxi
+  inp_par[8] = 1.0;   // Afe
+  inp_par[9] = 300.0; // Ecut
+  inp_par[10] = 3.0;   // refl_frac
+  inp_par[11] = 0.0;   // fixReflFrac
   inp_par[12] = 1;
+}
+
+void set_std_param_relline_lp(double *inp_par) {
+  inp_par[0] = 6.4;
+  inp_par[1] = 3.0;
+  inp_par[2] = 0.998;
+  inp_par[3] = 30.0;
+  inp_par[4] = -1.;
+  inp_par[5] = 400.;
+  inp_par[6] = 0.0;  // redshift
+  inp_par[7] = 0.0;
+  inp_par[8] = 2.0;  // gamma
+}
+
+relParam *init_par_relline_lp(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  relParam *param = new_relParam(MOD_TYPE_RELLINELP, EMIS_TYPE_LP, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_RELLINELP);
+
+  param->lineE = inp_par[0];
+  param->height = inp_par[1];
+  param->a = inp_par[2];
+  param->incl = inp_par[3] * M_PI / 180;
+  param->rin = inp_par[4];
+  param->rout = inp_par[5];
+  param->z = inp_par[6];
+  param->limb = (int) (inp_par[7] + 0.5);
+  param->gamma = inp_par[8];
+
+  param->beta = 0.0;
+
+  check_parameter_bounds(param, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  return param;
+}
+
+
+relParam *get_std_param_rellinelp(int *status) {
+  int n_param = NUM_PARAM_RELLINELP;
+  double inp_par[NUM_PARAM_RELLINELP];
+  set_std_param_relline_lp(inp_par);
+  return init_par_relline_lp(inp_par, n_param, status);
 }
 
 
@@ -767,7 +824,7 @@ static void testRebinEmisProfiles(int *status) {
 
   double precRebinCoarse = 0.05;
 
-  relParam *rel_param = get_std_param_rellinelp(status);
+  relParam* rel_param =  get_std_param_rellinelp(status);
 
   RelSysPar *sysPar = get_system_parameters(rel_param, status);
 
@@ -805,6 +862,8 @@ static void testRebinEmisProfiles(int *status) {
   print_relxill_test_result(*status);
 
 }
+
+
 
 static void returnEmisProfileLoaded(int *status) {
 
@@ -909,12 +968,11 @@ void test_coronaRet(int *status) {
 }
 
 void test_relreturn(void) {
-  char *buf;
+
   int status = EXIT_SUCCESS;
 
-  get_version_number(&buf, &status);
+  print_version_number();
   printf("\n### Testing RETURN RADIATION ###\n");
-  free(buf);
 
   test_general(&status);
 
