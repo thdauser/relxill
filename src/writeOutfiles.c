@@ -50,7 +50,7 @@ void write_binned_data_to_file(char *foutName, double *rad, double *intens, int 
  *   - double[n_rad] intens
  *   - int n_rad
  **/
-void write_data_to_file(char *foutName, double *rad, double *intens, int n_rad) {
+void write_data_to_file(const char *foutName, double *rad, double *intens, int n_rad) {
 
   FILE *fp = fopen(foutName, "w+");
   for (int ii = 0; ii < n_rad; ii++) {
