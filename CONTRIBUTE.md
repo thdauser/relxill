@@ -62,7 +62,7 @@ The difference is that only the public models are included in the official relea
 therefore should only contain stable models with a stable interface.
 
 2) Any new parameters have to be added in `class XPar` and a default value defined  in 
-   `class XspecLmodelDatDefinition` (cppparameters.h)
+   `class XspecSingleLmodelDefinition` (cppparameters.h)
 
 3) The new model name as to be added as to be added in the `class ModelName` (cppTypes.h). 
    It is used to uniquely identify the model.

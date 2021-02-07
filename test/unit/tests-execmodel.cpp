@@ -17,13 +17,12 @@
 */
 
 #include "catch2/catch_amalgamated.hpp"
-#include "cppmodels.h"
+#include "LocalModel.h"
 #include "xspec_wrapper_lmodels.h"
-#include "cppspectrum.h"
+#include "XspecSpectrum.h"
 
 #include <vector>
-
-
+#include <filesystem>
 
 
 double sum_flux(const double *flux, int nbins) {
@@ -39,7 +38,7 @@ double sum_flux(const double *flux, int nbins) {
 //  return sum_flux(spec.flux(), spec.num_flux_bins());
 //}
 
-static void test_xspec_lmod_call(ModelName model_name, DefaultSpec default_spec) {
+static void test_xspec_lmod_call(ModelName model_name, const DefaultSpec& default_spec) {
 
   try {
     const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
@@ -50,7 +49,7 @@ static void test_xspec_lmod_call(ModelName model_name, DefaultSpec default_spec)
                                default_spec.num_flux_bins,
                                default_spec.energy);
 
-    delete (xspec_parameters);
+    delete[] xspec_parameters;
 
     REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
   } catch (ModelNotFound &e) {
@@ -95,13 +94,18 @@ TEST_CASE(" default spectrum class", "[basic]") {
 /*
  * TEST CASE
  */
+static void test_loading_default_parameters(ModelName model_name){
+  const double* param = get_xspec_default_parameter_array(model_name);
+  delete[] param;
+}
+
 TEST_CASE(" testing if local model is implemented", "[basic]") {
 
   XspecModelDatabase database{};
 
   for (const auto &elem: database.all_models()) {
     DYNAMIC_SECTION("  - model: " << elem.second.name()) {
-      REQUIRE_NOTHROW(get_xspec_default_parameter_array(elem.first));
+      REQUIRE_NOTHROW(test_loading_default_parameters(elem.first));
     }
   }
 
@@ -111,7 +115,7 @@ TEST_CASE(" testing if local model is implemented", "[basic]") {
 /*
  * TEST CASE
  */
-TEST_CASE(" Execute local models", "[model]") {
+TEST_CASE(" Execute ALL local models", "[model]") {
 
   DefaultSpec default_spec{};
   XspecModelDatabase database{};
@@ -136,13 +140,24 @@ TEST_CASE(" Execute single model", "[single]") {
   test_xspec_lmod_call(ModelName::relxilllp, default_spec);
 }
 
-static void require_equal_flux(const DefaultSpec &default_spec_old, const DefaultSpec &default_spec_new) {
-  double old_flux = sum_flux(default_spec_old.flux, default_spec_old.num_flux_bins);
-  double new_flux = sum_flux(default_spec_new.flux, default_spec_new.num_flux_bins);
 
-  std::cout << "old_flux = " << old_flux
-            << "  --- new_flux = "
-            << new_flux << std::endl;
 
-  REQUIRE(fabs(old_flux - new_flux) < 1e-8);
+
+static void require_file_exists(const string& fname){
+  std::filesystem::path f{ fname };
+  INFO("trying to find file: " +  fname );
+  REQUIRE(std::filesystem::exists(f));
+}
+
+TEST_CASE(" Execute single model with output writing ", "[output]") {
+  DefaultSpec default_spec{};
+  const char* env_outfiles = "RELXILL_WRITE_OUTFILES";
+
+  setenv(env_outfiles, "1", 1);
+
+  test_xspec_lmod_call(ModelName::relxilllp, default_spec);
+  unsetenv(env_outfiles);
+
+  require_file_exists("test_relline_profile.dat");
+  require_file_exists("test_emis_profile.dat");
 }

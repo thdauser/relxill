@@ -59,12 +59,13 @@
 
 /** linear interpolation in 1 dimension **/
 double interp_lin_1d(double ifac_r, double rlo, double rhi);
+double interp_lin_1d_float(double ifac_r, float rlo, float rhi);
 
 /** log interpolation in 1 dimension **/
 double interp_log_1d(double ifac_r, double rlo, double rhi);
 
 /** linear interpolation in 2 dimensions **/
-double interp_lin_2d(double ifac1, double r1lo, double r1hi, double ifac2, double r2lo, double r2hi);
+double interp_lin_2d(double ifac1, double ifac2, double r11, double r12, double r21, double r22);
 double interp_lin_2d_float(double ifac1, double ifac2, float r11, float r12, float r21, float r22);
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
@@ -131,8 +132,6 @@ double doppler_factor(double del, double bet);
 /** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
 double gi_potential_lp(double r, double a, double h, double bet, double del);
 
-/** print the xillver spectrum   **/
-void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname);
 
 /* A simple implementation of the FFT taken
    from http://paulbourke.net/miscellaneous/dft/
@@ -140,7 +139,7 @@ void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname);
 void FFT_R2CT(short int dir, long m, double *x, double *y);
 
 /** rebin spectrum to a given energy grid length of ener is nbins+1       **/
-void rebin_spectrum(double *ener, double *flu, int nbins, double *ener0, double *flu0, int nbins0);
+void rebin_spectrum(double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
 
 /** calculate the gravitational redshift **/
 double grav_redshift(const relParam *param);

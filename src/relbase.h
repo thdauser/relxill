@@ -31,6 +31,7 @@
 #include "rellp.h"
 #include "xilltable.h"
 #include "relcache.h"
+#include "relprofile.h"
 
 #define RRAD
 
@@ -118,12 +119,7 @@ void get_version_number(char **vstr, int *status);
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
 rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status);
 
-/** calculate the relline profile(s) for all given zones **/
-void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status);
 
-void save_relline_profile(rel_spec *spec, int* status);
-
-void save_radial_profile(char *foutName, double *rad, double *intens, int n_rad);
 
 rel_spec *relbase_multizone(double *ener,
                             const int n_ener,
@@ -135,20 +131,9 @@ rel_spec *relbase_multizone(double *ener,
 
 void free_cached_tables(void);
 
-RelSysPar *new_relSysPar(int nr, int ng, int *status);
-
-void free_relSysPar(RelSysPar *sysPar);
-
-void relxill_kernel(double *ener_inp,
-                    double *spec_inp,
-                    int n_ener_inp,
-                    xillParam *xill_param,
-                    relParam *rel_param,
-                    int *status);
 
 void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam *rel_param, int *status);
 
-RelSysPar *get_system_parameters(relParam *param, int *status);
 
 /** function adding a primary component with the proper norm to the flux **/
 void add_primary_component(double *ener,
@@ -161,9 +146,13 @@ void add_primary_component(double *ener,
 void free_rel_spec(rel_spec *spec);
 rel_spec *new_rel_spec(int nzones, const int n_ener, int *status);
 
+void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
+                       int re_rel, int re_xill, int izone, specCache *cache, int *status);
+double calcFFTNormFactor(const double *ener, const double *fxill, const double *frel, const double *fout, int n);
+
 /** caching routines **/
-specCache *init_globalSpecCache(int *status);
-void free_specCache(void);
+specCache *init_global_specCache(int *status);
+void free_specCache(specCache* spec_cache);
 void free_fft_cache(double ***sp, int n1, int n2);
 void free_out_spec(OutSpec *spec);
 
@@ -174,17 +163,10 @@ int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param);
 
 void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status);
 
-int comp_xill_param(xillParam *cpar, xillParam *par);
+int did_xill_param_change(xillParam *cpar, xillParam *par);
 
-/** free the CLI cache **/
 void free_cache(void);
 
-void get_xillver_angdep_spec(double *o_xill_flux,
-                             int n_ener,
-                             double *ener,
-                             double *rel_dist,
-                             xillSpec *xill_spec,
-                             int *status);
 
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
                                    int re_rel, int re_xill, int izone, specCache *local_spec_cache, int *status);

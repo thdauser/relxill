@@ -18,10 +18,18 @@
 
 #include "relutility.h"
 
+#include "writeOutfiles.h"
+
 /** linear interpolation in 1 dimension **/
 double interp_lin_1d(double ifac_r, double rlo, double rhi) {
   return ifac_r * rhi + (1.0 - ifac_r) * rlo;
 }
+
+/** linear interpolation in 1 dimension **/
+double interp_lin_1d_float(double ifac_r, float rlo, float rhi) {
+  return ifac_r * rhi + (1.0 - ifac_r) * rlo;
+}
+
 
 double interp_log_1d(double ifac_r, double rlo, double rhi) {
   return exp(ifac_r * log(rhi) + (1.0 - ifac_r) * log(rlo));
@@ -412,17 +420,6 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
   return gi / beta_fac;
 }
 
-/** print the xillver spectrum   **/
-void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname) {
-
-  FILE *fp = fopen(fname, "w+");
-  int ii;
-  for (ii = 0; ii < n_ener; ii++) {
-    fprintf(fp, " %e \t %e \t %e \n", ener[ii], ener[ii + 1], flu[ii]);
-  }
-  if (fclose(fp)) exit(1);
-}
-
 /* A simple implementation of the FFT taken from http://paulbourke.net/miscellaneous/dft/
    (uses the Radix-2 Cooley-Tukey algorithm)
 
@@ -545,7 +542,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 /** rebin spectrum to a given energy grid
  *  length of ener is nbins+1       **/
 
-void rebin_spectrum(double *ener, double *flu, int nbins, double *ener0, double *flu0, int nbins0) {
+void rebin_spectrum(double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
 
   int ii;
   int jj;
@@ -645,9 +642,7 @@ static double cal_lxi(double dens, double emis) {
 }
 
 // determine the radius of maximal ionization
-static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin, int *status) {
-
-  CHECK_STATUS_RET(*status, 0.0);
+static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin) {
 
   double rad_max_lxi = pow((11. / 9.), 2)
       * rin;  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
@@ -663,16 +658,6 @@ static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin, int
   return lxi_max;
 }
 
-static void save_ion_profile(ion_grad *ion) {
-
-  FILE *fp = fopen("test_ion_grad_relxill.dat", "w+");
-  int ii;
-  for (ii = 0; ii < ion->nbins; ii++) {
-    fprintf(fp, " %e \t %e \t %e \n", ion->r[ii], ion->r[ii + 1], ion->lxi[ii]);
-  }
-  if (fclose(fp)) exit(1);
-
-}
 
 /** *** set log(xi) to obey the limits of the xillver table: TODO: check if we need to adjust the normalization as well  ***
  *  NOTE: with correctly set xpsec/isis limits, it is only possible to reach the lower boundary       **/
@@ -738,7 +723,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
     inv_rebin_mean(emis_profile->re, emis_profile->del_emit, sysPar->nr, rmean, ion->del_emit, n, status);
 
     // calculate the maximal ionization assuming r^-3 and SS73 alpha disk
-    double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->nr, rin, status);
+    double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->nr, rin);
 
     // the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
     double fac_lxi_norm = xlxi0 - lxi_max; // subtraction instead of division because of the log
@@ -768,7 +753,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
   }
 
   if (is_debug_run()) {
-    save_ion_profile(ion);
+    write_binned_data_to_file("test_ion_grad_relxill.dat", ion->r, ion->lxi, ion->nbins);
   }
 
   if (*status != EXIT_SUCCESS) {
@@ -861,13 +846,6 @@ double calc_g_inf(double height, double a) {
 void setArrayToZero(double *arr, int n) {
   for (int jj = 0; jj < n; jj++) {
     arr[jj] = 0.0;
-  }
-}
-
-
-void multiplyArray(double *arr, int n, double factor) {
-  for (int jj = 0; jj < n; jj++) {
-    arr[jj] *= factor;
   }
 }
 

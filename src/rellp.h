@@ -20,6 +20,7 @@
 
 #include "relbase.h"
 #include "relutility.h"
+#include "reltable.h"
 #include "common.h"
 
 #define NHBINS_VERTICALLY_EXTENDED_SOURCE 50
