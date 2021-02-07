@@ -20,6 +20,56 @@
 
 #include "writeOutfiles.h"
 
+
+
+
+void set_std_param_relline_lp(double *inp_par) {
+  inp_par[0] = 6.4;
+  inp_par[1] = 3.0;
+  inp_par[2] = 0.998;
+  inp_par[3] = 30.0;
+  inp_par[4] = -1.;
+  inp_par[5] = 400.;
+  inp_par[6] = 0.0;  // redshift
+  inp_par[7] = 0.0;
+  inp_par[8] = 2.0;  // gamma
+}
+
+relParam *init_par_relline_lp(const double *inp_par, const int n_parameter, int *status) {
+
+  // fill in parameters
+  relParam *param = new_relParam(MOD_TYPE_RELLINELP, EMIS_TYPE_LP, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  assert(n_parameter == NUM_PARAM_RELLINELP);
+
+  param->lineE = inp_par[0];
+  param->height = inp_par[1];
+  param->a = inp_par[2];
+  param->incl = inp_par[3] * M_PI / 180;
+  param->rin = inp_par[4];
+  param->rout = inp_par[5];
+  param->z = inp_par[6];
+  param->limb = (int) (inp_par[7] + 0.5);
+  param->gamma = inp_par[8];
+
+  param->beta = 0.0;
+
+  check_parameter_bounds(param, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  return param;
+}
+
+
+relParam *get_std_param_rellinelp(int *status) {
+  int n_param = NUM_PARAM_RELLINELP;
+  double inp_par[NUM_PARAM_RELLINELP];
+  set_std_param_relline_lp(inp_par);
+  return init_par_relline_lp(inp_par, n_param, status);
+}
+
+
 void set_std_param_xillver(double *inp_par) {
   inp_par[0] = 2.1;    // Gamma
   inp_par[1] = 1.0;    // Afe

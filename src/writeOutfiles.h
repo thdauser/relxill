@@ -21,7 +21,7 @@
 #include "common.h"
 
 void write_binned_data_to_file(char *foutName, double *rad, double *intens, int n_rad);
-void write_data_to_file(char *foutName, double *rad, double *intens, int n_rad);
+void write_data_to_file(const char *foutName, double *rad, double *intens, int n_rad);
 
 void save_relline_radial_flux_profile(double *rad, double *intens, int n_rad);
 
