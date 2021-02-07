@@ -20,6 +20,14 @@
 
 #include "relmodels.h"
 
+void get_xillver_angdep_spec(double *o_xill_flux,
+                             int n_ener,
+                             double *ener,
+                             double *rel_dist,
+                             xillSpec *xill_spec,
+                             int *status);
+
+
 void relxill_kernel(double *ener_inp,
                     double *spec_inp,
                     int n_ener_inp,

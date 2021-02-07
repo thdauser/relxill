@@ -89,6 +89,52 @@ static void check_caching_relxill(relParam *rel_param, xillParam *xill_param, in
 }
 
 
+
+static void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  int ii;
+  int jj;
+  for (ii = 0; ii < xill_spec->n_ener; ii++) {
+    xill_flux[ii] = 0.0;
+  }
+
+  for (ii = 0; ii < xill_spec->n_incl; ii++) {
+    for (jj = 0; jj < xill_spec->n_ener; jj++) {
+      xill_flux[jj] += dist[ii] * xill_spec->flu[ii][jj];
+    }
+  }
+
+}
+
+/**
+ * @Function: get_xillver_angdep_spec
+ * @Synopsis: Calculate the Angle Weighted Xillver Spectrum on the Standard Relxill Spectrum
+ * @Input:  ener[n_ener]
+ *         rel_dist[n_incl]
+ *         xill_spec
+ * @Output: o_xill_flux  (needs to be allocated, will be overwritten)
+ *  [reason for the required allocation is that this will be called in a large
+ *   loop and otherwise we would need to allocate a 3000 bin array very often]
+ **/
+void get_xillver_angdep_spec(double *o_xill_flux,
+                             int n_ener,
+                             double *ener,
+                             double *rel_dist,
+                             xillSpec *xill_spec,
+                             int *status) {
+
+  double xill_angdist_inp[xill_spec->n_ener];
+
+  calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
+
+  rebin_spectrum(ener, o_xill_flux, n_ener,
+                 xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
+
+}
+
+
 /*
  * BASIC RELXILL KERNEL FUNCTION : convolve a xillver spectrum with the relbase kernel
  * (ener has the length n_ener+1)

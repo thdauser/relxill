@@ -162,12 +162,6 @@ int did_xill_param_change(xillParam *cpar, xillParam *par);
 
 void free_cache(void);
 
-void get_xillver_angdep_spec(double *o_xill_flux,
-                             int n_ener,
-                             double *ener,
-                             double *rel_dist,
-                             xillSpec *xill_spec,
-                             int *status);
 
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
                                    int re_rel, int re_xill, int izone, specCache *local_spec_cache, int *status);
