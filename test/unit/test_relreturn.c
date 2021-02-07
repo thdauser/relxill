@@ -307,60 +307,6 @@ void get_std_param_relxill_bbret(relParam** p_rel_param, xillParam** p_xill_para
 
 //  ======= TEST FUNCTIONS ========   //
 
-
-static void testReturnfractionsRadialGridWhenChangingRin(int* status){
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-
-  double spin =0.9;
-  double Rout = 1000;
-
-  double Rin = kerr_rms(spin);
-  returnFracIpol *dat = get_rr_fractions(spin, Rin, Rout, status);
-  int nrad_rms  = dat->nrad;
-
-  Rin *= 2;
-  dat = get_rr_fractions(spin, Rin, Rout, status);
-  int nrad_rfac2 = dat->nrad;
-
-  if (nrad_rms>nrad_rfac2){
-    *status = EXIT_SUCCESS;
-  } else {
-    *status = EXIT_FAILURE;
-  }
-
-    print_relxill_test_result(*status);
-
-}
-
-static void testReturnfractionsInterpolationForDifferentSpins(int* status){
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-
-  int nspin = 1;
-  double spin[] = { 0.86 };
-
-  double Rout = 1000;
-
-  for (int ii=0; ii<nspin; ii++){
-
-    double Rin = kerr_rms(spin[ii]);
-    returnFracIpol *dat = get_rr_fractions(spin[ii], Rin, Rout, status);
-
-    assert(dat != NULL);
-
-    printf(" this test is missing any useful actions \n");
-    // TODO: Test missing here
-  }
-
-  print_relxill_test_result(*status);
-
-}
-
 static void testTemperatureProfile(int* status){
 
   CHECK_STATUS_VOID(*status);
@@ -683,52 +629,6 @@ static void set_std_param_relxilllpRet(double *inp_par) {
   inp_par[12] = 1;
 }
 
-void set_std_param_relline_lp(double *inp_par) {
-  inp_par[0] = 6.4;
-  inp_par[1] = 3.0;
-  inp_par[2] = 0.998;
-  inp_par[3] = 30.0;
-  inp_par[4] = -1.;
-  inp_par[5] = 400.;
-  inp_par[6] = 0.0;  // redshift
-  inp_par[7] = 0.0;
-  inp_par[8] = 2.0;  // gamma
-}
-
-relParam *init_par_relline_lp(const double *inp_par, const int n_parameter, int *status) {
-
-  // fill in parameters
-  relParam *param = new_relParam(MOD_TYPE_RELLINELP, EMIS_TYPE_LP, status);
-  CHECK_STATUS_RET(*status, NULL);
-
-  assert(n_parameter == NUM_PARAM_RELLINELP);
-
-  param->lineE = inp_par[0];
-  param->height = inp_par[1];
-  param->a = inp_par[2];
-  param->incl = inp_par[3] * M_PI / 180;
-  param->rin = inp_par[4];
-  param->rout = inp_par[5];
-  param->z = inp_par[6];
-  param->limb = (int) (inp_par[7] + 0.5);
-  param->gamma = inp_par[8];
-
-  param->beta = 0.0;
-
-  check_parameter_bounds(param, status);
-  CHECK_STATUS_RET(*status, NULL);
-
-  return param;
-}
-
-
-relParam *get_std_param_rellinelp(int *status) {
-  int n_param = NUM_PARAM_RELLINELP;
-  double inp_par[NUM_PARAM_RELLINELP];
-  set_std_param_relline_lp(inp_par);
-  return init_par_relline_lp(inp_par, n_param, status);
-}
-
 
 static void testRebinEmisProfiles(int *status) {
 
@@ -797,29 +697,6 @@ static void returnEmisProfileLoaded(int *status) {
 
 }
 
-static void returnEmisLineProfileCalculation(int *status) {
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-  relParam *rel_param = get_std_param_rellinelp(status);
-  rel_param->a = 0.998;
-  rel_param->height = 5;
-
-  //rel_param->return_rad=0;
-
-  Spectrum *spec = getNewSpec(0.05, 10, 1000, status);
-
-  rel_param->return_rad = 1;
-  rel_spec *rel_profile = relbase(spec->ener, spec->nbins, rel_param, NULL, status);
-  CHECK_STATUS_VOID(*status);
-
-  assert(rel_profile->n_zones == 1);
-  assert(calcSum(rel_profile->flux[0], rel_profile->n_ener) > 1e-8);
-
-  print_relxill_test_result(*status);
-
-}
 
 static void evalLmodRelxilllpRet(int *status) {
 
@@ -846,15 +723,6 @@ static void evalLmodRelxilllpRet(int *status) {
 
 //  ======= MAIN ========   //
 
-void test_general(int *status) {
-
-
-  testReturnfractionsRadialGridWhenChangingRin(status);
-
-  testReturnfractionsInterpolationForDifferentSpins(status);
-
-}
-
 void test_bbodyRet(int *status) {
 
   testTemperatureProfile(status);
@@ -870,7 +738,7 @@ void test_bbodyRet(int *status) {
 
 void test_coronaRet(int *status) {
 
-  testRebinEmisProfiles(status);
+ // testRebinEmisProfiles(status);
   //evalLmodRelxilllpRet(status);
   //returnEmisProfileLoaded(status);
   returnEmisLineProfileCalculation(status);
@@ -883,8 +751,6 @@ void test_relreturn(void) {
 
   print_version_number();
   printf("\n### Testing RETURN RADIATION ###\n");
-
-  test_general(&status);
 
   test_coronaRet(&status);
 

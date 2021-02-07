@@ -23,6 +23,8 @@
 extern "C" {
 #include "relreturn.h"
 #include "relutility.h"
+#include "test_relxill.h"
+#include "writeOutfiles.h"
 }
 
 #include <vector>
@@ -132,3 +134,131 @@ TEST_CASE(" Returning Radiation Table ", "[table]") {
 
 }
 
+
+
+
+// ------- //
+TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") {
+
+  int status = EXIT_SUCCESS;
+
+  double spin = 0.9;
+  double Rout = 1000;
+
+  double Rin = kerr_rms(spin);
+  returnFracIpol *dat = get_rr_fractions(spin, Rin, Rout, &status);
+  REQUIRE(status==EXIT_SUCCESS);
+  int nrad_rms = dat->nrad;
+
+  Rin *= 2;
+  dat = get_rr_fractions(spin, Rin, Rout, &status);
+  REQUIRE(status==EXIT_SUCCESS);
+  int nrad_rfac2 = dat->nrad;
+
+  REQUIRE(nrad_rms > nrad_rfac2);
+
+}
+
+
+
+// ------- //
+TEST_CASE(" Return Fraction interpolation for different spins", "[returnrad]") {
+
+  int status = EXIT_SUCCESS;
+
+  int nspin = 2;
+  double spin[] = { 0.86,0.861 };
+
+  double Rout = 1000;
+
+  INFO(" this test is missing any useful actions \n");
+  for (int ii=0; ii<nspin; ii++){
+
+    double Rin = kerr_rms(spin[ii]);
+    returnFracIpol *dat = get_rr_fractions(spin[ii], Rin, Rout, &status);
+
+    REQUIRE(status==EXIT_SUCCESS);
+    REQUIRE(dat != nullptr);
+
+  }
+
+}
+
+
+
+static void write_emis_profile(const std::string& fname, emisProfile* emis_profile){
+  write_data_to_file( fname.c_str() , emis_profile->re, emis_profile->emis, emis_profile->nr);
+}
+
+// ------- //
+TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
+
+  int status = EXIT_SUCCESS;
+
+  double precRebinCoarse = 0.05;
+
+  relParam* rel_param =  get_std_param_rellinelp(&status);
+
+  RelSysPar *sysPar = get_system_parameters(rel_param, &status);
+
+  returnFracIpol *dat = get_rr_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
+  double rmean[dat->nrad]; // descending grid
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    rmean[dat->nrad - ii - 1] = 0.5 * (dat->rlo[ii] + dat->rhi[ii]);
+  }
+  emisProfile *emisCoarse = calc_emis_profile(rmean, dat->nrad, rel_param, &status);
+  // invertArray(emisCoarse->re, emisCoarse->nr);
+  // invertArray(emisCoarse->emis, emisCoarse->nr);
+
+  emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
+  emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, &status);
+  interpolEmisProfile(emisRebin, emisCoarse, &status);
+
+  REQUIRE(status==EXIT_SUCCESS);
+
+  write_emis_profile("test_emisCoarse.dat", emisCoarse);
+  write_emis_profile("test_emisFineReference.dat", emisFineReference);
+  write_emis_profile("test_emisRebin.dat", emisRebin);
+
+  for (int ii = 20; ii < emisRebin->nr;  ii++) {  // last bin in coarse grid deviates, so skip, as it is not the interpolation
+    if (is_debug_run()) {
+      printf(" rad: %.3e :  %e (ref=%e, ratio=%e) \n",
+             emisRebin->re[ii], emisRebin->emis[ii], emisFineReference->emis[ii],
+             emisRebin->emis[ii] / emisFineReference->emis[ii]);
+    }
+    REQUIRE(fabs(emisRebin->emis[ii] / emisFineReference->emis[ii] - 1) < precRebinCoarse);
+  }
+
+}
+
+// ------- //
+TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
+
+
+  int status = EXIT_SUCCESS;
+
+  relParam *rel_param = get_std_param_rellinelp(&status);
+  rel_param->a = 0.998;
+  rel_param->height = 5;
+
+
+  Spectrum *spec = getNewSpec(0.05, 10, 1000, &status);
+
+  rel_param->return_rad = 1;
+  rel_spec *rel_profile = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
+  REQUIRE(status==EXIT_SUCCESS);
+
+  REQUIRE(rel_profile->n_zones == 1);
+  REQUIRE(calcSum(rel_profile->flux[0], rel_profile->n_ener) > 1e-8);
+
+  rel_param->return_rad=0;
+  rel_spec *rel_profile_norrad = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
+  REQUIRE(status==EXIT_SUCCESS);
+
+  INFO(" require that the line profile with and without return radiation differs ");
+  CHECK_THAT(calcSum(rel_profile->flux[0], rel_profile->n_ener),
+              ! Catch::Matchers::WithinRel(calcSum(rel_profile_norrad->flux[0], rel_profile_norrad->n_ener), 1e-5)
+              );
+
+
+}

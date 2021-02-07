@@ -369,6 +369,7 @@ static void fits_read_returnRadTable(char *filename, returnTable **inp_tab, int 
   // make sure we only store the table in a location which is empty / NULL
   assert(*inp_tab == NULL);
 
+  assert(*status==EXIT_SUCCESS);
   fits_rr_load_returnRadTable(fptr, inp_tab, status);
 
   if (*status != EXIT_SUCCESS) {
@@ -386,7 +387,6 @@ returnTable *get_returnRadTable(int *status) {
 
   if (cached_retTable==NULL) {
     fits_read_returnRadTable(RETURNRAD_TABLE_FILENAME, &cached_retTable, status);
-    CHECK_STATUS_RET(*status, NULL);
   }
 
   return cached_retTable;
