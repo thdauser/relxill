@@ -94,12 +94,12 @@
 /**** FUNCTION DEFINITIONS ****/
 
 void check_parameter_bounds(relParam *param, int *status);
-double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status);
+double *shift_energ_spec_1keV(const double *ener, int n_ener, double line_energ, double z, int *status);
 
 /** basic xillver model function **/
-void xillver_base(double *ener0, const int n_ener0, double *photar, xillParam *param_struct, int *status);
+void xillver_base(double *ener0, int n_ener0, double *photar, xillParam *param_struct, int *status);
 
-void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *param_struct, int *status);
+void relline_base(double *ener1keV, double *photar,int n_ener, relParam *param_struct, int *status);
 
 
 /* get the version number text on the screen (if not already printed before */

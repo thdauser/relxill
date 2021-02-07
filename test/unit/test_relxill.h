@@ -35,35 +35,7 @@ void set_std_param_xillverns(double *inp_par);
 
 void set_std_param_relline(double *inp_par);
 
-void set_std_param_relconv(double *inp_par);
-
-void set_std_param_relconvlp(double *inp_par);
-
-void set_std_param_relxill(double *inp_par);
-
-void bugtest_eval_relxill(int *status);
-
-void set_std_param_relxill_nthcomp(double *inp_par);
-
-void set_std_param_relxilldens(double *inp_par);
-
-void set_std_param_relxilllp(double *inp_par);
-
-void set_std_param_relxilllp_nthcomp(double *inp_par);
-
-void set_std_param_relxilllpdens(double *inp_par);
-
-void set_std_param_relline_lp(double *inp_par);
-
-void set_std_param_relxilllpion(double *inp_par);
-
-void set_std_param_relxilllpion_nthcomp(double *inp_par);
-
-void set_std_param_relxillns(double *inp_par);
-
 void set_std_param_relxill_bbret(double *inp_par);
-
-void set_std_param_relxillco(double *inp_par);
 
 xillParam *get_std_param_xillver(int *status);
 
@@ -77,63 +49,9 @@ xillParam *get_std_param_xillver_nthcomp(int *status);
 
 xillParam *get_std_param_xillver_dens_nthcomp(int *status);
 
-relParam *get_std_param_rellinelp(int *status);
-
 relParam *get_std_param_relline(int *status);
 
 void get_std_param_relxilllpDCp(relParam **rel_param, xillParam **xill_param, int *status);
-
-void get_std_param_relxilllp(relParam **rel_param, xillParam **xill_param, int *status);
-
-/** standard evaluation of the relline model **/
-void std_eval_relline(int *status, int n);
-
-/** standard evaluation of the relline model **/
-void std_eval_relconv(int *status, int n);
-
-/** standard evaluation of the relline model **/
-void std_eval_relconvlp(int *status, int n);
-
-/** standard evaluation of the relxill model **/
-void std_eval_relxill(int *status, int n);
-
-/** standard evaluation of the relxill model **/
-void std_eval_relxill_nthcomp(int *status, int n);
-
-/** standard evaluation of the relxillD model **/
-void std_eval_relxilldens(int *status, int n);
-
-/** standard evaluation of the relxill model **/
-void std_eval_relxilllp(int *status, int n);
-
-/** standard evaluation of the relxill model **/
-void std_eval_relxilllpion(int *status, int n);
-
-/** standard evaluation of the relxill model **/
-void std_eval_relxilllp_nthcomp(int *status, int n);
-
-/** standard evaluation of the relxill model **/
-void std_eval_relxilllpion_nthcomp(int *status, int n);
-
-/** standard evaluation of the relxill model **/
-void std_eval_relxilllpdens(int *status, int n);
-
-/** standard evaluation of the relline model **/
-void std_eval_relline_lp(int *status, int n);
-
-/** standard evaluation of the relline model **/
-void std_eval_xillver(int *status, int n);
-void std_eval_xillver_nthcomp(int *status, int n);
-
-/** standard evaluation of the relxillNS model **/
-void std_eval_relxill_ns(int *status, int n);
-
-/** standard evaluation of the relxillCO model **/
-void std_eval_relxill_co(int *status, int n);
-
-void std_eval_xillver_dens_nthcomp(int *status, int n);
-void std_eval_relxilllpdens_nthcomp(int *status, int n);
-void std_eval_relxilldens_nthcomp(int *status, int n);
 
 xillSpec *get_std_xill_spec(int *status);
 rel_spec *get_stdRelProfile(int *status);
