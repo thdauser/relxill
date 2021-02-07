@@ -90,6 +90,7 @@
 // unpublished models
 #define MOD_TYPE_RELXILLBBRET -300
 #define MOD_TYPE_RELXILLLPRET -310
+#define MOD_TYPE_RELLINELPRET -311
 
 /**** FUNCTION DEFINITIONS ****/
 
