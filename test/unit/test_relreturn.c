@@ -88,70 +88,7 @@ static void fits_write_spec(char* fname, const double* ener, double* spec, int n
 
 }
 
-static void testReturnRadTableRadialGrid(returnFracData *dat, const int *status) {
 
-  CHECK_STATUS_VOID(*status);
-
-  assert(dat->nrad == RETURNRAD_TABLE_NR);
-  assert(dat->ng == RETURNRAD_TABLE_NG);
-
-  assert(dat->rlo[0] > 1.0);
-  assert(dat->rhi[dat->nrad - 1] <= 1000.1); // don't care about border effects so add the 0.1
-
-  for (int ii=1; ii<dat->nrad; ii++){
-    assert(fabs(dat->rhi[ii-1]-dat->rlo[ii])<1e-6);
-  }
-
-}
-
-void test_norm_frac_e(const returnFracData *dat, int *status) {
-
-  double kSumfrac;
-  double kSumfrac_ref = 1.0;
-
-  for (int jj=0; jj<dat->nrad; jj++) {
-
-    kSumfrac=0.0;
-    for (int ii = 0; ii < dat->nrad; ii++) {
-
-      kSumfrac += dat->frac_e[ii][jj];
-    }
-    if (fabs(kSumfrac - kSumfrac_ref) > PREC) {
-      RELXILL_ERROR("testing the normalization of FRAC_E failed (return radiation table)", status);
-      printf(" expecting a normalization of %e, but found %e\n", kSumfrac_ref, kSumfrac);
-    }
-  }
-}
-
-void test_norm_frac_g(const returnFracData *dat, int *status) {
-
-  double kSumfrac;
-  double kSumfrac_ref = 1.0;
-
-  for (int ii=0; ii<dat->nrad; ii++) {
-    for (int jj=0; jj<dat->nrad; jj++) {
-
-      kSumfrac = 0.0;
-      for (int kk = 0; kk < dat->ng; kk++) {
-        kSumfrac += dat->frac_g[ii][jj][kk];
-      }
-
-      if (fabs(kSumfrac-kSumfrac_ref)>PREC){
-        RELXILL_ERROR("testing the normalization of FRAC_G failed (return radiation table)",status);
-        printf (" [%02i][%02i] expecting a normalization of %e, but found %e\n", ii,jj,kSumfrac_ref, kSumfrac);
-      }
-    }
-  }
-}
-
-static void testReturnRadTableFractionNormalization(returnFracData* dat, int* status){
-
-  assert(dat->frac_e[0][0]!= 0);
-
-  test_norm_frac_e(dat, status);
-  test_norm_frac_g(dat, status);
-
-}
 
 static refSpecData *new_refSpecData(int nener, int *status) {
 
@@ -452,30 +389,6 @@ static void testTemperatureProfile(int* status){
 
 }
 
-static void testReturnRadTableNormlizationAndRadialGrid(returnTable* tab, int* status){
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-  for (int ii=0; ii<tab->nspin; ii++) {
-
-    testReturnRadTableRadialGrid(tab->retFrac[ii], status);
-    if (*status!=EXIT_SUCCESS){
-      printf(" *** FAILED: testing radial grid\n");
-      return;
-    }
-
-    testReturnRadTableFractionNormalization(tab->retFrac[ii], status);
-    if (*status != EXIT_SUCCESS) {
-      printf(" *** FAILED: testing FRAC_E normalization\n");
-      return;
-    }
-
-  }
-
-  print_relxill_test_result(*status);
-
-}
 
 static void testDiskbbSpec(int *status) {
 
@@ -935,9 +848,6 @@ static void evalLmodRelxilllpRet(int *status) {
 
 void test_general(int *status) {
 
-  returnTable *tab = get_returnRadTable(status);
-
-  testReturnRadTableNormlizationAndRadialGrid(tab, status);
 
   testReturnfractionsRadialGridWhenChangingRin(status);
 

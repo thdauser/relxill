@@ -4,7 +4,8 @@ set(CATCH2_FILES catch2/catch_amalgamated.cpp catch2/catch_amalgamated.cpp)
 set(UNIT_TEST_FILES_CPP
         test-cppspectrum.cpp tests-execmodel.cpp
         common-functions.cpp common-functions.h
-        tests-returnrad.cpp)
+        tests-returnrad.cpp
+        )
       
 set(UNIT_TEST_FILES
         test_rellp.c test_rellp.h
