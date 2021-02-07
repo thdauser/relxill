@@ -20,37 +20,17 @@
 #include "LocalModel.h"
 #include "xspec_wrapper_lmodels.h"
 #include "XspecSpectrum.h"
+#include "common-functions.h"
 
 #include <vector>
 #include <filesystem>
 
 
-double sum_flux(const double *flux, int nbins) {
-
-  double sum = 0.0;
-  for (int ii = 0; ii < nbins; ii++) {
-    sum += flux[ii];
-  }
-  return sum;
-}
-
-//double sum_flux(const XspecSpectrum &spec) {
-//  return sum_flux(spec.flux(), spec.num_flux_bins());
-//}
 
 static void test_xspec_lmod_call(ModelName model_name, const DefaultSpec& default_spec) {
 
   try {
-    const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
-
-    xspec_C_wrapper_eval_model(model_name,
-                               xspec_parameters,
-                               default_spec.flux,
-                               default_spec.num_flux_bins,
-                               default_spec.energy);
-
-    delete[] xspec_parameters;
-
+    eval_xspec_lmod_default(model_name, default_spec);
     REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
   } catch (ModelNotFound &e) {
     WARN("Skipping test as model not implemented");
@@ -155,7 +135,7 @@ TEST_CASE(" Execute single model with output writing ", "[output]") {
 
   setenv(env_outfiles, "1", 1);
 
-  test_xspec_lmod_call(ModelName::relxilllp, default_spec);
+  eval_xspec_lmod_default(ModelName::relxilllp, default_spec);
   unsetenv(env_outfiles);
 
   require_file_exists("test_relline_profile.dat");
