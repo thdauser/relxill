@@ -126,6 +126,10 @@ class ModelDatabase {
       {ModelName::relxilllpDCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
       {ModelName::relxilllpionCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
 
+      {ModelName::relxilllpRet, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
+      {ModelName::rellinelpRet, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
+
+
       {ModelName::xillver, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverD, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverCp, ModelInfo(T_Model::Xill, T_PrimSpec::Nthcomp)},
