@@ -1,7 +1,7 @@
 require("isisscripts");
 
 variable outdir = "build/";
-variable files = outdir+["test_emis_profile.dat","test_emis_profile_rrad.dat","test_emis_profile_input.dat"];
+variable files = outdir+["test_emis_profile.dat","test_emis_profile_returnrad.dat","test_emis_profile_input.dat"];
 variable filesIpol = outdir+["test_emisCoarse.dat","test_emisFineReference.dat","test_emisRebin.dat"];
 variable col = CB_COLOR_SCHEME_NB;
 

@@ -241,19 +241,22 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
   rel_param->a = 0.998;
   rel_param->height = 5;
 
+  const char* env_name_outfiles = "RELXILL_WRITE_OUTFILES";
 
   Spectrum *spec = getNewSpec(0.05, 10, 1000, &status);
 
+  rel_param->return_rad=0;
+  rel_spec *rel_profile_norrad = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
+
+  setenv(env_name_outfiles, "1", 1);
   rel_param->return_rad = 1;
   rel_spec *rel_profile = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
-  REQUIRE(status==EXIT_SUCCESS);
+  setenv(env_name_outfiles, "0", 1);
 
+  REQUIRE(status==EXIT_SUCCESS);
   REQUIRE(rel_profile->n_zones == 1);
   REQUIRE(calcSum(rel_profile->flux[0], rel_profile->n_ener) > 1e-8);
 
-  rel_param->return_rad=0;
-  rel_spec *rel_profile_norrad = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
-  REQUIRE(status==EXIT_SUCCESS);
 
   double abs_diff_profiles[rel_profile->n_ener];
   for(int ii=0; ii<rel_profile->n_ener; ii++){
