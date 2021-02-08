@@ -31,7 +31,7 @@ lpTable *cached_lp_table = NULL;
  *    needed to calculate fraction of photons reaching infinity, as no photons are allowed to cross the
  *    disk plane)
  **/
-static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_max, relParam *param, int *status) {
+static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_max, const relParam *param, int *status) {
 
   // in case there is no relativity information, the refl_frac is 1
   if (param == NULL) {
@@ -230,7 +230,7 @@ static void apply_emis_relativity_flux_corrections(emisProfile *emisProf, double
   }
 
 }
-static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, double height, double beta,
+static void calc_emis_jet_point_source(emisProfile *emisProf, const relParam *param, double height, double beta,
                                        lpTable *tab, int *status) {
   CHECK_STATUS_VOID(*status);
 
@@ -252,7 +252,7 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, relParam *param, d
 
 }
 
-int modelLampPostPointsource(relParam *param) {
+int modelLampPostPointsource(const relParam *param) {
   double htopPrecLimit = 1e-3;
   if ((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) {
     return 1;
@@ -322,7 +322,7 @@ static void addSingleReturnFractions(lpReflFrac *reflFracAvg, lpReflFrac *single
  *    profile is of interest, it will be output in the debug mode
  */
 void calc_emis_jet_extended(emisProfile *emisProf,
-                            relParam *param,
+                            const relParam *param,
                             lpTable *tab,
                             int *status) {
 
@@ -434,7 +434,7 @@ static void get_emis_constant(double *emis, int n) {
   * @syopsis: calculate the emissivity profile for any jet like source
   * (extended, lamp post, ...)
   **/
-void get_emis_jet(emisProfile *emis_profile, relParam *param, int *status) {
+void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
 

@@ -37,9 +37,9 @@ typedef struct {
 
 emisProfile *calc_emis_profile(double *r, int nr, relParam *param, int *status);
 
-void get_emis_jet(emisProfile *, relParam *param, int *status);
+void get_emis_jet(emisProfile *, const relParam *param, int *status);
 
-int modelLampPostPointsource(relParam *param);
+int modelLampPostPointsource(const relParam *param);
 
 extPrimSource *getExtendedJetGeom(const relParam *param, int *status);
 
