@@ -202,4 +202,8 @@ Spectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
 int shouldOutfilesBeWritten(void);
 
+double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius);
+
+void get_ipol_factor(const float value, const float* arr, const int n_arr, int *ind, double *ifac);
+
 #endif /* RELUTILITY_H_ */
