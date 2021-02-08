@@ -255,9 +255,14 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
   rel_spec *rel_profile_norrad = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
   REQUIRE(status==EXIT_SUCCESS);
 
+  double abs_diff_profiles[rel_profile->n_ener];
+  for(int ii=0; ii<rel_profile->n_ener; ii++){
+    abs_diff_profiles[ii] = abs(rel_profile_norrad->flux[0][ii] - rel_profile->flux[0][ii] ) ;
+  }
+
   INFO(" require that the line profile with and without return radiation differs ");
-  CHECK_THAT(calcSum(rel_profile->flux[0], rel_profile->n_ener),
-              ! Catch::Matchers::WithinRel(calcSum(rel_profile_norrad->flux[0], rel_profile_norrad->n_ener), 1e-5)
+  CHECK_THAT(calcSum(abs_diff_profiles, rel_profile->n_ener),
+              ! Catch::Matchers::WithinAbs(0.0, 1e-2)
               );
 
 

@@ -27,7 +27,7 @@
 
 void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status);
 
-emisProfile *get_rrad_emis_corona(double *re, int nr, relParam *param, int *status);
+emisProfile *get_rrad_emis_corona(double *re, int nr, const relParam *param, int *status);
 
 void tdrelxilllpret(const double *ener0,
                     int n_ener0,

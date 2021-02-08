@@ -129,7 +129,7 @@ void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status) 
  *
  * Caveat: Emissivity Profiles are Define with radius DESCENDING
  */
-emisProfile *get_rrad_emis_corona(double *re, int nr, relParam *param, int *status) {
+emisProfile *get_rrad_emis_corona(double *re, int nr, const relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
