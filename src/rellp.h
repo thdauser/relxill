@@ -39,6 +39,10 @@ emisProfile *calc_emis_profile(double *r, int nr, relParam *param, int *status);
 
 void get_emis_jet(emisProfile *, const relParam *param, int *status);
 
+void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status);
+
+void apply_emis_relativity_flux_corrections(emisProfile *emisProf, double a, double height, double gamma, double beta);
+
 int modelLampPostPointsource(const relParam *param);
 
 extPrimSource *getExtendedJetGeom(const relParam *param, int *status);
