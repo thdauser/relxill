@@ -208,5 +208,6 @@ double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double ra
 
 void get_ipol_factor(const float value, const float* arr, const int n_arr, int *ind, double *ifac);
 
+void get_fine_radial_grid(double rin, double rout, double *re, int nr);
 
 #endif /* RELUTILITY_H_ */

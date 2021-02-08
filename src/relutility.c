@@ -859,6 +859,21 @@ void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int 
 
 }
 
+/*  get the fine radial grid */
+void get_fine_radial_grid(double rin, double rout, double *re, int nr) {
+
+  double r1 = 1.0 / sqrt(rout);
+  double r2 = 1.0 / sqrt(rin);
+  int ii;
+  for (ii = 0; ii < nr; ii++) {
+    re[ii] = ((double) (ii)) * (r2 - r1) / (nr - 1) + r1;
+    re[ii] = pow(1.0 / (re[ii]), 2);
+    assert(re[ii] > 1.0);
+  }
+
+}
+
+
 double calc_g_inf(double height, double a) {
   return sqrt(1.0 - (2 * height /
       (height * height + a * a)));
