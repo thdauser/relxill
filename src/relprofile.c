@@ -73,19 +73,6 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
   }
 }
 
-/*  get the fine radial grid */
-static void get_fine_radial_grid(double rin, double rout, RelSysPar *sysPar) {
-
-  double r1 = 1.0 / sqrt(rout);
-  double r2 = 1.0 / sqrt(rin);
-  int ii;
-  for (ii = 0; ii < sysPar->nr; ii++) {
-    sysPar->re[ii] = ((double) (ii)) * (r2 - r1) / (sysPar->nr - 1) + r1;
-    sysPar->re[ii] = pow(1.0 / (sysPar->re[ii]), 2);
-    assert(sysPar->re[ii] > 1.0);
-  }
-
-}
 
 /* function interpolating the rel table values for rin,rout,mu0,incl   */
 static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rout,
@@ -179,7 +166,7 @@ static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rou
   //  need to initialize and allocate memory
   RelSysPar *sysPar = new_relSysPar(N_FRAD, tab->n_g, status);
   CHECK_STATUS_RET(*status, NULL);
-  get_fine_radial_grid(rin, rout, sysPar);
+  get_fine_radial_grid(rin, rout, sysPar->re, sysPar->nr);
 
   /** we do not have rmax=1000.0 in the table, but just values close to it so let's do this trick**/
   double rmax = 1000.0;
