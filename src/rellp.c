@@ -96,25 +96,6 @@ double calc_norm_factor_primary_spectrum(double height, double a, double gamma, 
   return f_inf / 0.5 * pow(g_inf, gamma);
 }
 
-
-static double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius) {
-  double inter_r;
-  // for larger angles logarithmic interpolation works slightly better
-  if (del_inci / M_PI * 180.0 <= 75.0) {
-    inter_r = (radius - rlo) / (rhi - rlo);
-  } else {
-    inter_r = (log(radius) - log(rlo)) /
-        (log(rhi) - log(rlo));
-  }
-  return inter_r;
-}
-
-static void get_ipol_factor(const float value, const float* arr, const int n_arr, int *ind, double *ifac) {
-  (*ind) = binary_search_float(arr, n_arr, (float) value);
-  (*ifac) = (value - arr[*ind]) /
-      (arr[*ind + 1] - arr[*ind]);
-}
-
 void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status) {
 
   double* re = emis_prof->re;

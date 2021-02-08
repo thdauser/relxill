@@ -364,6 +364,27 @@ void get_lin_grid(double *ener, int n_ener, double emin, double emax) {
   }
 }
 
+
+double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius) {
+  double inter_r;
+  // for larger angles logarithmic interpolation works slightly better
+  if (del_inci / M_PI * 180.0 <= 75.0) {
+    inter_r = (radius - rlo) / (rhi - rlo);
+  } else {
+    inter_r = (log(radius) - log(rlo)) /
+        (log(rhi) - log(rlo));
+  }
+  return inter_r;
+}
+
+void get_ipol_factor(const float value, const float* arr, const int n_arr, int *ind, double *ifac) {
+  (*ind) = binary_search_float(arr, n_arr, (float) value);
+  (*ifac) = (value - arr[*ind]) /
+      (arr[*ind + 1] - arr[*ind]);
+}
+
+
+
 /* get RMS (ISCO) for the Kerr Case */
 double kerr_rms(double a) {
   //	 accounts for negative spin
