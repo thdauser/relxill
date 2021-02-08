@@ -256,7 +256,7 @@ static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rou
 static void add_returnrad_emis(const relParam* param, RelSysPar *sysPar) {
 
   for (int ii=0; ii < sysPar->nr; ii++){
-    if (param->return_rad < 0 ) {
+    if (param->return_rad > 0 ) {
       sysPar->emis->emis[ii] += abs(param->return_rad) * sysPar->emisReturn->emis[ii];
     } else {
       sysPar->emis->emis[ii] = abs(param->return_rad) * sysPar->emisReturn->emis[ii];
