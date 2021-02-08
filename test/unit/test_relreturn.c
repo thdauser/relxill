@@ -736,14 +736,6 @@ void test_bbodyRet(int *status) {
 
 }
 
-void test_coronaRet(int *status) {
-
- // testRebinEmisProfiles(status);
-  //evalLmodRelxilllpRet(status);
-  //returnEmisProfileLoaded(status);
-  returnEmisLineProfileCalculation(status);
-
-}
 
 void test_relreturn(void) {
 
@@ -751,8 +743,6 @@ void test_relreturn(void) {
 
   print_version_number();
   printf("\n### Testing RETURN RADIATION ###\n");
-
-  test_coronaRet(&status);
 
   //  test_bbodyRet(&status);
 
