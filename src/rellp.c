@@ -115,13 +115,16 @@ static void get_ipol_factor(const float value, const float* arr, const int n_arr
       (arr[*ind + 1] - arr[*ind]);
 }
 
-static void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status) {
+void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status) {
 
   double* re = emis_prof->re;
   int nr = emis_prof->nr;
 
   double* re_tab = emis_prof_tab->re;
   int nr_tab = emis_prof_tab->nr;
+
+  assert(emis_prof->re[0]>emis_prof->re[1]); // decreasing radius in input emis profile
+  assert(emis_prof_tab->re[0]<emis_prof_tab->re[1]); // increasing radius in the table
 
   // get the extent of the disk (indices are defined such that tab->r[ind] <= r < tab->r[ind+1]
   int ind_rmin = binary_search(re_tab, nr_tab, re[ nr - 1]);
@@ -217,7 +220,7 @@ emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status
   return emis_profile_table;
 }
 
-static void apply_emis_relativity_flux_corrections(emisProfile *emisProf, double a, double height, double gamma, double beta) {
+void apply_emis_relativity_flux_corrections(emisProfile *emisProf, double a, double height, double gamma, double beta) {
   for (int ii = 0; ii < emisProf->nr; ii++) {
 
       /** multiply by the additional factor gi^gamma (see Dauser et al., 2013) **/
