@@ -696,26 +696,46 @@ static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
                                double f1, double f2, double f3, double f4,
                                int i0, int i1, int i2, int i3, int i4, int i5) {
 
+  float* dat_0000 = get_dat(tab, i0, i1, i2, i3, i4, i5);
+  float* dat_1000 = get_dat(tab, i0, i1+1, i2, i3, i4, i5);
+  float* dat_0100 = get_dat(tab, i0, i1, i2+1, i3, i4, i5);
+  float* dat_0010 = get_dat(tab, i0, i1, i2, i3+1, i4, i5);
+
+  float* dat_1100 = get_dat(tab, i0, i1+1, i2+1, i3, i4, i5);
+  float* dat_1010 = get_dat(tab, i0, i1+1, i2, i3+1, i4, i5);
+  float* dat_0110 = get_dat(tab, i0, i1, i2+1, i3+1, i4, i5);
+  float* dat_1110 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4, i5);
+
+  float* dat_0001 = get_dat(tab, i0, i1, i2, i3, i4+1, i5);
+  float* dat_1001 = get_dat(tab, i0, i1+1, i2, i3, i4+1, i5);
+  float* dat_0101 = get_dat(tab, i0, i1, i2+1, i3, i4+1, i5);
+  float* dat_0011 = get_dat(tab, i0, i1, i2, i3+1, i4+1, i5);
+
+  float* dat_1101 = get_dat(tab, i0, i1+1, i2+1, i3, i4+1, i5);
+  float* dat_1011 = get_dat(tab, i0, i1+1, i2, i3+1, i4+1, i5);
+  float* dat_0111 = get_dat(tab, i0, i1, i2+1, i3+1, i4+1, i5);
+  float* dat_1111 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4+1, i5);
+
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
     flu[ii] =
-        ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4, i5))[ii]) +
-            (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4, i5))[ii]) +
-            (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4, i5))[ii]) +
-            (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4, i5))[ii]) +
-            (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4, i5))[ii]) +
-            (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4, i5))[ii]) +
-            (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4, i5))[ii]) +
-            (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5))[ii]))
+        ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_0000[ii]) +
+            (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_1000[ii]) +
+            (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_0100[ii]) +
+            (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_0010[ii]) +
+            (f1) * (f2) * (1.0 - f3) * (double) (dat_1100[ii]) +
+            (f1) * (1.0 - f2) * (f3) * (double) (dat_1010[ii]) +
+            (1.0 - f1) * (f2) * (f3) * (double) (dat_0110[ii]) +
+            (f1) * (f2) * (f3) * (double) (dat_1110[ii]))
             * (1 - f4) +
-            ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2, i3, i4 + 1, i5))[ii]) +
-                (f1) * (1.0 - f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3, i4 + 1, i5))[ii]) +
-                (1.0 - f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3, i4 + 1, i5))[ii]) +
-                (1.0 - f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2, i3 + 1, i4 + 1, i5))[ii]) +
-                (f1) * (f2) * (1.0 - f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5))[ii]) +
-                (f1) * (1.0 - f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5))[ii]) +
-                (1.0 - f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5))[ii]) +
-                (f1) * (f2) * (f3) * (double) ((get_dat(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5))[ii]))
+            ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_0001[ii]) +
+                (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_1001[ii]) +
+                (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_0101[ii]) +
+                (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_0011[ii]) +
+                (f1) * (f2) * (1.0 - f3) * (double) (dat_1101[ii]) +
+                (f1) * (1.0 - f2) * (f3) * (double) (dat_1011[ii]) +
+                (1.0 - f1) * (f2) * (f3) * (double) (dat_0111[ii]) +
+                (f1) * (f2) * (f3) * (double) (dat_1111[ii]))
                 * (f4);
   }
 
