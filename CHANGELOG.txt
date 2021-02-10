@@ -1,3 +1,6 @@
+[1.4.20210210] improves interpolation of xillver spectra from
+table (potentially a >50% increase in speed)
+
 [1.4.20210202] changes fft-convolution to use energy flux instead
 of photon flux; removes double precision problems for Gamma>2.8
 (appeared at logxi < 1 and logN~18)
