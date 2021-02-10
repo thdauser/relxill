@@ -16,6 +16,7 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "relbase.h"
+#include "fftw/fftw3.h"   // assumes installation in heasoft
 
 #include "writeOutfiles.h"
 
