@@ -146,7 +146,7 @@ define check_single_model(fn){ %{{{
    
    struct_filter(dat, where(dat.value != 0) );
    
-   variable ind = where(900 > dat.bin_lo>0.2);
+   variable ind = where(600 > dat.bin_lo>0.2);
    variable goodness =  sqrt(sum((dat.model[ind]/dat.value[ind]-1)^2))/length(dat.model[ind]);
    
    () = printf(" %s  \t deviation:  %.3e ",fn, goodness);   %% GOODNESS = sqr-distance / num_bins 
