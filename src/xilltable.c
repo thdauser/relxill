@@ -720,7 +720,7 @@ static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
   double f_1000 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (1 - f4);
   double f_0100 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (1 - f4);
   double f_0010 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (1 - f4);
-  double f_0001 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  );
+  double f_0001 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (  f4  );
 
   double f_1010 = ( f1     ) * (1.0 - f2) * (  f3    )  * (1 - f4);
   double f_1001 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (  f4  );
@@ -745,18 +745,15 @@ static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
             f_1100 * (double) (dat_1100[ii]) +
             f_1010 * (double) (dat_1010[ii]) +
             f_0110 * (double) (dat_0110[ii]) +
-            f_1110 * (double) (dat_1110[ii])
-             +
+            f_1110 * (double) (dat_1110[ii]) +
             f_0001 * (double) (dat_0001[ii]) +
-                f_1001 * (double) (dat_1001[ii]) +
-                f_0101 * (double) (dat_0101[ii]) +
-                f_0011 * (double) (dat_0011[ii]) +
-                f_1101 * (double) (dat_1101[ii]) +
-                f_1011 * (double) (dat_1011[ii]) +
-                f_0111 * (double) (dat_0111[ii]) +
-                f_1111 * (double) (dat_1111[ii])
-                ;
-    assert(flu[ii]>=0.0);
+            f_1001 * (double) (dat_1001[ii]) +
+            f_0101 * (double) (dat_0101[ii]) +
+            f_0011 * (double) (dat_0011[ii]) +
+            f_1101 * (double) (dat_1101[ii]) +
+            f_1011 * (double) (dat_1011[ii]) +
+            f_0111 * (double) (dat_0111[ii]) +
+            f_1111 * (double) (dat_1111[ii]);
   }
 
 }
@@ -808,45 +805,78 @@ static void interp_5d_tab(xillTable *tab, double *flu, int n_ener,
   float* dat_11111 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4+1, i5+1);
 
 
+  double f_00000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
+  double f_10000 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
+  double f_01000 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
+  double f_00100 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (1 - f4) * ( 1 - f5);
+  double f_00010 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
+  double f_10100 = ( f1     ) * (1.0 - f2) * (  f3    )  * (1 - f4) * ( 1 - f5);
+  double f_10010 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
+  double f_01010 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
+  double f_11000 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
+  double f_01100 = (1.0 - f1) * (   f2   ) * (  f3    )  * (1 - f4) * ( 1 - f5);
+  double f_00110 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  ) * ( 1 - f5);
+  double f_11010 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
+  double f_11100 = ( f1     ) * (  f2    ) * ( f3     )  * (1 - f4) * ( 1 - f5);
+  double f_10110 = ( f1     ) * (1.0 - f2) * (  f3    )  * (  f4  ) * ( 1 - f5);
+  double f_01110 = (1.0 - f1) * (  f2    ) * (  f3    )  * (  f4  ) * ( 1 - f5);
+  double f_11110 = (  f1    ) * (  f2    ) * (  f3    )  * (  f4  ) * ( 1 - f5);
+
+  double f_00001 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * (   f5  );
+  double f_10001 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * (   f5  );
+  double f_01001 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (1 - f4) * (   f5  );
+  double f_00101 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (1 - f4) * (   f5  );
+  double f_00011 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * (   f5  );
+  double f_10101 = ( f1     ) * (1.0 - f2) * (  f3    )  * (1 - f4) * (   f5  );
+  double f_10011 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * (   f5  );
+  double f_01011 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (  f4  ) * (   f5  );
+  double f_11001 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (1 - f4) * (   f5  );
+  double f_01101 = (1.0 - f1) * (   f2   ) * (  f3    )  * (1 - f4) * (   f5  );
+  double f_00111 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  ) * (   f5  );
+  double f_11011 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (  f4  ) * (   f5  );
+  double f_11101 = ( f1     ) * (  f2    ) * ( f3     )  * (1 - f4) * (   f5  );
+  double f_10111 = ( f1     ) * (1.0 - f2) * (  f3    )  * (  f4  ) * (   f5  );
+  double f_01111 = (1.0 - f1) * (  f2    ) * (  f3    )  * (  f4  ) * (   f5  );
+  double f_11111 = (  f1    ) * (  f2    ) * (  f3    )  * (  f4  ) * (   f5  );
+
+
+
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
     flu[ii] =
-        (((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_00000[ii]) +
-            (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_10000[ii]) +
-            (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_01000[ii]) +
-            (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_00100[ii]) +
-            (f1) * (f2) * (1.0 - f3) * (double) (dat_11000[ii]) +
-            (f1) * (1.0 - f2) * (f3) * (double) (dat_10100[ii]) +
-            (1.0 - f1) * (f2) * (f3) * (double) (dat_01100[ii]) +
-            (f1) * (f2) * (f3) * (double) (dat_11100[ii]))
-            * (1 - f4) +
-            ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_00010[ii]) +
-                (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_10010[ii]) +
-                (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_01010[ii]) +
-                (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_00110[ii]) +
-                (f1) * (f2) * (1.0 - f3) * (double) (dat_11010[ii]) +
-                (f1) * (1.0 - f2) * (f3) * (double) (dat_10110[ii]) +
-                (1.0 - f1) * (f2) * (f3) * (double) (dat_01110[ii]) +
-                (f1) * (f2) * (f3) * (double) (dat_11110[ii]))
-                * (f4)) * ( 1 - f5) +
-            (((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_00001[ii]) +
-                (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_10001[ii]) +
-                (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_01001[ii]) +
-                (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_00101[ii]) +
-                (f1) * (f2) * (1.0 - f3) * (double) (dat_11001[ii]) +
-                (f1) * (1.0 - f2) * (f3) * (double) (dat_10101[ii]) +
-                (1.0 - f1) * (f2) * (f3) * (double) (dat_01101[ii]) +
-                (f1) * (f2) * (f3) * (double) (dat_11101[ii]))
-                * (1 - f4) +
-                ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_00011[ii]) +
-                    (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_10011[ii]) +
-                    (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_01011[ii]) +
-                    (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_00111[ii]) +
-                    (f1) * (f2) * (1.0 - f3) * (double) (dat_11011[ii]) +
-                    (f1) * (1.0 - f2) * (f3) * (double) (dat_10111[ii]) +
-                    (1.0 - f1) * (f2) * (f3) * (double) (dat_01111[ii]) +
-                    (f1) * (f2) * (f3) * (double) (dat_11111[ii]))
-                    * (f4)) * ( f5);
+        f_00000 * (double) (dat_00000[ii]) +
+            f_10000 * (double) (dat_10000[ii]) +
+            f_01000 * (double) (dat_01000[ii]) +
+            f_00100 * (double) (dat_00100[ii]) +
+            f_11000 * (double) (dat_11000[ii]) +
+            f_10100 * (double) (dat_10100[ii]) +
+            f_01100 * (double) (dat_01100[ii]) +
+            f_11100 * (double) (dat_11100[ii]) +
+            f_00010 * (double) (dat_00010[ii]) +
+            f_10010 * (double) (dat_10010[ii]) +
+            f_01010 * (double) (dat_01010[ii]) +
+            f_00110 * (double) (dat_00110[ii]) +
+            f_11010 * (double) (dat_11010[ii]) +
+            f_10110 * (double) (dat_10110[ii]) +
+            f_01110 * (double) (dat_01110[ii]) +
+            f_11110 * (double) (dat_11110[ii])
+            +
+                f_00001 * (double) (dat_00001[ii]) +
+            f_10001 * (double) (dat_10001[ii]) +
+            f_01001 * (double) (dat_01001[ii]) +
+            f_00101 * (double) (dat_00101[ii]) +
+            f_11001 * (double) (dat_11001[ii]) +
+            f_10101 * (double) (dat_10101[ii]) +
+            f_01101 * (double) (dat_01101[ii]) +
+            f_11101 * (double) (dat_11101[ii]) +
+            f_00011 * (double) (dat_00011[ii]) +
+            f_10011 * (double) (dat_10011[ii]) +
+            f_01011 * (double) (dat_01011[ii]) +
+            f_00111 * (double) (dat_00111[ii]) +
+            f_11011 * (double) (dat_11011[ii]) +
+            f_10111 * (double) (dat_10111[ii]) +
+            f_01111 * (double) (dat_01111[ii]) +
+            f_11111 * (double) (dat_11111[ii]);
 
   }
 
@@ -899,6 +929,7 @@ static void interp_6d_tab(xillTable *tab, double *flu, int n_ener,
     flu[ii] = interp_lin_1d(fac[0], s1[ii], s2[ii]);
   }
 }
+
 
 /** check boundary of the Ecut parameter  (grav. redshift can lead to the code asking
  *  for an Ecut not tabulated, although actually observed ecut is larger
