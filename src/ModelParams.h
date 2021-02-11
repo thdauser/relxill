@@ -126,6 +126,14 @@ class ModelParams {
     }
   }
 
+  void set(XPar name, double value){
+    try {
+      m_param.at(name) = value;
+    } catch (std::out_of_range &e){
+      throw ParamInputException("parameter not found");
+    }
+  }
+
   auto &operator[](const XPar &name) const {
     return m_param.at(name);
   }

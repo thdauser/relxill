@@ -100,6 +100,7 @@ clean:
 	rm -f *~ gmon.out test*.dat *.log
 	rm -f relxill_model_v*.tgz
 	rm -f debug-*fits testrr-*.fits
+	rm -f build/*
 
 
 dist-clean:

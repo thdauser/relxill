@@ -33,7 +33,7 @@ set(EXEC_FILES_CPP test_sta)
 
 foreach (execfile ${EXEC_FILES_CPP})
     add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES} ${CONFIG_FILE} )
-    target_link_libraries(${execfile} m cfitsio)
+    target_link_libraries(${execfile} m cfitsio fftw3)
     target_include_directories(${execfile} PUBLIC "${PROJECT_BINARY_DIR}" )  # necessary to find config file
 endforeach (execfile ${EXEC_FILES_CPP})
 

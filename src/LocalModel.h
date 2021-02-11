@@ -74,6 +74,15 @@ class LocalModel {
   {  };
 
   /**
+   * @brief set the value of a single parameter
+   * @param XPar param
+   * @param double value
+   */
+  void set_par(const XPar param, double value){
+    m_model_params.set(param,value);
+  }
+
+  /**
    * Evaluate the LocalModel (in the Rest Frame of the Source)
    * (applies the redshift to the energy grid)
    * @param spectrum
