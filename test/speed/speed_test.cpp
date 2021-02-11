@@ -20,6 +20,8 @@
 #include "XspecSpectrum.h"
 #include "xspec_wrapper_lmodels.h"
 
+#include <chrono>
+
 extern "C" {
 #include "relutility.h"
 }
@@ -89,6 +91,7 @@ void eval_model_xillver_param_changes(ModelName model_name, const int num_evalua
 }
 
 
+// ------------------------- //
 int main(int argc, char *argv[]) {
 
   if (argc < 2)  {
@@ -104,13 +107,29 @@ int main(int argc, char *argv[]) {
 
     ModelName model_name = get_model_name_from_string(std::string(argv[1]));
 
-    if (argc == 2 || (std::string(argv[2]) == "rel")){
-      eval_model_relat_param_changes(model_name, num_evaluations);
+    auto tstart = std::chrono::steady_clock::now();
+
+    if (argc==2){
+      assert(num_evaluations>1);
+      eval_model_relat_param_changes(model_name, num_evaluations/2);
+      eval_model_xillver_param_changes(model_name, num_evaluations/2);
+    } else {
+
+      if  (std::string(argv[2]) == "rel"){
+        eval_model_relat_param_changes(model_name, num_evaluations);
+      } else if (std::string(argv[2]) == "xill") {
+        eval_model_xillver_param_changes(model_name, num_evaluations);
+      } else {
+        std::cout<< " speed test error: given argument " << std::string(argv[2]) << " not known" << std::endl;
+      }
     }
 
-    if (argc == 2 || (std::string(argv[2]) == "xill")) {
-      eval_model_xillver_param_changes(model_name, num_evaluations);
-    }
+
+    auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
+        (std::chrono::steady_clock::now() - tstart ).count();
+
+    printf("Time elapsed:              %.2fsec\n", time_elapsed_msec * 0.001);
+    printf("Time per model evaluation: %.0fmsec ", static_cast<double>(time_elapsed_msec) / num_evaluations);
 
   }
 

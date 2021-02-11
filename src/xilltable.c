@@ -716,27 +716,47 @@ static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
   float* dat_0111 = get_dat(tab, i0, i1, i2+1, i3+1, i4+1, i5);
   float* dat_1111 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4+1, i5);
 
+  double f_0000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (1 - f4);
+  double f_1000 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (1 - f4);
+  double f_0100 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (1 - f4);
+  double f_0010 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (1 - f4);
+  double f_0001 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  );
+
+  double f_1010 = ( f1     ) * (1.0 - f2) * (  f3    )  * (1 - f4);
+  double f_1001 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (  f4  );
+  double f_0101 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (  f4  );
+  double f_1100 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (1 - f4);
+  double f_0110 = (1.0 - f1) * (   f2   ) * (  f3    )  * (1 - f4);
+  double f_0011 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  );
+
+  double f_1101 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (  f4  );
+  double f_1110 = ( f1     ) * (  f2    ) * ( f3     )  * (1 - f4);
+  double f_1011 = ( f1     ) * (1.0 - f2) * (  f3    )  * (  f4  );
+  double f_0111 = (1.0 - f1) * (  f2    ) * (  f3    )  * (  f4  );
+  double f_1111 = (  f1    ) * (  f2    ) * (  f3    )  * (  f4  );
+
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
     flu[ii] =
-        ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_0000[ii]) +
-            (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_1000[ii]) +
-            (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_0100[ii]) +
-            (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_0010[ii]) +
-            (f1) * (f2) * (1.0 - f3) * (double) (dat_1100[ii]) +
-            (f1) * (1.0 - f2) * (f3) * (double) (dat_1010[ii]) +
-            (1.0 - f1) * (f2) * (f3) * (double) (dat_0110[ii]) +
-            (f1) * (f2) * (f3) * (double) (dat_1110[ii]))
-            * (1 - f4) +
-            ((1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_0001[ii]) +
-                (f1) * (1.0 - f2) * (1.0 - f3) * (double) (dat_1001[ii]) +
-                (1.0 - f1) * (f2) * (1.0 - f3) * (double) (dat_0101[ii]) +
-                (1.0 - f1) * (1.0 - f2) * (f3) * (double) (dat_0011[ii]) +
-                (f1) * (f2) * (1.0 - f3) * (double) (dat_1101[ii]) +
-                (f1) * (1.0 - f2) * (f3) * (double) (dat_1011[ii]) +
-                (1.0 - f1) * (f2) * (f3) * (double) (dat_0111[ii]) +
-                (f1) * (f2) * (f3) * (double) (dat_1111[ii]))
-                * (f4);
+        f_0000 * (double) (dat_0000[ii]) +
+            f_1000 * (double) (dat_1000[ii]) +
+            f_0100 * (double) (dat_0100[ii]) +
+            f_0010 * (double) (dat_0010[ii]) +
+            f_1100 * (double) (dat_1100[ii]) +
+            f_1010 * (double) (dat_1010[ii]) +
+            f_0110 * (double) (dat_0110[ii]) +
+            f_1110 * (double) (dat_1110[ii])
+             +
+            f_0001 * (double) (dat_0001[ii]) +
+                f_1001 * (double) (dat_1001[ii]) +
+                f_0101 * (double) (dat_0101[ii]) +
+                f_0011 * (double) (dat_0011[ii]) +
+                f_1101 * (double) (dat_1101[ii]) +
+                f_1011 * (double) (dat_1011[ii]) +
+                f_0111 * (double) (dat_0111[ii]) +
+                f_1111 * (double) (dat_1111[ii])
+                ;
+    assert(flu[ii]>=0.0);
   }
 
 }
