@@ -60,12 +60,13 @@ typedef struct {
 
 } returnTable;
 
-typedef struct {
 
+typedef struct {
   double a;  // store the spin here as well ?!
 
-  double *rlo;      // grid for r_i and r_e
-  double *rhi;
+  double *rlo; // for debugging only
+  double *rhi; // for debugging only
+  double* rad; // grid for r_i and r_e
   int nrad;
 
   double *proper_area_ring;  // proper area of this ring
@@ -80,7 +81,7 @@ typedef struct {
   /* everything we do not interpolate we directly take from the table */
   returnFracData *tabData;
 
-} returnFracIpol;
+} returningFractions;
 
 
 /* Routines */
@@ -90,6 +91,6 @@ returnTable *get_returnRadTable(int *status);
 void free_2d(double ***vals, int n1);
 void free_cached_returnTable(void);
 
-returnFracIpol *get_rr_fractions(double spin, double Rin, double Rout, int *status);
+returningFractions *get_rr_fractions(double spin, double rin, double rout, int *status);
 
 #endif /* RELRETURN_TABLE_H_ */

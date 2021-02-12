@@ -32,7 +32,7 @@
 double *global_bbody_ener_std = NULL;
 
 
-returnSpec2D *getReturnradOutputStructure(const returnFracIpol *dat,
+returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
                                           double **spec_rr_zones,
                                           double **spec_prim_zones,
                                           double *ener,

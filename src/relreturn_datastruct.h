@@ -44,7 +44,7 @@ void sum_2Dspec(double *spec, double **spec_arr, int nener, int nrad, const int 
 
 returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status);
 
-returnSpec2D *getReturnradOutputStructure(const returnFracIpol *dat,
+returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
                                           double **spec_rr_zones,
                                           double **spec_prim_zones,
                                           double* ener, int n_ener,

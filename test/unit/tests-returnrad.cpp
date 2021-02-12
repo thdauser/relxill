@@ -146,7 +146,7 @@ TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") 
   double Rout = 1000;
 
   double Rin = kerr_rms(spin);
-  returnFracIpol *dat = get_rr_fractions(spin, Rin, Rout, &status);
+  returningFractions *dat = get_rr_fractions(spin, Rin, Rout, &status);
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rms = dat->nrad;
 
@@ -175,7 +175,7 @@ TEST_CASE(" Return Fraction interpolation for different spins", "[returnrad]") {
   for (int ii=0; ii<nspin; ii++){
 
     double Rin = kerr_rms(spin[ii]);
-    returnFracIpol *dat = get_rr_fractions(spin[ii], Rin, Rout, &status);
+    returningFractions *dat = get_rr_fractions(spin[ii], Rin, Rout, &status);
 
     REQUIRE(status==EXIT_SUCCESS);
     REQUIRE(dat != nullptr);
@@ -184,7 +184,18 @@ TEST_CASE(" Return Fraction interpolation for different spins", "[returnrad]") {
 
 }
 
+static void invert_emis_profile(emisProfile* emis){
+  invertArray(emis->re, emis->nr);
+  invertArray(emis->emis, emis->nr);
 
+  if(emis->del_inc!= nullptr){
+    invertArray(emis->del_inc, emis->nr);
+  }
+
+  if(emis->del_emit!= nullptr){
+    invertArray(emis->del_emit, emis->nr);
+  }
+}
 
 static void write_emis_profile(const std::string& fname, emisProfile* emis_profile){
   write_data_to_file( fname.c_str() , emis_profile->re, emis_profile->emis, emis_profile->nr);
@@ -201,18 +212,14 @@ TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
 
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
 
-  returnFracIpol *dat = get_rr_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
-  double rmean[dat->nrad]; // descending grid
-  for (int ii = 0; ii < dat->nrad; ii++) {
-    rmean[dat->nrad - ii - 1] = 0.5 * (dat->rlo[ii] + dat->rhi[ii]);
-  }
-  emisProfile *emisCoarse = calc_emis_profile(rmean, dat->nrad, rel_param, &status);
-  // invertArray(emisCoarse->re, emisCoarse->nr);
-  // invertArray(emisCoarse->emis, emisCoarse->nr);
+ returningFractions *dat = get_rr_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
+ invertArray(dat->rad, dat->nrad);
+ emisProfile *emisCoarse = calc_emis_profile(dat->rad, dat->nrad, rel_param, &status);
+ invert_emis_profile(emisCoarse);
 
   emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, &status);
-  interpolEmisProfile(emisRebin, emisCoarse, &status);
+  rebin_emisprofile_on_radial_grid(emisRebin, emisCoarse, &status);
 
   REQUIRE(status==EXIT_SUCCESS);
 
@@ -239,7 +246,8 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 
   relParam *rel_param = get_std_param_rellinelp(&status);
   rel_param->a = 0.998;
-  rel_param->height = 5;
+  rel_param->height = 5.0;
+  rel_param->rout = 1000.0;
 
   const char* env_name_outfiles = "RELXILL_WRITE_OUTFILES";
 

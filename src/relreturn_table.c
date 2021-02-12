@@ -23,7 +23,7 @@
 returnTable *cached_retTable = NULL;
 
 int global_rr_do_interpolation = 1;
-returnFracIpol *cached_returnFractions = NULL;
+returningFractions *cached_returnFractions = NULL;
 
 /** create a new return table */
 static returnTable *new_returnTable(int *status) {
@@ -413,11 +413,11 @@ static int select_spinIndexForTable(double val_spin, double *arr_spin, int nspin
   return k;
 }
 
-static returnFracIpol *new_returnFracIpol(returnFracData *tab, double spin, int *status) {
+static returningFractions *new_returnFracIpol(returnFracData *tab, double spin, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  returnFracIpol *dat = (returnFracIpol *) malloc(sizeof(returnFracIpol));
+  returningFractions *dat = (returningFractions *) malloc(sizeof(returningFractions));
   CHECK_MALLOC_RET_STATUS(dat, status, dat)
 
   dat->tabData = tab;
@@ -428,18 +428,19 @@ static returnFracIpol *new_returnFracIpol(returnFracData *tab, double spin, int 
   dat->rhi = NULL;
   dat->irad = NULL;
 
-  dat->proper_area_ring = NULL;
+ // dat->proper_area_ring = NULL;
 
   dat->frac_i = NULL;
 
   return dat;
 }
 
-static void free_returnFracIpol(returnFracIpol **dat) {
+static void free_returningFractions(returningFractions **dat) {
 
   if (*dat != NULL) {
     free((*dat)->rlo);
     free((*dat)->rhi);
+    free((*dat)->rad);
 
     free_2d(&((*dat)->frac_i), (*dat)->nrad);
 
@@ -449,7 +450,7 @@ static void free_returnFracIpol(returnFracIpol **dat) {
 
 }
 
-static void allocate_radial_grid(returnFracIpol *ipol, double Rin, double Rout, int *status) {
+static void allocate_radial_grid(returningFractions *ipol, double Rin, double Rout, int *status) {
 
   int klo_Rlo = binary_search(ipol->tabData->rlo, ipol->tabData->nrad, Rin);
   int khi_Rhi = binary_search(ipol->tabData->rhi, ipol->tabData->nrad, Rout);
@@ -483,14 +484,18 @@ static void allocate_radial_grid(returnFracIpol *ipol, double Rin, double Rout, 
   ipol->rhi = (double *) malloc(nrad_trim * sizeof(double));
   CHECK_MALLOC_VOID_STATUS(ipol->rhi, status)
 
+  ipol->rad = (double *) malloc(nrad_trim * sizeof(double));
+  CHECK_MALLOC_VOID_STATUS(ipol->rad, status)
+
   for (int ii = 0; ii < nrad_trim; ii++) {
     ipol->rlo[ii] = ipol->tabData->rlo[ipol->irad[ii]];
     ipol->rhi[ii] = ipol->tabData->rhi[ipol->irad[ii]];
 
+    ipol->rad[ii] = 0.5*(ipol->tabData->rlo[ipol->irad[ii]] + ipol->tabData->rhi[ipol->irad[ii]]);
   }
 
   // reset lowest bin to Rin
-  ipol->rlo[0] = Rin;
+  // ipol->rlo[0] = Rin;// TODO: really set to Rin??
 
 
 }
@@ -522,15 +527,15 @@ double **get_trimmed_fraci(double **fraciTab, const int *ind_arr, int n, int *st
   return fraciTrim;
 }
 
-static void trim_rr_radial_grid(returnFracIpol *ipol, double Rin, double Rout, int *status) {
+static void trim_rr_radial_grid(returningFractions *ipol, double Rin, double Rout, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   allocate_radial_grid(ipol, Rin, Rout, status);
   CHECK_STATUS_VOID(*status);
 
-  assert(ipol->proper_area_ring == NULL);
-  ipol->proper_area_ring = get_area_ring(ipol->rlo, ipol->rhi, ipol->nrad, ipol->a, status);
+//  assert(ipol->proper_area_ring == NULL);
+//  ipol->proper_area_ring = get_area_ring(ipol->rlo, ipol->rhi, ipol->nrad, ipol->a, status);
 
 
   assert(ipol->frac_i == NULL);
@@ -538,7 +543,7 @@ static void trim_rr_radial_grid(returnFracIpol *ipol, double Rin, double Rout, i
 
 }
 
-static void interpol_fraci(returnFracIpol *ipol, double spin, const int *status) {
+static void interpol_fraci(returningFractions *ipol, double spin, const int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -550,19 +555,19 @@ static void interpol_fraci(returnFracIpol *ipol, double spin, const int *status)
   }
 
   // make sure Rin is not below kerr_rms(atab) of the tabulated values
-  assert(ipol->rlo[0]-kerr_rms(spin_tab) > -1e-4);
+  // assert(ipol->rlo[0]-kerr_rms(spin_tab) > -1e-4);
 
 }
 
-static void ipol_returnFractions(returnFracIpol **ptr_ipolFracs, returnFracData *tabFracs,
+static void ipol_returnFractions(returningFractions **ptr_ipolFracs, returnFracData *tabFracs,
                                  double spin, double Rin, double Rout, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  returnFracIpol *ipolFracs = *ptr_ipolFracs;
+  returningFractions *ipolFracs = *ptr_ipolFracs;
   if (ipolFracs != NULL) {
     // TODO: let's build in caching as well?
-    free_returnFracIpol(ptr_ipolFracs);
+    free_returningFractions(ptr_ipolFracs);
   }
 
   /* malloc and set table and spin value */
@@ -585,7 +590,7 @@ static void ipol_returnFractions(returnFracIpol **ptr_ipolFracs, returnFracData 
 
 }
 
-returnFracIpol *get_rr_fractions(double spin, double Rin, double Rout, int *status) {
+returningFractions *get_rr_fractions(double spin, double rin, double rout, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -595,10 +600,10 @@ returnFracIpol *get_rr_fractions(double spin, double Rin, double Rout, int *stat
   int spinIndex = select_spinIndexForTable(spin, tab->spin, tab->nspin, status);
   returnFracData *tabFrac = tab->retFrac[spinIndex];
 
-  if (Rin == -1) Rin = kerr_rms(spin);
-  assert(Rout > Rin);
+  if (rin == -1) rin = kerr_rms(spin);
+  assert(rout > rin);
 
-  ipol_returnFractions(&cached_returnFractions, tabFrac, spin, Rin, Rout, status);
+  ipol_returnFractions(&cached_returnFractions, tabFrac, spin, rin, rout, status);
 
   if (*status == EXIT_FAILURE) {
     printf(" *** error : failed getting return rad fraction data\n");

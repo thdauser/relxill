@@ -25,11 +25,7 @@
 #include "writeOutfiles.h"
 
 
-static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
-                                               emisProfile *emisInput,
-                                               double gamma,
-                                               int irad,
-                                               int *status) {
+static double calc_rrad_emis_corona_singleZone(returningFractions *dat, const emisProfile* emis_input, double gamma, int irad) {
 
   // loop over all zones to get the emissivity incident on this one zone irad
 
@@ -38,9 +34,9 @@ static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
 
   // need to have emisInput on the radial zone grid, ASCENDING (as tables are ascending in radius)
   // [poor test, as radial grid could still be different]
-  assert(emisInput->nr == dat->nrad);
-  assert((dat->rlo[irad] < emisInput->re[irad]) && (emisInput->re[irad] < dat->rhi[irad]));
-  assert(emisInput->re[0] < emisInput->re[1]);
+  assert(emis_input->nr == dat->nrad);
+//  assert((dat->rlo[irad] < emisInput->re[irad]) && (emisInput->re[irad] < dat->rhi[irad]));
+//  assert(emisInput->re[0] < emisInput->re[1]);
 
   double emis_r[nrad];
   double gfac[ng];
@@ -53,122 +49,68 @@ static double calc_rrad_emis_corona_singleZone(returnFracIpol *dat,
       emis_r[ii] += pow(gfac[jj], gamma) * dat->tabData->frac_g[irad][ii][jj];
     }
 
-    emis_r[ii] *= dat->frac_i[irad][ii] * emisInput->emis[ii] * dat->tabData->f_ret[ii];
+    // TODO:: f_ret needs to be interpolated for spin
+    emis_r[ii] *= dat->frac_i[irad][ii] * emis_input->emis[ii] * dat->tabData->f_ret[ii];
+    // emis_r[ii] *= dat->frac_i[irad][ii]  * dat->tabData->f_ret[ii];
   }
 
   double emisZone = calcSum(emis_r, nrad);
 
+  char buf[100];
+  sprintf(buf, "test_rrad_single_zone_%02i.dat",irad);
+  write_data_to_file(buf, dat->rad, emis_r, nrad);
+
   return emisZone;
 }
 
-/* function: interpolEmisProfile
- * uses an emissivity profile (with radius descending) and interpolates it (logarithmically)
- * onto a grid of descending radial values (as required by the relconv/relxill kernel)
- * warning: values will be extrapolated onto the finer grid
- */
-void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status) {
 
-  double *re = emisReb->re;
-  double *r0 = emis0->re;
-
-  assert(re[0] > re[1]);                // output requires a descending grid :-(
-  assert(r0[0] > r0[1]);  // verify that the input-grid is DESCENDING as well
-
-
-  int ind_rin = inv_binary_search(r0, emis0->nr, re[emisReb->nr - 1]);
-  assert(ind_rin >= 0);
-
-  if (ind_rin <= 1) {
-    RELXILL_ERROR("interpolating returning radiation emissivity profile failed", status);
-    printf("  -> smallest radial value of new grid [%e] is above the second largest of the original radial grid [%e]\n",
-           re[emis0->nr - 1], r0[1]);
-    printf("     Rin and Rout have to be further apart \n");
-    return;
+void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *rhi_emis) {
+  if (is_emis_grid_ascending(emisInput)){
+    (*rlo_emis) = emisInput->re[0];
+    (*rhi_emis) = emisInput->re[emisInput->nr-1];
+  } else {
+    (*rlo_emis) = emisInput->re[emisInput->nr-1];
+    (*rhi_emis) = emisInput->re[0];
   }
-
-  int kk = ind_rin;
-  for (int ii = emisReb->nr - 1; ii >= 0; ii--) {
-    while ((re[ii] >= r0[kk]) && kk >= 0) {
-      kk--;
-      if (kk == 0) {
-        if (re[ii] - RELTABLE_MAX_R <= 1e-6) {
-          kk = 0;
-          break;
-        } else {
-          RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
-          printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
-                 re[ii], RELTABLE_MAX_R);
-          CHECK_STATUS_VOID(*status);
-        }
-      } else if (kk < 0) {  // if we are already below the lowest value, we will extrapolate and therefore reset to kk=0
-        kk = 0;
-        break;
-      }
-    }
-
-
-    // for larger angles logarithmic interpolation works slightly better
-    double inter_r;
-    if (emis0->del_emit[kk] / M_PI * 180.0 <= 75.0) {
-      inter_r = (re[ii] - r0[kk]) / (r0[kk + 1] - r0[kk]);
-    } else {
-      inter_r = (log(re[ii]) - log(r0[kk])) /
-          (log(r0[kk + 1]) - log(r0[kk]));
-    }
-
-    //  log grid for the intensity (due to the function profile)
-    emisReb->emis[ii] = interp_log_1d(inter_r, emis0->emis[kk], emis0->emis[kk + 1]);
-
-    emisReb->del_emit[ii] = interp_lin_1d(inter_r, emis0->del_emit[kk], emis0->del_emit[kk + 1]);
-    emisReb->del_inc[ii] = interp_lin_1d(inter_r, emis0->del_inc[kk], emis0->del_inc[kk + 1]);
-
-  }
+  assert((*rlo_emis) < (*rhi_emis));
 }
 
-/* main function to calculate the returning radation emissivitiy profile
+
+/**
+ * @brief: main function to calculate the returning radiation emissivity profile
  *
- * Caveat: Emissivity Profiles are Define with radius DESCENDING
+ * @detail Caveat: The radial grid for the relline profile, which is typically used for the emissivity
+ * profile, is defined with the radius DESCENDING
  */
-emisProfile *get_rrad_emis_corona(double *re, int nr, const relParam *param, int *status) {
+emisProfile *get_rrad_emis_corona(const emisProfile* emisInput, const relParam* param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  returnFracIpol *dat = get_rr_fractions(param->a, param->rin, param->rout, status);
 
-  double rmeanZone[dat->nrad];
-  for (int ii = 0; ii < dat->nrad; ii++) {
-    rmeanZone[dat->nrad - ii - 1] = 0.5 * (dat->rlo[ii] + dat->rhi[ii]);
-  }
-  emisProfile *emisInput = new_emisProfile(rmeanZone, dat->nrad, status); // think about free memeory etc
-  get_emis_jet(emisInput, param, status);
+  double rlo_emis, rhi_emis;
+  determine_rlo_rhi(emisInput, &rlo_emis, &rhi_emis);
+  returningFractions *fractions = get_rr_fractions(param->a, rlo_emis, rhi_emis, status);
+
   write_data_to_file("test_emis_profile_input.dat", emisInput->re, emisInput->emis, emisInput->nr);
-  CHECK_STATUS_RET(*status, NULL);
 
-  emisProfile *emisReturn = new_emisProfile(rmeanZone, dat->nrad, status); // think about free memeory etc
+  emisProfile* emis_input_rebinned = new_emisProfile(fractions->rad, fractions->nrad, status); // fractions->rad is not owned by emisReturn
+  inv_rebin_mean(emisInput->re,emisInput->emis, emisInput->nr,
+                 emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
 
-  invertArray(emisReturn->re, emisReturn->nr);
-  invertArray(emisReturn->emis, emisReturn->nr);
-
-  for (int ii = 0; ii < dat->nrad; ii++) {
-    emisReturn->emis[ii] = calc_rrad_emis_corona_singleZone(dat, emisInput, param->gamma, ii, status);
+  emisProfile* emisReturn = new_emisProfile(fractions->rad, fractions->nrad, status); // fractions->rad is not owned by emisReturn
+  for (int irad = 0; irad < fractions->nrad; irad++) {
+    emisReturn->emis[irad] = calc_rrad_emis_corona_singleZone(fractions, emis_input_rebinned, param->gamma, irad);
   }
 
-  invertArray(emisReturn->re, emisReturn->nr);
-  invertArray(emisReturn->emis, emisReturn->nr);
 
-  emisProfile *emisReturnRebinned = new_emisProfile(re, nr, status);
-
-
-  // rebin to (typically finer) emissivity grid
-  interpolEmisProfile(emisReturnRebinned, emisReturn, status);
+  emisProfile *emisReturnRebinned = new_emisProfile(emisInput->re, emisInput->nr, status);
+  rebin_emisprofile_on_radial_grid(emisReturnRebinned, emisReturn, status);
 
   free_emisProfile(emisReturn);
-  free_emisProfile(emisInput);
-
-  CHECK_STATUS_RET(*status, emisReturnRebinned);
 
   return emisReturnRebinned;
 }
+
 
 void relxill_returnKernel(double *ener_inp,
                           double *spec_inp,

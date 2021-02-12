@@ -33,7 +33,7 @@ typedef struct {
   double *rhi;
   int nrad;
 
-  returnFracIpol *rDat;
+  returningFractions *rDat;
 
   double **specs; // n elements
 
@@ -47,7 +47,7 @@ void fits_rr_write_2Dspec(char *fname,
                           double *rlo,
                           double *rhi,
                           int nrad,
-                          returnFracIpol *dat,
+                          returningFractions *dat,
                           int *status);
 
 /**  return the diskbb spectrum for the radial grid given by the table for this spin value **/
@@ -81,7 +81,7 @@ void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec *rel_pr
 void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
 void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
 
-double *getTemperatureProfileDiskZones(returnFracIpol *dat, double Rin, double Tin, int *status);
+double *getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
 
 
 void set_std_param_relxill_bbret(double *inp_par);

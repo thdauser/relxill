@@ -25,9 +25,9 @@
 
 #define NUM_PARAM_RELXILLLPRET 13
 
-void interpolEmisProfile(emisProfile *emisReb, emisProfile *emis0, int *status);
+void interpol_emis_profile(emisProfile *emisReb, emisProfile *emis0, int *status);
 
-emisProfile *get_rrad_emis_corona(double *re, int nr, const relParam *param, int *status);
+emisProfile *get_rrad_emis_corona(const emisProfile*, const relParam*, int* );
 
 void tdrelxilllpret(const double *ener0,
                     int n_ener0,

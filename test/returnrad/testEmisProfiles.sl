@@ -11,6 +11,20 @@ define read_emis_profile(fname){
    return struct{rad=rad, emis=emis};
 }
 
+define plot_single_zones(pl){
+   variable files_single_zone = outdir + "test_rrad_single_zone_"+["00","12","24","48"]+".dat";
+     
+   variable ii, n = length(files_single_zone);
+   
+   _for ii(0,n-1){
+      variable dat = read_emis_profile(files_single_zone[ii]);
+      pl.plot(dat.rad,dat.emis;line=ii);
+   }
+     
+   
+}
+
+
 define plotEmisProfiles(files){
 
    variable pl = xfig_plot_new();
@@ -26,8 +40,13 @@ define plotEmisProfiles(files){
       pl.plot(emis[ii].rad,emis[ii].emis; width=2, line=ii, color=col[ii], depth=-ii);
    
    }
+   
+   plot_single_zones(pl);
+   
    return pl;
 }
+
+
 
 
 plotEmisProfiles(files).render("plots/testEmisProfiles.pdf");

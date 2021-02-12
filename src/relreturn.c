@@ -31,17 +31,17 @@
 // Function definitions
 static double **get_returnrad_specs(double *ener_inp,
                                     int nener_inp,
-                                    returnFracIpol *dat,
+                                    returningFractions *dat,
                                     const double *temperature,
                                     int *status);
-static double **get_bbody_specs(double *ener, int nener, returnFracIpol *dat, double *temperature, int *status);
+static double **get_bbody_specs(double *ener, int nener, returningFractions *dat, double *temperature, int *status);
 
 void normalizeFluxRrad(int nrad, int nener, const double *ener, double **spec);
-double getEmissivityNormFactor(returnFracIpol *dat, int nener, const double *ener, double **spec);
+double getEmissivityNormFactor(returningFractions *dat, int nener, const double *ener, double **spec);
 
 // Program Code
 
-double* getTemperatureProfileDiskZones(returnFracIpol* dat, double Rin, double Tin, int* status){
+double* getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double Tin, int* status){
   return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, TPROFILE_ALPHA, status);
 }
 
@@ -56,7 +56,7 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
   CHECK_STATUS_RET(*status, NULL);
 
   // 1 - get the fractions from the table (plus interpolation to current parameters)
-  returnFracIpol *dat = get_rr_fractions(spin, Rin, Rout, status);
+  returningFractions *dat = get_rr_fractions(spin, Rin, Rout, status);
 
   // 2 - temperature profile of the whole disk
   double *temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
@@ -106,7 +106,7 @@ static void calc_rr_bbspec_gzone(double *ener, int nener, double *spec, double t
 }
 
 
-static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad, const double* temp, returnFracIpol* dat, const int* status){
+static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad, const double* temp, returningFractions* dat, const int* status){
 
   CHECK_STATUS_VOID(*status);
 
@@ -141,7 +141,7 @@ static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad,
 
 
 
-static double **get_returnrad_specs(double *ener_inp, int nener_inp, returnFracIpol *dat,
+static double **get_returnrad_specs(double *ener_inp, int nener_inp, returningFractions *dat,
                                     const double *temperature, int *status) {
 /* returns: - 2D-spectral array, unit is cts/bin  (xspec standard)
  *          - each zone is integrated over the GR proper area
@@ -175,7 +175,7 @@ static double **get_returnrad_specs(double *ener_inp, int nener_inp, returnFracI
 }
 
 
-static double **get_bbody_specs(double *ener, int nener, returnFracIpol *dat, double *temperature, int *status) {
+static double **get_bbody_specs(double *ener, int nener, returningFractions *dat, double *temperature, int *status) {
 /* returns: - 2D-spectral array, unit is cts/bin  (xspec standard)
  *          - outside the energy band EMIN_XILLVER to EMAX_XILLVER the function is 0
  * input: temperature profile (in keV)
@@ -211,14 +211,13 @@ void normalizeFluxRrad(int nrad, int nener, const double *ener, double **spec) {
 }
 
 
-double getEmissivityNormFactor(returnFracIpol *dat, int nener, const double *ener, double **spec) {
+double getEmissivityNormFactor(returningFractions *dat, int nener, const double *ener, double **spec) {
 /*
  *  Input: bin integrated spectrum  [cts /bin/cm^2]
  */
 
 double sumRadius[dat->nrad];
   double sumTotalSpec = 0.0;
-
 
   for (int ii = 0; ii < dat->nrad; ii++) {
     sumRadius[ii] = 0.0;
@@ -230,13 +229,11 @@ double sumRadius[dat->nrad];
   }
 
   return sumTotalSpec;
-
-
 }
 
 
-void fits_rr_write_2Dspec(char *fname,double **spec_arr, double *ener, int nener,
-    double* rlo, double* rhi, int nrad, returnFracIpol *dat, int *status) {
+void fits_rr_write_2Dspec(char *fname, double **spec_arr, double *ener, int nener,
+                          double* rlo, double* rhi, int nrad, returningFractions *dat, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -302,7 +299,7 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
 
   CHECK_STATUS_VOID(*status);
 
-  returnFracIpol *dat = get_rr_fractions(spin, -1, RMAX_RELRET, status);
+  returningFractions *dat = get_rr_fractions(spin, -1, RMAX_RELRET, status);
 
   double *temperature =
       get_tprofile(dat->rlo, dat->rhi, dat->nrad, 0.5 * (dat->rlo[0] + dat->rhi[0]), Tin, TPROFILE_DISKBB, status);

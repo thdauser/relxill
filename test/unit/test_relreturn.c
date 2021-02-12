@@ -318,7 +318,7 @@ static void testTemperatureProfile(int* status){
 
   double Rout = 1000;
 
-  returnFracIpol* dat = NULL;
+  returningFractions* dat = NULL;
   for (int ii=0; ii<nspin; ii++){
     double Rin = kerr_rms(spin[ii]);
     dat = get_rr_fractions(spin[ii], Rin, Rout, status);
@@ -629,52 +629,6 @@ static void set_std_param_relxilllpRet(double *inp_par) {
   inp_par[12] = 1;
 }
 
-
-static void testRebinEmisProfiles(int *status) {
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-  double precRebinCoarse = 0.05;
-
-  relParam* rel_param =  get_std_param_rellinelp(status);
-
-  RelSysPar *sysPar = get_system_parameters(rel_param, status);
-
-  returnFracIpol *dat = get_rr_fractions(rel_param->a, rel_param->rin, rel_param->rout, status);
-  double rmean[dat->nrad]; // descending grid
-  for (int ii = 0; ii < dat->nrad; ii++) {
-    rmean[dat->nrad - ii - 1] = 0.5 * (dat->rlo[ii] + dat->rhi[ii]);
-  }
-  emisProfile *emisCoarse = calc_emis_profile(rmean, dat->nrad, rel_param, status);
-  // invertArray(emisCoarse->re, emisCoarse->nr);
-  // invertArray(emisCoarse->emis, emisCoarse->nr);
-
-  emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, status);
-  emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, status);
-  interpolEmisProfile(emisRebin, emisCoarse, status);
-
-  if (*status == EXIT_SUCCESS) {
-
-    save_emisProfile("test_emisCoarse.dat", emisCoarse);
-    save_emisProfile("test_emisFineReference.dat", emisFineReference);
-    save_emisProfile("test_emisRebin.dat", emisRebin);
-
-    for (int ii = 20; ii < emisRebin->nr;
-         ii++) {  // last bin in coarse grid deviates, so skip, as it is not the interpolation
-      if (is_debug_run()) {
-        printf(" rad: %.3e :  %e (ref=%e, ratio=%e) \n",
-               emisRebin->re[ii], emisRebin->emis[ii], emisFineReference->emis[ii],
-               emisRebin->emis[ii] / emisFineReference->emis[ii]);
-      }
-      assert(fabs(emisRebin->emis[ii] / emisFineReference->emis[ii] - 1) < precRebinCoarse);
-    }
-
-  }
-
-  print_relxill_test_result(*status);
-
-}
 
 
 
