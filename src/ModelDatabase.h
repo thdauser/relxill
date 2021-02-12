@@ -95,6 +95,22 @@ class ModelDatabase {
     }
   }
 
+  ModelName model_name(const std::string& model_string){
+
+    auto models = lmodel_database.all_models();
+
+    auto ptr_model =  std::find_if(std::begin(models), std::end(models),
+                                   [model_string](const auto& vt){
+                                     return vt.second.name()==model_string;
+                                   });
+
+    if (std::end(models) != ptr_model){
+      return ptr_model->first;
+    } else {
+      throw ModelNotFound("failed to find model corresponding to string \"" +  model_string + "\"");
+    }
+
+  }
 
 
  private:

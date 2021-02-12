@@ -41,28 +41,6 @@ void default_eval_local_model(ModelName model_name){
 }
 
 
-ModelName find_name_string_in_xspec_database(const XspecModelDatabase& database, const std::string& model_string){
-
-  auto models = database.all_models();
-
-  for (auto & model : models){
-    if (model.second.name()==model_string){
-      return model.first;
-    }
-
-  }
-  throw ModelEvalFailed("failed to find a model with this name");
-}
-
-
-ModelName get_model_name_from_string(const std::string& model_string){
-
-  XspecModelDatabase database{};
-  std::cout << "  evaluating model: " << model_string << std::endl;
-  return find_name_string_in_xspec_database(database, model_string);
-
-}
-
 int main(int argc, char *argv[]) {
 
     if (argc != 2)  {
@@ -75,7 +53,7 @@ int main(int argc, char *argv[]) {
 
     } else {
 
-      ModelName model_name = get_model_name_from_string(std::string(argv[1]) );
+      ModelName model_name = ModelDatabase::instance().model_name(std::string(argv[1]));
       default_eval_local_model(model_name);
 
     }

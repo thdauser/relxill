@@ -28,18 +28,7 @@ extern "C" {
 
 
 
-void default_eval_local_model(ModelName model_name){
-
-  DefaultSpec default_spec{};
-  LocalModel local_model(model_name);
-
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
-  local_model.eval_model(spec);
-
-}
-
-
-void eval_local_model_paramrange(ModelName model_name, XPar param, double pmin, double pmax, int npar){
+void eval_local_model_param_range(ModelName model_name, XPar param, double pmin, double pmax, int npar){
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -56,38 +45,15 @@ void eval_local_model_paramrange(ModelName model_name, XPar param, double pmin, 
 }
 
 
-
-ModelName find_name_string_in_xspec_database(const XspecModelDatabase& database, const std::string& model_string){
-
-  auto models = database.all_models();
-
-  for (auto & model : models){
-    if (model.second.name()==model_string){
-      return model.first;
-    }
-
-  }
-  throw ModelEvalFailed("failed to find a model with this name");
-}
-
-
-ModelName get_model_name_from_string(const std::string& model_string){
-
-  XspecModelDatabase database{};
-  std::cout << "  evaluating model: " << model_string << std::endl;
-  return find_name_string_in_xspec_database(database, model_string);
-
-}
-
 void eval_model_relat_param_changes(ModelName model_name, const int num_evaluations){
   XPar rel_param = XPar::a;
-  eval_local_model_paramrange(model_name, rel_param, 0.5, 0.998, num_evaluations);
+  eval_local_model_param_range(model_name, rel_param, 0.5, 0.998, num_evaluations);
 }
 
 void eval_model_xillver_param_changes(ModelName model_name, const int num_evaluations){
   XPar rel_param = XPar::logxi;
   // only choose a small difference here such that the table does not need to be re-loaded
-  eval_local_model_paramrange(model_name, rel_param, 3.1, 3.2, num_evaluations);
+  eval_local_model_param_range(model_name, rel_param, 3.1, 3.2, num_evaluations);
 }
 
 
@@ -103,9 +69,9 @@ int main(int argc, char *argv[]) {
 
     const int num_zones = 50;
     setenv("RELXILL_NUM_RZONES", std::to_string(num_zones).c_str(), 1);
-    printf(" testing for number of zones %i \n",num_zones);
+    printf(" testing %s for number of zones %i \n",argv[1], num_zones);
 
-    ModelName model_name = get_model_name_from_string(std::string(argv[1]));
+    ModelName model_name = ModelDatabase::instance().model_name(std::string(argv[1]));
 
     auto tstart = std::chrono::steady_clock::now();
 
