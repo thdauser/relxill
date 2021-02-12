@@ -96,7 +96,31 @@ double calc_norm_factor_primary_spectrum(double height, double a, double gamma, 
   return f_inf / 0.5 * pow(g_inf, gamma);
 }
 
+
+/**
+ *
+ * @param emis_prof (required to be descending in radius)
+ * @param emis_prof_tab (required to be ascending in radius
+ * @param status
+ *
+ * @detail function "invert_emis_profile" can be used to convert
+ */
 void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status) {
+
+  if (is_emis_grid_ascending(emis_prof)==1){
+    RELXILL_ERROR("rebinning emissivity profile failed (require output radial grid of emissivity to be descending with radius",
+                  status);
+    assert(emis_prof->re[0]>emis_prof->re[1]);
+    return;
+  }
+
+  if (is_emis_grid_ascending(emis_prof_tab)==0){
+    RELXILL_ERROR("rebinning emissivity profile failed (require input emissivity to be ASCENDING with radius",
+                  status);
+    assert(emis_prof_tab->re[1]>emis_prof_tab->re[0]);
+    return;
+  }
+
 
   double* re = emis_prof->re;
   int nr = emis_prof->nr;
@@ -110,7 +134,7 @@ void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile*
   // get the extent of the disk (indices are defined such that tab->r[ind] <= r < tab->r[ind+1]
   int ind_rmin = binary_search(re_tab, nr_tab, re[ nr - 1]);
 
-  assert(ind_rmin > 0);
+  assert(ind_rmin >= 0);
   assert(ind_rmin < nr_tab - 1);
   int kk = ind_rmin;
   for (int ii = nr - 1; ii >= 0; ii--) {
@@ -135,6 +159,16 @@ void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile*
     emis_prof->emis[ii] = interp_log_1d(inter_r, emis_prof_tab->emis[kk], emis_prof_tab->emis[kk + 1]);
     emis_prof->del_emit[ii] = interp_lin_1d(inter_r, emis_prof_tab->del_emit[kk], emis_prof_tab->del_emit[kk + 1]);
     emis_prof->del_inc[ii] = interp_lin_1d(inter_r, emis_prof_tab->del_inc[kk], emis_prof_tab->del_inc[kk + 1]);
+  }
+}
+
+
+
+int is_emis_grid_ascending(const emisProfile* emis){
+  if (emis->re[0]<emis->re[emis->nr-1]){
+    return 1;
+  } else {
+    return 0;
   }
 }
 

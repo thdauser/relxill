@@ -240,12 +240,21 @@ static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rou
 }
 
 
+static void add_returnrad_emis(const relParam* param, RelSysPar *sysPar) {
+
+  for (int ii=0; ii < sysPar->nr; ii++){
+    if (param->return_rad > 0 ) {
+      sysPar->emis->emis[ii] += abs(param->return_rad) * sysPar->emisReturn->emis[ii];
+    } else {
+      sysPar->emis->emis[ii] = abs(param->return_rad) * sysPar->emisReturn->emis[ii];
+    }
+  }
+}
+
 /**  calculate all relativistic system parameters, including interpolation
  *   of the rel-table, and the emissivity; caching is implemented
  *   Input: relParam* param   Output: relSysPar* system_parameter_struct
  */
-
-/* function to get the system parameters */
 static RelSysPar *calculate_system_parameters(relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -261,18 +270,13 @@ static RelSysPar *calculate_system_parameters(relParam *param, int *status) {
     sysPar->limb_law = param->limb;
   }
 
-
   // get emissivity profile
   sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
 
-#ifdef RRAD
-  if (param->return_rad == 1) {
-    sysPar->emisReturn = get_rrad_emis_corona(sysPar->re, sysPar->nr, param, status);
-    for (int ii=0; ii < sysPar->nr; ii++){
-      sysPar->emis->emis[ii] += sysPar->emisReturn->emis[ii];
-    }
+  if (param->return_rad > 1e-6) {
+    sysPar->emisReturn = get_rrad_emis_corona(sysPar->emis, param, status);
+    add_returnrad_emis(param, sysPar);
   }
-#endif
 
   if (*status != EXIT_SUCCESS) {
     RELXILL_ERROR("failed to calculate the system parameters", status);
