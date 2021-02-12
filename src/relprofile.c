@@ -273,10 +273,10 @@ static RelSysPar *calculate_system_parameters(relParam *param, int *status) {
   // get emissivity profile
   sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
 
-  if (param->return_rad > 1e-6) {
-    sysPar->emisReturn = get_rrad_emis_corona(sysPar->emis, param, status);
-    add_returnrad_emis(param, sysPar);
-  }
+//  if (param->return_rad > 1e-6) {
+//    sysPar->emisReturn = get_rrad_emis_corona(sysPar->emis, param, status);
+//    add_returnrad_emis(param, sysPar);
+//  }
 
   if (*status != EXIT_SUCCESS) {
     RELXILL_ERROR("failed to calculate the system parameters", status);
