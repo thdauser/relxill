@@ -60,5 +60,6 @@ void free_emisProfile(emisProfile *emis_profile);
 extPrimSource *new_extendedPrimarySource(int nh, int *status);
 void free_extendedPrimarySource(extPrimSource *source);
 
+int is_emis_grid_ascending(const emisProfile* emis);
 
 #endif /* RELLP_H_ */
