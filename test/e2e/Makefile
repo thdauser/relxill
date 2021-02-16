@@ -11,4 +11,4 @@ test-stable:
 
 
 test-verbose:
-	isis test_driver.sl -DVERBOSE
+	isis -DVERBOSE test_driver.sl
