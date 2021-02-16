@@ -612,6 +612,7 @@ rel_spec *relbase_multizone(double *ener,
 
   // initialize parameter values (has an internal cache)
   RelSysPar *sysPar = get_system_parameters(param, status);
+  CHECK_STATUS_RET(*status, NULL);
   assert(sysPar != NULL);
 
   if (is_relbase_cached(ca_info) == 0) {
