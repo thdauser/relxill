@@ -89,11 +89,11 @@ test-unit:
 	bin/tests
 
 test-e2e:
-	cd test/e2e && make test
+	cd test && make test
 
 test-stable:
 	make model-stable
-	cd test/e2e && make test-stable
+	cd test && make test-stable
 
 
 clean:

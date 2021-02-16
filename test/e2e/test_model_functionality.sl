@@ -22,7 +22,7 @@ if (length(__argv)>1){
 
 %% assumes the model is set up at 
 require("isisscripts");
-require("test_setup.sl");
+require("load_test_setup.sl");
 require("subs_fitfunctions.sl");
 
 
@@ -1061,7 +1061,7 @@ define check_xilltab_implementation_single(ff,tabname){ %{{{
    %% valr *=  sum(val1) / sum(valr);
 
    %% doing this instead 
-   variable refdat = fits_read_table(sprintf("%s/refdat_%s.fits",XILLVER_REFDATA_DIR,ff));
+   variable refdat = fits_read_table(sprintf("%s/refdat_%s.fits","tests/refdata_xillverTable",ff));
    variable lo0 = refdat.lo;
    variable hi0 = refdat.hi;
    variable valr = refdat.val;
