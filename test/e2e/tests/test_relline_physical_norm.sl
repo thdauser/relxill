@@ -1,5 +1,7 @@
 require("load_test_setup.sl", "Global");
 
+load_relxill_model_devel(modlib);
+
 variable msg_log = "\n";
 
 define runtest(ffs){
@@ -39,6 +41,8 @@ define runtest(ffs){
       variable prec = 1e-5;
       variable env0_changes_default = abs(sum(val_notset) - sum(val_set0)) > prec;
       variable env1_changes_default = abs(sum(val_notset) - sum(val_set1)) > prec;
+
+      putenv("RELLINE_PHYSICAL_NORM");
             
       variable status = EXIT_SUCCESS;
       
@@ -71,7 +75,6 @@ define runtest(ffs){
 	 return EXIT_FAILURE;
       }
    }
-   putenv("RELLINE_PHYSICAL_NORM");
 
    return EXIT_SUCCESS;
 }
