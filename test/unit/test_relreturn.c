@@ -611,27 +611,6 @@ void save_emisProfile(char *fname, emisProfile *emis) {
 }
 
 
-/* ******* test_coronaRet ******** */
-
-static void set_std_param_relxilllpRet(double *inp_par) {
-  inp_par[0] = 3;   // height
-  inp_par[1] = 0.998; // a
-  inp_par[2] = 60.0;  // incl
-  inp_par[3] = -1.0;  // rin
-  inp_par[4] = 1000.;  // rout
-  inp_par[5] = 0.0;    // redshift
-  inp_par[6] = 2.1;   // pl Index
-  inp_par[7] = 0.0;   // logxi
-  inp_par[8] = 1.0;   // Afe
-  inp_par[9] = 300.0; // Ecut
-  inp_par[10] = 3.0;   // refl_frac
-  inp_par[11] = 0.0;   // fixReflFrac
-  inp_par[12] = 1;
-}
-
-
-
-
 static void returnEmisProfileLoaded(int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -651,28 +630,6 @@ static void returnEmisProfileLoaded(int *status) {
 
 }
 
-
-static void evalLmodRelxilllpRet(int *status) {
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-  enum { n_param = NUM_PARAM_RELXILLLPRET };
-  double inp_par[n_param];
-  set_std_param_relxilllpRet(inp_par);
-  CHECK_STATUS_VOID(*status);
-
-  Spectrum *spec = getNewSpec(0.1, 100, 1000, status);
-  CHECK_RELXILL_DEFAULT_ERROR(status);
-
-  tdrelxilllpret(spec->ener, spec->nbins, spec->flux, inp_par, n_param, status);
-  CHECK_RELXILL_DEFAULT_ERROR(status);
-
-  fits_write_spec("!testrr-spec-relxilllpret.fits", spec->ener, spec->flux, spec->nbins, status);
-
-  print_relxill_test_result(*status);
-
-}
 
 
 //  ======= MAIN ========   //
