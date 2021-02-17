@@ -29,6 +29,12 @@ define check_line_ener(ff){ %{{{
    
    variable val_reb = rebin(lo,hi,lo1,hi1,val1);
    
+   if (not qualifier_exists("nopl")){
+      hplot(lo,hi,val0);
+      ohplot(lo,hi,val_reb);
+      sleep(5);      
+   }
+   
    variable i_en = where(2.0<lo<6.0);
    variable gn = goodness(val0[i_en],val_reb[i_en]);
    msg_log += sprintf("    -> %s goodness value: %.3e\n", ff, gn);
@@ -76,11 +82,11 @@ define runtest(ffs){
       
       if(is_line_model(ff)){
 	 
-	 if (check_line_ener(ff;nopl) > goodness_lim*5){
+	 if (check_line_ener(ff) > goodness_lim*5){
 	    msg_log += sprintf(" *** error: there seems to be a problem with the LineE in %s \n",ff);
 	    return EXIT_FAILURE;
 	 }
-	 if (check_line_limb(ff;nopl) < goodness_lim*5){
+	 if (check_line_limb(ff) < goodness_lim*5){
 	    msg_log += sprintf(" *** error: there seems to be a problem with the Limb Brightening / Darkening  in %s \n",ff);
 	    return EXIT_FAILURE;
 	 }
