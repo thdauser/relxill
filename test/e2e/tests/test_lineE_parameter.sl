@@ -29,7 +29,7 @@ define check_line_ener(ff){ %{{{
    
    variable val_reb = rebin(lo,hi,lo1,hi1,val1);
    
-   if (not qualifier_exists("nopl")){
+   if (qualifier_exists("pl")){
       hplot(lo,hi,val0);
       ohplot(lo,hi,val_reb);
       sleep(5);      

@@ -32,11 +32,18 @@ define single_comparison(ff, ff_ref){
 }
 
 define runtest(ffs){
-      
-   variable status = EXIT_SUCCESS; 
+
+   variable status = EXIT_SUCCESS;
 
    variable ff = "rellinelpRet";
    variable ff_ref = "relline_lp";
+
+   if (not model_exists(ff,ffs)){
+      message(" ... skipping ");
+      return status;
+   }
+   
+
    
    if ( single_comparison(ff, ff_ref; return_radiation=0) > goodness_lim){
       msg_log += sprintf(" *** error: matching rrad line profile to standard profile\n");
