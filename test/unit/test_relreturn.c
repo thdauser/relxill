@@ -321,7 +321,7 @@ static void testTemperatureProfile(int* status){
   returningFractions* dat = NULL;
   for (int ii=0; ii<nspin; ii++){
     double Rin = kerr_rms(spin[ii]);
-    dat = get_rr_fractions(spin[ii], Rin, Rout, status);
+    dat = get_rrad_fractions(spin[ii], Rin, Rout, status);
 
     double* temperature = getTemperatureProfileDiskZones(dat, Rin, 1.0, status);
 

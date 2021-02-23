@@ -44,7 +44,7 @@ static int is_grid_consistent(const double* rlo, const double* rhi, int nrad){
   return 1;
 }
 
-static void test_table_radial_grid(returnFracData *dat) {
+static void test_table_radial_grid(tabulatedReturnFractions *dat) {
 
   REQUIRE(dat->nrad == RETURNRAD_TABLE_NR);
   REQUIRE(dat->ng == RETURNRAD_TABLE_NG);
@@ -55,7 +55,7 @@ static void test_table_radial_grid(returnFracData *dat) {
   REQUIRE(is_grid_consistent(dat->rlo, dat->rhi, dat->nrad)==1);
 }
 
-static int test_table_fracE_norm(const returnFracData *dat) {
+static int test_table_fracE_norm(const tabulatedReturnFractions *dat) {
 
   int status = EXIT_SUCCESS;
   double kSumfrac;
@@ -77,7 +77,7 @@ static int test_table_fracE_norm(const returnFracData *dat) {
   return status;
 }
 
-static int test_table_fracG_norm(const returnFracData *dat) {
+static int test_table_fracG_norm(const tabulatedReturnFractions *dat) {
 
   int status = EXIT_SUCCESS;
   double kSumfrac;
@@ -102,7 +102,7 @@ static int test_table_fracG_norm(const returnFracData *dat) {
 }
 
 
-static void test_table_fractions_normalization(returnFracData* dat){
+static void test_table_fractions_normalization(tabulatedReturnFractions* dat){
   REQUIRE(dat->frac_e[0][0]!= 0);
   REQUIRE(test_table_fracE_norm(dat) == EXIT_SUCCESS);
   REQUIRE(test_table_fracG_norm(dat) == EXIT_SUCCESS);
@@ -114,7 +114,7 @@ static void test_table_fractions_normalization(returnFracData* dat){
 TEST_CASE(" Returning Radiation Table ", "[table]") {
 
   int status = EXIT_SUCCESS;
-  returnTable *tab = get_returnRadTable(&status);
+  returnTable *tab = get_returnrad_table(&status);
   REQUIRE(tab != NULL);
   REQUIRE(status == EXIT_SUCCESS);
 
@@ -146,12 +146,12 @@ TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") 
   double Rout = 1000;
 
   double Rin = kerr_rms(spin);
-  returningFractions *dat = get_rr_fractions(spin, Rin, Rout, &status);
+  returningFractions *dat = get_rrad_fractions(spin, Rin, Rout, &status);
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rms = dat->nrad;
 
   Rin *= 2;
-  dat = get_rr_fractions(spin, Rin, Rout, &status);
+  dat = get_rrad_fractions(spin, Rin, Rout, &status);
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rfac2 = dat->nrad;
 
@@ -175,7 +175,7 @@ TEST_CASE(" Return Fraction interpolation for different spins", "[returnrad]") {
   for (int ii=0; ii<nspin; ii++){
 
     double Rin = kerr_rms(spin[ii]);
-    returningFractions *dat = get_rr_fractions(spin[ii], Rin, Rout, &status);
+    returningFractions *dat = get_rrad_fractions(spin[ii], Rin, Rout, &status);
 
     REQUIRE(status==EXIT_SUCCESS);
     REQUIRE(dat != nullptr);
@@ -212,7 +212,7 @@ TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
 
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
 
- returningFractions *dat = get_rr_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
+ returningFractions *dat = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
  invertArray(dat->rad, dat->nrad);
  emisProfile *emisCoarse = calc_emis_profile(dat->rad, dat->nrad, rel_param, &status);
  invert_emis_profile(emisCoarse);
@@ -275,6 +275,26 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
   CHECK_THAT(calcSum(abs_diff_profiles, rel_profile->n_ener),
               ! Catch::Matchers::WithinAbs(0.0, 1e-2)
               );
+
+}
+
+
+// ------- //
+TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
+
+  int status = EXIT_SUCCESS;
+  double spin1 = 0.998;
+  double spin2 = 0.997;
+  double rout = 1000;
+
+  returningFractions *ret_fractions1 = get_rrad_fractions(spin1, kerr_rms(spin1), rout, &status);
+  returningFractions *ret_fractions2 = get_rrad_fractions(spin2, kerr_rms(spin2), rout, &status);
+
+
+  REQUIRE(ret_fractions1!=NULL);
+  REQUIRE(status == EXIT_SUCCESS);
+
+
 
 
 }

@@ -49,14 +49,14 @@ typedef struct {
   double *f_inf;
   double *f_bh;
 
-} returnFracData;
+} tabulatedReturnFractions;
 
 typedef struct {
 
   double *spin;
   int nspin;
 
-  returnFracData **retFrac;
+  tabulatedReturnFractions **retFrac;
 
 } returnTable;
 
@@ -75,22 +75,26 @@ typedef struct {
    * now the new rlo, rhi and therefore rlo = tabData->rlo[irad] (except for Rin and Rout bin)*/
   int *irad;
 
-  /*  2d array of fractions, first dimension is r_i, second is r_e */
+  /*  2d array of fractions, first dimension is r_incident, second is r_emitted */
   double **frac_i;  //
 
+  double *f_ret; // fraction of returning photons  [dimension r_incident]
+  double *f_inf; // fraction of photons reaching the observed [dimension r_incident]
+
   /* everything we do not interpolate we directly take from the table */
-  returnFracData *tabData;
+  tabulatedReturnFractions *tabData;
 
 } returningFractions;
 
 
 /* Routines */
 
-returnTable *get_returnRadTable(int *status);
+returnTable *get_returnrad_table(int *status);
 
 void free_2d(double ***vals, int n1);
 void free_cached_returnTable(void);
+void free_returningFractions(returningFractions **dat);
 
-returningFractions *get_rr_fractions(double spin, double rin, double rout, int *status);
+returningFractions *get_rrad_fractions(double spin, double rin, double rout, int *status);
 
 #endif /* RELRETURN_TABLE_H_ */

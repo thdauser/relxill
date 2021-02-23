@@ -56,7 +56,7 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
   CHECK_STATUS_RET(*status, NULL);
 
   // 1 - get the fractions from the table (plus interpolation to current parameters)
-  returningFractions *dat = get_rr_fractions(spin, Rin, Rout, status);
+  returningFractions *dat = get_rrad_fractions(spin, Rin, Rout, status);
 
   // 2 - temperature profile of the whole disk
   double *temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
@@ -299,7 +299,7 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
 
   CHECK_STATUS_VOID(*status);
 
-  returningFractions *dat = get_rr_fractions(spin, -1, RMAX_RELRET, status);
+  returningFractions *dat = get_rrad_fractions(spin, -1, RMAX_RELRET, status);
 
   double *temperature =
       get_tprofile(dat->rlo, dat->rhi, dat->nrad, 0.5 * (dat->rlo[0] + dat->rhi[0]), Tin, TPROFILE_DISKBB, status);

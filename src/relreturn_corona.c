@@ -28,11 +28,14 @@
  * @param ret_fractions
  * @param emis_input
  * @param gamma
- * @param irad
- * @return
+ * @param status
+ * @return emisProfile
+ * @details calculate the emissivity profile for each radius (i_rad_incident), by integrating over the emitted flux
+ * from radial zones that will hit this radius (i_rad_emitted). Additionally, for each zone the energy shift has to
+ * be taken into account.
  */
 
-static double calc_rrad_emis_corona_singleZone(const returningFractions *ret_fractions, const emisProfile* emis_input, double gamma, int irad) {
+static emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, const emisProfile* emis_input, double gamma, int* status) {
 
 
   int ng = ret_fractions->tabData->ng;
@@ -44,22 +47,34 @@ static double calc_rrad_emis_corona_singleZone(const returningFractions *ret_fra
   assert(emis_input->nr == ret_fractions->nrad);
   assert(emis_input->re[0] < emis_input->re[1]);
 
-  double emis_r[nrad];
+  double emis_single_zone[nrad];
   double gfac[ng];
 
-  for (int ii = 0; ii < nrad; ii++) {
-    get_gfac_grid(gfac, ret_fractions->tabData->gmin[irad][ii], ret_fractions->tabData->gmax[irad][ii], ng);
+  emisProfile* emis_return = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emisReturn
 
-    emis_r[ii] = 0.0;
-    for (int jj = 0; jj < ng; jj++) {
-      emis_r[ii] += pow(gfac[jj], gamma) * ret_fractions->tabData->frac_g[irad][ii][jj];
+
+  for (int i_rad_incident = 0; i_rad_incident < nrad; i_rad_incident++) {
+
+    for (int i_rad_emitted = 0; i_rad_emitted < nrad; i_rad_emitted++) {
+      get_gfac_grid(gfac, ret_fractions->tabData->gmin[i_rad_incident][i_rad_emitted], ret_fractions->tabData->gmax[i_rad_incident][i_rad_emitted], ng);
+
+      emis_single_zone[i_rad_emitted] = 0.0;
+      for (int jj = 0; jj < ng; jj++) {
+        emis_single_zone[i_rad_emitted] += pow(gfac[jj], gamma) * ret_fractions->tabData->frac_g[i_rad_incident][i_rad_emitted][jj];
+      }
+
+      emis_single_zone[i_rad_emitted] *=
+          ret_fractions->frac_i[i_rad_incident][i_rad_emitted]
+              * emis_input->emis[i_rad_emitted]
+              * ret_fractions->tabData->f_ret[i_rad_emitted];
     }
 
-    // TODO:: f_ret needs to be interpolated for spin
-    emis_r[ii] *= ret_fractions->frac_i[irad][ii] * emis_input->emis[ii] * ret_fractions->tabData->f_ret[ii];
+    emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);
+
   }
 
-  return calcSum(emis_r, nrad);
+
+  return emis_return;
 }
 
 /**
@@ -86,31 +101,28 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
  * @detail Caveat: The radial grid for the relline profile, which is typically used for the emissivity
  * profile, is defined with the radius DESCENDING
  */
-emisProfile *get_rrad_emis_corona(const emisProfile* emisInput, const relParam* param, int *status) {
+emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam* param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-
   double rlo_emis, rhi_emis;
-  determine_rlo_rhi(emisInput, &rlo_emis, &rhi_emis);
+  determine_rlo_rhi(emis_input, &rlo_emis, &rhi_emis);
 
-  returningFractions *fractions = get_rr_fractions(param->a, rlo_emis, rhi_emis, status);
+  returningFractions *ret_fractions = get_rrad_fractions(param->a, rlo_emis, rhi_emis, status);
 
-  emisProfile* emis_input_rebinned = new_emisProfile(fractions->rad, fractions->nrad, status); // fractions->rad is not owned by emisReturn
-  inv_rebin_mean(emisInput->re,emisInput->emis, emisInput->nr,
+  emisProfile* emis_input_rebinned = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emis_return
+  inv_rebin_mean(emis_input->re, emis_input->emis, emis_input->nr,
                  emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
 
-  emisProfile* emisReturn = new_emisProfile(fractions->rad, fractions->nrad, status); // fractions->rad is not owned by emisReturn
-  for (int irad = 0; irad < fractions->nrad; irad++) {
-    emisReturn->emis[irad] = calc_rrad_emis_corona_singleZone(fractions, emis_input_rebinned, param->gamma, irad);
-  }
+  emisProfile* emis_return = calc_rrad_emis_corona(ret_fractions, emis_input_rebinned, param->gamma, status);
+  CHECK_STATUS_RET(*status, NULL);
 
+  emisProfile *emis_return_rebinned = new_emisProfile(emis_input->re, emis_input->nr, status);
+  rebin_emisprofile_on_radial_grid(emis_return_rebinned, emis_return, status);
 
-  emisProfile *emisReturnRebinned = new_emisProfile(emisInput->re, emisInput->nr, status);
-  rebin_emisprofile_on_radial_grid(emisReturnRebinned, emisReturn, status);
+  free_emisProfile(emis_return);
+  free_returningFractions(&ret_fractions);
 
-  free_emisProfile(emisReturn);
-
-  return emisReturnRebinned;
+  return emis_return_rebinned;
 }
 

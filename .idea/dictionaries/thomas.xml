@@ -4,16 +4,19 @@
       <w>anynul</w>
       <w>cfitsio</w>
       <w>colnum</w>
+      <w>emis</w>
       <w>extver</w>
       <w>gitignore</w>
       <w>nrad</w>
       <w>nspin</w>
       <w>nullval</w>
       <w>prec</w>
+      <w>rebinned</w>
       <w>relline</w>
       <w>reltable</w>
       <w>retval</w>
       <w>rmean</w>
+      <w>rrad</w>
       <w>xilltable</w>
       <w>xillver</w>
       <w>xspec</w>
