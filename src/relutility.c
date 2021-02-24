@@ -842,7 +842,7 @@ void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int 
 
   int in = nn - 1; // traverse new array backwards
   int ii;
-  for (ii = 0; ii < n0 - 2; ii++) {  // only go to the second to last bin
+  for (ii = 0; ii < n0 - 1; ii++) {  // only go to the second to last bin
 
     if (x0[ii] > xn[in] && x0[ii + 1] <= xn[in]) {
 
