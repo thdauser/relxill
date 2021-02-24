@@ -66,7 +66,7 @@ static emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fraction
       emis_single_zone[i_rad_emitted] *=
           ret_fractions->frac_i[i_rad_incident][i_rad_emitted]
               * emis_input->emis[i_rad_emitted]
-              * ret_fractions->tabData->f_ret[i_rad_emitted];
+              * ret_fractions->tabData->f_ret[ret_fractions->irad[i_rad_emitted]];
     }
 
     emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);

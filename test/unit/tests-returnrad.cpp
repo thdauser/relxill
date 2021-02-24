@@ -17,9 +17,9 @@
 */
 
 #include "catch2/catch_amalgamated.hpp"
-//#include "LocalModel.h"
-//#include "XspecSpectrum.h"
-//#include "common-functions.h"
+#include "LocalModel.h"
+#include "XspecSpectrum.h"
+#include "common-functions.h"
 extern "C" {
 #include "relreturn.h"
 #include "relutility.h"
@@ -161,28 +161,6 @@ TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") 
 
 
 
-// ------- //
-TEST_CASE(" Return Fraction interpolation for different spins", "[returnrad]") {
-
-  int status = EXIT_SUCCESS;
-
-  int nspin = 2;
-  double spin[] = { 0.86,0.861 };
-
-  double Rout = 1000;
-
-  INFO(" this test is missing any useful actions \n");
-  for (int ii=0; ii<nspin; ii++){
-
-    double Rin = kerr_rms(spin[ii]);
-    returningFractions *dat = get_rrad_fractions(spin[ii], Rin, Rout, &status);
-
-    REQUIRE(status==EXIT_SUCCESS);
-    REQUIRE(dat != nullptr);
-
-  }
-
-}
 
 static void invert_emis_profile(emisProfile* emis){
   invertArray(emis->re, emis->nr);
@@ -283,18 +261,42 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
 
   int status = EXIT_SUCCESS;
-  double spin1 = 0.998;
-  double spin2 = 0.997;
+  double spin = 0.99;
+  double rin = kerr_rms(spin);
+  double rin_grid = rin*1.001;
   double rout = 1000;
 
-  returningFractions *ret_fractions1 = get_rrad_fractions(spin1, kerr_rms(spin1), rout, &status);
-  returningFractions *ret_fractions2 = get_rrad_fractions(spin2, kerr_rms(spin2), rout, &status);
+  returningFractions *rf0 = get_rrad_fractions(spin, rin , rout, &status);
+  returningFractions *rf_grid = get_rrad_fractions(spin, rin_grid , rout, &status);
+
+  REQUIRE(rf0!=NULL);
+  REQUIRE(rf_grid!=NULL);
+
+  INFO("changing Rin slightly has to reduce the returning incident fraction onto the next zone ");
+  REQUIRE(abs(rf_grid->frac_i[1][0] - rf0->frac_i[1][0]) > 1e-8); // frac_i[ind_ri][ind_re]
+
+  INFO("but not change for any other emitting radius");
+  REQUIRE(abs(rf_grid->frac_i[1][1] - rf0->frac_i[1][1]) < 1e-8);
+
+}
 
 
-  REQUIRE(ret_fractions1!=NULL);
-  REQUIRE(status == EXIT_SUCCESS);
+// ------- //
+TEST_CASE(" Changing Rin Returning Radiation Fractions", "[returnrad-s]") {
 
+  double spin = 0.998;
+  double rin_scaled = kerr_rms(0.99);
 
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
+  LocalModel local_model{ModelName::rellinelpRet};
+  local_model.set_par(XPar::a, spin);
+  local_model.set_par(XPar::return_rad, -1.0);
+
+  local_model.set_par(XPar::rin, rin_scaled*0.99);
+  local_model.eval_model(spec);
+
+  REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
 
 }

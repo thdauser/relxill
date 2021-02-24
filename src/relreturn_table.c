@@ -450,26 +450,28 @@ static void allocate_radial_grid(returningFractions *ipol, double Rin, double Ro
   ipol->rad = (double *) malloc(nrad_trim * sizeof(double));
   CHECK_MALLOC_VOID_STATUS(ipol->rad, status)
 
-  ipol->proper_area_ring = (double *) malloc(nrad_trim * sizeof(double));
-  CHECK_MALLOC_VOID_STATUS(ipol->rad, status)
+  ipol->proper_area_ring = NULL;
 
   for (int ii = 0; ii < nrad_trim; ii++) {
     ipol->rlo[ii] = ipol->tabData->rlo[ipol->irad[ii]];
     ipol->rhi[ii] = ipol->tabData->rhi[ipol->irad[ii]];
-
-    ipol->rad[ii] = 0.5*(ipol->tabData->rlo[ipol->irad[ii]] + ipol->tabData->rhi[ipol->irad[ii]]);
-
-
   }
+
 
   assert(Rin >= ipol->rlo[0]-1e-4); // TODO: make this limit stronger with a better table
 
   // reset lowest bin to Rin
   ipol->rlo[0] = Rin;
   ipol->rhi[nrad_trim] = Rout;
+
   for (int ii = 0; ii < nrad_trim; ii++) {
-    ipol->proper_area_ring[ii] = calc_proper_area_ring(ipol->rlo[ii],ipol->rhi[ii], ipol->a);
+    ipol->rad[ii] = 0.5*(ipol->rlo[ii] + ipol->rhi[ii]);
   }
+
+
+//  for (int ii = 0; ii < nrad_trim; ii++) {
+//    ipol->proper_area_ring[ii] = calc_proper_area_ring(ipol->rlo[ii],ipol->rhi[ii], ipol->a);
+//  }
 
 }
 
@@ -514,17 +516,6 @@ void free_returningFractions(returningFractions **dat) {
 
 }
 
-double *get_area_ring(double *rlo, double *rhi, int n, double spin, int *status) {
-
-  double *area_ring = (double *) malloc(n * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(area_ring, status, NULL)
-  for (int ii = 0; ii < n; ii++) {
-    area_ring[ii] = calc_proper_area_ring(rlo[ii], rhi[ii], spin);
-  }
-
-  return area_ring;
-}
-
 
 static double **trim_fraci_to_radial_grid(double** tab_fraci, const int* ind_arr, int n, int *status) {
 
@@ -546,7 +537,8 @@ static double **trim_fraci_to_radial_grid(double** tab_fraci, const int* ind_arr
 
 static double get_area_correction_factor(int index_radius, returningFractions* ret_fractions){
   double rlo_table = ret_fractions->tabData->rlo[ret_fractions->irad[index_radius]];
-  if (index_radius==0 && rlo_table>kerr_rms(ret_fractions->a)){
+
+  if (ret_fractions->irad[index_radius]==0 && rlo_table>kerr_rms(ret_fractions->a)){ //TODO: will beremoved with dated table
     printf(" *** warning: resetting rlo to the ISCO at %f  (was %f before)\n",
            kerr_rms(ret_fractions->a), rlo_table);
     rlo_table = kerr_rms(ret_fractions->a);
@@ -582,56 +574,18 @@ static double** get_interpolated_fraci(returningFractions *ret_fractions, int *s
 
 
   if (global_rr_do_interpolation) {
-    // correction of emitted photons with respect to the smaller area
-    for (int i_rad_incident = 0; i_rad_incident < ret_fractions->nrad; i_rad_incident++) {
+    // correction of emitted photons with respect to the smaller area of emission
+    for (int i_rad_incident = i_rad_rin+1; i_rad_incident < i_rad_rout; i_rad_incident++) {
       frac_i[i_rad_incident][i_rad_rin] *= area_correction_rin;
+    }
+    for (int i_rad_incident = i_rad_rin; i_rad_incident < i_rad_rout-1; i_rad_incident++) {
       frac_i[i_rad_incident][i_rad_rout] *= area_correction_rout;
     }
+
   }
 
   return frac_i;
 }
-
-//static void interpol_fraci(returningFractions *ipol, double spin, const int *status) {
-//
-//  CHECK_STATUS_VOID(*status);
-//
-//  double spin_tab = ipol->tabData->a;
-//
-//  if(is_debug_run()){
-//    relxill_warning("Interpolation of the Return Radiation for different spins currently not implemented");
-//    printf("   for given a=%.4f, using tabulated values of atab=%.4f\n", spin, spin_tab);
-//  }
-//
-//  // make sure Rin is not below kerr_rms(atab) of the tabulated values
-//  // assert(ipol->rlo[0]-kerr_rms(spin_tab) > -1e-4);
-//
-//}
-
-//static returningFractions* interpolate_rrad_table(tabulatedReturnFractions *tab_fractions,
-//                                                  double spin, double Rin, double Rout, int *status) {
-//
-//  CHECK_STATUS_RET(*status, NULL);
-//
-//
-//  /* malloc and set table and spin value */
-//  returningFractions* interpolated_fractions = new_returningFractions(tab_fractions, spin, status);
-//
-//  /* set the radial grid plus indices and frac_i*/
-//  trim_fraci_to_radial_grid(interpolated_fractions, Rin, Rout, status);
-//
-//  /* adapt the values of frac_i to the new spin */
-//  if (global_rr_do_interpolation) {
-//    interpol_fraci(interpolated_fractions, spin, status);
-//
-//  }
-//
-//  return interpolated_fractions;
-//}
-
-
-// static void interp_frac(ifac_spin, * tab_spin_lo->, tab_spin_hi, )
-
 
 
 returningFractions *get_rrad_fractions(double spin, double rin, double rout, int *status) {
