@@ -19,6 +19,8 @@
 
 #include "relutility.h"
 #include "writeOutfiles.h"
+#include "relcache.h"
+#include "reltable.h"
 
 cnode *cache_syspar = NULL;
 

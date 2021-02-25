@@ -17,6 +17,7 @@
 */
 
 #include "relcache.h"
+#include "relbase.h"
 
 /** probably best move to "utils" **/
 inpar *set_input(double *ener, int n_ener, relParam *rel_par, xillParam *xill_par, int *status) {

@@ -19,6 +19,7 @@
 #define RELUTILITY_H_
 
 #include "xilltable.h"
+#include "common.h"
 
 
 /****** DEFINE FUNCTION DEFINITIONS ******/

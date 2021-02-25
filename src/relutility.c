@@ -18,6 +18,7 @@
 
 #include "relutility.h"
 
+#include "relbase.h"
 #include "writeOutfiles.h"
 
 /** linear interpolation in 1 dimension **/

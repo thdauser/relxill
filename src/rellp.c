@@ -408,7 +408,7 @@ static lpTable* get_lp_table(int* status){
  *  @synopsis: calculate the emissivity for broken power law defined
  *  by up to two indices
  **/
-static void get_emis_bkn(double *emis, const double *re, int nr,
+void get_emis_bkn(double *emis, const double *re, int nr,
                          double index1, double index2, double rbr) {
 
   double alpha;
