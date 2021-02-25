@@ -18,8 +18,6 @@
 #ifndef RELRETURN_TABLE_H_
 #define RELRETURN_TABLE_H_
 
-#include "relbase.h"
-#include "xilltable.h"
 #include "relutility.h"
 #include "relphysics.h"
 

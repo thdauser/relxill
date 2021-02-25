@@ -35,7 +35,7 @@
  * be taken into account.
  */
 
-static emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, const emisProfile* emis_input, double gamma, int* status) {
+emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, const emisProfile* emis_input, double gamma, int* status) {
 
 
   int ng = ret_fractions->tabData->ng;
@@ -54,13 +54,17 @@ static emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fraction
 
 
   for (int i_rad_incident = 0; i_rad_incident < nrad; i_rad_incident++) {
+    int itab_rad_incident = ret_fractions->irad[i_rad_incident];
 
     for (int i_rad_emitted = 0; i_rad_emitted < nrad; i_rad_emitted++) {
-      get_gfac_grid(gfac, ret_fractions->tabData->gmin[i_rad_incident][i_rad_emitted], ret_fractions->tabData->gmax[i_rad_incident][i_rad_emitted], ng);
+      int itab_rad_emitted = ret_fractions->irad[i_rad_emitted];
+
+      get_gfac_grid(gfac, ret_fractions->tabData->gmin[itab_rad_incident][itab_rad_emitted], ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
 
       emis_single_zone[i_rad_emitted] = 0.0;
       for (int jj = 0; jj < ng; jj++) {
-        emis_single_zone[i_rad_emitted] += pow(gfac[jj], gamma) * ret_fractions->tabData->frac_g[i_rad_incident][i_rad_emitted][jj];
+        emis_single_zone[i_rad_emitted] += pow(gfac[jj], gamma)
+            * ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj];
       }
 
       emis_single_zone[i_rad_emitted] *=
@@ -70,7 +74,6 @@ static emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fraction
     }
 
     emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);
-
   }
 
 
@@ -117,6 +120,13 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   emisProfile* emis_return = calc_rrad_emis_corona(ret_fractions, emis_input_rebinned, param->gamma, status);
   CHECK_STATUS_RET(*status, NULL);
 
+  if( shouldOutfilesBeWritten() ){
+    write_data_to_file("test_emis_profile_rrad_input.dat",
+                       emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr);
+    write_data_to_file("test_emis_profile_rrad_output.dat",
+                       ret_fractions->rad, emis_return->emis, emis_return->nr);
+  }
+  
   emisProfile *emis_return_rebinned = new_emisProfile(emis_input->re, emis_input->nr, status);
   rebin_emisprofile_on_radial_grid(emis_return_rebinned, emis_return, status);
 

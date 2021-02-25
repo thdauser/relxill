@@ -18,12 +18,12 @@
 
 #include "relreturn_table.h"
 
-
+#include "xilltable.h"
+#include "relbase.h"
 
 returnTable *cached_retTable = NULL;
 
 int global_rr_do_interpolation = 1;
-returningFractions *cached_returnFractions = NULL;
 
 /** create a new return table */
 static returnTable *new_returnTable(int *status) {
@@ -420,6 +420,8 @@ static void allocate_radial_grid(returningFractions *ipol, double Rin, double Ro
 
   if( fabs(Rout - ipol->tabData->rhi[ipol->tabData->nrad-1]) < 1e-6){
     khi_Rhi=ipol->tabData->nrad-1;
+  } else {
+    khi_Rhi++;
   }
 
   if(fabs(Rin-ipol->tabData->rlo[0]) < 1e-6){
@@ -462,7 +464,7 @@ static void allocate_radial_grid(returningFractions *ipol, double Rin, double Ro
 
   // reset lowest bin to Rin
   ipol->rlo[0] = Rin;
-  ipol->rhi[nrad_trim] = Rout;
+  ipol->rhi[nrad_trim-1] = Rout;
 
   for (int ii = 0; ii < nrad_trim; ii++) {
     ipol->rad[ii] = 0.5*(ipol->rlo[ii] + ipol->rhi[ii]);
@@ -569,15 +571,16 @@ static double** get_interpolated_fraci(returningFractions *ret_fractions, int *s
   double area_correction_rin = get_area_correction_factor(i_rad_rin, ret_fractions);
   double area_correction_rout = get_area_correction_factor(i_rad_rout, ret_fractions);
 
-  assert(area_correction_rin<=1.0);
-  assert(area_correction_rout<=1.0);
+  assert( area_correction_rin-1  <1e-6);
+  assert( area_correction_rout-1 <1e-6);
 
 
   if (global_rr_do_interpolation) {
-    // correction of emitted photons with respect to the smaller area of emission
-    for (int i_rad_incident = i_rad_rin+1; i_rad_incident < i_rad_rout; i_rad_incident++) {
+    // correction of frac_e by emitted photons with respect to the smaller area of emission at i_rad_in
+    for (int i_rad_incident = i_rad_rin; i_rad_incident < i_rad_rout; i_rad_incident++) {
       frac_i[i_rad_incident][i_rad_rin] *= area_correction_rin;
     }
+    // same for i_rad_out
     for (int i_rad_incident = i_rad_rin; i_rad_incident < i_rad_rout-1; i_rad_incident++) {
       frac_i[i_rad_incident][i_rad_rout] *= area_correction_rout;
     }

@@ -19,21 +19,12 @@
 #ifndef RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 #define RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 
-#include "relbase.h"
 #include "common.h"
 #include "relmodels.h"
-
-#define NUM_PARAM_RELXILLLPRET 13
-
-void interpol_emis_profile(emisProfile *emisReb, emisProfile *emis0, int *status);
+#include "relreturn_table.h"
 
 emisProfile *get_rrad_emis_corona(const emisProfile*, const relParam*, int* );
+emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, const emisProfile* emis_input, double gamma, int* status);
 
-void tdrelxilllpret(const double *ener0,
-                    int n_ener0,
-                    double *photar,
-                    const double *parameter,
-                    int n_parameter,
-                    int *status);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_CORONA_H_

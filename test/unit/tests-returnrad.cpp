@@ -25,6 +25,7 @@ extern "C" {
 #include "relutility.h"
 #include "test_relxill.h"
 #include "writeOutfiles.h"
+#include "rellp.h"
 }
 
 #include <vector>
@@ -150,10 +151,14 @@ TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") 
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rms = dat->nrad;
 
+  free_returningFractions(&dat);
+
   Rin *= 2;
   dat = get_rrad_fractions(spin, Rin, Rout, &status);
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rfac2 = dat->nrad;
+
+  free_returningFractions(&dat);
 
   REQUIRE(nrad_rms > nrad_rfac2);
 
@@ -258,7 +263,7 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 
 
 // ------- //
-TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
+TEST_CASE(" Increasing Rin has to reduce the flux at the next zone (in radius)", "[returnrad]") {
 
   int status = EXIT_SUCCESS;
   double spin = 0.99;
@@ -278,25 +283,97 @@ TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
   INFO("but not change for any other emitting radius");
   REQUIRE(abs(rf_grid->frac_i[1][1] - rf0->frac_i[1][1]) < 1e-8);
 
+
+}
+
+
+emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* status){
+
+  returningFractions *rf = get_rrad_fractions(spin,rin , rout, status);
+  double gamma = 2;
+
+  emisProfile* emis = new_emisProfile(rf->rad, rf->nrad, status);
+  get_emis_bkn(emis->emis, emis->re, emis->nr,3.0,3.0,emis->re[0]);
+  for (int ii=0; ii<rf->nrad; ii++){
+    emis->emis[ii] /= emis->emis[0]; //
+  }
+
+  emisProfile* emis_return = calc_rrad_emis_corona(rf, emis, gamma, status);
+
+  free_returningFractions(&rf);
+  free_emisProfile(emis);
+
+  return emis_return;
 }
 
 
 // ------- //
-TEST_CASE(" Changing Rin Returning Radiation Fractions", "[returnrad-s]") {
+TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
 
-  double spin = 0.998;
-  double rin_scaled = kerr_rms(0.99);
+  int status = EXIT_SUCCESS;
+  double spin = 0.995;
+  int ind_rad_test = 2;
+  double rout = 1000;
+
+  returningFractions *rf = get_rrad_fractions(spin, kerr_rms(spin) , rout, &status);
+  double rad_grid = rf->rad[ind_rad_test];
+
+  double rad_lo = rad_grid*0.99999;
+  double rad_hi  = rad_grid*1.00001;
+
+  emisProfile* emis_lo = get_test_emis_rrad(rad_lo, rout, spin, &status);
+  emisProfile* emis_0  = get_test_emis_rrad(rad_grid, rout, spin, &status);
+  emisProfile* emis_hi = get_test_emis_rrad(rad_hi, rout, spin, &status);
+
+  double sum_lo = calcSum(emis_lo->emis, emis_lo->nr);
+  double sum_0 = calcSum(emis_0->emis, emis_0->nr);
+  double sum_hi = calcSum(emis_hi->emis, emis_hi->nr);
+
+
+  REQUIRE(sum_0 > 0);
+  REQUIRE(sum_lo/sum_0 > 1.001);
+  REQUIRE(sum_0/sum_hi > 1.001);
+
+  // absolute difference for a tiny change around the grid-point less than 1%
+  REQUIRE(sum_lo - sum_0 < 0.01);
+  REQUIRE(sum_0  - sum_hi< 0.01);
+
+  // absolute difference for a tiny change around the grid-point less than 1%
+  REQUIRE(sum_lo/sum_0 < 1.01);
+  REQUIRE(sum_0/sum_hi < 1.01);
+
+  // fractional change in both direction of the grid point should be fairly similar
+  REQUIRE( abs( sum_lo/sum_0 - sum_0/sum_hi) < 1e-4 );
+
+}
+
+
+// ------- //
+TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad]") {
+
+  double spin = 0.995;
+  double rin_scaled = kerr_rms(0.99025);
+  double rin_scaled2 = kerr_rms(0.990);
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::rellinelpRet};
+  LocalModel local_model{ModelName::relxilllpRet};
   local_model.set_par(XPar::a, spin);
   local_model.set_par(XPar::return_rad, -1.0);
+  local_model.set_par(XPar::rout,1000.0);
 
-  local_model.set_par(XPar::rin, rin_scaled*0.99);
+
+  local_model.set_par(XPar::rin, rin_scaled);
   local_model.eval_model(spec);
 
-  REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
+  double sum1 = sum_flux(spec.flux(), spec.num_flux_bins());
+
+  local_model.set_par(XPar::rin, rin_scaled2);
+  local_model.eval_model(spec);
+  double sum2 = sum_flux(spec.flux(), spec.num_flux_bins());
+
+  REQUIRE( sum1 > 1e-6);
+  REQUIRE( abs(sum1-sum2) > 1e-3);
 
 }
