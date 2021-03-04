@@ -67,6 +67,7 @@ typedef struct {
   double lineE;
   double z;
   double height;
+  double d_offaxis;
   double htop;
   double gamma;
   double beta;

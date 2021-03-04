@@ -116,6 +116,7 @@ relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, Mod
   param->gamma = params[XPar::gamma];
   param->beta = params[XPar::beta];
   param->htop = params[XPar::htop];
+  param->d_offaxis = params[XPar::d_offaxis];
   param->limb = static_cast<int>(lround(params[XPar::limb]));
   param->return_rad = static_cast<int>(lround(params[XPar::return_rad]));
 
