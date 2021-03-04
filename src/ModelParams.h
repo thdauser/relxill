@@ -49,6 +49,7 @@ enum class XPar {
   refl_frac,
   h,
   htop,
+  d_offaxis,
   beta,
   return_rad,
   frac_pl_bb,

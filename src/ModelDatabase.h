@@ -124,6 +124,7 @@ class ModelDatabase {
   const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
       {ModelName::relline, ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw)},
       {ModelName::relline_lp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
+      {ModelName::rellinelpExt, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
 
       {ModelName::relconv_lp, ModelInfo(T_Model::Conv, T_Irrad::LampPost)},
       {ModelName::relconv, ModelInfo(T_Model::Conv, T_Irrad::BknPowerlaw)},

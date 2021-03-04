@@ -34,6 +34,7 @@ int convertModelType(ModelName name) {
     case ModelName::relline: return MOD_TYPE_RELLINE;
     case ModelName::relconv: return MOD_TYPE_RELCONV;
     case ModelName::relline_lp: return MOD_TYPE_RELLINELP;
+    case ModelName::rellinelpExt: return MOD_TYPE_RELLINELPEXT;
     case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
     case ModelName::relxill  : return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
