@@ -131,11 +131,13 @@ class ModelParams {
     try {
       m_param.at(name) = value;
     } catch (std::out_of_range &e){
+
       throw ParamInputException("parameter not found");
     }
   }
 
   auto &operator[](const XPar &name) const {
+    // TODO: proper error handling
     return m_param.at(name);
   }
 
@@ -161,6 +163,7 @@ class ModelParams {
       {XPar::kte, 100},
       {XPar::h, 3.0},
       {XPar::htop, 0.0},
+      {XPar::d_offaxis, 3.0},
       {XPar::beta, 0.0},
       {XPar::return_rad, 0.0},
       {XPar::frac_pl_bb, -1.0},
