@@ -293,6 +293,16 @@ cnode *check_cache_relpar(cache_info *ca_info, inpar *inp, cnode *node) {
   }
 }
 
+
+static int get_cache_maxsize(void){
+  if (shouldOutfilesBeWritten()){
+    return 1;
+  } else {
+    return CLI_NMAX;
+  }
+
+}
+
 cache_info *cli_check_cache(cnode *head,
                             inpar *inp,
                             cnode *(*check_cache)(cache_info *, inpar *, cnode *),
@@ -318,7 +328,7 @@ cache_info *cli_check_cache(cnode *head,
 
     // if we are above the maximal number of elements, delete the rest and break
     // (+) we need to set the cursor->next=NULL
-    if (next != NULL && c >= CLI_NMAX - 1) {
+    if (next != NULL && c >= get_cache_maxsize() - 1) {
       if (is_debug_run()) {
         printf(" DEBUG: Cached reached its limiting size of %i\n", CLI_NMAX);
       }
