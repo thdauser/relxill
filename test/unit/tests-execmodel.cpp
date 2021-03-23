@@ -141,3 +141,24 @@ TEST_CASE(" Execute single model with output writing ", "[output]") {
   require_file_exists("test_relline_profile.dat");
   require_file_exists("test_emis_profile.dat");
 }
+
+
+TEST_CASE(" Test setting input parameters outside the allowed range") {
+  DefaultSpec default_spec{};
+
+  LocalModel lmod(ModelName::relxilllp);
+
+  auto spec = default_spec.get_xspec_spectrum();
+
+
+  double height_below_horizon = 0.9;
+  lmod.set_par(XPar::h, height_below_horizon );
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+
+  // require a real
+  REQUIRE( sum_flux(spec.flux(),spec.num_flux_bins()) > 1e-8);
+
+}
+
+
