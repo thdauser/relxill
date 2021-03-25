@@ -26,6 +26,7 @@ extern "C" {
 #include "test_relxill.h"
 #include "writeOutfiles.h"
 #include "rellp.h"
+#include "relxill.h"
 }
 
 #include <vector>
@@ -373,7 +374,41 @@ TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad]"
   local_model.eval_model(spec);
   double sum2 = sum_flux(spec.flux(), spec.num_flux_bins());
 
-  REQUIRE( sum1 > 1e-6);
-  REQUIRE( abs(sum1-sum2) > 1e-3);
+  REQUIRE(sum1 > 1e-6);
+  REQUIRE(abs(sum1 - sum2) > 1e-3);
+
+}
+
+TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
+  //
+
+  int status = EXIT_SUCCESS;
+
+  LocalModel lmod{ModelName::relxilllpRet};
+  lmod.set_par(XPar::return_rad, 1);
+
+  lmod.set_par(XPar::logxi, 3.0);
+  double flux_corr1 = calc_return_rad_flux_correction(lmod.get_xill_params(), lmod.get_rel_params(), &status);
+  REQUIRE(flux_corr1 > 0.5);
+  REQUIRE(flux_corr1 < 1.0);
+
+  lmod.set_par(XPar::logxi, 0.0);
+  double flux_corr2 = calc_return_rad_flux_correction(lmod.get_xill_params(), lmod.get_rel_params(), &status);
+
+  REQUIRE(flux_corr1 > 2 * flux_corr2);  // for low to high ionization it has to be much larger
+
+}
+
+// ------- //
+TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  LocalModel local_model{ModelName::relxilllpRet};
+  local_model.set_par(XPar::return_rad, 1);
+  local_model.eval_model(spec);
+
+  /// STILL MISSING
 
 }
