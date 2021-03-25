@@ -105,6 +105,9 @@ class LocalModel {
 
   }
 
+  relParam *get_rel_params();
+  xillParam *get_xill_params();
+
  private:
   ModelName m_name;
   ModelParams m_model_params;
