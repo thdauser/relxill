@@ -77,13 +77,12 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
 
 
 /* function interpolating the rel table values for rin,rout,mu0,incl   */
-static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rout,
+static RelSysPar *interpol_relTable(double a, double incl, double rin, double rout,
                                     int *status) {
 
   // load tables
   if (ptr_rellineTable == NULL) {
     print_version_number();
-    CHECK_STATUS_RET(*status, NULL);
     read_relline_table(RELTABLE_FILENAME, &ptr_rellineTable, status);
     CHECK_STATUS_RET(*status, NULL);
   }
@@ -96,6 +95,7 @@ static RelSysPar *interpol_relTable(double a, double mu0, double rin, double rou
   assert(rout > rin);
   assert(rin >= rms);
 
+  double mu0 = cos(incl);
 
   /**************************************/
   /** 1 **  Interpolate in A-MU0 plane **/
@@ -246,9 +246,11 @@ static void add_returnrad_emis(const relParam* param, RelSysPar *sysPar) {
 
   for (int ii=0; ii < sysPar->nr; ii++){
     if (param->return_rad > 0 ) {
-      sysPar->emis->emis[ii] += abs(param->return_rad) * sysPar->emisReturn->emis[ii];
+      sysPar->emis->emis[ii] +=
+          abs(param->return_rad) * sysPar->emisReturn->emis[ii] * param->return_rad_flux_correction_factor;
     } else {
-      sysPar->emis->emis[ii] = abs(param->return_rad) * sysPar->emisReturn->emis[ii];
+      sysPar->emis->emis[ii] =
+          abs(param->return_rad) * sysPar->emisReturn->emis[ii] * param->return_rad_flux_correction_factor;
     }
   }
 }
@@ -257,36 +259,6 @@ static void add_returnrad_emis(const relParam* param, RelSysPar *sysPar) {
  *   of the rel-table, and the emissivity; caching is implemented
  *   Input: relParam* param   Output: relSysPar* system_parameter_struct
  */
-static RelSysPar *calculate_system_parameters(relParam *param, int *status) {
-
-  CHECK_STATUS_RET(*status, NULL);
-
-  // only re-do the interpolation if rmin,rmax,a,mu0 changed
-  // or if the cached parameters are NULL
-
-  double mu0 = cos(param->incl);
-  RelSysPar *sysPar = interpol_relTable(param->a, mu0, param->rin, param->rout, status);
-  CHECK_STATUS_RET(*status, NULL);
-
-  if (param->limb != 0) {
-    sysPar->limb_law = param->limb;
-  }
-
-  // get emissivity profile
-  sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
-
-  if (abs(param->return_rad) > 1e-6) {
-    sysPar->emisReturn = get_rrad_emis_corona(sysPar->emis, param, status);
-    add_returnrad_emis(param, sysPar);
-  }
-
-  if (*status != EXIT_SUCCESS) {
-    RELXILL_ERROR("failed to calculate the system parameters", status);
-  }
-
-  return sysPar;
-}
-
 RelSysPar *get_system_parameters(relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -306,7 +278,17 @@ RelSysPar *get_system_parameters(relParam *param, int *status) {
     }
   } else {
     // NOT CACHED, so we need to calculate the system parameters
-    sysPar = calculate_system_parameters(param, status);
+    sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status);
+    CHECK_STATUS_RET(*status, NULL);
+
+    sysPar->limb_law = param->limb;
+
+    // get emissivity profile
+    sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
+    if (abs(param->return_rad) > 1e-6) {
+      sysPar->emisReturn = get_rrad_emis_corona(sysPar->emis, param, status);
+      add_returnrad_emis(param, sysPar);
+    }
     CHECK_STATUS_RET(*status, NULL);
 
     // now add (i.e., prepend) the current calculation to the cache

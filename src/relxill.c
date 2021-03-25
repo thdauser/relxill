@@ -134,6 +134,51 @@ void get_xillver_angdep_spec(double *o_xill_flux,
 
 }
 
+/**
+ * @brief calculate the energy flux from a given bin-integrated photon flux (cts/bin), the standard unit to store
+ * all spectra in the relxill code
+ **/
+static double get_energy_flux(const double *ener, const double *photon_flux, int n_ener) {
+  double sum = 0.0;
+  for (int ii = 0; ii < n_ener; ii++) {
+    sum += photon_flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
+  }
+  return sum;
+}
+
+/**
+ * @brief calculate the flux correction factor for the returning radiation. It is the ratio of the energy
+ * flux of the reflected xillver spectrum to its input spectrum. Therefore, it should converge towards 1 for
+ * large values of the ionization
+ * @param xill_param
+ * @return flux correction factor (between 0 and 1)
+ */
+double calc_return_rad_flux_correction(xillParam *xill_param, relParam *rel_param, int *status) {
+  CHECK_STATUS_RET(*status, 1.0);
+
+  // need to make a trick to get the interpolation over the inclination done correctly, which is only done
+  // for xillver models
+  int store_model_type = xill_param->model_type;
+  xill_param->model_type = convert_relxill_to_xillver_model_type(xill_param->model_type, status);
+
+  xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
+
+  xill_param->model_type = store_model_type; // reset the previous
+  CHECK_STATUS_RET(*status, 1.0);
+
+  assert(xill_spec->n_incl == 1);  // has to be the case for the inclination interpolated xillver model
+  double *direct_spec =
+      calc_normalized_xillver_primary_spectrum(xill_spec->ener, xill_spec->n_ener, rel_param, xill_param, status);
+
+  double ratio_refl_direct =
+      get_energy_flux(xill_spec->ener, xill_spec->flu[0], xill_spec->n_ener) /
+          get_energy_flux(xill_spec->ener, direct_spec, xill_spec->n_ener);
+
+  free_xill_spec(xill_spec);
+  free(direct_spec);
+
+  return ratio_refl_direct;
+}
 
 /*
  * BASIC RELXILL KERNEL FUNCTION : convolve a xillver spectrum with the relbase kernel
@@ -204,7 +249,20 @@ void relxill_kernel(double *ener_inp,
   } else {
     CHECK_STATUS_VOID(*status);
 
-    /* *** first, stored the parameters for which we are calculating **/
+
+    // set Return Rad correction factor before checking the caching
+    // (xillver parameters could influence it)
+    if (rel_param->return_rad > 0) {
+      rel_param->return_rad_flux_correction_factor = 1.0;
+      // calc_return_rad_flux_correction(xill_param, rel_param, status);
+      if (*status != EXIT_SUCCESS) {
+        RELXILL_ERROR("failed to calculate the flux correction factor", status);
+      }
+      printf(" flux corr: %f (not implemented yet correctly) \n", rel_param->return_rad_flux_correction_factor);
+    }
+
+
+    // stored the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
     set_cached_rel_param(rel_param, &cached_rel_param, status);
 

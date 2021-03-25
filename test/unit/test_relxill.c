@@ -54,6 +54,7 @@ relParam *init_par_relline_lp(const double *inp_par, const int n_parameter, int 
   param->gamma = inp_par[8];
 
   param->beta = 0.0;
+  param->return_rad_flux_correction_factor = 1.0;
 
   check_parameter_bounds(param, status);
   CHECK_STATUS_RET(*status, NULL);

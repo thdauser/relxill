@@ -447,27 +447,46 @@ void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
   }
 }
 
-void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
-                           xillParam *xill_param, int *status) {
+/**
+ *
+ * @param ener
+ * @param n_ener
+ * @param rel_param
+ * @param xill_param
+ * @param status
+ * @return
+ */
+double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
+                                                 const relParam *rel_param, const xillParam *xill_param, int *status) {
 
-  double pl_flux[n_ener];
-
-  /** need to create a spcific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
+  /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
   EnerGrid *egrid = get_stdXillverEnergygrid(status);
-  CHECK_STATUS_VOID(*status);
+  // CHECK_STATUS_VOID(*status);
   double pl_flux_xill[egrid->nbins]; // global energy grid
   calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, status);
 
   double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, status);
 
+  double *o_flux = malloc(sizeof(double) * n_ener);
+  CHECK_MALLOC_RET_STATUS(o_flux, status, NULL);
+
   /** bin the primary continuum onto the Input grid **/
-  rebin_spectrum(ener, pl_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
+  rebin_spectrum(ener, o_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
 
   free(egrid);
 
   for (int ii = 0; ii < n_ener; ii++) {
-    pl_flux[ii] *= primarySpecNormFactor;
+    o_flux[ii] *= primarySpecNormFactor;
   }
+
+  return o_flux;
+}
+
+void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
+                           xillParam *xill_param, int *status) {
+
+  double *pl_flux = calc_normalized_xillver_primary_spectrum(ener, n_ener, rel_param, xill_param, status);
+  CHECK_STATUS_VOID(*status);
 
   /** 2 **  decide if we need to do relat. calculations **/
   if (is_xill_model(xill_param->model_type)) {
@@ -533,6 +552,8 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
       flu[ii] += pl_flux[ii];
     }
   }
+
+  free(pl_flux);
 
 }
 
@@ -610,8 +631,7 @@ rel_spec *relbase_multizone(double *ener,
   // set a pointer to the spectrum
   rel_spec *spec = NULL;
 
-  // initialize parameter values (has an internal cache)
-  RelSysPar *sysPar = get_system_parameters(param, status);
+  RelSysPar *sysPar = get_system_parameters(param, status);   // initialize parameter values (has an internal cache)
   CHECK_STATUS_RET(*status, NULL);
   assert(sysPar != NULL);
 
@@ -802,4 +822,28 @@ void free_specCache(specCache* spec_cache) {
 void free_cache(void) {
   free_cache_syspar();
   cli_delete_list(&cache_relbase);
+}
+
+/**
+ * @details on works for certain types, will produce an error for the rest
+ * @param relxill_model_type
+ * @param status
+ * @return
+ */
+int convert_relxill_to_xillver_model_type(int relxill_model_type, int *status) {
+
+  switch (relxill_model_type) {
+
+    case MOD_TYPE_RELXILL: return MOD_TYPE_XILLVER;
+    case MOD_TYPE_RELXILLDENS: return MOD_TYPE_XILLVERDENS;
+    case MOD_TYPE_RELXILLLP: return MOD_TYPE_XILLVER;
+    case MOD_TYPE_RELXILLLPRET: return MOD_TYPE_XILLVER;
+    case MOD_TYPE_RELXILLLPDENS: return MOD_TYPE_XILLVERDENS;
+    case MOD_TYPE_RELXILLLPION: return MOD_TYPE_XILLVER;
+    case MOD_TYPE_RELXILLDENS_NTHCOMP: return MOD_TYPE_XILLVERDENS_NTHCOMP;
+    case MOD_TYPE_RELXILLLPDENS_NTHCOMP: return MOD_TYPE_XILLVERDENS_NTHCOMP;
+    default: RELXILL_ERROR("Error converting relxill model type to xillver model type", status);
+      return 0;
+  }
+
 }
