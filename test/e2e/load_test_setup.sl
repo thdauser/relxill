@@ -96,6 +96,26 @@ define isLpModel(ff){ %{{{
 %}}}
 
 
+define is_lamppost_model(ff){ %{{{
+   if (string_matches(ff,"lp")!=NULL){
+      return 1;
+   } else {
+      return 0;
+   }
+}
+%}}}
+
+
+define is_conv_model(ff){ %{{{
+   if (string_matches(ff,"conv")!=NULL){
+      return 1;
+   } else {
+      return 0;
+   }
+}
+%}}}
+
+
 define is_xillver_model(ff){ %{{{
    if (string_matches(ff,"xillver")!=NULL){
       return 1;
@@ -104,7 +124,6 @@ define is_xillver_model(ff){ %{{{
    }
 }
 %}}}
-
 
 define is_relxill_model(ff){ %{{{
    if (string_matches(ff,"relxill")!=NULL){

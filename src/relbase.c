@@ -300,14 +300,9 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
 
   specCache* spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
-  fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
+  convolveSpectrumFFTNormalized(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
                     1, 1, 0, spec_cache, status);
   CHECK_STATUS_VOID(*status);
-
-  // need to renormalize the convolution? (not that only LP has a physical norm!!)
-  if (!do_not_normalize_relline()) {
-    renorm_model(rebin_flux, conv_out, n_ener);
-  }
 
   // rebin to the output grid
   rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener, conv_out, n_ener);
@@ -591,7 +586,7 @@ int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param) {
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
  * optinal input: xillver grid
- * output: photar(n_ener)     */
+ * output: photar(n_ener)  [photons/bin]   */
 rel_spec *relbase_multizone(double *ener,
                             const int n_ener,
                             relParam *param,
@@ -621,7 +616,7 @@ rel_spec *relbase_multizone(double *ener,
     param->num_zones = nzones;
     init_rel_spec(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
 
-    // calculate line profile (returned units are 'cts/bin')
+    // calculate line profile (returned units are 'photons/bin')
     relline_profile(spec, sysPar, status);
 
     // normalize it and calculate the angular distribution (if necessary)

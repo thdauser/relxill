@@ -714,12 +714,7 @@ static void set_str_relbf(str_relb_func *str, double re, double gmin, double gma
   str->save_g_ind = 0;
 }
 
-/** function to properly re-normalize the relline_profile **/
-void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const int *status) {
-
-  CHECK_STATUS_VOID(*status);
-
-  // normalize to 'cts/bin'
+static void convert_keVperBin_to_ctsperBin(rel_spec *spec) {// normalize to 'cts/bin'
   int ii;
   int jj;
   double sum = 0.0;
@@ -729,12 +724,25 @@ void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const int *stat
       sum += spec->flux[ii][jj];
     }
   }
+}
+/** function to properly re-normalize the relline_profile **/
+void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  int ii; int jj;
 
   /** only renormalize if not the relxill model or not a lamp post model **/
-
   if (do_renorm_model(rel_param)) {
 
-    double relline_norm = 1;
+    double sum = 0.0;
+    for (ii = 0; ii < spec->n_zones; ii++) {
+      for (jj = 0; jj < spec->n_ener; jj++) {
+        sum += spec->flux[ii][jj];
+      }
+    }
+
+  double relline_norm = 1;
     if (is_relxill_model(rel_param->model_type) && rel_param->emis_type == EMIS_TYPE_BKN) {
       relline_norm = norm_factor_semi_infinite_slab(rel_param->incl * 180.0 / M_PI);
     }
@@ -752,7 +760,7 @@ void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const int *stat
   if (spec->rel_cosne != NULL) {
     for (ii = 0; ii < spec->n_zones; ii++) {
       // normalize it for each zone, the overall flux will be taken care of by the normal structure
-      sum = 0.0;
+      double sum = 0.0;
       for (jj = 0; jj < spec->rel_cosne->n_cosne; jj++) {
         sum += spec->rel_cosne->dist[ii][jj];
       }
@@ -791,6 +799,13 @@ static void free_str_relb_func(str_relb_func **str) {
   }
 }
 
+/**
+ * @brief calculates a line profile with units [photons/bin]
+ * @param spec
+ * @param sysPar
+ * @description the routine calculates the intensity I_E via the method described in Dauser et al. (2010). To
+ * match the Xspec specification the profile is returned not as energy flux, but as [photons/bin]
+ */
 void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -893,6 +908,9 @@ void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status) {
   if (shouldOutfilesBeWritten() && spec->n_zones == 1) {
     save_relline_radial_flux_profile(sysPar->re, radialFlux, sysPar->nr);
   }
+
+  convert_keVperBin_to_ctsperBin(spec);
+
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
