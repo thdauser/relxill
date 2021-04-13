@@ -147,6 +147,21 @@ static double get_energy_flux(const double *ener, const double *photon_flux, int
 }
 
 /**
+ * @brief calculate the energy flux from a given bin-integrated photon flux (cts/bin), the standard unit to store
+ * all spectra in the relxill code
+ **/
+static double get_energy_flux_band(const double *ener, const double *photon_flux, int n_ener, double emin, double emax) {
+  double sum = 0.0;
+  for (int ii = 0; ii < n_ener; ii++) {
+    if (ener[ii]>=emin && ener[ii+1]<=emax ) {
+      sum += photon_flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
+    }
+  }
+  return sum;
+}
+
+
+/**
  * @brief calculate the flux correction factor for the returning radiation. It is the ratio of the energy
  * flux of the reflected xillver spectrum to its input spectrum. Therefore, it should converge towards 1 for
  * large values of the ionization
@@ -162,17 +177,24 @@ double calc_return_rad_flux_correction(xillParam *xill_param, relParam *rel_para
   xill_param->model_type = convert_relxill_to_xillver_model_type(xill_param->model_type, status);
 
   xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
+  norm_xillver_spec(xill_spec, xill_param->incl);
 
-  xill_param->model_type = store_model_type; // reset the previous
   CHECK_STATUS_RET(*status, 1.0);
 
   assert(xill_spec->n_incl == 1);  // has to be the case for the inclination interpolated xillver model
   double *direct_spec =
-      calc_normalized_xillver_primary_spectrum(xill_spec->ener, xill_spec->n_ener, rel_param, xill_param, status);
+      calc_normalized_xillver_primary_spectrum(xill_spec->ener, xill_spec->n_ener, NULL, xill_param, status);
 
+  xill_param->model_type = store_model_type; // reset the previous
+
+  save_xillver_spectrum(xill_spec->ener, direct_spec, xill_spec->n_ener, "test-debug-xillver-direct.dat");
+  save_xillver_spectrum(xill_spec->ener, xill_spec->flu[0], xill_spec->n_ener, "test-debug-xillver-refl.dat");
+
+  double emin = 1.0;
+  double emax = 1000;
   double ratio_refl_direct =
-      get_energy_flux(xill_spec->ener, xill_spec->flu[0], xill_spec->n_ener) /
-          get_energy_flux(xill_spec->ener, direct_spec, xill_spec->n_ener);
+      get_energy_flux_band(xill_spec->ener, xill_spec->flu[0], xill_spec->n_ener, emin, emax) /
+          get_energy_flux_band(xill_spec->ener, direct_spec, xill_spec->n_ener, emin, emax);
 
   free_xill_spec(xill_spec);
   free(direct_spec);

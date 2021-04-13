@@ -387,7 +387,7 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
   LocalModel lmod{ModelName::relxilllpRet};
   lmod.set_par(XPar::return_rad, 1);
 
-  lmod.set_par(XPar::logxi, 3.0);
+  lmod.set_par(XPar::logxi, 3.5);
   double flux_corr1 = calc_return_rad_flux_correction(lmod.get_xill_params(), lmod.get_rel_params(), &status);
   REQUIRE(flux_corr1 > 0.5);
   REQUIRE(flux_corr1 < 1.0);
