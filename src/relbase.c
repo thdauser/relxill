@@ -300,14 +300,9 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
 
   specCache* spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
-  fft_conv_spectrum(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
+  convolveSpectrumFFTNormalized(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
                     1, 1, 0, spec_cache, status);
   CHECK_STATUS_VOID(*status);
-
-  // need to renormalize the convolution? (not that only LP has a physical norm!!)
-  if (!do_not_normalize_relline()) {
-    renorm_model(rebin_flux, conv_out, n_ener);
-  }
 
   // rebin to the output grid
   rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener, conv_out, n_ener);
@@ -447,46 +442,27 @@ void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
   }
 }
 
-/**
- *
- * @param ener
- * @param n_ener
- * @param rel_param
- * @param xill_param
- * @param status
- * @return
- */
-double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
-                                                 const relParam *rel_param, const xillParam *xill_param, int *status) {
+void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
+                           xillParam *xill_param, int *status) {
 
-  /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
+  double pl_flux[n_ener];
+
+  /** need to create a spcific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
   EnerGrid *egrid = get_stdXillverEnergygrid(status);
-  // CHECK_STATUS_VOID(*status);
+  CHECK_STATUS_VOID(*status);
   double pl_flux_xill[egrid->nbins]; // global energy grid
   calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, status);
 
   double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, status);
 
-  double *o_flux = malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(o_flux, status, NULL);
-
   /** bin the primary continuum onto the Input grid **/
-  rebin_spectrum(ener, o_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
+  rebin_spectrum(ener, pl_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
 
   free(egrid);
 
   for (int ii = 0; ii < n_ener; ii++) {
-    o_flux[ii] *= primarySpecNormFactor;
+    pl_flux[ii] *= primarySpecNormFactor;
   }
-
-  return o_flux;
-}
-
-void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
-                           xillParam *xill_param, int *status) {
-
-  double *pl_flux = calc_normalized_xillver_primary_spectrum(ener, n_ener, rel_param, xill_param, status);
-  CHECK_STATUS_VOID(*status);
 
   /** 2 **  decide if we need to do relat. calculations **/
   if (is_xill_model(xill_param->model_type)) {
@@ -553,8 +529,6 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     }
   }
 
-  free(pl_flux);
-
 }
 
 
@@ -612,7 +586,7 @@ int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param) {
  * (assuming a 1keV line, by a grid given in keV!)
  * input: ener(n_ener), param
  * optinal input: xillver grid
- * output: photar(n_ener)     */
+ * output: photar(n_ener)  [photons/bin]   */
 rel_spec *relbase_multizone(double *ener,
                             const int n_ener,
                             relParam *param,
@@ -631,7 +605,8 @@ rel_spec *relbase_multizone(double *ener,
   // set a pointer to the spectrum
   rel_spec *spec = NULL;
 
-  RelSysPar *sysPar = get_system_parameters(param, status);   // initialize parameter values (has an internal cache)
+  // initialize parameter values (has an internal cache)
+  RelSysPar *sysPar = get_system_parameters(param, status);
   CHECK_STATUS_RET(*status, NULL);
   assert(sysPar != NULL);
 
@@ -641,7 +616,7 @@ rel_spec *relbase_multizone(double *ener,
     param->num_zones = nzones;
     init_rel_spec(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
 
-    // calculate line profile (returned units are 'cts/bin')
+    // calculate line profile (returned units are 'photons/bin')
     relline_profile(spec, sysPar, status);
 
     // normalize it and calculate the angular distribution (if necessary)
@@ -822,28 +797,4 @@ void free_specCache(specCache* spec_cache) {
 void free_cache(void) {
   free_cache_syspar();
   cli_delete_list(&cache_relbase);
-}
-
-/**
- * @details on works for certain types, will produce an error for the rest
- * @param relxill_model_type
- * @param status
- * @return
- */
-int convert_relxill_to_xillver_model_type(int relxill_model_type, int *status) {
-
-  switch (relxill_model_type) {
-
-    case MOD_TYPE_RELXILL: return MOD_TYPE_XILLVER;
-    case MOD_TYPE_RELXILLDENS: return MOD_TYPE_XILLVERDENS;
-    case MOD_TYPE_RELXILLLP: return MOD_TYPE_XILLVER;
-    case MOD_TYPE_RELXILLLPRET: return MOD_TYPE_XILLVER;
-    case MOD_TYPE_RELXILLLPDENS: return MOD_TYPE_XILLVERDENS;
-    case MOD_TYPE_RELXILLLPION: return MOD_TYPE_XILLVER;
-    case MOD_TYPE_RELXILLDENS_NTHCOMP: return MOD_TYPE_XILLVERDENS_NTHCOMP;
-    case MOD_TYPE_RELXILLLPDENS_NTHCOMP: return MOD_TYPE_XILLVERDENS_NTHCOMP;
-    default: RELXILL_ERROR("Error converting relxill model type to xillver model type", status);
-      return 0;
-  }
-
 }

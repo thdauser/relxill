@@ -354,26 +354,23 @@ void relxill_kernel(double *ener_inp,
       // convolve the spectrum **
       //(important for the convolution: need to recompute fft for xillver
       //always if rel changes, as the angular distribution changes !!)
-      fft_conv_spectrum(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener,
+      convolveSpectrumFFTNormalized(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener,
                         recompute_rel, 1, ii, spec_cache, status);
       CHECK_STATUS_VOID(*status);
-
-
-      double normFacFFT = calcFFTNormFactor(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener);
 
       // rebin to the output grid
       rebin_spectrum(ener_inp, single_spec_inp, n_ener_inp, ener, conv_out, n_ener);
 
       // add it to the final output spectrum
       for (int jj = 0; jj < n_ener_inp; jj++) {
-        spec_inp[jj] += single_spec_inp[jj] * normFacFFT;
+        spec_inp[jj] += single_spec_inp[jj] ;
       }
 
       if (shouldOutfilesBeWritten() && rel_profile->n_zones <= 10) {
         char vstr[200];
         double test_flu[n_ener_inp];
         for (int jj = 0; jj < n_ener_inp; jj++) {
-          test_flu[jj] = single_spec_inp[jj] * normFacFFT;
+          test_flu[jj] = single_spec_inp[jj];
         }
         if (sprintf(vstr, "test_relxill_spec_zones_%03i.dat", ii + 1) == -1) {
           RELXILL_ERROR("failed to get filename", status);

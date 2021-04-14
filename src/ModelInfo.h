@@ -25,6 +25,7 @@
 enum class ModelName {
   relline,
   relline_lp,
+  rellinelpExt,
   relconv,
   relconv_lp,
   relxill,
