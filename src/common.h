@@ -75,6 +75,8 @@ typedef struct {
   int do_renorm_relline;
   int num_zones;
   int return_rad;
+  double
+      return_rad_flux_correction_factor; // calculated ratio from xillver reflection to primary spectrum (energy flux)
 } relParam;
 
 typedef struct {

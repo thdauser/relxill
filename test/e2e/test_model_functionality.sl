@@ -1425,6 +1425,8 @@ define print_refl_frac(){ %{{{
 }
 %}}}
 
+if (check_refl_frac() != EXIT_SUCCESS) exit;
+
 
 %%%%%%%% TEST  %%%%%%%%%%%%
 

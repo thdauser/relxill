@@ -3,17 +3,21 @@ set(CATCH2_FILES catch2/catch_amalgamated.cpp catch2/catch_amalgamated.cpp)
 
 set(UNIT_TEST_FILES_CPP
         test-cppspectrum.cpp tests-execmodel.cpp
-        common-functions.cpp common-functions.h)
+        common-functions.cpp common-functions.h
+        tests-returnrad.cpp
+        test_relxill.c test_relxill.h   #only for get_relline_lp_params
+        )
       
 set(UNIT_TEST_FILES
         test_rellp.c test_rellp.h
         test_relxill.c test_relxill.h
         test_std_functions.c test_std_functions.h
         test_xilltab.c test_xilltab.h
+        test_relreturn.h
         )
 
 
-set(EXEC_FILES run-tests)
+set(EXEC_FILES run-tests test_relreturn)
 
 set(EXEC_FILES_CPP tests)
 

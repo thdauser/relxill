@@ -33,6 +33,11 @@
 #include "relcache.h"
 #include "relprofile.h"
 
+#define RRAD
+
+#ifdef RRAD
+#include "relreturn_corona.h"
+#endif
 
 /*********** DEFINE STATEMENTS *********/
 
@@ -59,7 +64,7 @@
 /** dimensions of the RR table */
 #define RETURNRAD_TABLE_NR 50
 #define RETURNRAD_TABLE_NG 20
-#define RETURNRAD_TABLE_FILENAME "table_returnRad_v20200506.fits"
+#define RETURNRAD_TABLE_FILENAME "table_returnRad_v20210304.fits"
 
 
 /** parameters for interpolation an interagration **/
@@ -174,5 +179,9 @@ double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const
 
 void set_stdNormXillverEnerygrid(int *status);
 EnerGrid *get_stdXillverEnergygrid(int *status);
+
+double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
+                                                 const relParam *rel_param, const xillParam *xill_param, int *status);
+int convert_relxill_to_xillver_model_type(int relxill_model_type, int *status);
 
 #endif /* RELBASE_H_ */

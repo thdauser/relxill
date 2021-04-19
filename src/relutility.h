@@ -19,6 +19,7 @@
 #define RELUTILITY_H_
 
 #include "xilltable.h"
+#include "common.h"
 
 
 /****** DEFINE FUNCTION DEFINITIONS ******/
@@ -139,7 +140,7 @@ double gi_potential_lp(double r, double a, double h, double bet, double del);
 void FFT_R2CT(short int dir, long m, double *x, double *y);
 
 /** rebin spectrum to a given energy grid length of ener is nbins+1       **/
-void rebin_spectrum(double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
+void rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
 
 /** calculate the gravitational redshift **/
 double grav_redshift(const relParam *param);
@@ -201,6 +202,8 @@ void free_Spectrum(Spectrum **spec);
 Spectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
 int shouldOutfilesBeWritten(void);
+
+void invertArray(double *vals, int n);
 
 double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius);
 

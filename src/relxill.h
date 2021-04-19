@@ -27,12 +27,13 @@ void get_xillver_angdep_spec(double *o_xill_flux,
                              xillSpec *xill_spec,
                              int *status);
 
-
 void relxill_kernel(double *ener_inp,
                     double *spec_inp,
                     int n_ener_inp,
                     xillParam *xill_param,
                     relParam *rel_param,
                     int *status);
+
+double calc_return_rad_flux_correction(xillParam *xill_param, int *status);
 
 #endif

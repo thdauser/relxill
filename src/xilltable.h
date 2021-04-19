@@ -18,9 +18,8 @@
 #ifndef XILLTABLE_H_
 #define XILLTABLE_H_
 
-#include "relbase.h"
 #include "relutility.h"
-#include "relmodels.h"
+#include "common.h"
 
 #define XILLTABLE_N_PARAM 5
 

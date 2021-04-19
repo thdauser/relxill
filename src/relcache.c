@@ -17,6 +17,7 @@
 */
 
 #include "relcache.h"
+#include "relbase.h"
 
 /** probably best move to "utils" **/
 inpar *set_input(double *ener, int n_ener, relParam *rel_par, xillParam *xill_par, int *status) {
@@ -148,6 +149,7 @@ void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
   (*ca_rel_param)->num_zones = par->num_zones;
 
   (*ca_rel_param)->return_rad = par->return_rad;
+  (*ca_rel_param)->return_rad_flux_correction_factor = par->return_rad_flux_correction_factor;
 
 }
 

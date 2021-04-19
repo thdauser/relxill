@@ -37,6 +37,10 @@ typedef struct {
 
 emisProfile *calc_emis_profile(double *r, int nr, relParam *param, int *status);
 
+void get_emis_bkn(double *emis, const double *re, int nr,
+                  double index1, double index2, double rbr);
+
+
 void get_emis_jet(emisProfile *, const relParam *param, int *status);
 
 void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile* emis_prof_tab, int *status);

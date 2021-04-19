@@ -134,6 +134,89 @@ void get_xillver_angdep_spec(double *o_xill_flux,
 
 }
 
+/**
+ * @brief calculate the energy flux from a given bin-integrated photon flux (cts/bin), the standard unit to store
+ * all spectra in the relxill code
+ **/
+static double get_energy_flux(const double *ener, const double *photon_flux, int n_ener) {
+  double sum = 0.0;
+  for (int ii = 0; ii < n_ener; ii++) {
+    sum += photon_flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
+  }
+  return sum;
+}
+
+/**
+ * @brief calculate the energy flux from a given bin-integrated photon flux (cts/bin), the standard unit to store
+ * all spectra in the relxill code
+ **/
+static double get_energy_flux_band(const double *ener, const double *photon_flux, int n_ener, double emin, double emax) {
+  double sum = 0.0;
+  for (int ii = 0; ii < n_ener; ii++) {
+    if (ener[ii]>=emin && ener[ii+1]<=emax ) {
+      sum += photon_flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
+    }
+  }
+  return sum;
+}
+
+
+double* calc_angle_averaged_xill_spec(xillSpec* xill_spec, int* status ){
+
+  CHECK_STATUS_RET(*status, NULL);
+
+  double* output_spec = malloc(sizeof(double) * xill_spec->n_ener);
+  CHECK_MALLOC_RET_STATUS(output_spec, status, NULL);
+
+  memset(output_spec, 0, xill_spec->n_ener*sizeof(output_spec[0]));
+  for (int ii=0; ii<xill_spec->n_incl; ii++){
+
+    double incl_factor = 0.5*cos(xill_spec->incl[ii])*1.0/xill_spec->n_incl;
+    for (int jj=0; jj<xill_spec->n_ener; jj++) {
+      output_spec[jj] += incl_factor*xill_spec->flu[ii][jj] ;
+    }
+  }
+
+  return output_spec;
+}
+
+/**
+ * @brief calculate the flux correction factor for the returning radiation. It is the ratio of the energy
+ * flux of the reflected xillver spectrum to its input spectrum. Therefore, it should converge towards 1 for
+ * large values of the ionization (note that for logxi>4 it will exceed 1 slightly)
+ * @param xill_param
+ * @return flux correction factor
+ */
+double calc_return_rad_flux_correction(xillParam *xill_param, int *status) {
+  CHECK_STATUS_RET(*status, 1.0);
+
+
+  xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
+  double* angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
+
+  CHECK_STATUS_RET(*status, 1.0);
+
+  assert(xill_spec->n_incl > 1);  // has to be the case for the inclination interpolated xillver model
+  double *direct_spec =
+      calc_normalized_xillver_primary_spectrum(xill_spec->ener, xill_spec->n_ener, NULL, xill_param, status);
+
+  if(shouldOutfilesBeWritten()) {
+    save_xillver_spectrum(xill_spec->ener, direct_spec, xill_spec->n_ener, "test-debug-xillver-direct.dat");
+    save_xillver_spectrum(xill_spec->ener, angle_averaged_xill_spec, xill_spec->n_ener, "test-debug-xillver-refl.dat");
+  }
+
+  double emin = 1.0;
+  double emax = 1000;
+  double ratio_refl_direct =
+      get_energy_flux_band(xill_spec->ener, angle_averaged_xill_spec, xill_spec->n_ener, emin, emax) /
+          get_energy_flux_band(xill_spec->ener, direct_spec, xill_spec->n_ener, emin, emax);
+
+  free_xill_spec(xill_spec);
+  free(direct_spec);
+  free(angle_averaged_xill_spec);
+
+  return ratio_refl_direct;
+}
 
 /*
  * BASIC RELXILL KERNEL FUNCTION : convolve a xillver spectrum with the relbase kernel
@@ -204,7 +287,18 @@ void relxill_kernel(double *ener_inp,
   } else {
     CHECK_STATUS_VOID(*status);
 
-    /* *** first, stored the parameters for which we are calculating **/
+
+    // set Return Rad correction factor before checking the caching
+    // (xillver parameters could influence it)
+    if (rel_param->return_rad > 0) {
+      rel_param->return_rad_flux_correction_factor = calc_return_rad_flux_correction(xill_param, status);
+      if (*status != EXIT_SUCCESS) {
+        RELXILL_ERROR("failed to calculate the flux correction factor", status);
+      }
+    }
+
+
+    // stored the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
     set_cached_rel_param(rel_param, &cached_rel_param, status);
 

@@ -18,6 +18,10 @@
 
 #include "relphysics.h"
 
+#include "common.h"
+#include "relutility.h"
+
+
 double calc_proper_area_ring(double rlo, double rhi, double a) {
 
   double rmean = 0.5 * (rlo + rhi);

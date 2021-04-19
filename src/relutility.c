@@ -18,6 +18,7 @@
 
 #include "relutility.h"
 
+#include "relbase.h"
 #include "writeOutfiles.h"
 
 /** linear interpolation in 1 dimension **/
@@ -563,7 +564,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 /** rebin spectrum to a given energy grid
  *  length of ener is nbins+1       **/
 
-void rebin_spectrum(double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
+void rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
 
   int ii;
   int jj;
@@ -842,7 +843,7 @@ void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int 
 
   int in = nn - 1; // traverse new array backwards
   int ii;
-  for (ii = 0; ii < n0 - 2; ii++) {  // only go to the second to last bin
+  for (ii = 0; ii < n0 - 1; ii++) {  // only go to the second to last bin
 
     if (x0[ii] > xn[in] && x0[ii + 1] <= xn[in]) {
 
@@ -1005,4 +1006,17 @@ Spectrum *getNewSpec(double emin, double emax, int nbins, int *status) {
   spec->flux = flux;
 
   return spec;
+}
+
+void invertArray(double *vals, int n) {
+
+  double storage[n];
+  for (int ii = 0; ii < n; ii++) {
+    storage[n - ii - 1] = vals[ii];
+  }
+
+  for (int ii = 0; ii < n; ii++) {
+    vals[ii] = storage[ii];
+  }
+
 }

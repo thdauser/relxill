@@ -17,6 +17,7 @@
 */
 
 #include "xilltable.h"
+#include "relbase.h"
 
 // possible parameters for the xillver tables
 int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_KTE, PARAM_DNS,
