@@ -183,21 +183,16 @@ double* calc_angle_averaged_xill_spec(xillSpec* xill_spec, int* status ){
 /**
  * @brief calculate the flux correction factor for the returning radiation. It is the ratio of the energy
  * flux of the reflected xillver spectrum to its input spectrum. Therefore, it should converge towards 1 for
- * large values of the ionization
+ * large values of the ionization (note that for logxi>4 it will exceed 1 slightly)
  * @param xill_param
- * @return flux correction factor (between 0 and 1)
+ * @return flux correction factor
  */
-double calc_return_rad_flux_correction(xillParam *xill_param, relParam *rel_param, int *status) {
+double calc_return_rad_flux_correction(xillParam *xill_param, int *status) {
   CHECK_STATUS_RET(*status, 1.0);
 
-  // need to make a trick to get the interpolation over the inclination done correctly, which is only done
-  // for xillver models
-//  int store_model_type = xill_param->model_type;
-//  xill_param->model_type = convert_relxill_to_xillver_model_type(xill_param->model_type, status);
 
   xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
   double* angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
-  // norm_xillver_spec(xill_spec, xill_param->incl);
 
   CHECK_STATUS_RET(*status, 1.0);
 
@@ -205,10 +200,10 @@ double calc_return_rad_flux_correction(xillParam *xill_param, relParam *rel_para
   double *direct_spec =
       calc_normalized_xillver_primary_spectrum(xill_spec->ener, xill_spec->n_ener, NULL, xill_param, status);
 
-//  xill_param->model_type = store_model_type; // reset the previous
-
-  save_xillver_spectrum(xill_spec->ener, direct_spec, xill_spec->n_ener, "test-debug-xillver-direct.dat");
-  save_xillver_spectrum(xill_spec->ener, angle_averaged_xill_spec, xill_spec->n_ener, "test-debug-xillver-refl.dat");
+  if(shouldOutfilesBeWritten()) {
+    save_xillver_spectrum(xill_spec->ener, direct_spec, xill_spec->n_ener, "test-debug-xillver-direct.dat");
+    save_xillver_spectrum(xill_spec->ener, angle_averaged_xill_spec, xill_spec->n_ener, "test-debug-xillver-refl.dat");
+  }
 
   double emin = 1.0;
   double emax = 1000;
@@ -296,8 +291,7 @@ void relxill_kernel(double *ener_inp,
     // set Return Rad correction factor before checking the caching
     // (xillver parameters could influence it)
     if (rel_param->return_rad > 0) {
-      rel_param->return_rad_flux_correction_factor = 1.0;
-      // calc_return_rad_flux_correction(xill_param, rel_param, status);
+      rel_param->return_rad_flux_correction_factor = calc_return_rad_flux_correction(xill_param, status);
       if (*status != EXIT_SUCCESS) {
         RELXILL_ERROR("failed to calculate the flux correction factor", status);
       }

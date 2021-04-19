@@ -34,6 +34,6 @@ void relxill_kernel(double *ener_inp,
                     relParam *rel_param,
                     int *status);
 
-double calc_return_rad_flux_correction(xillParam *xill_param, relParam *rel_param, int *status);
+double calc_return_rad_flux_correction(xillParam *xill_param, int *status);
 
 #endif
