@@ -295,7 +295,6 @@ void relxill_kernel(double *ener_inp,
       if (*status != EXIT_SUCCESS) {
         RELXILL_ERROR("failed to calculate the flux correction factor", status);
       }
-      printf(" flux corr: %f (not implemented yet correctly) \n", rel_param->return_rad_flux_correction_factor);
     }
 
 
