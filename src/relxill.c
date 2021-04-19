@@ -161,6 +161,25 @@ static double get_energy_flux_band(const double *ener, const double *photon_flux
 }
 
 
+double* calc_angle_averaged_xill_spec(xillSpec* xill_spec, int* status ){
+
+  CHECK_STATUS_RET(*status, NULL);
+
+  double* output_spec = malloc(sizeof(double) * xill_spec->n_ener);
+  CHECK_MALLOC_RET_STATUS(output_spec, status, NULL);
+
+  memset(output_spec, 0, xill_spec->n_ener*sizeof(output_spec[0]));
+  for (int ii=0; ii<xill_spec->n_incl; ii++){
+
+    double incl_factor = 0.5*cos(xill_spec->incl[ii])*1.0/xill_spec->n_incl;
+    for (int jj=0; jj<xill_spec->n_ener; jj++) {
+      output_spec[jj] += incl_factor*xill_spec->flu[ii][jj] ;
+    }
+  }
+
+  return output_spec;
+}
+
 /**
  * @brief calculate the flux correction factor for the returning radiation. It is the ratio of the energy
  * flux of the reflected xillver spectrum to its input spectrum. Therefore, it should converge towards 1 for
@@ -173,31 +192,33 @@ double calc_return_rad_flux_correction(xillParam *xill_param, relParam *rel_para
 
   // need to make a trick to get the interpolation over the inclination done correctly, which is only done
   // for xillver models
-  int store_model_type = xill_param->model_type;
-  xill_param->model_type = convert_relxill_to_xillver_model_type(xill_param->model_type, status);
+//  int store_model_type = xill_param->model_type;
+//  xill_param->model_type = convert_relxill_to_xillver_model_type(xill_param->model_type, status);
 
   xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
-  norm_xillver_spec(xill_spec, xill_param->incl);
+  double* angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
+  // norm_xillver_spec(xill_spec, xill_param->incl);
 
   CHECK_STATUS_RET(*status, 1.0);
 
-  assert(xill_spec->n_incl == 1);  // has to be the case for the inclination interpolated xillver model
+  assert(xill_spec->n_incl > 1);  // has to be the case for the inclination interpolated xillver model
   double *direct_spec =
       calc_normalized_xillver_primary_spectrum(xill_spec->ener, xill_spec->n_ener, NULL, xill_param, status);
 
-  xill_param->model_type = store_model_type; // reset the previous
+//  xill_param->model_type = store_model_type; // reset the previous
 
   save_xillver_spectrum(xill_spec->ener, direct_spec, xill_spec->n_ener, "test-debug-xillver-direct.dat");
-  save_xillver_spectrum(xill_spec->ener, xill_spec->flu[0], xill_spec->n_ener, "test-debug-xillver-refl.dat");
+  save_xillver_spectrum(xill_spec->ener, angle_averaged_xill_spec, xill_spec->n_ener, "test-debug-xillver-refl.dat");
 
   double emin = 1.0;
   double emax = 1000;
   double ratio_refl_direct =
-      get_energy_flux_band(xill_spec->ener, xill_spec->flu[0], xill_spec->n_ener, emin, emax) /
+      get_energy_flux_band(xill_spec->ener, angle_averaged_xill_spec, xill_spec->n_ener, emin, emax) /
           get_energy_flux_band(xill_spec->ener, direct_spec, xill_spec->n_ener, emin, emax);
 
   free_xill_spec(xill_spec);
   free(direct_spec);
+  free(angle_averaged_xill_spec);
 
   return ratio_refl_direct;
 }

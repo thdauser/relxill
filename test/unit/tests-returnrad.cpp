@@ -390,14 +390,42 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
   lmod.set_par(XPar::logxi, 3.5);
   double flux_corr1 = calc_return_rad_flux_correction(lmod.get_xill_params(), lmod.get_rel_params(), &status);
   REQUIRE(flux_corr1 > 0.5);
-  REQUIRE(flux_corr1 < 1.0);
+  REQUIRE(flux_corr1 < 1.0); // only works for logxi<=4
 
   lmod.set_par(XPar::logxi, 0.0);
   double flux_corr2 = calc_return_rad_flux_correction(lmod.get_xill_params(), lmod.get_rel_params(), &status);
 
-  REQUIRE(flux_corr1 > 2 * flux_corr2);  // for low to high ionization it has to be much larger
+  REQUIRE(flux_corr1 > 2 * flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
 
 }
+
+
+
+TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
+  //
+
+  int status = EXIT_SUCCESS;
+
+  LocalModel lmod{ModelName::relxilllpRet};
+  lmod.set_par(XPar::return_rad, 1);
+
+  const int n_logxi = 30;
+  double logxi[n_logxi] = {0};
+  double flux_corr[n_logxi] = {0};
+
+  double logxi_min = 0.0;
+  double logxi_max = 4.0;
+
+  for (int ii=0; ii<n_logxi; ii++){
+    logxi[ii] = (logxi_max-logxi_min)*(ii*1.0 / (n_logxi-1)) + logxi_min;
+    lmod.set_par(XPar::logxi, logxi[ii]);
+    flux_corr[ii] = calc_return_rad_flux_correction(lmod.get_xill_params(), lmod.get_rel_params(), &status);
+  }
+
+  write_data_to_file("test-flux-corr-returnrad.dat",logxi,flux_corr,n_logxi);
+
+}
+
 
 // ------- //
 TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
