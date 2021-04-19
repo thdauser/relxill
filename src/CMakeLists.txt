@@ -33,7 +33,7 @@ set(EXEC_FILES_CPP test_sta)
 
 foreach (execfile ${EXEC_FILES_CPP})
     add_executable(${execfile} ${execfile}.cpp ${SOURCE_FILES} ${CONFIG_FILE} )
-    target_link_libraries(${execfile} m cfitsio fftw3)
+    target_link_libraries(${execfile} cfitsio fftw3 m)
     target_include_directories(${execfile} PUBLIC "${PROJECT_BINARY_DIR}" )  # necessary to find config file
 endforeach (execfile ${EXEC_FILES_CPP})
 
@@ -41,7 +41,7 @@ endforeach (execfile ${EXEC_FILES_CPP})
 set(LIBNAME Relxill)
 add_library(${LIBNAME} ${SOURCE_FILES} ${CONFIG_FILE})
 target_include_directories(${LIBNAME} PUBLIC "${PROJECT_BINARY_DIR}")
-target_link_libraries(${LIBNAME} m cfitsio)
+target_link_libraries(${LIBNAME} cfitsio fftw3 m)
 ########################
 
 

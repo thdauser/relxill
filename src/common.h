@@ -27,6 +27,10 @@
 #include <float.h>
 #include <fitsio.h>
 
+#include "complex.h" // needed by fftw3 (has to be included before fftw3.h)
+#include "fftw/fftw3.h"   // assumes installation in heasoft
+
+
 /*********** DEFINE STATEMENTS *********/
 
 /** define Emissivity Model Type **/
@@ -213,6 +217,15 @@ typedef struct {
   double* conversion_factor_energyflux; // conversion from photons/bin to keV/keV
   double ***fft_xill;  // dimensions [n_cache,2,n_ener]
   double ***fft_rel;   // dimensions [n_cache,2,n_ener]
+
+  fftw_complex** fftw_xill;  // dimensions [n_cache,n_ener]
+  fftw_complex** fftw_rel;   // dimensions [n_cache,n_ener]
+
+  fftw_complex* fftw_backwards_input;  // [nener]
+  double* fftw_output;  // [nener]
+  fftw_plan plan_c2r;
+
+
   xillSpec **xill_spec;
   OutSpec *out_spec;
 } specCache;

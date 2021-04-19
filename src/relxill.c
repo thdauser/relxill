@@ -135,19 +135,7 @@ void get_xillver_angdep_spec(double *o_xill_flux,
 }
 
 /**
- * @brief calculate the energy flux from a given bin-integrated photon flux (cts/bin), the standard unit to store
- * all spectra in the relxill code
- **/
-static double get_energy_flux(const double *ener, const double *photon_flux, int n_ener) {
-  double sum = 0.0;
-  for (int ii = 0; ii < n_ener; ii++) {
-    sum += photon_flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
-  }
-  return sum;
-}
-
-/**
- * @brief calculate the energy flux from a given bin-integrated photon flux (cts/bin), the standard unit to store
+ * @brief calculate the energy flux in a given band from a given bin-integrated photon flux (cts/bin), the standard unit to store
  * all spectra in the relxill code
  **/
 static double get_energy_flux_band(const double *ener, const double *photon_flux, int n_ener, double emin, double emax) {

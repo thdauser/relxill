@@ -16,6 +16,7 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "relbase.h"
+#include "complex.h"   // needed by fftw3 (has to be included before fftw3.h)
 #include "fftw/fftw3.h"   // assumes installation in heasoft
 
 #include "writeOutfiles.h"
@@ -34,14 +35,14 @@ double *global_ener_std = NULL;
 specCache *global_spec_cache = NULL;
 
 
-static specCache *new_specCache(int n_cache, int n_ener, int *status) {
+static specCache *new_specCache(int n_cache, int *status) {
 
   specCache *spec = (specCache *) malloc(sizeof(specCache));
   CHECK_MALLOC_RET_STATUS(spec, status, NULL)
 
   spec->n_cache = n_cache;
   spec->nzones = 0;
-  spec->n_ener = n_ener;
+  spec->n_ener = N_ENER_CONV;
 
   spec->conversion_factor_energyflux = NULL;
 
@@ -50,6 +51,20 @@ static specCache *new_specCache(int n_cache, int n_ener, int *status) {
 
   spec->fft_rel = (double ***) malloc(sizeof(double **) * n_cache);
   CHECK_MALLOC_RET_STATUS(spec->fft_rel, status, NULL)
+
+  spec->fftw_xill = (fftw_complex**) malloc(sizeof(fftw_complex*) * n_cache);
+  CHECK_MALLOC_RET_STATUS(spec->fftw_xill, status, NULL)
+
+  spec->fftw_rel = (fftw_complex**) malloc(sizeof(fftw_complex*) * n_cache);
+  CHECK_MALLOC_RET_STATUS(spec->fftw_rel, status, NULL)
+
+  spec->fftw_backwards_input = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
+  CHECK_MALLOC_RET_STATUS(spec->fftw_backwards_input, status, NULL)
+  spec->fftw_output = (double*) fftw_malloc(sizeof(double) * spec->n_ener);
+  CHECK_MALLOC_RET_STATUS(spec->fftw_output, status, NULL)
+
+  spec->plan_c2r = fftw_plan_dft_c2r_1d(spec->n_ener, spec->fftw_backwards_input, spec->fftw_output,FFTW_ESTIMATE);
+
 
   spec->xill_spec = (xillSpec **) malloc(sizeof(xillSpec *) * n_cache);
   CHECK_MALLOC_RET_STATUS(spec->xill_spec, status, NULL)
@@ -63,10 +78,15 @@ static specCache *new_specCache(int n_cache, int n_ener, int *status) {
     spec->fft_rel[ii] = (double **) malloc(sizeof(double *) * m);
     CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii], status, NULL)
 
+    spec->fftw_xill[ii] = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
+    CHECK_MALLOC_RET_STATUS(spec->fftw_xill[ii], status, NULL)
+    spec->fftw_rel[ii] = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
+    CHECK_MALLOC_RET_STATUS(spec->fftw_rel[ii], status, NULL)
+
     for (jj = 0; jj < m; jj++) {
-      spec->fft_xill[ii][jj] = (double *) malloc(sizeof(double) * n_ener);
+      spec->fft_xill[ii][jj] = (double *) malloc(sizeof(double) * spec->n_ener);
       CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii][jj], status, NULL)
-      spec->fft_rel[ii][jj] = (double *) malloc(sizeof(double) * n_ener);
+      spec->fft_rel[ii][jj] = (double *) malloc(sizeof(double) * spec->n_ener);
       CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii][jj], status, NULL)
     }
 
@@ -81,7 +101,7 @@ static specCache *new_specCache(int n_cache, int n_ener, int *status) {
 
 static void init_specCache(specCache **spec, const int n_zones, int *status) {
   if ((*spec) == NULL) {
-    (*spec) = new_specCache(n_zones, N_ENER_CONV, status);
+    (*spec) = new_specCache(n_zones, status);
   }
 }
 
@@ -104,6 +124,86 @@ static double* calculate_energyflux_conversion(const double* ener, int n_ener, i
   return factor;
 }
 
+
+
+
+
+
+
+
+/** FFTW VERSION: convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
+ *  fout: gives the output
+ *  f1 input (reflection) specrum
+ *  f2 filter
+ *  ener has length n+1 and is the energy array
+ *  requirements: needs "specCache" to be set up
+ * **/
+void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
+                       int re_rel, int re_xill, int izone, specCache *cache, int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  // needs spec cache to be set up
+  assert(cache != NULL);
+
+  if (cache->conversion_factor_energyflux == NULL){
+    cache->conversion_factor_energyflux = calculate_energyflux_conversion(ener, n, status);
+  }
+
+
+  /* need to find out where the 1keV for the filter is, which defines if energies are blue or redshifted*/
+  if (save_1eV_pos == 0 ||
+      (!((ener[save_1eV_pos] <= 1.0) &&
+          (ener[save_1eV_pos + 1] > 1.0)))) {
+    save_1eV_pos = binary_search(ener, n + 1, 1.0);
+  }
+
+  int ii;
+  int irot;
+
+  /**********************************************************************/
+  /** cache either the relat. or the xillver part, as only one of the
+   * two changes most of the time (reduce time by 1/3 for convolution) **/
+  /**********************************************************************/
+
+  /** #1: for the xillver part **/
+  if (re_xill) {
+    for (ii = 0; ii < n; ii++) {
+      cache->fft_xill[izone][0][ii] = fxill[ii] * cache->conversion_factor_energyflux[ii] ;
+    }
+
+    fftw_plan plan_xill = fftw_plan_dft_r2c_1d(n, cache->fft_xill[izone][0], cache->fftw_xill[izone],FFTW_ESTIMATE);
+    fftw_execute(plan_xill);
+    fftw_destroy_plan(plan_xill);
+  }
+
+  /** #2: for the relat. part **/
+  if (re_rel) {
+    for (ii = 0; ii < n; ii++) {
+      irot = (ii - save_1eV_pos + n) % n;
+      cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii];
+    }
+
+    fftw_plan plan_rel = fftw_plan_dft_r2c_1d(n, cache->fft_rel[izone][0], cache->fftw_rel[izone],FFTW_ESTIMATE);
+    fftw_execute(plan_rel);
+    fftw_destroy_plan(plan_rel);
+  }
+
+  // complex multiplication
+  for (ii = 0; ii < n; ii++) {
+    cache->fftw_backwards_input[ii] = cache->fftw_xill[izone][ii] * cache->fftw_rel[izone][ii];
+  }
+
+  fftw_execute(cache->plan_c2r);
+
+  for (ii = 0; ii < n; ii++) {
+    fout[ii] = cache->fftw_output[ii] /  cache->conversion_factor_energyflux[ii]; 
+  }
+
+}
+
+
+
 /** convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
  *  fout: gives the output
  *  f1 input (reflection) specrum
@@ -116,10 +216,6 @@ void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, do
 
   long m = 0;
   switch (n) {
-    case 512: m = 9;
-      break;
-    case 1024: m = 10;
-      break;
     case 2048: m = 11;
       break;
     case 4096: m = 12;
@@ -172,11 +268,12 @@ void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, do
   if (re_rel) {
     for (ii = 0; ii < n; ii++) {
       irot = (ii - save_1eV_pos + n) % n;
-      cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii]; /// (ener[ii + 1] - ener[ii]) * ener[ii];
+      cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii];
       cache->fft_rel[izone][1][ii] = 0.0;
     }
     FFT_R2CT(1, m, cache->fft_rel[izone][0], cache->fft_rel[izone][1]);
   }
+
   double *x2 = cache->fft_rel[izone][0];
   double *y2 = cache->fft_rel[izone][1];
 
@@ -191,7 +288,7 @@ void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, do
   FFT_R2CT(-1, m, xcomb, ycomb);
 
   for (ii = 0; ii < n; ii++) {
-    fout[ii] = xcomb[ii] /  cache->conversion_factor_energyflux[ii]; //* (ener[ii + 1] - ener[ii]) / ener[ii];
+    fout[ii] = xcomb[ii] /  cache->conversion_factor_energyflux[ii];
   }
 
 }
@@ -230,27 +327,10 @@ void normalizeFFTOutput(const double *ener, const double *fxill, const double *f
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
                                    int re_rel, int re_xill, int izone, specCache *spec_cache_ptr, int *status) {
 
-  fft_conv_spectrum(ener, fxill, frel, fout, n, re_rel, re_xill, izone, spec_cache_ptr, status);
+//  fft_conv_spectrum(ener, fxill, frel, fout, n, re_rel, re_xill, izone, spec_cache_ptr, status);
+  fftw_conv_spectrum(ener, fxill, frel, fout, n, re_rel, re_xill, izone, spec_cache_ptr, status);
 
   normalizeFFTOutput(ener, fxill, frel, fout, n);
-
-}
-
-
-/** renorm a model (flu) to have the same flux as another model (flu)
- *  (bin-integrated flux, same energy grid!) **/
-static void renorm_model(const double *flu0, double *flu, int nbins) {
-
-  double sum_inp = 0.0;
-  double sum_out = 0.0;
-  int ii;
-  for (ii = 0; ii < nbins; ii++) {
-    sum_inp += flu0[ii];
-    sum_out += flu[ii];
-  }
-  for (ii = 0; ii < nbins; ii++) {
-    flu[ii] *= sum_inp / sum_out;
-  }
 
 }
 
@@ -780,6 +860,12 @@ void free_out_spec(OutSpec *spec) {
   }
 }
 
+void free_fftw_complex_cache(fftw_complex** val, int n){
+  for(int ii=0; ii<n; ii++){
+    fftw_free(val[ii]);
+  }
+}
+
 void free_specCache(specCache* spec_cache) {
 
   int ii;
@@ -798,9 +884,15 @@ void free_specCache(specCache* spec_cache) {
       free_fft_cache(spec_cache->fft_xill, spec_cache->n_cache, m);
     }
 
-    if (spec_cache->fft_rel != NULL) {
+    if (spec_cache->fftw_rel != NULL) {
       free_fft_cache(spec_cache->fft_rel, spec_cache->n_cache, m);
     }
+
+    free_fftw_complex_cache(spec_cache->fftw_rel, spec_cache->n_cache);
+    free_fftw_complex_cache(spec_cache->fftw_xill, spec_cache->n_cache);
+    fftw_free(spec_cache->fftw_backwards_input);
+    fftw_destroy_plan(spec_cache->plan_c2r);
+    free(spec_cache->fftw_output);
 
     if (spec_cache->conversion_factor_energyflux != NULL){
       free(spec_cache->conversion_factor_energyflux);
