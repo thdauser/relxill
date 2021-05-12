@@ -24,7 +24,8 @@
 #include "relreturn_table.h"
 
 emisProfile *get_rrad_emis_corona(const emisProfile*, const relParam*, int* );
-emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, const emisProfile* emis_input, double gamma, int* status);
-
+emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, double gshift_corr_factor,
+                                   const emisProfile* emis_input, double gamma, int* status);
+double calc_gshift_corr_factor(double xill_gshift_fac, double g);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_CORONA_H_

@@ -81,6 +81,7 @@ typedef struct {
   int return_rad;
   double
       return_rad_flux_correction_factor; // calculated ratio from xillver reflection to primary spectrum (energy flux)
+  double xillver_gshift_corr_fac; // correction factor of flux boost from xillver wrt to g^Gamma (for g=1.5)
 } relParam;
 
 typedef struct {

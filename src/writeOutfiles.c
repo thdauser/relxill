@@ -34,7 +34,7 @@ static void fclose_errormsg(FILE *fp, char *foutName) {
  *   - double[n_rad] intens
  *   - int n_rad
  **/
-void write_binned_data_to_file(char *foutName, double *rad, double *intens, int n_rad) {
+void write_binned_data_to_file(char *foutName, const double *rad, double *intens, int n_rad) {
   FILE *fp = fopen(foutName, "w+");
   for (int ii = 0; ii < n_rad; ii++) {
     fprintf(fp, " %e \t %e \t %e \n", rad[ii], rad[ii + 1], intens[ii]);
@@ -73,7 +73,7 @@ void save_relline_profile(rel_spec *spec) {
   write_binned_data_to_file(fname, spec->ener, spec->flux[0], spec->n_ener);
 }
 
-void save_xillver_spectrum(double *ener, double *flu, int n_ener, char *fname) {
+void save_xillver_spectrum(const double *ener, double *flu, int n_ener, char *fname) {
   write_binned_data_to_file(fname, ener, flu, n_ener);
 }
 

@@ -150,6 +150,7 @@ void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
 
   (*ca_rel_param)->return_rad = par->return_rad;
   (*ca_rel_param)->return_rad_flux_correction_factor = par->return_rad_flux_correction_factor;
+  (*ca_rel_param)->xillver_gshift_corr_fac = par->xillver_gshift_corr_fac;
 
 }
 

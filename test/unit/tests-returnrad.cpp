@@ -299,7 +299,7 @@ emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* statu
     emis->emis[ii] /= emis->emis[0]; //
   }
 
-  emisProfile* emis_return = calc_rrad_emis_corona(rf, emis, gamma, status);
+  emisProfile* emis_return = calc_rrad_emis_corona(rf, 1.0, emis, gamma, status);
 
   free_returningFractions(&rf);
   free_emisProfile(emis);
@@ -387,19 +387,55 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
   LocalModel lmod{ModelName::relxilllpRet};
   lmod.set_par(XPar::return_rad, 1);
 
-  lmod.set_par(XPar::logxi, 3.5);
-  double flux_corr1 = calc_return_rad_flux_correction(lmod.get_xill_params(), &status);
+  lmod.set_par(XPar::logxi, 3.0);
+  double flux_corr1=0;
+  set_return_rad_flux_correction(&flux_corr1, nullptr, lmod.get_xill_params(), &status);
   REQUIRE(flux_corr1 > 0.5);
   REQUIRE(flux_corr1 < 1.0); // only works for logxi<=4
 
   lmod.set_par(XPar::logxi, 0.0);
-  double flux_corr2 = calc_return_rad_flux_correction(lmod.get_xill_params(),  &status);
+  double flux_corr2=0;
+  set_return_rad_flux_correction(&flux_corr2, nullptr,lmod.get_xill_params(), &status);
 
   REQUIRE(flux_corr1 > 2 * flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
 
 }
 
 
+TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
+  int status = EXIT_SUCCESS;
+
+  LocalModel lmod{ModelName::relxilllpRet};
+  lmod.set_par(XPar::return_rad, 1);
+
+  double gshift_ref_value = 1.5; // correction factor calculated for this value
+  double gam = 2.0;
+
+  lmod.set_par(XPar::gamma, gam);
+  lmod.set_par(XPar::logxi, 3.0);
+  double gshift_flux_corr1;
+  set_return_rad_flux_correction(nullptr, &gshift_flux_corr1, lmod.get_xill_params(), &status);
+  REQUIRE(gshift_flux_corr1 > 1);
+  REQUIRE(gshift_flux_corr1 < pow(gshift_ref_value,gam+0.5)/pow(gshift_ref_value,gam));
+
+  lmod.set_par(XPar::logxi, 0.0);
+  double gshift_flux_corr2;
+  set_return_rad_flux_correction(nullptr, &gshift_flux_corr2, lmod.get_xill_params(), &status);
+
+  REQUIRE(gshift_flux_corr2 < 1 );
+  REQUIRE(gshift_flux_corr1 > 1.5 * gshift_flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
+
+}
+
+
+TEST_CASE("Test Gshift Linear Interpolation of the Correction Factor", "[returnrad]") {
+  double xill_gshift_fac = 1.2;
+
+  REQUIRE( calc_gshift_corr_factor(xill_gshift_fac, 1.5) > 1);
+  REQUIRE( calc_gshift_corr_factor(xill_gshift_fac, 0.1) < 1);
+  REQUIRE( calc_gshift_corr_factor(xill_gshift_fac, 0.1) > 0);
+
+}
 
 TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
   //
@@ -409,20 +445,30 @@ TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
   LocalModel lmod{ModelName::relxilllpRet};
   lmod.set_par(XPar::return_rad, 1);
 
-  const int n_logxi = 30;
+  const int n_logxi = 100;
   double logxi[n_logxi] = {0};
   double flux_corr[n_logxi] = {0};
+  double gshift_corr[n_logxi] = {0};
 
   double logxi_min = 0.0;
   double logxi_max = 4.0;
 
-  for (int ii=0; ii<n_logxi; ii++){
-    logxi[ii] = (logxi_max-logxi_min)*(ii*1.0 / (n_logxi-1)) + logxi_min;
-    lmod.set_par(XPar::logxi, logxi[ii]);
-    flux_corr[ii] = calc_return_rad_flux_correction(lmod.get_xill_params(), &status);
-  }
+  const int n_gam = 3;
+  double values_gamma[n_gam] = {1.5, 2.0, 2.5};
 
-  write_data_to_file("test-flux-corr-returnrad.dat",logxi,flux_corr,n_logxi);
+  char buffer[100];
+  for (double gam : values_gamma) {
+    lmod.set_par(XPar::gamma, gam);
+    for (int ii = 0; ii < n_logxi; ii++) {
+      logxi[ii] = (logxi_max - logxi_min) * (ii * 1.0 / (n_logxi - 1)) + logxi_min;
+      lmod.set_par(XPar::logxi, logxi[ii]);
+      set_return_rad_flux_correction(&(flux_corr[ii]), &(gshift_corr[ii]), lmod.get_xill_params(), &status);
+    }
+    int retval = sprintf(buffer, "test-flux-corr-returnrad_gam%.1f.dat",gam);
+    write_data_to_file(buffer, logxi, flux_corr, n_logxi);
+    retval = sprintf(buffer, "test-gshift-corr-returnrad_gam%.1f.dat",gam);
+    write_data_to_file(buffer, logxi, gshift_corr, n_logxi);
+  }
 
 }
 
@@ -434,14 +480,18 @@ TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllpRet};
-  local_model.set_par(XPar::return_rad, 1);
-  local_model.eval_model(spec);
-
-  double model_rrad_flux = sum_flux(spec.flux(),spec.num_flux_bins());
 
   local_model.set_par(XPar::return_rad, 0);
   local_model.eval_model(spec);
   double model_no_rrad_flux = sum_flux(spec.flux(),spec.num_flux_bins());
+
+
+  local_model.set_par(XPar::return_rad, 1);
+  local_model.eval_model(spec);
+  double model_rrad_flux = sum_flux(spec.flux(),spec.num_flux_bins());
+
+  string fname = "test-spec-relxilllpret.dat";
+  save_xillver_spectrum(spec.energy(), spec.flux(), spec.num_flux_bins(), fname.data() );
 
   REQUIRE(model_rrad_flux > model_no_rrad_flux);
 

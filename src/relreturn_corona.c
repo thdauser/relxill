@@ -35,8 +35,28 @@
  * be taken into account.
  */
 
-emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, const emisProfile* emis_input, double gamma, int* status) {
+/**
+ * @brief from the known ratio between xillver and power law flux boost, calculate the expected flux
+ * correction / factor for any g value (certainly not very accurate for large values of g)
+ * @param xill_gshift_fac  : factor between flux boost from xillver wrt to g^Gamma for g=1.5
+ * @param g : energy shift
+ * @return
+ */
+double calc_gshift_corr_factor(double xill_gshift_fac, double g){
+  if (g>=1){
+    return 2*((xill_gshift_fac - 1)*g + 1.5 - xill_gshift_fac );
+  } else {
+    return 1./(2*((xill_gshift_fac - 1)/g + 1.5 - xill_gshift_fac ) );
+  }
+}
 
+emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, double gshift_corr_factor,
+                                   const emisProfile* emis_input, double gamma, int* status) {
+
+
+  // make very rough sanity checks here
+  assert(gshift_corr_factor>1e-3);
+  assert(gshift_corr_factor<1e3);
 
   int ng = ret_fractions->tabData->ng;
   int nrad = ret_fractions->nrad;
@@ -52,18 +72,18 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, cons
 
   emisProfile* emis_return = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emisReturn
 
-
   for (int i_rad_incident = 0; i_rad_incident < nrad; i_rad_incident++) {
     int itab_rad_incident = ret_fractions->irad[i_rad_incident];
 
     for (int i_rad_emitted = 0; i_rad_emitted < nrad; i_rad_emitted++) {
       int itab_rad_emitted = ret_fractions->irad[i_rad_emitted];
 
-      get_gfac_grid(gfac, ret_fractions->tabData->gmin[itab_rad_incident][itab_rad_emitted], ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
+      get_gfac_grid(gfac, ret_fractions->tabData->gmin[itab_rad_incident][itab_rad_emitted],
+                    ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
 
       emis_single_zone[i_rad_emitted] = 0.0;
       for (int jj = 0; jj < ng; jj++) {
-        emis_single_zone[i_rad_emitted] += pow(gfac[jj], gamma)
+        emis_single_zone[i_rad_emitted] += pow(gfac[jj], gamma)*calc_gshift_corr_factor(gshift_corr_factor,gfac[jj])
             * ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj];
       }
 
@@ -117,7 +137,8 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   inv_rebin_mean(emis_input->re, emis_input->emis, emis_input->nr,
                  emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
 
-  emisProfile* emis_return = calc_rrad_emis_corona(ret_fractions, emis_input_rebinned, param->gamma, status);
+  emisProfile* emis_return = calc_rrad_emis_corona(ret_fractions, param->xillver_gshift_corr_fac,
+                                                   emis_input_rebinned, param->gamma, status);
   CHECK_STATUS_RET(*status, NULL);
 
   if( shouldOutfilesBeWritten() ){
