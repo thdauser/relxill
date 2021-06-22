@@ -16,7 +16,7 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "xilltable.h"
+#include "xillspec.h"
 #include "relbase.h"
 
 // possible parameters for the xillver tables
@@ -202,7 +202,7 @@ void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parna
 }
 
 /** read the parameters of the xillver FITS table   */
-static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, xillParam *param, int *status) {
+static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -311,7 +311,7 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
 
 }
 
-static float *get_xill_param_vals_array(xillParam *param, int *status) {
+float *get_xilltab_paramvals(xillParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -330,11 +330,11 @@ static float *get_xill_param_vals_array(xillParam *param, int *status) {
   return param_vals;
 }
 
-static int *xillInd_from_parInput(xillParam *param, xillTable *tab, int *status) {
+int *get_xilltab_indices_for_paramvals(xillParam *param, xillTable *tab, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
   // store the input in a variable
-  float *inp_param_vals = get_xill_param_vals_array(param, status);
+  float *inp_param_vals = get_xilltab_paramvals(param, status);
 
   int ii;
   int *ind = (int *) malloc(tab->num_param * sizeof(int));
@@ -379,7 +379,7 @@ static void set_dat(float *spec, xillTable *tab, int i0, int i1, int i2, int i3,
 }
 
 // get one Spectrum from the Data Storage
-static float *get_dat(xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
+float *get_xillspec(xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
 
   int index = get_xillspec_rownum(tab->num_param_vals, tab->num_param,
                                   i0, i1, i2, i3, i4, i5);
@@ -390,7 +390,8 @@ static float *get_dat(xillTable *tab, int i0, int i1, int i2, int i3, int i4, in
 char *getFullPathTableName(char *filename, int *status) {
 
   int MAXSIZE = 1000;
-  char *fullfilename = malloc(sizeof(char *) * MAXSIZE);
+  char *fullfilename = (char *) malloc(sizeof(char) * MAXSIZE);
+  CHECK_MALLOC_RET_STATUS(fullfilename, status, NULL)
 
   if (sprintf(fullfilename, "%s/%s", get_relxill_table_path(), filename) == -1) {
     RELXILL_ERROR("failed to construct full path the rel table", status);
@@ -398,7 +399,6 @@ char *getFullPathTableName(char *filename, int *status) {
   }
 
   return fullfilename;
-
 }
 
 int checkIfTableExists(char *filename, int *status) {
@@ -427,24 +427,24 @@ fitsfile *open_fits_table_stdpath(char *filename, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  char *fullfilename = getFullPathTableName(filename, status);
+  char *full_filename = getFullPathTableName(filename, status);
   CHECK_STATUS_RET(*status, NULL);
 
   fitsfile *fptr = NULL;
-  if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
+  if (fits_open_table(&fptr, full_filename, READONLY, status)) {
     RELXILL_ERROR("opening of the table failed", status);
-    printf("    either the full path given (%s) is wrong \n", fullfilename);
+    printf("    either the full path given (%s) is wrong \n", full_filename);
     printf("    or you need to download the table ** %s **  from \n", filename);
-    printf("    http://www.sternwarte.uni-erlangen.de/research/relxill/ \n");
+    printf("    https://www.sternwarte.uni-erlangen.de/research/relxill/ \n");
   }
 
-  free(fullfilename);
+  free(full_filename);
 
   return fptr;
 }
 
 /** load the complete relline table */
-void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, int *status) {
+void init_xillver_table(char *filename, xillTable **inp_tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -468,7 +468,7 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
   get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
 
   /** =3= and now the stored parameter values (also check if the correct number of parameters) **/
-  get_xilltable_parameters(fptr, tab, param, status);
+  get_xilltable_parameters(fptr, tab, status);
 
   /** =4= finally set up the complete data structure **/
   init_xilltable_data_struct(tab, status);
@@ -487,10 +487,13 @@ void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, i
 
 }
 
-/** check if the given parameter index is in the xillver table
+/**
+ * @brief: check if the given parameter index is in the xillver table
+ * @return
  *  -1 : not found
- *  ii : return index where this value is found in the param_index array  **/
-static int getParameterTableIndex(xillTable *tab, int ind) {
+ *  ii : return index where this value is found in the param_index array
+ **/
+int get_xilltab_param_index(xillTable *tab, int ind) {
 
   int ii;
   for (ii = 0; ii < tab->num_param; ii++) {
@@ -516,11 +519,10 @@ static void normalizeXillverSpecLogxiDensity(float *spec,
                                              xillTable *tab,
                                              double density,
                                              double logxi,
-                                             const int *indVals,
-                                             int array) {
+                                             const int *indVals) {
 
-  int ind_dens = getParameterTableIndex(tab, PARAM_DNS);
-  int ind_lxi = getParameterTableIndex(tab, PARAM_LXI);
+  int ind_dens = get_xilltab_param_index(tab, PARAM_DNS);
+  int ind_lxi = get_xilltab_param_index(tab, PARAM_LXI);
 
   int ind_dens_6dim = convertTo6dimTableIndex(tab->num_param, ind_dens);
   int ind_lxi_6dim = convertTo6dimTableIndex(tab->num_param, ind_lxi);
@@ -538,8 +540,18 @@ static void normalizeXillverSpecLogxiDensity(float *spec,
 
 }
 
-static void load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, double defDensity, double defLogxi,
-                             int nn, int ii, int jj, int kk, int ll, int mm, int *status) {
+static void xilltable_fits_load_single_spec(char *fname,
+                                            fitsfile **fptr,
+                                            xillTable *tab,
+                                            double defDensity,
+                                            double defLogxi,
+                                            int nn,
+                                            int ii,
+                                            int jj,
+                                            int kk,
+                                            int ll,
+                                            int mm,
+                                            int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -575,9 +587,8 @@ static void load_single_spec(char *fname, fitsfile **fptr, xillTable *tab, doubl
     return;
   }
 
-  const int n_array = 6;
   int indexArray[] = {nn, ii, jj, kk, ll, mm};
-  normalizeXillverSpecLogxiDensity(spec, tab, defDensity, defLogxi, indexArray, n_array);
+  normalizeXillverSpecLogxiDensity(spec, tab, defDensity, defLogxi, indexArray);
 
   set_dat(spec, tab, nn, ii, jj, kk, ll, mm);
 }
@@ -591,18 +602,11 @@ static double getDefaultLogxi(xillParam *param) {
   return param->lxi;
 }
 
-static void check_xillTable_cache(char *fname, xillParam *param, xillTable *tab, const int *ind, int *status) {
+void check_xilltab_cache(char *fname, xillParam *param, xillTable *tab, const int* ind, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  // =2=  check if the necessary spectra are loaded (we only open the file once)
   fitsfile *fptr = NULL;
-  int ii;
-  int jj;
-  int kk;
-  int ll;
-  int mm;
-  int nn;
 
   // (current) standard case for 5 param
   int i0lo = 0;
@@ -619,6 +623,7 @@ static void check_xillTable_cache(char *fname, xillParam *param, xillTable *tab,
   double defDensity = getDefaultDensity(param);
   double defLogxi = getDefaultLogxi(param);
 
+  int ii, jj, kk, ll, mm, nn;
   for (nn = i0lo; nn <= i0hi; nn++) { // for 5dim this is a dummy loop
     for (ii = ind[istart]; ii <= ind[istart] + 1; ii++) {
       for (jj = ind[istart + 1]; jj <= ind[istart + 1] + 1; jj++) {
@@ -627,8 +632,19 @@ static void check_xillTable_cache(char *fname, xillParam *param, xillTable *tab,
             // always load **all** incl bins as for relxill we will certainly need it
             for (mm = 0; mm < tab->n_incl; mm++) {
 
-              if (get_dat(tab, nn, ii, jj, kk, ll, mm) == NULL) {
-                load_single_spec(fname, &fptr, tab, defDensity, defLogxi, nn, ii, jj, kk, ll, mm, status);
+              if (get_xillspec(tab, nn, ii, jj, kk, ll, mm) == NULL) {
+                xilltable_fits_load_single_spec(fname,
+                                                &fptr,
+                                                tab,
+                                                defDensity,
+                                                defLogxi,
+                                                nn,
+                                                ii,
+                                                jj,
+                                                kk,
+                                                ll,
+                                                mm,
+                                                status);
                 CHECK_STATUS_VOID(*status);
               }
 
@@ -693,48 +709,170 @@ void free_xill_spec(xillSpec *spec) {
   }
 }
 
+
+
+char *getXilltableNameUsingAlternativeIfNotExisting(char *stdname, char *altname, int *status) {
+  char *nthcompFileName = stdname;
+
+  if (checkIfTableExists(nthcompFileName, status) == 0) {
+    nthcompFileName = altname;
+    if (is_debug_run()) {
+      printf(" *** warning: did not find standard table %s, trying to use alternatively %s \n", stdname, altname);
+    }
+  }
+  return nthcompFileName;
+}
+/** load the xillver table and return its filename **/
+char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
+
+  CHECK_STATUS_RET(*status, NULL);
+
+  if (is_dens_model(param->model_type) && (param->prim_type == PRIM_SPEC_ECUT)) {
+    if (cached_xill_tab_dens == NULL) {
+      init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, status);
+    }
+    *tab = cached_xill_tab_dens;
+    return XILLTABLE_DENS_FILENAME;
+
+  } else if (is_ns_model(param->model_type)) {
+    if (cached_xill_tab_ns == NULL) {
+      init_xillver_table(XILLTABLE_NS_FILENAME, &cached_xill_tab_ns, status);
+      CHECK_STATUS_RET(*status, NULL);
+    }
+    *tab = cached_xill_tab_ns;
+    return XILLTABLE_NS_FILENAME;
+
+  } else if (is_co_model(param->model_type)) {
+    if (cached_xill_tab_co == NULL) {
+      assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
+      assert(param->lxi == 0); // the CO_Table does not have an ionization
+      init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, status);
+      CHECK_STATUS_RET(*status, NULL);
+    }
+    *tab = cached_xill_tab_co;
+    return XILLTABLE_CO_FILENAME;
+
+  } else if (is_CpD_model(param->model_type)) {
+
+    if (cached_xill_tab_dens_nthcomp == NULL) {
+      init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_dens_nthcomp, status);
+      CHECK_STATUS_RET(*status, NULL);
+    }
+    *tab = cached_xill_tab_dens_nthcomp;
+    return XILLTABLE_NTHCOMP_FILENAME;
+
+  } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
+
+    // currently we have a new and also an older table for the nthcomp version (one includes more
+    // densities, but is not in the standard distribution
+    char *nthcompFileName = getXilltableNameUsingAlternativeIfNotExisting(
+        XILLTABLE_NTHCOMP_FILENAME, XILLTABLE_NTHCOMP_FILENAME_OLD, status);
+
+
+    // TODO: need to check that logN=10^15 if we use the old table (plus print warning to download new table)
+
+    if (cached_xill_tab_nthcomp == NULL) {
+      init_xillver_table(nthcompFileName, &cached_xill_tab_nthcomp, status);
+    }
+
+    *tab = cached_xill_tab_nthcomp;
+    return nthcompFileName;
+
+  } else {
+
+    if (cached_xill_tab == NULL) {
+      init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, status);
+    }
+    *tab = cached_xill_tab;
+    return XILLTABLE_FILENAME;
+  }
+
+}
+
+
+void free_xillTable(xillTable *tab) {
+  if (tab != NULL) {
+
+    int ii;
+    if (tab->data_storage != NULL) {
+      for (ii = 0; ii < tab->num_elements; ii++) {
+        if (tab->data_storage[ii] != NULL) {
+          free(tab->data_storage[ii]);
+        }
+
+      }
+      free(tab->data_storage);
+    }
+
+    if (tab->param_vals != NULL) {
+      for (ii = 0; ii < tab->num_param; ii++) {
+        free(tab->param_vals[ii]);
+
+        free(tab->param_names[ii]);
+      }
+
+    }
+    free(tab->param_vals);
+    free(tab->param_names);
+
+    free(tab->num_param_vals);
+    free(tab->param_index);
+
+    free(tab->elo);
+    free(tab->ehi);
+
+    free(tab);
+  }
+}
+
+void free_cached_xillTable(void) {
+  free_xillTable(cached_xill_tab);
+  free_xillTable(cached_xill_tab_dens);
+  free_xillTable(cached_xill_tab_nthcomp);
+}
+
 static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
                                double f1, double f2, double f3, double f4,
                                int i0, int i1, int i2, int i3, int i4, int i5) {
 
-  float* dat_0000 = get_dat(tab, i0, i1, i2, i3, i4, i5);
-  float* dat_1000 = get_dat(tab, i0, i1+1, i2, i3, i4, i5);
-  float* dat_0100 = get_dat(tab, i0, i1, i2+1, i3, i4, i5);
-  float* dat_0010 = get_dat(tab, i0, i1, i2, i3+1, i4, i5);
+  float *dat_0000 = get_xillspec(tab, i0, i1, i2, i3, i4, i5);
+  float *dat_1000 = get_xillspec(tab, i0, i1 + 1, i2, i3, i4, i5);
+  float *dat_0100 = get_xillspec(tab, i0, i1, i2 + 1, i3, i4, i5);
+  float *dat_0010 = get_xillspec(tab, i0, i1, i2, i3 + 1, i4, i5);
 
-  float* dat_1100 = get_dat(tab, i0, i1+1, i2+1, i3, i4, i5);
-  float* dat_1010 = get_dat(tab, i0, i1+1, i2, i3+1, i4, i5);
-  float* dat_0110 = get_dat(tab, i0, i1, i2+1, i3+1, i4, i5);
-  float* dat_1110 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4, i5);
+  float *dat_1100 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3, i4, i5);
+  float *dat_1010 = get_xillspec(tab, i0, i1 + 1, i2, i3 + 1, i4, i5);
+  float *dat_0110 = get_xillspec(tab, i0, i1, i2 + 1, i3 + 1, i4, i5);
+  float *dat_1110 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5);
 
-  float* dat_0001 = get_dat(tab, i0, i1, i2, i3, i4+1, i5);
-  float* dat_1001 = get_dat(tab, i0, i1+1, i2, i3, i4+1, i5);
-  float* dat_0101 = get_dat(tab, i0, i1, i2+1, i3, i4+1, i5);
-  float* dat_0011 = get_dat(tab, i0, i1, i2, i3+1, i4+1, i5);
+  float *dat_0001 = get_xillspec(tab, i0, i1, i2, i3, i4 + 1, i5);
+  float *dat_1001 = get_xillspec(tab, i0, i1 + 1, i2, i3, i4 + 1, i5);
+  float *dat_0101 = get_xillspec(tab, i0, i1, i2 + 1, i3, i4 + 1, i5);
+  float *dat_0011 = get_xillspec(tab, i0, i1, i2, i3 + 1, i4 + 1, i5);
 
-  float* dat_1101 = get_dat(tab, i0, i1+1, i2+1, i3, i4+1, i5);
-  float* dat_1011 = get_dat(tab, i0, i1+1, i2, i3+1, i4+1, i5);
-  float* dat_0111 = get_dat(tab, i0, i1, i2+1, i3+1, i4+1, i5);
-  float* dat_1111 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4+1, i5);
+  float *dat_1101 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5);
+  float *dat_1011 = get_xillspec(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5);
+  float *dat_0111 = get_xillspec(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5);
+  float *dat_1111 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5);
 
-  double f_0000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (1 - f4);
-  double f_1000 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (1 - f4);
-  double f_0100 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (1 - f4);
-  double f_0010 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (1 - f4);
-  double f_0001 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (  f4  );
+  double f_0000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4);
+  double f_1000 = (f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4);
+  double f_0100 = (1.0 - f1) * (f2) * (1.0 - f3) * (1 - f4);
+  double f_0010 = (1.0 - f1) * (1.0 - f2) * (f3) * (1 - f4);
+  double f_0001 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (f4);
 
-  double f_1010 = ( f1     ) * (1.0 - f2) * (  f3    )  * (1 - f4);
-  double f_1001 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (  f4  );
-  double f_0101 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (  f4  );
-  double f_1100 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (1 - f4);
-  double f_0110 = (1.0 - f1) * (   f2   ) * (  f3    )  * (1 - f4);
-  double f_0011 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  );
+  double f_1010 = (f1) * (1.0 - f2) * (f3) * (1 - f4);
+  double f_1001 = (f1) * (1.0 - f2) * (1.0 - f3) * (f4);
+  double f_0101 = (1.0 - f1) * (f2) * (1.0 - f3) * (f4);
+  double f_1100 = (f1) * (f2) * (1.0 - f3) * (1 - f4);
+  double f_0110 = (1.0 - f1) * (f2) * (f3) * (1 - f4);
+  double f_0011 = (1.0 - f1) * (1.0 - f2) * (f3) * (f4);
 
-  double f_1101 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (  f4  );
-  double f_1110 = ( f1     ) * (  f2    ) * ( f3     )  * (1 - f4);
-  double f_1011 = ( f1     ) * (1.0 - f2) * (  f3    )  * (  f4  );
-  double f_0111 = (1.0 - f1) * (  f2    ) * (  f3    )  * (  f4  );
-  double f_1111 = (  f1    ) * (  f2    ) * (  f3    )  * (  f4  );
+  double f_1101 = (f1) * (f2) * (1.0 - f3) * (f4);
+  double f_1110 = (f1) * (f2) * (f3) * (1 - f4);
+  double f_1011 = (f1) * (1.0 - f2) * (f3) * (f4);
+  double f_0111 = (1.0 - f1) * (f2) * (f3) * (f4);
+  double f_1111 = (f1) * (f2) * (f3) * (f4);
 
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
@@ -764,83 +902,79 @@ static void interp_5d_tab(xillTable *tab, double *flu, int n_ener,
                           int i0, int i1, int i2, int i3, int i4,
                           int i5) {
 
-  float* dat_00000 = get_dat(tab, i0, i1, i2, i3, i4, i5);
-  float* dat_10000 = get_dat(tab, i0, i1+1, i2, i3, i4, i5);
-  float* dat_01000 = get_dat(tab, i0, i1, i2+1, i3, i4, i5);
-  float* dat_00100 = get_dat(tab, i0, i1, i2, i3+1, i4, i5);
+  float *dat_00000 = get_xillspec(tab, i0, i1, i2, i3, i4, i5);
+  float *dat_10000 = get_xillspec(tab, i0, i1 + 1, i2, i3, i4, i5);
+  float *dat_01000 = get_xillspec(tab, i0, i1, i2 + 1, i3, i4, i5);
+  float *dat_00100 = get_xillspec(tab, i0, i1, i2, i3 + 1, i4, i5);
 
-  float* dat_11000 = get_dat(tab, i0, i1+1, i2+1, i3, i4, i5);
-  float* dat_10100 = get_dat(tab, i0, i1+1, i2, i3+1, i4, i5);
-  float* dat_01100 = get_dat(tab, i0, i1, i2+1, i3+1, i4, i5);
-  float* dat_11100 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4, i5);
+  float *dat_11000 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3, i4, i5);
+  float *dat_10100 = get_xillspec(tab, i0, i1 + 1, i2, i3 + 1, i4, i5);
+  float *dat_01100 = get_xillspec(tab, i0, i1, i2 + 1, i3 + 1, i4, i5);
+  float *dat_11100 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5);
 
-  float* dat_00010 = get_dat(tab, i0, i1, i2, i3, i4+1, i5);
-  float* dat_10010 = get_dat(tab, i0, i1+1, i2, i3, i4+1, i5);
-  float* dat_01010 = get_dat(tab, i0, i1, i2+1, i3, i4+1, i5);
-  float* dat_00110 = get_dat(tab, i0, i1, i2, i3+1, i4+1, i5);
+  float *dat_00010 = get_xillspec(tab, i0, i1, i2, i3, i4 + 1, i5);
+  float *dat_10010 = get_xillspec(tab, i0, i1 + 1, i2, i3, i4 + 1, i5);
+  float *dat_01010 = get_xillspec(tab, i0, i1, i2 + 1, i3, i4 + 1, i5);
+  float *dat_00110 = get_xillspec(tab, i0, i1, i2, i3 + 1, i4 + 1, i5);
 
-  float* dat_11010 = get_dat(tab, i0, i1+1, i2+1, i3, i4+1, i5);
-  float* dat_10110 = get_dat(tab, i0, i1+1, i2, i3+1, i4+1, i5);
-  float* dat_01110 = get_dat(tab, i0, i1, i2+1, i3+1, i4+1, i5);
-  float* dat_11110 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4+1, i5);
+  float *dat_11010 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5);
+  float *dat_10110 = get_xillspec(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5);
+  float *dat_01110 = get_xillspec(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5);
+  float *dat_11110 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5);
 
+  float *dat_00001 = get_xillspec(tab, i0, i1, i2, i3, i4, i5 + 1);
+  float *dat_10001 = get_xillspec(tab, i0, i1 + 1, i2, i3, i4, i5 + 1);
+  float *dat_01001 = get_xillspec(tab, i0, i1, i2 + 1, i3, i4, i5 + 1);
+  float *dat_00101 = get_xillspec(tab, i0, i1, i2, i3 + 1, i4, i5 + 1);
 
-  float* dat_00001 = get_dat(tab, i0, i1, i2, i3, i4, i5+1);
-  float* dat_10001 = get_dat(tab, i0, i1+1, i2, i3, i4, i5+1);
-  float* dat_01001 = get_dat(tab, i0, i1, i2+1, i3, i4, i5+1);
-  float* dat_00101 = get_dat(tab, i0, i1, i2, i3+1, i4, i5+1);
+  float *dat_11001 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3, i4, i5 + 1);
+  float *dat_10101 = get_xillspec(tab, i0, i1 + 1, i2, i3 + 1, i4, i5 + 1);
+  float *dat_01101 = get_xillspec(tab, i0, i1, i2 + 1, i3 + 1, i4, i5 + 1);
+  float *dat_11101 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5 + 1);
 
-  float* dat_11001 = get_dat(tab, i0, i1+1, i2+1, i3, i4, i5+1);
-  float* dat_10101 = get_dat(tab, i0, i1+1, i2, i3+1, i4, i5+1);
-  float* dat_01101 = get_dat(tab, i0, i1, i2+1, i3+1, i4, i5+1);
-  float* dat_11101 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4, i5+1);
+  float *dat_00011 = get_xillspec(tab, i0, i1, i2, i3, i4 + 1, i5 + 1);
+  float *dat_10011 = get_xillspec(tab, i0, i1 + 1, i2, i3, i4 + 1, i5 + 1);
+  float *dat_01011 = get_xillspec(tab, i0, i1, i2 + 1, i3, i4 + 1, i5 + 1);
+  float *dat_00111 = get_xillspec(tab, i0, i1, i2, i3 + 1, i4 + 1, i5 + 1);
 
-  float* dat_00011 = get_dat(tab, i0, i1, i2, i3, i4+1, i5+1);
-  float* dat_10011 = get_dat(tab, i0, i1+1, i2, i3, i4+1, i5+1);
-  float* dat_01011 = get_dat(tab, i0, i1, i2+1, i3, i4+1, i5+1);
-  float* dat_00111 = get_dat(tab, i0, i1, i2, i3+1, i4+1, i5+1);
+  float *dat_11011 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5 + 1);
+  float *dat_10111 = get_xillspec(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5 + 1);
+  float *dat_01111 = get_xillspec(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5 + 1);
+  float *dat_11111 = get_xillspec(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5 + 1);
 
-  float* dat_11011 = get_dat(tab, i0, i1+1, i2+1, i3, i4+1, i5+1);
-  float* dat_10111 = get_dat(tab, i0, i1+1, i2, i3+1, i4+1, i5+1);
-  float* dat_01111 = get_dat(tab, i0, i1, i2+1, i3+1, i4+1, i5+1);
-  float* dat_11111 = get_dat(tab, i0, i1+1, i2+1, i3+1, i4+1, i5+1);
+  double f_00000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4) * (1 - f5);
+  double f_10000 = (f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4) * (1 - f5);
+  double f_01000 = (1.0 - f1) * (f2) * (1.0 - f3) * (1 - f4) * (1 - f5);
+  double f_00100 = (1.0 - f1) * (1.0 - f2) * (f3) * (1 - f4) * (1 - f5);
+  double f_00010 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (f4) * (1 - f5);
+  double f_10100 = (f1) * (1.0 - f2) * (f3) * (1 - f4) * (1 - f5);
+  double f_10010 = (f1) * (1.0 - f2) * (1.0 - f3) * (f4) * (1 - f5);
+  double f_01010 = (1.0 - f1) * (f2) * (1.0 - f3) * (f4) * (1 - f5);
+  double f_11000 = (f1) * (f2) * (1.0 - f3) * (1 - f4) * (1 - f5);
+  double f_01100 = (1.0 - f1) * (f2) * (f3) * (1 - f4) * (1 - f5);
+  double f_00110 = (1.0 - f1) * (1.0 - f2) * (f3) * (f4) * (1 - f5);
+  double f_11010 = (f1) * (f2) * (1.0 - f3) * (f4) * (1 - f5);
+  double f_11100 = (f1) * (f2) * (f3) * (1 - f4) * (1 - f5);
+  double f_10110 = (f1) * (1.0 - f2) * (f3) * (f4) * (1 - f5);
+  double f_01110 = (1.0 - f1) * (f2) * (f3) * (f4) * (1 - f5);
+  double f_11110 = (f1) * (f2) * (f3) * (f4) * (1 - f5);
 
-
-  double f_00000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
-  double f_10000 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
-  double f_01000 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
-  double f_00100 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (1 - f4) * ( 1 - f5);
-  double f_00010 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
-  double f_10100 = ( f1     ) * (1.0 - f2) * (  f3    )  * (1 - f4) * ( 1 - f5);
-  double f_10010 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
-  double f_01010 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
-  double f_11000 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (1 - f4) * ( 1 - f5);
-  double f_01100 = (1.0 - f1) * (   f2   ) * (  f3    )  * (1 - f4) * ( 1 - f5);
-  double f_00110 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  ) * ( 1 - f5);
-  double f_11010 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (  f4  ) * ( 1 - f5);
-  double f_11100 = ( f1     ) * (  f2    ) * ( f3     )  * (1 - f4) * ( 1 - f5);
-  double f_10110 = ( f1     ) * (1.0 - f2) * (  f3    )  * (  f4  ) * ( 1 - f5);
-  double f_01110 = (1.0 - f1) * (  f2    ) * (  f3    )  * (  f4  ) * ( 1 - f5);
-  double f_11110 = (  f1    ) * (  f2    ) * (  f3    )  * (  f4  ) * ( 1 - f5);
-
-  double f_00001 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * (   f5  );
-  double f_10001 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (1 - f4) * (   f5  );
-  double f_01001 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (1 - f4) * (   f5  );
-  double f_00101 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (1 - f4) * (   f5  );
-  double f_00011 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * (   f5  );
-  double f_10101 = ( f1     ) * (1.0 - f2) * (  f3    )  * (1 - f4) * (   f5  );
-  double f_10011 = ( f1     ) * (1.0 - f2) * (1.0 - f3)  * (  f4  ) * (   f5  );
-  double f_01011 = (1.0 - f1) * (   f2   ) * (1.0 - f3)  * (  f4  ) * (   f5  );
-  double f_11001 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (1 - f4) * (   f5  );
-  double f_01101 = (1.0 - f1) * (   f2   ) * (  f3    )  * (1 - f4) * (   f5  );
-  double f_00111 = (1.0 - f1) * (1.0 - f2) * (  f3    )  * (  f4  ) * (   f5  );
-  double f_11011 = ( f1     ) * (  f2    ) * (1.0 - f3)  * (  f4  ) * (   f5  );
-  double f_11101 = ( f1     ) * (  f2    ) * ( f3     )  * (1 - f4) * (   f5  );
-  double f_10111 = ( f1     ) * (1.0 - f2) * (  f3    )  * (  f4  ) * (   f5  );
-  double f_01111 = (1.0 - f1) * (  f2    ) * (  f3    )  * (  f4  ) * (   f5  );
-  double f_11111 = (  f1    ) * (  f2    ) * (  f3    )  * (  f4  ) * (   f5  );
-
-
+  double f_00001 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4) * (f5);
+  double f_10001 = (f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4) * (f5);
+  double f_01001 = (1.0 - f1) * (f2) * (1.0 - f3) * (1 - f4) * (f5);
+  double f_00101 = (1.0 - f1) * (1.0 - f2) * (f3) * (1 - f4) * (f5);
+  double f_00011 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (f4) * (f5);
+  double f_10101 = (f1) * (1.0 - f2) * (f3) * (1 - f4) * (f5);
+  double f_10011 = (f1) * (1.0 - f2) * (1.0 - f3) * (f4) * (f5);
+  double f_01011 = (1.0 - f1) * (f2) * (1.0 - f3) * (f4) * (f5);
+  double f_11001 = (f1) * (f2) * (1.0 - f3) * (1 - f4) * (f5);
+  double f_01101 = (1.0 - f1) * (f2) * (f3) * (1 - f4) * (f5);
+  double f_00111 = (1.0 - f1) * (1.0 - f2) * (f3) * (f4) * (f5);
+  double f_11011 = (f1) * (f2) * (1.0 - f3) * (f4) * (f5);
+  double f_11101 = (f1) * (f2) * (f3) * (1 - f4) * (f5);
+  double f_10111 = (f1) * (1.0 - f2) * (f3) * (f4) * (f5);
+  double f_01111 = (1.0 - f1) * (f2) * (f3) * (f4) * (f5);
+  double f_11111 = (f1) * (f2) * (f3) * (f4) * (f5);
 
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
@@ -931,22 +1065,25 @@ static void interp_6d_tab(xillTable *tab, double *flu, int n_ener,
   }
 }
 
-
-/** check boundary of the Ecut parameter  (grav. redshift can lead to the code asking
- *  for an Ecut not tabulated, although actually observed ecut is larger
- *  Input: tab, param
- *  Output fac         **/
-static void check_boundarys_ecut(xillTable *tab, const xillParam *param, double *fac) {
+/**
+ * @brief check boundary of the Ecut parameter and set ipol_factor accordingly
+ * @detail grav. redshift can lead to the code asking for an Ecut not tabulated,
+ * although actually observed ecut is larger. We set it to the lowest/highest value in this case
+ * @param: (input) tab
+ * @param: (input) param
+ * @param: (output) ipol_fac
+ **/
+static void ensure_ecut_within_boundarys(xillTable *tab, const xillParam *param, double *ipol_fac) {
   // first need to make sure ECUT is a parameter in the table
-  int index_ect = getParameterTableIndex(tab, PARAM_ECT);
+  int index_ect = get_xilltab_param_index(tab, PARAM_ECT);
   if (index_ect >= 0) {
     if (param->ect <= tab->param_vals[tab->param_index[index_ect]][0]) {
-      fac[index_ect] = 0.0;
+      ipol_fac[index_ect] = 0.0;
     }
     // can happen due to grav. redshift, although actually observed ecut is larger
     if (param->ect >=
         tab->param_vals[tab->param_index[index_ect]][tab->num_param_vals[tab->param_index[index_ect]] - 1]) {
-      fac[index_ect] = 1.0;
+      ipol_fac[index_ect] = 1.0;
     }
   }
 }
@@ -972,7 +1109,7 @@ static void resetInpvalsToBoundaries(char *pname, float *p_inpVal, float tabValL
 
 }
 
-static xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
+xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -998,11 +1135,11 @@ static xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *
     spec->incl[ii] = tab->incl[ii];
   }
 
-  float *inp_param_vals = get_xill_param_vals_array(param, status);
+  float *inp_param_vals = get_xilltab_paramvals(param, status);
 
   int nfac = tab->num_param;
-  double *fac = (double *) malloc(sizeof(double) * nfac);
-  CHECK_MALLOC_RET_STATUS(fac, status, NULL)
+  double *ipol_fac = (double *) malloc(sizeof(double) * nfac);
+  CHECK_MALLOC_RET_STATUS(ipol_fac, status, NULL)
 
   /* calculate interpolation factor for all parameters
    * ([nfac-1] is inclination, which might not be used ) */
@@ -1011,31 +1148,30 @@ static xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *
     // need the index
     pind = tab->param_index[ii];
 
-    if ( ! (( !is_xill_model(param->model_type)) &&  (tab->param_index[ii] == PARAM_INC ))) {
+    if (!((!is_xill_model(param->model_type)) && (tab->param_index[ii] == PARAM_INC))) {
       resetInpvalsToBoundaries(tab->param_names[ii], &(inp_param_vals[pind]), tab->param_vals[ii][0],
                                tab->param_vals[ii][tab->num_param_vals[ii] - 1]);
     }
 
-    fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
+    ipol_fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
         (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
 
     if (is_debug_run()) {
-      printf("\n [%i] %s (par_index=%i)  : parval = %.2e (index=%i), determining fac = %.2e ",
-             ii, tab->param_names[ii], pind, inp_param_vals[pind], ind[ii], fac[ii]);
+      printf("\n [%i] %s (par_index=%i)  : parval = %.2e (index=%i), determining ipol_fac = %.2e ",
+             ii, tab->param_names[ii], pind, inp_param_vals[pind], ind[ii], ipol_fac[ii]);
     }
   }
 
   free(inp_param_vals);
 
-  /** check boundary of the Ecut parameter
-   *  (grav. redshift can lead to the code asking for an Ecut not tabulated,
-   *  although actually observed ecut is larger **/
-  check_boundarys_ecut(tab, param, fac);
+  // check boundary of the Ecut parameter and set ipol_fac[ECUT] accordingly
+  // (can happen due to strong grav. redshift)
+  ensure_ecut_within_boundarys(tab, param, ipol_fac);
 
   if (tab->num_param == 5) {
     if (is_xill_model(param->model_type)) {
       interp_5d_tab(tab, spec->flu[0], spec->n_ener,
-                    fac[0], fac[1], fac[2], fac[3], fac[4], 0,
+                    ipol_fac[0], ipol_fac[1], ipol_fac[2], ipol_fac[3], ipol_fac[4], 0,
                     ind[0], ind[1], ind[2], ind[3], ind[4]);
 
     } else {
@@ -1045,7 +1181,7 @@ static xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *
       // get the spectrum for EACH flux bin
       for (ii = 0; ii < spec->n_incl; ii++) {
         interp_5d_tab_incl(tab, spec->flu[ii], spec->n_ener,
-                           fac[0], fac[1], fac[2], fac[3], 0,
+                           ipol_fac[0], ipol_fac[1], ipol_fac[2], ipol_fac[3], 0,
                            ind[0], ind[1], ind[2], ind[3], ii);
       }
 
@@ -1055,178 +1191,18 @@ static xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *
     if (is_xill_model(param->model_type)) {
       for (ii = 0; ii < spec->n_incl; ii++) {
         interp_6d_tab(tab, spec->flu[ii], spec->n_ener,
-                      fac, nfac, ind);
+                      ipol_fac, nfac, ind);
       }
     } else {
       for (ii = 0; ii < spec->n_incl; ii++) {
         interp_6d_tab_incl(tab, spec->flu[ii], spec->n_ener,
-                           fac, nfac, ind, ii);
+                           ipol_fac, nfac, ind, ii);
       }
     }
 
   }
 
-  free(fac);
+  free(ipol_fac);
 
   return spec;
-}
-
-char *getXilltableNameUsingAlternativeIfNotExisting(char *stdname, char *altname, int *status) {
-  char *nthcompFileName = stdname;
-
-  if (checkIfTableExists(nthcompFileName, status) == 0) {
-    nthcompFileName = altname;
-    if (is_debug_run()) {
-      printf(" *** warning: did not find standard table %s, trying to use alternatively %s \n", stdname, altname);
-    }
-  }
-  return nthcompFileName;
-}
-/** load the xillver table and return its filename **/
-char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
-
-  CHECK_STATUS_RET(*status, NULL);
-
-  if (is_dens_model(param->model_type) && (param->prim_type == PRIM_SPEC_ECUT)) {
-    if (cached_xill_tab_dens == NULL) {
-      init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, param, status);
-    }
-    *tab = cached_xill_tab_dens;
-    return XILLTABLE_DENS_FILENAME;
-
-  } else if (is_ns_model(param->model_type)) {
-    if (cached_xill_tab_ns == NULL) {
-      init_xillver_table(XILLTABLE_NS_FILENAME, &cached_xill_tab_ns, param, status);
-      CHECK_STATUS_RET(*status, NULL);
-    }
-    *tab = cached_xill_tab_ns;
-    return XILLTABLE_NS_FILENAME;
-
-  } else if (is_co_model(param->model_type)) {
-    if (cached_xill_tab_co == NULL) {
-      assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
-      assert(param->lxi == 0); // the CO_Table does not have an ionization
-      init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, param, status);
-      CHECK_STATUS_RET(*status, NULL);
-    }
-    *tab = cached_xill_tab_co;
-    return XILLTABLE_CO_FILENAME;
-
-  } else if (is_CpD_model(param->model_type)) {
-
-    if (cached_xill_tab_dens_nthcomp == NULL) {
-      init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_dens_nthcomp, param, status);
-      CHECK_STATUS_RET(*status, NULL);
-    }
-    *tab = cached_xill_tab_dens_nthcomp;
-    return XILLTABLE_NTHCOMP_FILENAME;
-
-  } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
-
-    // currently we have a new and also an older table for the nthcomp version (one includes more
-    // densities, but is not in the standard distribution
-    char *nthcompFileName = getXilltableNameUsingAlternativeIfNotExisting(
-        XILLTABLE_NTHCOMP_FILENAME, XILLTABLE_NTHCOMP_FILENAME_OLD, status);
-
-    if (cached_xill_tab_nthcomp == NULL) {
-      init_xillver_table(nthcompFileName, &cached_xill_tab_nthcomp, param, status);
-    }
-
-    *tab = cached_xill_tab_nthcomp;
-    return nthcompFileName;
-
-  } else {
-
-    if (cached_xill_tab == NULL) {
-      init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, param, status);
-    }
-    *tab = cached_xill_tab;
-    return XILLTABLE_FILENAME;
-  }
-
-}
-
-/** the main routine for the xillver table: returns a spectrum for the given parameters
- *  - decides if the table needs to be initialized and/or more data loaded
- *  - automatically normalizes  the spectra to logN=1e15 and logXi=0
- * */
-xillSpec *get_xillver_spectra(xillParam *param, int *status) {
-
-  CHECK_STATUS_RET(*status, NULL);
-
-  xillTable *tab = NULL;
-  char *fname = get_init_xillver_table(&tab, param, status);
-
-  CHECK_STATUS_RET(*status, NULL);
-  assert(fname != NULL);
-
-  // =1=  get the inidices
-  int *ind = xillInd_from_parInput(param, tab, status);
-
-  // =2=  check if the necessary spectra are loaded (we only open the file once)
-  check_xillTable_cache(fname, param, tab, ind, status);
-
-  // =3= interpolate values
-  xillSpec *spec = interp_xill_table(tab, param, ind, status);
-
-  CHECK_RELXILL_DEFAULT_ERROR(status);
-
-  free(ind);
-  return spec;
-}
-
-double norm_factor_semi_infinite_slab(double incl_deg) {
-  return 0.5 * cos(incl_deg * M_PI / 180);
-}
-
-void norm_xillver_spec(xillSpec *spec, double incl) {
-
-  /** adds the proper flux normalization for a semi-infinate slab
-   *  under inclination angle incl */
-  double norm_factor = norm_factor_semi_infinite_slab(incl);
-  for (int ii = 0; ii < spec->n_ener; ii++) {
-    spec->flu[0][ii] *= norm_factor;
-  }
-
-}
-
-void free_xillTable(xillTable *tab) {
-  if (tab != NULL) {
-
-    int ii;
-    if (tab->data_storage != NULL) {
-      for (ii = 0; ii < tab->num_elements; ii++) {
-        if (tab->data_storage[ii] != NULL) {
-          free(tab->data_storage[ii]);
-        }
-
-      }
-      free(tab->data_storage);
-    }
-
-    if (tab->param_vals != NULL) {
-      for (ii = 0; ii < tab->num_param; ii++) {
-        free(tab->param_vals[ii]);
-
-        free(tab->param_names[ii]);
-      }
-
-    }
-    free(tab->param_vals);
-    free(tab->param_names);
-
-    free(tab->num_param_vals);
-    free(tab->param_index);
-
-    free(tab->elo);
-    free(tab->ehi);
-
-    free(tab);
-  }
-}
-
-void free_cached_xillTable(void) {
-  free_xillTable(cached_xill_tab);
-  free_xillTable(cached_xill_tab_dens);
-  free_xillTable(cached_xill_tab_nthcomp);
 }

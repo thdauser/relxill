@@ -29,7 +29,7 @@
 #include "relutility.h"
 #include "reltable.h"
 #include "rellp.h"
-#include "xilltable.h"
+#include "xillspec.h"
 #include "relcache.h"
 #include "relprofile.h"
 
@@ -184,4 +184,4 @@ double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
                                                  const relParam *rel_param, const xillParam *xill_param, int *status);
 int convert_relxill_to_xillver_model_type(int relxill_model_type, int *status);
 
-#endif /* RELBASE_H_ */
+#endif //RELBASE_H_

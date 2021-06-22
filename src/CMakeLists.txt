@@ -23,7 +23,7 @@ set(SOURCE_FILES
         relreturn_datastruct.c relreturn_datastruct.h
         relreturn_table.c relreturn_table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
-        )
+        xillspec.c xillspec.h)
 ############################################
 
 set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)

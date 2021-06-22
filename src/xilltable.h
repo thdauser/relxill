@@ -62,23 +62,22 @@ xillTable *new_xillTable(int num_param, int *status);
 /* destroy the relline table structure */
 void free_xillTable(xillTable *tab);
 
-/** the main routine for the xillver table: returns a spectrum for the given parameters
- *  (decides if the table needs to be initialized and/or more data loaded          */
-xillSpec *get_xillver_spectra(xillParam *param, int *status);
+xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status);
 
-xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
-void free_xill_spec(xillSpec *spec);
+int get_xilltab_param_index(xillTable *tab, int ind);
+float *get_xilltab_paramvals(xillParam *param, int *status);
+int *get_xilltab_indices_for_paramvals(xillParam *param, xillTable *tab, int *status);
+
+void check_xilltab_cache(char *fname, xillParam *param, xillTable *tab, const int *ind, int *status);
 
 void free_cached_xillTable(void);
 
-void init_xillver_table(char *filename, xillTable **inp_tab, xillParam *param, int *status);
+void init_xillver_table(char *filename, xillTable **inp_tab, int *status);
 
 char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status);
 
 void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname);
 
-double norm_factor_semi_infinite_slab(double incl_deg);
-void norm_xillver_spec(xillSpec *spec, double incl);
 
 fitsfile *open_fits_table_stdpath(char *filename, int *status);
 

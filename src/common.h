@@ -126,7 +126,7 @@ typedef struct {
   float *incl;
 
   /* need to identify the meaning of each parameter here [index in the array]
-   * (see routine "get_xill_param_vals_array" */
+   * (see routine "get_xilltab_paramvals" */
   int *param_index;  // lenth is N_PARAM_MAX
   char **param_names; // name of each parameter
 

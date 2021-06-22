@@ -23,17 +23,6 @@
 #include "relbase.h"
 #include "writeOutfiles.h"
 
-/**
- *
- * @param ret_fractions
- * @param emis_input
- * @param gamma
- * @param status
- * @return emisProfile
- * @details calculate the emissivity profile for each radius (i_rad_incident), by integrating over the emitted flux
- * from radial zones that will hit this radius (i_rad_emitted). Additionally, for each zone the energy shift has to
- * be taken into account.
- */
 
 /**
  * @brief from the known ratio between xillver and power law flux boost, calculate the expected flux

@@ -34,7 +34,7 @@ void relxill_kernel(double *ener_inp,
                     relParam *rel_param,
                     int *status);
 
-void set_return_rad_flux_correction(double* fac_fluxcorr, double* fac_gshift_fluxcorr,
-                                    xillParam *xill_param, int *status);
+void get_xillver_fluxcorrection_factors(double* fac_fluxcorr, double* fac_gshift_fluxcorr,
+                                        xillParam *xill_param, int *status);
 
 #endif

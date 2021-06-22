@@ -65,7 +65,7 @@ static void testInitializeXillverTableCorrectly(int *status) {
 
   xillTable *tab = NULL;
   xillParam *param = get_std_param_xillver(status);
-  init_xillver_table(XILLTABLE_FILENAME, &tab, param, status);
+  init_xillver_table(XILLTABLE_FILENAME, &tab, status);
 
   if (*status == EXIT_SUCCESS) {
     assert(tab->n_ener > 0);
@@ -218,14 +218,11 @@ static void testLoadingNonExistingTable(int *status) {
   CHECK_STATUS_VOID(*status);
   PRINT_RELXILL_TEST_MSG_DEFAULT();
 
-  xillParam *param;
-
   char *nonExistingFilename = "no_table_has_this_name_1234.fits";
 
-  param = get_std_param_xillver(status);
   int statusFailing = EXIT_SUCCESS;
   xillTable *tab = NULL;
-  init_xillver_table(nonExistingFilename, &tab, param, &statusFailing);
+  init_xillver_table(nonExistingFilename, &tab, &statusFailing);
 
   if (statusFailing == EXIT_SUCCESS) {
     *status = EXIT_FAILURE;
@@ -280,7 +277,7 @@ static void testLoadingAlternativeTable(int *status) {
 
 }
 
-static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec, int *status) {
+static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec) {
 
   double sum0 = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, elo, ehi);
   double sum1 = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, elo, ehi);
@@ -306,7 +303,7 @@ static void testRenormXilltableDensLogxi(int *status) {
   param->dens = 15.5;
   spec[1] = get_xillver_spectra(param, status);
 
-  testNormfacBand(spec, 30.0, 80.0, 0.01, status);
+  testNormfacBand(spec, 30.0, 80.0, 0.01);
 
   print_status_outcome(status);
 
