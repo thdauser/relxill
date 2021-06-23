@@ -21,7 +21,7 @@ define load_relxill_model_devel(modlib){
 variable ALL_FF;  %% empty global variable
 
 define get_implemented_fitfunctions(){
-   variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
+   variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver",
 		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
    variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO","relxillDCp","relxilllpDCp","xillverDCp"];
    

@@ -178,8 +178,6 @@ define runtest(ffs){
 %   ff_arr["relline_lp"]   = [std_rel_param, "h"];
    ff_arr["relxill"]   = [std_rel_param, "Index1",std_xill_param, "Ecut"];
    ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
-%   ff_arr["relxillD"]   = [std_rel_param, "Rbr", "Index1","Index2", std_xill_param, "logN" ];
-   ff_arr["relxilllpD"] = [std_rel_param, "h","refl_frac", std_xill_param, "logN" ];
 #ifndef STABLE
    ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
    ff_arr["relxillNS"] = [std_rel_param, "logN", "kTbb"];

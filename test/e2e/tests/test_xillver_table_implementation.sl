@@ -65,12 +65,12 @@ define runtest(ffs){
 
    
 
-   variable ff =     ["xillverCp", "xillver","xillverD","xillverNS","xillverCO"];
-   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits", "xillverNS.fits","xillverCO.fits"];
+   variable ff =     ["xillverCp", "xillver","xillverNS","xillverCO"];
+   variable ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverNS.fits","xillverCO.fits"];
 
 #ifdef STABLE
-   ff =     ["xillverCp", "xillver","xillverD"];
-   ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits", "xillverD-5.fits"];   
+   ff =     ["xillverCp", "xillver"];
+   ff_tab = ["xillver-comp.fits", "xillver-a-Ec5.fits"];
 #endif   
       
    variable ii,n = length(ff);
