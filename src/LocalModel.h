@@ -73,8 +73,7 @@ class LocalModel {
       LocalModel(ModelParams(), model_name)
   {  };
 
-  /**
-   * @brief set the value of a single parameter
+  /** set the value of a single parameter
    * @param XPar param
    * @param double value
    */

@@ -45,7 +45,7 @@ relParam *LocalModel::get_rel_params() {
   param->beta = m_model_params[XPar::beta];
   param->htop = m_model_params[XPar::htop];
   param->limb = static_cast<int>(lround(m_model_params[XPar::limb]));
-  param->return_rad = static_cast<int>(lround(m_model_params[XPar::return_rad]));
+  param->return_rad = static_cast<int>(lround(m_model_params[XPar::switch_return_rad]));
   param->return_rad_flux_correction_factor = 1.0; // needs to be calculated in the code
   param->xillver_gshift_corr_fac = 1.0; // needs to be calculated in the code
 

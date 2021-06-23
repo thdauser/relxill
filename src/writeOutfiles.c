@@ -87,9 +87,5 @@ void save_emis_profiles(RelSysPar *sysPar) {
   assert(sysPar->emis != NULL);
   write_data_to_file("test_emis_profile.dat",
                      sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
-  if (sysPar->emisReturn != NULL) {
-    write_data_to_file("test_emis_profile_returnrad.dat",
-                       sysPar->emisReturn->re, sysPar->emisReturn->emis, sysPar->emisReturn->nr);
-  }
 }
 

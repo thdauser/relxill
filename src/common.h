@@ -172,7 +172,6 @@ typedef struct {
   double ***cosne;
 
   emisProfile *emis;
-  emisProfile *emisReturn;
 
   double del_ad_max;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
 

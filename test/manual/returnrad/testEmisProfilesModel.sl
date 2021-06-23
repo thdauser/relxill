@@ -39,8 +39,8 @@ pl.world(rin[0]*0.99,20,5e-4,2e-1;loglog);
 variable plr = xfig_plot_new();
 plr.world(rin[0]*0.99,20,0.95,1.05;xlog);
 
-__set_hard_limits("rellinelpRet","Rin",-100,100);
-fit_fun("rellinelpRet");
+__set_hard_limits("relline_lp","Rin",-100,100);
+fit_fun("relline_lp");
 
 variable ii;
 variable val = Array_Type[n];

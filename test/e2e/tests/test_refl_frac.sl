@@ -9,7 +9,7 @@ define ncheck_refl_frac_single(ff){ %{{{
    variable val0,val1,valr;
    
    fit_fun_default(ff);
-   
+
    set_par("*.refl_frac",1,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
@@ -121,8 +121,9 @@ define runtest(ffs){
 	msg_log += sprintf(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s (goodness %e)\n",ff[ii],goodn);
 	 return EXIT_FAILURE;
       }
-      if (ncheck_refl_frac_single(ff[ii]) < goodness_lim){
-	 msg_log += sprintf(" *** error: there seems to be a problem with the reflection fraction (no difference between 1 and -1) in  MODEL %s\n",ff[ii]);
+      goodn = ncheck_refl_frac_single(ff[ii]);
+      if (goodn < goodness_lim){
+	 msg_log += sprintf(" *** error: there seems to be a problem with the reflection fraction (no difference between 1 and -1) in  MODEL %s (goodness %e)\n",ff[ii],goodn);
 	 return EXIT_FAILURE;
       }
       

@@ -466,6 +466,35 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
 
 }
 
+
+static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* status) {
+
+  if (shouldOutfilesBeWritten()) {
+    write_data_to_file("test-rrad-emis-input.dat", emis0->re, emis0->emis, emis0->nr);
+  }
+    emisProfile* emisReturn = get_rrad_emis_corona(emis0, param, status);
+
+  if (shouldOutfilesBeWritten()) {
+    write_data_to_file("test-rrad-emis-rrad.dat",emis0->re,emisReturn->emis, emis0->nr);
+  }
+
+  assert(emisReturn->nr == emis0->nr);
+
+  for (int ii=0; ii < emis0->nr; ii++){
+    if (param->return_rad == 1 ) {
+      emis0->emis[ii] +=  emisReturn->emis[ii] ;
+    } else if (param->return_rad == -1 ){ // only return rad (for debugging only)
+      emis0->emis[ii] = emisReturn->emis[ii] ;
+
+    } else {
+      RELXILL_ERROR("adding returning radiation failed ",status );
+      printf("    return_rad = %i is not allowed \n", param->return_rad);
+    }
+  }
+}
+
+
+
 /*
  *  @function: calc_emis_profile
  *  @synopsis: calculate the emissivity profile on a given radial grid,
@@ -507,6 +536,12 @@ emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status)
     printf("   -> emis_type=%i not known \n", param->emis_type);
     return NULL;
   }
+
+
+  if (abs(param->return_rad) > 1e-6) {
+    add_returnrad_emis(param, emis, status);
+  }
+
 
   CHECK_RELXILL_ERROR("calculating the emissivity profile failed due to previous error", status);
 

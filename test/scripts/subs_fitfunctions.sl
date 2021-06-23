@@ -23,9 +23,7 @@ variable ALL_FF;  %% empty global variable
 define get_implemented_fitfunctions(){
    variable ALL_FF = ["relline","relline_lp","relxill","relxilllp","xillver","relxillD","xillverD","relxilllpD",
 		  "relxillCp","relxilllpCp","xillverCp","relxilllpion","relxilllpionCp"];
-%   variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO","relxillDCp","relxilllpDCp","xillverDCp"];
-   variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO","relxillDCp","relxilllpDCp","xillverDCp",
-			     "rellinelpRet","relxilllpRet"];
+   variable additional_FF =  ["xillverNS","relxillNS","xillverCO","relxillCO","relxillDCp","relxilllpDCp","xillverDCp"];
    
    if (qualifier("dev",0) == 1 ){
       ALL_FF = [ALL_FF, additional_FF];

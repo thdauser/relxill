@@ -611,26 +611,6 @@ void save_emisProfile(char *fname, emisProfile *emis) {
 }
 
 
-static void returnEmisProfileLoaded(int *status) {
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-  relParam *rel_param = get_std_param_rellinelp(status);
-
-  rel_param->return_rad = 0;
-  RelSysPar *sysPar = get_system_parameters(rel_param, status);
-  assert(sysPar->emisReturn == NULL);
-
-  rel_param->return_rad = 1;
-  sysPar = get_system_parameters(rel_param, status);
-  assert(sysPar->emisReturn != NULL);
-
-  print_relxill_test_result(*status);
-
-}
-
-
 
 //  ======= MAIN ========   //
 
@@ -655,7 +635,7 @@ void test_relreturn(void) {
   print_version_number();
   printf("\n### Testing RETURN RADIATION ###\n");
 
-  //  test_bbodyRet(&status);
+  test_bbodyRet(&status);
 
 }
 

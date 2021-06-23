@@ -51,11 +51,11 @@ enum class XPar {
   htop,
   d_offaxis,
   beta,
-  return_rad,
   frac_pl_bb,
   ktbb,
   xi_index,
   switch_fixreflfrac,
+  switch_return_rad,
   switch_ion_grad_type
 };
 
@@ -141,6 +141,7 @@ class ModelParams {
     return m_param.at(name);
   }
 
+  // default values: (typically) if the parameter is NOT used
  private:
   std::unordered_map<XPar, double> m_param{
       {XPar::linee, 1.0},
@@ -165,10 +166,10 @@ class ModelParams {
       {XPar::htop, 0.0},
       {XPar::d_offaxis, 0.0},
       {XPar::beta, 0.0},
-      {XPar::return_rad, 0.0},
       {XPar::frac_pl_bb, -1.0},
       {XPar::ktbb, -1.0},
       {XPar::xi_index, 0.0},
+      {XPar::switch_return_rad, 0},
       {XPar::switch_fixreflfrac, -1},
       {XPar::switch_ion_grad_type, ION_GRAD_TYPE_CONST}
   };

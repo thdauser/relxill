@@ -24,6 +24,8 @@
 #include "writeOutfiles.h"
 
 
+
+
 /**
  * @brief from the known ratio between xillver and power law flux boost, calculate the expected flux
  * correction / factor for any g value (certainly not very accurate for large values of g)
@@ -106,11 +108,17 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
   assert((*rlo_emis) < (*rhi_emis));
 }
 
+static void apply_returnrad_flux_correction(emisProfile* emis, double flux_correction_factor){
+  for (int ii=0; ii < emis->nr; ii++){
+    emis->emis[ii] *= flux_correction_factor;
+  }
+}
+
 
 /**
- * @brief: main function to calculate the returning radiation emissivity profile
+ * main function to calculate the returning radiation emissivity profile.
  *
- * @detail Caveat: The radial grid for the relline profile, which is typically used for the emissivity
+ * Caveat: The radial grid for the relline profile, which is typically used for the emissivity
  * profile, is defined with the radius DESCENDING
  */
 emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam* param, int *status) {
@@ -130,15 +138,17 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
                                                    emis_input_rebinned, param->gamma, status);
   CHECK_STATUS_RET(*status, NULL);
 
+  emisProfile *emis_return_rebinned = new_emisProfile(emis_input->re, emis_input->nr, status);
+  rebin_emisprofile_on_radial_grid(emis_return_rebinned, emis_return, status);
+
+  apply_returnrad_flux_correction(emis_return_rebinned, param->return_rad_flux_correction_factor);
+
   if( shouldOutfilesBeWritten() ){
     write_data_to_file("test_emis_profile_rrad_input.dat",
                        emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr);
     write_data_to_file("test_emis_profile_rrad_output.dat",
                        ret_fractions->rad, emis_return->emis, emis_return->nr);
   }
-  
-  emisProfile *emis_return_rebinned = new_emisProfile(emis_input->re, emis_input->nr, status);
-  rebin_emisprofile_on_radial_grid(emis_return_rebinned, emis_return, status);
 
   free_emisProfile(emis_return);
   free_returningFractions(&ret_fractions);
