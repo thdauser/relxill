@@ -383,7 +383,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
   }
 
   if (shouldOutfilesBeWritten()) {
-    write_data_to_file("test_rellxill_heightVelocityProfile.txt", source->heightMean, source->beta, source->nh);
+    write_data_to_file("test_rellxill_heightVelocityProfile.dat", source->heightMean, source->beta, source->nh);
   }
 
   free_extendedPrimarySource(source);

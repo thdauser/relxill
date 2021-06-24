@@ -327,8 +327,6 @@ static void fits_rr_load_all_fractions(fitsfile *fptr, returnTable *tab, int *st
   for (int ii = 0; ii < tab->nspin; ii++) {
     sprintf(extname, "FRAC%02i", ii + 1);
 
-    if (is_debug_run()) printf(" *** Return Rad: loading extension %s \n", extname);
-
     tab->retFrac[ii] = fits_rr_load_single_fractions(fptr, extname, status);
     CHECK_STATUS_BREAK(*status);
 

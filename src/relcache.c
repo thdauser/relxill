@@ -343,10 +343,12 @@ cache_info *cli_check_cache(cnode *head,
   cache_info *ca_info = init_cache_info(head, status);
   CHECK_MALLOC_RET_STATUS(ca_info, status, NULL)
 
+  const int cache_maxsize = get_cache_maxsize();
+
   int c = 0;
   cnode *cursor = head;
   cnode *next = NULL;
-  while (cursor != NULL) {
+  while (cursor != NULL ) {
 
     // if cursor is not NULL, we already have one element
     c++;
@@ -358,9 +360,9 @@ cache_info *cli_check_cache(cnode *head,
 
     // if we are above the maximal number of elements, delete the rest and break
     // (+) we need to set the cursor->next=NULL
-    if (next != NULL && c >= get_cache_maxsize() - 1) {
+    if (next != NULL && c >= cache_maxsize - 1) {
       if (is_debug_run()) {
-        printf(" DEBUG: Cached reached its limiting size of %i\n", get_cache_maxsize());
+        printf(" DEBUG: Cached reached its limiting size of %i\n", cache_maxsize);
       }
       cli_delete_list(&next);
       cursor->next = NULL;
