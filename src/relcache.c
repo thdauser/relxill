@@ -56,16 +56,43 @@ int comp_single_param_val(double val1, double val2) {
 static int comp_sys_param(relParam *cpar, relParam *par) {
 
   if (comp_single_param_val(par->a, cpar->a)) return 1;
-  if (comp_single_param_val(par->emis1, cpar->emis1)) return 1;
-  if (comp_single_param_val(par->emis2, cpar->emis2)) return 1;
-  if (comp_single_param_val(par->gamma, cpar->gamma)) return 1;
-  if (comp_single_param_val(par->height, cpar->height)) return 1;
-  if (comp_single_param_val(par->htop, cpar->htop)) return 1;
-  if (comp_single_param_val(par->incl, cpar->incl)) return 1;
-  if (comp_single_param_val(par->beta, cpar->beta)) return 1;
-  if (comp_single_param_val(par->rin, cpar->rin)) return 1;
-  if (comp_single_param_val(par->rbr, cpar->rbr)) return 1;
-  if (comp_single_param_val(par->rout, cpar->rout)) return 1;
+  if (comp_single_param_val(par->emis1, cpar->emis1)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->emis2, cpar->emis2)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->gamma, cpar->gamma)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->height, cpar->height)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->htop, cpar->htop)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->incl, cpar->incl)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->beta, cpar->beta)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->rin, cpar->rin)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->rbr, cpar->rbr)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->rout, cpar->rout)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->return_rad_flux_correction_factor, cpar->return_rad_flux_correction_factor)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->xillver_gshift_corr_fac, cpar->xillver_gshift_corr_fac)) {
+    return 1;
+  }
+
   if (par->limb != cpar->limb) {
     return 1;
   }
@@ -333,7 +360,7 @@ cache_info *cli_check_cache(cnode *head,
     // (+) we need to set the cursor->next=NULL
     if (next != NULL && c >= get_cache_maxsize() - 1) {
       if (is_debug_run()) {
-        printf(" DEBUG: Cached reached its limiting size of %i\n", CLI_NMAX);
+        printf(" DEBUG: Cached reached its limiting size of %i\n", get_cache_maxsize());
       }
       cli_delete_list(&next);
       cursor->next = NULL;
