@@ -433,11 +433,26 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
     sign = -1.0;
   }
 
+// ** Adam, 6.7.2021: **
+// So given the expression for Carter’s q:
+//q^2 = \sin^2\delta (h^2+a^2)^2/\Delta_h - a^2,
+//it is clear that
+//q^2 + a^2 = \sin^2\delta (h^2+a^2)^2/\Delta_h
+//Therefore:
+//(h^2+a^2)^2 - \Delta_h (q^2+a^2) = (h^2+a^2)^2 - \sin^2\delta (h^2+a^2)^2
+//= (h^2+a^2)^2 \cos^2\delta
+//
+//Therefore:
+//\sqrt{ (h^2+a^2)^2 - \Delta_h (q^2+a^2) } / (h^2+a^2) = \cos\delta
+//
+//Therefore your equation (27) becomes:
+//glp = glp(beta=0) / { \gamma [ 1 -/+ \beta\cos\delta ] }
+
   double delta_eq = h * h - 2 * h + a * a;
   double q2 = (pow(sin(del), 2)) * (pow((h * h + a * a), 2) / delta_eq) - a * a;
 
   double beta_fac = sqrt(pow((h * h + a * a), 2) - delta_eq * (q2 + a * a));
-  beta_fac = gam * (1.0 + sign * beta_fac / (h * h + a * 2) * bet);
+  beta_fac = gam * (1.0 + sign * beta_fac / (h * h + a * a) * bet);
 
   return gi / beta_fac;
 }

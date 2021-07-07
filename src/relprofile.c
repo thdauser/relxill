@@ -257,7 +257,7 @@ RelSysPar *get_system_parameters(relParam *param, int *status) {
   CHECK_STATUS_RET(*status, NULL);
 
   RelSysPar *sysPar = NULL;
-  if (ca_info->syscache == 1) {
+  if (ca_info->syscache == 1 ) {
     // system parameter values are cached, so we can take it from there
     sysPar = ca_info->store->data->relSysPar;
     if (is_debug_run()) {

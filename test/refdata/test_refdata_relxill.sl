@@ -23,6 +23,9 @@ require("fits_model_struct");
 
 require("test_setup.sl");
 
+%putenv("RELXILL_WRITE_OUTFILES=1");
+%putenv("DEBUG_RELXILL=1");
+
 load_relxill_model_devel("build/librelxill.so");
 
 define get_refdata_files(){ %{{{

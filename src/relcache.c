@@ -345,6 +345,10 @@ cache_info *cli_check_cache(cnode *head,
 
   const int cache_maxsize = get_cache_maxsize();
 
+  if (cache_maxsize==1){
+    return ca_info;
+  }
+
   int c = 0;
   cnode *cursor = head;
   cnode *next = NULL;

@@ -19,6 +19,8 @@ require("test_setup.sl");
 
 variable dry_run = 0;
 
+putenv("RELXILL_WRITE_OUTFILES=1");
+
 load_relxill_model_devel(modlib);
 
 define get_fit_functions(){ %{{{
