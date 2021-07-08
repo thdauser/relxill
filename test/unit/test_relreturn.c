@@ -292,17 +292,17 @@ void writeZoneXillverAllIncidentReturnSpec(double Tshift, int indZone, int n_ene
 }
 
 
-void get_std_param_relxill_bbret(relParam** p_rel_param, xillParam** p_xill_param, int* status) {
-
-  CHECK_STATUS_VOID(*status);
-
-  // set the standard parameters
-  int n_parameter = NUM_PARAM_RELXILLBBRET;
-  double parameter[n_parameter];
-  set_std_param_relxill_bbret(parameter);
-  init_par_relxill_bbret(p_rel_param, p_xill_param, parameter, n_parameter, status);
-
-}
+//void get_std_param_relxill_bbret(relParam** p_rel_param, xillParam** p_xill_param, int* status) {
+//
+//  CHECK_STATUS_VOID(*status);
+//
+//  // set the standard parameters
+//  int n_parameter = NUM_PARAM_RELXILLBBRET;
+//  double parameter[n_parameter];
+//  set_std_param_relxill_bbret(parameter);
+//  init_par_relxill_bbret(p_rel_param, p_xill_param, parameter, n_parameter, status);
+//
+//}
 
 
 //  ======= TEST FUNCTIONS ========   //
@@ -399,97 +399,97 @@ static void testReturnRadBBodySpec(int* status){
 
 
 }
-
-static void testSingleZoneRframeReflectSpectrum(int* status){
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-
-  // get a standard grid for the convolution (is rebinned later to the input grid)
-  int n_ener;
-  double *ener;
-  get_std_relxill_energy_grid(&n_ener, &ener, status);
-
-  // set the standard parameters
-  xillParam *xill_param = NULL;
-  relParam *rel_param = NULL;
-  get_std_param_relxill_bbret(&rel_param, &xill_param, status);
-  xill_param->refl_frac = -1.0;
-
-  xillTable *xill_tab = NULL;
-  get_init_xillver_table(&xill_tab, xill_param, status);
-
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, NULL, NULL, n_ener, xill_param->kTbb, rel_param->rin,
-                                                      rel_param->rout, rel_param->a, status);
-
-  double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
-  rel_spec *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
-
-  enum{ nzones = 4};
-  enum{ nshift = 2};
-  int indZone[nzones] = {10,20,30,40};
-  double Tshift[nshift] = {1.0,1.4};
-
-  for (int ii=0; ii<nzones; ii++) {
-    for (int jj=0; jj<nshift; jj++) {
-      writeZoneXillverAllIncidentReturnSpec(Tshift[jj], indZone[ii], n_ener, ener, xill_param, returnSpec, rel_profile, status);
-    }
-  }
-
-  printf(" [ !! missing comparison !! ]  ");
-
-  print_relxill_test_result(*status);
-
-}
-
-static void test_rr_bbody_lmod(int* status){
-
-  CHECK_STATUS_VOID(*status);
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
-  double Tin = 1.0;
-  double spin = 0.86;
-
-
-  /* create an energy grid */
-  int n_ener = 1000;
-  double ener[n_ener + 1];
-  get_log_grid(ener, n_ener + 1, 0.01, 50.0);
-
-  // set the standard parameters
-  xillParam *xill_param = NULL;
-  relParam *rel_param = NULL;
-  get_std_param_relxill_bbret(&rel_param, &xill_param, status);
-
-  xill_param->kTbb = Tin;
-  rel_param->a = spin;
-  rel_param->rin = kerr_rms(spin);
-  rel_param->incl = 60.0/180.0*M_PI;
-
-  // create space for the output spectrum
-  double photar[n_ener];
-
-
-  xill_param->refl_frac = -1.0;
-  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 1, status);
-  fits_write_spec("!testrr-spec-rr-bbody.fits",ener, photar, n_ener, status);
-
-
-  xill_param->refl_frac = 0.0;
-  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
-  fits_write_spec("!testrr-spec-prim-bbody.fits",ener, photar, n_ener, status);
-
-  xill_param->refl_frac = -1.0;
-  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
-  fits_write_spec("!testrr-spec-rr-bbody-reflect.fits",ener, photar, n_ener, status);
-
-  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
-  fits_write_spec("!testrr-spec-rr-bbody-reflect.fits",ener, photar, n_ener, status);
-
-
-  print_relxill_test_result(*status);
-}
+//
+//static void testSingleZoneRframeReflectSpectrum(int* status){
+//
+//  CHECK_STATUS_VOID(*status);
+//  PRINT_RELXILL_TEST_MSG_DEFAULT();
+//
+//
+//  // get a standard grid for the convolution (is rebinned later to the input grid)
+//  int n_ener;
+//  double *ener;
+//  get_std_relxill_energy_grid(&n_ener, &ener, status);
+//
+//  // set the standard parameters
+//  xillParam *xill_param = NULL;
+//  relParam *rel_param = NULL;
+//  get_std_param_relxill_bbret(&rel_param, &xill_param, status);
+//  xill_param->refl_frac = -1.0;
+//
+//  xillTable *xill_tab = NULL;
+//  get_init_xillver_table(&xill_tab, xill_param, status);
+//
+//  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, NULL, NULL, n_ener, xill_param->kTbb, rel_param->rin,
+//                                                      rel_param->rout, rel_param->a, status);
+//
+//  double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
+//  rel_spec *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
+//
+//  enum{ nzones = 4};
+//  enum{ nshift = 2};
+//  int indZone[nzones] = {10,20,30,40};
+//  double Tshift[nshift] = {1.0,1.4};
+//
+//  for (int ii=0; ii<nzones; ii++) {
+//    for (int jj=0; jj<nshift; jj++) {
+//      writeZoneXillverAllIncidentReturnSpec(Tshift[jj], indZone[ii], n_ener, ener, xill_param, returnSpec, rel_profile, status);
+//    }
+//  }
+//
+//  printf(" [ !! missing comparison !! ]  ");
+//
+//  print_relxill_test_result(*status);
+//
+//}
+//
+//static void test_rr_bbody_lmod(int* status){
+//
+//  CHECK_STATUS_VOID(*status);
+//  PRINT_RELXILL_TEST_MSG_DEFAULT();
+//
+//  double Tin = 1.0;
+//  double spin = 0.86;
+//
+//
+//  /* create an energy grid */
+//  int n_ener = 1000;
+//  double ener[n_ener + 1];
+//  get_log_grid(ener, n_ener + 1, 0.01, 50.0);
+//
+//  // set the standard parameters
+//  xillParam *xill_param = NULL;
+//  relParam *rel_param = NULL;
+//  get_std_param_relxill_bbret(&rel_param, &xill_param, status);
+//
+//  xill_param->kTbb = Tin;
+//  rel_param->a = spin;
+//  rel_param->rin = kerr_rms(spin);
+//  rel_param->incl = 60.0/180.0*M_PI;
+//
+//  // create space for the output spectrum
+//  double photar[n_ener];
+//
+//
+//  xill_param->refl_frac = -1.0;
+//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 1, status);
+//  fits_write_spec("!testrr-spec-rr-bbody.fits",ener, photar, n_ener, status);
+//
+//
+//  xill_param->refl_frac = 0.0;
+//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
+//  fits_write_spec("!testrr-spec-prim-bbody.fits",ener, photar, n_ener, status);
+//
+//  xill_param->refl_frac = -1.0;
+//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
+//  fits_write_spec("!testrr-spec-rr-bbody-reflect.fits",ener, photar, n_ener, status);
+//
+//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
+//  fits_write_spec("!testrr-spec-rr-bbody-reflect.fits",ener, photar, n_ener, status);
+//
+//
+//  print_relxill_test_result(*status);
+//}
 
 
 static void testSecondEvalReturnsIdenticalResults(int* status) {
@@ -619,8 +619,8 @@ void test_bbodyRet(int *status) {
   testTemperatureProfile(status);
   testDiskbbSpec(status);
   testReturnRadBBodySpec(status);
-  testSingleZoneRframeReflectSpectrum(status);
-  test_rr_bbody_lmod(status);
+//  testSingleZoneRframeReflectSpectrum(status);
+//  test_rr_bbody_lmod(status);
   testSecondEvalReturnsIdenticalResults(status);
   testEvaluateRelxillbbret(status);
   testBBretDifferentSpinValues(status);

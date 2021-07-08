@@ -112,13 +112,4 @@ class ModelInfo {
   const T_PrimSpec m_primeSpec;
 };
 
-
-/**
- * types to map to the previously defined C-types
- */
-
-
-// std::map<Model
-
-
 #endif //RELXILL__CPPTYPES_H_

@@ -31,23 +31,12 @@ static void test_xspec_lmod_call(ModelName model_name, const DefaultSpec& defaul
 
   try {
     eval_xspec_lmod_default(model_name, default_spec);
-    REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
+     REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
   } catch (ModelNotFound &e) {
     WARN("Skipping test as model not implemented");
   }
 
 }
-
-//static void test_internal_lmod_call(ModelName model_name, const DefaultSpec &default_spec) {
-//  LocalModel testModel{model_name};
-//
-//  XspecSpectrum spec{default_spec.energy, default_spec.flux, default_spec.num_flux_bins};
-//
-//  testModel.eval_model(spec);
-//  REQUIRE(sum_flux(spec) >= 0.0);
-//  REQUIRE(sum_flux(spec) > 1e-6);
-//
-//}
 
 /*
  * TEST CASE
@@ -117,7 +106,7 @@ TEST_CASE(" Execute ALL local models", "[model]") {
 
 TEST_CASE(" Execute single model", "[single]") {
   DefaultSpec default_spec{};
-  test_xspec_lmod_call(ModelName::relxilllp, default_spec);
+  REQUIRE_NOTHROW(test_xspec_lmod_call(ModelName::relxill, default_spec) );
 }
 
 

@@ -86,11 +86,6 @@ double *getTemperatureProfileDiskZones(returningFractions *dat, double Rin, doub
 
 void set_std_param_relxill_bbret(double *inp_par);
 
-void init_par_relxill_bbret(relParam **rel_param,
-                            xillParam **xill_param,
-                            const double *inp_par,
-                            int n_parameter,
-                            int *status);
 void tdrelxillbbret(const double *ener0,
                     int n_ener0,
                     double *photar,

@@ -350,7 +350,7 @@ TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
 
 
 // ------- //
-TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad]") {
+TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad-single]") {
 
   double spin = 0.995;
   double rin_scaled = kerr_rms(0.99025);
@@ -359,18 +359,21 @@ TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad]"
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
+  const char* env_outfiles = "RELXILL_WRITE_OUTFILES";
+  setenv(env_outfiles, "1", 1);
+
   LocalModel local_model{ModelName::relxilllp};
   local_model.set_par(XPar::a, spin);
-  local_model.set_par(XPar::switch_return_rad, -1);
+  local_model.set_par(XPar::switch_return_rad, 1);
   local_model.set_par(XPar::rout,1000.0);
 
 
-  local_model.set_par(XPar::rin, rin_scaled);
+  local_model.set_par(XPar::rin, rin_scaled2);
   local_model.eval_model(spec);
 
   double sum1 = sum_flux(spec.flux(), spec.num_flux_bins());
 
-  local_model.set_par(XPar::rin, rin_scaled2);
+  local_model.set_par(XPar::rin, rin_scaled);
   local_model.eval_model(spec);
   double sum2 = sum_flux(spec.flux(), spec.num_flux_bins());
 

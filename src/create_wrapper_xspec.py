@@ -111,17 +111,28 @@ def parse_param_list(definition):
     # parameter definition starts in the second line
     param_lines = split_in_lines_and_remove_empty(definition)[1:]
 
-    param_names = []
+    param_names = {}
 
     for line in param_lines:
-        param = line.split(' ')[0]
-        if len(param) >= 1:
+        param_definition = line.split()
+
+        if len(param_definition) >= 2:
+            param = param_definition[0]
+
+            # depending on if it is a switch parameter or not, the value is found in the 2nd or 3rd entry
+            if len(param_definition) == 2:
+                value = param_definition[1]
+            else:
+                value = param_definition[2]
+
             param = param.lower()
-            param_names.append(convert_if_switch_parameter(param))
+            param = convert_if_switch_parameter(param)
         else:
             print(" *** error ***: could not parse the parameter in the following model definition")
             print(definition)
             return None
+
+        param_names[param] = value
 
     return param_names
 
@@ -177,8 +188,8 @@ def get_implemented_lmod(local_model_name, param_list):
     LmodelParamList(\"{local_model_name}\", {{"""
 
     separator = ""
-    for par in param_list:
-        lmodel_str += separator + param_class + par
+    for par_key in param_list.keys():
+        lmodel_str += separator + "\n\t{"+param_class + par_key+","+param_list[par_key]+"}"
         separator = ", "
 
     lmodel_str += "})\n   },\n"
@@ -195,7 +206,7 @@ class XspecModelDatabase{
     return model_definition.at(name).name();
   }
 
-  ModelParamVector params(ModelName name) const{
+  ParamList params(ModelName name) const{
     return model_definition.at(name).params();
   }
 

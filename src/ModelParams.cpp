@@ -103,11 +103,13 @@ const double *get_xspec_default_parameter_array(ModelName model_name) {
 
   auto const model_parameters = ModelDatabase::instance().param_names(model_name);
 
-  auto default_param_values = ModelParams();
   auto output_param_array = new double[model_parameters.size()];
 
-  for (size_t ii = 0; ii < model_parameters.size(); ii++) {
-    output_param_array[ii] = default_param_values[model_parameters[ii]];
+  // TODO: Need to change this to the actual input parameters
+  int ii = 0;
+  for (auto pars : model_parameters){
+    output_param_array[ii] = pars.second;
+    ii++;
   }
 
   return output_param_array;

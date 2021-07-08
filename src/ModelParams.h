@@ -55,12 +55,11 @@ enum class XPar {
   frac_pl_bb,
   ktbb,
   xi_index,
-  switch_fixreflfrac,
   switch_return_rad,
   switch_ion_grad_type
 };
 
-typedef std::vector<XPar> ModelParamVector;
+typedef std::unordered_map<XPar, double> ParamList;
 
 /**
  * @brief exception if anything is wrong with the input parameters
@@ -89,7 +88,7 @@ class ParamInputException : public std::exception {
 class LmodelParamList {
 
  public:
-  LmodelParamList(std::string _name, ModelParamVector _params)
+  LmodelParamList(std::string _name, ParamList _params)
       : m_name{std::move(_name)}, m_params{std::move(_params)} {
   };
 
@@ -97,94 +96,24 @@ class LmodelParamList {
     return m_name;
   }
 
-  [[nodiscard]] ModelParamVector params() const {
+  [[nodiscard]] ParamList params() const {
     return m_params;
   }
 
  private:
   std::string m_name;
-  ModelParamVector m_params;
+  ParamList m_params;
 
 };
 
-/**
- * @brief class to store all parameters of the model
- * @remark contains default values for all parameters,
- * which will get overwritten for the given input parameters.
- */
-class ModelParams {
-
- public:
-  ModelParams() = default;
-  ~ModelParams() = default;
-
-  /**
-   * @param pars: list of parameters  (XPar)
-   * @param values: input values corresponding to the parameter list
-   */
-  ModelParams(ModelParamVector pars, const double *values) {
-    for (size_t ii = 0; ii < pars.size(); ii++) {
-      m_param.at(pars[ii]) = values[ii];
-    }
-  }
-
-  void set(XPar name, double value){
-    try {
-      m_param.at(name) = value;
-    } catch (std::out_of_range &e){
-
-      throw ParamInputException("parameter not found");
-    }
-  }
-
-  auto &operator[](const XPar &name) const {
-    // TODO: proper error handling
-    return m_param.at(name);
-  }
-
-  // default values: (typically) if the parameter is NOT used
- private:
-  std::unordered_map<XPar, double> m_param{
-      {XPar::linee, 1.0},
-      {XPar::index1, 3.0},
-      {XPar::index2, 3.0},
-      {XPar::a, 0.998},
-      {XPar::rin, -1.0},
-      {XPar::rbr, 30},
-      {XPar::rout, 400},
-      {XPar::incl, 30},
-      {XPar::logxi, 3.0},
-      {XPar::logn, 15.0},
-      {XPar::afe, 1.0},
-      {XPar::a_co, 1.0},
-      {XPar::refl_frac, 1.0},
-      {XPar::limb, 0.0},
-      {XPar::z, 0.0},
-      {XPar::gamma, 2.0},
-      {XPar::ecut, 300},
-      {XPar::kte, 100},
-      {XPar::h, 3.0},
-      {XPar::htop, 0.0},
-      {XPar::d_offaxis, 0.0},
-      {XPar::beta, 0.0},
-      {XPar::boost, 1.0},
-      {XPar::frac_pl_bb, -1.0},
-      {XPar::ktbb, -1.0},
-      {XPar::xi_index, 0.0},
-      {XPar::switch_return_rad, 0},
-      {XPar::switch_fixreflfrac, -1},
-      {XPar::switch_ion_grad_type, ION_GRAD_TYPE_CONST}
-  };
-
-};
 
 // *** Function Definitions ***
 int convertModelType(ModelName name);
 int convertIrradType(T_Irrad name);
 int convertPrimSpecType(T_PrimSpec name);
 
-relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
-xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
+//relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
+//xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 const double *get_xspec_default_parameter_array(ModelName model_name);
 
 #endif //RELXILL_SRC_MODELPARAMS_H_

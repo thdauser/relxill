@@ -87,7 +87,7 @@ class ModelDatabase {
    * @param ModelName
    * @return ModelParamVector
    */
-  ModelParamVector param_names(ModelName name){
+  ParamList param_names(ModelName name){
     try {
       return lmodel_database.params(name);
     } catch (std::out_of_range &e) {

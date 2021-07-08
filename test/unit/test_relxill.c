@@ -304,49 +304,6 @@ xillParam *init_par_xillver_dens_nthcomp(const double *inp_par, const int n_para
   return param;
 }
 
-void init_par_relxilllp_dens_nthcomp(relParam **rel_param,
-                                     xillParam **xill_param,
-                                     const double *inp_par,
-                                     const int n_parameter,
-                                     int *status) {
-
-  // fill in parameters
-  relParam *param = new_relParam(MOD_TYPE_RELXILLLP, EMIS_TYPE_LP, status);
-  CHECK_STATUS_VOID(*status);
-
-  xillParam *xparam = new_xillParam(MOD_TYPE_RELXILLLPDENS_NTHCOMP, PRIM_SPEC_NTHCOMP, status);
-  CHECK_STATUS_VOID(*status);
-
-  assert(n_parameter == NUM_PARAM_RELXILLLPDENS_NTHCOMP);
-
-  param->a = inp_par[0];
-  param->incl = inp_par[1] * M_PI / 180;
-  param->rin = inp_par[2];
-  param->rout = inp_par[3];
-  param->height = inp_par[4];
-  param->htop = inp_par[5];
-  param->beta = inp_par[6];
-
-  param->gamma = inp_par[7];
-  xparam->gam = param->gamma;
-  xparam->lxi = inp_par[8];
-  xparam->afe = inp_par[9];
-  xparam->ect = inp_par[10];
-  xparam->dens = inp_par[11];
-
-  xparam->refl_frac = inp_par[12];
-  xparam->fixReflFrac = (int) (inp_par[13] + 0.5); // make sure there is no problem with integer conversion
-
-  param->z = inp_par[14];
-  xparam->z = param->z;
-
-  check_parameter_bounds(param, status);
-  CHECK_STATUS_VOID(*status);
-
-  *rel_param = param;
-  *xill_param = xparam;
-
-}
 
 relParam *init_par_relline(const double *inp_par, const int n_parameter, int *status) {
 
@@ -421,16 +378,6 @@ xillParam *get_std_param_xillver_dens_nthcomp(int *status) {
   CHECK_MALLOC_RET_STATUS(inp_par, status, NULL)
   set_std_param_xillver_dens_nthcomp(inp_par);
   return init_par_xillver_dens_nthcomp(inp_par, n_param, status);
-}
-
-void get_std_param_relxilllpDCp(relParam **rel_param, xillParam **xill_param, int *status) {
-  int n_param = NUM_PARAM_RELXILLLPDENS_NTHCOMP;
-  double *inp_par = (double *) malloc(sizeof(double) * n_param);
-  CHECK_MALLOC_VOID_STATUS(inp_par, status)
-
-  set_std_param_relxilllpdens_nthcomp(inp_par);
-  init_par_relxilllp_dens_nthcomp(rel_param, xill_param, inp_par, n_param, status);
-
 }
 
 relParam *get_std_param_relline(int *status) {

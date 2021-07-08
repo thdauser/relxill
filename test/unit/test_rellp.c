@@ -29,12 +29,7 @@ static double sumArray(double *arr, int n) {
   return sum;
 }
 
-static relParam *get_std_relParam_relxilllpDCp(int *status) {
-  relParam *rel_param = NULL;
-  xillParam *xill_param = NULL;
-  get_std_param_relxilllpDCp(&rel_param, &xill_param, status);
-  return rel_param;
-}
+/*
 
 static void test_pointSourceDecision(int *status) {
 
@@ -117,6 +112,7 @@ static void test_calcEmisProfileLp(int *status) {
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
 }
+*/
 
 void test_rellp(int *status) {
 
@@ -125,11 +121,9 @@ void test_rellp(int *status) {
   char *testName = "EMISSIVTIY Profile Calculation";
   printf("\n === Testing %s with RELXILL Version %s === \n\n", testName, PROJECT_VER);
 
-  test_extendedGeometryHeight(status);
-
-  test_calcEmisProfileLp(status);
-
-  test_pointSourceDecision(status);
+  //test_extendedGeometryHeight(status);
+  //test_calcEmisProfileLp(status);
+  // test_pointSourceDecision(status);
 
   if (*status != EXIT_SUCCESS) {
     printf(" *** TESTING %s NOT SUCCESSFUL \n", testName);

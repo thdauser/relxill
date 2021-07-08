@@ -67,7 +67,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   }
 
   if (param->a > 0.9982) {
-    printf(" *** relxill error : Spin a > 0.9982, model evaluation failed \n");
+    printf(" *** relxill error : Spin a > 0.9982, model evaluation failed (value is %f) \n", param->a);
     *status = EXIT_FAILURE;
     return;
   }
@@ -238,7 +238,7 @@ xillParam *new_xillParam(int model_type, int prim_type, int *status) {
   param->incl = PARAM_DEFAULT;
   param->z = PARAM_DEFAULT;
   param->refl_frac = PARAM_DEFAULT;
-  param->fixReflFrac = -1;
+  param->boost = -1;
   param->dens = 15;  // the standard value for every table, given in "log-units"
   param->frac_pl_bb = PARAM_DEFAULT;
   param->kTbb = PARAM_DEFAULT;

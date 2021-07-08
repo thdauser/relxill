@@ -97,7 +97,7 @@ typedef struct {
   double kTbb;
   double frac_pl_bb;
   int ion_grad_type;
-  int fixReflFrac;
+  double boost;
   int model_type;
   int prim_type;
   double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end

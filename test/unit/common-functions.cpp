@@ -28,13 +28,15 @@ double sum_flux(const double *flux, int nbins) {
 }
 
 void eval_xspec_lmod_default(ModelName model_name, const DefaultSpec& default_spec){
+
   const double *xspec_parameters = get_xspec_default_parameter_array(model_name);
 
   xspec_C_wrapper_eval_model(model_name,
-                             xspec_parameters,
-                             default_spec.flux,
-                             default_spec.num_flux_bins,
-                             default_spec.energy);
+                               xspec_parameters,
+                               default_spec.flux,
+                               default_spec.num_flux_bins,
+                               default_spec.energy);
 
   delete[] xspec_parameters;
+
 }
