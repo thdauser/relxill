@@ -405,7 +405,7 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
 TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
   int status = EXIT_SUCCESS;
 
-  LocalModel lmod{ModelName::relxilllpRet};
+  LocalModel lmod{ModelName::relxilllp};
   lmod.set_par(XPar::switch_return_rad, 1);
 
   double gshift_ref_value = 1.5; // correction factor calculated for this value

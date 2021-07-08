@@ -50,11 +50,8 @@ int convertModelType(ModelName name) {
     case ModelName::xillverCO: return MOD_TYPE_XILLVERCO;
     case ModelName::relxillNS: return MOD_TYPE_RELXILLNS;
     case ModelName::relxillCO: return MOD_TYPE_RELXILLCO;
-    case ModelName::relxillDCp: return MOD_TYPE_RELXILLDENS_NTHCOMP;
-    case ModelName::relxilllpDCp: return MOD_TYPE_RELXILLLPDENS_NTHCOMP;
-    case ModelName::xillverDCp: return MOD_TYPE_XILLVERDENS_NTHCOMP;
-    case ModelName::relxilllpRet: return MOD_TYPE_RELXILLLPRET;
-    case ModelName::rellinelpRet: return MOD_TYPE_RELLINELPRET ;
+    case ModelName::relxillAlpha: return MOD_TYPE_RELXILLALPHA;
+    case ModelName::relxilllpAlpha: return MOD_TYPE_RELXILLLPALPHA;
   }
   puts(" *** relxill-error: unknown ModelName, converting model name to integer failed ");
   exit(EXIT_FAILURE);

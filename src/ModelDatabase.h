@@ -131,25 +131,21 @@ class ModelDatabase {
       {ModelName::relxill, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
       {ModelName::relxillCO, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
       {ModelName::relxillNS, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Blackbody)},
-      {ModelName::relxillD, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
       {ModelName::relxillCp, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Nthcomp)},
-      {ModelName::relxillDCp, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Nthcomp)},
+      {ModelName::relxillD, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
 
       {ModelName::relxilllp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
-      {ModelName::relxilllpD, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpion, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
-      {ModelName::relxilllpDCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
+      {ModelName::relxilllpD, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpionCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
 
-      {ModelName::relxilllpRet, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
-      {ModelName::rellinelpRet, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
-
+      {ModelName::relxillAlpha, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Nthcomp)},
+      {ModelName::relxilllpAlpha, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
 
       {ModelName::xillver, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverD, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverCp, ModelInfo(T_Model::Xill, T_PrimSpec::Nthcomp)},
-      {ModelName::xillverDCp, ModelInfo(T_Model::Xill, T_PrimSpec::Nthcomp)},
       {ModelName::xillverCO, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverNS, ModelInfo(T_Model::Xill, T_PrimSpec::Blackbody)},
 

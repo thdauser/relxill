@@ -31,22 +31,19 @@ enum class ModelName {
   relxillNS,
   relxillCO,
   relxillCp,
-  relxillD,
-  relxillDCp,
   relxilllp,
   relxilllpCp,
-  relxilllpD,
-  relxilllpDCp,
   relxilllpion,
   relxilllpionCp,
-  relxilllpRet,
-  rellinelpRet,
+  relxillAlpha,
+  relxilllpAlpha,
   xillver,
-  xillverD,
   xillverCp,
-  xillverDCp,
   xillverNS,
-  xillverCO
+  xillverCO,
+  xillverD,
+  relxillD,
+  relxilllpD
 };
 
 enum class T_Irrad {
