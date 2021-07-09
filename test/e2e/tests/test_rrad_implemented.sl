@@ -43,7 +43,7 @@ define runtest(ffs){
    
    %  test that for the given models RETURN RADIATION is implemented
    variable fit_fun_rrad = 
-     ["relline_lp", "relxilllp", "relxilllpCp", "relxilllpionCp"];
+     ["relline_lp", "relxilllp", "relxilllpCp"];
    
    
    variable ii, n = length(fit_fun_rrad);

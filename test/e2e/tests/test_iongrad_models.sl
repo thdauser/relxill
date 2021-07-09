@@ -103,6 +103,8 @@ define check_single_iongrad_model(ff_ion,ff_ref){ %{{{
 
 define runtest(ffs){ 
 
+#ifndef STABLE
+
    counter++;
    msg_log += sprintf(" testing IONIZATION GRADIENT MODELS\n");
 
@@ -128,6 +130,8 @@ define runtest(ffs){
       }
    }   
 
+#endif   
+   
    return EXIT_SUCCESS;
    
 }
