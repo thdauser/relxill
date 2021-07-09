@@ -143,7 +143,14 @@ define check_single_model(fn){ %{{{
 
    variable status = EXIT_SUCCESS;
 
-   variable dat = fits_read_model_struct(fn);
+   variable dat;
+   try {
+      dat = fits_read_model_struct(fn);
+   } catch AnyError: {      
+      vmessage(" skipping %s as fit_function not implemented ", fn);
+      return;
+   }
+
    variable m_dat = eval_fun_keV(dat.bin_lo,dat.bin_hi);
    dat = struct_combine(dat, struct{model=m_dat} );
    
@@ -153,12 +160,13 @@ define check_single_model(fn){ %{{{
    variable goodness =  sqrt(sum((dat.model[ind]/dat.value[ind]-1)^2))/length(dat.model[ind]);
    
    () = printf(" %s  \t deviation:  %.3e ",fn, goodness);   %% GOODNESS = sqr-distance / num_bins 
+
    
-   if (goodness>goodness_limit_modelcomparison){
+   if (goodness<goodness_limit_modelcomparison){
+      message("");
+   } else {
       status = EXIT_FAILURE;            
       message("    *** test FAILED *** ");
-   } else {
-      message("");
    }
    
    
@@ -210,12 +218,7 @@ status[*] = EXIT_SUCCESS;
 
 _for ii(0,n-1,1){
    
-   try {
       status[ii] = check_single_model(fnames[ii]; update=update_refdata );
-   } catch AnyError: {      
-      vmessage(" skipping %s as fit_function not implemented ", fnames[ii]);
-      continue;
-   }
 }
 
 print_summary(status);
