@@ -29,9 +29,9 @@
 extern "C" {
 #include "common.h"
 #include "relmodels.h"
-#include "relxill.h"
 }
 
+#include "Relxill.h"
 #include "ModelDatabase.h"
 #include "ModelParams.h"
 

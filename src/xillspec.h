@@ -33,4 +33,20 @@ xillSpec *get_xillver_spectra(xillParam *param, int *status);
 xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
 void free_xill_spec(xillSpec *spec);
 
+
+void get_xillver_angdep_spec(double *o_xill_flux,
+                             int n_ener,
+                             double *ener,
+                             double *rel_dist,
+                             xillSpec *xill_spec,
+                             int *status);
+
+void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillParam* xill_param,
+                              double* rel_cosne_dist, int* status );
+
+
+void get_xillver_fluxcorrection_factors(double* fac_fluxcorr, double* fac_gshift_fluxcorr,
+                                        xillParam *xill_param, int *status);
+
+
 #endif //XILLSPEC_H_

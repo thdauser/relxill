@@ -24,7 +24,7 @@
 #include "relphysics.h"
 #include "relreturn_datastruct.h"
 #include "relmodels.h"
-#include "relxill.h"
+//#include "relxill.h"
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
 
@@ -338,18 +338,6 @@ double *getRadialGridFromReturntab(returnSpec2D *spec, int* status) {
   rgrid[spec->nrad] = spec->rhi[spec->nrad-1];
 
   return rgrid;
-}
-
-
-
-static void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillParam* xill_param,
-                                     double* rel_cosne_dist, int* status ){
-
-  CHECK_STATUS_VOID(*status);
-
-  xillSpec* xillSpecTable = get_xillver_spectra(xill_param, status);
-  get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_cosne_dist, xillSpecTable, status);
-
 }
 
 

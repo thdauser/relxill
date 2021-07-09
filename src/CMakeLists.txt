@@ -12,7 +12,7 @@ set(SOURCE_FILES
         relphysics.c relphysics.h
         writeOutfiles.c writeOutfiles.h
         relprofile.c relprofile.h
-        relxill.c relxill.h
+        Relxill.cpp Relxill.h
         ModelDatabase.h
         LocalModel.cpp LocalModel.h
         ModelParams.cpp ModelParams.h

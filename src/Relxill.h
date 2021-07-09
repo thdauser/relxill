@@ -18,14 +18,16 @@
 #ifndef RELXILL_H_
 #define RELXILL_H_
 
-#include "relmodels.h"
 
-void get_xillver_angdep_spec(double *o_xill_flux,
-                             int n_ener,
-                             double *ener,
-                             double *rel_dist,
-                             xillSpec *xill_spec,
-                             int *status);
+
+extern "C" {
+#include "relmodels.h"
+#include "relbase.h"
+#include "writeOutfiles.h"
+#include "relutility.h"
+#include "xillspec.h"
+}
+
 
 void relxill_kernel(double *ener_inp,
                     double *spec_inp,
@@ -33,8 +35,5 @@ void relxill_kernel(double *ener_inp,
                     xillParam *xill_param,
                     relParam *rel_param,
                     int *status);
-
-void get_xillver_fluxcorrection_factors(double* fac_fluxcorr, double* fac_gshift_fluxcorr,
-                                        xillParam *xill_param, int *status);
 
 #endif

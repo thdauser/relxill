@@ -26,7 +26,6 @@ extern "C" {
 #include "test_relxill.h"
 #include "writeOutfiles.h"
 #include "rellp.h"
-#include "relxill.h"
 }
 
 #include <vector>
