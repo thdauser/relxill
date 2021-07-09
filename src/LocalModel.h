@@ -116,15 +116,8 @@ class LocalModelParams {
     }
   }
 
-
-  // default values: (typically) if the parameter is NOT used
    private:
-    ParamList m_default_param{
-        {XPar::logn, 15.0},
-        {XPar::beta, 0.0}
-    };
-    ParamList m_param = {};
-
+    ParamList m_param;
   };
 
   /**

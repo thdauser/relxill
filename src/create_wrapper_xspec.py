@@ -185,12 +185,20 @@ def get_implemented_lmod(local_model_name, param_list):
 
     lmodel_str = \
         f"""   {{ModelName::{local_model_name},
-    LmodelParamList(\"{local_model_name}\", {{"""
+    LmodelParamList(\"{local_model_name}\", 
+        {{ """
 
     separator = ""
     for par_key in param_list.keys():
-        lmodel_str += separator + "\n\t{"+param_class + par_key+","+param_list[par_key]+"}"
+        lmodel_str += separator +param_class + par_key
         separator = ", "
+
+    lmodel_str += "}, \n\t {"
+    separator = ""
+    for par_key in param_list.keys():
+        lmodel_str += separator + param_list[par_key]
+        separator = ", "
+
 
     lmodel_str += "})\n   },\n"
 

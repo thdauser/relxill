@@ -23,6 +23,7 @@
 #include <cassert>
 #include <iostream>
 #include <unordered_map>
+#include <utility>
 
 #include "XspecSpectrum.h" //only to get the typedef of Array
 #include "ModelInfo.h"
@@ -60,7 +61,9 @@ enum class XPar {
   switch_ion_grad_type
 };
 
+// typedef std::vector<std::pair<XPar, double>> ParamList;
 typedef std::unordered_map<XPar, double> ParamList;
+
 
 /**
  * @brief exception if anything is wrong with the input parameters
@@ -89,8 +92,14 @@ class ParamInputException : public std::exception {
 class LmodelParamList {
 
  public:
-  LmodelParamList(std::string _name, ParamList _params)
-      : m_name{std::move(_name)}, m_params{std::move(_params)} {
+  LmodelParamList(std::string model_name, std::vector<XPar> parnames, std::vector<double> parvalues)   {
+
+    m_name = std::move(model_name);
+
+    assert(parnames.size()== parvalues.size() );
+    for (size_t ii = 0; ii < parnames.size() && ii < parvalues.size(); ++ii){
+      m_params.insert(std::make_pair(parnames[ii],parvalues[ii]));
+    }
   };
 
   [[nodiscard]] std::string name() const {
@@ -104,7 +113,6 @@ class LmodelParamList {
  private:
   std::string m_name;
   ParamList m_params;
-
 };
 
 
