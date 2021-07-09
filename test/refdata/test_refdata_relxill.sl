@@ -23,6 +23,7 @@ require("fits_model_struct");
 
 require("test_setup.sl");
 
+_traceback=1;
 %putenv("RELXILL_WRITE_OUTFILES=1");
 %putenv("DEBUG_RELXILL=1");
 
@@ -148,7 +149,7 @@ define check_single_model(fn){ %{{{
       dat = fits_read_model_struct(fn);
    } catch AnyError: {      
       vmessage(" skipping %s as fit_function not implemented ", fn);
-      return;
+      return status;
    }
 
    variable m_dat = eval_fun_keV(dat.bin_lo,dat.bin_hi);
