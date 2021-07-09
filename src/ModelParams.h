@@ -61,9 +61,6 @@ enum class XPar {
   switch_ion_grad_type
 };
 
-// typedef std::vector<std::pair<XPar, double>> ParamList;
-typedef std::unordered_map<XPar, double> ParamList;
-
 
 /**
  * @brief exception if anything is wrong with the input parameters
@@ -83,36 +80,6 @@ class ParamInputException : public std::exception {
 
  private:
   std::string m_msg{"*** input parameter error: "};
-};
-
-/**
- * @brief class storing the name and the parameter list
- * - used by the python script from the lmodel.dat file to create the xspec_wrapper
- */
-class LmodelParamList {
-
- public:
-  LmodelParamList(std::string model_name, std::vector<XPar> parnames, std::vector<double> parvalues)   {
-
-    m_name = std::move(model_name);
-
-    assert(parnames.size()== parvalues.size() );
-    for (size_t ii = 0; ii < parnames.size() && ii < parvalues.size(); ++ii){
-      m_params.insert(std::make_pair(parnames[ii],parvalues[ii]));
-    }
-  };
-
-  [[nodiscard]] std::string name() const {
-    return m_name;
-  }
-
-  [[nodiscard]] ParamList params() const {
-    return m_params;
-  }
-
- private:
-  std::string m_name;
-  ParamList m_params;
 };
 
 

@@ -108,8 +108,8 @@ define runtest(ffs){
 
 
    %% currently the only model with an ionization gradient
-   variable ff_ion = ["relxilllpion","relxilllpionCp"];
-   variable ff_ref = ["relxilllp","relxilllpCp"];
+   variable ff_ion = ["relxilllpionCp"];
+   variable ff_ref = ["relxilllpCp"];
    
    variable ii,n = length(ff_ion);
    

@@ -101,15 +101,14 @@ int convertPrimSpecType(T_PrimSpec name) {
  */
 const double *get_xspec_default_parameter_array(ModelName model_name) {
 
-  auto const model_parameters = ModelDatabase::instance().param_names(model_name);
+  auto const default_values = ModelDatabase::instance().default_values(model_name);
 
-  auto output_param_array = new double[model_parameters.size()];
+  auto output_param_array = new double[default_values.size()];
 
   // TODO: Need to change this to the actual input parameters
-  int ii = 0;
-  for (auto pars : model_parameters){
-    output_param_array[ii] = pars.second;
-    ii++;
+
+  for (size_t ii = 0; ii < default_values.size(); ii++){
+    output_param_array[ii] = default_values[ii];
   }
 
   return output_param_array;

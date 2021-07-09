@@ -109,6 +109,17 @@ TEST_CASE(" Execute single model", "[single]") {
   REQUIRE_NOTHROW(test_xspec_lmod_call(ModelName::relxill, default_spec) );
 }
 
+TEST_CASE(" Exec single model with LocalModel Structure", "[single]") {
+  DefaultSpec default_spec{};
+
+  LocalModel lmod(ModelName::relxill);
+
+  auto spec = default_spec.get_xspec_spectrum();
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+  REQUIRE( sum_flux(spec.flux(),spec.num_flux_bins()) > 1e-8);
+
+}
 
 
 

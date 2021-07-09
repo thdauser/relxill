@@ -59,9 +59,8 @@ class ModelDatabase {
 
  public:
   /**
-   * @brief use this instance to always and securely access
-   * the database, without needing to initialize it anywhere
-   * else
+   * use this instance to always and securely access the database, without
+   * needing to initialize it anywhere else
    * @return ModelDatabase
    */
   static ModelDatabase &instance() {
@@ -70,7 +69,7 @@ class ModelDatabase {
   }
 
   /**
-   * @brief get model info (as defined in the database)
+   * get model info (as defined in the database)
    * @param ModelName
    * @return ModelInfo
    */
@@ -87,9 +86,17 @@ class ModelDatabase {
    * @param ModelName
    * @return ModelParamVector
    */
-  ParamList param_names(ModelName name){
+  std::vector<XPar> param_names(ModelName name){
     try {
       return lmodel_database.params(name);
+    } catch (std::out_of_range &e) {
+      throw ModelNotFound(lmodel_database.name_string(name));
+    }
+  }
+
+  std::vector<double> default_values(ModelName name){
+    try {
+      return lmodel_database.default_values(name);
     } catch (std::out_of_range &e) {
       throw ModelNotFound(lmodel_database.name_string(name));
     }

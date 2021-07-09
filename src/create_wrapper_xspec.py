@@ -167,7 +167,7 @@ def write_std_header(file):
 
 
 def write_xspec_wrapper_file(outfile_name, model_definition):
-    includes = "#include \"LocalModel.h\"\n#include \"ModelParams.h\"\n"
+    includes = "#include \"LocalModel.h\"\n"
 
     file = open(outfile_name, "w")
 
@@ -185,7 +185,7 @@ def get_implemented_lmod(local_model_name, param_list):
 
     lmodel_str = \
         f"""   {{ModelName::{local_model_name},
-    LmodelParamList(\"{local_model_name}\", 
+    XspecParamList(\"{local_model_name}\", 
         {{ """
 
     separator = ""
@@ -207,6 +207,33 @@ def get_implemented_lmod(local_model_name, param_list):
 
 def write_class_definition(file):
     class_definition_cpp = """
+
+class XspecParamList {
+
+ public:
+  XspecParamList(std::string model_name, std::vector<XPar> parnames, std::vector<double> parvalues):
+      m_name{std::move(model_name)}, m_parnames{std::move(parnames)}, m_values{std::move(parvalues)} { };
+
+
+  [[nodiscard]] std::string name() const {
+    return m_name;
+  }
+
+  [[nodiscard]] std::vector<XPar> parnames() const {
+    return m_parnames;
+  }
+
+  [[nodiscard]] std::vector<double> default_values() const {
+    return m_values;
+  }
+
+ private:
+  std::string m_name;
+  std::vector<XPar> m_parnames;
+  std::vector<double> m_values;
+};
+
+
 class XspecModelDatabase{
 
  public:
@@ -214,16 +241,20 @@ class XspecModelDatabase{
     return model_definition.at(name).name();
   }
 
-  ParamList params(ModelName name) const{
-    return model_definition.at(name).params();
+  std::vector<XPar> params(ModelName name) const{
+    return model_definition.at(name).parnames();
   }
 
-  std::unordered_map<ModelName, LmodelParamList> all_models() const{
+  std::vector<double> default_values(ModelName name) const{
+    return model_definition.at(name).default_values();
+  }
+
+  std::unordered_map<ModelName, XspecParamList> all_models() const{
     return model_definition;
   }
 
  private:
-  const std::unordered_map<ModelName, LmodelParamList> model_definition = {
+  const std::unordered_map<ModelName, XspecParamList> model_definition = {
   {"""
     file.write(class_definition_cpp)
 
@@ -235,7 +266,7 @@ def write_model_database(file, definition):
 
 
 def write_xspec_implement_models(outfile_name, model_definition):
-    includes = "#include \"ModelParams.h\"\n"
+    includes = ""
 
     file = open(outfile_name, "w")
 

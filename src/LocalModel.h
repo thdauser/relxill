@@ -54,51 +54,54 @@ class ModelEvalFailed : public std::exception {
   std::string m_msg{"*** relxill-error: "};
 };
 
+
+/**
+ * @brief class storing the name and the parameter list
+ * - used by the python script from the lmodel.dat file to create the xspec_wrapper
+ */
+
 /**
  * class to store all input parameters of the model (explicit or hidden)
  */
-class LocalModelParams {
+class ParamList {
 
  public:
-  //  ModelParams() = default;
-  //  ~ModelParams() = default;
+  explicit ParamList(ModelName model_name) :
+      ParamList(model_name, &ModelDatabase::instance().default_values(model_name)[0]) {
+  };
 
-  explicit LocalModelParams(ModelName model_name) {
-    m_param = ModelDatabase::instance().param_names(model_name);
-  }
+  //  explicit ParamList(ModelName model_name) {
+  //    auto parnames = ModelDatabase::instance().param_names(model_name);
+  //    auto parvalues = ModelDatabase::instance().default_values(model_name);
+  //    for (size_t ii = 0; ii < parnames.size() ; ++ii){
+  //      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
+  //    }
+  //  };
 
-  /**
-   * @param pars: list of parameters  (XPar)
-   * @param values: input values corresponding to the parameter list
-   */
-  LocalModelParams(ParamList pars, const double *values) {
-
-    m_param = std::move(pars);
-
-    int ii=0; // dangerous!! need to trust the length given by xspec (there is no other way)
-    for (auto par : m_param){
-      m_param.at(par.first) = values[ii];
-      ii++;
+  explicit ParamList(ModelName model_name, const double* parvalues) {
+    auto parnames = ModelDatabase::instance().param_names(model_name);
+    for (size_t ii = 0; ii < parnames.size() ; ++ii){
+      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
     }
+  };
 
-    // set default values??
-  }
+
 
   void set(XPar name, double value){
     try {
-        m_param.at(name) = value;
-      } catch (std::out_of_range &e){
-        throw ParamInputException("parameter not found");
-      }
+      m_param.at(name) = value;
+    } catch (std::out_of_range &e){
+      throw ParamInputException("parameter not found");
     }
+  }
 
-    auto &operator[](const XPar &name) const {
-      try {
-        return m_param.at(name);
-      } catch (std::exception &e){
-        throw ParamInputException("parameter not found");
-      }
+  auto &operator[](const XPar &name) const {
+    try {
+      return m_param.at(name);
+    } catch (std::exception &e){
+      throw ParamInputException("parameter not found");
     }
+  }
 
   /**
    * get the parameter value for "name", otherwise return the default
@@ -108,7 +111,6 @@ class LocalModelParams {
    * @return
    */
   double get_otherwise_default(const XPar &name, double def_value) const {
-
     if (m_param.find(name) != m_param.end()){
       return m_param.at(name);
     } else {
@@ -116,29 +118,29 @@ class LocalModelParams {
     }
   }
 
-   private:
-    ParamList m_param;
-  };
+ private:
+  std::unordered_map<XPar, double> m_param = {};
+};
 
-  /**
+
+/**
    * class LocalModel
    */
-  class LocalModel {
+class LocalModel {
 
    public:
-    LocalModel(LocalModelParams par, ModelName model_name)
+    LocalModel(ParamList par, ModelName model_name)
         : m_name{model_name},
           m_model_params{std::move(par)},
           m_info{ModelDatabase::instance().model_info(model_name)}
     {  };
 
     LocalModel(const double* inp_param, ModelName model_name)
-        : LocalModel(LocalModelParams(ModelDatabase::instance().param_names(model_name), inp_param),
-                     model_name )
+        : LocalModel(ParamList(model_name, inp_param), model_name )
     {  };
 
     explicit LocalModel(ModelName model_name) :
-        LocalModel(LocalModelParams(model_name), model_name)
+        LocalModel(ParamList(model_name), model_name)
     {  };
 
     /** set the value of a single parameter
@@ -182,7 +184,7 @@ class LocalModelParams {
 
  private:
   ModelName m_name;
-  LocalModelParams m_model_params;
+  ParamList m_model_params;
   ModelInfo m_info;
 
   void line_model(const XspecSpectrum &spectrum);
