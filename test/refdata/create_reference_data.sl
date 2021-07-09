@@ -179,16 +179,13 @@ define test_parfiles(){ %{{{
 %}}}
 private define write_all_refl_frac_combinations(filename_refdata){ %{{{
 
-   set_par("*.fixReflFrac",0);
-   set_par("*.refl_frac",1,0,-10,10);
+   set_par("*.boost",1,0,-10,10);
    fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
-   set_par("*.refl_frac",-1,0,-10,10);
+   set_par("*.boost",0,0,-10,10);
    fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
-   set_par("*.refl_frac",0);
+   set_par("*.boost",-1,0,-10,10);
    fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );   
-   set_par("*.fixReflFrac",1);
-   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );      
-   set_par("*.fixReflFrac",0);
+   set_par("*.boost",1);
    
 }
 %}}}
