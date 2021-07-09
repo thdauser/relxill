@@ -42,7 +42,7 @@ define check_reflfrac_beta(ff_ion){ %{{{
    
    %% just use the normal relxilllp model for the test here
    set_par("*.ion_grad_type",0);
-   set_par("*.fixReflFrac",1);
+   set_par("*.boost",1,1);
    
    variable bet = [0:0.5:#3];
    variable ii, n = length(bet);

@@ -10,7 +10,11 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
    variable val0,val1;
    
    fit_fun_default(ff);
-   set_par("*.refl_frac",0.0,0,-10,10);
+   if (isLpModel(ff)){
+      set_par("*.boost",0.0,0,-10,10);      
+   } else {
+      set_par("*.refl_frac",0.0,0,-10,10);
+   }
    val1 =  eval_fun_keV(lo0,hi0);
 
    variable z = 0.0; 

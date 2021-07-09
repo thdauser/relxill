@@ -20,53 +20,34 @@ define ncheck_refl_frac_single(ff){ %{{{
 }
 %}}}
 
-define ncheck_fixReflFrac_working(ff){ %{{{
+define ncheck_boost_onlyRefl(ff){ %{{{
    
    variable val0,val1,valr;
    
    fit_fun_default(ff);
    
-   set_par("*.fixReflFrac",0);
-   set_par("*.refl_frac",0.1);
+   set_par("*.boost",1,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
-   set_par("*.fixReflFrac",1);
+   set_par("*.boost",-1,0,-10,10);
    val0 =  eval_fun_keV(lo0,hi0);
    
    return goodness(val1,val0);
 }
 %}}}
 
-define ncheck_fixReflFrac_onlyRefl(ff){ %{{{
-   
-   variable val0,val1,valr;
-   
-   fit_fun_default(ff);
-   
-   set_par("*.fixReflFrac",1);
-   val1 =  eval_fun_keV(lo0,hi0);
-
-   set_par("*.fixReflFrac",3);
-   val0 =  eval_fun_keV(lo0,hi0);
-   
-   return goodness(val1,val0);
-}
-%}}}
-
-define check_fixReflFrac(ff){ %{{{
+define check_boost(ff){ %{{{
    
    variable val0,val1,valp;
    
    fit_fun_default(ff);
-
-   set_par("*.fixReflFrac",1);
+   
+   set_par("*.boost",1,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
-   set_par("*.fixReflFrac",3);
+   set_par("*.boost",0,0,-10,10);
    val0 =  eval_fun_keV(lo0,hi0);
-
-   set_par("*.fixReflFrac",0);
-   set_par("*.refl_frac",0);
+   set_par("*.boost",-1,0,-10,10);
    valp =  eval_fun_keV(lo0,hi0);
 
    return goodness(val1,val0+valp);
@@ -115,33 +96,33 @@ define runtest(ffs){
    
    variable goodn;
    _for ii(0,n-1,1){
-      msg_log += sprintf("   -> reflection fraction in %s\n",ff[ii]);
-      goodn = check_refl_frac_single(ff[ii]);
-      if (goodn > goodness_lim*5){
-	msg_log += sprintf(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s (goodness %e)\n",ff[ii],goodn);
-	 return EXIT_FAILURE;
-      }
-      goodn = ncheck_refl_frac_single(ff[ii]);
-      if (goodn < goodness_lim){
-	 msg_log += sprintf(" *** error: there seems to be a problem with the reflection fraction (no difference between 1 and -1) in  MODEL %s (goodness %e)\n",ff[ii],goodn);
-	 return EXIT_FAILURE;
-      }
-      
       
       if (isLpModel(ff[ii])) {
+	 msg_log += sprintf("   -> boost parameter in %s\n",ff[ii]);
 	 msg_log += sprintf("    + fixReflFrac parameter in %s\n",ff[ii]);
-	 if (check_fixReflFrac(ff[ii]) > goodness_lim){
+	 if (check_boost(ff[ii]) > goodness_lim){
 	    msg_log += sprintf(" *** error: there seems to be a problem with the fixReflFrac parameter in  MODEL %s\n",ff[ii]);
 	    return EXIT_FAILURE;
 	 }
-	 if (ncheck_fixReflFrac_working(ff[ii]) < goodness_lim){
-	    msg_log += sprintf(" *** error: there seems to be a problem with the fixReflFrac parameter (no difference 0 and 1) in  MODEL %s\n",ff[ii]);
-	    return EXIT_FAILURE;
-	 }
-	 if (ncheck_fixReflFrac_onlyRefl(ff[ii]) < goodness_lim){
+	 if (ncheck_boost_onlyRefl(ff[ii]) < goodness_lim){
 	    msg_log += sprintf(" *** error: there seems to be a problem with the fixReflFrac parameter (no difference between 1 and -1) in  MODEL %s\n",ff[ii]);
 	    return EXIT_FAILURE;
 	 }
+
+      } else {
+	 msg_log += sprintf("   -> reflection fraction in %s\n",ff[ii]);
+	 goodn = check_refl_frac_single(ff[ii]);
+	 if (goodn > goodness_lim*5){
+	    msg_log += sprintf(" *** error: there seems to be a problem with the REFLECTION FRACTION in  MODEL %s (goodness %e)\n",ff[ii],goodn);
+	    return EXIT_FAILURE;
+      }
+	 goodn = ncheck_refl_frac_single(ff[ii]);
+	 if (goodn < goodness_lim){
+	    msg_log += sprintf(" *** error: there seems to be a problem with the reflection fraction (no difference between 1 and -1) in  MODEL %s (goodness %e)\n",ff[ii],goodn);
+	    return EXIT_FAILURE;
+      }
+	 
+	 
       }
    }
    

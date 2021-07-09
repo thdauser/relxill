@@ -15,8 +15,8 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
    _for ii(0,n-2,1){
       tmp = sum(  (v[ii] - v[ii+1] )^2 ) ;
       if (tmp < lim ){
-	 vmessage("     caching spectra not correct (did not change while it should), %.3e < %.3e for values %.2e and %.2e ",
-		  tmp, lim, inp[ii], inp[ii+1] );
+	 vmessage("     caching spectra not correct (did not change while it should), %.3e < %.3e for values %.2e [%i] and %.2e [%i]",
+		  tmp, lim, inp[ii], ii, inp[ii+1], ii+1 );
 	 return EXIT_FAILURE;
       }
       
@@ -114,7 +114,7 @@ define check_caching_single(ff,par){ %{{{
    
    
    variable res = struct{no_cache=no_cache_msec, cache=cache_msec};
-   
+
    if (test_caching_spec(val_ncache,val0_cache,vals,vals0) != EXIT_SUCCESS){
       msg_log += sprintf("     => spectra did not behave as expected when testing caching (%s -  %s)\n",ff,par);
       return EXIT_FAILURE, res;
@@ -169,14 +169,15 @@ define runtest(ffs){
    
    variable ff_arr = Assoc_Type[Array_Type];
    
-   variable std_rel_param = ["a","Incl","Rin"];
+   variable std_rel_param = ["Rin","a","Incl"];
    variable std_xill_param = ["logxi","Afe","z"];
    
    ff_arr["relxill"]   = [std_rel_param, "Index1",std_xill_param, "Ecut"];
-   ff_arr["relxilllp"] = [std_rel_param, "h","refl_frac", std_xill_param, "Ecut" ];
+   ff_arr["relxilllp"] = [std_rel_param, "h","boost", std_xill_param, "Ecut" ];
+   ff_arr["relxilllpCp"] = [std_rel_param, "h","boost", std_xill_param, "kTe" ];
    ff_arr["relxillNS"] = [std_rel_param, "logN", "kTbb"];
 #ifndef STABLE
-   ff_arr["relxilllpionCp"] = [std_rel_param, "h","refl_frac", std_xill_param, "xi_index" ];
+   ff_arr["relxilllpionCp"] = [std_rel_param, "h","boost", std_xill_param, "xi_index" ];
    ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
 #endif
    
