@@ -55,6 +55,7 @@ enum class XPar {
   frac_pl_bb,
   ktbb,
   xi_index,
+  switch_fixreflfrac,
   switch_return_rad,
   switch_ion_grad_type
 };

@@ -579,20 +579,33 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
     lpReflFrac *struct_refl_frac = sysPar->emis->returnFracs;
 
-    if (rel_param->emis_type == EMIS_TYPE_LP) {
-      if (xill_param->boost >= 0) {
-        /** set the reflection fraction calculated from the height and
-         *  spin of the primary source, in this case for the physical
-         *  value from Rin to Rout          						 */
-        xill_param->refl_frac = struct_refl_frac->refl_frac * xill_param->boost;
+    if ( xill_param->fixReflFrac > 0 ) {
+      /** set the reflection fraction calculated from the height and
+       *  spin of the primary source, in this case for the physical
+       *  value from Rin to Rout          						 */
+      xill_param->refl_frac = struct_refl_frac->refl_frac;
 
-        // special case, if set to "3", it will return only the reflected spectrum
-        // with the normalization as predicted
-      } else {
-        xill_param->refl_frac = struct_refl_frac->refl_frac * xill_param->boost;
-        assert(xill_param->refl_frac < 0);
+      // special case, if set to "3", it will return only the reflected spectrum
+      // with the normalization as predicted
+      if (xill_param->fixReflFrac == 3){
+        xill_param->refl_frac = - struct_refl_frac->refl_frac;
       }
     }
+
+//    if (rel_param->emis_type == EMIS_TYPE_LP) {  //NEW VERSION TO BE IMPLEMENTED SOON
+//      if (xill_param->boost >= 0) {
+//        /** set the reflection fraction calculated from the height and
+//         *  spin of the primary source, in this case for the physical
+//         *  value from Rin to Rout          						 */
+//        xill_param->refl_frac = struct_refl_frac->refl_frac * xill_param->boost;
+//
+//        // special case, if set to "3", it will return only the reflected spectrum
+//        // with the normalization as predicted
+//      } else {
+//        xill_param->refl_frac = struct_refl_frac->refl_frac * xill_param->boost;
+//        assert(xill_param->refl_frac < 0);
+//      }
+//    }
 
     /** 4 ** and apply it to primary and reflected spectra **/
     if (rel_param->emis_type == EMIS_TYPE_LP) {
