@@ -232,7 +232,7 @@ static relDat *load_single_relDat(fitsfile *fptr, char *extname, int nhdu, int *
 }
 
 /** load the complete relline table */
-void read_relline_table(char *filename, relTable **inp_tab, int *status) {
+void read_relline_table(const char *filename, relTable **inp_tab, int *status) {
 
   relTable *tab = (*inp_tab);
   fitsfile *fptr = NULL;
@@ -381,7 +381,7 @@ lpDat *load_single_lpDat(fitsfile *fptr, int n_h, int n_rad, int rownum, int *st
 }
 
 /** load the complete relline table */
-void read_lp_table(char *filename, lpTable **inp_tab, int *status) {
+void read_lp_table(const char *filename, lpTable **inp_tab, int *status) {
 
   lpTable *tab = (*inp_tab);
   fitsfile *fptr = NULL;

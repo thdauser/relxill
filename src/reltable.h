@@ -85,9 +85,9 @@ relTable *new_relTable(int n_a, int n_mu0, int n_r, int n_g, int *status);
 void free_relTable(relTable *tab);
 
 /* routine to read the RELLINE table */
-void read_relline_table(char *filename, relTable **tab, int *status);
+void read_relline_table(const char *filename, relTable **tab, int *status);
 
 /* routine to read the LP table */
-void read_lp_table(char *filename, lpTable **inp_tab, int *status);
+void read_lp_table(const char *filename, lpTable **inp_tab, int *status);
 
 #endif /* RELTABLE_H_ */
