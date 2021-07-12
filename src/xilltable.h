@@ -68,22 +68,22 @@ int get_xilltab_param_index(xillTable *tab, int ind);
 float *get_xilltab_paramvals(xillParam *param, int *status);
 int *get_xilltab_indices_for_paramvals(xillParam *param, xillTable *tab, int *status);
 
-void check_xilltab_cache(char *fname, xillParam *param, xillTable *tab, const int *ind, int *status);
+void check_xilltab_cache(const char *fname, xillParam *param, xillTable *tab, const int *ind, int *status);
 
 void free_cached_xillTable(void);
 
-void init_xillver_table(char *filename, xillTable **inp_tab, int *status);
+void init_xillver_table(const char *filename, xillTable **inp_tab, int *status);
 
-char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status);
+const char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status);
 
 void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname);
 
 
-fitsfile *open_fits_table_stdpath(char *filename, int *status);
+fitsfile *open_fits_table_stdpath(const char *filename, int *status);
 
-int checkIfTableExists(char *filename, int *status);
+int checkIfTableExists(const char *filename, int *status);
 
-char *getXilltableNameUsingAlternativeIfNotExisting(char *stdname, char *altname, int *status);
+const char *getXilltableNameUsingAlternativeIfNotExisting(const char *stdname, const char *altname, int *status);
 
 int is_6dim_table(int model_type);
 

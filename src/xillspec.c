@@ -33,7 +33,7 @@ xillSpec *get_xillver_spectra(xillParam *param, int *status) {
   CHECK_STATUS_RET(*status, NULL);
 
   xillTable *tab = NULL;
-  char *fname = get_init_xillver_table(&tab, param, status);
+  const char *fname = get_init_xillver_table(&tab, param, status);
 
   CHECK_STATUS_RET(*status, NULL);
   assert(fname != NULL);

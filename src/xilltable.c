@@ -387,7 +387,7 @@ float *get_xillspec(xillTable *tab, int i0, int i1, int i2, int i3, int i4, int 
   return tab->data_storage[index];
 }
 
-char *getFullPathTableName(char *filename, int *status) {
+static char *getFullPathTableName(const char *filename, int *status) {
 
   int MAXSIZE = 1000;
   char *fullfilename = (char *) malloc(sizeof(char) * MAXSIZE);
@@ -401,7 +401,7 @@ char *getFullPathTableName(char *filename, int *status) {
   return fullfilename;
 }
 
-int checkIfTableExists(char *filename, int *status) {
+int checkIfTableExists(const char *filename, int *status) {
 
   char *fullfilename = getFullPathTableName(filename, status);
   CHECK_STATUS_RET(*status, 0);
@@ -423,7 +423,7 @@ int checkIfTableExists(char *filename, int *status) {
   return tableExists;
 }
 
-fitsfile *open_fits_table_stdpath(char *filename, int *status) {
+fitsfile *open_fits_table_stdpath(const char *filename, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -444,7 +444,7 @@ fitsfile *open_fits_table_stdpath(char *filename, int *status) {
 }
 
 /** load the complete relline table */
-void init_xillver_table(char *filename, xillTable **inp_tab, int *status) {
+void init_xillver_table(const char *filename, xillTable **inp_tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -540,7 +540,7 @@ static void normalizeXillverSpecLogxiDensity(float *spec,
 
 }
 
-static void xilltable_fits_load_single_spec(char *fname,
+static void xilltable_fits_load_single_spec(const char *fname,
                                             fitsfile **fptr,
                                             xillTable *tab,
                                             double defDensity,
@@ -602,7 +602,7 @@ static double getDefaultLogxi(xillParam *param) {
   return param->lxi;
 }
 
-void check_xilltab_cache(char *fname, xillParam *param, xillTable *tab, const int* ind, int *status) {
+void check_xilltab_cache(const char *fname, xillParam *param, xillTable *tab, const int* ind, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -711,8 +711,8 @@ void free_xill_spec(xillSpec *spec) {
 
 
 
-char *getXilltableNameUsingAlternativeIfNotExisting(char *stdname, char *altname, int *status) {
-  char *nthcompFileName = stdname;
+const char *getXilltableNameUsingAlternativeIfNotExisting(const char *stdname, const char *altname, int *status) {
+  const char *nthcompFileName = stdname;
 
   if (checkIfTableExists(nthcompFileName, status) == 0) {
     nthcompFileName = altname;
@@ -723,7 +723,7 @@ char *getXilltableNameUsingAlternativeIfNotExisting(char *stdname, char *altname
   return nthcompFileName;
 }
 /** load the xillver table and return its filename **/
-char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
+const char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -765,7 +765,7 @@ char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
     // currently we have a new and also an older table for the nthcomp version (one includes more
     // densities, but is not in the standard distribution
-    char *nthcompFileName = getXilltableNameUsingAlternativeIfNotExisting(
+    const char *nthcompFileName = getXilltableNameUsingAlternativeIfNotExisting(
         XILLTABLE_NTHCOMP_FILENAME, XILLTABLE_NTHCOMP_FILENAME_OLD, status);
 
 
