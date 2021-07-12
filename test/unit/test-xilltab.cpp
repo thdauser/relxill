@@ -192,9 +192,6 @@ TEST_CASE(" automated loading of the xillver tables ", "[xilltab]") {
 
 TEST_CASE(" loading table which does not exist ", "[xilltab]") {
 
-  int status = EXIT_SUCCESS;
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
-
   std::string nonExistingFilename = "no_table_has_this_name_1234.fits";
 
   int statusFailing = EXIT_SUCCESS;

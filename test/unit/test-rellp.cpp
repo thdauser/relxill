@@ -16,18 +16,13 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+#include "catch2/catch_amalgamated.hpp"
 
-#include "test_rellp.h"
+extern "C" {
+#include "rellp.h"
+}
 
 #define PREC 1e-6
-
-static double sumArray(double *arr, int n) {
-  double sum = 0.0;
-  for (int ii = 0; ii < n; ii++) {
-    sum += arr[ii];
-  }
-  return sum;
-}
 
 /*
 
@@ -114,21 +109,3 @@ static void test_calcEmisProfileLp(int *status) {
 }
 */
 
-void test_rellp(int *status) {
-
-  CHECK_STATUS_VOID(*status);
-
-  char *testName = "EMISSIVTIY Profile Calculation";
-  printf("\n === Testing %s with RELXILL Version %s === \n\n", testName, PROJECT_VER);
-
-  //test_extendedGeometryHeight(status);
-  //test_calcEmisProfileLp(status);
-  // test_pointSourceDecision(status);
-
-  if (*status != EXIT_SUCCESS) {
-    printf(" *** TESTING %s NOT SUCCESSFUL \n", testName);
-  } else {
-    printf(" *** TESTING %s SUCCESSFUL \n", testName);
-  }
-
-}
