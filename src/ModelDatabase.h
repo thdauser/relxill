@@ -102,6 +102,10 @@ class ModelDatabase {
     }
   }
 
+  std::string model_string(ModelName name){
+    return lmodel_database.name_string(name);
+  }
+
   ModelName model_name(const std::string& model_string){
 
     auto models = lmodel_database.all_models();

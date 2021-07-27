@@ -151,6 +151,10 @@ class LocalModel {
       m_model_params.set(param,value);
     }
 
+    std::string get_model_string(){
+      return ModelDatabase::instance().model_string(m_name);
+    }
+
     /**
      * Evaluate the LocalModel (in the Rest Frame of the Source)
      * (applies the redshift to the energy grid)

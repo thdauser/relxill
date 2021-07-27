@@ -16,12 +16,15 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "test_relxill.h"
+#include "catch2/catch_amalgamated.hpp"
+#include "LocalModel.h"
 
+extern "C" {
 #include "writeOutfiles.h"
+}
 
 
-
+/*
 
 void set_std_param_relline_lp(double *inp_par) {
   inp_par[0] = 6.4;
@@ -222,10 +225,7 @@ xillParam *init_par_xillver_ns(const double *inp_par, const int n_parameter, int
   param->incl = inp_par[5]; // is given in degrees !!
   param->refl_frac = inp_par[6];
 
-  // TODO: check parameter bounds here as well
-  /*	check_parameter_bounds_xillver(param,status);
-      CHECK_STATUS_RET(*status,NULL); */
-  
+
   return param;
 }
 
@@ -249,10 +249,6 @@ xillParam *init_par_xillver_co(const double *inp_par, const int n_parameter, int
   param->dens = 17.0;
   param->lxi = 0.0;       // interestingly this model does not have an ionization
 
-  // TODO: check parameter bounds here as well
-  /*	check_parameter_bounds_xillver(param,status);
-      CHECK_STATUS_RET(*status,NULL); */
-
   return param;
 }
 
@@ -273,9 +269,6 @@ xillParam *init_par_xillver_dens(const double *inp_par, const int n_parameter, i
   param->incl = inp_par[5]; // is given in degrees !!
   param->refl_frac = inp_par[6];
 
-  // TODO: check parameter bounds here as well
-  /*	check_parameter_bounds_xillver(param,status);
-      CHECK_STATUS_RET(*status,NULL); */
 
   return param;
 }
@@ -296,10 +289,6 @@ xillParam *init_par_xillver_dens_nthcomp(const double *inp_par, const int n_para
   param->z = inp_par[5];
   param->incl = inp_par[6]; // is given in degrees !!
   param->refl_frac = inp_par[7];
-
-  // TODO: check parameter bounds here as well
-  /*	check_parameter_bounds_xillver(param,status);
-      CHECK_STATUS_RET(*status,NULL); */
 
   return param;
 }
@@ -388,50 +377,65 @@ relParam *get_std_param_relline(int *status) {
 }
 
 
-xillSpec *get_std_xill_spec(int *status) {
-  xillParam *xill_param = get_std_param_xillver(status);
-  xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
-  return xill_spec;
-}
+
+*/
 
 void get_RelProfileConstEmisZones(rel_spec **p_rel_profile, relParam **p_rel_param, int nzones, int *status) {
 
   // relline is per default re-normalized, but we need to test the physical normalization here
-  putenv("RELLINE_PHYSICAL_NORM=1");
+  const char* env_physnorm = "RELLINE_PHYSICAL_NORM";
+  setenv(env_physnorm, "1", 1);
 
-  *p_rel_param = get_std_param_relline(status);
-  (*p_rel_param)->num_zones = nzones;
-  // set emissivity to constant
-  (*p_rel_param)->emis1 = 0.0;
-  (*p_rel_param)->emis2 = 0.0;
+  LocalModel lmod(ModelName::relline);
+  lmod.set_par(XPar::index1, 0.0);
+  lmod.set_par(XPar::index2, 0.0);
 
   int n_ener;
   double *ener;
   get_std_relxill_energy_grid(&n_ener, &ener, status);
 
-  *p_rel_profile = relbase(ener, n_ener, *p_rel_param, NULL, status);
-  putenv("RELLINE_PHYSICAL_NORM=0");
+  relParam* rel_param = lmod.get_rel_params();
+  rel_param->num_zones = nzones;
 
+
+  *p_rel_profile = relbase(ener, n_ener, *p_rel_param, nullptr, status);
+  setenv(env_physnorm, "0", 1);
+
+  free(rel_param);
 }
 
 rel_spec *get_stdRelProfile(int *status) {
 
-  relParam *rel_param = get_std_param_relline(status);
+  LocalModel lmod(ModelName::relline);
 
   int n_ener;
   double *ener;
   get_std_relxill_energy_grid(&n_ener, &ener, status);
 
-  return relbase(ener, n_ener, rel_param, NULL, status);
+  return relbase(ener, n_ener, lmod.get_rel_params() , nullptr, status);
 }
 
+xillSpec *get_std_xill_spec(int *status) {
+  LocalModel lmod(ModelName::xillver);
+  xillSpec *xill_spec = get_xillver_spectra(lmod.get_xill_params(), status);
+  return xill_spec;
+}
+
+
+/**
+ * calculate a relativistic profile and a xillver spectrum for standard parameters on the
+ * same energy grid (for testing)
+ * @param rel_profile [output]
+ * @param xill_spec_output [output]
+ * @param status
+ */
 void init_std_relXill_spec(rel_spec **rel_profile, double **xill_spec_output, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   *rel_profile = get_stdRelProfile(status);
 
-  double *xill_flux = malloc(sizeof(double) * (*rel_profile)->n_ener);
+  auto *xill_flux = new double[(*rel_profile)->n_ener];
   CHECK_MALLOC_VOID_STATUS(xill_flux, status)
 
   xillSpec *xill_spec_table = get_std_xill_spec(status);
@@ -477,50 +481,29 @@ void compareReferenceFlux(double flux, double refFlux, int *status) {
 
 }
 
-int test_stdEvaluationRelatFlux(const rel_spec *rel_profile) {
-
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
+TEST_CASE(" compare standard relline profile with reference flux "){
 
   int status = EXIT_SUCCESS;
+
+  rel_spec *rel_profile = get_stdRelProfile(&status);
 
   const double ReferenceRelatStdFlux = 8.371512e-01;
   double relatFlux = calc_RelatFluxInStdBand(rel_profile);
   compareReferenceFlux(relatFlux, ReferenceRelatStdFlux, &status);
 
-  print_relxill_test_result(status);
-  return status;
 }
 
-int test_stdEvaluationXillverFlux(const double *xill_spec, const rel_spec *rel_profile) {
-
-  PRINT_RELXILL_TEST_MSG_DEFAULT();
+TEST_CASE(" compare standard xillver evaluation with reference flux") {
 
   int status = EXIT_SUCCESS;
+
+  rel_spec *rel_profile = nullptr;
+  double *xill_spec = nullptr;
+  init_std_relXill_spec(&rel_profile, &xill_spec, &status);
 
   const double ReferenceXillverStdFlux = 1.802954e+01;
   double xillFlux = calc_XillverFluxInStdBand(xill_spec, rel_profile->ener, rel_profile->n_ener);
   compareReferenceFlux(xillFlux, ReferenceXillverStdFlux, &status);
 
-  print_relxill_test_result(status);
-  return status;
-}
-
-void test_stdEvaluationFluxes(int *status) {
-
-  CHECK_STATUS_VOID(*status);
-
-  PRINT_RELXILL_TEST_MSG("  : \n");
-
-  rel_spec *rel_profile = NULL;
-  double *xill_spec = NULL;
-  init_std_relXill_spec(&rel_profile, &xill_spec, status);
-
-  int relStatus = test_stdEvaluationRelatFlux(rel_profile);
-
-  int xillStatus = test_stdEvaluationXillverFlux(xill_spec, rel_profile);
-
-  if ((relStatus != EXIT_SUCCESS) || (xillStatus != EXIT_SUCCESS)) {
-    *status = EXIT_FAILURE;
-  }
 }
 

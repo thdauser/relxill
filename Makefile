@@ -85,7 +85,6 @@ test:
 
 test-unit:
 	make install
-	bin/run-tests
 	bin/tests
 
 test-e2e:

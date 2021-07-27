@@ -25,6 +25,7 @@
 
 #include <sys/time.h> // onyl for speed tests
 
+/*
 void set_std_param_xillver(double *inp_par);
 
 void set_std_param_xillver_nthcomp(double *inp_par);
@@ -54,6 +55,8 @@ relParam *get_std_param_relline(int *status);
 relParam *get_std_param_rellinelp(int *status);
 
 void get_std_param_relxilllpDCp(relParam **rel_param, xillParam **xill_param, int *status);
+
+ */
 
 xillSpec *get_std_xill_spec(int *status);
 rel_spec *get_stdRelProfile(int *status);

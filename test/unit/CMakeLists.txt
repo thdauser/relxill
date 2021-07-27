@@ -5,17 +5,16 @@ set(UNIT_TEST_FILES_CPP
         test-cppspectrum.cpp tests-execmodel.cpp
         common-functions.cpp common-functions.h
         tests-returnrad.cpp test-stdfunctions.cpp test-xilltab.cpp
-        test-rellp.cpp
-        test_relxill.c test_relxill.h   #only for get_relline_lp_params
+        test-rellp.cpp test-relxill.cpp
+         test_relxill.h   #only for get_relline_lp_params
         )
       
 set(UNIT_TEST_FILES
-        test_relxill.c test_relxill.h
         test_relreturn.h
         )
 
 
-set(EXEC_FILES run-tests test_relreturn)
+set(EXEC_FILES test_relreturn)
 
 set(EXEC_FILES_CPP tests)
 

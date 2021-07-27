@@ -18,6 +18,8 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+#include "LocalModel.h"
+
 extern "C" {
 #include "relbase.h"
 #include "test_relxill.h"
@@ -55,7 +57,7 @@ TEST_CASE(" initialize Xillver table ", "[xilltab]") {
   int status = EXIT_SUCCESS;
 
   xillTable *tab = nullptr;
-  xillParam *param = get_std_param_xillver(&status);
+  LocalModel lmod(ModelName::xillver);
 
   const std::string fname_xilltable = XILLTABLE_FILENAME;
   init_xillver_table(fname_xilltable.c_str(), &tab, &status);
@@ -69,7 +71,7 @@ TEST_CASE(" initialize Xillver table ", "[xilltab]") {
   }
 
   REQUIRE(tab->num_param > 0);
-  test_tab_num_param(param, &status, tab);
+  test_tab_num_param(lmod.get_xill_params(), &status, tab);
 
 }
 
@@ -127,32 +129,26 @@ TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
 
   int status = EXIT_SUCCESS;
 
-  param = get_std_param_xillver(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  test_get_spec("xillver", param);
+  std::vector<ModelName> names = {
+      ModelName::xillver,
+      ModelName::xillverCO,
+      ModelName::xillverCp,
+      ModelName::xillverNS
+  };
 
-  param = get_std_param_xillver_co(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  test_get_spec("xillverCO", param);
+  for ( auto mod_name : names ){
+    LocalModel lmod(mod_name);
+    param = lmod.get_xill_params();
+    test_get_spec(lmod.get_model_string(),  param);
 
-  param = get_std_param_xillver_ns(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  test_get_spec("xillverNS", param);
-
-  param = get_std_param_xillver_nthcomp(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  test_get_spec("xillverCp", param);
-
-  param = get_std_param_xillver_dens_nthcomp(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  test_get_spec("xillverDCp", param);
-
-  if (param != nullptr) {
-    param->dens = 17.0;
+    testAutomaticLoadingTable(param);
+    free(param);
   }
-  test_get_spec("xillverDCp (dens=1e17)", param);
 
-  free(param);
+  LocalModel lmod_dens(ModelName::xillverCp);
+  lmod_dens.set_par(XPar::logn, 17.0);
+  test_get_spec("xillverDCp (dens=1e17)", lmod_dens.get_xill_params() );
+
 
 }
 
@@ -244,17 +240,23 @@ static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec
 
 TEST_CASE(" renorm xilltable with density and logxi ") {
 
-  int status = EXIT_SUCCESS;
-  xillParam *param;
+
+  const double emin = 30.0;
+  const double emax = 80.0;
+
 
   xillSpec *spec[2];
-  param = get_std_param_xillver_dens_nthcomp(&status);
-  spec[0] = get_xillver_spectra(param, &status);
+  int status = EXIT_SUCCESS;
+  LocalModel lmod(ModelName::xillverCp);
+  spec[0] = get_xillver_spectra(lmod.get_xill_params(), &status);
 
-  test_get_spec("xillverDCp", param);
-  param->dens = 15.5;
-  spec[1] = get_xillver_spectra(param, &status);
+  double flux_in_band_stdparam = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, emin, emax);
 
-  testNormfacBand(spec, 30.0, 80.0, 0.01);
+  lmod.set_par(XPar::logn, 15.5);
+  spec[1] = get_xillver_spectra(lmod.get_xill_params(), &status);
+  double flux_in_band_logn_changed = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, emin, emax);
+
+  const double prec = 0.01;
+  REQUIRE(  ( flux_in_band_stdparam/flux_in_band_logn_changed - 1 ) < prec  );
 
 }
