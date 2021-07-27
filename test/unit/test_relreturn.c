@@ -20,7 +20,6 @@
 
 #include "relbase.h"
 #include "relreturn.h"
-#include "test_relxill.h"
 #include "relreturn_corona.h"
 #include "writeOutfiles.h"
 

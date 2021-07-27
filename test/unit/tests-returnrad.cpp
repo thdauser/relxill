@@ -23,7 +23,6 @@
 extern "C" {
 #include "relreturn.h"
 #include "relutility.h"
-#include "test_relxill.h"
 #include "writeOutfiles.h"
 #include "rellp.h"
 }
@@ -184,6 +183,8 @@ static void write_emis_profile(const std::string& fname, emisProfile* emis_profi
   write_data_to_file( fname.c_str() , emis_profile->re, emis_profile->emis, emis_profile->nr);
 }
 
+
+
 // ------- //
 TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
 
@@ -191,7 +192,9 @@ TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
 
   double precRebinCoarse = 0.05;
 
-  relParam* rel_param =  get_std_param_rellinelp(&status);
+  LocalModel lmod(ModelName::relline_lp);
+  lmod.set_par(XPar::switch_return_rad, 0);  // need this for the comparison (which is without return_rad)
+  relParam* rel_param = lmod.get_rel_params();
 
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
 
@@ -227,7 +230,8 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 
   int status = EXIT_SUCCESS;
 
-  relParam *rel_param = get_std_param_rellinelp(&status);
+  LocalModel lmod(ModelName::relline_lp);
+  relParam* rel_param = lmod.get_rel_params();
   rel_param->a = 0.998;
   rel_param->height = 5.0;
   rel_param->rout = 1000.0;

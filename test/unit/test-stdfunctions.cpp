@@ -18,8 +18,9 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+#include "common-functions.h"
+
 extern "C" {
-#include "test_relxill.h"
 #include "relutility.h"
 #include "relbase.h"
 #include "relphysics.h"

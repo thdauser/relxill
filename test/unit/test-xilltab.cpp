@@ -22,7 +22,6 @@
 
 extern "C" {
 #include "relbase.h"
-#include "test_relxill.h"
 }
 
 
@@ -127,8 +126,6 @@ TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
 
   xillParam *param;
 
-  int status = EXIT_SUCCESS;
-
   std::vector<ModelName> names = {
       ModelName::xillver,
       ModelName::xillverCO,
@@ -154,35 +151,21 @@ TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
 
 TEST_CASE(" automated loading of the xillver tables ", "[xilltab]") {
 
-  int status = EXIT_SUCCESS;
-  xillParam *param;
+  std::vector<ModelName> names = {
+      ModelName::xillver,
+      ModelName::xillverCO,
+      ModelName::xillverCp,
+      ModelName::xillverNS
+  };
 
-
-  param = get_std_param_xillver(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  testAutomaticLoadingTable(param);
-  free(param);
-
-  param = get_std_param_xillver_dens(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  testAutomaticLoadingTable(param);
-  free(param);
-
-  param = get_std_param_xillver_co(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  testAutomaticLoadingTable(param);
-  free(param);
-
-  param = get_std_param_xillver_ns(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  testAutomaticLoadingTable(param);
-  free(param);
-
-  param = get_std_param_xillver_dens_nthcomp(&status);
-  REQUIRE(status == EXIT_SUCCESS);
-  testAutomaticLoadingTable(param);
-  free(param);
-
+  for ( auto mod_name : names ) {
+    DYNAMIC_SECTION(" loading table for single model ") {
+      LocalModel local_model(mod_name);
+      xillParam *param = local_model.get_xill_params();
+      testAutomaticLoadingTable(param);
+      free(param);
+    }
+  }
 
 }
 
