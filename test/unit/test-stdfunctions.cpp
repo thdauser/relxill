@@ -227,7 +227,7 @@ TEST_CASE("Relline Normalization Convergence", "[basic]"){
   relParam *rel_param = nullptr;
   get_RelProfileConstEmisZones(&rel_profile, &rel_param, nzones, &status);
 
-  double beginOuterRadii = 10.;
+  double beginOuterRadii = 50.;
   int indexBeginOuterRadii = binary_search(rel_profile->rgrid, rel_profile->n_zones, beginOuterRadii);
 
   REQUIRE(rel_profile->n_zones - indexBeginOuterRadii > min_number_zones);
@@ -238,7 +238,7 @@ TEST_CASE("Relline Normalization Convergence", "[basic]"){
     averageRatio += getRatioRelProfileAndRingArea(rel_profile, ii, rel_param->a) * contributingFactorOfEachZone;
   }
 
-  double referenceRatio = 1.0;
+  double referenceRatio = 0.5*cos(rel_param->incl);
   /* As we still expect some relat. effects testing for a high precision will lead to
  * errors, while the normalization is correct. Therefore we choose simply a weaker
  * criterion, which can be fulfilled considering GR.

@@ -52,7 +52,9 @@ void get_RelProfileConstEmisZones(rel_spec **p_rel_profile, relParam **p_rel_par
   LocalModel lmod(ModelName::relline);
   lmod.set_par(XPar::index1, 0.0);
   lmod.set_par(XPar::index2, 0.0);
-  lmod.set_par(XPar::a, 0.9);
+  lmod.set_par(XPar::a, 0.0);
+  lmod.set_par(XPar::rout, 1000);
+ // lmod.set_par(XPar::limb, 1.0);
 
   int n_ener;
   double *ener;
