@@ -160,6 +160,8 @@ class ModelDatabase {
       {ModelName::xillverCO, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverNS, ModelInfo(T_Model::Xill, T_PrimSpec::Blackbody)},
 
+      {ModelName::relxillBB, ModelInfo(T_Model::Relxill, T_Irrad::BlackBody, T_PrimSpec::Blackbody)},
+
   };
 };
 

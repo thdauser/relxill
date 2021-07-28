@@ -21,12 +21,12 @@
 #include "XspecSpectrum.h"
 #include "common-functions.h"
 extern "C" {
-#include "relreturn.h"
 #include "relutility.h"
 #include "writeOutfiles.h"
 #include "rellp.h"
 }
 
+#include "Relreturn_BlackBody.h"
 #include <vector>
 
 #define PREC 1e-6

@@ -18,8 +18,6 @@
 #ifndef TEST_RELRETURN_H_
 #define TEST_RELRETURN_H_
 
-#include "relmodels.h"
-
 typedef struct {
 
   int nener;

@@ -16,15 +16,16 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "relreturn.h"
+#include "Relreturn_BlackBody.h"
 
+extern "C" {
 #include "common.h"
 #include "relbase.h"
 #include "relutility.h"
 #include "relphysics.h"
 #include "relreturn_datastruct.h"
 #include "relmodels.h"
-//#include "relxill.h"
+}
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
 
@@ -37,9 +38,74 @@ static double **get_returnrad_specs(double *ener_inp,
 static double **get_bbody_specs(double *ener, int nener, returningFractions *dat, double *temperature, int *status);
 
 void normalizeFluxRrad(int nrad, int nener, const double *ener, double **spec);
-double getEmissivityNormFactor(returningFractions *dat, int nener, const double *ener, double **spec);
 
 // Program Code
+
+
+
+
+void fits_rr_write_2Dspec(const char *fname, double **spec_arr, double *ener, int nener,
+                          double* rlo, double* rhi, int nrad, returningFractions *dat, int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  // open the fits file
+  fitsfile *fptr;
+  if (fits_create_file(&fptr, fname, status)) {
+    relxill_check_fits_error(status);
+    printf("   creating file %s failed\n", fname);
+    CHECK_STATUS_VOID(*status);
+  }
+
+
+  int n1 = nrad;
+  int n2 = nener;
+  char dim1[10];
+  char dim2[10];
+  sprintf(dim1, "%iD", (int) 1);
+  sprintf(dim2, "%iD", (int) n2);
+
+  if (dat!=nullptr) {
+    const int tfields = 6;
+    char *ttype[] = { (char*) "rlo", (char*) "rhi", (char*) "ener", (char*) "spec", (char*) "fraci", (char*) "fret"};
+    char *tform[] = {dim1, dim1, dim2, dim2, (char*) "50D", dim1};
+    fits_create_tbl(fptr, BINARY_TBL, 0, tfields, ttype, tform, nullptr, "2Dspec", status);
+
+  } else {
+    const int tfields = 4;
+    char *ttype[] = {(char*) "rlo", (char*) "rhi", (char*) "ener", (char*) "spec"};
+    char *tform[] = {dim1, dim1, dim2, dim2};
+    fits_create_tbl(fptr, BINARY_TBL, 0, tfields, ttype, tform, nullptr, "2Dspec", status);
+  }
+
+  relxill_check_fits_error(status);
+  CHECK_STATUS_VOID(*status);
+
+  int firstrow = 1;  /* first row in table to write   */
+  int firstelem = 1;  /* first element in row  */
+
+  fits_write_col(fptr, TDOUBLE, 1, firstrow, firstelem, n1, rlo, status);
+  fits_write_col(fptr, TDOUBLE, 2, firstrow, firstelem, n1, rhi, status);
+  for (int ii = 0; ii < n1; ii++) {
+    fits_write_col(fptr, TDOUBLE, 3, firstrow + ii, firstelem, n2, ener, status);
+    fits_write_col(fptr, TDOUBLE, 4, firstrow + ii, firstelem, n2, spec_arr[ii], status);
+  }
+
+  if (dat!=nullptr) {
+    for (int ii = 0; ii < n1; ii++) {
+      fits_write_col(fptr, TDOUBLE, 5, firstrow + ii, firstelem, n1, dat->frac_i[ii], status);
+    }
+    fits_write_col(fptr, TDOUBLE, 6, firstrow, firstelem, n1, dat->tabData->f_ret, status);
+    if( fits_write_key(fptr, TDOUBLE, "SPIN", &(dat->a),nullptr, status) ) {}
+  }
+
+
+  relxill_check_fits_error(status);
+
+  if (fptr != nullptr) { fits_close_file(fptr, status); }
+
+}
+
 
 double* getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double Tin, int* status){
   return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, TPROFILE_ALPHA, status);
@@ -70,10 +136,10 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
   returnSpec2D *returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
 
   // get the primary spectrum for the given radial grid and temperature profile
-  if (spec!=NULL) { // TODO: decide if we need this spec
+  if (spec!=nullptr) { // TODO: decide if we need this spec
     sum_2Dspec(spec, spec_rr_zones, nener, dat->nrad, status);
   }
-  if (spec_prim!=NULL) { // TODO: decide if we need this spec
+  if (spec_prim!=nullptr) { // TODO: decide if we need this spec
     sum_2Dspec(spec_prim, spec_prim_zones, nener, dat->nrad, status);
   }
 
@@ -159,7 +225,7 @@ static double **get_returnrad_specs(double *ener_inp, int nener_inp, returningFr
 
   double **spec_zones = new_specZonesArr(nener_inp, dat->nrad, status);
 
-  assert(dat->frac_i[0] != NULL);
+  assert(dat->frac_i[0] != nullptr);
 
   double spec[nener];
   for (int ii = 0; ii < dat->nrad; ii++) {
@@ -211,10 +277,10 @@ void normalizeFluxRrad(int nrad, int nener, const double *ener, double **spec) {
 }
 
 
-double getEmissivityNormFactor(returningFractions *dat, int nener, const double *ener, double **spec) {
+
 /*
  *  Input: bin integrated spectrum  [cts /bin/cm^2]
- */
+double getEmissivityNormFactor(returningFractions *dat, int nener, const double *ener, double **spec) {
 
 double sumRadius[dat->nrad];
   double sumTotalSpec = 0.0;
@@ -230,76 +296,15 @@ double sumRadius[dat->nrad];
 
   return sumTotalSpec;
 }
-
-
-void fits_rr_write_2Dspec(char *fname, double **spec_arr, double *ener, int nener,
-                          double* rlo, double* rhi, int nrad, returningFractions *dat, int *status) {
-
-  CHECK_STATUS_VOID(*status);
-
-  // open the fits file
-  fitsfile *fptr;
-  if (fits_create_file(&fptr, fname, status)) {
-    relxill_check_fits_error(status);
-    printf("   creating file %s failed\n", fname);
-    CHECK_STATUS_VOID(*status);
-  }
-
-
-  int n1 = nrad;
-  int n2 = nener;
-  char dim1[10];
-  char dim2[10];
-  sprintf(dim1, "%iD", (int) 1);
-  sprintf(dim2, "%iD", (int) n2);
-
-  if (dat!=NULL) {
-    const int tfields = 6;
-    char *ttype[] = {"rlo", "rhi", "ener", "spec", "fraci", "fret"};
-    char *tform[] = {dim1, dim1, dim2, dim2, "50D", dim1};
-    fits_create_tbl(fptr, BINARY_TBL, 0, tfields, ttype, tform, NULL, "2Dspec", status);
-
-  } else {
-    const int tfields = 4;
-    char *ttype[] = {"rlo", "rhi", "ener", "spec"};
-    char *tform[] = {dim1, dim1, dim2, dim2};
-    fits_create_tbl(fptr, BINARY_TBL, 0, tfields, ttype, tform, NULL, "2Dspec", status);
-  }
-
-   relxill_check_fits_error(status);
-   CHECK_STATUS_VOID(*status);
-
-  int firstrow = 1;  /* first row in table to write   */
-  int firstelem = 1;  /* first element in row  */
-
-  fits_write_col(fptr, TDOUBLE, 1, firstrow, firstelem, n1, rlo, status);
-  fits_write_col(fptr, TDOUBLE, 2, firstrow, firstelem, n1, rhi, status);
-  for (int ii = 0; ii < n1; ii++) {
-    fits_write_col(fptr, TDOUBLE, 3, firstrow + ii, firstelem, n2, ener, status);
-    fits_write_col(fptr, TDOUBLE, 4, firstrow + ii, firstelem, n2, spec_arr[ii], status);
-  }
-
-  if (dat!=NULL) {
-    for (int ii = 0; ii < n1; ii++) {
-      fits_write_col(fptr, TDOUBLE, 5, firstrow + ii, firstelem, n1, dat->frac_i[ii], status);
-    }
-    fits_write_col(fptr, TDOUBLE, 6, firstrow, firstelem, n1, dat->tabData->f_ret, status);
-    if( fits_write_key(fptr, TDOUBLE, "SPIN", &(dat->a),NULL, status) ) {}
-  }
-
-
-  relxill_check_fits_error(status);
-
-  if (fptr != NULL) { fits_close_file(fptr, status); }
-
-}
+ */
 
 
 void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, int* status) {
 
   CHECK_STATUS_VOID(*status);
 
-  returningFractions *dat = get_rrad_fractions(spin, -1, RMAX_RELRET, status);
+  const double rin = kerr_rms(spin);
+  returningFractions *dat = get_rrad_fractions(spin,  rin, RMAX_RELRET, status);
 
   double *temperature =
       get_tprofile(dat->rlo, dat->rhi, dat->nrad, 0.5 * (dat->rlo[0] + dat->rhi[0]), Tin, TPROFILE_DISKBB, status);
@@ -311,7 +316,8 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
     for (int ii = 0; ii < dat->nrad; ii++) {
       // need to divide by the GR area and multiply by the normal ring area to mimick a diskbb spectrum
       spec_arr[ii][jj] *=
-          (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2))) / dat->proper_area_ring[ii];
+          (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2)))
+          / calc_proper_area_ring( dat->rlo[ii] , dat->rhi[ii], spin);
     }
   }
 
@@ -329,7 +335,7 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
 
 double *getRadialGridFromReturntab(returnSpec2D *spec, int* status) {
 
-  double* rgrid = malloc(sizeof(double)*(spec->nrad+1)); // we use n+1 grid points
+  auto rgrid = new double[spec->nrad+1]; // we use n+1 grid points
   CHECK_MALLOC_RET_STATUS(rgrid, status, rgrid)
 
   for (int ii=0; ii<spec->nrad; ii++){
@@ -347,7 +353,7 @@ static double getXillverNormFactorFromPrimarySpectrum(double* spec, double* ener
 
   EnerGrid* egrid = get_stdXillverEnergygrid(status);
 
-  double* xillverInputSpec = malloc(sizeof(double)*egrid->nbins);
+  auto xillverInputSpec = new double[egrid->nbins];
   CHECK_MALLOC_RET_STATUS(xillverInputSpec, status, 0.0)
 
   rebin_spectrum(egrid->ener, xillverInputSpec, egrid->nbins, ener, spec, n_ener);
@@ -360,7 +366,11 @@ static double getXillverNormFactorFromPrimarySpectrum(double* spec, double* ener
   return normFactorXill;
 }
 
-double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb, double * spec_in, double* spec_bb, double* ener, int n_ener, int* status){
+double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb,
+                                                  double *spec_in,
+                                                  double *spec_bb,
+                                                  double *ener,
+                                                  int n_ener) {
   /* calculate the normalization factor between the primary returning radiation and the black body (xillver primary
    * spectra) at high energies
    */
@@ -389,9 +399,10 @@ void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec* rel_pr
       returnSpec->ener, returnSpec->n_ener, status);
 
   double normfacMatchAtHighEnergies = calcXillverNormfacRetrad2BoodyAtHighenergy(xill_param->kTbb,
-                                                                                 returnSpec->specRet[izone], xillver_prim_out,
+                                                                                 returnSpec->specRet[izone],
+                                                                                 xillver_prim_out,
                                                                                  returnSpec->ener,
-                                                                                 returnSpec->n_ener, status);
+                                                                                 returnSpec->n_ener);
   free(xillver_prim_out);
 
   for (int jj = 0; jj < returnSpec->n_ener; jj++) {
@@ -416,18 +427,19 @@ void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *return
 
 }
 
+/*
 void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii) {
 
   for (int jj = 0; jj < returnSpec->n_ener; jj++) {
     returnFlux[jj] =  returnSpec->specPri[ii][jj];
   }
 
-}
+}*/
 
 
 double* getXillverPrimaryBBodyNormalized(double kTbb, double* spec_in, double* ener, int n_ener, int* status){
 
-  double* spec_out = malloc(sizeof(double)*n_ener);
+  auto spec_out = new double[n_ener];
   CHECK_MALLOC_RET_STATUS(spec_out, status, spec_out)
 
   double xillverReflectionNormFactor = getXillverNormFactorFromPrimarySpectrum(spec_in, ener, n_ener, status);
@@ -451,7 +463,7 @@ double* scaledXillverPrimaryBBodyHighener(double kTbb, double* spec_in, double* 
 
   double* xill_out_prim = getXillverPrimaryBBodyNormalized(kTbb, spec_in,ener, n_ener, status);
 
-  double normFac = calcXillverNormfacRetrad2BoodyAtHighenergy(kTbb, spec_in, xill_out_prim, ener, n_ener, status);
+  double normFac = calcXillverNormfacRetrad2BoodyAtHighenergy(kTbb, spec_in, xill_out_prim, ener, n_ener);
 
   for (int jj = 0; jj < n_ener; jj++) {
     xill_out_prim[jj] *= normFac;
@@ -461,9 +473,10 @@ double* scaledXillverPrimaryBBodyHighener(double kTbb, double* spec_in, double* 
 }
 
 
-static void setLowValuesToZero(double* spec, int n, double lowestModelValue){
+static void setLowValuesToZero(double* spec, int n){
 
   double maxVal =  0.0;
+  const double lowestModelValue = 1e-8;
 
   for (int ii=0; ii<n; ii++){
     maxVal = fmax(maxVal, spec[ii]);
@@ -486,21 +499,36 @@ static void setValuesOutsideToZero(double* spec, const double* ener, int n){
 }
 
 
+static int should_noXillverRefl_calculated(){
+
+  char* env = getenv("RELXILL_BBRET_NOREFL");
+
+  if (  env!= nullptr &&  env[0]=='1'){
+    return 1;
+  } else {
+    return 0;
+  }
+
+}
+
 void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillParam *xill_param, relParam *rel_param,
-    int noXillverReflection, int *status) {
+    int *status) {
+
+
 
   CHECK_STATUS_VOID(*status);
   assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET);
+
 
   // get a standard grid for the convolution (is rebinned later to the input grid)
   int n_ener;
   double *ener;
   get_std_relxill_energy_grid(&n_ener, &ener, status);
 
-  xillTable *xill_tab = NULL;
+  xillTable *xill_tab = nullptr;
   get_init_xillver_table(&xill_tab, xill_param, status);
 
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, NULL, NULL, n_ener, xill_param->kTbb, rel_param->rin,
+  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, nullptr, nullptr, n_ener, xill_param->kTbb, rel_param->rin,
                                                       rel_param->rout, rel_param->a, status);
 
   double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
@@ -508,16 +536,10 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
 
   // ========== //
   double single_spec_inp[n_ener_inp];
-
-  double **spec_conv_out = malloc(sizeof(double *) * returnSpec->nrad);
-  CHECK_MALLOC_VOID_STATUS(spec_conv_out, status)
-
-  double **xillver_out = malloc(sizeof(double *) * returnSpec->nrad);
-  CHECK_MALLOC_VOID_STATUS(spec_conv_out, status)
-
-  double **xillver_prim_out = malloc(sizeof(double *) * returnSpec->nrad);
-  CHECK_MALLOC_VOID_STATUS(spec_conv_out, status)
-  // ========== //
+  auto spec_conv_out = new double*[returnSpec->nrad];
+  auto xillver_out = new double*[returnSpec->nrad];
+  auto xillver_prim_out = new double*[returnSpec->nrad];
+ // ========== //
 
   double Tin = xill_param ->kTbb;
 
@@ -527,11 +549,10 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   for (int ii = 0; ii < rel_profile->n_zones; ii++) {
     assert(returnSpec->n_ener==n_ener);
 
-    xillver_out[ii] = malloc(sizeof(double *) * n_ener);
-    CHECK_MALLOC_VOID_STATUS(xillver_out[ii],status)
+    xillver_out[ii] = new double[n_ener];
 
     xill_param->kTbb=Tin*xill_param->shiftTmaxRRet;  // currently set for testing
-    if (noXillverReflection){
+    if ( should_noXillverRefl_calculated() ){
       getZoneIncidentReturnFlux(xill_param, returnSpec, xillver_out[ii], ii);
     } else {
       getZoneReflectedReturnFluxDiskframe(xill_param, rel_profile, returnSpec, xillver_out[ii], ii, status);
@@ -540,8 +561,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
     xillver_prim_out[ii] = scaledXillverPrimaryBBodyHighener(xill_param->kTbb, returnSpec->specRet[ii],
                                                             returnSpec->ener, returnSpec->n_ener, status);
 
-    spec_conv_out[ii] = malloc(sizeof(double *) * n_ener);
-    CHECK_MALLOC_VOID_STATUS(spec_conv_out[ii],status)
+    spec_conv_out[ii] = new double[n_ener];
     convolveSpectrumFFTNormalized(ener, xillver_out[ii], rel_profile->flux[ii], spec_conv_out[ii], n_ener,
         1, 1, ii, spec_cache, status);
 
@@ -555,96 +575,38 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   }
 
   // clean spectrum
-  double lowestModelValue = 1e-8;
-  setLowValuesToZero(spec_inp, n_ener_inp, lowestModelValue);
+  setLowValuesToZero(spec_inp, n_ener_inp);
   setValuesOutsideToZero(spec_inp, ener_inp, n_ener_inp);
 
   // reset Tin parameter to be safe
   xill_param->kTbb = Tin;
 
   if (is_debug_run()) {
-    char *fname = "!debug-testrr-bbody-obs-reflect.fits";
+    std::string fname = "!debug-testrr-bbody-obs-reflect.fits";
     if (fabs(xill_param->refl_frac) < 1e-8) {
       fname = "!debug-testrr-bbody-obs-primary.fits";
     }
-    if (noXillverReflection){
+    if ( should_noXillverRefl_calculated() ){
       fname = "!debug-testrr-bbody-obs-mirror.fits";
     }
-    fits_rr_write_2Dspec(fname, spec_conv_out, ener, n_ener,
-                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, NULL, status);
+    fits_rr_write_2Dspec(fname.c_str(), spec_conv_out, ener, n_ener,
+                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
 
     fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-xillverRefl.fits", xillver_out, ener, n_ener,
-                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, NULL, status);
+                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
     fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-xillverPrim.fits", xillver_prim_out, ener, n_ener,
-                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, NULL, status);
+                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
 
     fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-specRet.fits", returnSpec->specRet, ener, n_ener,
-                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, NULL, status);
+                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
     fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-specPri.fits", returnSpec->specPri, ener, n_ener,
-                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, NULL, status);
+                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
   }
   free_2d(&spec_conv_out, returnSpec->nrad);
   free_2d(&xillver_prim_out, returnSpec->nrad);
 
 }
-
-void set_std_param_relxill_bbret(double *inp_par) {
-  inp_par[0] = 0.998;
-  inp_par[1] = 60.0;
-  inp_par[2] = -1.0;
-  inp_par[3] = 1000.;
-  inp_par[4] = 0.0;   // redshift
-  inp_par[5] = 1.0;   // kTbb
-  inp_par[6] = 2.0;   // logxi
-  inp_par[7] = 1.0;   // Afe
-  inp_par[8] = 15.0; // logN
-  inp_par[9] = 1.0;   // refl_frac
-  inp_par[10] = 1;   // fixReflFrac
-  inp_par[11] = 1.4;   // shiftTmaxRRad
-}
-
-
-
-/** shift the spectrum such that we can calculate the line for 1 keV **/
-double *shift_energ_spec_1keV(const double *ener, const int n_ener, double line_energ, double z, int *status) {
-
-  double *ener1keV = (double *) malloc((n_ener + 1) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ener1keV, status, NULL)
-
-  int ii;
-  for (ii = 0; ii <= n_ener; ii++) {
-    ener1keV[ii] = ener[ii] * (1 + z) / line_energ;
-  }
-  return ener1keV;
-}
-
-/** RELXILL MODEL FUNCTION for the BB returning radiation **/
-// DEPRECATED!!!!!!!!!!!!!
-void tdrelxillbbret(const double *ener0,
-                    const int n_ener0,
-                    double *photar,
-                    const double *parameter,
-                    const int n_parameter,
-                    int *status) {
-
-  xillParam *xill_param = NULL;
-  relParam *rel_param = NULL;
-
- // init_par_relxill_bbret(&rel_param, &xill_param, parameter, n_parameter, status);
-  CHECK_STATUS_VOID(*status);
-
-  double *ener = shift_energ_spec_1keV(ener0, n_ener0, 1.0, rel_param->z, status);
-
-  relxill_bb_kernel(ener, photar, n_ener0, xill_param, rel_param, 0, status);
-  CHECK_STATUS_VOID(*status);
-
-  free(ener);
-  free(xill_param);
-  free(rel_param);
-
-}
-

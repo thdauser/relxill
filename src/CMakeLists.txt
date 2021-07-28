@@ -18,7 +18,7 @@ set(SOURCE_FILES
         ModelParams.cpp ModelParams.h
         XspecSpectrum.h
         ModelInfo.h
-        relreturn.c relreturn.h
+        Relreturn_BlackBody.cpp Relreturn_BlackBody.h
         relreturn_corona.c relreturn_corona.h
         relreturn_datastruct.c relreturn_datastruct.h
         relreturn_table.c relreturn_table.h

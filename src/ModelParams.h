@@ -58,7 +58,8 @@ enum class XPar {
   xi_index,
   switch_fixreflfrac,
   switch_return_rad,
-  switch_ion_grad_type
+  switch_ion_grad_type,
+  shifttmaxrrad  // only for testing relxillBB
 };
 
 

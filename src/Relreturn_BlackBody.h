@@ -19,10 +19,10 @@
 #ifndef RELXILL__RELRETURN_H_
 #define RELXILL__RELRETURN_H_
 
+extern "C" {
 #include "relreturn_table.h"
 #include "relreturn_datastruct.h"
-
-#define NUM_PARAM_RELXILLBBRET 12
+}
 
 typedef struct {
 
@@ -40,15 +40,9 @@ typedef struct {
 } spec2D;
 
 
-void fits_rr_write_2Dspec(char *fname,
-                          double **spec_arr,
-                          double *ener,
-                          int nener,
-                          double *rlo,
-                          double *rhi,
-                          int nrad,
-                          returningFractions *dat,
-                          int *status);
+void fits_rr_write_2Dspec(const char *fname, double **spec_arr, double *ener, int nener,
+                          double *rlo, double *rhi, int nrad,
+                          returningFractions *dat, int *status);
 
 /**  return the diskbb spectrum for the radial grid given by the table for this spin value **/
 void spec_diskbb(double *ener, double *spec, int n, double Tin, double spin, int *status);
@@ -64,14 +58,17 @@ void relxill_bb_kernel(double *ener_inp,
                        int n_ener_inp,
                        xillParam *xill_param,
                        relParam *rel_param,
-                       int noXillverReflection,
                        int *status);
 
 double *getRadialGridFromReturntab(returnSpec2D *spec, int* status);
 
 double * getXillverPrimaryBBodyNormalized(double kTbb, double* spec_in, double* ener, int n_ener, int* status);
 
-double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb, double * spec_in, double* spec_bb, double* ener, int n_ener, int* status);
+double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb,
+                                                  double *spec_in,
+                                                  double *spec_bb,
+                                                  double *ener,
+                                                  int n_ener);
 
 double *scaledXillverPrimaryBBodyHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
@@ -82,15 +79,5 @@ void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *return
 void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
 
 double *getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
-
-
-void set_std_param_relxill_bbret(double *inp_par);
-
-void tdrelxillbbret(const double *ener0,
-                    int n_ener0,
-                    double *photar,
-                    const double *parameter,
-                    int n_parameter,
-                    int *status);
 
 #endif //RELXILL__RELRETURN_H_

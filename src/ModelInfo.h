@@ -43,7 +43,8 @@ enum class ModelName {
   xillverCO,
   xillverD,
   relxillD,
-  relxilllpD
+  relxilllpD,
+  relxillBB
 };
 
 enum class T_Irrad {
