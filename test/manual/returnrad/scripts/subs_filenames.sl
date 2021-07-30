@@ -1,7 +1,7 @@
 
 define getFilenameStruct(){
    
-   variable outdir = "build/";
+   variable outdir = "./";
    variable fbase = outdir + "debug-testrr-bbody-%s.fits";
 
    variable f_rframe = struct{

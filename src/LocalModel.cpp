@@ -152,7 +152,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   xillParam *xill_param = LocalModel::get_xill_params();
 
   int status = EXIT_SUCCESS;
-  if (m_info.irradiation() == T_Irrad::BlackBody){
+  if (m_info.irradiation() == T_Irrad::Const){
     relxill_bb_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), xill_param, rel_param, &status);
   } else {
     relxill_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), xill_param, rel_param, &status);

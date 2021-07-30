@@ -431,14 +431,17 @@ void get_emis_bkn(double *emis, const double *re, int nr,
  *  @synopsis: calculate the emissivity for an alpha-disk (as given
  *  by Shakura & Sunyaev; 1973)
  **/
-static void get_emis_alphadisk(double *emis, double *re, int n) {
+static void get_emis_alphadisk(double *emis, double *re, int nr) {
 
-  for (int ii = 0; ii < n; ii++) {
-    emis[ii] = 1. / pow(re[ii], 3) * (1 - 1. / sqrt(re[ii] / re[0]));
+  // requires descending grid in radius
+  assert(re[nr-1] < re[0]);
+  assert(re[1] < re[0]);
+
+  for (int ii = 0; ii < nr; ii++) {
+    emis[ii] = 1. / pow(re[ii], 3) * (1 - 1. / sqrt(re[ii] / re[nr-1]));
   }
 
-  // normalized to 1?
-
+  norm_emis_profile(re, nr, emis);
 }
 
 static void get_emis_constant(double *emis, int n) {

@@ -7,6 +7,7 @@ require("scripts/subs_filenames.sl");
 
 
 variable spin = 0.998;  %% currently only done for this value
+variable Tin = 1.0;
 
 define getDiagnoseRframePlot(){ %{{{
    
@@ -84,16 +85,42 @@ define getDiagnoseRelatSmearingPlot(){ %{{{
 %}}}
 
 
+define createOutputFiles(){
+   load_xspec_local_models("build/");
+   fit_fun("relxillBB");
+   
+   putenv("RELXILL_WRITE_OUTFILES=1");
+
+   message("  Creating Output Files (calling relxillBB model) ");
+   
+   set_par("*.a",spin);
+   set_par("*.kTbb", Tin);
+   () = eval_fun(1,2);
+   
+   putenv("RELXILL_BBRET_NOREFL=1");
+
+   set_par("*.boost",1);   
+   () = eval_fun(1,2);
+
+   set_par("*.boost",0);
+   () = eval_fun(1,2);
+
+   
+   
+   putenv("RELXILL_WRITE_OUTFILES=0");
+   putenv("RELXILL_BBRET_NOREFL=0");
+}
+
+
 define testDiagnosePlots(){
 
+   createOutputFiles();
 
    if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseXillverPrimPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseRelatSmearingPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-   
-   
-   
+         
    return EXIT_SUCCESS;
 }
 

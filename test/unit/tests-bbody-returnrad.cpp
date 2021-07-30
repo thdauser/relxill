@@ -32,7 +32,7 @@ extern "C" {
 
 #define PREC 1e-6
 #define PREC_REFDATA 1e-3
-#define REFDATA_DIR "test/returnrad/refdata/"  // relativ to RELXILL_SOURCE_DIR (set when compiling)
+#define REFDATA_DIR "test/manual/returnrad/refdata/"  // relativ to RELXILL_SOURCE_DIR (set when compiling)
 
 
 
@@ -304,7 +304,7 @@ void writeZoneXillverAllIncidentReturnSpec(double Tshift, int indZone, int n_ene
 //  ======= TEST FUNCTIONS ========   //
 
 // ========== //
-TEST_CASE(" Check Temeperature Profile"){
+TEST_CASE(" Check Temperature Profile"){
 
   int status = EXIT_SUCCESS;
 
@@ -327,10 +327,10 @@ TEST_CASE(" Check Temeperature Profile"){
 }
 
 // ========== //
-/* REFDATA MISSING
-TEST_CASE(" DiskBB Spectrum "){
+TEST_CASE(" DiskBB Spectrum ", "[bbret]"){
 
   int status = EXIT_SUCCESS;
+  setenv("DEBUG_RELXILL","1",1);
 
   //create an energy grid
   int n_ener = 50;
@@ -345,11 +345,14 @@ TEST_CASE(" DiskBB Spectrum "){
 
   spec_diskbb(ener, photar, n_ener, Tin, spin, &status);
 
+  fits_write_spec("!testrr-spec-diskbb.fits", ener, photar, n_ener, &status);
+
   REQUIRE( compareWithRefdata("refvalues_diskbb.fits", ener, photar, n_ener, &status) == EXIT_SUCCESS );
   REQUIRE( status == EXIT_SUCCESS );
 
+  setenv("DEBUG_RELXILL","0",1);
+
 }
-*/
 
 // ========== //
 TEST_CASE(" Return Radiation Black Body Spectrum"){
@@ -383,7 +386,7 @@ TEST_CASE(" Return Radiation Black Body Spectrum"){
   fits_rr_write_2Dspec("!testrr-rframe-prim-bbody.fits", returnSpec->specPri, ener, n_ener,
                        returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, &status);
 
-  // refdata currently missing 
+  // refdata currently missing
   // REQUIRE( compareWithRefdata("refvalues_rrbbody_ret.fits", ener, photar_areaInteg, n_ener, &status) == EXIT_SUCCESS);
   // REQUIRE( compareWithRefdata("refvalues_rrbbody_pri.fits", ener, photar0_areaInteg, n_ener, &status ) == EXIT_SUCCESS);
 
@@ -503,27 +506,35 @@ TEST_CASE("Check if Second Evaluation returns the identical results"){
   }
 }
 
-TEST_CASE(" Evaluate RelxillBBRet") {
+TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret]") {
 
- setenv("DEBUG_RELXILL","1",1);
+  int status = EXIT_SUCCESS;
+  setenv("RELXILL_WRITE_OUTFILES","1",1);
+  setenv("RELXILL_BBRET_NOREFL","1",1);
 
   LocalModel lmod(ModelName::relxillBB);
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  lmod.set_par(XPar::boost,-1);
   lmod.eval_model(spec);
+  fits_write_spec("!testrr-spec-relxillbb-refl.fits",spec.energy(), spec.flux(), spec.num_flux_bins(), &status);
 
-  int status = EXIT_SUCCESS;
-  fits_write_spec("!testrr-spec-relxillbbret.fits",spec.energy(), spec.flux(), spec.num_flux_bins(), &status);
+  lmod.set_par(XPar::boost,0);
+  lmod.eval_model(spec);
+  fits_write_spec("!testrr-spec-relxillbb-prim.fits",spec.energy(), spec.flux(), spec.num_flux_bins(), &status);
 
-  setenv("DEBUG_RELXILL","0", 1);
+  setenv("RELXILL_WRITE_OUTFILES","0", 1);
+  setenv("RELXILL_BBRET_NOREFL","0",1);
+
+  REQUIRE( calcSum(spec.flux(), spec.num_flux_bins()) > 1e-8);
 
 }
 
-TEST_CASE("Test different spin values"){
+TEST_CASE("Test different spin values", "[bbret]"){
 
-  const int nspin = 5;
-  std::vector<double> spinArray = {0.35,0.71,0.801,0.99,0.998};
+ std::vector<double> spinArray{0.35,0.71,0.801,0.99,0.998};
   LocalModel lmod(ModelName::relxillBB);
 
   DefaultSpec default_spec{};
@@ -533,7 +544,9 @@ TEST_CASE("Test different spin values"){
     lmod.set_par(XPar::a, spin);
     lmod.eval_model(spec);
 
-    REQUIRE( calcSum(spec.flux(), spec.num_flux_bins()) > 1e-8);
+    std::cout << "spin " << spin << " : " << calcSum(spec.flux(), spec.num_flux_bins()) << std::endl;
+
+    // REQUIRE( calcSum(spec.flux(), spec.num_flux_bins()) > 1e-8);
   }
 
 }

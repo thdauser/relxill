@@ -16,6 +16,7 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+#include <iostream>
 #include "Relreturn_BlackBody.h"
 
 extern "C" {
@@ -312,17 +313,18 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
   double **spec_arr = get_bbody_specs(ener, n, dat, temperature, status);  // spectra integrated over the ring area
 
   /* need area correction for diskbb */
+  assert(dat->rhi[0] > dat->rlo[0] );
   for (int jj = 0; jj < n; jj++) {
     for (int ii = 0; ii < dat->nrad; ii++) {
       // need to divide by the GR area and multiply by the normal ring area to mimick a diskbb spectrum
       spec_arr[ii][jj] *=
-          (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2)))
-          / calc_proper_area_ring( dat->rlo[ii] , dat->rhi[ii], spin);
+          (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2)));
+   //       / calc_proper_area_ring( dat->rlo[ii] , dat->rhi[ii], spin);
     }
   }
 
   if (is_debug_run()) {
-    fits_rr_write_2Dspec("!debug-testrr-diskbb.fits", spec_arr, ener, n, dat->rlo, dat->rhi, dat->nrad, dat, status);
+    fits_rr_write_2Dspec("!debug-testrr-spec-diskbb.fits", spec_arr, ener, n, dat->rlo, dat->rhi, dat->nrad, dat, status);
   }
 
   sum_2Dspec(spec, spec_arr, n, dat->nrad, status);
@@ -406,10 +408,10 @@ void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec* rel_pr
   free(xillver_prim_out);
 
   for (int jj = 0; jj < returnSpec->n_ener; jj++) {
-    xill_flux_returnrad[jj] *= fabs(xill_param->refl_frac) ;
+    xill_flux_returnrad[jj] *= fabs(xill_param->boost) ;
     xill_flux_returnrad[jj] *= xillverReflectionNormFactor * normfacMatchAtHighEnergies;
 
-    if (xill_param->refl_frac >= 0) {
+    if (xill_param->boost >= 0) {
       xill_flux_returnrad[jj] += returnSpec->specPri[izone][jj];
     }
   }
@@ -419,8 +421,8 @@ void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec* rel_pr
 void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii) {
 
   for (int jj = 0; jj < returnSpec->n_ener; jj++) {
-    returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->refl_frac);
-    if (xill_param->refl_frac >= 0) {
+    returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->boost);
+    if (xill_param->boost >= 0) {
       returnFlux[jj] += returnSpec->specPri[ii][jj];
     }
   }
@@ -511,6 +513,23 @@ static int should_noXillverRefl_calculated(){
 
 }
 
+/**
+ * add the primary flux to the reflected flux, by taking the boost parameter into account
+ */
+static void calculated_combined_flux(double* flux, const double* prim_flux, int n_ener, double boost){
+
+  int ii;
+  for (ii = 0; ii < n_ener; ii++){
+    flux[ii] *= fabs(boost);
+    if (boost>1e-8){
+      flux[ii] += prim_flux[ii];
+    } else if ( fabs(boost) < 1e-8){
+      flux[ii] = prim_flux[ii];
+    }
+
+  }
+}
+
 void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillParam *xill_param, relParam *rel_param,
     int *status) {
 
@@ -558,8 +577,10 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
       getZoneReflectedReturnFluxDiskframe(xill_param, rel_profile, returnSpec, xillver_out[ii], ii, status);
     }
 
+
     xillver_prim_out[ii] = scaledXillverPrimaryBBodyHighener(xill_param->kTbb, returnSpec->specRet[ii],
-                                                            returnSpec->ener, returnSpec->n_ener, status);
+                                                             returnSpec->ener, returnSpec->n_ener, status);
+ //   calculated_combined_flux(xillver_out[ii], xillver_prim_out[ii], n_ener, xill_param->boost);
 
     spec_conv_out[ii] = new double[n_ener];
     convolveSpectrumFFTNormalized(ener, xillver_out[ii], rel_profile->flux[ii], spec_conv_out[ii], n_ener,
@@ -581,12 +602,14 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   // reset Tin parameter to be safe
   xill_param->kTbb = Tin;
 
-  if (is_debug_run()) {
+  if ( shouldOutfilesBeWritten() ) {
+
+    std::cout << " writing BBret diagnose outfiles " << std::endl;
+
     std::string fname = "!debug-testrr-bbody-obs-reflect.fits";
-    if (fabs(xill_param->refl_frac) < 1e-8) {
+    if (fabs(xill_param->boost) < 1e-8) {
       fname = "!debug-testrr-bbody-obs-primary.fits";
-    }
-    if ( should_noXillverRefl_calculated() ){
+    } else if ( should_noXillverRefl_calculated() ){
       fname = "!debug-testrr-bbody-obs-mirror.fits";
     }
     fits_rr_write_2Dspec(fname.c_str(), spec_conv_out, ener, n_ener,
