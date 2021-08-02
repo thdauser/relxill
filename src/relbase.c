@@ -178,7 +178,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   }
 
   /** #2: for the relat. part **/
-  if (re_rel) {
+  if (re_rel){
     for (ii = 0; ii < n; ii++) {
       irot = (ii - save_1eV_pos + n) % n;
       cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii];

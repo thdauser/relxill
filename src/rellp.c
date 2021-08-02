@@ -494,6 +494,8 @@ static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* s
       printf("    return_rad = %i is not allowed \n", param->return_rad);
     }
   }
+
+  free_emisProfile(emisReturn);
 }
 
 

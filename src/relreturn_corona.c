@@ -151,6 +151,7 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   }
 
   free_emisProfile(emis_return);
+  free_emisProfile(emis_input_rebinned);
   free_returningFractions(&ret_fractions);
 
   return emis_return_rebinned;

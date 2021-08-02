@@ -503,6 +503,8 @@ void free_returningFractions(returningFractions **dat) {
     free((*dat)->rlo);
     free((*dat)->rhi);
     free((*dat)->rad);
+    free((*dat)->irad);
+
 
     free_2d(&((*dat)->frac_i), (*dat)->nrad);
 
