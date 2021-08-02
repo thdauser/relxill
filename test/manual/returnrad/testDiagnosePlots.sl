@@ -6,7 +6,7 @@ require("scripts/subs_returnrad.sl");
 require("scripts/subs_filenames.sl");
 
 
-variable spin = 0.998;  %% currently only done for this value
+variable spin = 0.9;  %% currently only done for this value
 variable Tin = 1.0;
 
 define getDiagnoseRframePlot(){ %{{{
@@ -85,7 +85,28 @@ define getDiagnoseRelatSmearingPlot(){ %{{{
 %}}}
 
 
-define createOutputFiles(){
+
+define getDiagnoseMirrorBbody(){ %{{{
+   
+   variable plotTitle = sprintf("Observer, Mirror Refl: Combined (solid), Primary BBody (dashed), Reflected Mirror (dotted)  -- spin=%.3f",
+				spin);
+
+
+   variable files = getFilenameStruct();
+   variable fnames  = [files.fobs.mirror,files.fobs.mirrorPrim,files.fobs.mirrorRefl];
+   variable iRframe = [0,0,0];
+   
+   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec, plot_kerrbb);
+   
+   pl.render(dir_plots+"diagnosePlotMirrorBbody.pdf");
+   
+   return EXIT_SUCCESS;
+}
+%}}}
+
+
+
+define createOutputFiles(){ %{{{
    load_xspec_local_models("build/");
    fit_fun("relxillBB");
    
@@ -97,30 +118,39 @@ define createOutputFiles(){
    set_par("*.kTbb", Tin);
    () = eval_fun(1,2);
    
+   %% creating the "mirror" files
    putenv("RELXILL_BBRET_NOREFL=1");
 
-   set_par("*.boost",1);   
+   set_par("*.Rout",100);
+   set_par("*.boost",1.0);
+   set_par("*.Incl",60);
    () = eval_fun(1,2);
 
    set_par("*.boost",0);
    () = eval_fun(1,2);
 
+   set_par("*.boost",-1.0,0,-10,10);
+   () = eval_fun(1,2);
    
    
    putenv("RELXILL_WRITE_OUTFILES=0");
    putenv("RELXILL_BBRET_NOREFL=0");
 }
+%}}}
+
 
 
 define testDiagnosePlots(){
 
    createOutputFiles();
 
-   if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-   if (getDiagnoseXillverPrimPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-   if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-   if (getDiagnoseRelatSmearingPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-         
+   if (getDiagnoseMirrorBbody() != EXIT_SUCCESS) return EXIT_FAILURE;
+
+%   if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+%   if (getDiagnoseXillverPrimPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+%   if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+%   if (getDiagnoseRelatSmearingPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+
    return EXIT_SUCCESS;
 }
 

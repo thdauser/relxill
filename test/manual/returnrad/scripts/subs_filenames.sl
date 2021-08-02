@@ -10,13 +10,15 @@ define getFilenameStruct(){
       xillRefl = sprintf(fbase, "rframe-xillverRefl" ),  %% reflected xillver spectrum (rest-frame)
       xillPrim =  sprintf(fbase, "rframe-xillverPrim" )  %% primary spectrum producing reflected xillver spectrum (rest-frame)
    };
-   %% Note that rframe_xillPrim is ideally the same as rframe_specRet,
+   %% Note that rframe-xillPrim is ideally the same as rframe-specRet,
    %% but here only trying to approximate this shape
    %% 
    variable f_obs = struct{    
       reflect = sprintf(fbase, "obs-reflect" ),
       primary = sprintf(fbase, "obs-primary" ),
-      mirror  = sprintf(fbase, "obs-mirror" )
+      mirror  = sprintf(fbase, "obs-mirror" ),
+      mirrorPrim  = sprintf(fbase, "obs-mirror-primary" ),
+      mirrorRefl  = sprintf(fbase, "obs-mirror-refl" )
    };
    
    

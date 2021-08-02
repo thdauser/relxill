@@ -93,7 +93,7 @@ define get_2d_plot(fdat,rframe,spin){
 
    pl.xlabel("Energy [keV]");
    pl.ylabel("Energy Flux $F_\nu$"R);
-   pl.world(0.1,100,1e-4,7000;loglog);
+   pl.world(0.1,30,1e-4,7000;loglog);
    
    fdat = [fdat];
    variable m = length(fdat);
@@ -145,17 +145,22 @@ define get_2d_plot(fdat,rframe,spin){
       pl.plot(emn,(dat[0].sumspec+dat[1].sumspec)*efac; color="red",width=3,depth=-10);
    }
 
+   print(sum(dat[0].sumspec*elo));
+   print(sum(dat[1].sumspec*elo));
+   print(sum(dat[2].sumspec*elo));
+  
    if (qualifier_exists("title")){
       pl.title(qualifier("title","description missing");size="\footnotesize"R);
    }
 
    if (qualifier_exists("plot_kerrbb")){
       variable val_kerrbb = eval_kerrbb_model(elo,ehi,spin);
-      variable kerrbb_fac = sum(dat[1].sumspec*efac*0.48) / sum(val_kerrbb);
+      variable ind = where (elo>0.1);
+      variable kerrbb_fac = sum(dat[1].sumspec[ind]*efac[ind]) / sum(val_kerrbb[ind]);
       val_kerrbb *= kerrbb_fac;
       pl.plot(emn,val_kerrbb;width=3, color="blue");
       
-      variable val_kerrbb_return = eval_kerrbb_model(elo,ehi;refl_frac=1);
+      variable val_kerrbb_return = eval_kerrbb_model(elo,ehi, spin;refl_frac=1);
       list_par;
       val_kerrbb_return *= kerrbb_fac;
       pl.plot(emn,val_kerrbb;width=3, color="blue", line=1);
