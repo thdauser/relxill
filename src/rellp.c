@@ -614,6 +614,8 @@ emisProfile *new_emisProfile(double *re, int nr, int *status) {
 
   for (int ii = 0; ii < nr; ii++) {
     emis->emis[ii] = 0.0;
+    emis->del_emit[ii] = 0.0;
+    emis->del_inc[ii] = 0.0;
   }
 
   emis->normFactorPrimSpec = 0.0;

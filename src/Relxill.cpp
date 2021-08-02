@@ -175,12 +175,12 @@ void relxill_kernel(double *ener_inp,
     CHECK_STATUS_VOID(*status);
 
     /* init the xillver spectrum structure **/
-    xillSpec *xill_spec_table = NULL;
+    xillSpec *xill_spec_table = nullptr;
     double xill_flux[n_ener];
 
 
     // currently only working for the LP version (as relxill always has just 1 zone)
-    ion_grad *ion = NULL;
+    ion_grad *ion = nullptr;
     if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type)) {
 
       // make sure the number of zones is correctly set:
@@ -193,7 +193,7 @@ void relxill_kernel(double *ener_inp,
     }
 
     for (ii = 0; ii < rel_profile->n_zones; ii++) {
-      assert(spec_cache != NULL);
+      assert(spec_cache != nullptr);
 
       /** avoid problems where no relxill bin falls into an ionization bin **/
       if (calcSum(rel_profile->flux[ii], rel_profile->n_ener) < 1e-12) {
@@ -209,7 +209,7 @@ void relxill_kernel(double *ener_inp,
         // choose the (linear) middle of the radial zone
         double rzone = 0.5 * (rel_profile->rgrid[ii] + rel_profile->rgrid[ii + 1]);
         double del_emit = 0.0;  // only relevant if beta!=0 (doppler boosting)
-        if (ion != NULL) {
+        if (ion != nullptr) {
           assert(ion->nbins == rel_profile->n_zones);
           del_emit = ion->del_emit[ii];
         }
@@ -218,14 +218,14 @@ void relxill_kernel(double *ener_inp,
       }
 
       // if we have an ionization gradient defined, we need to set the xlxi to the value of the current zone
-      if (ion != NULL) {
+      if (ion != nullptr) {
         xill_param->lxi = ion->lxi[ii];
       }
 
       // call the function which calculates the xillver spectrum
       //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
       if (recompute_xill) {
-        if (spec_cache->xill_spec[ii] != NULL) {
+        if (spec_cache->xill_spec[ii] != nullptr) {
           free_xill_spec(spec_cache->xill_spec[ii]);
         }
         spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param, status);

@@ -112,7 +112,7 @@ TEST_CASE(" Execute single model", "[single]") {
 TEST_CASE(" Exec single model with LocalModel Structure", "[single]") {
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relxill);
+  LocalModel lmod(ModelName::relline_lp);
 
   auto spec = default_spec.get_xspec_spectrum();
 
