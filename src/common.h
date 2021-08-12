@@ -104,13 +104,6 @@ typedef struct {
   double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end
 } xillParam;
 
-typedef struct {
-  double *lxi;
-  double *fx;
-  double *r;
-  double *del_emit;
-  int nbins;
-} ion_grad;
 
 /** the XILLVER table structure */
 typedef struct {

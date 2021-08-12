@@ -23,6 +23,16 @@ extern "C" {
 #include "relphysics.h"
 }
 
+typedef struct {
+  double *lxi;
+  double *fx;
+  double *r;
+  double *del_emit;
+  double *dens;
+  int nbins;
+} ion_grad;
+
+
 ion_grad *calc_ion_gradient(relParam *rel_param,
                             double xlxi0,
                             double xindex,
@@ -30,5 +40,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
                             double *rgrid,
                             int n,
                             int *status);
+
+void free_ion_grad(ion_grad *ion);
 
 #endif

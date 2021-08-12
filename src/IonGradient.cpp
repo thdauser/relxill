@@ -62,6 +62,41 @@ static void lxi_set_to_xillver_bounds(double *pt_lxi) {
 
 }
 
+
+
+ion_grad *new_ion_grad(const double *r, int n, int *status) {
+
+  auto ion = new ion_grad; //) malloc(sizeof(ion_grad));
+  CHECK_MALLOC_RET_STATUS(ion, status, nullptr)
+
+
+  ion->dens = new double[n+1]{0};
+
+  ion->r = (double *) malloc((n + 1) * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(ion->r, status, nullptr)
+  ion->lxi = (double *) malloc((n) * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(ion->lxi, status, nullptr)
+  ion->fx = (double *) malloc((n) * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(ion->fx, status, nullptr)
+  ion->del_emit = (double *) malloc((n) * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(ion->del_emit, status, nullptr)
+
+  ion->nbins = n;
+
+  int ii;
+  for (ii = 0; ii < n; ii++) {
+    ion->r[ii] = r[ii];
+    ion->lxi[ii] = 0.0;
+    ion->fx[ii] = 0.0;
+    ion->del_emit[ii] = M_PI / 4.; // assume default 45 deg (xillver assumption), only used if beta>0
+  }
+  // radius goes to n+1
+  ion->r[n] = r[n];
+
+  return ion;
+}
+
+
 ion_grad *calc_ion_gradient(relParam *rel_param,
                             double xlxi0,
                             double xindex,
@@ -93,7 +128,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
     }
 
   } else if (type == ION_GRAD_TYPE_ALPHA) {
-    auto dens = new double[n];
+
     double rin = rgrid[0];
 
     // TODO: use a better approach to not linearly interpolate but rather average over the profile?
@@ -116,10 +151,10 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
 
     /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
     for (ii = 0; ii < n; ii++) {
-      dens[ii] = density_ss73_zone_a(rmean[ii], rin);
+      ion->dens[ii] = density_ss73_zone_a(rmean[ii], rin);
 
       // now we can use the emissivity to calculate the ionization
-      ion->lxi[ii] = cal_lxi(dens[ii], emis_zones[ii]) + fac_lxi_norm;
+      ion->lxi[ii] = cal_lxi(ion->dens[ii], emis_zones[ii]) + fac_lxi_norm;
 
       ion->lxi[ii] += log10(cos(M_PI / 4) / cos(del_inc[ii]));
 
@@ -145,35 +180,6 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
   if (*status != EXIT_SUCCESS) {
     RELXILL_ERROR("calculating the ionization gradient failed due to previous error", status);
   }
-
-  return ion;
-}
-
-ion_grad *new_ion_grad(const double *r, int n, int *status) {
-
-  auto ion = new ion_grad; //) malloc(sizeof(ion_grad));
-  CHECK_MALLOC_RET_STATUS(ion, status, nullptr)
-
-  ion->r = (double *) malloc((n + 1) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->r, status, nullptr)
-  ion->lxi = (double *) malloc((n) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->lxi, status, nullptr)
-  ion->fx = (double *) malloc((n) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->fx, status, nullptr)
-  ion->del_emit = (double *) malloc((n) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->del_emit, status, nullptr)
-
-  ion->nbins = n;
-
-  int ii;
-  for (ii = 0; ii < n; ii++) {
-    ion->r[ii] = r[ii];
-    ion->lxi[ii] = 0.0;
-    ion->fx[ii] = 0.0;
-    ion->del_emit[ii] = M_PI / 4.; // assume default 45 deg (xillver assumption), only used if beta>0
-  }
-  // radius goes to n+1
-  ion->r[n] = r[n];
 
   return ion;
 }
