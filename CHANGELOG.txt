@@ -1,3 +1,11 @@
+[1.4.20210812] many changes for a complete model update
+ - includes returning radiation in the relevant models (currently
+   still includes a switch to turn it off)
+ - adds "boost" parameter for LP type models instead of "refl_frac"
+   and "fixReflFrac"
+ - adds ENV variable RELXILL_PRINT_DETAILS to print information on
+   reflection fraction and strength (if set to 1)
+
 [1.4.20210210] improves interpolation of xillver spectra from
 table (potentially a >50% increase in speed)
 
