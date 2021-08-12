@@ -304,13 +304,28 @@ int is_debug_run(void) {
   char *env;
   env = getenv("DEBUG_RELXILL");
   if (env != NULL) {
-    int debug = atof(env);
+    int debug = (int) atof(env);
     if (debug == 1) {
       return 1;
     }
   }
   return 0;
 }
+
+
+/** check if we are currently debugging the model **/
+int shouldAuxInfoGetPrinted(void) {
+
+  char *env = getenv("RELXILL_PRINT_DETAILS");
+  if (env != NULL) {
+    int envval = (int) strtod(env, NULL);
+    if (envval == 1) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
 
 /** check if we are currently debugging the model **/
 int shouldOutfilesBeWritten(void) {

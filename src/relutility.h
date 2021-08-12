@@ -210,4 +210,6 @@ void get_ipol_factor(const float value, const float* arr, const int n_arr, int *
 
 void get_fine_radial_grid(double rin, double rout, double *re, int nr);
 
+int shouldAuxInfoGetPrinted(void);
+
 #endif /* RELUTILITY_H_ */

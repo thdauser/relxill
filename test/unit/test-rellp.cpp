@@ -18,11 +18,38 @@
 
 #include "catch2/catch_amalgamated.hpp"
 
+#include "LocalModel.h"
+#include "xspec_wrapper_lmodels.h"
+#include "XspecSpectrum.h"
+#include "common-functions.h"
+
+
 extern "C" {
 #include "rellp.h"
 }
 
 #define PREC 1e-6
+
+TEST_CASE(" test printing of reflection strength", "[rellp]" ){
+
+  DefaultSpec default_spec{};
+  LocalModel lmod(ModelName::relxilllp);
+
+  const char* env = "RELXILL_PRINT_DETAILS";
+
+
+  lmod.set_par(XPar::boost, 1 );
+  auto spec = default_spec.get_xspec_spectrum();
+
+  lmod.eval_model(spec);
+
+  setenv(env, "1", 1);
+
+  lmod.eval_model(spec);
+
+  unsetenv(env);
+
+}
 
 /*
 

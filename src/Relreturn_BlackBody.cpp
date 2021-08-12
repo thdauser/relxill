@@ -589,7 +589,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
 
   if ( shouldOutfilesBeWritten() ) {
 
-    std::cout << " writing BBret diagnose outfiles " << std::endl;
+  //  std::cout << " writing BBret diagnose outfiles " << std::endl;
 
     std::string fname = "!debug-testrr-bbody-obs-reflect.fits";
 

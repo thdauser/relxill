@@ -444,13 +444,13 @@ double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const
   return sum_pl / norm_xillver_table;
 }
 
-static void printReflectionStrengthInfo(double *ener,
-                                        int n_ener,
-                                        const double *flu,
-                                        relParam *rel_param,
-                                        xillParam *xill_param,
-                                        const double *pl_flux,
-                                        lpReflFrac *struct_refl_frac) {
+static void print_reflection_strength(double *ener,
+                                      int n_ener,
+                                      const double *flu,
+                                      relParam *rel_param,
+                                      xillParam *xill_param,
+                                      const double *pl_flux,
+                                      lpReflFrac *struct_refl_frac) {
 
 
   // todo: all this to be set by a ENV
@@ -468,11 +468,11 @@ static void printReflectionStrengthInfo(double *ener,
   if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) || rel_param->beta > 1e-6) {
     printf(" and beta=%.3f v/c", rel_param->beta);
   }
-  printf(": \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
+  printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
          struct_refl_frac->refl_frac,
          sum / sum_pl);
   printf(" - photons falling into the black hole or plunging region: %.2f%%\n", struct_refl_frac->f_bh * 100);
-  printf(" - gravitational redshift from the observer to the primary source is %.3f\n", grav_redshift(rel_param));
+  printf(" - gravitational redshift from the primary source to the observer is %.3f\n", grav_redshift(rel_param));
 }
 
 void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
@@ -558,6 +558,8 @@ double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
   return o_flux;
 }
 
+
+
 void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
                            xillParam *xill_param, int *status) {
 
@@ -607,10 +609,9 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     }
 
     /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
-    // TODO: define an env variable to output the stuff
-//    if ((xill_param->fixReflFrac == 2) && (rel_param->emis_type == EMIS_TYPE_LP)) {
-//      printReflectionStrengthInfo(ener, n_ener, flu, rel_param, xill_param, pl_flux, struct_refl_frac);
-//    }
+    if ( shouldAuxInfoGetPrinted()  && (rel_param->emis_type == EMIS_TYPE_LP) ) {
+      print_reflection_strength(ener, n_ener, flu, rel_param, xill_param, pl_flux, struct_refl_frac);
+    }
 
   }
 
