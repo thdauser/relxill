@@ -206,7 +206,7 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
 
 }
 
-static int did_energy_grid_change(double *ener, int n_ener, rel_spec *ca) {
+static int did_energy_grid_change(double *ener, int n_ener, relline_spec_multizone *ca) {
   int change = 0;
 
   if (ca == NULL) {
@@ -404,7 +404,7 @@ cnode *add_node_to_cache(cnode *head, relParam *relpar, xillParam *xillpar, int 
   return new_head;
 }
 
-void set_cache_relbase(cnode **pt_head, relParam *param, rel_spec *spec, int *status) {
+void set_cache_relbase(cnode **pt_head, relParam *param, relline_spec_multizone *spec, int *status) {
 
   CHECK_STATUS_VOID(*status);
 

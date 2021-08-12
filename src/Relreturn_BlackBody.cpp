@@ -388,7 +388,7 @@ double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb,
   return normReturnSpec / normBbodySpec;
 }
 
-void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec* rel_profile, const returnSpec2D *returnSpec,
+void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_multizone* rel_profile, const returnSpec2D *returnSpec,
                                          double *xill_flux_returnrad, int izone, int* status) {
 
   // assumption: we use Tin for all zones
@@ -536,7 +536,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
                                                       rel_param->rout, rel_param->a, status);
 
   double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
-  rel_spec *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
+  relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
 
   // ========== //
   auto single_spec_inp = new double[n_ener_inp];

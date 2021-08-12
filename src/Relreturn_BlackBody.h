@@ -72,7 +72,7 @@ double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb,
 
 double *scaledXillverPrimaryBBodyHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
-void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, rel_spec *rel_profile, const returnSpec2D *returnSpec,
+void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_multizone *rel_profile, const returnSpec2D *returnSpec,
                                          double *xill_flux_returnrad, int izone, int *status);
 
 void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);

@@ -117,17 +117,17 @@ typedef struct {
 void get_version_number(char **vstr, int *status);
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
-rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status);
+relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status);
 
 
 
-rel_spec *relbase_multizone(double *ener,
-                            const int n_ener,
-                            relParam *param,
-                            xillTable *xill_tab,
-                            double *radialZones,
-                            int nzones,
-                            int *status);
+relline_spec_multizone *relbase_multizone(double *ener,
+                                          const int n_ener,
+                                          relParam *param,
+                                          xillTable *xill_tab,
+                                          double *radialZones,
+                                          int nzones,
+                                          int *status);
 
 void free_cached_tables(void);
 
@@ -143,8 +143,8 @@ void add_primary_component(double *ener,
                            xillParam *xill_param,
                            int *status);
 
-void free_rel_spec(rel_spec *spec);
-rel_spec *new_rel_spec(int nzones, const int n_ener, int *status);
+void free_rel_spec(relline_spec_multizone *spec);
+relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status);
 
 void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
                        int re_rel, int re_xill, int izone, specCache *cache, int *status);

@@ -298,9 +298,9 @@ RelSysPar *get_system_parameters(relParam *param, int *status) {
 
 /** get new structure to store the relline spectrum (possibly for several zones)
     important note: ener has n_ener+1 number of bins **/
-rel_spec *new_rel_spec(int nzones, const int n_ener, int *status) {
+relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status) {
 
-  rel_spec *spec = (rel_spec *) malloc(sizeof(rel_spec));
+  relline_spec_multizone *spec = (relline_spec_multizone *) malloc(sizeof(relline_spec_multizone));
   CHECK_MALLOC_RET_STATUS(spec, status, NULL)
 
   spec->n_zones = nzones;
@@ -350,9 +350,11 @@ RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
   return spec;
 }
 
-/** initialize the rel_spec structure **/
-void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab, double *radialZones,
-                   double **pt_ener, const int n_ener, int *status) {
+/**
+  * Initialize the structure to store the relline spectra for multiple radial zones
+  **/
+void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, double *radialZones,
+                                 double **pt_ener, const int n_ener, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -394,7 +396,7 @@ void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab, double
 
 }
 
-static void zero_rel_spec_flux(rel_spec *spec) {
+static void zero_rel_spec_flux(relline_spec_multizone *spec) {
   int ii;
   int jj;
   for (ii = 0; ii < spec->n_zones; ii++) {
@@ -682,7 +684,7 @@ static void set_str_relbf(str_relb_func *str, double re, double gmin, double gma
 }
 
 /** function to properly re-normalize the relline_profile **/
-void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const int *status) {
+void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, const int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -738,7 +740,7 @@ int static get_cosne_bin(double mu, RelCosne *dat) {
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func *cached_str_relb_func = NULL;
 
-static double calculate_radiallyResolvedFluxObs(str_relb_func *relb_func, rel_spec *spec, double weight) {
+static double calculate_radiallyResolvedFluxObs(str_relb_func *relb_func, relline_spec_multizone *spec, double weight) {
 
   double integRadialFlux = 0.0;
   for (int jj = 0; jj <= spec->n_ener; jj++) {
@@ -758,7 +760,7 @@ static void free_str_relb_func(str_relb_func **str) {
   }
 }
 
-void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status) {
+void relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status) {
 
   CHECK_STATUS_VOID(*status);
 

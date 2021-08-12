@@ -28,7 +28,7 @@ extern "C" {
 #define LIMIT_PREC 1e-6
 
 
-static double getRatioRelProfileAndRingArea(rel_spec *rprofile, int ii, double spin) {
+static double getRatioRelProfileAndRingArea(relline_spec_multizone *rprofile, int ii, double spin) {
 
   // proper area times the emissivity
   double propAreaRing = calc_proper_area_ring(rprofile->rgrid[ii], rprofile->rgrid[ii + 1], spin);
@@ -223,7 +223,7 @@ TEST_CASE("Relline Normalization Convergence", "[basic]"){
   int nzones = 100;
   const int min_number_zones = 10;
 
-  rel_spec *rel_profile = nullptr;
+  relline_spec_multizone *rel_profile = nullptr;
   relParam *rel_param = nullptr;
   get_RelProfileConstEmisZones(&rel_profile, &rel_param, nzones, &status);
 
@@ -254,7 +254,7 @@ TEST_CASE(" Normlization of the FFT Convolution", "[bbasic]") {
 
   int status = EXIT_SUCCESS;
 
-  rel_spec *rel_profile = nullptr;
+  relline_spec_multizone *rel_profile = nullptr;
   double *xill_spec = nullptr;
   init_std_relXill_spec(&rel_profile, &xill_spec, &status);
 

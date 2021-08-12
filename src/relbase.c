@@ -368,7 +368,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   double *ener;
   get_std_relxill_energy_grid(&n_ener, &ener, status);
 
-  rel_spec *rel_profile = relbase(ener, n_ener, rel_param, NULL, status);
+  relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, NULL, status);
 
   // simple convolution only makes sense for 1 zone !
   assert(rel_profile->n_zones == 1);
@@ -681,13 +681,13 @@ int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param) {
  * input: ener(n_ener), param
  * optinal input: xillver grid
  * output: photar(n_ener)  [photons/bin]   */
-rel_spec *relbase_multizone(double *ener,
-                            const int n_ener,
-                            relParam *param,
-                            xillTable *xill_tab,
-                            double *radialZones,
-                            int nzones,
-                            int *status) {
+relline_spec_multizone *relbase_multizone(double *ener,
+                                          const int n_ener,
+                                          relParam *param,
+                                          xillTable *xill_tab,
+                                          double *radialZones,
+                                          int nzones,
+                                          int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -697,7 +697,7 @@ rel_spec *relbase_multizone(double *ener,
   cache_info *ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
 
   // set a pointer to the spectrum
-  rel_spec *spec = NULL;
+  relline_spec_multizone *spec = NULL;
 
   // initialize parameter values (has an internal cache)
   RelSysPar *sysPar = get_system_parameters(param, status);
@@ -708,7 +708,7 @@ rel_spec *relbase_multizone(double *ener,
 
     // init the spectra where we store the flux
     param->num_zones = nzones;
-    init_rel_spec(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
+    init_relline_spec_multizone(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
 
     // calculate line profile (returned units are 'photons/bin')
     relline_profile(spec, sysPar, status);
@@ -716,7 +716,7 @@ rel_spec *relbase_multizone(double *ener,
     // normalize it and calculate the angular distribution (if necessary)
     renorm_relline_profile(spec, param, status);
 
-    // last step: store parameters and cached rel_spec (this prepends a new node to the cache)
+    // last step: store parameters and cached relline_spec_multizone (this prepends a new node to the cache)
     set_cache_relbase(&cache_relbase, param, spec, status);
     if (is_debug_run() && *status == EXIT_SUCCESS) {
       printf(" DEBUG:  Adding new RELBASE eval to cache; the count is %i \n", cli_count_elements(cache_relbase));
@@ -745,7 +745,7 @@ rel_spec *relbase_multizone(double *ener,
 }
 
 
-rel_spec *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status) {
+relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param, xillTable *xill_tab, int *status) {
 
   double *rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
 
@@ -767,7 +767,7 @@ void free_rel_cosne(RelCosne *spec) {
   }
 }
 
-void free_rel_spec(rel_spec *spec) {
+void free_rel_spec(relline_spec_multizone *spec) {
   if (spec != NULL) {
     free(spec->ener);
     free(spec->rgrid);

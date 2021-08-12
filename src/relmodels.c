@@ -177,7 +177,7 @@ void xillver_base(double *ener_inp, const int n_ener0, double *photar, xillParam
 
 void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *param_struct, int *status) {
 
-  rel_spec *spec = relbase(ener1keV, n_ener, param_struct, NULL, status);
+  relline_spec_multizone *spec = relbase(ener1keV, n_ener, param_struct, NULL, status);
 
   for (int ii = 0; ii < n_ener; ii++) {
     photar[ii] = spec->flux[0][ii];

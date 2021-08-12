@@ -67,7 +67,7 @@ void save_relline_radial_flux_profile(double *rad, double *intens, int n_rad) {
   write_data_to_file(fname, rad, intens, n_rad);
 }
 
-void save_relline_profile(rel_spec *spec) {
+void save_relline_profile(relline_spec_multizone *spec) {
   char *fname = "test_relline_profile.dat";
   assert(spec != NULL);
   write_binned_data_to_file(fname, spec->ener, spec->flux[0], spec->n_ener);

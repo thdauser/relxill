@@ -43,7 +43,7 @@ void eval_xspec_lmod_default(ModelName model_name, const DefaultSpec& default_sp
 
 
 
-void get_RelProfileConstEmisZones(rel_spec **p_rel_profile, relParam **p_rel_param, int nzones, int *status) {
+void get_RelProfileConstEmisZones(relline_spec_multizone **p_rel_profile, relParam **p_rel_param, int nzones, int *status) {
 
   // relline is per default re-normalized, but we need to test the physical normalization here
   const char* env_physnorm = "RELLINE_PHYSICAL_NORM";
@@ -69,7 +69,7 @@ void get_RelProfileConstEmisZones(rel_spec **p_rel_profile, relParam **p_rel_par
 
 }
 
-rel_spec *get_stdRelProfile(int *status) {
+relline_spec_multizone *get_stdRelProfile(int *status) {
 
   LocalModel lmod(ModelName::relline);
 
@@ -94,7 +94,7 @@ xillSpec *get_std_xill_spec(int *status) {
  * @param xill_spec_output [output]
  * @param status
  */
-void init_std_relXill_spec(rel_spec **rel_profile, double **xill_spec_output, int *status) {
+void init_std_relXill_spec(relline_spec_multizone **rel_profile, double **xill_spec_output, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -122,7 +122,7 @@ double calc_FluxInStdBand(const double *flux, double *ener, int n) {
   return calcSumInEnergyBand(flux, n, ener, ELO_REF_RELPROFILE, EHI_REF_RELPROFILE);
 }
 
-double calc_RelatFluxInStdBand(const rel_spec *spec) {
+double calc_RelatFluxInStdBand(const relline_spec_multizone *spec) {
 
   assert(spec->n_zones == 1);
   return calc_FluxInStdBand(spec->flux[0], spec->ener, spec->n_ener);

@@ -195,7 +195,7 @@ typedef struct {
   double *ener;       // length=n_ener +1
   double **flux;      // [n_zones][n_ener]
   RelCosne *rel_cosne;
-} rel_spec;
+} relline_spec_multizone;
 
 typedef struct {
   double *ener;  // has n_ener+1 elements

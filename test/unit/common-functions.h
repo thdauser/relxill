@@ -28,12 +28,12 @@ double sum_flux(const double *flux, int nbins);
 void eval_xspec_lmod_default(ModelName model_name, const DefaultSpec& default_spec);
 
 
-void get_RelProfileConstEmisZones(rel_spec **p_rel_profile, relParam **p_rel_param, int nzones, int *status);
-rel_spec *get_stdRelProfile(int *status);
+void get_RelProfileConstEmisZones(relline_spec_multizone **p_rel_profile, relParam **p_rel_param, int nzones, int *status);
+relline_spec_multizone *get_stdRelProfile(int *status);
 xillSpec *get_std_xill_spec(int *status);
-void init_std_relXill_spec(rel_spec **rel_profile, double **xill_spec_output, int *status);
+void init_std_relXill_spec(relline_spec_multizone **rel_profile, double **xill_spec_output, int *status);
 double calc_FluxInStdBand(const double *flux, double *ener, int n);
-double calc_RelatFluxInStdBand(const rel_spec *spec);
+double calc_RelatFluxInStdBand(const relline_spec_multizone *spec);
 double calc_XillverFluxInStdBand(const double *xillverSpec, double *ener, int n);
 void compareReferenceFlux(double flux, double refFlux, int *status);
 

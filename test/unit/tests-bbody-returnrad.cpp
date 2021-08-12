@@ -240,7 +240,7 @@ void fitsAddKeyRadialZone(char* fname, const returnSpec2D* returnSpec, int izone
 
 /*
 void writeZoneXillverAllIncidentReturnSpec(double Tshift, int indZone, int n_ener, double *ener, xillParam *xill_param,
-                                           const returnSpec2D *returnSpec, rel_spec *rel_profile, int *status) {
+                                           const returnSpec2D *returnSpec, relline_spec_multizone *rel_profile, int *status) {
 
 
   char fname_base[] = "testrr-spec-rframe-bbody";
@@ -420,7 +420,7 @@ TEST_CASE(" Return Radiation Black Body Spectrum"){
 //                                                      rel_param->rout, rel_param->a, status);
 //
 //  double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
-//  rel_spec *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
+//  relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
 //
 //  enum{ nzones = 4};
 //  enum{ nshift = 2};
@@ -544,9 +544,9 @@ TEST_CASE("Test different spin values", "[bbret]"){
     lmod.set_par(XPar::a, spin);
     lmod.eval_model(spec);
 
-    std::cout << "spin " << spin << " : " << calcSum(spec.flux(), spec.num_flux_bins()) << std::endl;
+    // std::cout << "spin " << spin << " : " << calcSum(spec.flux(), spec.num_flux_bins()) << std::endl;
 
-    // REQUIRE( calcSum(spec.flux(), spec.num_flux_bins()) > 1e-8);
+    REQUIRE( calcSum(spec.flux(), spec.num_flux_bins()) > 1e-8);
   }
 
 }

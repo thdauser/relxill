@@ -171,7 +171,7 @@ void relxill_kernel(double *ener_inp,
     set_cached_xill_param(xill_param, &cached_xill_param, status);
     set_cached_rel_param(rel_param, &cached_rel_param, status);
 
-    rel_spec *rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
+    relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
     CHECK_STATUS_VOID(*status);
 
     auto xill_flux= new double[n_ener];

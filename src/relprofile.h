@@ -20,7 +20,7 @@
 
 #include "common.h"
 
-void relline_profile(rel_spec *spec, RelSysPar *sysPar, int *status);
+void relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
 
 RelSysPar *new_relSysPar(int nr, int ng, int *status);
 
@@ -28,10 +28,10 @@ void free_relSysPar(RelSysPar *sysPar);
 
 RelSysPar *get_system_parameters(relParam *param, int *status);
 
-void renorm_relline_profile(rel_spec *spec, relParam *rel_param, const int *status);
+void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, const int *status);
 
-void init_rel_spec(rel_spec **spec, relParam *param, xillTable *xill_tab, double *radialZones,
-                   double **pt_ener, int n_ener, int *status);
+void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, double *radialZones,
+                                 double **pt_ener, const int n_ener, int *status);
 
 void free_cached_relTable(void);
 void free_relprofile_cache(void);

@@ -32,7 +32,7 @@ typedef struct cdata {
   xillParam *par_xill;
   relParam *par_rel;
 
-  rel_spec *relbase_spec;
+  relline_spec_multizone *relbase_spec;
   RelSysPar *relSysPar;
   specCache *relxill_cache;
 } cdata;
@@ -82,7 +82,7 @@ cnode *cli_prepend(cnode *head, cdata *data, int *status);
 cdata *init_cdata(int *status);
 
 // Routines to set the cached parameters
-void set_cache_relbase(cnode **node, relParam *param, rel_spec *spec, int *status);
+void set_cache_relbase(cnode **node, relParam *param, relline_spec_multizone *spec, int *status);
 void set_cache_syspar(cnode **node, relParam *param, RelSysPar *syspar, int *status);
 void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *status);
 

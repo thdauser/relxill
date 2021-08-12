@@ -30,7 +30,7 @@ TEST_CASE(" compare standard relline profile with reference flux "){
 
   int status = EXIT_SUCCESS;
 
-  rel_spec *rel_profile = get_stdRelProfile(&status);
+  relline_spec_multizone *rel_profile = get_stdRelProfile(&status);
 
   const double ReferenceRelatStdFlux = 8.533758e-01;
   double relatFlux = calc_RelatFluxInStdBand(rel_profile);
@@ -44,7 +44,7 @@ TEST_CASE(" compare standard xillver evaluation with reference flux") {
 
   int status = EXIT_SUCCESS;
 
-  rel_spec *rel_profile = nullptr;
+  relline_spec_multizone *rel_profile = nullptr;
   double *xill_spec = nullptr;
   init_std_relXill_spec(&rel_profile, &xill_spec, &status);
 
