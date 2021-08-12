@@ -162,7 +162,7 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
 static void calc_rr_bbspec_gzone(double *ener, int nener, double *spec, double temp,
                                  double *gfac, int ng, const double *frac_g) {
   // loop over all gfac and calculate the spectrum for each
-  double spec_g[nener];
+  auto spec_g = new double[nener];
   for (int kk = 0; kk < ng; kk++) {
     bbody_spec(ener, nener, spec_g, temp, gfac[kk]);
     for (int jj = 0; jj < nener; jj++) {
@@ -181,8 +181,8 @@ static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad,
     spec[jj] = 0.0;
   }
 
-  double gfac[dat->tabData->ng];
-  double spec_r[nener];
+  auto gfac = new double[dat->tabData->ng];
+  auto spec_r = new double[nener];
   for (int ii=0; ii<dat->nrad; ii++){  // loop over all radial zones
 
     for (int jj=0; jj<nener; jj++){
@@ -227,7 +227,7 @@ static double **get_returnrad_specs(double *ener_inp, int nener_inp, returningFr
 
   assert(dat->frac_i[0] != nullptr);
 
-  double spec[nener];
+  auto spec = new double[nener];
   for (int ii = 0; ii < dat->nrad; ii++) {
     calc_rr_bbspec_ring(ener, spec, nener, ii, temperature, dat, status);  // return ph / cm²/s/keV ( not bin integ.)
 
@@ -539,7 +539,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   rel_spec *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
 
   // ========== //
-  double single_spec_inp[n_ener_inp];
+  auto single_spec_inp = new double[n_ener_inp];
   auto spec_conv_out = new double*[returnSpec->nrad];
   auto xillver_out = new double*[returnSpec->nrad];
   auto xillver_prim_out = new double*[returnSpec->nrad];

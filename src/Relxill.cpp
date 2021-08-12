@@ -19,8 +19,8 @@
 
 
 /** caching parameters **/
-relParam *cached_rel_param = NULL;
-xillParam *cached_xill_param = NULL;
+relParam *cached_rel_param = nullptr;
+xillParam *cached_xill_param = nullptr;
 
 
 
@@ -31,7 +31,7 @@ xillParam *cached_xill_param = NULL;
  */
 static int is_all_cached(specCache *cache, int n_ener_inp, double *ener_inp, int recompute_xill, int recompute_rel) {
 
-  if ((recompute_xill + recompute_rel) == 0 && (cache->out_spec != NULL)) {
+  if ((recompute_xill + recompute_rel) == 0 && (cache->out_spec != nullptr)) {
     /** first need to check if the energy grid did change (might happen) **/
     if (cache->out_spec->n_ener != n_ener_inp) {
       return 0;
@@ -118,8 +118,8 @@ void relxill_kernel(double *ener_inp,
   }
 
   /*** LOOP OVER THE RADIAL ZONES ***/
-  double conv_out[n_ener];
-  double single_spec_inp[n_ener_inp];
+  auto conv_out = new double[n_ener];
+  auto single_spec_inp = new double[n_ener_inp];
   for (ii = 0; ii < n_ener; ii++) {
     conv_out[ii] = 0.0;
   }
@@ -174,10 +174,7 @@ void relxill_kernel(double *ener_inp,
     rel_spec *rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
     CHECK_STATUS_VOID(*status);
 
-    /* init the xillver spectrum structure **/
-    xillSpec *xill_spec_table = nullptr;
-    double xill_flux[n_ener];
-
+    auto xill_flux= new double[n_ener];
 
     // currently only working for the LP version (as relxill always has just 1 zone)
     ion_grad *ion = nullptr;
@@ -230,7 +227,7 @@ void relxill_kernel(double *ener_inp,
         }
         spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param, status);
       }
-      xill_spec_table = spec_cache->xill_spec[ii];
+      xillSpec *xill_spec_table = spec_cache->xill_spec[ii];
 
       get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
 
@@ -251,7 +248,7 @@ void relxill_kernel(double *ener_inp,
 
       if (shouldOutfilesBeWritten() && rel_profile->n_zones <= 10) {
         char vstr[200];
-        double test_flu[n_ener_inp];
+        auto test_flu = new double[n_ener_inp];
         for (int jj = 0; jj < n_ener_inp; jj++) {
           test_flu[jj] = single_spec_inp[jj];
         }
@@ -275,7 +272,7 @@ void relxill_kernel(double *ener_inp,
     free_ion_grad(ion);
 
     /** initialize the cached output spec array **/
-    if ((spec_cache->out_spec != NULL)) {
+    if ((spec_cache->out_spec != nullptr)) {
       if (spec_cache->out_spec->n_ener != n_ener_inp) {
         free_out_spec(spec_cache->out_spec);
         spec_cache->out_spec = init_out_spec(n_ener_inp, ener_inp, status);
