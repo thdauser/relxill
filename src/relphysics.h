@@ -30,4 +30,6 @@ double *get_tprofile(double *rlo, double *rhi, const int nrad, double Rin, doubl
 
 void bbody_spec(double *ener, int n, double *spec, double temperature, double gfac);
 
+double density_ss73_zone_a(double radius, double rms);
+
 #endif //RELXILL__RELPHYSICS_H_

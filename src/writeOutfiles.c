@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include "writeOutfiles.h"
 
-static void fclose_errormsg(FILE *fp, char *foutName) {
+static void fclose_errormsg(FILE *fp, const char *foutName) {
   if (fclose(fp)) {
     printf(" *** error : failed writing file %s \n", foutName);
   }
@@ -34,7 +34,7 @@ static void fclose_errormsg(FILE *fp, char *foutName) {
  *   - double[n_rad] intens
  *   - int n_rad
  **/
-void write_binned_data_to_file(char *foutName, const double *rad, double *intens, int n_rad) {
+void write_binned_data_to_file(const char *foutName, const double *rad, double *intens, int n_rad) {
   FILE *fp = fopen(foutName, "w+");
   for (int ii = 0; ii < n_rad; ii++) {
     fprintf(fp, " %e \t %e \t %e \n", rad[ii], rad[ii + 1], intens[ii]);

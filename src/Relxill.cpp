@@ -16,6 +16,7 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "Relxill.h"
+#include "IonGradient.h"
 
 
 /** caching parameters **/

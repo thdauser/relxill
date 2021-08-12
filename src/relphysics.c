@@ -101,3 +101,35 @@ double *get_tprofile(double *rlo, double *rhi, const int nrad, double Rin, doubl
 
   return tprofile;
 }
+
+
+
+
+/*** we calculate the disk density from  Shakura & Sunyaev (1973)
+ *    - for zone A as describe in their publication,  formula (Eq 2.11)
+ *    - only the radial dependence is picked up here  (viscosity alpha=const.)
+ *    - normalized such that dens(rms) = 1
+ *    - rms is given in units of Rg
+ *                                                               ***/
+double density_ss73_zone_a(double radius, double rms) {
+  return pow((radius * 2 / rms), (3. / 2)) * pow((1 - sqrt(rms / 2. / radius)), -2);
+}
+
+
+
+
+
+/** calculate the gravitational redshift **/
+double grav_redshift(const relParam *param) {
+  if (param->emis_type == EMIS_TYPE_LP) {
+    return 1.0 / sqrt(1.0 - 2 * param->height /
+    (param->height * param->height + param->a * param->a)) - 1.0;
+  } else {
+    // important: without a geometrical assumption no grav. redshift can be calculated
+    return 0.0;
+  }
+}
+
+double relat_abberation(double del, double beta) {
+  return acos((cos(del) - beta) / (1 - beta * cos(del)));
+}

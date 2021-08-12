@@ -19,6 +19,7 @@ set(SOURCE_FILES
         XspecSpectrum.h
         ModelInfo.h
         Relreturn_BlackBody.cpp Relreturn_BlackBody.h
+        IonGradient.cpp IonGradient.h
         relreturn_corona.c relreturn_corona.h
         relreturn_datastruct.c relreturn_datastruct.h
         relreturn_table.c relreturn_table.h

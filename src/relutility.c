@@ -18,6 +18,7 @@
 
 #include "relutility.h"
 
+#include "relphysics.h"
 #include "relbase.h"
 #include "writeOutfiles.h"
 
@@ -90,20 +91,6 @@ void relxill_check_fits_error(const int *status) {
   }
 }
 
-/** calculate the gravitational redshift **/
-double grav_redshift(const relParam *param) {
-  if (param->emis_type == EMIS_TYPE_LP) {
-    return 1.0 / sqrt(1.0 - 2 * param->height /
-        (param->height * param->height + param->a * param->a)) - 1.0;
-  } else {
-    // important: without a geometrical assumption no grav. redshift can be calculated
-    return 0.0;
-  }
-}
-
-double relat_abberation(double del, double beta) {
-  return acos((cos(del) - beta) / (1 - beta * cos(del)));
-}
 
 void check_relxill_error(const char *const func, const char *const msg, int *status) {
   if (*status != EXIT_SUCCESS) {
@@ -679,186 +666,6 @@ void get_nthcomp_param(double *nthcomp_param, double gam, double kte, double z) 
 
 }
 
-/*** we calculate the disk density from  Shakura & Sunyaev (1973)
- *    - for zone A as describe in their publication,  formula (Eq 2.11)
- *    - only the radial dependence is picked up here  (viscosity alpha=const.)
- *    - normalized such that dens(rms) = 1
- *                                                               ***/
-double density_ss73_zone_a(double radius, double rms) {
-  return pow((radius / rms), (3. / 2)) * pow((1 - sqrt(rms / radius)), -2);
-}
-
-// calculate the log(xi) for given density and emissivity
-static double cal_lxi(double dens, double emis) {
-  return log10(4.0 * M_PI * emis / dens);
-}
-
-// determine the radius of maximal ionization
-static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin) {
-
-  double rad_max_lxi = pow((11. / 9.), 2)
-      * rin;  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
-
-  // radial AD grid is sorted descending (!)
-  int kk = inv_binary_search(re, nr, rad_max_lxi);
-  double interp = (rad_max_lxi - re[kk + 1]) / (re[kk] - re[kk + 1]);
-
-  double emis_max_lxi = interp_lin_1d(interp, emis[kk + 1], emis[kk]);
-
-  double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi);
-
-  return lxi_max;
-}
-
-
-/** *** set log(xi) to obey the limits of the xillver table: TODO: check if we need to adjust the normalization as well  ***
- *  NOTE: with correctly set xpsec/isis limits, it is only possible to reach the lower boundary       **/
-static void lxi_set_to_xillver_bounds(double *pt_lxi) {
-  /**  TODO: Need to define this globally **/
-  double xlxi_tab_min = 0.0;
-  double xlxi_tab_max = 4.7;
-
-  // #1: set the value of xi to the lowest value of the table
-  if (*pt_lxi < xlxi_tab_min) {
-    *pt_lxi = xlxi_tab_min;
-  } else if (*pt_lxi > xlxi_tab_max) {
-    //	#2: high ionization: we approximately assume such a highly ionized disk acts as a mirror
-    *pt_lxi = xlxi_tab_max;
-  }
-
-}
-
-ion_grad *calc_ion_gradient(relParam *rel_param,
-                            double xlxi0,
-                            double xindex,
-                            int type,
-                            double *rgrid,
-                            int n,
-                            int *status) {
-
-  CHECK_STATUS_RET(*status, NULL);
-
-  ion_grad *ion = new_ion_grad(rgrid, n, status);
-  CHECK_STATUS_RET(*status, NULL);
-
-  double rmean[n];
-  double del_inc[n];
-  int ii;
-  for (ii = 0; ii < n; ii++) {
-    rmean[ii] = 0.5 * (rgrid[ii] + rgrid[ii + 1]);
-  }
-
-  if (type == ION_GRAD_TYPE_PL) {
-    for (ii = 0; ii < n; ii++) {
-      ion->lxi[ii] = (exp(xlxi0))
-          * pow((rmean[ii] / rmean[0]), -1.0 * xindex);  // TODO: check if we need to subtract xlxi_tab_min here
-      ion->lxi[ii] = log(ion->lxi[ii]);
-
-      lxi_set_to_xillver_bounds(&(ion->lxi[ii]));
-
-    }
-
-  } else if (type == ION_GRAD_TYPE_ALPHA) {
-    double dens[n];
-    double rin = rgrid[0];
-
-    // TODO: use a better approach to not linearly interpolate but rather average over the profile?
-    double emis_zones[n];
-
-    // we need the emissivity profile (should be cached, so no extra effort required here)
-    RelSysPar *sysPar = get_system_parameters(rel_param, status);
-    emisProfile *emis_profile = sysPar->emis;
-
-    assert(emis_profile->del_inc != NULL);
-    inv_rebin_mean(emis_profile->re, emis_profile->emis, sysPar->nr, rmean, emis_zones, n, status);
-    inv_rebin_mean(emis_profile->re, emis_profile->del_inc, sysPar->nr, rmean, del_inc, n, status);
-    inv_rebin_mean(emis_profile->re, emis_profile->del_emit, sysPar->nr, rmean, ion->del_emit, n, status);
-
-    // calculate the maximal ionization assuming r^-3 and SS73 alpha disk
-    double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->nr, rin);
-
-    // the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
-    double fac_lxi_norm = xlxi0 - lxi_max; // subtraction instead of division because of the log
-
-    /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
-    for (ii = 0; ii < n; ii++) {
-      dens[ii] = density_ss73_zone_a(rmean[ii], rin);
-
-      // now we can use the emissivity to calculate the ionization
-      ion->lxi[ii] = cal_lxi(dens[ii], emis_zones[ii]) + fac_lxi_norm;
-
-      ion->lxi[ii] += log10(cos(M_PI / 4) / cos(del_inc[ii]));
-
-      lxi_set_to_xillver_bounds(&(ion->lxi[ii]));
-    }
-
-  } else if (type
-      == ION_GRAD_TYPE_CONST) {  // should not happen, as this will be approximated by 1 zone (but just in case we get here...)
-    for (ii = 0; ii < n; ii++) {
-      ion->lxi[ii] = xlxi0;
-    }
-  } else {
-    printf(" *** ionization type with number %i not implemented \n", type);
-    printf("     choose either %i for the PL, %i for the ALPHA-disk, or %i for constant\n",
-           ION_GRAD_TYPE_PL, ION_GRAD_TYPE_ALPHA, ION_GRAD_TYPE_CONST);
-    RELXILL_ERROR("unknown ionization gradient type", status);
-  }
-
-  if (is_debug_run()) {
-    write_binned_data_to_file("test_ion_grad_relxill.dat", ion->r, ion->lxi, ion->nbins);
-  }
-
-  if (*status != EXIT_SUCCESS) {
-    RELXILL_ERROR("calculating the ionization gradient failed due to previous error", status);
-  }
-
-  return ion;
-}
-
-ion_grad *new_ion_grad(double *r, int n, int *status) {
-
-  ion_grad *ion = (ion_grad *) malloc(sizeof(ion_grad));
-  CHECK_MALLOC_RET_STATUS(ion, status, NULL)
-
-  ion->r = (double *) malloc((n + 1) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->r, status, NULL)
-  ion->lxi = (double *) malloc((n) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->lxi, status, NULL)
-  ion->fx = (double *) malloc((n) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->fx, status, NULL)
-  ion->del_emit = (double *) malloc((n) * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(ion->del_emit, status, NULL)
-
-  ion->nbins = n;
-
-  int ii;
-  for (ii = 0; ii < n; ii++) {
-    ion->r[ii] = r[ii];
-    ion->lxi[ii] = 0.0;
-    ion->fx[ii] = 0.0;
-    ion->del_emit[ii] = M_PI / 4.; // assume default 45 deg (xillver assumption), only used if beta>0
-  }
-  // radius goes to n+1
-  ion->r[n] = r[n];
-
-  return ion;
-}
-
-void free_ion_grad(ion_grad *ion) {
-
-  if (ion != NULL) {
-    if (ion->r != NULL) {
-      free(ion->r);
-    }
-    if (ion->lxi != NULL) {
-      free(ion->lxi);
-    }
-    if (ion->fx != NULL) {
-      free(ion->fx);
-    }
-    free(ion);
-  }
-}
 
 // for x0 descending and xn ascending, calculate the mean at xn
 void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int nn, int *status) {

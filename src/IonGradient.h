@@ -13,20 +13,22 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
-#ifndef WRITEOUTFILES_H_
-#define WRITEOUTFILES_H_
+#ifndef IONGRADIENT_H_
+#define IONGRADIENT_H_
 
-#include "common.h"
+extern "C" {
+#include "relutility.h"
+#include "relphysics.h"
+}
 
-void write_binned_data_to_file(const char *foutName, const double *rad, double *intens, int n_rad);
-void write_data_to_file(const char *foutName, double *rad, double *intens, int n_rad);
-
-void save_relline_radial_flux_profile(double *rad, double *intens, int n_rad);
-
-void save_xillver_spectrum(const double *ener, double *flu, int n_ener, char *fname);
-void save_relline_profile(relline_spec_multizone *spec);
-void save_emis_profiles(RelSysPar *sysPar);
+ion_grad *calc_ion_gradient(relParam *rel_param,
+                            double xlxi0,
+                            double xindex,
+                            int type,
+                            double *rgrid,
+                            int n,
+                            int *status);
 
 #endif
