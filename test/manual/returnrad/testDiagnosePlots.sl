@@ -6,7 +6,7 @@ require("scripts/subs_returnrad.sl");
 require("scripts/subs_filenames.sl");
 
 
-variable spin = 0.9;  %% currently only done for this value
+variable spin = 0.998;  %% currently only done for this value
 variable Tin = 1.0;
 
 define getDiagnoseRframePlot(){ %{{{
@@ -145,8 +145,8 @@ define testDiagnosePlots(){
    createOutputFiles();
 
    if (getDiagnoseMirrorBbody() != EXIT_SUCCESS) return EXIT_FAILURE;
-
-%   if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+   if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+   
 %   if (getDiagnoseXillverPrimPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
 %   if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
 %   if (getDiagnoseRelatSmearingPlot() != EXIT_SUCCESS) return EXIT_FAILURE;

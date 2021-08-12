@@ -93,7 +93,7 @@ define get_2d_plot(fdat,rframe,spin){
 
    pl.xlabel("Energy [keV]");
    pl.ylabel("Energy Flux $F_\nu$"R);
-   pl.world(0.1,30,1e-4,7000;loglog);
+   pl.world(0.1,50,1e-4,7000;loglog);
    
    fdat = [fdat];
    variable m = length(fdat);
@@ -118,7 +118,7 @@ define get_2d_plot(fdat,rframe,spin){
       variable emn = 0.5*(elo+ehi);
       variable efac = emn/(ehi-elo);
       
-      
+
       pl.plot(emn,dat[jj].sumspec*efac; color="black",width=3,line=jj);
                   
       variable n = length(dat[jj].dat.spec[*,0]);
@@ -127,7 +127,6 @@ define get_2d_plot(fdat,rframe,spin){
 	 
 	 if (pl!=NULL){
 	    if (ii mod mod_fac == 0) {
-%	       pl.plot(emn,dat[jj].dat.spec[ii,*]*efac*dat[jj].area_ring[ii];color=get_col(), line=jj);
 	       pl.plot(emn,dat[jj].dat.spec[ii,*]*efac;color=get_col(), line=jj);
 	       
 	       if(jj==0){
@@ -139,15 +138,15 @@ define get_2d_plot(fdat,rframe,spin){
 	    }            	    
 	 }
       }
+      vmessage(" summed photon flux: %.4e (frac: %.3f) ", sum(dat[jj].sumspec), 
+	       sum(dat[jj].sumspec)/sum(dat[0].sumspec) );
+      vmessage(" summed energy flux: %.4e (frac: %.3f)", sum(dat[jj].sumspec*elo), 
+	      sum(dat[jj].sumspec*elo)/sum(dat[0].sumspec*elo));
    }
 
    if (not qualifier_exists("noSumSpec")){
       pl.plot(emn,(dat[0].sumspec+dat[1].sumspec)*efac; color="red",width=3,depth=-10);
    }
-
-   print(sum(dat[0].sumspec*elo));
-   print(sum(dat[1].sumspec*elo));
-   print(sum(dat[2].sumspec*elo));
   
    if (qualifier_exists("title")){
       pl.title(qualifier("title","description missing");size="\footnotesize"R);

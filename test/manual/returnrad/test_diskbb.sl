@@ -4,9 +4,7 @@ require("scripts/subs_returnrad.sl");
 variable dir = "build/";
 
 variable fname = "cmake-build-debug/testrr-spec-diskbb.fits";
-variable fname2d = "cmake-build-debug/debug-testrr-spec-diskbb.fits";
 variable fd = fits_read_table(fname);
-%% variable fd = get_2d_data(fname2d);
 
 variable ref = fits_read_table("refdata/refvalues_diskbb.fits");
 

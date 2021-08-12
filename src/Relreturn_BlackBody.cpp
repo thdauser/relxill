@@ -252,7 +252,6 @@ static double **get_bbody_specs(double *ener, int nener, returningFractions *dat
   double **spec_array = new_specZonesArr(nener, dat->nrad, status);
 
   for (int ii = 0; ii < dat->nrad; ii++) {
-
     bbody_spec(ener, nener, spec_array[ii], temperature[ii], 1.0);
     for (int jj = 0; jj < nener; jj++) {
       if (ener[jj] < EMIN_XILLVER || ener[jj + 1] > EMAX_XILLVER) {
@@ -298,7 +297,12 @@ double sumRadius[dat->nrad];
 }
  */
 
-
+/**
+ * diskbb spectrum in Xspec units [cts/bin]
+ *
+ * tested to give identical results to the Xspec implementation of diskbb
+ * (deviation at <0.1keV are expected due to our outer radius only being 1000Rg)
+ */
 void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, int* status) {
 
   CHECK_STATUS_VOID(*status);
@@ -315,10 +319,9 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
   assert(dat->rhi[0] > dat->rlo[0] );
   for (int jj = 0; jj < n; jj++) {
     for (int ii = 0; ii < dat->nrad; ii++) {
-      // need to divide by the GR area and multiply by the normal ring area to mimick a diskbb spectrum
+      // need to multiply by the normal ring area to mimick a diskbb spectrum
       spec_arr[ii][jj] *=
           (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2)));
-   //       / calc_proper_area_ring( dat->rlo[ii] , dat->rhi[ii], spin);
     }
   }
 

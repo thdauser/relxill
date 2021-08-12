@@ -137,6 +137,48 @@ TEST_CASE(" Returning Radiation Table ", "[table]") {
 
 
 
+
+static void invert_emis_profile(emisProfile* emis){
+  invertArray(emis->re, emis->nr);
+  invertArray(emis->emis, emis->nr);
+
+  if(emis->del_inc!= nullptr){
+    invertArray(emis->del_inc, emis->nr);
+  }
+
+  if(emis->del_emit!= nullptr){
+    invertArray(emis->del_emit, emis->nr);
+  }
+}
+
+static void write_emis_profile(const std::string& fname, emisProfile* emis_profile){
+  write_data_to_file( fname.c_str() , emis_profile->re, emis_profile->emis, emis_profile->nr);
+}
+
+
+emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* status){
+
+  returningFractions *rf = get_rrad_fractions(spin,rin , rout, status);
+  double gamma = 2;
+
+  emisProfile* emis = new_emisProfile(rf->rad, rf->nrad, status);
+  get_emis_bkn(emis->emis, emis->re, emis->nr,3.0,3.0,emis->re[0]);
+  for (int ii=0; ii<rf->nrad; ii++){
+    emis->emis[ii] /= emis->emis[0]; //
+  }
+
+  emisProfile* emis_return = calc_rrad_emis_corona(rf, 1.0, emis, gamma, status);
+
+  free_returningFractions(&rf);
+  free_emisProfile(emis);
+
+  return emis_return;
+}
+
+
+
+
+
 // ------- //
 TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") {
 
@@ -162,27 +204,6 @@ TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") 
   REQUIRE(nrad_rms > nrad_rfac2);
 
 }
-
-
-
-
-static void invert_emis_profile(emisProfile* emis){
-  invertArray(emis->re, emis->nr);
-  invertArray(emis->emis, emis->nr);
-
-  if(emis->del_inc!= nullptr){
-    invertArray(emis->del_inc, emis->nr);
-  }
-
-  if(emis->del_emit!= nullptr){
-    invertArray(emis->del_emit, emis->nr);
-  }
-}
-
-static void write_emis_profile(const std::string& fname, emisProfile* emis_profile){
-  write_data_to_file( fname.c_str() , emis_profile->re, emis_profile->emis, emis_profile->nr);
-}
-
 
 
 // ------- //
@@ -266,6 +287,9 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 }
 
 
+
+
+
 // ------- //
 TEST_CASE(" Increasing Rin has to reduce the flux at the next zone (in radius)", "[returnrad]") {
 
@@ -288,26 +312,6 @@ TEST_CASE(" Increasing Rin has to reduce the flux at the next zone (in radius)",
   REQUIRE(abs(rf_grid->frac_i[1][1] - rf0->frac_i[1][1]) < 1e-8);
 
 
-}
-
-
-emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* status){
-
-  returningFractions *rf = get_rrad_fractions(spin,rin , rout, status);
-  double gamma = 2;
-
-  emisProfile* emis = new_emisProfile(rf->rad, rf->nrad, status);
-  get_emis_bkn(emis->emis, emis->re, emis->nr,3.0,3.0,emis->re[0]);
-  for (int ii=0; ii<rf->nrad; ii++){
-    emis->emis[ii] /= emis->emis[0]; //
-  }
-
-  emisProfile* emis_return = calc_rrad_emis_corona(rf, 1.0, emis, gamma, status);
-
-  free_returningFractions(&rf);
-  free_emisProfile(emis);
-
-  return emis_return;
 }
 
 
