@@ -80,7 +80,6 @@ therefore should only contain stable models with a stable interface.
 
 
 ## Test Setup
-
 The tests are all collected in `test`. The main tests, which are automatically performed, 
 are in `test/unit/` and `test/e2e/`. 
 
@@ -90,10 +89,9 @@ tested as well with `make test-stable`. In this case, first the stable model is 
 the e2e tests are ran on this model. 
 
 #### Unit Tests (test/unit/)
-The units tests are done on C or C++ and should test
-basic functionality of the code. Those tests are ran first. To implement the tests the Catch2 
-framework is used. New tests can simply be added as a new .cpp file and added in CMakeLists.txt.
-Those will then be automatically compiled and run.
+The units tests are done in C++ and should test basic functionality of the code. Those tests are ran first.
+To implement the tests the Catch2  framework is used. New tests can simply be added as a new .cpp file and
+added in CMakeLists.txt. Those will then be automatically compiled and run.
 
 #### e2e Tests (test/e2e/)
 End-to-end tests are based on using the fully compiled local model (in build/), which is then loaded in isis.
