@@ -66,9 +66,7 @@ static void lxi_set_to_xillver_bounds(double *pt_lxi) {
 
 ion_grad *new_ion_grad(const double *r, int n, int *status) {
 
-  auto ion = new ion_grad; //) malloc(sizeof(ion_grad));
-  CHECK_MALLOC_RET_STATUS(ion, status, nullptr)
-
+  auto ion = new ion_grad;
 
   ion->dens = new double[n+1]{0};
 
@@ -108,6 +106,7 @@ ion_grad *calc_ion_gradient(relParam *rel_param,
   CHECK_STATUS_RET(*status, nullptr);
 
   ion_grad *ion = new_ion_grad(rgrid, n, status);
+  assert(ion!=nullptr);
   CHECK_STATUS_RET(*status, nullptr);
 
   auto rmean = new double[n];
