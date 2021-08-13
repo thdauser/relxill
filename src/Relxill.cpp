@@ -177,19 +177,10 @@ void relxill_kernel(double *ener_inp,
 
     auto xill_flux= new double[n_ener];
 
-    // currently only working for the LP version (as relxill always has just 1 zone)
-    ion_grad *ion = nullptr;
-    if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type)) {
+    IonGradient ion_gradient{rel_profile->rgrid, rel_profile->n_zones,xill_param->ion_grad_type};
+    ion_gradient.calculate(rel_param, xill_param);
 
-      // make sure the number of zones is correctly set:
-      assert(rel_param->num_zones
-                 == get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type));
-
-      ion = calc_ion_gradient(rel_param, xill_param->lxi, xill_param->ion_grad_index, xill_param->ion_grad_type,
-                              rel_profile->rgrid, rel_profile->n_zones, status);
-      CHECK_STATUS_VOID(*status);
-    }
-
+    // loop over ionization zones
     for (ii = 0; ii < rel_profile->n_zones; ii++) {
       assert(spec_cache != nullptr);
 
@@ -206,19 +197,11 @@ void relxill_kernel(double *ener_inp,
       } else {
         // choose the (linear) middle of the radial zone
         double rzone = 0.5 * (rel_profile->rgrid[ii] + rel_profile->rgrid[ii + 1]);
-        double del_emit = 0.0;  // only relevant if beta!=0 (doppler boosting)
-        if (ion != nullptr) {
-          assert(ion->nbins == rel_profile->n_zones);
-          del_emit = ion->del_emit[ii];
-        }
+        double del_emit = (ion_gradient.del_emit== nullptr) ? 0.0 : ion_gradient.del_emit[ii] ;  // only relevant if beta!=0 (doppler boosting)
         xill_param->ect = ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
-        //
       }
 
-      // if we have an ionization gradient defined, we need to set the xlxi to the value of the current zone
-      if (ion != nullptr) {
-        xill_param->lxi = ion->lxi[ii];
-      }
+      double xlxi_zone = ion_gradient.lxi[ii];
 
       // call the function which calculates the xillver spectrum
       //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
@@ -258,19 +241,12 @@ void relxill_kernel(double *ener_inp,
         }
         save_xillver_spectrum(ener_inp, test_flu, n_ener_inp, vstr);
 
-//        save_xillver_spectrum(ener, xill_flux, n_ener, "test_fft_xill.dat" );
-//        save_xillver_spectrum(ener,rel_profile->flux[ii], n_ener, "test_fft_rel.dat");
-//        save_xillver_spectrum(ener, conv_out, n_ener, "test_fft_conv.dat");
-
       }
 
     } /**** END OF LOOP OVER RADIAL ZONES [ii] *****/
 
     /** important: set the cutoff energy value back to its original value **/
     xill_param->ect = ecut0;
-
-    /** free the ionization parameter structure **/
-    free_ion_grad(ion);
 
     /** initialize the cached output spec array **/
     if ((spec_cache->out_spec != nullptr)) {
