@@ -27,40 +27,33 @@ static double cal_lxi(double dens, double emis) {
   return log10(4.0 * M_PI * emis / dens);
 }
 
-// determine the radius of maximal ionization
-static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin) {
-
-  double rad_max_lxi = pow((11. / 9.), 2)
-      * rin;  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
-
-      // radial AD grid is sorted descending (!)
-      int kk = inv_binary_search(re, nr, rad_max_lxi);
-      double interp = (rad_max_lxi - re[kk + 1]) / (re[kk] - re[kk + 1]);
-
-      double emis_max_lxi = interp_lin_1d(interp, emis[kk + 1], emis[kk]);
-
-      double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi);
-
-      return lxi_max;
-}
-
-
 /**
-  * set log(xi) to be within the limits of the xillver table
- * NOTE: with correctly set xpsec/isis limits, it is only possible to reach the lower boundary
- **/
-static void lxi_set_to_xillver_bounds(double* lxi, const int nzones) {
-  //  TODO: Need to define this globally
-  double xlxi_tab_min = 0.0;
-  double xlxi_tab_max = 4.7;
-
+  * adjust "values" to be within the limits of the xillver table
+  **/
+void adjust_parameter_to_be_within_xillver_bounds(double* values, int nzones, double tab_min, double tab_max) {
   for (int ii=0; ii<nzones; ii++){
-    if (lxi[ii] < xlxi_tab_min) {
-      lxi[ii] = xlxi_tab_min;
-    } else if (lxi[ii] > xlxi_tab_max) {
-      lxi[ii] = xlxi_tab_max;
+    if (values[ii] < tab_min) {
+      values[ii] = tab_min;
+    } else if (values[ii] > tab_max) {
+      values[ii] = tab_max;
     }
   }
+}
+
+// determine the maximal ionization
+static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin) {
+
+  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
+  double rad_max_lxi = pow((11. / 9.), 2) * rin;
+
+  // radial AD grid is sorted descending (!)
+  int kk = inv_binary_search(re, nr, rad_max_lxi);
+  double interp = (rad_max_lxi - re[kk + 1]) / (re[kk] - re[kk + 1]);
+
+  double emis_max_lxi = interp_lin_1d(interp, emis[kk + 1], emis[kk]);
+  double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi);
+
+  return lxi_max;
 }
 
 
@@ -90,14 +83,19 @@ void IonGradient::calc_ion_grad_alpha(relParam *rel_param, double param_xlxi0, d
 
   /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
   for (int ii = 0; ii < m_nzones; ii++) {
-    dens[ii] = density_ss73_zone_a(m_rmean[ii], rin);
+    dens[ii] = density_ss73_zone_a(m_rmean[ii], rin);  //addition as quantity is logarithm
+    dens[ii] /= dens[0];
 
     // now we can use the emissivity to calculate the ionization
     lxi[ii] = cal_lxi(dens[ii], emis_zones[ii]) + fac_lxi_norm;
-
     lxi[ii] += log10(cos(M_PI / 4) / cos(del_inc[ii]));
 
+    dens[ii] = log10(dens[ii]) + param_density;  //addition as quantity is logarithm
+
+
   }
+
+
 
 }
 
@@ -107,9 +105,6 @@ void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex){
     lxi[ii] = (exp(xlxi0))
         * pow((m_rmean[ii] / m_rmean[0]), -1.0 * xindex);  // TODO: check if we need to subtract xlxi_tab_min here
         lxi[ii] = log(lxi[ii]);
-
-        adjust_lxi_to_be_within_xillver_bounds(&(lxi[ii]));
-
   }
 }
 
@@ -134,13 +129,25 @@ void IonGradient::calculate(relParam *rel_param, xillParam *xill_param) {
     throw std::exception();
   }
 
-  adjust_lxi_to_be_within_xillver_bounds(lxi);
+  // need to make sure lxi and logn are within the xillver table values //  TODO: Need to define this automatically
+  adjust_parameter_to_be_within_xillver_bounds(lxi, m_nzones, 0.0, 4.7);
+//  adjust_parameter_to_be_within_xillver_bounds(dens, m_nzones, 15, 19);
 
-  if (is_debug_run()) {
-    write_binned_data_to_file("test_ion_grad_relxill.dat", m_radius, lxi, m_nzones);
+  if  (shouldOutfilesBeWritten()) {
+    IonGradient::write_to_file("test_ion_grad_relxill.dat");
   }
 
+}
 
+void IonGradient::write_to_file(const char* fout) {
 
+  FILE *fp = fopen(fout, "w+");
+
+  fprintf(fp, "# rlo \t rhi \t logxi \t density \t delta_emit \n");
+    for (int ii = 0; ii < m_nzones; ii++) {
+      fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", m_radius[ii], m_radius[ii + 1],
+              lxi[ii], dens[ii], del_emit[ii]);
+    }
+    fclose_errormsg(fp, fout);
 }
 

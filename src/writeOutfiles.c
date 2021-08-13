@@ -18,7 +18,7 @@
 #include <stdio.h>
 #include "writeOutfiles.h"
 
-static void fclose_errormsg(FILE *fp, const char *foutName) {
+void fclose_errormsg(FILE *fp, const char *foutName) {
   if (fclose(fp)) {
     printf(" *** error : failed writing file %s \n", foutName);
   }

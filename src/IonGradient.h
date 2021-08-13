@@ -68,32 +68,14 @@ class IonGradient{
 
   void calculate(relParam* rel_param, xillParam* xill_param);
 
+  void write_to_file( const char* fout);
+
  private:
   double* m_radius;
   const int m_nzones;
   const int m_ion_grad_type;
 
   double* m_rmean;
-
-
-  /**
-    * set log(xi) to obey the limits of the xillver table
-   * NOTE: with correctly set xpsec/isis limits, it is only possible to reach the lower boundary
-   **/
-  static void adjust_lxi_to_be_within_xillver_bounds(double *pt_lxi) {
-    /**  TODO: Need to define this globally **/
-    double xlxi_tab_min = 0.0;
-    double xlxi_tab_max = 4.7;
-
-    // #1: set the value of xi to the lowest value of the table
-    if (*pt_lxi < xlxi_tab_min) {
-      *pt_lxi = xlxi_tab_min;
-    } else if (*pt_lxi > xlxi_tab_max) {
-      //	#2: high ionization: we approximately assume such a highly ionized disk acts as a mirror
-      *pt_lxi = xlxi_tab_max;
-    }
-
-  }
 
   void calc_ion_grad_alpha(relParam* rel_param, double param_xlxi0, double param_density);
 

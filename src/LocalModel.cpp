@@ -113,6 +113,10 @@ xillParam *LocalModel::get_xill_params() {
   param->kTbb = m_model_params.get_otherwise_default(XPar::ktbb, 0);
   param->ion_grad_type = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_ion_grad_type,0)));
 
+  if (m_name == ModelName::relxilllpAlpha || m_name == ModelName::relxillAlpha){
+    param->ion_grad_type = ION_GRAD_TYPE_ALPHA;
+  }
+
   // to be deleted
   param->fixReflFrac = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_fixreflfrac,0)));
 

@@ -5,7 +5,7 @@ set(UNIT_TEST_FILES_CPP
         test-cppspectrum.cpp tests-execmodel.cpp
         common-functions.cpp common-functions.h
         tests-returnrad.cpp test-stdfunctions.cpp test-xilltab.cpp
-        test-rellp.cpp test-relxill.cpp
+        test-rellp.cpp test-relxill.cpp tests-iongrad.cpp
         tests-bbody-returnrad.cpp
         )
 

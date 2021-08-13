@@ -20,6 +20,8 @@
 
 #include "common.h"
 
+void fclose_errormsg(FILE *fp, const char *foutName);
+
 void write_binned_data_to_file(const char *foutName, const double *rad, double *intens, int n_rad);
 void write_data_to_file(const char *foutName, double *rad, double *intens, int n_rad);
 
