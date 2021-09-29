@@ -50,11 +50,11 @@ class IonGradient{
   };
 
   ~IonGradient(){
-    delete lxi;
-    delete fx;
-    delete del_emit;
-    delete dens;
-    delete m_rmean;
+    delete[] lxi;
+    delete[] fx;
+    delete[] del_emit;
+    delete[] dens;
+    delete[] m_rmean;
   }
 
   double* lxi{nullptr};

@@ -259,6 +259,9 @@ void relxill_kernel(double *ener_inp,
       spec_cache->out_spec = init_out_spec(n_ener_inp, ener_inp, status);
       CHECK_STATUS_VOID(*status);
     }
+    delete[] single_spec_inp;
+    delete[] conv_out;
+    delete[] xill_flux;
 
     for (ii = 0; ii < n_ener_inp; ii++) {
       spec_cache->out_spec->flux[ii] = spec_inp[ii];

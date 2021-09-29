@@ -106,10 +106,19 @@ TEST_CASE(" Execute ALL local models", "[model]") {
 
 TEST_CASE(" Execute single model", "[single]") {
   DefaultSpec default_spec{};
-  REQUIRE_NOTHROW(test_xspec_lmod_call(ModelName::relxill, default_spec) );
+  REQUIRE_NOTHROW(test_xspec_lmod_call(ModelName::relxilllpCp, default_spec) );
+
+  LocalModel lmod(ModelName::relxilllpCp);
+
+  auto spec = default_spec.get_xspec_spectrum();
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+
+  lmod.set_par(XPar::h,6.12);
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+
 }
 
-TEST_CASE(" Exec single model with LocalModel Structure", "[single]") {
+TEST_CASE(" Exec single model with LocalModel Structure") {
   DefaultSpec default_spec{};
 
   LocalModel lmod(ModelName::relline_lp);

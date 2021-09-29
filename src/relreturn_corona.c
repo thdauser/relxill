@@ -142,6 +142,7 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   rebin_emisprofile_on_radial_grid(emis_return_rebinned, emis_return, status);
 
   apply_returnrad_flux_correction(emis_return_rebinned, param->return_rad_flux_correction_factor);
+  printf("xill corr factor: %e\n", param->xillver_gshift_corr_fac);
 
   if( shouldOutfilesBeWritten() ){
     write_data_to_file("test_emis_profile_rrad_input.dat",
