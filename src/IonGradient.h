@@ -42,6 +42,7 @@ class IonGradient{
     m_rmean = new double[nzones];
     for ( int ii=0; ii<nzones; ii++){
       m_rmean[ii] = 0.5*(m_radius[ii]+m_radius[ii+1]);
+      del_emit[ii] = M_PI / 4.; // assume default 45 deg (xillver assumption), only used if beta>0
     }
 
     if (m_nzones>1){
