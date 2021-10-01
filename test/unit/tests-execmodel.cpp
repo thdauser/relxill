@@ -118,15 +118,18 @@ TEST_CASE(" Execute single model", "[single]") {
 
 }
 
-TEST_CASE(" Exec single model with LocalModel Structure") {
+TEST_CASE(" Exec single model with LocalModel Structure","[model-change]") {
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relline_lp);
+  LocalModel lmod(ModelName::relxilllpionCp);
 
   auto spec = default_spec.get_xspec_spectrum();
+  lmod.set_par(XPar::xi_index,1.0);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
-  REQUIRE( sum_flux(spec.flux(),spec.num_flux_bins()) > 1e-8);
+  double sum = sum_flux(spec.flux(),spec.num_flux_bins() );
+
+  REQUIRE( sum > 1e-8);
 
 }
 

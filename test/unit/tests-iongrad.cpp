@@ -24,6 +24,34 @@
 #define PREC 1e-6
 
 
+TEST_CASE(" Ion Grad PL Index ", "[iongrad]") {
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+  int status = EXIT_SUCCESS;
+
+  LocalModel local_model{ModelName::relxilllpCp};
+
+  local_model.eval_model(spec);
+
+  xillParam* xill_param = local_model.get_xill_params();
+  relParam* rel_param = local_model.get_rel_params();
+
+  relline_spec_multizone *rel_profile = relbase(spec.energy(), spec.n_energy(), rel_param, nullptr, &status);
+
+  IonGradient ion_gradient{rel_profile->rgrid, rel_profile->n_zones,xill_param->ion_grad_type};
+  ion_gradient.calculate(rel_param, xill_param);
+
+  for (int ii=0; ii<rel_profile->n_zones; ii++){
+    REQUIRE(ion_gradient.dens[ii] >=15.0);
+    REQUIRE(ion_gradient.dens[ii] <=22.0);
+    REQUIRE(ion_gradient.lxi[ii] >=0.0);
+    REQUIRE(ion_gradient.lxi[ii] <=4.7);
+  }
+
+}
+
+
 TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
 
   DefaultSpec default_spec{};
@@ -37,5 +65,30 @@ TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
 
   local_model.eval_model(spec);
   unsetenv(env_outfiles);
+
+}
+
+
+TEST_CASE(" Exec single iongrad model, should change with xindex","[iongrad]") {
+  DefaultSpec default_spec{};
+
+  LocalModel lmod(ModelName::relxilllpionCp);
+
+  auto spec = default_spec.get_xspec_spectrum();
+  lmod.set_par(XPar::xi_index,1.0);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+  double sum = sum_flux(spec.flux(),spec.num_flux_bins() );
+
+  auto spec2 = default_spec.get_xspec_spectrum();
+  lmod.set_par(XPar::xi_index,2.0);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec2));
+  double sum2 = sum_flux(spec2.flux(),spec2.num_flux_bins() );
+
+  REQUIRE( sum > 1e-8);
+  REQUIRE( sum2 > 1e-8);
+
+  REQUIRE( fabs(sum - sum2) > 1e-8);
 
 }
