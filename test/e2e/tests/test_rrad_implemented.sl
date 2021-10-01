@@ -10,7 +10,7 @@ define is_rrad_implemented(ff){
    
    variable status = 1;
    
-   if (get_params("*.return_rad")[0]==NULL){
+   if (get_params("*.switch_returnrad")[0]==NULL){
       vmessage("    model %s does not have returning radiation implemented", ff);
       status = 0;
       
@@ -19,7 +19,7 @@ define is_rrad_implemented(ff){
    } else if (is_relxill_model(ff)){
 	 
       variable val_rrad = eval_fun_keV(lo0, hi0);
-      set_par("*.return_rad", 0);
+      set_par("*.switch_returnrad", 0);
       variable val_no_rrad = eval_fun_keV(lo0, hi0);
       
       if ( not  (sum(val_rrad) / sum(val_no_rrad) > (1 + 1e-6) ) ) {

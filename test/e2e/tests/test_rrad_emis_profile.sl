@@ -16,7 +16,7 @@ define runtest(ffs){
    variable rm,emis_mod_total;
    (rm, emis_mod_total) = readcol("test_emis_profile.dat",1,2);
    
-   set_par("*.return_rad",0);   
+   set_par("*.switch_returnrad",0);   
    () = eval_fun(1,2);
    variable emis_mod_norrad;
    (rm, emis_mod_norrad) = readcol("test_emis_profile.dat",1,2);

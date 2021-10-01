@@ -505,4 +505,31 @@ TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
 
   REQUIRE(model_rrad_flux > model_no_rrad_flux);
 
+
+}
+
+
+
+// ------- //
+TEST_CASE(" Test return rad ENV variable", "[returnrad]") {
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  LocalModel local_model{ModelName::relxilllp};
+
+  local_model.set_par(XPar::switch_switch_returnrad, 0);
+  local_model.eval_model(spec);
+  double model_no_rrad_flux = sum_flux(spec.flux(), spec.num_flux_bins());
+
+
+  const char* env = "RELXILL_RETURNRAD_SWITCH";
+  setenv(env, "1", 1);
+  local_model.eval_model(spec);
+  double model_rrad_flux = sum_flux(spec.flux(), spec.num_flux_bins());
+
+  unsetenv(env);
+
+  // env variable can not change if parameter value is given
+  REQUIRE( fabs(model_rrad_flux - model_no_rrad_flux) <1e-8);
 }

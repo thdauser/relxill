@@ -12,10 +12,10 @@ define single_comparison_rrad(ff){
 
    fit_fun(ff);
    set_par("*.lineE",6.4);
-   set_par("*.return_rad", 0);
+   set_par("*.switch_returnrad", 0);
    variable val_ref = eval_fun_keV(lo,hi);
 
-   set_par("*return_rad",1);
+   set_par("*switch_returnrad",1);
    variable val0 = eval_fun_keV(lo,hi);
    
    variable i_en = where(2.0<lo<6.0);

@@ -38,10 +38,9 @@ define check_reflfrac_beta(ff_ion){ %{{{
 
    fit_fun_default(ff_ion);
 
-   msg_log += sprintf(" checking the how refl_frac depends on BETA for %s\n",ff_ion);
+   msg_log += sprintf(" checking how refl_frac depends on BETA for %s\n",ff_ion);
    
-   %% just use the normal relxilllp model for the test here
-   set_par("*.ion_grad_type",0);
+   set_par("*.iongrad_type",0);
    set_par("*.boost",1,1);
    
    variable bet = [0:0.5:#3];
@@ -69,19 +68,20 @@ define check_single_iongrad_model(ff_ion,ff_ref){ %{{{
    putenv("RELXILL_NUM_RZONES=50");
 
    fit_fun_default(ff_ion);   
-   set_par("*.xi_index",0);
-   set_par("*.ion_grad_type",1);  %% PL ion gradient
+   set_par("*.iongrad_index",0);
+   set_par("*.iongrad_type",1);  %% PL ion gradient
    set_par("*.logN",15.0);
    val0 = eval_fun_keV (lo,hi);
 
 
    fit_fun_default(ff_ref);
+   set_par("*.iongrad_type",0);  %% PL ion gradient
    set_par("*.logN",15.0);
    val1 = eval_fun_keV (lo,hi);
 
 
    fit_fun_default(ff_ion);   
-   set_par("*.ion_grad_type",2) ;  %% alpha disk
+   set_par("*.iongrad_type",2) ;  %% alpha disk
    val2 = eval_fun_keV (lo,hi);
    
    
@@ -112,7 +112,7 @@ define runtest(ffs){
 
 
    %% currently the only model with an ionization gradient
-   variable ff_ion = ["relxilllpionCp"];
+   variable ff_ion = ["relxilllpCp"];
    variable ff_ref = ["relxilllpCp"];
    
    variable ii,n = length(ff_ion);
