@@ -201,7 +201,7 @@ void relxill_kernel(double *ener_inp,
         xill_param->ect = ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
       }
 
-      double xlxi_zone = ion_gradient.lxi[ii];
+      xill_param->lxi = ion_gradient.lxi[ii]; // TODO: do not use xill_param struct here
 
       // call the function which calculates the xillver spectrum
       //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
