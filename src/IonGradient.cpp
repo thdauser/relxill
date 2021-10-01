@@ -114,7 +114,7 @@ void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex, double inputval_
 void IonGradient::calculate(relParam *rel_param, xillParam *xill_param) {
 
   if (m_ion_grad_type == ION_GRAD_TYPE_PL) {
-    calc_ion_grad_pl(xill_param->lxi, xill_param->ion_grad_index, xill_param->dens);
+    calc_ion_grad_pl(xill_param->lxi, xill_param->iongrad_index, xill_param->dens);
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_ALPHA) {
     calc_ion_grad_alpha(rel_param, xill_param->lxi, xill_param->dens);

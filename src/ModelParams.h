@@ -55,10 +55,10 @@ enum class XPar {
   beta,
   frac_pl_bb,
   ktbb,
-  xi_index,
+  iongrad_index,
   switch_fixreflfrac,
-  switch_return_rad,
-  switch_ion_grad_type,
+  switch_switch_returnrad,
+  switch_iongrad_type,
   shifttmaxrrad  // only for testing relxillBB
 };
 

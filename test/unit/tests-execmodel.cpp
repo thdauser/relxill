@@ -108,7 +108,7 @@ TEST_CASE(" Execute single model", "[single]") {
   DefaultSpec default_spec{};
   REQUIRE_NOTHROW(test_xspec_lmod_call(ModelName::relxilllpCp, default_spec) );
 
-  LocalModel lmod(ModelName::relxilllpionCp);
+  LocalModel lmod(ModelName::relxilllpCp);
 
   auto spec = default_spec.get_xspec_spectrum();
   REQUIRE_NOTHROW(lmod.eval_model(spec));
@@ -121,10 +121,10 @@ TEST_CASE(" Execute single model", "[single]") {
 TEST_CASE(" Exec single model with LocalModel Structure","[model-change]") {
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relxilllpionCp);
+  LocalModel lmod(ModelName::relxilllpCp);
 
   auto spec = default_spec.get_xspec_spectrum();
-  lmod.set_par(XPar::xi_index,1.0);
+  lmod.set_par(XPar::iongrad_index,1.0);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   double sum = sum_flux(spec.flux(),spec.num_flux_bins() );

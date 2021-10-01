@@ -93,7 +93,7 @@ typedef struct {
   double z;
   double refl_frac;
   double dens;
-  double ion_grad_index;
+  double iongrad_index;
   double kTbb;
   double frac_pl_bb;
   int ion_grad_type;

@@ -640,7 +640,7 @@ int did_xill_param_change(xillParam *cpar, xillParam *par) {
   if (comp_single_param_val((double) par->prim_type, (double) cpar->prim_type)) return 1;
   if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) return 1;
 
-  if (comp_single_param_val(par->ion_grad_index, cpar->ion_grad_index)) return 1;
+  if (comp_single_param_val(par->iongrad_index, cpar->iongrad_index)) return 1;
   if (comp_single_param_val((double) par->ion_grad_type, (double) cpar->ion_grad_type)) return 1;
 
   return 0;

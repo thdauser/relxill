@@ -71,14 +71,6 @@ class ParamList {
       ParamList(model_name, &ModelDatabase::instance().default_values(model_name)[0]) {
   };
 
-  //  explicit ParamList(ModelName model_name) {
-  //    auto parnames = ModelDatabase::instance().param_names(model_name);
-  //    auto parvalues = ModelDatabase::instance().default_values(model_name);
-  //    for (size_t ii = 0; ii < parnames.size() ; ++ii){
-  //      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
-  //    }
-  //  };
-
   explicit ParamList(ModelName model_name, const double* parvalues) {
     auto parnames = ModelDatabase::instance().param_names(model_name);
     for (size_t ii = 0; ii < parnames.size() ; ++ii){

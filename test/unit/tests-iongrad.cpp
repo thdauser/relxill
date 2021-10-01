@@ -57,13 +57,13 @@ TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::relxilllpionCp};
+  LocalModel local_model{ModelName::relxilllpCp};
 
   const char* env_outfiles = "RELXILL_WRITE_OUTFILES";
   setenv(env_outfiles, "1", 1);
 
   local_model.set_par(XPar::logn,19.0);
-  local_model.set_par(XPar::switch_ion_grad_type,2);
+  local_model.set_par(XPar::switch_iongrad_type,2);
   local_model.eval_model(spec);
 
   unsetenv(env_outfiles);
@@ -73,16 +73,17 @@ TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
 TEST_CASE(" Exec single iongrad model, should change with xindex","[iongrad]") {
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relxilllpionCp);
+  LocalModel lmod(ModelName::relxilllpCp);
 
   auto spec = default_spec.get_xspec_spectrum();
-  lmod.set_par(XPar::xi_index,1.0);
+  lmod.set_par(XPar::switch_iongrad_type, 1);
+  lmod.set_par(XPar::iongrad_index,1.0);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   double sum = sum_flux(spec.flux(),spec.num_flux_bins() );
 
   auto spec2 = default_spec.get_xspec_spectrum();
-  lmod.set_par(XPar::xi_index,2.0);
+  lmod.set_par(XPar::iongrad_index,2.0);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec2));
   double sum2 = sum_flux(spec2.flux(),spec2.num_flux_bins() );

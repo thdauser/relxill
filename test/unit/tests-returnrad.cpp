@@ -214,7 +214,7 @@ TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
   double precRebinCoarse = 0.05;
 
   LocalModel lmod(ModelName::relline_lp);
-  lmod.set_par(XPar::switch_return_rad, 0);  // need this for the comparison (which is without return_rad)
+  lmod.set_par(XPar::switch_switch_returnrad, 0);  // need this for the comparison (which is without return_rad)
   relParam* rel_param = lmod.get_rel_params();
 
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
@@ -371,7 +371,7 @@ TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad-s
 
   LocalModel local_model{ModelName::relxilllp};
   local_model.set_par(XPar::a, spin);
-  local_model.set_par(XPar::switch_return_rad, 1);
+  local_model.set_par(XPar::switch_switch_returnrad, 1);
   local_model.set_par(XPar::rout,1000.0);
 
 
@@ -395,7 +395,7 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
   int status = EXIT_SUCCESS;
 
   LocalModel lmod{ModelName::relxilllp};
-  lmod.set_par(XPar::switch_return_rad, 1);
+  lmod.set_par(XPar::switch_switch_returnrad, 1);
 
   lmod.set_par(XPar::logxi, 3.0);
   double flux_corr1=0;
@@ -416,7 +416,7 @@ TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
   int status = EXIT_SUCCESS;
 
   LocalModel lmod{ModelName::relxilllp};
-  lmod.set_par(XPar::switch_return_rad, 1);
+  lmod.set_par(XPar::switch_switch_returnrad, 1);
 
   double gshift_ref_value = 1.5; // correction factor calculated for this value
   double gam = 2.0;
@@ -453,7 +453,7 @@ TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
   int status = EXIT_SUCCESS;
 
   LocalModel lmod{ModelName::relxilllp};
-  lmod.set_par(XPar::switch_return_rad, 1);
+  lmod.set_par(XPar::switch_switch_returnrad, 1);
 
   const int n_logxi = 100;
   double logxi[n_logxi] = {0};
@@ -491,12 +491,12 @@ TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
 
   LocalModel local_model{ModelName::relxilllp};
 
-  local_model.set_par(XPar::switch_return_rad, 0);
+  local_model.set_par(XPar::switch_switch_returnrad, 0);
   local_model.eval_model(spec);
   double model_no_rrad_flux = sum_flux(spec.flux(),spec.num_flux_bins());
 
 
-  local_model.set_par(XPar::switch_return_rad, 1);
+  local_model.set_par(XPar::switch_switch_returnrad, 1);
   local_model.eval_model(spec);
   double model_rrad_flux = sum_flux(spec.flux(),spec.num_flux_bins());
 

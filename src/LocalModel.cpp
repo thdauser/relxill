@@ -39,14 +39,9 @@ static int get_returnrad_switch(const ParamList& model_params, T_Irrad irrad){
     }
   }
 
-
-  // model parmeter values take precedence over env variable
+  // model parameter values take precedence over env variable
   // TODO: warning if conflict with env variable (??)
-  int return_rad_switch =
-      static_cast<int>(lround(model_params.get_otherwise_default(XPar::switch_return_rad,default_switch)));
-
-
-  return return_rad_switch;
+  return static_cast<int>(lround(model_params.get_otherwise_default(XPar::switch_switch_returnrad,default_switch)));
 }
 
 /**
@@ -82,7 +77,6 @@ relParam *LocalModel::get_rel_params() {
   param->beta = m_model_params.get_otherwise_default(XPar::beta,0);
   param->limb = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::limb,0)));
   param->return_rad = get_returnrad_switch(m_model_params, m_info.irradiation() );
-//      static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_return_rad,0)));
 
   param->return_rad_flux_correction_factor = 1.0; // needs to be calculated in the code
   param->xillver_gshift_corr_fac = 1.0; // needs to be calculated in the code
@@ -131,7 +125,7 @@ xillParam *LocalModel::get_xill_params() {
   param->lxi = m_model_params.get_otherwise_default(XPar::logxi, 0);  // default value for CO table
   param->dens = m_model_params.get_otherwise_default(XPar::logn,               // CO-table has logN=17
                                                      is_co_model(param->model_type) ? 17 : 15);
-  param->ion_grad_index = m_model_params.get_otherwise_default(XPar::xi_index,0);
+  param->iongrad_index = m_model_params.get_otherwise_default(XPar::iongrad_index, 0);
   param->boost = m_model_params.get_otherwise_default(XPar::boost,-1);
 
   // those values should never be used, unless it is set by the model
@@ -139,7 +133,7 @@ xillParam *LocalModel::get_xill_params() {
   param->refl_frac = m_model_params.get_otherwise_default(XPar::refl_frac,0);
   param->frac_pl_bb = m_model_params.get_otherwise_default(XPar::frac_pl_bb,0);
   param->kTbb = m_model_params.get_otherwise_default(XPar::ktbb, 0);
-  param->ion_grad_type = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_ion_grad_type,0)));
+  param->ion_grad_type = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_iongrad_type,0)));
 
   if (m_name == ModelName::relxilllpAlpha || m_name == ModelName::relxillAlpha){
     param->ion_grad_type = ION_GRAD_TYPE_ALPHA;
