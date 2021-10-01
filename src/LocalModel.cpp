@@ -22,6 +22,33 @@
 #include <stdexcept>
 #include <iostream>
 
+
+static int get_returnrad_switch(const ParamList& model_params, T_Irrad irrad){
+
+  // by default activated for Lamp Post, otherwise noe
+  int default_switch = (irrad==T_Irrad::LampPost) ? 1 : 0;
+
+  // if env is set, we use the value given there, it takes precedence over default values
+  char *env = getenv("RELXILL_RETURNRAD_SWITCH");
+  if (env != nullptr) {
+    int value_switch = atof(env);
+    if (value_switch == 1 ) {
+      default_switch = value_switch;
+    } else {
+      default_switch = 0; // set to zero for any other value
+    }
+  }
+
+
+  // model parmeter values take precedence over env variable
+  // TODO: warning if conflict with env variable (??)
+  int return_rad_switch =
+      static_cast<int>(lround(model_params.get_otherwise_default(XPar::switch_return_rad,default_switch)));
+
+
+  return return_rad_switch;
+}
+
 /**
  * @brief get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
@@ -54,7 +81,8 @@ relParam *LocalModel::get_rel_params() {
   param->z = m_model_params.get_otherwise_default(XPar::z, 0);
   param->beta = m_model_params.get_otherwise_default(XPar::beta,0);
   param->limb = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::limb,0)));
-  param->return_rad = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_return_rad,0)));
+  param->return_rad = get_returnrad_switch(m_model_params, m_info.irradiation() );
+//      static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_return_rad,0)));
 
   param->return_rad_flux_correction_factor = 1.0; // needs to be calculated in the code
   param->xillver_gshift_corr_fac = 1.0; // needs to be calculated in the code
@@ -84,7 +112,7 @@ xillParam *LocalModel::get_xill_params() {
   param->model_type = convertModelType(m_name);
   param->prim_type = convertPrimSpecType(m_info.primeSpec());
 
-  // these parameters have to be given for any relativistic parameter structure
+  // these parameters have to be given for any xillver parameter structure
   try {
     param->afe = (is_co_model(param->model_type))
         ? m_model_params[XPar::a_co]  // special definition of the xillver-co table
