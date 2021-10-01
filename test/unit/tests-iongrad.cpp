@@ -57,15 +57,16 @@ TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::relxilllpAlpha};
+  LocalModel local_model{ModelName::relxilllpionCp};
 
   const char* env_outfiles = "RELXILL_WRITE_OUTFILES";
-
   setenv(env_outfiles, "1", 1);
 
+  local_model.set_par(XPar::logn,19.0);
+  local_model.set_par(XPar::switch_ion_grad_type,2);
   local_model.eval_model(spec);
-  unsetenv(env_outfiles);
 
+  unsetenv(env_outfiles);
 }
 
 
