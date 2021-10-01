@@ -43,11 +43,13 @@ class IonGradient{
     for ( int ii=0; ii<nzones; ii++){
       m_rmean[ii] = 0.5*(m_radius[ii]+m_radius[ii+1]);
       del_emit[ii] = M_PI / 4.; // assume default 45 deg (xillver assumption), only used if beta>0
+      dens[ii] = 15.0;
     }
 
     if (m_nzones>1){
       assert(m_rmean[0] < m_rmean[1]); // make sure we have an ascending radial grid
     }
+
   };
 
   ~IonGradient(){
@@ -80,7 +82,7 @@ class IonGradient{
 
   void calc_ion_grad_alpha(relParam* rel_param, double param_xlxi0, double param_density);
 
-  void calc_ion_grad_pl(double xlxi0, double xindex);
+  void calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens);
 
 };
 
