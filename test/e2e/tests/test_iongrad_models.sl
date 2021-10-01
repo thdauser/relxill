@@ -71,10 +71,12 @@ define check_single_iongrad_model(ff_ion,ff_ref){ %{{{
    fit_fun_default(ff_ion);   
    set_par("*.xi_index",0);
    set_par("*.ion_grad_type",1);  %% PL ion gradient
+   set_par("*.logN",15.0);
    val0 = eval_fun_keV (lo,hi);
 
 
    fit_fun_default(ff_ref);
+   set_par("*.logN",15.0);
    val1 = eval_fun_keV (lo,hi);
 
 
