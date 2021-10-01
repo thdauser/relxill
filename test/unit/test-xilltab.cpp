@@ -186,8 +186,6 @@ TEST_CASE(" check for existing table ", "[xilltab]") {
 
   int status = EXIT_SUCCESS;
 
-  printf(" TEST: checking for table existence ");
-
   const std::string nonExistingTable = "no_table_has_this_name_1234.fits";
   REQUIRE(checkIfTableExists(nonExistingTable.c_str(), &status) == 0);
 
