@@ -61,8 +61,11 @@ TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
 
   const char* env_outfiles = "RELXILL_WRITE_OUTFILES";
   setenv(env_outfiles, "1", 1);
+  setenv("RELXILL_NUM_RZONES","50",1);
 
   local_model.set_par(XPar::logn,19.0);
+  local_model.set_par(XPar::h, 6);
+  local_model.set_par(XPar::a, 0.9);
   local_model.set_par(XPar::switch_iongrad_type,2);
   local_model.eval_model(spec);
 

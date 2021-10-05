@@ -112,7 +112,7 @@ double *get_tprofile(double *rlo, double *rhi, const int nrad, double Rin, doubl
  *    - rms is given in units of Rg
  *                                                               ***/
 double density_ss73_zone_a(double radius, double rms) {
-  return pow((radius * 2 / rms), (3. / 2)) * pow((1 - sqrt(rms / 2. / radius)), -2);
+  return pow( (radius/rms) , (3. / 2)) * pow((1 - sqrt(rms  / radius)), -2);
 }
 
 

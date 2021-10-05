@@ -23,8 +23,11 @@ extern "C"{
 }
 
 // calculate the log(xi) for given density and emissivity
-static double cal_lxi(double dens, double emis) {
-  return log10(4.0 * M_PI * emis / dens);
+// note: delta_inc is taking the correction into account that xillver
+//       is calculated for a fixed delta_inc=PI/4 (see Ingram+19)
+static double cal_lxi(double dens, double emis, double delta_inc) {
+  double lxi_corrfactor = cos(M_PI / 4) / cos(delta_inc);
+  return log10(4.0 * M_PI * emis / dens * lxi_corrfactor);
 }
 
 /**
@@ -41,7 +44,7 @@ void adjust_parameter_to_be_within_xillver_bounds(double* values, int nzones, do
 }
 
 // determine the maximal ionization
-static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin) {
+static double cal_lxi_max_ss73(double *re, double *emis, double* delinc, int nr, double rin) {
 
   // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
   double rad_max_lxi = pow((11. / 9.), 2) * rin;
@@ -51,7 +54,9 @@ static double cal_lxi_max_ss73(double *re, double *emis, int nr, double rin) {
   double interp = (rad_max_lxi - re[kk + 1]) / (re[kk] - re[kk + 1]);
 
   double emis_max_lxi = interp_lin_1d(interp, emis[kk + 1], emis[kk]);
-  double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi);
+  double delinc_max_lxi = interp_lin_1d(interp, delinc[kk + 1], delinc[kk]);
+
+  double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi, delinc_max_lxi);
 
   return lxi_max;
 }
@@ -75,23 +80,21 @@ void IonGradient::calc_ion_grad_alpha(relParam *rel_param, double param_xlxi0, d
   inv_rebin_mean(emis_profile->re, emis_profile->del_inc, sysPar->nr, m_rmean, del_inc, m_nzones, &status);
   inv_rebin_mean(emis_profile->re, emis_profile->del_emit, sysPar->nr, m_rmean, del_emit, m_nzones, &status);
 
-  // calculate the maximal ionization assuming r^-3 and SS73 alpha disk
-  double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->nr, rin);
+  // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
+  double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->del_inc, emis_profile->nr, rin);
 
   // the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
   double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
 
   /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
   for (int ii = 0; ii < m_nzones; ii++) {
-    dens[ii] = density_ss73_zone_a(m_rmean[ii], rin);  //addition as quantity is logarithm
-    dens[ii] /= dens[0];
+    double density_normed = density_ss73_zone_a(m_rmean[ii], rin);
+    dens[ii] = log10(density_normed) + param_density;  //addition as quantity is logarithm
 
     // now we can use the emissivity to calculate the ionization
-    lxi[ii] = cal_lxi(dens[ii], emis_zones[ii]) + fac_lxi_norm;
-    lxi[ii] += log10(cos(M_PI / 4) / cos(del_inc[ii]));
-
-    dens[ii] = log10(dens[ii]) + param_density;  //addition as quantity is logarithm
-
+    // (note we need a density which is normalized to dens(rin)=1 )
+    lxi[ii] = cal_lxi(density_normed, emis_zones[ii], del_inc[ii]);
+    lxi[ii] += fac_lxi_norm;
 
   }
 
