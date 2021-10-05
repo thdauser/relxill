@@ -70,6 +70,7 @@
 /** parameters for interpolation an interagration **/
 #define N_FRAD 1000      // values of radial bins (from rmin to rmax)
 #define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
+#define N_ZONES_IONGRAD 25  // default number of radial zones for iongrad models
 #define N_ZONES_MAX 50  // maximal number of radial zones
 
 /** parameters for the convolution **/

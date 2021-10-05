@@ -74,8 +74,9 @@ int is_xill_model(int model_type) {
 
 // ion-gradient model, which is not set to constant ionization
 //  - in case ion_grad_type=constant, it is working as a normal model
-int is_iongrad_model(int model_type, int ion_grad_type) {
-  if ((model_type == MOD_TYPE_RELXILLLPION) && (ion_grad_type != ION_GRAD_TYPE_CONST)) {
+int is_iongrad_model(int ion_grad_type) {
+//  if ((model_type == MOD_TYPE_RELXILLLPION) && (ion_grad_type != ION_GRAD_TYPE_CONST)) {
+    if (ion_grad_type != ION_GRAD_TYPE_CONST) {
     return 1;
   } else {
     return 0;
@@ -549,7 +550,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 
 
   // set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
-  if (is_iongrad_model(model_type, ion_grad_type)) {
+  if (is_iongrad_model(ion_grad_type)) {
     if (env != NULL) {
       if ((env_n_zones > 9) && (env_n_zones <= N_ZONES_MAX)) {
         return env_n_zones;
@@ -559,7 +560,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
                N_ZONES_MAX);
       }
     }
-    return N_ZONES_MAX;
+    return N_ZONES_IONGRAD;
   } else if (is_relxill_model(model_type) && (emis_type == EMIS_TYPE_LP)) {
 
     if (env != NULL) {

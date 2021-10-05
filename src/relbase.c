@@ -465,7 +465,7 @@ static void print_reflection_strength(double *ener,
   }
 
   printf("For a = %.3f, Rin = %.3f, and h = %.2f rg", rel_param->a, rel_param->rin, rel_param->height);
-  if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type) || rel_param->beta > 1e-6) {
+  if (is_iongrad_model(xill_param->ion_grad_type) || rel_param->beta > 1e-6) {
     printf(" and beta=%.3f v/c", rel_param->beta);
   }
   printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",

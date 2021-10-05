@@ -108,7 +108,7 @@ void relxill_kernel(double *ener_inp,
   CHECK_STATUS_VOID(*status);
 
   // in case of an ionization gradient, we need to update the number of zones
-  if (is_iongrad_model(rel_param->model_type, xill_param->ion_grad_type)) {
+  if (is_iongrad_model(xill_param->ion_grad_type)) {
     rel_param->num_zones = get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type);
   }
 
