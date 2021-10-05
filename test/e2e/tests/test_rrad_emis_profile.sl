@@ -7,19 +7,20 @@ define runtest(ffs){
       
    variable status = EXIT_SUCCESS; 
 
-   putenv("RELXILL_WRITE_OUTFILES=1");
+   putenv("RELXILL_OUTPUT_FILES=1");
    
    fit_fun("relline_lp");
    set_par("*.h",3);
    
    () = eval_fun(1,2);
    variable rm,emis_mod_total;
-   (rm, emis_mod_total) = readcol("test_emis_profile.dat",1,2);
+   variable fname_output_relxill = "__relxillOutput_emisProfile.dat";
+   (rm, emis_mod_total) = readcol(fname_output_relxill,1,2);
    
    set_par("*.switch_returnrad",0);   
    () = eval_fun(1,2);
    variable emis_mod_norrad;
-   (rm, emis_mod_norrad) = readcol("test_emis_profile.dat",1,2);
+   (rm, emis_mod_norrad) = readcol(fname_output_relxill,1,2);
  
    variable emis_mod_rrad = emis_mod_total - emis_mod_norrad;
    
@@ -53,7 +54,7 @@ define runtest(ffs){
    }
 
    
-   putenv("RELXILL_WRITE_OUTFILES=0");
+   putenv("RELXILL_OUTPUT_FILES=0");
    
    return status;
 }

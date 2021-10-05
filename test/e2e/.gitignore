@@ -1,3 +1,5 @@
 refdata*/*/*.par
 refdata*/*/*.pdf
 refdata*/*/*.tmp
+tests/*.dat
+*.dat
