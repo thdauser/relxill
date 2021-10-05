@@ -36,7 +36,7 @@ define plot_mo(mo, val_ref){
 %%%%%%%%%% 
 define relxill_read_iongrad_data(){
    variable rlo,rhi,lxi,logn;
-   (rlo,rhi,lxi,logn) = readcol("test_ion_grad_relxill.dat",1,2,3,4);
+   (rlo,rhi,lxi,logn) = readcol("__relxillOutput_iongrad.dat",1,2,3,4);
    return struct{rlo=rlo, rhi=rhi, lxi=lxi, logn=logn};
 }
 

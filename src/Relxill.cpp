@@ -230,7 +230,7 @@ void relxill_kernel(double *ener_inp,
         spec_inp[jj] += single_spec_inp[jj] ;
       }
 
-      if (shouldOutfilesBeWritten() && rel_profile->n_zones <= 10) {
+      if (is_debug_run() && rel_profile->n_zones <= 10) {
         char vstr[200];
         auto test_flu = new double[n_ener_inp];
         for (int jj = 0; jj < n_ener_inp; jj++) {

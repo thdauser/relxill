@@ -303,7 +303,7 @@ int is_debug_run(void) {
 /** check if we are currently debugging the model **/
 int shouldAuxInfoGetPrinted(void) {
 
-  char *env = getenv("RELXILL_PRINT_DETAILS");
+  char *env = getenv("RELXILL_OUTPUT_DETAILS");
   if (env != NULL) {
     int envval = (int) strtod(env, NULL);
     if (envval == 1) {
@@ -317,10 +317,10 @@ int shouldAuxInfoGetPrinted(void) {
 /** check if we are currently debugging the model **/
 int shouldOutfilesBeWritten(void) {
   char *env;
-  env = getenv("RELXILL_WRITE_OUTFILES");
+  env = getenv("RELXILL_OUTPUT_FILES");
   if (env != NULL) {
-    int debug = atof(env);
-    if (debug == 1) {
+    int envval = (int) strtod(env, NULL);
+    if (envval == 1) {
       return 1;
     }
   }

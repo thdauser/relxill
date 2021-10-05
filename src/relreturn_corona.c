@@ -143,13 +143,6 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
 
   apply_returnrad_flux_correction(emis_return_rebinned, param->return_rad_flux_correction_factor);
 
-  if( shouldOutfilesBeWritten() ){
-    write_data_to_file("test_emis_profile_rrad_input.dat",
-                       emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr);
-    write_data_to_file("test_emis_profile_rrad_output.dat",
-                       ret_fractions->rad, emis_return->emis, emis_return->nr);
-  }
-
   free_emisProfile(emis_return);
   free_emisProfile(emis_input_rebinned);
   free_returningFractions(&ret_fractions);

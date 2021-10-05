@@ -144,7 +144,7 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
     sum_2Dspec(spec_prim, spec_prim_zones, nener, dat->nrad, status);
   }
 
-  if ( shouldOutfilesBeWritten() ) {
+  if ( is_debug_run() ) {
     fits_rr_write_2Dspec("!debug-testrr-rframe-rr-bbody.fits", returnSpec->specRet, ener, nener,
                          dat->rlo, dat->rhi, dat->nrad, dat, status);
     fits_rr_write_2Dspec("!debug-testrr-rframe-prim-bbody.fits", returnSpec->specPri, ener, nener,
@@ -325,7 +325,7 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
     }
   }
 
-  if (shouldOutfilesBeWritten()) {
+  if (is_debug_run()) {
     fits_rr_write_2Dspec("!debug-testrr-spec-diskbb.fits", spec_arr, ener, n, dat->rlo, dat->rhi, dat->nrad, dat, status);
   }
 
@@ -587,7 +587,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   // reset Tin parameter to be safe
   xill_param->kTbb = Tin;
 
-  if ( shouldOutfilesBeWritten() ) {
+  if ( is_debug_run() ) {
 
   //  std::cout << " writing BBret diagnose outfiles " << std::endl;
 

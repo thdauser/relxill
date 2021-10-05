@@ -140,7 +140,7 @@ void IonGradient::calculate(relParam *rel_param, xillParam *xill_param) {
 //  adjust_parameter_to_be_within_xillver_bounds(dens, m_nzones, 15, 19);
 
   if  (shouldOutfilesBeWritten()) {
-    IonGradient::write_to_file("test_ion_grad_relxill.dat");
+    IonGradient::write_to_file("__relxillOutput_iongrad.dat");
   }
 
 }
@@ -149,7 +149,7 @@ void IonGradient::write_to_file(const char* fout) {
 
   FILE *fp = fopen(fout, "w+");
 
-  fprintf(fp, "# rlo \t rhi \t logxi \t density \t delta_emit \n");
+  fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n");
     for (int ii = 0; ii < m_nzones; ii++) {
       fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", m_radius[ii], m_radius[ii + 1],
               lxi[ii], dens[ii], del_emit[ii]);

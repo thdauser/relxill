@@ -143,16 +143,35 @@ static void require_file_exists(const string& fname){
 
 TEST_CASE(" Execute single model with output writing ", "[output]") {
   DefaultSpec default_spec{};
-  const char* env_outfiles = "RELXILL_WRITE_OUTFILES";
+  const char* env_outfiles = "RELXILL_OUTPUT_FILES";
 
   setenv(env_outfiles, "1", 1);
 
   eval_xspec_lmod_default(ModelName::relxilllp, default_spec);
   unsetenv(env_outfiles);
 
-  require_file_exists("test_relline_profile.dat");
-  require_file_exists("test_emis_profile.dat");
+  require_file_exists("__relxillOutput_rellineProfile.dat");
+  require_file_exists("__relxillOutput_emisProfile.dat");
 }
+
+
+TEST_CASE(" Execute iongrad model with output writing ", "[output]") {
+  DefaultSpec default_spec{};
+  const char* env_outfiles = "RELXILL_OUTPUT_FILES";
+
+  setenv(env_outfiles, "1", 1);
+
+  LocalModel lmod(ModelName::relxilllpCp);
+  auto spec = default_spec.get_xspec_spectrum();
+
+  lmod.set_par(XPar::switch_iongrad_type, 2);
+  lmod.eval_model(spec);
+
+  unsetenv(env_outfiles);
+
+  require_file_exists("__relxillOutput_iongrad.dat");
+}
+
 
 
 TEST_CASE(" Test setting input parameters outside the allowed range") {

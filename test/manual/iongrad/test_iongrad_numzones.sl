@@ -16,7 +16,7 @@ define makeplot(h, fname){
    variable mo_ref = eval_mo();   
    
    
-   variable ii, nzones = [50,30,20,15,10];
+   variable ii, nzones = [50,25,20,15,10];
    variable n = length(nzones);
 
    variable leg = String_Type[n];

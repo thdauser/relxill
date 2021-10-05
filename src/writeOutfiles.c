@@ -62,13 +62,13 @@ void write_data_to_file(const char *foutName, double *rad, double *intens, int n
 }
 
 void save_relline_radial_flux_profile(double *rad, double *intens, int n_rad) {
-  char *fname = "test_relline_radialFluxProfile.dat";
+  char *fname = "__relxillOutput_radialFluxProfile.dat";
   assert(intens != NULL);
   write_data_to_file(fname, rad, intens, n_rad);
 }
 
 void save_relline_profile(relline_spec_multizone *spec) {
-  char *fname = "test_relline_profile.dat";
+  char *fname = "__relxillOutput_rellineProfile.dat";
   assert(spec != NULL);
   write_binned_data_to_file(fname, spec->ener, spec->flux[0], spec->n_ener);
 }
@@ -85,7 +85,7 @@ void save_xillver_spectrum(const double *ener, double *flu, int n_ener, char *fn
  */
 void save_emis_profiles(RelSysPar *sysPar) {
   assert(sysPar->emis != NULL);
-  write_data_to_file("test_emis_profile.dat",
+  write_data_to_file("__relxillOutput_emisProfile.dat",
                      sysPar->emis->re, sysPar->emis->emis, sysPar->emis->nr);
 }
 

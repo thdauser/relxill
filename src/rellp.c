@@ -382,10 +382,6 @@ void calc_emis_jet_extended(emisProfile *emisProf,
     free_lpReflFrac(&(emisProfSingle->returnFracs));
   }
 
-  if (shouldOutfilesBeWritten()) {
-    write_data_to_file("test_rellxill_heightVelocityProfile.dat", source->heightMean, source->beta, source->nh);
-  }
-
   free_extendedPrimarySource(source);
   free_emisProfile(emisProfSingle);
 
@@ -472,12 +468,12 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
 
 static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* status) {
 
-  if (shouldOutfilesBeWritten()) {
+  if ( is_debug_run() ) {
     write_data_to_file("test-rrad-emis-input.dat", emis0->re, emis0->emis, emis0->nr);
   }
     emisProfile* emisReturn = get_rrad_emis_corona(emis0, param, status);
 
-  if (shouldOutfilesBeWritten()) {
+  if ( is_debug_run() ) {
     write_data_to_file("test-rrad-emis-rrad.dat",emis0->re,emisReturn->emis, emis0->nr);
   }
 

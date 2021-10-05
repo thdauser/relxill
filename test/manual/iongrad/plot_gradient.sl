@@ -8,7 +8,7 @@ define makeplot(h, fname){
    list_par;
    set_par("*iongrad_type",2);
    
-   putenv("RELXILL_WRITE_OUTFILES=1");
+   putenv("RELXILL_OUTPUT_FILES=1");
    putenv("RELXILL_NUM_RZONES=50");   
    
    variable ii, n = length(h);

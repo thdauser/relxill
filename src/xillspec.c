@@ -119,11 +119,6 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
   double *direct_spec =
       calc_normalized_xillver_primary_spectrum(ener, n_ener, NULL, xill_param, status);
 
-  if (shouldOutfilesBeWritten()) {
-    save_xillver_spectrum(ener, direct_spec, n_ener, "test-debug-xillver-direct.dat");
-    save_xillver_spectrum(ener, flu, n_ener, "test-debug-xillver-refl.dat");
-  }
-
   double emin = 0.1;
   double emax = 1000;
   double ratio_refl_direct =
@@ -148,11 +143,6 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
   rebin_spectrum(ener_z, flu_z, n_ener, ener, flu, n_ener);
   for (int ii = 0; ii < n_ener; ii++) {
     flu_z[ii] *= gshift_refvalue;  // take time dillation into account (dE already taken into account as bin-integ)
-  }
-
-  if (shouldOutfilesBeWritten()) {
-    save_xillver_spectrum(ener, flu, n_ener, "test-debug-xillver-gshift-0.dat");
-    save_xillver_spectrum(ener, flu_z, n_ener, "test-debug-xillver-gshift-z.dat");
   }
 
   double emin = 0.15;
