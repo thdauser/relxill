@@ -18,7 +18,6 @@
 
 #include "LocalModel.h"
 #include "XspecSpectrum.h"
-#include "xspec_wrapper_lmodels.h"
 
 #include <chrono>
 
@@ -67,7 +66,7 @@ int main(int argc, char *argv[]) {
 
     const int num_evaluations = 100;
 
-    const int num_zones = 50;
+    const int num_zones = 25;
     setenv("RELXILL_NUM_RZONES", std::to_string(num_zones).c_str(), 1);
     printf(" testing %s for number of zones %i \n",argv[1], num_zones);
 
