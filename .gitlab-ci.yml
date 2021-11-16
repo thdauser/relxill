@@ -29,6 +29,6 @@ test:
 provide:
   stage: deploy
   script:
-    - rsync -vhu relxill_model_v*.tgz /data/www/dauser_download/relxillArchive/
+    - rsync -vhu relxill_model_v*.tgz /home/dauser/work/relxill/relxillArchive/
   only:
     - tags
