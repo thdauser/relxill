@@ -21,8 +21,6 @@
 #include "relutility.h"
 #include "common.h"
 
-#define XILLTABLE_N_PARAM 5
-
 // currently the number of different parameters that can be given in a table
 #define N_PARAM_MAX 10  // has to be as long as the NAME_ array
 #define PARAM_GAM 0

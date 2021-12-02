@@ -195,18 +195,6 @@ TEST_CASE(" check for existing table ", "[xilltab]") {
 
 }
 
-TEST_CASE(" loading alternative xillver table", "[xilltab]") {
-
-  int status = EXIT_SUCCESS;
-  const std::string existingTable = XILLTABLE_FILENAME;
-  const std::string nonExistingTable = "no_table_has_this_name_1234.fits";
-
-  const char *tableName = getXilltableNameUsingAlternativeIfNotExisting(
-      nonExistingTable.c_str(), existingTable.c_str(), &status);
-
-  REQUIRE(checkIfTableExists(tableName, &status) == 1);
-
-}
 
 static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec) {
 
