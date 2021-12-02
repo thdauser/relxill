@@ -50,9 +50,7 @@
 
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
-#define XILLTABLE_DENS_FILENAME "xillverD-5.fits"
-#define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.4.fits"
-#define XILLTABLE_NTHCOMP_FILENAME_OLD "xillver-comp.fits"
+#define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.3.fits"
 #define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
 #define XILLTABLE_CO_FILENAME "xillverCO.fits"
 
@@ -83,12 +81,9 @@ fitsfile *open_fits_table_stdpath(const char *filename, int *status);
 
 int checkIfTableExists(const char *filename, int *status);
 
-const char *getXilltableNameUsingAlternativeIfNotExisting(const char *stdname, const char *altname, int *status);
-
 int is_6dim_table(int model_type);
 
 int is_ns_model(int model_type);
 int is_co_model(int model_type);
-int is_CpD_model(int model_type);
 
 #endif /* XILLTABLE_H_ */

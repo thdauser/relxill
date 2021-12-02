@@ -49,17 +49,6 @@ int is_co_model(int model_type) {
   }
 }
 
-int is_CpD_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLDENS_NTHCOMP) ||
-      (model_type == MOD_TYPE_RELXILLLPDENS_NTHCOMP) ||
-      (model_type == MOD_TYPE_XILLVERDENS_NTHCOMP)
-      ) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
 static int get_num_elem(const int *n_parvals, int npar) {
 
   assert(npar >= 1);
@@ -134,15 +123,6 @@ xillTable *new_xillTable(int num_param, int *status) {
   tab->data_storage = NULL;
 
   return tab;
-}
-
-static int is_dens_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLDENS) || (model_type == MOD_TYPE_XILLVERDENS) ||
-      (model_type == MOD_TYPE_RELXILLLPDENS)) {
-    return 1;
-  } else {
-    return 0;
-  }
 }
 
 int is_6dim_table(int model_type) {
@@ -710,31 +690,12 @@ void free_xill_spec(xillSpec *spec) {
 }
 
 
-
-const char *getXilltableNameUsingAlternativeIfNotExisting(const char *stdname, const char *altname, int *status) {
-  const char *nthcompFileName = stdname;
-
-  if (checkIfTableExists(nthcompFileName, status) == 0) {
-    nthcompFileName = altname;
-    if (is_debug_run()) {
-      printf(" *** warning: did not find standard table %s, trying to use alternatively %s \n", stdname, altname);
-    }
-  }
-  return nthcompFileName;
-}
 /** load the xillver table and return its filename **/
 const char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  if (is_dens_model(param->model_type) && (param->prim_type == PRIM_SPEC_ECUT)) {
-    if (cached_xill_tab_dens == NULL) {
-      init_xillver_table(XILLTABLE_DENS_FILENAME, &cached_xill_tab_dens, status);
-    }
-    *tab = cached_xill_tab_dens;
-    return XILLTABLE_DENS_FILENAME;
-
-  } else if (is_ns_model(param->model_type)) {
+  if (is_ns_model(param->model_type)) {
     if (cached_xill_tab_ns == NULL) {
       init_xillver_table(XILLTABLE_NS_FILENAME, &cached_xill_tab_ns, status);
       CHECK_STATUS_RET(*status, NULL);
@@ -752,7 +713,7 @@ const char *get_init_xillver_table(xillTable **tab, xillParam *param, int *statu
     *tab = cached_xill_tab_co;
     return XILLTABLE_CO_FILENAME;
 
-  } else if (is_CpD_model(param->model_type)) {
+  } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
 
     if (cached_xill_tab_dens_nthcomp == NULL) {
       init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_dens_nthcomp, status);
@@ -760,24 +721,6 @@ const char *get_init_xillver_table(xillTable **tab, xillParam *param, int *statu
     }
     *tab = cached_xill_tab_dens_nthcomp;
     return XILLTABLE_NTHCOMP_FILENAME;
-
-  } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
-
-    // currently we have a new and also an older table for the nthcomp version (one includes more
-    // densities, but is not in the standard distribution
-    const char *nthcompFileName = getXilltableNameUsingAlternativeIfNotExisting(
-        XILLTABLE_NTHCOMP_FILENAME, XILLTABLE_NTHCOMP_FILENAME_OLD, status);
-
-
-    // TODO: need to check that logN=10^15 if we use the old table (plus print warning to download new table)
-
-    if (cached_xill_tab_nthcomp == NULL) {
-      init_xillver_table(nthcompFileName, &cached_xill_tab_nthcomp, status);
-    }
-
-    *tab = cached_xill_tab_nthcomp;
-    return nthcompFileName;
-
   } else {
 
     if (cached_xill_tab == NULL) {
@@ -1155,11 +1098,6 @@ xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, in
 
     ipol_fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
         (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
-
-//    if (is_debug_run()) {
-//      printf("\n [%i] %s (par_index=%i)  : parval = %.2e (index=%i), determining ipol_fac = %.2e \n",
-//             ii, tab->param_names[ii], pind, inp_param_vals[pind], ind[ii], ipol_fac[ii]);
-//    }
   }
 
   free(inp_param_vals);
