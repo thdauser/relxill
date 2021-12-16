@@ -48,7 +48,7 @@
 
 /** name of the XILLVER table */
 #define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
-#define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.3.fits"
+#define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.4.fits"
 #define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
 #define XILLTABLE_CO_FILENAME "xillverCO.fits"
 
