@@ -439,11 +439,22 @@ TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
 
 
 TEST_CASE("Test Gshift Linear Interpolation of the Correction Factor", "[returnrad]") {
-  double xill_gshift_fac = 1.2;
 
-  REQUIRE( calc_gshift_corr_factor(xill_gshift_fac, 1.5) > 1);
-  REQUIRE( calc_gshift_corr_factor(xill_gshift_fac, 0.1) < 1);
-  REQUIRE( calc_gshift_corr_factor(xill_gshift_fac, 0.1) > 0);
+  double gamma = 2.0;
+
+  double xill_gshift_fac = 1.2;
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 1.5, gamma) > pow(1.5, gamma));
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 0.3, gamma) > pow(0.3, gamma));
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 1.5, gamma) > 1);
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 0.3, gamma) < 1);
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 0.3, gamma) > 0);
+
+  xill_gshift_fac = 0.9;
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 1.5, gamma) < pow(1.5, gamma));
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 0.3, gamma) < pow(0.3, gamma));
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 1.5, gamma) > 1);
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 0.3, gamma) < 1);
+  REQUIRE(corrected_gshift_fluxboost_factor(xill_gshift_fac, 0.3, gamma) > 0);
 
 }
 

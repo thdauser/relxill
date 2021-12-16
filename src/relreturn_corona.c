@@ -27,23 +27,55 @@
 
 
 /**
- * @brief from the known ratio between xillver and power law flux boost, calculate the expected flux
- * correction / factor for any g value (certainly not very accurate for large values of g)
+ * @brief From the known ratio between xillver and power law flux boost, calculate the expected flux
+ * correction / factor for any g value (certainly not very accurate for large values of g). The function
+ * is assuring that we are not over-correcting and does ensure that for g>1 we never have a flux reduction
+ * and similarly for g<1 never a flux boost.
  * @param xill_gshift_fac  : factor between flux boost from xillver wrt to g^Gamma for g=1.5
  * @param g : energy shift
- * @return
+ * @param gamma: power law index gamma
+ * @return flux boost factor (would be g^gamma for a powerlaw instead of the xillver reflection)
  */
-double calc_gshift_corr_factor(double xill_gshift_fac, double g){
-  if (g>=1){
-    return 2*((xill_gshift_fac - 1)*g + 1.5 - xill_gshift_fac );
-  } else {
-    return 1./(2*((xill_gshift_fac - 1)/g + 1.5 - xill_gshift_fac ) );
+double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, double gamma) {
+
+  if (fabs(g - 1) <= 1e-3) { // without any significant energy shift, there is no need for a flxu correction
+    return 1.0;
   }
+
+  double g0 = 2. / 3;  // 1/g, where g is used to calculate xill_gshift_fac
+
+  double gshift_corr_factor;
+  if (xill_gshift_fac < 1) { // parabola which has f(g=0)=0
+    double a = (xill_gshift_fac / g0 - 1) / (g0 - 1);
+    double b = 1 - a;
+
+    gshift_corr_factor = (g >= 1)
+                         ? 1. / g * (1. / g * a + b)
+                         : g * (g * a + b);
+
+  } else { // linear interpolation
+    double alin = (xill_gshift_fac / g0 - 1) / (g0 - 1);
+    double blin = 1 - alin;
+
+    gshift_corr_factor = (g >= 1)
+                         ? (1. / g * alin + blin)
+                         : (g * alin + blin);
+  }
+
+  double fluxboost_factor = pow(g, gamma) * gshift_corr_factor;
+
+  // ensure that we are not over-correcting (meaning that for g>1 we do not allow a flux reduction)
+  if (g >= 1)
+    assert(fluxboost_factor >= 1);
+  if (g < 1)
+    assert(fluxboost_factor < 1);
+
+  return fluxboost_factor;
 }
+
 
 emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, double gshift_corr_factor,
                                    const emisProfile* emis_input, double gamma, int* status) {
-
 
   // make very rough sanity checks here
   assert(gshift_corr_factor>1e-3);
@@ -71,7 +103,6 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, doub
 
       get_gfac_grid(gfac, ret_fractions->tabData->gmin[itab_rad_incident][itab_rad_emitted],
                     ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
-
       emis_single_zone[i_rad_emitted] = 0.0;
       for (int jj = 0; jj < ng; jj++) {
         emis_single_zone[i_rad_emitted] += pow(gfac[jj], gamma)*calc_gshift_corr_factor(gshift_corr_factor,gfac[jj])
