@@ -66,8 +66,9 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
   double fluxboost_factor = pow(g, gamma) * gshift_corr_factor;
 
   // ensure that we are not over-correcting (meaning that for g>1 we do not allow a flux reduction)
-  assert(fluxboost_factor >= 1);
-  assert(fluxboost_factor < 1);
+
+  if (g>1) assert(fluxboost_factor >= 1);
+  if (g<1) assert(fluxboost_factor < 1);
 
   return fluxboost_factor;
 }
@@ -104,7 +105,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, doub
                     ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
       emis_single_zone[i_rad_emitted] = 0.0;
       for (int jj = 0; jj < ng; jj++) {
-        emis_single_zone[i_rad_emitted] += pow(gfac[jj], gamma)*calc_gshift_corr_factor(gshift_corr_factor,gfac[jj])
+        emis_single_zone[i_rad_emitted] += corrected_gshift_fluxboost_factor(gshift_corr_factor, gfac[jj], gamma)
             * ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj];
       }
 
