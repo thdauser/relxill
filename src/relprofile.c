@@ -725,6 +725,7 @@ void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, c
       for (jj = 0; jj < spec->rel_cosne->n_cosne; jj++) {
         sum += spec->rel_cosne->dist[ii][jj];
       }
+      assert(sum > 1e-8);
       for (jj = 0; jj < spec->rel_cosne->n_cosne; jj++) {
         spec->rel_cosne->dist[ii][jj] /= sum;
       }
@@ -841,6 +842,14 @@ void relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *statu
           double g = da->gstar[jj] * (da->gmax - da->gmin) + da->gmin;
           for (kk = 0; kk < 2; kk++) {
             imu = get_cosne_bin(da->cosne[jj][kk], spec->rel_cosne);
+
+            double tmp =
+                da->re * pow(2 * M_PI * g * da->re, 2) /
+                    sqrt(da->gstar[jj] - da->gstar[jj] * da->gstar[jj]) *
+                    da->trff[jj][kk] * da->emis
+                    * weight * sysPar->d_gstar[jj];
+
+            assert(tmp == tmp);
 
             spec->rel_cosne->dist[izone][imu] +=
                 da->re * pow(2 * M_PI * g * da->re, 2) /

@@ -21,9 +21,6 @@
 #include "relreturn_datastruct.h"
 #include "relutility.h"
 #include "relbase.h"
-#include "writeOutfiles.h"
-
-
 
 
 /**
@@ -38,8 +35,12 @@
  */
 double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, double gamma) {
 
-  if (fabs(g - 1) <= 1e-3) { // without any significant energy shift, there is no need for a flxu correction
+  if (fabs(g - 1) <= 1e-3) { // without any significant energy shift, there is no need for a flux correction
     return 1.0;
+  }
+
+  if (fabs(xill_gshift_fac - 1) < 1e-3) { // if the correction is not significant, we don't need any corrections
+    return pow(g, gamma);
   }
 
   double g0 = 2. / 3;  // 1/g, where g is used to calculate xill_gshift_fac
@@ -54,7 +55,7 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
                          : g * (g * a + b);
 
   } else { // linear interpolation
-    double alin = (xill_gshift_fac / g0 - 1) / (g0 - 1);
+    double alin = (xill_gshift_fac - 1) / (g0 - 1);
     double blin = 1 - alin;
 
     gshift_corr_factor = (g >= 1)
@@ -65,10 +66,8 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
   double fluxboost_factor = pow(g, gamma) * gshift_corr_factor;
 
   // ensure that we are not over-correcting (meaning that for g>1 we do not allow a flux reduction)
-  if (g >= 1)
-    assert(fluxboost_factor >= 1);
-  if (g < 1)
-    assert(fluxboost_factor < 1);
+  assert(fluxboost_factor >= 1);
+  assert(fluxboost_factor < 1);
 
   return fluxboost_factor;
 }
@@ -165,7 +164,7 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   inv_rebin_mean(emis_input->re, emis_input->emis, emis_input->nr,
                  emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
 
-  emisProfile* emis_return = calc_rrad_emis_corona(ret_fractions, param->xillver_gshift_corr_fac,
+  emisProfile *emis_return = calc_rrad_emis_corona(ret_fractions, param->xillver_gshift_corr_fac,
                                                    emis_input_rebinned, param->gamma, status);
   CHECK_STATUS_RET(*status, NULL);
 
