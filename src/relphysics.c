@@ -21,6 +21,12 @@
 #include "common.h"
 #include "relutility.h"
 
+// calculate the u^t component of the 4-velocity of a thin accretion disk
+// (see Bardeen, Press, Teukolsky; 1972)
+double ut_disk(double r, double a) {
+  return ((r * sqrt(r) + a) /
+      (sqrt(r) * sqrt(r * r - 3 * r + 2 * a * sqrt(r))));
+}
 
 double calc_proper_area_ring(double rlo, double rhi, double a) {
 

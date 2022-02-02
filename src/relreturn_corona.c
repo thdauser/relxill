@@ -67,8 +67,11 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
 
   // ensure that we are not over-correcting (meaning that for g>1 we do not allow a flux reduction)
 
-  if (g>1) assert(fluxboost_factor >= 1);
-  if (g<1) assert(fluxboost_factor < 1);
+  if (g > 1)
+    assert(fluxboost_factor >= 1);
+  if (g < 1)
+    assert(fluxboost_factor < 1);
+  assert(fluxboost_factor > 0);
 
   return fluxboost_factor;
 }
@@ -101,18 +104,28 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, doub
     for (int i_rad_emitted = 0; i_rad_emitted < nrad; i_rad_emitted++) {
       int itab_rad_emitted = ret_fractions->irad[i_rad_emitted];
 
+      double ratio_ut_obs2emit =
+          ut_disk(ret_fractions->rad[i_rad_incident], ret_fractions->a)
+              / ut_disk(ret_fractions->rad[i_rad_emitted], ret_fractions->a);
+
       get_gfac_grid(gfac, ret_fractions->tabData->gmin[itab_rad_incident][itab_rad_emitted],
                     ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
       emis_single_zone[i_rad_emitted] = 0.0;
       for (int jj = 0; jj < ng; jj++) {
+        // TODO: switch to new table, means removing this factor
+        double corr_fac_new_deriv = ratio_ut_obs2emit / gfac[jj];
+        assert(corr_fac_new_deriv > 0);
+
         emis_single_zone[i_rad_emitted] += corrected_gshift_fluxboost_factor(gshift_corr_factor, gfac[jj], gamma)
-            * ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj];
+            * ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj]
+            * corr_fac_new_deriv;
       }
 
       emis_single_zone[i_rad_emitted] *=
           ret_fractions->frac_i[i_rad_incident][i_rad_emitted]
               * emis_input->emis[i_rad_emitted]
               * ret_fractions->tabData->f_ret[ret_fractions->irad[i_rad_emitted]];
+
     }
 
     emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);

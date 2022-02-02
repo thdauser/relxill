@@ -22,6 +22,7 @@
 #define TPROFILE_ALPHA 1
 #define TPROFILE_DISKBB 2
 
+double ut_disk(double r, double a);
 double calc_proper_area_ring(double rlo, double rhi, double spin);
 
 void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int n, double Rin, double Tin);

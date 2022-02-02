@@ -487,13 +487,13 @@ static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* s
   assert(emisReturn->nr == emis0->nr);
 
   for (int ii=0; ii < emis0->nr; ii++){
-    if (param->return_rad == 1 ) {
-      emis0->emis[ii] +=  emisReturn->emis[ii] ;
-    } else if (param->return_rad == -1 ){ // only return rad (for debugging only)
-      emis0->emis[ii] = emisReturn->emis[ii] ;
+    if (param->return_rad == 1) {
+      emis0->emis[ii] += emisReturn->emis[ii];
+    } else if (param->return_rad == -1 || param->return_rad == 2) { // only return rad (for debugging only)
+      emis0->emis[ii] = emisReturn->emis[ii];
 
     } else {
-      RELXILL_ERROR("adding returning radiation failed ",status );
+      RELXILL_ERROR("adding returning radiation failed ", status);
       printf("    return_rad = %i is not allowed \n", param->return_rad);
     }
   }
