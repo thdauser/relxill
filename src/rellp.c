@@ -80,8 +80,15 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
 static void norm_emis_profile(const double *re, int nr, double *emis) {
 
   double integ_area = 0.0;
+  double delta_area[nr];
+
   for (int ii = 0; ii < nr; ii++) {
-    integ_area += emis[ii] * trapez_integ_single(re, ii, nr) * 2;
+    if (re[1] < re[0]) {  // desencing grid
+      delta_area[ii] = trapez_integ_single(re, ii, nr) * 2;
+    } else {
+      delta_area[ii] = trapez_integ_single_rad_ascending(re, ii, nr) * 2;
+    }
+    integ_area += emis[ii] * delta_area[ii];
   }
 
   for (int ii = 0; ii < nr; ii++) {

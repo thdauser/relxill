@@ -105,6 +105,7 @@ double relat_abberation(double del, double beta);
 
 /** trapez integration around a single bin (returns only r*dr*PI!) **/
 double trapez_integ_single(const double *re, int ii, int nr);
+double trapez_integ_single_rad_ascending(const double *re, int ii, int nr);
 
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);

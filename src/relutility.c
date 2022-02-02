@@ -211,7 +211,8 @@ int is_returnrad_model(int model_type) {
 }
 
 /** trapez integration around a single bin
- *  caveat: only returns half of the full 2*PI*r*dr due to computational speed**/
+ *  caveat: only returns half of the full 2*PI*r*dr due to computational speed
+ *  radius is descending **/
 double trapez_integ_single(const double *re, int ii, int nr) {
   double dr;
   // dr is defined such that the full disk is covered once, with NO overlapping bins
@@ -221,6 +222,19 @@ double trapez_integ_single(const double *re, int ii, int nr) {
     dr = 0.5 * (re[ii - 1] - re[ii]);
   } else {
     dr = 0.5 * (re[ii - 1] - re[ii + 1]);
+  }
+  return re[ii] * dr * M_PI;
+}
+
+double trapez_integ_single_rad_ascending(const double *re, int ii, int nr) {
+  double dr;
+  // dr is defined such that the full disk is covered once, with NO overlapping bins
+  if (ii == 0) {
+    dr = 0.5 * (re[ii + 1] - re[ii]);
+  } else if (ii == nr - 1) {
+    dr = 0.5 * (re[ii] - re[ii - 1]);
+  } else {
+    dr = 0.5 * (re[ii + 1] - re[ii - 1]);
   }
   return re[ii] * dr * M_PI;
 }
