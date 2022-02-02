@@ -329,26 +329,25 @@ TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
   double rad_lo = rad_grid*0.99999;
   double rad_hi  = rad_grid*1.00001;
 
-  emisProfile* emis_lo = get_test_emis_rrad(rad_lo, rout, spin, &status);
-  emisProfile* emis_0  = get_test_emis_rrad(rad_grid, rout, spin, &status);
-  emisProfile* emis_hi = get_test_emis_rrad(rad_hi, rout, spin, &status);
+  emisProfile *emis_lo = get_test_emis_rrad(rad_lo, rout, spin, &status);
+  emisProfile *emis_0 = get_test_emis_rrad(rad_grid, rout, spin, &status);
+  emisProfile *emis_hi = get_test_emis_rrad(rad_hi, rout, spin, &status);
 
   double sum_lo = calcSum(emis_lo->emis, emis_lo->nr);
   double sum_0 = calcSum(emis_0->emis, emis_0->nr);
   double sum_hi = calcSum(emis_hi->emis, emis_hi->nr);
 
-
   REQUIRE(sum_0 > 0);
-  REQUIRE(sum_lo/sum_0 > 1.001);
-  REQUIRE(sum_0/sum_hi > 1.001);
+  REQUIRE(sum_lo / sum_0 > 1.0001);
+  REQUIRE(sum_0 / sum_hi > 1.0001);
 
   // absolute difference for a tiny change around the grid-point less than 1%
   REQUIRE(sum_lo - sum_0 < 0.01);
-  REQUIRE(sum_0  - sum_hi< 0.01);
+  REQUIRE(sum_0 - sum_hi < 0.01);
 
   // absolute difference for a tiny change around the grid-point less than 1%
-  REQUIRE(sum_lo/sum_0 < 1.01);
-  REQUIRE(sum_0/sum_hi < 1.01);
+  REQUIRE(sum_lo / sum_0 < 1.01);
+  REQUIRE(sum_0 / sum_hi < 1.01);
 
   // fractional change in both direction of the grid point should be fairly similar
   REQUIRE( abs( sum_lo/sum_0 - sum_0/sum_hi) < 1e-4 );
