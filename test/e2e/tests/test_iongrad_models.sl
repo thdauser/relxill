@@ -41,7 +41,8 @@ define check_reflfrac_beta(ff_ion){ %{{{
    msg_log += sprintf(" checking how refl_frac depends on BETA for %s\n",ff_ion);
    
    set_par("*.iongrad_type",0);
-   set_par("*.boost",1,1);
+   set_par("*.switch_reflfrac_boost",1);
+   set_par("*.refl_frac",1);
    
    variable bet = [0:0.5:#3];
    variable ii, n = length(bet);

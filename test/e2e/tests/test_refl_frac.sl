@@ -25,11 +25,12 @@ define ncheck_boost_onlyRefl(ff){ %{{{
    variable val0,val1,valr;
    
    fit_fun_default(ff);
-   
-   set_par("*.boost",1,0,-10,10);
+      
+   set_par("*.switch_reflfrac_boost",1);
+   set_par("*.refl_frac",1,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
-   set_par("*.boost",-1,0,-10,10);
+   set_par("*.refl_frac",-1,0,-10,10);
    val0 =  eval_fun_keV(lo0,hi0);
    
    return goodness(val1,val0);
@@ -42,12 +43,13 @@ define check_boost(ff){ %{{{
    
    fit_fun_default(ff);
    
-   set_par("*.boost",1,0,-10,10);
+   set_par("*.switch_reflfrac_boost",1);
+   set_par("*.refl_frac",1,0,-10,10);
    val1 =  eval_fun_keV(lo0,hi0);
 
-   set_par("*.boost",0,0,-10,10);
+   set_par("*.refl_frac",0,0,-10,10);
    val0 =  eval_fun_keV(lo0,hi0);
-   set_par("*.boost",-1,0,-10,10);
+   set_par("*.refl_frac",-1,0,-10,10);
    valp =  eval_fun_keV(lo0,hi0);
 
    return goodness(val1,val0+valp);

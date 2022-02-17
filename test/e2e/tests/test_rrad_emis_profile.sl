@@ -10,7 +10,7 @@ define runtest(ffs){
    putenv("RELXILL_OUTPUT_FILES=1");
    
    fit_fun("relline_lp");
-   set_par("*.h",3);
+   set_par("*.h",2.0,0,2.0,50);
    
    () = eval_fun(1,2);
    variable rm,emis_mod_total;
@@ -43,7 +43,7 @@ define runtest(ffs){
 
    %% direct radiation dominates for small radii
    if (  length(where(emis_mod_rrad[rad_small] > emis_mod_norrad[rad_small])) !=0 ){
-      message("   *** error: emissivity profile not dominated at low energies by direct radiation ");
+      message("   *** error: emissivity profile not dominated at low radii by direct radiation ");
       return EXIT_FAILURE;
    }
 
