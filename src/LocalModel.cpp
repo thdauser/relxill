@@ -126,21 +126,21 @@ xillParam *LocalModel::get_xill_params() {
   param->dens = m_model_params.get_otherwise_default(XPar::logn,               // CO-table has logN=17
                                                      is_co_model(param->model_type) ? 17 : 15);
   param->iongrad_index = m_model_params.get_otherwise_default(XPar::iongrad_index, 0);
-  param->boost = m_model_params.get_otherwise_default(XPar::boost,-1);
+  param->boost = m_model_params.get_otherwise_default(XPar::boost, -1);
 
   // those values should never be used, unless it is set by the model
   param->gam = m_model_params.get_otherwise_default(XPar::gamma, 0);
-  param->refl_frac = m_model_params.get_otherwise_default(XPar::refl_frac,0);
-  param->frac_pl_bb = m_model_params.get_otherwise_default(XPar::frac_pl_bb,0);
+  param->refl_frac = m_model_params.get_otherwise_default(XPar::refl_frac, 0);
+  param->frac_pl_bb = m_model_params.get_otherwise_default(XPar::frac_pl_bb, 0);
   param->kTbb = m_model_params.get_otherwise_default(XPar::ktbb, 0);
-  param->ion_grad_type = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_iongrad_type,0)));
+  param->ion_grad_type = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_iongrad_type, 0)));
 
-  if (m_name == ModelName::relxilllpAlpha || m_name == ModelName::relxillAlpha){
+  param->interpret_reflfrac_as_boost =
+      static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
+
+  if (m_name == ModelName::relxilllpAlpha || m_name == ModelName::relxillAlpha) {
     param->ion_grad_type = ION_GRAD_TYPE_ALPHA;
   }
-
-  // to be deleted
-  param->fixReflFrac = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::switch_fixreflfrac,0)));
 
   // to be deleted, only for testing
   param->shiftTmaxRRet = m_model_params.get_otherwise_default(XPar::shifttmaxrrad, 0.0);

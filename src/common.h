@@ -92,6 +92,7 @@ typedef struct {
   double incl;
   double z;
   double refl_frac;
+  int interpret_reflfrac_as_boost;
   double dens;
   double iongrad_index;
   double kTbb;
@@ -100,7 +101,6 @@ typedef struct {
   double boost;
   int model_type;
   int prim_type;
-  int fixReflFrac;
   double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end
 } xillParam;
 
@@ -147,7 +147,7 @@ typedef struct {
   double *del_emit;   // angle under which the photon is emitted from the primary source
   double *del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
 
-  lpReflFrac *returnFracs;
+  lpReflFrac *photon_fate_fractions;
   double normFactorPrimSpec;  // determined from the f_inf and g_inf, the factor to multiply the direct radiation with
 
 } emisProfile;

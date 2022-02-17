@@ -35,10 +35,10 @@ TEST_CASE(" test printing of reflection strength", "[rellp]" ){
   DefaultSpec default_spec{};
   LocalModel lmod(ModelName::relxilllp);
 
-  const char* env = "RELXILL_PRINT_DETAILS";
+  const char *env = "RELXILL_PRINT_DETAILS";
 
-
-  lmod.set_par(XPar::boost, 1 );
+  lmod.set_par(XPar::refl_frac, 1);
+  lmod.set_par(XPar::switch_switch_reflfrac_boost, 1);
   auto spec = default_spec.get_xspec_spectrum();
 
   lmod.eval_model(spec);
@@ -129,7 +129,7 @@ static void test_calcEmisProfileLp(int *status) {
   assert(sumEmisExt != sumEmisPoint);
 
   assert(sysPar2->emis->normFactorPrimSpec != sysPar->emis->normFactorPrimSpec);
-  assert(sysPar2->emis->returnFracs->refl_frac != sysPar->emis->returnFracs->refl_frac);
+  assert(sysPar2->emis->photon_fate_fractions->refl_frac != sysPar->emis->photon_fate_fractions->refl_frac);
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 

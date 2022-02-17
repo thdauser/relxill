@@ -579,13 +579,15 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     // should be cached, as it has been calculated before
     RelSysPar *sysPar = get_system_parameters(rel_param, status);
 
-    lpReflFrac *struct_refl_frac = sysPar->emis->returnFracs;
+    lpReflFrac *struct_refl_frac = sysPar->emis->photon_fate_fractions;
 
 
     /** 4 ** and apply it to primary and reflected spectra **/
     if (rel_param->emis_type == EMIS_TYPE_LP) {
 
-      xill_param->refl_frac = struct_refl_frac->refl_frac * xill_param->boost;
+      if (xill_param->interpret_reflfrac_as_boost) {
+        xill_param->refl_frac *= struct_refl_frac->refl_frac;  // if set, it is given as boost, wrt predicted refl_frac
+      }
 
       double g_inf = sqrt(1.0 - (2 * rel_param->height /
           (rel_param->height * rel_param->height + rel_param->a * rel_param->a)));

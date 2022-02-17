@@ -56,7 +56,7 @@ enum class XPar {
   frac_pl_bb,
   ktbb,
   iongrad_index,
-  switch_fixreflfrac,
+  switch_switch_reflfrac_boost,
   switch_switch_returnrad,
   switch_iongrad_type,
   shifttmaxrrad  // only for testing relxillBB

@@ -270,10 +270,10 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, const relParam *pa
 
   apply_emis_relativity_flux_corrections(emisProf, param->a, height, param->gamma, beta);
 
-  emisProf->returnFracs = calc_refl_frac(emisProf, del_emit_ad_max, param, status);
+  emisProf->photon_fate_fractions = calc_refl_frac(emisProf, del_emit_ad_max, param, status);
 
   emisProf->normFactorPrimSpec =
-      calc_norm_factor_primary_spectrum(height, param->a, param->gamma, emisProf->returnFracs->f_inf);
+      calc_norm_factor_primary_spectrum(height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
 
 }
 
@@ -357,7 +357,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
   emisProfile *emisProfSingle = new_emisProfile(emisProf->re, emisProf->nr, status);
 
   setArrayToZero(emisProf->emis, emisProf->nr);
-  emisProf->returnFracs = new_lpReflFrac(status);
+  emisProf->photon_fate_fractions = new_lpReflFrac(status);
   emisProf->normFactorPrimSpec = 0.0;
 
 
@@ -382,11 +382,13 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 
     }
 
-    addSingleReturnFractions(emisProf->returnFracs, emisProfSingle->returnFracs, heightIntegrationFactor);
+    addSingleReturnFractions(emisProf->photon_fate_fractions,
+                             emisProfSingle->photon_fate_fractions,
+                             heightIntegrationFactor);
 
     emisProf->normFactorPrimSpec += emisProfSingle->normFactorPrimSpec * heightIntegrationFactor;
 
-    free_lpReflFrac(&(emisProfSingle->returnFracs));
+    free_lpReflFrac(&(emisProfSingle->photon_fate_fractions));
   }
 
   free_extendedPrimarySource(source);
@@ -625,7 +627,7 @@ emisProfile *new_emisProfile(double *re, int nr, int *status) {
 
   emis->normFactorPrimSpec = 0.0;
 
-  emis->returnFracs = NULL;
+  emis->photon_fate_fractions = NULL;
 
   return emis;
 }
@@ -636,7 +638,7 @@ void free_emisProfile(emisProfile *emis_profile) {
     free(emis_profile->del_emit);
     free(emis_profile->del_inc);
 
-    free_lpReflFrac(&(emis_profile->returnFracs));
+    free_lpReflFrac(&(emis_profile->photon_fate_fractions));
 
     free(emis_profile);
   }
