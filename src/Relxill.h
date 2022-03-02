@@ -18,7 +18,7 @@
 #ifndef RELXILL_H_
 #define RELXILL_H_
 
-
+#include "XspecSpectrum.h"
 
 extern "C" {
 #include "relmodels.h"
@@ -29,9 +29,30 @@ extern "C" {
 }
 
 
-void relxill_kernel(double *ener_inp,
-                    double *spec_inp,
-                    int n_ener_inp,
+enum cached {
+  yes,
+  no
+};
+
+class CachingStatus {
+
+ public:
+  CachingStatus() = default;
+
+  [[nodiscard]] int is_all_cached() const {
+    if (energy_grid == cached::yes && relat == cached::yes && xill == cached::yes) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
+  cached energy_grid = cached::no;
+  cached relat = cached::no;
+  cached xill = cached::no;
+};
+
+void relxill_kernel(const XspecSpectrum &spectrum,
                     xillParam *xill_param,
                     relParam *rel_param,
                     int *status);

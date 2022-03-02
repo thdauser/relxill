@@ -17,91 +17,130 @@
 */
 #include "Relxill.h"
 #include "IonGradient.h"
-
+#include "XspecSpectrum.h"
 
 /** caching parameters **/
 relParam *cached_rel_param = nullptr;
 xillParam *cached_xill_param = nullptr;
 
+//static int cached = 1;
+// static int not_cached = 0;
 
 
-
-/** check if the complete spectrum is cached and if the energy grid did not change
- *  -> additionally we adapte the energy grid to the new dimensions and energy values
+/**
+ * check if the complete spectrum is cached and if the energy grid did not change
+ *  -> additionally we adapt the energy grid to the new dimensions and energy values
  *     if it's not the case yet
  */
-static int is_all_cached(specCache *cache, int n_ener_inp, double *ener_inp, int recompute_xill, int recompute_rel) {
+static void check_caching_energy_grid(CachingStatus caching_status, specCache *cache, const XspecSpectrum &spectrum) {
 
-  if ((recompute_xill + recompute_rel) == 0 && (cache->out_spec != nullptr)) {
-    /** first need to check if the energy grid did change (might happen) **/
-    if (cache->out_spec->n_ener != n_ener_inp) {
-      return 0;
+  caching_status.energy_grid = cached::no;
+
+  if (cache->out_spec == nullptr) {
+    return;
+  } else {
+    // first need to check if the energy grid has a different number of bins
+    if (cache->out_spec->n_ener != spectrum.num_flux_bins()) {
+      return;
     }
-    int ii;
-    // we know that n_ener
-    for (ii = 0; ii < n_ener_inp; ii++) {
-      if (fabs(cache->out_spec->ener[ii] - ener_inp[ii]) > 1e-4) {
-        int jj;
-        for (jj = 0; jj < n_ener_inp; jj++) {
-          cache->out_spec->ener[jj] = ener_inp[jj];
+
+    // now check if the energies themselves changes
+    for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+      if (fabs(cache->out_spec->ener[ii] - spectrum.energy[ii]) > 1e-4) {
+        for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
+          cache->out_spec->ener[jj] = spectrum.energy[jj];
         }
-        return 0;
+        return;
       }
+    }
+
+    // no nullptr, same number of bins and energies are the same
+    caching_status.energy_grid = cached::yes;
+  }
+
+
+}
+
+/**
+ * @brief test if the rel_param number of zones is different from the global cache
+ * @param rel_param
+ * @return bool
+ */
+static int did_number_of_zones_change(const relParam *rel_param) {
+
+  if (cached_rel_param == nullptr) {
+    return 1;
+  }
+
+  if (rel_param->num_zones != cached_rel_param->num_zones) {
+    if (is_debug_run()) {
+      printf("  *** warning :  the number of radial zones was changed from %i to %i \n",
+             rel_param->num_zones, cached_rel_param->num_zones);
     }
     return 1;
   } else {
     return 0;
   }
-
 }
 
+static void check_caching_parameters(const relParam *rel_param,
+                                     const xillParam *xill_param,
+                                     CachingStatus &caching_status) {
 
-static void check_caching_relxill(relParam *rel_param, xillParam *xill_param, int *re_rel, int *re_xill) {
-
-
-  /** always re-compute if
-   *  - the number of zones changed
-   *  - we are interested in some output files
-   **/
-  if ((cached_rel_param != nullptr) && (shouldOutfilesBeWritten() == 0)) {
-
-    if (rel_param->num_zones != cached_rel_param->num_zones) {
-      if (is_debug_run()) {
-        printf("  *** warning :  the number of radial zones was changed from %i to %i \n",
-               rel_param->num_zones, cached_rel_param->num_zones);
-      }
-      *re_rel = 1;
-      *re_xill = 1;
-      return;
-    }
+  // special case: no caching if output files are to be written
+  if (shouldOutfilesBeWritten() || did_number_of_zones_change(rel_param)) {
+    caching_status.relat = cached::no;
+    caching_status.xill = cached::no;
   } else {
-    *re_rel = 1;
-    *re_xill = 1;
-    return;
+
+    /** did any of the parameters change?  **/
+    if (redo_relbase_calc(rel_param, cached_rel_param) == 0) {
+      caching_status.relat = cached::yes;
+    }
+    if (redo_xillver_calc(rel_param, xill_param, cached_rel_param, cached_xill_param)) {
+      caching_status.xill = cached::yes;
+    }
+
   }
 
-  /** did any of the parameters change?  **/
-  *re_rel = redo_relbase_calc(rel_param, cached_rel_param);
-  *re_xill = redo_xillver_calc(rel_param, xill_param, cached_rel_param, cached_xill_param);
 }
 
+static void write_output_spec_zones(const XspecSpectrum &spectrum, double *spec_inp_single, int ii, int *status) {
+  char vstr[200];
+  //  auto test_flu = new double[n_ener_inp];
+  // for (int jj = 0; jj < n_ener_inp; jj++) {
+  //   test_flu[jj] = single_spec_inp[jj];
+  // }
+  if (sprintf(vstr, "test_relxill_spec_zones_%03i.dat", ii + 1) == -1) {
+    RELXILL_ERROR("failed to get filename", status);
+  }
+  save_xillver_spectrum(spectrum.energy, spec_inp_single, spectrum.num_flux_bins(), vstr);
+}
 
+void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
+                            specCache *spec_cache,
+                            int *status) {/** initialize the cached output spec array **/
+  if ((spec_cache->out_spec != nullptr)) {
+    if (spec_cache->out_spec->n_ener != spectrum.num_flux_bins()) {
+      free_out_spec(spec_cache->out_spec);
+      spec_cache->out_spec = init_out_spec(spectrum.num_flux_bins(), spectrum.energy, status);
+    }
+  } else {
+    spec_cache->out_spec = init_out_spec(spectrum.num_flux_bins(), spectrum.energy, status);
+  }
 
+  for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+    spec_cache->out_spec->flux[ii] = spectrum.flux[ii];
+  }
+}
 /*
  * BASIC RELXILL KERNEL FUNCTION : convolve a xillver spectrum with the relbase kernel
  * (ener has the length n_ener+1)
 */
-void relxill_kernel(double *ener_inp,
-                    double *spec_inp,
-                    int n_ener_inp,
+void relxill_kernel(const XspecSpectrum &spectrum,
                     xillParam *xill_param,
                     relParam *rel_param,
                     int *status) {
-
-  /** only do the calculation once **/
-  int n_ener;
-  double *ener;
-  get_std_relxill_energy_grid(&n_ener, &ener, status);
 
   xillTable *xill_tab = nullptr;
   get_init_xillver_table(&xill_tab, xill_param, status);
@@ -110,19 +149,6 @@ void relxill_kernel(double *ener_inp,
   // in case of an ionization gradient, we need to update the number of zones
   if (is_iongrad_model(xill_param->ion_grad_type)) {
     rel_param->num_zones = get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type);
-  }
-
-  // make sure the output array is set to 0
-  int ii;
-  for (ii = 0; ii < n_ener_inp; ii++) {
-    spec_inp[ii] = 0.0;
-  }
-
-  /*** LOOP OVER THE RADIAL ZONES ***/
-  auto conv_out = new double[n_ener];
-  auto single_spec_inp = new double[n_ener_inp];
-  for (ii = 0; ii < n_ener; ii++) {
-    conv_out[ii] = 0.0;
   }
 
   /** be careful, as xill_param->ect can get over-written so save the following values**/
@@ -139,16 +165,19 @@ void relxill_kernel(double *ener_inp,
 
   int recompute_xill = 1;
   int recompute_rel = 1;
-  check_caching_relxill(rel_param, xill_param, &recompute_rel, &recompute_xill);
 
-  specCache* spec_cache = init_global_specCache(status);
+  specCache *spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
 
+  auto caching_status = CachingStatus();
+  check_caching_parameters(rel_param, xill_param, caching_status);
+  check_caching_energy_grid(caching_status, spec_cache, spectrum);
+
+
   /** is both already cached we can see if we can simply use the output flux value **/
-  if (is_all_cached(spec_cache, n_ener_inp, ener_inp, recompute_xill, recompute_rel)) {
-    CHECK_STATUS_VOID(*status);
-    for (ii = 0; ii < n_ener_inp; ii++) {
-      spec_inp[ii] = spec_cache->out_spec->flux[ii];
+  if (caching_status.is_all_cached()) {
+    for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+      spectrum.flux[ii] = spec_cache->out_spec->flux[ii];
     }
 
     /** if NOT, we need to do a whole lot of COMPUTATIONS **/
@@ -172,16 +201,34 @@ void relxill_kernel(double *ener_inp,
     set_cached_xill_param(xill_param, &cached_xill_param, status);
     set_cached_rel_param(rel_param, &cached_rel_param, status);
 
+    /** only do the calculation once **/
+    int n_ener;
+    double *ener;
+    get_std_relxill_energy_grid(&n_ener, &ener, status);
+
     relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
     CHECK_STATUS_VOID(*status);
 
-    auto xill_flux= new double[n_ener];
+    auto xill_flux = new double[n_ener];
 
-    IonGradient ion_gradient{rel_profile->rgrid, rel_profile->n_zones,xill_param->ion_grad_type};
+    IonGradient ion_gradient{rel_profile->rgrid, rel_profile->n_zones, xill_param->ion_grad_type};
     ion_gradient.calculate(rel_param, xill_param);
 
+
+    // make sure the output array is set to 0
+    for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+      spectrum.flux[ii] = 0.0;
+    }
+
+    /*** LOOP OVER THE RADIAL ZONES ***/
+    auto conv_out = new double[n_ener];
+    auto single_spec_inp = new double[spectrum.num_flux_bins()];
+    for (int ii = 0; ii < n_ener; ii++) {
+      conv_out[ii] = 0.0;
+    }
+
     // loop over ionization zones
-    for (ii = 0; ii < rel_profile->n_zones; ii++) {
+    for (int ii = 0; ii < rel_profile->n_zones; ii++) {
       assert(spec_cache != nullptr);
 
       /** avoid problems where no relxill bin falls into an ionization bin **/
@@ -219,28 +266,19 @@ void relxill_kernel(double *ener_inp,
       //(important for the convolution: need to recompute fft for xillver
       //always if rel changes, as the angular distribution changes !!)
       convolveSpectrumFFTNormalized(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener,
-                        recompute_rel, 1, ii, spec_cache, status);
+                                    recompute_rel, 1, ii, spec_cache, status);
       CHECK_STATUS_VOID(*status);
 
       // rebin to the output grid
-      rebin_spectrum(ener_inp, single_spec_inp, n_ener_inp, ener, conv_out, n_ener);
+      rebin_spectrum(spectrum.energy, single_spec_inp, spectrum.num_flux_bins(), ener, conv_out, n_ener);
 
       // add it to the final output spectrum
-      for (int jj = 0; jj < n_ener_inp; jj++) {
-        spec_inp[jj] += single_spec_inp[jj] ;
+      for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
+        spectrum.flux[jj] += single_spec_inp[jj];
       }
 
       if (is_debug_run() && rel_profile->n_zones <= 10) {
-        char vstr[200];
-        auto test_flu = new double[n_ener_inp];
-        for (int jj = 0; jj < n_ener_inp; jj++) {
-          test_flu[jj] = single_spec_inp[jj];
-        }
-        if (sprintf(vstr, "test_relxill_spec_zones_%03i.dat", ii + 1) == -1) {
-          RELXILL_ERROR("failed to get filename", status);
-        }
-        save_xillver_spectrum(ener_inp, test_flu, n_ener_inp, vstr);
-
+        write_output_spec_zones(spectrum, single_spec_inp, ii, status);
       }
 
     } /**** END OF LOOP OVER RADIAL ZONES [ii] *****/
@@ -248,26 +286,16 @@ void relxill_kernel(double *ener_inp,
     /** important: set the cutoff energy value back to its original value **/
     xill_param->ect = ecut0;
 
-    /** initialize the cached output spec array **/
-    if ((spec_cache->out_spec != nullptr)) {
-      if (spec_cache->out_spec->n_ener != n_ener_inp) {
-        free_out_spec(spec_cache->out_spec);
-        spec_cache->out_spec = init_out_spec(n_ener_inp, ener_inp, status);
-        CHECK_STATUS_VOID(*status);
-      }
-    } else {
-      spec_cache->out_spec = init_out_spec(n_ener_inp, ener_inp, status);
-      CHECK_STATUS_VOID(*status);
-    }
+    copy_spectrum_to_cache(spectrum, spec_cache, status);
+    CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status);
+
     delete[] single_spec_inp;
     delete[] conv_out;
     delete[] xill_flux;
 
-    for (ii = 0; ii < n_ener_inp; ii++) {
-      spec_cache->out_spec->flux[ii] = spec_inp[ii];
-    }
   } /************* END OF THE HUGE COMPUTATION ********************/
 
   /** add a primary spectral component and normalize according to the given refl_frac parameter**/
-  add_primary_component(ener_inp, n_ener_inp, spec_inp, rel_param, xill_param, status);
+  add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, status);
 }

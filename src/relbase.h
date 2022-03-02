@@ -153,21 +153,21 @@ double calcFFTNormFactor(const double *ener, const double *fxill, const double *
 
 /** caching routines **/
 specCache *init_global_specCache(int *status);
-void free_specCache(specCache* spec_cache);
+void free_specCache(specCache *spec_cache);
 void free_fft_cache(double ***sp, int n1, int n2);
 void free_out_spec(OutSpec *spec);
 
 OutSpec *init_out_spec(int n_ener, const double *ener, int *status);
 
-int redo_xillver_calc(relParam *rel_param, xillParam *xill_param, relParam *ca_rel, xillParam *ca_xill);
-int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param);
+int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
+                      const relParam *ca_rel, const xillParam *ca_xill);
+int redo_relbase_calc(const relParam *rel_param, const relParam *ca_rel_param);
 
 void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status);
 
-int did_xill_param_change(xillParam *cpar, xillParam *par);
+int did_xill_param_change(const xillParam *cpar, const xillParam *par);
 
 void free_cache(void);
-
 
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
                                    int re_rel, int re_xill, int izone, specCache *local_spec_cache, int *status);

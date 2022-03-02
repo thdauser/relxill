@@ -502,7 +502,7 @@ TEST_CASE("Check if Second Evaluation returns the identical results"){
 
 
   for (int ii=0; ii<spec0.num_flux_bins(); ii++){
-    REQUIRE( (spec0.flux()[ii] - spec1.flux()[ii]) < PREC );
+    REQUIRE((spec0.flux[ii] - spec1.flux[ii]) < PREC);
   }
 }
 
@@ -519,16 +519,16 @@ TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret]") {
 
   lmod.set_par(XPar::boost,-1);
   lmod.eval_model(spec);
-  fits_write_spec("!testrr-spec-relxillbb-refl.fits",spec.energy(), spec.flux(), spec.num_flux_bins(), &status);
+  fits_write_spec("!testrr-spec-relxillbb-refl.fits", spec.energy, spec.flux, spec.num_flux_bins(), &status);
 
-  lmod.set_par(XPar::boost,0);
+  lmod.set_par(XPar::boost, 0);
   lmod.eval_model(spec);
-  fits_write_spec("!testrr-spec-relxillbb-prim.fits",spec.energy(), spec.flux(), spec.num_flux_bins(), &status);
+  fits_write_spec("!testrr-spec-relxillbb-prim.fits", spec.energy, spec.flux, spec.num_flux_bins(), &status);
 
-  setenv("RELXILL_WRITE_OUTFILES","0", 1);
-  setenv("RELXILL_BBRET_NOREFL","0",1);
+  setenv("RELXILL_WRITE_OUTFILES", "0", 1);
+  setenv("RELXILL_BBRET_NOREFL", "0", 1);
 
-  REQUIRE( calcSum(spec.flux(), spec.num_flux_bins()) > 1e-8);
+  REQUIRE(calcSum(spec.flux, spec.num_flux_bins()) > 1e-8);
 
 }
 
@@ -540,13 +540,13 @@ TEST_CASE("Test different spin values", "[bbret]"){
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  for ( double spin : spinArray){
+  for ( double spin : spinArray) {
     lmod.set_par(XPar::a, spin);
     lmod.eval_model(spec);
 
     // std::cout << "spin " << spin << " : " << calcSum(spec.flux(), spec.num_flux_bins()) << std::endl;
 
-    REQUIRE( calcSum(spec.flux(), spec.num_flux_bins()) > 1e-8);
+    REQUIRE(calcSum(spec.flux, spec.num_flux_bins()) > 1e-8);
   }
 
 }

@@ -160,7 +160,7 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
 
   int status = EXIT_SUCCESS;
 
-  relline_base(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), rel_param, &status);
+  relline_base(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_param, &status);
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();
@@ -179,9 +179,9 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
   int status = EXIT_SUCCESS;
   if (m_info.irradiation() == T_Irrad::Const){
-    relxill_bb_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), xill_param, rel_param, &status);
+    relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), xill_param, rel_param, &status);
   } else {
-    relxill_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), xill_param, rel_param, &status);
+    relxill_kernel(spectrum, xill_param, rel_param, &status);
   }
 
   if (status != EXIT_SUCCESS) {
@@ -197,14 +197,14 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
  */
 void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 
-  if (calcSum(spectrum.flux(), spectrum.num_flux_bins()) <= 0.0) {
+  if (calcSum(spectrum.flux, spectrum.num_flux_bins()) <= 0.0) {
     throw ModelEvalFailed("input flux for convolution model needs to be >0");
   }
 
   relParam *rel_param = LocalModel::get_rel_params();
 
   int status = EXIT_SUCCESS;
-  relconv_kernel(spectrum.energy(), spectrum.flux(), spectrum.num_flux_bins(), rel_param, &status);
+  relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_param, &status);
 
   if (status != EXIT_SUCCESS) {
     throw ModelEvalFailed("executing convolution failed");
@@ -222,7 +222,7 @@ void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
   xillParam *xill_param = LocalModel::get_xill_params();
 
   int status = EXIT_SUCCESS;
-  xillver_base(spectrum.energy(), spectrum.num_flux_bins(), spectrum.flux(), xill_param, &status);
+  xillver_base(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, xill_param, &status);
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();

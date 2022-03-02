@@ -40,11 +40,11 @@ TEST_CASE(" Spectrum Class", "[basic]") {
   XspecSpectrum spec(test_spec.energy, test_spec.flux, test_spec.n_flux_bins);
 
   DYNAMIC_SECTION(" test initial array without operations ") {
-    REQUIRE(spec.energy());
-    REQUIRE(spec.flux());
+    REQUIRE(spec.energy);
+    REQUIRE(spec.flux);
 
-    REQUIRE(spec.energy());
-    REQUIRE(spec.flux());
+    REQUIRE(spec.energy);
+    REQUIRE(spec.flux);
   }
 
   DYNAMIC_SECTION(" is the given number of flux bins and energy bins correctly set") {
@@ -59,18 +59,18 @@ TEST_CASE(" Spectrum Class:  shifting of the energy grid ") {
   SimpleSpec test_spec{};
   XspecSpectrum spec(test_spec.energy, test_spec.flux, test_spec.n_flux_bins);
 
-  double ener0 = spec.energy()[0];
+  double ener0 = spec.energy[0];
 
   DYNAMIC_SECTION(" shifting by line energy produces correct energies? ") {
     spec.shift_energy_grid_1keV(0.5);
-    double shifted_ener = spec.energy()[0];
+    double shifted_ener = spec.energy[0];
     REQUIRE(shifted_ener == ener0 * 2);
   }
 
   DYNAMIC_SECTION(" shifting by z correct energies? ") {
     spec.shift_energy_grid_1keV(1.0);
     spec.shift_energy_grid_redshift(0.5);
-    double shifted_ener = spec.energy()[0];
+    double shifted_ener = spec.energy[0];
     REQUIRE(shifted_ener == ener0 * 1.5);
   }
 

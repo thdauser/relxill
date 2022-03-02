@@ -128,7 +128,7 @@ TEST_CASE(" Exec single model with LocalModel Structure","[model-change]") {
   lmod.set_par(XPar::logn, 19.5);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
-  double sum = sum_flux(spec.flux(),spec.num_flux_bins() );
+  double sum = sum_flux(spec.flux, spec.num_flux_bins());
 
   REQUIRE( sum > 1e-8);
 
@@ -182,14 +182,13 @@ TEST_CASE(" Test setting input parameters outside the allowed range") {
 
   auto spec = default_spec.get_xspec_spectrum();
 
-
   double height_below_horizon = 0.9;
-  lmod.set_par(XPar::h, height_below_horizon );
+  lmod.set_par(XPar::h, height_below_horizon);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 
   // require a real
-  REQUIRE( sum_flux(spec.flux(),spec.num_flux_bins()) > 1e-8);
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
 }
 

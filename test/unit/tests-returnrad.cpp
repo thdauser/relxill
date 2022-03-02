@@ -377,11 +377,11 @@ TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad-s
   local_model.set_par(XPar::rin, rin_scaled2);
   local_model.eval_model(spec);
 
-  double sum1 = sum_flux(spec.flux(), spec.num_flux_bins());
+  double sum1 = sum_flux(spec.flux, spec.num_flux_bins());
 
   local_model.set_par(XPar::rin, rin_scaled);
   local_model.eval_model(spec);
-  double sum2 = sum_flux(spec.flux(), spec.num_flux_bins());
+  double sum2 = sum_flux(spec.flux, spec.num_flux_bins());
 
   REQUIRE(sum1 > 1e-6);
   REQUIRE(abs(sum1 - sum2) > 1e-3);
@@ -503,15 +503,15 @@ TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
 
   local_model.set_par(XPar::switch_switch_returnrad, 0);
   local_model.eval_model(spec);
-  double model_no_rrad_flux = sum_flux(spec.flux(),spec.num_flux_bins());
+  double model_no_rrad_flux = sum_flux(spec.flux, spec.num_flux_bins());
 
 
   local_model.set_par(XPar::switch_switch_returnrad, 1);
   local_model.eval_model(spec);
-  double model_rrad_flux = sum_flux(spec.flux(),spec.num_flux_bins());
+  double model_rrad_flux = sum_flux(spec.flux, spec.num_flux_bins());
 
   string fname = "test-spec-relxilllpret.dat";
-  save_xillver_spectrum(spec.energy(), spec.flux(), spec.num_flux_bins(), fname.data() );
+  save_xillver_spectrum(spec.energy, spec.flux, spec.num_flux_bins(), fname.data());
 
   REQUIRE(model_rrad_flux > model_no_rrad_flux);
 
@@ -530,13 +530,13 @@ TEST_CASE(" Test return rad ENV variable", "[returnrad]") {
 
   local_model.set_par(XPar::switch_switch_returnrad, 0);
   local_model.eval_model(spec);
-  double model_no_rrad_flux = sum_flux(spec.flux(), spec.num_flux_bins());
+  double model_no_rrad_flux = sum_flux(spec.flux, spec.num_flux_bins());
 
 
   const char* env = "RELXILL_RETURNRAD_SWITCH";
   setenv(env, "1", 1);
   local_model.eval_model(spec);
-  double model_rrad_flux = sum_flux(spec.flux(), spec.num_flux_bins());
+  double model_rrad_flux = sum_flux(spec.flux, spec.num_flux_bins());
 
   unsetenv(env);
 

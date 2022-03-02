@@ -628,18 +628,35 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
 }
 
+int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
+  if (comp_single_param_val(par->afe, cpar->afe)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->dens, cpar->dens)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->ect, cpar->ect)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->gam, cpar->gam)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->lxi, cpar->lxi)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->kTbb, cpar->kTbb)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->frac_pl_bb, cpar->frac_pl_bb)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->z, cpar->z)) {
+    return 1;
+  }
 
-int did_xill_param_change(xillParam *cpar, xillParam *par) {
-  if (comp_single_param_val(par->afe, cpar->afe)) return 1;
-  if (comp_single_param_val(par->dens, cpar->dens)) return 1;
-  if (comp_single_param_val(par->ect, cpar->ect)) return 1;
-  if (comp_single_param_val(par->gam, cpar->gam)) return 1;
-  if (comp_single_param_val(par->lxi, cpar->lxi)) return 1;
-  if (comp_single_param_val(par->kTbb, cpar->kTbb)) return 1;
-  if (comp_single_param_val(par->frac_pl_bb, cpar->frac_pl_bb)) return 1;
-  if (comp_single_param_val(par->z, cpar->z)) return 1;
-
-  if (comp_single_param_val((double) par->prim_type, (double) cpar->prim_type)) return 1;
+  if (comp_single_param_val((double) par->prim_type, (double) cpar->prim_type)) {
+    return 1;
+  }
   if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) return 1;
 
   if (comp_single_param_val(par->iongrad_index, cpar->iongrad_index)) return 1;
@@ -649,7 +666,8 @@ int did_xill_param_change(xillParam *cpar, xillParam *par) {
 }
 
 /* check if values, which need a re-computation of the relline profile, have changed */
-int redo_xillver_calc(relParam *rel_param, xillParam *xill_param, relParam *ca_rel_param, xillParam *ca_xill_param) {
+int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
+                      const relParam *ca_rel_param, const xillParam *ca_xill_param) {
 
   int redo = 1;
 
@@ -668,7 +686,7 @@ int redo_xillver_calc(relParam *rel_param, xillParam *xill_param, relParam *ca_r
   return redo;
 }
 
-int redo_relbase_calc(relParam *rel_param, relParam *ca_rel_param) {
+int redo_relbase_calc(const relParam *rel_param, const relParam *ca_rel_param) {
 
   if (did_rel_param_change(ca_rel_param, rel_param)) {
     return 1;

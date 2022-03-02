@@ -103,9 +103,11 @@ static int comp_sys_param(relParam *cpar, relParam *par) {
   return 0;
 }
 
-int did_rel_param_change(relParam *cpar, relParam *par) {
+int did_rel_param_change(const relParam *cpar, const relParam *par) {
 
-  if (cpar == NULL) return 1;
+  if (cpar == NULL) {
+    return 1;
+  }
 
   // first check all system parameters
   if (comp_sys_param(cpar, par)) {

@@ -89,7 +89,7 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
 cnode *check_cache_syspar(cache_info *ca_info, inpar *input, cnode *node);
 cnode *check_cache_relpar(cache_info *ca_info, inpar *input, cnode *node);
 
-int did_rel_param_change(relParam *cpar, relParam *par);
+int did_rel_param_change(const relParam *cpar, const relParam *par);
 
 cache_info *cli_check_cache(cnode *head,
                             inpar *inp,
