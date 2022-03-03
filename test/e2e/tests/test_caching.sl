@@ -47,6 +47,12 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
 define check_caching_single(ff,par){ %{{{
 
    fit_fun_default(ff);   
+   
+   %% some bad hack to have an ionization gradient here
+   if (ff == "relxilllpCp"){
+      set_par("relxilllpCp(1).iongrad_type",2);
+   }
+   
    variable param0 = get_params("*."+par);
    if (length(param0)!=1){
       vmessage(" *** error *** problem with model %s and parameter %s when testing caching",ff,par);
