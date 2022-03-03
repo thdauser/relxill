@@ -190,6 +190,10 @@ void get_xillver_fluxcorrection_factors(double *fac_fluxcorr, double *fac_gshift
   free_xill_spec(xill_spec);
   free(angle_averaged_xill_spec);
 
+  if (*status != EXIT_SUCCESS) {
+    RELXILL_ERROR("failed to calculate the flux correction factor", status);
+  }
+
 }
 
 double norm_factor_semi_infinite_slab(double incl_deg) {

@@ -27,6 +27,12 @@ xillParam *cached_xill_param = nullptr;
 // static int not_cached = 0;
 
 
+double calculate_ecut_on_disk(const relParam *rel_param,
+                              double ecut0,
+                              double ecut_primary,
+                              const relline_spec_multizone *rel_profile,
+                              const IonGradient &ion_gradient,
+                              int ii);
 /**
  * check if the complete spectrum is cached and if the energy grid did not change
  *  -> additionally we adapt the energy grid to the new dimensions and energy values
@@ -99,6 +105,11 @@ static void check_caching_parameters(CachingStatus &caching_status,
       caching_status.xill = cached::yes;
     }
 
+    // special case: as return_rad emissivity depends on xillver, if xillver not cached, relat also no cached
+    if (rel_param->return_rad && caching_status.xill == cached::no){
+      caching_status.relat = cached::no;
+    }
+
   }
 
 }
@@ -127,6 +138,33 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
     spec_cache->out_spec->flux[ii] = spectrum.flux[ii];
   }
 }
+
+
+/**
+ * @brief get the energy shift in order to calculate the proper Ecut value  on the disk (if nzones>1)
+ *        - the cutoff is calculated for the (linear) middle of the radial zone
+ * @param rel_param
+ * @param ecut0
+ * @param ecut_primary
+ * @param rel_profile
+ * @param ion_gradient
+ * @param ii
+ * @return
+ */
+double calculate_ecut_on_disk(const relParam *rel_param, double ecut0, double ecut_primary,
+                              const relline_spec_multizone *rel_profile, const IonGradient &ion_gradient, int ii) {
+
+  if (rel_profile->n_zones == 1) {
+    return ecut0; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
+  } else {
+    double rzone = 0.5 * (rel_profile->rgrid[ii] + rel_profile->rgrid[ii + 1]);
+    double del_emit = (ion_gradient.del_emit== nullptr) ? 0.0 : ion_gradient.del_emit[ii] ;  // only relevant if beta!=0 (doppler boosting)
+    return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
+  }
+}
+
+
+
 /*
  * BASIC RELXILL KERNEL FUNCTION : convolve a xillver spectrum with the relbase kernel
  * (ener has the length n_ener+1)
@@ -140,12 +178,14 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   get_init_xillver_table(&xill_tab, xill_param, status);
   CHECK_STATUS_VOID(*status);
 
+  // TODO: this should be done when loading the input parameters
   // in case of an ionization gradient, we need to update the number of zones
   if (is_iongrad_model(xill_param->ion_grad_type)) {
     rel_param->num_zones = get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type);
   }
 
   /** be careful, as xill_param->ect can get over-written so save the following values**/
+  // TODO: better treatment of the input parameter
   double ecut0 = xill_param->ect;
 
   /** note that in case of the nthcomp model Ecut is in the frame of the primary source
@@ -160,51 +200,55 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   specCache *spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
 
-  // set Return Rad correction factor before checking the caching
-  // (xillver parameters could influence it)
+  // TODO: NEEDS to be for every zone,
+  //  - always re-calculate everything if any Xillver Parameter changes
+  //  - cache if only refl_frac
+  //  - write unit tests about every caching (!!)
   if (rel_param->return_rad > 0) {
+    // set Return Rad correction factor before checking the caching
+    // (xillver parameters could influence it)
     get_xillver_fluxcorrection_factors(&(rel_param->return_rad_flux_correction_factor),
                                        &(rel_param->xillver_gshift_corr_fac),
                                        xill_param, status);
-    if (*status != EXIT_SUCCESS) {
-      RELXILL_ERROR("failed to calculate the flux correction factor", status);
-    }
+    CHECK_STATUS_VOID(*status);
   }
 
   auto caching_status = CachingStatus();
   check_caching_parameters(caching_status, rel_param, xill_param);
   check_caching_energy_grid(caching_status, spec_cache, spectrum);
 
-
-  /** is both already cached we can see if we can simply use the output flux value **/
-  if (caching_status.is_all_cached()) {
+  if (caching_status.is_all_cached()) { // already cached, simply use the cached output flux value
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
       spectrum.flux[ii] = spec_cache->out_spec->flux[ii];
     }
 
-    /** if NOT, we need to do a whole lot of COMPUTATIONS **/
-  } else {
-    CHECK_STATUS_VOID(*status);
-
-
-
+  } else { // if NOT, we need to do a whole lot of COMPUTATIONS
 
     // stored the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
     set_cached_rel_param(rel_param, &cached_rel_param, status);
+    CHECK_STATUS_VOID(*status);
 
-    /** only do the calculation once **/
-    int n_ener;
+    // --- 0 ---
+    double *rgrid = get_rzone_grid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height, status);
+    CHECK_STATUS_VOID(*status);
+
+    // --- 1 ---
+    IonGradient ion_gradient{rgrid, rel_param->num_zones, xill_param->ion_grad_type};
+    ion_gradient.calculate(rel_param, xill_param);
+
+
+    // --- 5 ---
+    int n_ener; /** only do the calculation once **/
     double *ener;
     get_std_relxill_energy_grid(&n_ener, &ener, status);
-
-    relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, xill_tab, status);
+    // depends on returning radiation (i.e., the xillver correction factors)
+    relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, rgrid,
+                                                            rel_param->num_zones, status);
     CHECK_STATUS_VOID(*status);
 
     auto xill_flux = new double[n_ener];
 
-    IonGradient ion_gradient{rel_profile->rgrid, rel_profile->n_zones, xill_param->ion_grad_type};
-    ion_gradient.calculate(rel_param, xill_param);
 
 
     // make sure the output array is set to 0
@@ -228,18 +272,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
         continue;
       }
 
-      // get the energy shift in order to calculate the proper Ecut value (if nzones>1)
-      // (the latter part of the IF is a trick to get the same effect as NZONES=1 if during a running
-      //  session the number of zones is reset)
-      if (rel_profile->n_zones == 1) {
-        xill_param->ect = ecut0;
-      } else {
-        // choose the (linear) middle of the radial zone
-        double rzone = 0.5 * (rel_profile->rgrid[ii] + rel_profile->rgrid[ii + 1]);
-        double del_emit = (ion_gradient.del_emit== nullptr) ? 0.0 : ion_gradient.del_emit[ii] ;  // only relevant if beta!=0 (doppler boosting)
-        xill_param->ect = ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
-      }
-
+      // set xillver parameters for the given zone
+      xill_param->ect = calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rel_profile, ion_gradient, ii);
       xill_param->lxi = ion_gradient.lxi[ii]; // TODO: do not use xill_param struct here
 
       // call the function which calculates the xillver spectrum
@@ -289,3 +323,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   /** add a primary spectral component and normalize according to the given refl_frac parameter**/
   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, status);
 }
+
+
+
