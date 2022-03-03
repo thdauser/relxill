@@ -32,7 +32,7 @@ xillParam *cached_xill_param = nullptr;
  *  -> additionally we adapt the energy grid to the new dimensions and energy values
  *     if it's not the case yet
  */
-static void check_caching_energy_grid(CachingStatus caching_status, specCache *cache, const XspecSpectrum &spectrum) {
+static void check_caching_energy_grid(CachingStatus &caching_status, specCache *cache, const XspecSpectrum &spectrum) {
 
   caching_status.energy_grid = cached::no;
 
@@ -44,16 +44,14 @@ static void check_caching_energy_grid(CachingStatus caching_status, specCache *c
       return;
     }
 
-    // now check if the energies themselves changes
-    for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+    for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) { // now check if the energies themselves changes
       if (fabs(cache->out_spec->ener[ii] - spectrum.energy[ii]) > 1e-4) {
-        for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
-          cache->out_spec->ener[jj] = spectrum.energy[jj];
-        }
+        //        for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
+        //          cache->out_spec->ener[jj] = spectrum.energy[jj];
+        //        }
         return;
       }
     }
-
     // no nullptr, same number of bins and energies are the same
     caching_status.energy_grid = cached::yes;
   }
@@ -83,9 +81,9 @@ static int did_number_of_zones_change(const relParam *rel_param) {
   }
 }
 
-static void check_caching_parameters(const relParam *rel_param,
-                                     const xillParam *xill_param,
-                                     CachingStatus &caching_status) {
+static void check_caching_parameters(CachingStatus &caching_status,
+                                     const relParam *rel_param,
+                                     const xillParam *xill_param) {
 
   // special case: no caching if output files are to be written
   if (shouldOutfilesBeWritten() || did_number_of_zones_change(rel_param)) {
@@ -97,7 +95,7 @@ static void check_caching_parameters(const relParam *rel_param,
     if (redo_relbase_calc(rel_param, cached_rel_param) == 0) {
       caching_status.relat = cached::yes;
     }
-    if (redo_xillver_calc(rel_param, xill_param, cached_rel_param, cached_xill_param)) {
+    if (redo_xillver_calc(rel_param, xill_param, cached_rel_param, cached_xill_param) == 0) {
       caching_status.xill = cached::yes;
     }
 
@@ -107,10 +105,6 @@ static void check_caching_parameters(const relParam *rel_param,
 
 static void write_output_spec_zones(const XspecSpectrum &spectrum, double *spec_inp_single, int ii, int *status) {
   char vstr[200];
-  //  auto test_flu = new double[n_ener_inp];
-  // for (int jj = 0; jj < n_ener_inp; jj++) {
-  //   test_flu[jj] = single_spec_inp[jj];
-  // }
   if (sprintf(vstr, "test_relxill_spec_zones_%03i.dat", ii + 1) == -1) {
     RELXILL_ERROR("failed to get filename", status);
   }
@@ -163,14 +157,22 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     ecut_primary = ecut0;
   }
 
-  int recompute_xill = 1;
-  int recompute_rel = 1;
-
   specCache *spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
 
+  // set Return Rad correction factor before checking the caching
+  // (xillver parameters could influence it)
+  if (rel_param->return_rad > 0) {
+    get_xillver_fluxcorrection_factors(&(rel_param->return_rad_flux_correction_factor),
+                                       &(rel_param->xillver_gshift_corr_fac),
+                                       xill_param, status);
+    if (*status != EXIT_SUCCESS) {
+      RELXILL_ERROR("failed to calculate the flux correction factor", status);
+    }
+  }
+
   auto caching_status = CachingStatus();
-  check_caching_parameters(rel_param, xill_param, caching_status);
+  check_caching_parameters(caching_status, rel_param, xill_param);
   check_caching_energy_grid(caching_status, spec_cache, spectrum);
 
 
@@ -185,16 +187,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     CHECK_STATUS_VOID(*status);
 
 
-    // set Return Rad correction factor before checking the caching
-    // (xillver parameters could influence it)
-    if (rel_param->return_rad > 0) {
-      get_xillver_fluxcorrection_factors(&(rel_param->return_rad_flux_correction_factor),
-                                         &(rel_param->xillver_gshift_corr_fac),
-                                         xill_param, status);
-      if (*status != EXIT_SUCCESS) {
-        RELXILL_ERROR("failed to calculate the flux correction factor", status);
-      }
-    }
 
 
     // stored the parameters for which we are calculating
@@ -252,7 +244,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
       // call the function which calculates the xillver spectrum
       //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
-      if (recompute_xill) {
+      if (caching_status.xill == cached::no) {
         if (spec_cache->xill_spec[ii] != nullptr) {
           free_xill_spec(spec_cache->xill_spec[ii]);
         }
@@ -263,13 +255,12 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
 
       // convolve the spectrum **
-      //(important for the convolution: need to recompute fft for xillver
-      //always if rel changes, as the angular distribution changes !!)
+      //(important for the convolution:
+      int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
       convolveSpectrumFFTNormalized(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener,
-                                    recompute_rel, 1, ii, spec_cache, status);
+                                    caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
       CHECK_STATUS_VOID(*status);
 
-      // rebin to the output grid
       rebin_spectrum(spectrum.energy, single_spec_inp, spectrum.num_flux_bins(), ener, conv_out, n_ener);
 
       // add it to the final output spectrum
@@ -287,7 +278,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     xill_param->ect = ecut0;
 
     copy_spectrum_to_cache(spectrum, spec_cache, status);
-    CHECK_STATUS_VOID(*status);
     CHECK_STATUS_VOID(*status);
 
     delete[] single_spec_inp;

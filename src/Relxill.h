@@ -47,6 +47,14 @@ class CachingStatus {
     }
   }
 
+  [[nodiscard]] int recomput_relat() const {
+    if (relat == cached::no) {
+      return 1;
+    } else {
+      return 0;
+    }
+  }
+
   cached energy_grid = cached::no;
   cached relat = cached::no;
   cached xill = cached::no;

@@ -53,9 +53,11 @@ int comp_single_param_val(double val1, double val2) {
   }
 }
 
-static int comp_sys_param(relParam *cpar, relParam *par) {
+static int comp_sys_param(const relParam *cpar, const relParam *par) {
 
-  if (comp_single_param_val(par->a, cpar->a)) return 1;
+  if (comp_single_param_val(par->a, cpar->a)) {
+    return 1;
+  }
   if (comp_single_param_val(par->emis1, cpar->emis1)) {
     return 1;
   }

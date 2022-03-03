@@ -63,36 +63,37 @@ TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
   setenv(env_outfiles, "1", 1);
   setenv("RELXILL_NUM_RZONES","50",1);
 
-  local_model.set_par(XPar::logn,19.0);
+  local_model.set_par(XPar::logn, 19.0);
   local_model.set_par(XPar::h, 6);
   local_model.set_par(XPar::a, 0.9);
-  local_model.set_par(XPar::switch_iongrad_type,2);
+  local_model.set_par(XPar::switch_iongrad_type, 2);
   local_model.eval_model(spec);
 
   unsetenv(env_outfiles);
 }
 
-
-TEST_CASE(" Exec single iongrad model, should change with xindex","[iongrad]") {
+TEST_CASE(" Exec single iongrad model, should change with xindex", "[iongradt]") {
   DefaultSpec default_spec{};
 
   LocalModel lmod(ModelName::relxilllpCp);
 
   auto spec = default_spec.get_xspec_spectrum();
   lmod.set_par(XPar::switch_iongrad_type, 1);
-  lmod.set_par(XPar::iongrad_index,1.0);
+  lmod.set_par(XPar::iongrad_index, 1.0);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   double sum = sum_flux(spec.flux, spec.num_flux_bins());
 
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+
   auto spec2 = default_spec.get_xspec_spectrum();
-  lmod.set_par(XPar::iongrad_index,2.0);
+  lmod.set_par(XPar::iongrad_index, 2.0);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec2));
   double sum2 = sum_flux(spec2.flux, spec2.num_flux_bins());
 
-  REQUIRE( sum > 1e-8);
-  REQUIRE( sum2 > 1e-8);
+  REQUIRE(sum > 1e-8);
+  REQUIRE(sum2 > 1e-8);
 
   REQUIRE( fabs(sum - sum2) > 1e-8);
 
