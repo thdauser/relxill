@@ -239,15 +239,15 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
 
     // --- 5 ---
-    int n_ener; /** only do the calculation once **/
-    double *ener;
-    get_std_relxill_energy_grid(&n_ener, &ener, status);
+    int n_ener_conv; // energy grid for the convolution, only created
+    double *ener_conv;
+    get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
     // depends on returning radiation (i.e., the xillver correction factors)
-    relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, rgrid,
+    relline_spec_multizone *rel_profile = relbase_multizone(ener_conv, n_ener_conv, rel_param, xill_tab, rgrid,
                                                             rel_param->num_zones, status);
     CHECK_STATUS_VOID(*status);
 
-    auto xill_flux = new double[n_ener];
+    auto xill_flux = new double[n_ener_conv];
 
 
 
@@ -257,9 +257,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     }
 
     /*** LOOP OVER THE RADIAL ZONES ***/
-    auto conv_out = new double[n_ener];
+    auto conv_out = new double[n_ener_conv];
     auto single_spec_inp = new double[spectrum.num_flux_bins()];
-    for (int ii = 0; ii < n_ener; ii++) {
+    for (int ii = 0; ii < n_ener_conv; ii++) {
       conv_out[ii] = 0.0;
     }
 
@@ -286,16 +286,17 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       }
       xillSpec *xill_spec_table = spec_cache->xill_spec[ii];
 
-      get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
+      // on the relxill_conv_grid
+      get_xillver_angdep_spec(xill_flux, n_ener_conv, ener_conv, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
 
       // convolve the spectrum **
       //(important for the convolution:
       int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
-      convolveSpectrumFFTNormalized(ener, xill_flux, rel_profile->flux[ii], conv_out, n_ener,
+      convolveSpectrumFFTNormalized(ener_conv, xill_flux, rel_profile->flux[ii], conv_out, n_ener_conv,
                                     caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
       CHECK_STATUS_VOID(*status);
 
-      rebin_spectrum(spectrum.energy, single_spec_inp, spectrum.num_flux_bins(), ener, conv_out, n_ener);
+      rebin_spectrum(spectrum.energy, single_spec_inp, spectrum.num_flux_bins(), ener_conv, conv_out, n_ener_conv);
 
       // add it to the final output spectrum
       for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {

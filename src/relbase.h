@@ -75,8 +75,8 @@
 
 /** parameters for the convolution **/
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
-#define EMIN_RELXILL 0.00035  // minimal energy of the convolution (in keV)
-#define EMAX_RELXILL 2000.0 // minimal energy of the convolution (in keV)
+#define EMIN_RELXILL_CONV 0.00035  // minimal energy of the convolution (in keV)
+#define EMAX_RELXILL_CONV 2000.0 // minimal energy of the convolution (in keV)
 #define EMIN_XILLVER_NORMALIZATION 0.1
 #define EMAX_XILLVER_NORMALIZATION 1000.0
 #define EMIN_XILLVER 0.01
@@ -172,7 +172,7 @@ void free_cache(void);
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
                                    int re_rel, int re_xill, int izone, specCache *local_spec_cache, int *status);
 
-void get_std_relxill_energy_grid(int *n_ener, double **ener, int *status);
+void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status);
 
 void renorm_xill_spec(float *spec, int n, double lxi, double dens);
 

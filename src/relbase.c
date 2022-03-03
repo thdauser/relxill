@@ -343,11 +343,11 @@ void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
   }
 }
 
-void get_std_relxill_energy_grid(int *n_ener, double **ener, int *status) {
+void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status) {
   if (global_ener_std == NULL) {
     global_ener_std = (double *) malloc((N_ENER_CONV + 1) * sizeof(double));
     CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
-    get_log_grid(global_ener_std, (N_ENER_CONV + 1), EMIN_RELXILL, EMAX_RELXILL);
+    get_log_grid(global_ener_std, (N_ENER_CONV + 1), EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
   }
   (*n_ener) = N_ENER_CONV;
   (*ener) = global_ener_std;
@@ -366,7 +366,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   // always do the convolution on this grid
   int n_ener;
   double *ener;
-  get_std_relxill_energy_grid(&n_ener, &ener, status);
+  get_relxill_conv_energy_grid(&n_ener, &ener, status);
 
   relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, NULL, status);
 

@@ -405,7 +405,7 @@ TEST_CASE(" Return Radiation Black Body Spectrum"){
 //  // get a standard grid for the convolution (is rebinned later to the input grid)
 //  int n_ener;
 //  double *ener;
-//  get_std_relxill_energy_grid(&n_ener, &ener, status);
+//  get_relxill_conv_energy_grid(&n_ener, &ener, status);
 //
 //  // set the standard parameters
 //  xillParam *xill_param = nullptr;
