@@ -76,9 +76,9 @@ void IonGradient::calc_ion_grad_alpha(relParam *rel_param, double param_xlxi0, d
   emisProfile *emis_profile = sysPar->emis;
 
   assert(emis_profile->del_inc != nullptr);
-  inv_rebin_mean(emis_profile->re, emis_profile->emis, sysPar->nr, m_rmean, emis_zones, m_nzones, &status);
-  inv_rebin_mean(emis_profile->re, emis_profile->del_inc, sysPar->nr, m_rmean, del_inc, m_nzones, &status);
-  inv_rebin_mean(emis_profile->re, emis_profile->del_emit, sysPar->nr, m_rmean, del_emit, m_nzones, &status);
+  inv_rebin_mean(emis_profile->re, emis_profile->emis, emis_profile->nr, m_rmean, emis_zones, m_nzones, &status);
+  inv_rebin_mean(emis_profile->re, emis_profile->del_inc, emis_profile->nr, m_rmean, del_inc, m_nzones, &status);
+  inv_rebin_mean(emis_profile->re, emis_profile->del_emit, emis_profile->nr, m_rmean, del_emit, m_nzones, &status);
 
   // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
   double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->del_inc, emis_profile->nr, rin);

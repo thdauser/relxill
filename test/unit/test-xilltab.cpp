@@ -134,12 +134,19 @@ TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
   };
 
   for ( auto mod_name : names ){
-    LocalModel lmod(mod_name);
-    param = lmod.get_xill_params();
-    test_get_spec(lmod.get_model_string(),  param);
+    try {
+      LocalModel lmod(mod_name);
+      param = lmod.get_xill_params();
 
-    testAutomaticLoadingTable(param);
-    free(param);
+      test_get_spec(lmod.get_model_string(),  param);
+
+      testAutomaticLoadingTable(param);
+      free(param);
+
+    } catch (std::exception &e){
+      throw ModelNotFound(" (unknown error, maybe model database is not including all models)");
+    }
+
   }
 
   LocalModel lmod_dens(ModelName::xillverCp);

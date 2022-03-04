@@ -246,8 +246,8 @@ static void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const do
  *   loop and otherwise we would need to allocate a 3000 bin array very often]
  **/
 void get_xillver_angdep_spec(double *o_xill_flux,
-                             int n_ener,
                              double *ener,
+                             int n_ener,
                              double *rel_dist,
                              xillSpec *xill_spec,
                              int *status) {
@@ -279,7 +279,7 @@ void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillP
   CHECK_STATUS_VOID(*status);
 
   xillSpec* xillSpecTable = get_xillver_spectra(xill_param, status);
-  get_xillver_angdep_spec(xill_flux, n_ener, ener, rel_cosne_dist, xillSpecTable, status);
+  get_xillver_angdep_spec(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecTable, status);
 
 }
 

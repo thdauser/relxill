@@ -35,8 +35,8 @@ void free_xill_spec(xillSpec *spec);
 
 
 void get_xillver_angdep_spec(double *o_xill_flux,
-                             int n_ener,
                              double *ener,
+                             int n_ener,
                              double *rel_dist,
                              xillSpec *xill_spec,
                              int *status);

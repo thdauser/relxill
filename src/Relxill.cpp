@@ -233,7 +233,12 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     double *rgrid = get_rzone_grid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height, status);
     CHECK_STATUS_VOID(*status);
 
-    // --- 1 ---
+    // --- 1 --- calculate disk irradiation
+    RelSysPar *sysPar = get_system_parameters(rel_param, status);
+    CHECK_STATUS_VOID(*status);
+
+
+    // --- 2 ---
     IonGradient ion_gradient{rgrid, rel_param->num_zones, xill_param->ion_grad_type};
     ion_gradient.calculate(rel_param, xill_param);
 
@@ -247,21 +252,15 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                                                             rel_param->num_zones, status);
     CHECK_STATUS_VOID(*status);
 
-    auto xill_flux = new double[n_ener_conv];
-
-
 
     // make sure the output array is set to 0
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
       spectrum.flux[ii] = 0.0;
     }
 
-    /*** LOOP OVER THE RADIAL ZONES ***/
+    auto xill_flux = new double[n_ener_conv];
     auto conv_out = new double[n_ener_conv];
     auto single_spec_inp = new double[spectrum.num_flux_bins()];
-    for (int ii = 0; ii < n_ener_conv; ii++) {
-      conv_out[ii] = 0.0;
-    }
 
     // loop over ionization zones
     for (int ii = 0; ii < rel_profile->n_zones; ii++) {
@@ -272,25 +271,28 @@ void relxill_kernel(const XspecSpectrum &spectrum,
         continue;
       }
 
-      // set xillver parameters for the given zone
-      xill_param->ect = calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rel_profile, ion_gradient, ii);
-      xill_param->lxi = ion_gradient.lxi[ii]; // TODO: do not use xill_param struct here
-
-      // call the function which calculates the xillver spectrum
-      //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
+      // --- 3 --- calculate xillver spectrum
       if (caching_status.xill == cached::no) {
+        //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
         if (spec_cache->xill_spec[ii] != nullptr) {
           free_xill_spec(spec_cache->xill_spec[ii]);
         }
         spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param, status);
       }
       xillSpec *xill_spec_table = spec_cache->xill_spec[ii];
+      // --- 3a --- plus correction factors
 
-      // on the relxill_conv_grid
-      get_xillver_angdep_spec(xill_flux, n_ener_conv, ener_conv, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
 
-      // convolve the spectrum **
-      //(important for the convolution:
+      // set xillver parameters for the given zone TODO: do not use xill_param struct here
+      xill_param->ect = calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rel_profile, ion_gradient, ii);
+      xill_param->lxi = ion_gradient.lxi[ii];
+
+
+      // -- 6 -- get angle-dependent spectrum
+      get_xillver_angdep_spec(xill_flux, ener_conv, n_ener_conv, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
+      CHECK_STATUS_VOID(*status);
+
+      // -- 7 -- convolve the spectrum **
       int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
       convolveSpectrumFFTNormalized(ener_conv, xill_flux, rel_profile->flux[ii], conv_out, n_ener_conv,
                                     caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);

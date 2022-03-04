@@ -98,7 +98,7 @@ class ModelDatabase {
     try {
       return lmodel_database.default_values(name);
     } catch (std::out_of_range &e) {
-      throw ModelNotFound(lmodel_database.name_string(name));
+      throw ModelNotFound("not in local model database");
     }
   }
 
