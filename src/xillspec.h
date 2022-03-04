@@ -45,8 +45,11 @@ void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillP
                               double* rel_cosne_dist, int* status );
 
 
-void get_xillver_fluxcorrection_factors(double* fac_fluxcorr, double* fac_gshift_fluxcorr,
-                                        xillParam *xill_param, int *status);
+void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
+                                        double *fac_fluxcorr,
+                                        double *fac_gshift_fluxcorr,
+                                        xillParam *xill_param,
+                                        int *status);
 
 
 #endif //XILLSPEC_H_

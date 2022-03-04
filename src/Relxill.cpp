@@ -146,18 +146,19 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
  * @param rel_param
  * @param ecut0
  * @param ecut_primary
- * @param rel_profile
+ * @param rgrid
+ * @param num_zones
  * @param ion_gradient
  * @param ii
  * @return
  */
 double calculate_ecut_on_disk(const relParam *rel_param, double ecut0, double ecut_primary,
-                              const relline_spec_multizone *rel_profile, const IonGradient &ion_gradient, int ii) {
+                              const double* rgrid, int num_zones, const IonGradient &ion_gradient, int ii) {
 
-  if (rel_profile->n_zones == 1) {
+  if (num_zones == 1) {
     return ecut0; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
   } else {
-    double rzone = 0.5 * (rel_profile->rgrid[ii] + rel_profile->rgrid[ii + 1]);
+    double rzone = 0.5 * (rgrid[ii] + rgrid[ii + 1]);
     double del_emit = (ion_gradient.del_emit== nullptr) ? 0.0 : ion_gradient.del_emit[ii] ;  // only relevant if beta!=0 (doppler boosting)
     return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
   }
@@ -200,18 +201,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   specCache *spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
 
-  // TODO: NEEDS to be for every zone,
-  //  - always re-calculate everything if any Xillver Parameter changes
-  //  - cache if only refl_frac
-  //  - write unit tests about every caching (!!)
-  if (rel_param->return_rad > 0) {
-    // set Return Rad correction factor before checking the caching
-    // (xillver parameters could influence it)
-    get_xillver_fluxcorrection_factors(&(rel_param->return_rad_flux_correction_factor),
-                                       &(rel_param->xillver_gshift_corr_fac),
-                                       xill_param, status);
-    CHECK_STATUS_VOID(*status);
-  }
 
   auto caching_status = CachingStatus();
   check_caching_parameters(caching_status, rel_param, xill_param);
@@ -238,12 +227,51 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     CHECK_STATUS_VOID(*status);
 
 
-    // --- 2 ---
+    // --- 2 --- calculate ionization gradient
     IonGradient ion_gradient{rgrid, rel_param->num_zones, xill_param->ion_grad_type};
     ion_gradient.calculate(rel_param, xill_param);
 
+    // --- 3 --- calculate xillver reflection spectra  (for every zone)
+    for (int ii = 0; ii < rel_param->num_zones; ii++) {
 
-    // --- 5 ---
+      // set xillver parameters for the given zone TODO: do not use xill_param struct here
+      xill_param->ect =
+          calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rgrid, rel_param->num_zones, ion_gradient, ii);
+      xill_param->lxi = ion_gradient.lxi[ii];
+
+
+      // --- 3a: load xillver spectra
+      if (caching_status.xill == cached::no) {
+        //  - always need to re-compute for an ionization gradient, TODO: can we do better caching?
+        if (spec_cache->xill_spec[ii] != nullptr) {
+          free_xill_spec(spec_cache->xill_spec[ii]);
+        }
+        spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param, status);
+      }
+
+    }
+
+    // -- 4 -- returning radiation
+    for (int ii = 0; ii < rel_param->num_zones; ii++) {
+
+      // --- 4a: returning radiation flux correction factors
+      // TODO: NEEDS to be for every zone,
+      //  - always re-calculate everything if any Xillver Parameter changes
+      //  - cache if only refl_frac
+      //  - write unit tests about every caching (!!)
+      if (rel_param->return_rad > 0) {
+        get_xillver_fluxcorrection_factors(spec_cache->xill_spec[ii], &(rel_param->return_rad_flux_correction_factor),
+                                           &(rel_param->xillver_gshift_corr_fac),
+                                           xill_param, status);
+        CHECK_STATUS_VOID(*status);
+      }
+
+    }
+
+    // --- 4b: returning radiation emissivity
+
+
+    // --- 5 --- calculate multi-zone relline profile
     int n_ener_conv; // energy grid for the convolution, only created
     double *ener_conv;
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
@@ -258,13 +286,15 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       spectrum.flux[ii] = 0.0;
     }
 
-    auto xill_flux = new double[n_ener_conv];
     auto conv_out = new double[n_ener_conv];
     auto single_spec_inp = new double[spectrum.num_flux_bins()];
 
     // loop over ionization zones
+    auto xill_angledep_spec = new double*[rel_param->num_zones];
     for (int ii = 0; ii < rel_profile->n_zones; ii++) {
       assert(spec_cache != nullptr);
+
+      xill_angledep_spec[ii] = new double[n_ener_conv];
 
       /** avoid problems where no relxill bin falls into an ionization bin **/
       if (calcSum(rel_profile->flux[ii], rel_profile->n_ener) < 1e-12) {
@@ -272,29 +302,21 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       }
 
       // --- 3 --- calculate xillver spectrum
-      // set xillver parameters for the given zone TODO: do not use xill_param struct here
-      xill_param->ect = calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rel_profile, ion_gradient, ii);
-      xill_param->lxi = ion_gradient.lxi[ii];
-      if (caching_status.xill == cached::no) {
-        //  - always need to re-compute if we have an ioniztion gradient, TODO: better caching here
-        if (spec_cache->xill_spec[ii] != nullptr) {
-          free_xill_spec(spec_cache->xill_spec[ii]);
-        }
-        spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param, status);
-      }
       xillSpec *xill_spec_table = spec_cache->xill_spec[ii];
-      // --- 3a --- plus correction factors
-
-
-
 
       // -- 6 -- get angle-dependent spectrum
-      get_xillver_angdep_spec(xill_flux, ener_conv, n_ener_conv, rel_profile->rel_cosne->dist[ii], xill_spec_table, status);
+      get_xillver_angdep_spec(xill_angledep_spec[ii], ener_conv,n_ener_conv, rel_profile->rel_cosne->dist[ii],  xill_spec_table,
+                              status);
       CHECK_STATUS_VOID(*status);
+
+    }
+
+    // loop over ionization zones
+    for (int ii = 0; ii < rel_profile->n_zones; ii++) {
 
       // -- 7 -- convolve the spectrum **
       int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
-      convolveSpectrumFFTNormalized(ener_conv, xill_flux, rel_profile->flux[ii], conv_out, n_ener_conv,
+      convolveSpectrumFFTNormalized(ener_conv, xill_angledep_spec[ii], rel_profile->flux[ii], conv_out, n_ener_conv,
                                     caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
       CHECK_STATUS_VOID(*status);
 
@@ -319,7 +341,10 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     delete[] single_spec_inp;
     delete[] conv_out;
-    delete[] xill_flux;
+    for (int ii = 0; ii < rel_profile->n_zones; ii++) {
+      delete[] xill_angledep_spec[ii];
+    }
+    delete[] xill_angledep_spec;
 
   } /************* END OF THE HUGE COMPUTATION ********************/
 

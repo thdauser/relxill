@@ -59,7 +59,7 @@ xillSpec *get_xillver_spectra(xillParam *param, int *status) {
  * @param status
  * @return (double*) spectrum
  */
-double *calc_angle_averaged_xill_spec(xillSpec *xill_spec, int *status) {
+double *calc_angle_averaged_xill_spec(const xillSpec *xill_spec, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -129,6 +129,22 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
   return ratio_refl_direct;
 }
 
+
+/**
+ * @brief calculate the gshift flux correction factor
+ * @detail The gshift-flux-correction factor is defined as the ratio of the flux-change of the xillver spectrum
+ * by shifting it to a factor 1.5 lower energies wrt to the flux change of a powerlaw-spectrum (with the same
+ * gamma), shifted by the same amoount.
+ *
+ * C_g = ( F(g=g_r)/F(g=g_0)  )  /  ( (g_r)^Gamma / (g_0)^Gamma )
+ *     = ( F(g=1.5)/F(g=1) ) /  ( (1.5)^Gamma
+ * @param  flux (double*): xillver spectrum
+ * @param  energy (double*): energy grid on which the spectrum is defined
+ * @param  n_energy (int)
+ * @param  gamma (photon index)
+ * @return fac_gshift_fluxcorr: ratio of xillver spectrum shifted to lower energy by a factor 1.5 (g=2/3) to a
+ * shifted powerlaw with gamma (gamma is the input to the xillver spec)
+ */
 double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, double gamma) {
 
   const double gshift_refvalue = 2. / 3.;  // shift it 1.5 to lower energies
@@ -142,13 +158,14 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
 
   rebin_spectrum(ener_z, flu_z, n_ener, ener, flu, n_ener);
   for (int ii = 0; ii < n_ener; ii++) {
-    flu_z[ii] *= gshift_refvalue;  // take time dillation into account (dE already taken into account as bin-integ)
+    flu_z[ii] *= gshift_refvalue;  // take time dilation into account (dE already taken into account as bin-integ)
   }
 
   double emin = 0.15;
   double emax = 500.0;
 
-  // ratio of no-shift wrt to a shift if 1.5 to lower energies
+  // ratio of no-shift wrt to a shift if 1.5 to lower energies, i.e.
+  // this is equivalent to F(g=1.5)/F(g=1)
   double gshift_ratio =
       get_photon_flux_band(ener, flu, n_ener, emin, emax) /
           get_photon_flux_band(ener, flu_z, n_ener, emin, emax);
@@ -162,17 +179,17 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
  * (1) fac_fluxcorr: ratio of reflected xillver spectrum to its input spectrum (below 1 for low ionization and above 1
  * for high ionization)
  * (2) fac_gshift_fluxcorr: ratio of xillver spectrum shifted to lower energy by a factor 1.5 (g=2/3) to a
- * non-shifted xillver spetctrum
+ * shifted powerlaw with gamma (gamma is the input to the xillver spec)
  * @param (output) fac_fluxcorr (double*)
  * @param (output) fac_gshift_fluxcorr (double*)
  * @param xill_param
  */
-void get_xillver_fluxcorrection_factors(double *fac_fluxcorr, double *fac_gshift_fluxcorr,
-                                        xillParam *xill_param, int *status) {
+void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
+                                        double *fac_fluxcorr,
+                                        double *fac_gshift_fluxcorr,
+                                        xillParam *xill_param,
+                                        int *status) {
   CHECK_STATUS_VOID(*status);
-
-  xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
-  assert(xill_spec->n_incl > 1);  // has to be the case for the inclination interpolated xillver model
 
   double *angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
   CHECK_STATUS_VOID(*status);
@@ -187,7 +204,6 @@ void get_xillver_fluxcorrection_factors(double *fac_fluxcorr, double *fac_gshift
         get_xillver_gshift_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_param->gam);
   }
 
-  free_xill_spec(xill_spec);
   free(angle_averaged_xill_spec);
 
   if (*status != EXIT_SUCCESS) {
