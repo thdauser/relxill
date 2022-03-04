@@ -272,8 +272,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       }
 
       // --- 3 --- calculate xillver spectrum
+      // set xillver parameters for the given zone TODO: do not use xill_param struct here
+      xill_param->ect = calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rel_profile, ion_gradient, ii);
+      xill_param->lxi = ion_gradient.lxi[ii];
       if (caching_status.xill == cached::no) {
-        //  - always need to re-compute if we have an ionization gradient, TODO: better caching here
+        //  - always need to re-compute if we have an ioniztion gradient, TODO: better caching here
         if (spec_cache->xill_spec[ii] != nullptr) {
           free_xill_spec(spec_cache->xill_spec[ii]);
         }
@@ -283,9 +286,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       // --- 3a --- plus correction factors
 
 
-      // set xillver parameters for the given zone TODO: do not use xill_param struct here
-      xill_param->ect = calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rel_profile, ion_gradient, ii);
-      xill_param->lxi = ion_gradient.lxi[ii];
 
 
       // -- 6 -- get angle-dependent spectrum
