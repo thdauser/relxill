@@ -233,6 +233,31 @@ define create_refdata_relxilllp(filename_refdata){ %{{{
    write_all_refl_frac_combinations(filename_refdata; verbose);
 }
 %}}}
+define create_refdata_relxilllpCp(filename_refdata){ %{{{
+
+%   message("\n creating special relxilllpCp reference for Alpha-Disk Gradients \n");
+   __set_hard_limits("relxilllp","h",-100,1000);
+   fit_fun("relxilllpCp");
+   
+   set_par("*.iongrad_type",2);
+   set_par("*.switch_reflfrac_boost",1);
+   set_par("*.refl_frac",1);
+   set_par("*.switch_returnrad",0);
+   
+   set_par("*.a",0.998);
+   set_par("*.h",2.0,0,-100,100);   
+   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
+   
+   set_par("*.h",20.0,0,-100,100);
+   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
+
+   set_par("*.a",0.0);
+   set_par("*.h",3.0,0,-100,100);   
+   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
+   
+}
+%}}}
+
 
 %%% MAIN %%%
 
@@ -259,6 +284,15 @@ if ( length(where(all_fit_functions=="relxilllp") ) > 0 ){
       counter = 0;
       create_refdata_relxilllp(filename_special);
    }
+}
+if ( length(where(all_fit_functions=="relxilllpCp") ) > 0 ){
+   message("relxillpCp - special");
+   if (dry_run==0){
+      counter = 0;
+      create_refdata_relxilllpCp(filename_special;verbose);
+   }
+
+
 }
 
 %%%%%%%%%%
