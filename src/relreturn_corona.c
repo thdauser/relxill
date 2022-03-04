@@ -28,7 +28,7 @@
  * correction / factor for any g value (certainly not very accurate for large values of g). The function
  * is assuring that we are not over-correcting and does ensure that for g>1 we never have a flux reduction
  * and similarly for g<1 never a flux boost.
- * @param xill_gshift_fac  : factor between flux boost from xillver wrt to g^Gamma for g=1.5
+ * @param xill_gshift_fac  : factor between flux boost from xillver for F(g=1.5)/F(g=1) wrt to g^Gamma for g=1.5
  * @param g : energy shift
  * @param gamma: power law index gamma
  * @return flux boost factor (would be g^gamma for a powerlaw instead of the xillver reflection)
@@ -45,6 +45,7 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
 
   double g0 = 2. / 3;  // 1/g, where g is used to calculate xill_gshift_fac
 
+  double alin; double blin;
   double gshift_corr_factor;
   if (xill_gshift_fac < 1) { // parabola which has f(g=0)=0
     double a = (xill_gshift_fac / g0 - 1) / (g0 - 1);
@@ -55,8 +56,8 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
                          : g * (g * a + b);
 
   } else { // linear interpolation
-    double alin = (xill_gshift_fac - 1) / (g0 - 1);
-    double blin = 1 - alin;
+    alin = (xill_gshift_fac - 1) / (g0 - 1);
+    blin = 1 - alin;
 
     gshift_corr_factor = (g >= 1)
                          ? (1. / g * alin + blin)
@@ -69,8 +70,15 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
 
   if (g > 1)
     assert(fluxboost_factor >= 1);
-  if (g < 1)
-    assert(fluxboost_factor < 1);
+  if (g < 1){
+    if (fluxboost_factor>1){
+      if (fluxboost_factor > 1.01 ) { // print warning for a deviation of >1%
+        printf(" *** warning: for g=%.4f the gshift-fluxboost factor = %.4f > 1 -> resetting to 1 \n",
+               g, fluxboost_factor);
+      }
+      fluxboost_factor = 1;
+    }
+  }
   assert(fluxboost_factor > 0);
 
   return fluxboost_factor;
