@@ -291,7 +291,7 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
 
 }
 
-float *get_xilltab_paramvals(xillParam *param, int *status) {
+float *get_xilltab_paramvals(const xillTableParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -310,7 +310,7 @@ float *get_xilltab_paramvals(xillParam *param, int *status) {
   return param_vals;
 }
 
-int *get_xilltab_indices_for_paramvals(xillParam *param, xillTable *tab, int *status) {
+int *get_xilltab_indices_for_paramvals(const xillTableParam *param, xillTable *tab, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
   // store the input in a variable
@@ -575,14 +575,14 @@ static void xilltable_fits_load_single_spec(const char *fname,
 
 // Default values from the param-structure, as those are set to the value the table is calculated
 // with, even if the model does not have a lxi or density parameter
-static double getDefaultDensity(xillParam *param) {
+static double getDefaultDensity(const xillTableParam *param) {
   return param->dens;
 }
-static double getDefaultLogxi(xillParam *param) {
+static double getDefaultLogxi(const xillTableParam *param) {
   return param->lxi;
 }
 
-void check_xilltab_cache(const char *fname, xillParam *param, xillTable *tab, const int* ind, int *status) {
+void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTable *tab, const int *ind, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -689,45 +689,88 @@ void free_xill_spec(xillSpec *spec) {
   }
 }
 
+enum xillTableIds get_xilltable_id(int model_id, int prim_type) {
+
+  if (is_ns_model(model_id)) {
+    return XILLTABLE_ID_NS;
+  } else if (is_co_model(model_id)) {
+    return XILLTABLE_ID_CO;
+  } else if (prim_type == PRIM_SPEC_NTHCOMP) {
+    return XILLTABLE_ID_NTHCOMP;
+  } else {
+    return XILLTABLE_ID_STANDARD;
+  }
+
+}
+
+xillTableParam *get_xilltab_param(xillParam *param, int *status) {
+
+  xillTableParam *tab_param = (xillTableParam *) malloc(sizeof(xillTableParam));
+  CHECK_MALLOC_RET_STATUS(tab_param, status, NULL)
+
+  tab_param->gam = param->gam;
+  tab_param->afe = param->afe;
+  tab_param->lxi = param->lxi;
+  tab_param->ect = param->ect;
+  tab_param->dens = param->dens;
+  tab_param->kTbb = param->kTbb;
+  tab_param->frac_pl_bb = param->frac_pl_bb;
+  tab_param->incl = param->incl;
+
+  tab_param->model_type = param->model_type;
+  tab_param->xilltable_id = get_xilltable_id(param->model_type, param->prim_type);
+
+  return tab_param;
+}
 
 /** load the xillver table and return its filename **/
-const char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status) {
+const char *get_init_xillver_table(xillTable **tab, const xillTableParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  if (is_ns_model(param->model_type)) {
-    if (cached_xill_tab_ns == NULL) {
-      init_xillver_table(XILLTABLE_NS_FILENAME, &cached_xill_tab_ns, status);
-      CHECK_STATUS_RET(*status, NULL);
-    }
-    *tab = cached_xill_tab_ns;
-    return XILLTABLE_NS_FILENAME;
+  switch (param->xilltable_id) {
 
-  } else if (is_co_model(param->model_type)) {
-    if (cached_xill_tab_co == NULL) {
-      assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
-      assert(param->lxi == 0); // the CO_Table does not have an ionization
-      init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, status);
-      CHECK_STATUS_RET(*status, NULL);
+    case XILLTABLE_ID_STANDARD: {
+      if (cached_xill_tab == NULL) {
+        init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, status);
+      }
+      *tab = cached_xill_tab;
+      return XILLTABLE_FILENAME;
     }
-    *tab = cached_xill_tab_co;
-    return XILLTABLE_CO_FILENAME;
 
-  } else if (param->prim_type == PRIM_SPEC_NTHCOMP) {
-
-    if (cached_xill_tab_dens_nthcomp == NULL) {
-      init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_dens_nthcomp, status);
-      CHECK_STATUS_RET(*status, NULL);
+    case XILLTABLE_ID_NTHCOMP: {
+      if (cached_xill_tab_dens_nthcomp == NULL) {
+        init_xillver_table(XILLTABLE_NTHCOMP_FILENAME, &cached_xill_tab_dens_nthcomp, status);
+        CHECK_STATUS_RET(*status, NULL);
+      }
+      *tab = cached_xill_tab_dens_nthcomp;
+      return XILLTABLE_NTHCOMP_FILENAME;
     }
-    *tab = cached_xill_tab_dens_nthcomp;
-    return XILLTABLE_NTHCOMP_FILENAME;
-  } else {
 
-    if (cached_xill_tab == NULL) {
-      init_xillver_table(XILLTABLE_FILENAME, &cached_xill_tab, status);
+    case XILLTABLE_ID_NS: {
+      if (cached_xill_tab_ns == NULL) {
+        init_xillver_table(XILLTABLE_NS_FILENAME, &cached_xill_tab_ns, status);
+        CHECK_STATUS_RET(*status, NULL);
+      }
+      *tab = cached_xill_tab_ns;
+      return XILLTABLE_NS_FILENAME;
     }
-    *tab = cached_xill_tab;
-    return XILLTABLE_FILENAME;
+
+    case XILLTABLE_ID_CO: {
+      if (cached_xill_tab_co == NULL) {
+        assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
+        assert(param->lxi == 0); // the CO_Table does not have an ionization
+        init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, status);
+        CHECK_STATUS_RET(*status, NULL);
+      }
+      *tab = cached_xill_tab_co;
+      return XILLTABLE_CO_FILENAME;
+    }
+
+    default: {
+      RELXILL_ERROR("could not identify a xillver table for this model", status);
+      return NULL;
+    }
   }
 
 }
@@ -1016,7 +1059,7 @@ static void interp_6d_tab(xillTable *tab, double *flu, int n_ener,
  * @param: (input) param
  * @param: (output) ipol_fac
  **/
-static void ensure_ecut_within_boundarys(xillTable *tab, const xillParam *param, double *ipol_fac) {
+static void ensure_ecut_within_boundarys(xillTable *tab, const xillTableParam *param, double *ipol_fac) {
   // first need to make sure ECUT is a parameter in the table
   int index_ect = get_xilltab_param_index(tab, PARAM_ECT);
   if (index_ect >= 0) {
@@ -1052,7 +1095,7 @@ static void resetInpvalsToBoundaries(char *pname, float *p_inpVal, float tabValL
 
 }
 
-xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status) {
+xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *ind, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 

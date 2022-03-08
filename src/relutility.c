@@ -75,7 +75,7 @@ int is_xill_model(int model_type) {
 // ion-gradient model, which is not set to constant ionization
 //  - in case ion_grad_type=constant, it is working as a normal model
 int is_iongrad_model(int ion_grad_type) {
-//  if ((model_type == MOD_TYPE_RELXILLLPION) && (ion_grad_type != ION_GRAD_TYPE_CONST)) {
+//  if ((model_id == MOD_TYPE_RELXILLLPION) && (ion_grad_type != ION_GRAD_TYPE_CONST)) {
     if (ion_grad_type != ION_GRAD_TYPE_CONST) {
     return 1;
   } else {

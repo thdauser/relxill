@@ -96,9 +96,11 @@ static void testAutomaticLoadingTable(xillParam *param) {
   xillTable *tab = nullptr;
 
   int status = EXIT_SUCCESS;
-  const char *fname = get_init_xillver_table(&tab, param, &status);
+  xillTableParam *xilltab_param = get_xilltab_param(param, &status);
+  const char *fname = get_init_xillver_table(&tab, xilltab_param, &status);
+  free(xilltab_param);
   REQUIRE(fname != nullptr);
-  REQUIRE( status == EXIT_SUCCESS );
+  REQUIRE(status == EXIT_SUCCESS);
   INFO("  -> loading table for model type = %i: " << fname);
   REQUIRE(tab != nullptr);
 

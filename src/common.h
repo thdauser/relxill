@@ -54,6 +54,13 @@
 /***************************************/
 
 
+enum xillTableIds {
+  XILLTABLE_ID_STANDARD,
+  XILLTABLE_ID_NTHCOMP,
+  XILLTABLE_ID_NS,
+  XILLTABLE_ID_CO,
+};
+
 #define AD_ROUT_MAX 1000
 
 /****** TYPE DEFINITIONS ******/
@@ -90,17 +97,30 @@ typedef struct {
   double lxi;
   double ect;
   double incl;
+  double dens;
+  double frac_pl_bb;
+  double kTbb;
+  enum xillTableIds xilltable_id;
+  int model_type;
+} xillTableParam;
+
+typedef struct {
+  double gam;
+  double afe;
+  double lxi;
+  double ect;
+  double incl;
+  double dens;
+  double frac_pl_bb;
+  int model_type;
+  int prim_type;
   double z;
   double refl_frac;
   int interpret_reflfrac_as_boost;
-  double dens;
   double iongrad_index;
   double kTbb;
-  double frac_pl_bb;
   int ion_grad_type;
   double boost;
-  int model_type;
-  int prim_type;
   double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end
 } xillParam;
 

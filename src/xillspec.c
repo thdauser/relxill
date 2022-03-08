@@ -28,7 +28,7 @@
  *  - automatically normalizes  the spectra to logN=1e15 and logXi=0
  *  - for relxill type models it returns spectra for all available inclinations
  * */
-xillSpec *get_xillver_spectra(xillParam *param, int *status) {
+xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -51,6 +51,26 @@ xillSpec *get_xillver_spectra(xillParam *param, int *status) {
 
   free(indparam);
   return spec;
+}
+
+/**
+ * @description: the main routine for the xillver table: returns a spectrum for the given parameters
+ *  - decides if the table needs to be initialized and/or more data loaded
+ *  - automatically normalizes  the spectra to logN=1e15 and logXi=0
+ *  - for relxill type models it returns spectra for all available inclinations
+ *  (wrapper around the more basic function "get_xillver_spectra_table")
+ * */
+xillSpec *get_xillver_spectra(xillParam *param, int *status) {
+
+  CHECK_STATUS_RET(*status, NULL);
+
+  xillTableParam *param_table = get_xilltab_param(param, status);
+  xillSpec *xill_spec = get_xillver_spectra_table(param_table, status);
+  CHECK_STATUS_RET(*status, NULL);
+
+  free(param_table);
+
+  return xill_spec;
 }
 
 /**

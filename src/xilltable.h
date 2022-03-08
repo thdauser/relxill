@@ -52,25 +52,29 @@
 #define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
 #define XILLTABLE_CO_FILENAME "xillverCO.fits"
 
+enum xillTableIds get_xilltable_id(int model_id, int prim_type);
+
+xillTableParam *get_xilltab_param(xillParam *param, int *status);
+
 /** get a new and empty rel table (structure will be allocated)  */
 xillTable *new_xillTable(int num_param, int *status);
 
 /* destroy the relline table structure */
 void free_xillTable(xillTable *tab);
 
-xillSpec *interp_xill_table(xillTable *tab, xillParam *param, const int *ind, int *status);
+xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *ind, int *status);
 
 int get_xilltab_param_index(xillTable *tab, int ind);
-float *get_xilltab_paramvals(xillParam *param, int *status);
-int *get_xilltab_indices_for_paramvals(xillParam *param, xillTable *tab, int *status);
+float *get_xilltab_paramvals(const xillTableParam *param, int *status);
+int *get_xilltab_indices_for_paramvals(const xillTableParam *param, xillTable *tab, int *status);
 
-void check_xilltab_cache(const char *fname, xillParam *param, xillTable *tab, const int *ind, int *status);
+void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTable *tab, const int *ind, int *status);
 
 void free_cached_xillTable(void);
 
 void init_xillver_table(const char *filename, xillTable **inp_tab, int *status);
 
-const char *get_init_xillver_table(xillTable **tab, xillParam *param, int *status);
+const char *get_init_xillver_table(xillTable **tab, const xillTableParam *param, int *status);
 
 void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname);
 

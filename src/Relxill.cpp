@@ -23,16 +23,12 @@
 relParam *cached_rel_param = nullptr;
 xillParam *cached_xill_param = nullptr;
 
-//static int cached = 1;
-// static int not_cached = 0;
+///////////////////////////////////////
+// Forward Definitions of Functions  //
+///////////////////////////////////////
+double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary,
+                              const double *rgrid, int num_zones, const IonGradient &ion_gradient, int ii);
 
-
-double calculate_ecut_on_disk(const relParam *rel_param,
-                              double ecut0,
-                              double ecut_primary,
-                              const relline_spec_multizone *rel_profile,
-                              const IonGradient &ion_gradient,
-                              int ii);
 double calc_ecut_at_primary_source(const xillParam *xill_param,
                                    const relParam *rel_param,
                                    double ecut_input,
@@ -41,6 +37,13 @@ void free_arrays_relxill_kernel(int n_zones,
                                 const double *conv_out,
                                 const double *single_spec_inp,
                                 double *const *xill_angledep_spec);
+
+
+
+///////////////////////////////////////
+// Function Definitions              //
+///////////////////////////////////////
+
 /**
  * check if the complete spectrum is cached and if the energy grid did not change
  *  -> additionally we adapt the energy grid to the new dimensions and energy values
@@ -147,45 +150,27 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
   }
 }
 
-/**
- * @brief get the energy shift in order to calculate the proper Ecut value on the disk (if nzones>1)
- *        - the cutoff is calculated for the (linear) middle of the radial zone
- *        - for nzones=1 the value at the primary source is returned
+
+
+
+///////////////////////////////////////
+// MAIN: Relxill Kernel Function     //
+///////////////////////////////////////
+
+
+/** @brief convolve a xillver spectrum with the relbase kernel
+ * @param spectrum
+ * @param xill_param
  * @param rel_param
- * @param ecut0
- * @param ecut_primary
- * @param rgrid
- * @param num_zones
- * @param ion_gradient
- * @param ii
- * @return
+ * @param status
  */
-double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary,
-                              const double *rgrid, int num_zones, const IonGradient &ion_gradient, int ii) {
-
-  if (num_zones == 1) {
-    return ecut_primary; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
-  } else {
-    double rzone = 0.5 * (rgrid[ii] + rgrid[ii + 1]);
-    double del_emit = (ion_gradient.del_emit == nullptr) ? 0.0
-                                                         : ion_gradient.del_emit[ii];  // only relevant if beta!=0 (doppler boosting)
-    return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
-  }
-}
-
-
-
-/*
- * BASIC RELXILL KERNEL FUNCTION : convolve a xillver spectrum with the relbase kernel
- * (ener has the length n_ener+1)
-*/
 void relxill_kernel(const XspecSpectrum &spectrum,
                     xillParam *xill_param,
                     relParam *rel_param,
                     int *status) {
 
   xillTable *xill_tab = nullptr;
-  get_init_xillver_table(&xill_tab, xill_param, status);
+  get_init_xillver_table(&xill_tab, get_xilltab_param(xill_param, status), status);
   CHECK_STATUS_VOID(*status);
 
   // TODO: this should be done when loading the input parameters
@@ -383,5 +368,28 @@ double calc_ecut_at_primary_source(const xillParam *xill_param,
   }
 }
 
+/** @brief get the energy shift in order to calculate the proper Ecut value on the disk (if nzones>1)
+ *        - the cutoff is calculated for the (linear) middle of the radial zone
+ *        - for nzones=1 the value at the primary source is returned
+ * @param rel_param
+ * @param ecut0
+ * @param ecut_primary
+ * @param rgrid
+ * @param num_zones
+ * @param ion_gradient
+ * @param ii
+ * @return
+ */
+double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary,
+                              const double *rgrid, int num_zones, const IonGradient &ion_gradient, int ii) {
 
+  if (num_zones == 1) {
+    return ecut_primary; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
+  } else {
+    double rzone = 0.5 * (rgrid[ii] + rgrid[ii + 1]);
+    double del_emit = (ion_gradient.del_emit == nullptr) ? 0.0
+                                                         : ion_gradient.del_emit[ii];  // only relevant if beta!=0 (doppler boosting)
+    return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
+  }
+}
 

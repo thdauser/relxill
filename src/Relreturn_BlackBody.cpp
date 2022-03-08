@@ -26,6 +26,7 @@ extern "C" {
 #include "relphysics.h"
 #include "relreturn_datastruct.h"
 #include "relmodels.h"
+#include "xilltable.h"
 }
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
@@ -518,8 +519,6 @@ static int should_noXillverRefl_calculated(){
 void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillParam *xill_param, relParam *rel_param,
     int *status) {
 
-
-
   CHECK_STATUS_VOID(*status);
   assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET);
 
@@ -530,17 +529,20 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   get_relxill_conv_energy_grid(&n_ener, &ener, status);
 
   xillTable *xill_tab = nullptr;
-  get_init_xillver_table(&xill_tab, xill_param, status);
+  xillTableParam *xilltab_param = get_xilltab_param(xill_param, status);
+  get_init_xillver_table(&xill_tab, xilltab_param, status);
+  free(xilltab_param);
 
   returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, nullptr, nullptr, n_ener, xill_param->kTbb, rel_param->rin,
                                                       rel_param->rout, rel_param->a, status);
 
   double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
-  relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
+  relline_spec_multizone
+      *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
 
   // ========== //
   auto single_spec_inp = new double[n_ener_inp];
-  auto spec_conv_out = new double*[returnSpec->nrad];
+  auto spec_conv_out = new double *[returnSpec->nrad];
   auto xillver_out = new double*[returnSpec->nrad];
   auto xillver_prim_out = new double*[returnSpec->nrad];
  // ========== //
