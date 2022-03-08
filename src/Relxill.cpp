@@ -44,6 +44,12 @@ void free_arrays_relxill_kernel(int n_zones,
 // Function Definitions              //
 ///////////////////////////////////////
 
+void relxill_convolution_multizone(const XspecSpectrum &spectrum,
+                                   const relline_spec_multizone *rel_profile,
+                                   specCache *spec_cache,
+                                   const relParam *rel_param,
+                                   const CachingStatus &caching_status,
+                                   int *status);
 /**
  * check if the complete spectrum is cached and if the energy grid did not change
  *  -> additionally we adapt the energy grid to the new dimensions and energy values
@@ -176,11 +182,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     rel_param->num_zones = get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type);
   }
 
-  /** be careful, as xill_param->ect can get over-written so save the following values**/
-  // TODO: better treatment of the input parameter
-  double ecut0 = xill_param->ect;
-
-  double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, ecut0, status);
+  double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, xill_param->ect, status);
   CHECK_STATUS_VOID(*status);
 
   specCache *spec_cache = init_global_specCache(status);
@@ -243,13 +245,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // -- 4 -- returning radiation
     for (int ii = 0; ii < rel_param->num_zones; ii++) {
-
-      // --- 4a: returning radiation flux correction factors
-      // TODO: NEEDS to be for every zone,
-      //  - always re-calculate everything if any Xillver Parameter changes
-      //  - cache if only refl_frac
-      //  - write unit tests about every caching (!!)
-      if (rel_param->return_rad > 0) {
+       if (rel_param->return_rad > 0) {
         get_xillver_fluxcorrection_factors(spec_cache->xill_spec[ii], &(rel_param->return_rad_flux_correction_factor),
                                            &(rel_param->xillver_gshift_corr_fac),
                                            xill_table_param[ii], status);
@@ -258,13 +254,10 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     }
 
-    // --- 4b: returning radiation emissivity
-
-
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the relline_profile call
     get_init_xillver_table(&xill_tab, get_xilltab_param(xill_param, status), status);
-    CHECK_STATUS_VOID(*status);
+//    CHECK_STATUS_VOID(*status);
 
     int n_ener_conv; // energy grid for the convolution, only created
     double *ener_conv;
@@ -272,63 +265,74 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // depends on returning radiation (i.e., the xillver correction factors)
     relline_spec_multizone *rel_profile = relbase_multizone(ener_conv, n_ener_conv, rel_param, xill_tab, rgrid,
                                                             rel_param->num_zones, status);
-    CHECK_STATUS_VOID(*status);
+ //   CHECK_STATUS_VOID(*status);
 
 
-    // make sure the output array is set to 0
-    for (int ie = 0; ie < spectrum.num_flux_bins(); ie++) {
-      spectrum.flux[ie] = 0.0;
-    }
-
-    auto conv_out = new double[n_ener_conv];
-    auto single_spec_inp = new double[spectrum.num_flux_bins()];
-    auto xill_angledep_spec = new double *[rel_param->num_zones];
-
-    // loop over ionization zones
-    for (int ii = 0; ii < rel_profile->n_zones; ii++) {
-
-      /** avoid problems where no relxill bin falls into an ionization bin **/
-      if (calcSum(rel_profile->flux[ii], rel_profile->n_ener) < 1e-12) {
-        continue;
-      }
-
-      // -- 6 -- get angle-dependent spectrum
-      xill_angledep_spec[ii] = new double[n_ener_conv];
-      get_xillver_angdep_spec(xill_angledep_spec[ii], ener_conv, n_ener_conv, rel_profile->rel_cosne->dist[ii],
-                              spec_cache->xill_spec[ii], status);
-      CHECK_STATUS_VOID(*status);
-
-      // -- 7 -- convolve the spectrum **
-      int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
-      convolveSpectrumFFTNormalized(ener_conv, xill_angledep_spec[ii], rel_profile->flux[ii], conv_out, n_ener_conv,
-                                    caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
-      CHECK_STATUS_VOID(*status);
-
-      rebin_spectrum(spectrum.energy, single_spec_inp, spectrum.num_flux_bins(), ener_conv, conv_out, n_ener_conv);
-
-      // add it to the final output spectrum
-      for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
-        spectrum.flux[jj] += single_spec_inp[jj];
-      }
-
-      if (is_debug_run() && rel_profile->n_zones <= 10) {
-        write_output_spec_zones(spectrum, single_spec_inp, ii, status);
-      }
-
-    } /**** END OF LOOP OVER RADIAL ZONES [ii] *****/
-
-    /** important: set the cutoff energy value back to its original value **/
-    xill_param->ect = ecut0;
+    relxill_convolution_multizone(spectrum, rel_profile, spec_cache, rel_param, caching_status, status);
 
     copy_spectrum_to_cache(spectrum, spec_cache, status);
     CHECK_STATUS_VOID(*status);
 
-    free_arrays_relxill_kernel(rel_profile->n_zones, conv_out, single_spec_inp, xill_angledep_spec);
-
   }
 
-  /** add a primary spectral component and normalize according to the given refl_frac parameter**/
   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, status);
+}
+
+
+
+void relxill_convolution_multizone(const XspecSpectrum &spectrum,
+                                   const relline_spec_multizone *rel_profile,
+                                   specCache *spec_cache,
+                                   const relParam *rel_param,
+                                   const CachingStatus &caching_status,
+                                   int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  int n_ener_conv = rel_profile->n_ener;
+  double* ener_conv = rel_profile->ener;
+
+  auto conv_out = new double[n_ener_conv];
+  auto single_spec_inp = new double[spectrum.num_flux_bins()];
+  auto xill_angledep_spec = new double *[rel_param->num_zones];
+
+  // make sure the output array is set to 0
+  for (int ie = 0; ie < spectrum.num_flux_bins(); ie++) {
+    spectrum.flux[ie] = 0.0;
+  }
+
+  for (int ii = 0; ii < rel_profile->n_zones; ii++) { /***** loop over ionization zones   ******/
+
+    /** avoid problems where no relxill bin falls into an ionization bin **/
+    if (calcSum(rel_profile->flux[ii], rel_profile->n_ener) < 1e-12) {
+      continue;
+    }
+
+    // -- 6 -- get angle-dependent spectrum
+    xill_angledep_spec[ii] = new double[n_ener_conv];
+    get_xillver_angdep_spec(xill_angledep_spec[ii], ener_conv, n_ener_conv, rel_profile->rel_cosne->dist[ii],
+                            spec_cache->xill_spec[ii], status);
+     CHECK_STATUS_VOID(*status);
+
+    // -- 7 -- convolve the spectrum **
+    int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
+    convolveSpectrumFFTNormalized(ener_conv, xill_angledep_spec[ii], rel_profile->flux[ii], conv_out, n_ener_conv,
+                                  caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
+    CHECK_STATUS_VOID(*status);
+    rebin_spectrum(spectrum.energy, single_spec_inp, spectrum.num_flux_bins(), ener_conv, conv_out, n_ener_conv);
+
+    // add it to the final output spectrum
+    for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
+      spectrum.flux[jj] += single_spec_inp[jj];
+    }
+
+    if (is_debug_run() && rel_profile->n_zones <= 10) {
+      write_output_spec_zones(spectrum, single_spec_inp, ii, status);
+    }
+
+  } /**** END OF LOOP OVER RADIAL ZONES *****/
+
+  free_arrays_relxill_kernel(rel_profile->n_zones, conv_out, single_spec_inp, xill_angledep_spec);
 }
 
 /**

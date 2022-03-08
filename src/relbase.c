@@ -714,6 +714,11 @@ relline_spec_multizone *relbase_multizone(double *ener,
 
   CHECK_STATUS_RET(*status, NULL);
 
+  // initialize parameter values (has an internal cache)
+  RelSysPar *sysPar = get_system_parameters(param, status);
+  CHECK_STATUS_RET(*status, NULL);
+  assert(sysPar != NULL);
+
   inpar *inp = set_input(ener, n_ener, param, NULL, status);
 
   // check caching here and also re-set the cached parameter values
@@ -722,10 +727,6 @@ relline_spec_multizone *relbase_multizone(double *ener,
   // set a pointer to the spectrum
   relline_spec_multizone *spec = NULL;
 
-  // initialize parameter values (has an internal cache)
-  RelSysPar *sysPar = get_system_parameters(param, status);
-  CHECK_STATUS_RET(*status, NULL);
-  assert(sysPar != NULL);
 
   if (is_relbase_cached(ca_info) == 0) {
 
