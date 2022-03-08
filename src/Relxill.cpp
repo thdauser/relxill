@@ -257,7 +257,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the relline_profile call
     get_init_xillver_table(&xill_tab, get_xilltab_param(xill_param, status), status);
-//    CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status);
 
     int n_ener_conv; // energy grid for the convolution, only created
     double *ener_conv;
@@ -265,7 +265,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // depends on returning radiation (i.e., the xillver correction factors)
     relline_spec_multizone *rel_profile = relbase_multizone(ener_conv, n_ener_conv, rel_param, xill_tab, rgrid,
                                                             rel_param->num_zones, status);
- //   CHECK_STATUS_VOID(*status);
+    CHECK_STATUS_VOID(*status);
 
 
     relxill_convolution_multizone(spectrum, rel_profile, spec_cache, rel_param, caching_status, status);
