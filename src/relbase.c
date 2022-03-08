@@ -476,7 +476,7 @@ static void print_reflection_strength(double *ener,
 }
 
 void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
-                              const relParam *rel_param, const xillParam *xill_param, int *status) {
+                              const relParam *rel_param, const xillTableParam *xill_param, int *status) {
 
   CHECK_STATUS_VOID(*status);
   assert(global_ener_xill != NULL);
@@ -533,7 +533,7 @@ void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
  * @return
  */
 double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
-                                                 const relParam *rel_param, const xillParam *xill_param, int *status) {
+                                                 const relParam *rel_param, const xillTableParam *xill_param, int *status) {
 
   /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
   EnerGrid *egrid = get_stdXillverEnergygrid(status);
@@ -561,16 +561,18 @@ double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
 
 
 void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
-                           xillParam *xill_param, int *status) {
+                           xillParam *xill_input_param, int *status) {
 
-  double *pl_flux = calc_normalized_xillver_primary_spectrum(ener, n_ener, rel_param, xill_param, status);
+  xillTableParam* xill_table_param = get_xilltab_param(xill_input_param, status);
+  double *pl_flux = calc_normalized_xillver_primary_spectrum(ener, n_ener, rel_param, xill_table_param, status);
+  free(xill_table_param);
   CHECK_STATUS_VOID(*status);
 
   /** 2 **  decide if we need to do relat. calculations **/
-  if (is_xill_model(xill_param->model_type)) {
+  if (is_xill_model(xill_input_param->model_type)) {
 
     for (int ii = 0; ii < n_ener; ii++) {
-      flu[ii] *= fabs(xill_param->refl_frac);
+      flu[ii] *= fabs(xill_input_param->refl_frac);
     }
   } else {
 
@@ -585,8 +587,8 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     /** 4 ** and apply it to primary and reflected spectra **/
     if (rel_param->emis_type == EMIS_TYPE_LP) {
 
-      if (xill_param->interpret_reflfrac_as_boost) {
-        xill_param->refl_frac *= struct_refl_frac->refl_frac;  // if set, it is given as boost, wrt predicted refl_frac
+      if (xill_input_param->interpret_reflfrac_as_boost) {
+        xill_input_param->refl_frac *= struct_refl_frac->refl_frac;  // if set, it is given as boost, wrt predicted refl_frac
       }
 
       double g_inf = sqrt(1.0 - (2 * rel_param->height /
@@ -596,9 +598,9 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
       /** if the user sets the refl_frac parameter manually, we need to calculate the ratio
        *  to end up with the correct normalization
        */
-      double norm_fac_refl = (fabs(xill_param->refl_frac)) / struct_refl_frac->refl_frac;
+      double norm_fac_refl = (fabs(xill_input_param->refl_frac)) / struct_refl_frac->refl_frac;
 
-      double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_param->gam);
+      double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
 
       for (int ii = 0; ii < n_ener; ii++) {
         pl_flux[ii] *= prim_fac;
@@ -606,19 +608,19 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
       }
     } else {
       for (int ii = 0; ii < n_ener; ii++) {
-        flu[ii] *= fabs(xill_param->refl_frac);
+        flu[ii] *= fabs(xill_input_param->refl_frac);
       }
     }
 
     /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
     if ( shouldAuxInfoGetPrinted()  && (rel_param->emis_type == EMIS_TYPE_LP) ) {
-      print_reflection_strength(ener, n_ener, flu, rel_param, xill_param, pl_flux, struct_refl_frac);
+      print_reflection_strength(ener, n_ener, flu, rel_param, xill_input_param, pl_flux, struct_refl_frac);
     }
 
   }
 
   /** 6 ** add power law component only if desired (i.e., refl_frac > 0)**/
-  if (xill_param->refl_frac >= 0) {
+  if (xill_input_param->refl_frac >= 0) {
     for (int ii = 0; ii < n_ener; ii++) {
       flu[ii] += pl_flux[ii];
     }

@@ -169,9 +169,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                     relParam *rel_param,
                     int *status) {
 
-  xillTable *xill_tab = nullptr;
-  get_init_xillver_table(&xill_tab, get_xilltab_param(xill_param, status), status);
-  CHECK_STATUS_VOID(*status);
 
   // TODO: this should be done when loading the input parameters
   // in case of an ionization gradient, we need to update the number of zones
@@ -219,13 +216,18 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     IonGradient ion_gradient{rgrid, rel_param->num_zones, xill_param->ion_grad_type};
     ion_gradient.calculate(rel_param, xill_param);
 
+    xillTableParam* xill_table_param[rel_param->num_zones];
+
     // --- 3 --- calculate xillver reflection spectra  (for every zone)
     for (int ii = 0; ii < rel_param->num_zones; ii++) {
 
-      // set xillver parameters for the given zone TODO: do not use xill_param struct here
-      xill_param->ect =
+      xill_table_param[ii] = get_xilltab_param(xill_param, status);
+
+      // set xillver parameters for the given zone
+      xill_table_param[ii]->ect =
           calculate_ecut_on_disk(rel_param, ecut_primary, rgrid, rel_param->num_zones, ion_gradient, ii);
-      xill_param->lxi = ion_gradient.lxi[ii];
+      xill_table_param[ii]->lxi = ion_gradient.lxi[ii];
+      xill_table_param[ii]->dens = ion_gradient.dens[ii];
 
 
       // --- 3a: load xillver spectra
@@ -234,7 +236,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
         if (spec_cache->xill_spec[ii] != nullptr) {
           free_xill_spec(spec_cache->xill_spec[ii]);
         }
-        spec_cache->xill_spec[ii] = get_xillver_spectra(xill_param, status);
+        spec_cache->xill_spec[ii] = get_xillver_spectra_table(xill_table_param[ii], status);
       }
 
     }
@@ -250,7 +252,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       if (rel_param->return_rad > 0) {
         get_xillver_fluxcorrection_factors(spec_cache->xill_spec[ii], &(rel_param->return_rad_flux_correction_factor),
                                            &(rel_param->xillver_gshift_corr_fac),
-                                           xill_param, status);
+                                           xill_table_param[ii], status);
         CHECK_STATUS_VOID(*status);
       }
 
@@ -260,6 +262,10 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
 
     // --- 5 --- calculate multi-zone relline profile
+    xillTable *xill_tab = nullptr; // needed for the relline_profile call
+    get_init_xillver_table(&xill_tab, get_xilltab_param(xill_param, status), status);
+    CHECK_STATUS_VOID(*status);
+
     int n_ener_conv; // energy grid for the convolution, only created
     double *ener_conv;
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);

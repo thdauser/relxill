@@ -22,12 +22,15 @@
 #include "writeOutfiles.h"
 #include "relbase.h"
 
-/**
- * @description: the main routine for the xillver table: returns a spectrum for the given parameters
- *  - decides if the table needs to be initialized and/or more data loaded
- *  - automatically normalizes  the spectra to logN=1e15 and logXi=0
- *  - for relxill type models it returns spectra for all available inclinations
- * */
+/** @brief main routine for the xillver table: returns a spectrum for the given parameters
+ *  @details
+ *   - decides if the table needs to be initialized and/or more data loaded
+ *   - automatically normalizes  the spectra to logN=1e15 and logXi=0
+ *   - for relxill type models it returns spectra for all available inclinations
+ * @param param
+ * @param status
+ * @return xillSpec
+ */
 xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -53,13 +56,13 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
   return spec;
 }
 
-/**
- * @description: the main routine for the xillver table: returns a spectrum for the given parameters
- *  - decides if the table needs to be initialized and/or more data loaded
- *  - automatically normalizes  the spectra to logN=1e15 and logXi=0
- *  - for relxill type models it returns spectra for all available inclinations
- *  (wrapper around the more basic function "get_xillver_spectra_table")
- * */
+
+/** @brief similar to get_xillver_spectra_table, but uses the full xill_param input (from xpsecc)
+ *  @details see get_xillver_spectra_table for more details, this function is just a wrapper
+ * @param param
+ * @param status
+ * @return xillSpec
+ */
 xillSpec *get_xillver_spectra(xillParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -135,9 +138,9 @@ static double get_photon_flux_band(const double *ener,
 }
 
 double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
-                            const xillParam *xill_param, int *status) {
+                            const xillTableParam *xill_table_param, int *status) {
   double *direct_spec =
-      calc_normalized_xillver_primary_spectrum(ener, n_ener, NULL, xill_param, status);
+      calc_normalized_xillver_primary_spectrum(ener, n_ener, NULL, xill_table_param, status);
 
   double emin = 0.1;
   double emax = 1000;
@@ -207,7 +210,7 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         double *fac_fluxcorr,
                                         double *fac_gshift_fluxcorr,
-                                        xillParam *xill_param,
+                                        xillTableParam *xill_table_param,
                                         int *status) {
   CHECK_STATUS_VOID(*status);
 
@@ -216,12 +219,12 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
 
   if (fac_fluxcorr != NULL) {
     *fac_fluxcorr =
-        get_xillver_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_param, status);
+        get_xillver_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_table_param, status);
   }
 
   if (fac_gshift_fluxcorr != NULL) {
     *fac_gshift_fluxcorr =
-        get_xillver_gshift_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_param->gam);
+        get_xillver_gshift_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_table_param->gam);
   }
 
   free(angle_averaged_xill_spec);

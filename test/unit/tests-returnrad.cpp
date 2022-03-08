@@ -24,6 +24,7 @@ extern "C" {
 #include "relutility.h"
 #include "writeOutfiles.h"
 #include "rellp.h"
+#include "xilltable.h"
 }
 
 #include "Relreturn_BlackBody.h"
@@ -399,14 +400,18 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
   lmod.set_par(XPar::logxi, 3.0);
   double flux_corr1=0;
   xillSpec* xill_spec = get_xillver_spectra(lmod.get_xill_params(), &status);
-  get_xillver_fluxcorrection_factors(xill_spec, &flux_corr1, nullptr, lmod.get_xill_params(), &status);
+  get_xillver_fluxcorrection_factors(xill_spec, &flux_corr1, nullptr,
+                                     get_xilltab_param(lmod.get_xill_params(), &status),
+                                     &status);
   REQUIRE(flux_corr1 > 0.5);
   REQUIRE(flux_corr1 < 1.0); // only works for logxi<=4
 
   lmod.set_par(XPar::logxi, 0.0);
   xillSpec* xill_spec2 = get_xillver_spectra(lmod.get_xill_params(), &status);
   double flux_corr2=0;
-  get_xillver_fluxcorrection_factors(xill_spec2, &flux_corr2, nullptr, lmod.get_xill_params(), &status);
+  get_xillver_fluxcorrection_factors(xill_spec2, &flux_corr2, nullptr,
+                                     get_xilltab_param(lmod.get_xill_params(), &status) ,
+                                     &status);
 
   REQUIRE(flux_corr1 > 2 * flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
 
@@ -429,14 +434,16 @@ TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
   lmod.set_par(XPar::logxi, 3.0);
   double gshift_flux_corr1;
   xillSpec* xill_spec = get_xillver_spectra(lmod.get_xill_params(), &status);
-  get_xillver_fluxcorrection_factors(xill_spec, nullptr, &gshift_flux_corr1, lmod.get_xill_params(), &status);
+  get_xillver_fluxcorrection_factors(xill_spec, nullptr, &gshift_flux_corr1,
+                                     get_xilltab_param(lmod.get_xill_params(), &status), &status);
   REQUIRE(gshift_flux_corr1 > 1);
   REQUIRE(gshift_flux_corr1 < pow(gshift_ref_value,gam+0.5)/pow(gshift_ref_value,gam));
 
   lmod.set_par(XPar::logxi, 0.0);
   double gshift_flux_corr2;
   xillSpec* xill_spec2 = get_xillver_spectra(lmod.get_xill_params(), &status);
-  get_xillver_fluxcorrection_factors(xill_spec2, nullptr, &gshift_flux_corr2, lmod.get_xill_params(), &status);
+  get_xillver_fluxcorrection_factors(xill_spec2, nullptr, &gshift_flux_corr2,
+                                     get_xilltab_param(lmod.get_xill_params(), &status), &status);
 
   REQUIRE(gshift_flux_corr2 < 1 );
   REQUIRE(gshift_flux_corr1 > 1.5 * gshift_flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
@@ -493,7 +500,8 @@ TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
       logxi[ii] = (logxi_max - logxi_min) * (ii * 1.0 / (n_logxi - 1)) + logxi_min;
       lmod.set_par(XPar::logxi, logxi[ii]);
       xillSpec* xill_spec = get_xillver_spectra(lmod.get_xill_params(), &status);
-      get_xillver_fluxcorrection_factors(xill_spec, &(flux_corr[ii]), &(gshift_corr[ii]), lmod.get_xill_params(), &status);
+      get_xillver_fluxcorrection_factors(xill_spec, &(flux_corr[ii]), &(gshift_corr[ii]),
+                                         get_xilltab_param(lmod.get_xill_params(), &status), &status);
       free_xill_spec(xill_spec);
     }
     int retval = sprintf(buffer, "test-flux-corr-returnrad_gam%.1f.dat",gam);

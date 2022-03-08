@@ -25,8 +25,10 @@
 double norm_factor_semi_infinite_slab(double incl_deg);
 void norm_xillver_spec(xillSpec *spec, double incl);
 
-/** the main routine for the xillver table: returns a spectrum for the given parameters
- *  (decides if the table needs to be initialized and/or more data loaded          */
+
+
+xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status);
+
 xillSpec *get_xillver_spectra(xillParam *param, int *status);
 
 
@@ -48,7 +50,7 @@ void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillP
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         double *fac_fluxcorr,
                                         double *fac_gshift_fluxcorr,
-                                        xillParam *xill_param,
+                                        xillTableParam *xill_table_param,
                                         int *status);
 
 

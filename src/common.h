@@ -100,7 +100,7 @@ typedef struct {
   double dens;
   double frac_pl_bb;
   double kTbb;
-  enum xillTableIds xilltable_id;
+  int prim_type;
   int model_type;
 } xillTableParam;
 

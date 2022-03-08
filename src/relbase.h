@@ -141,7 +141,7 @@ void add_primary_component(double *ener,
                            int n_ener,
                            double *flu,
                            relParam *rel_param,
-                           xillParam *xill_param,
+                           xillParam *xill_input_param,
                            int *status);
 
 void free_rel_spec(relline_spec_multizone *spec);
@@ -182,7 +182,7 @@ void set_stdNormXillverEnerygrid(int *status);
 EnerGrid *get_stdXillverEnergygrid(int *status);
 
 double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
-                                                 const relParam *rel_param, const xillParam *xill_param, int *status);
+                                                 const relParam *rel_param, const xillTableParam *xill_param, int *status);
 int convert_relxill_to_xillver_model_type(int relxill_model_type, int *status);
 
 #endif //RELBASE_H_

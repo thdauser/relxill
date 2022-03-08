@@ -718,7 +718,7 @@ xillTableParam *get_xilltab_param(xillParam *param, int *status) {
   tab_param->incl = param->incl;
 
   tab_param->model_type = param->model_type;
-  tab_param->xilltable_id = get_xilltable_id(param->model_type, param->prim_type);
+  tab_param->prim_type = param->prim_type;
 
   return tab_param;
 }
@@ -728,7 +728,7 @@ const char *get_init_xillver_table(xillTable **tab, const xillTableParam *param,
 
   CHECK_STATUS_RET(*status, NULL);
 
-  switch (param->xilltable_id) {
+  switch ( get_xilltable_id(param->model_type, param->prim_type) ) {
 
     case XILLTABLE_ID_STANDARD: {
       if (cached_xill_tab == NULL) {
@@ -759,7 +759,7 @@ const char *get_init_xillver_table(xillTable **tab, const xillTableParam *param,
     case XILLTABLE_ID_CO: {
       if (cached_xill_tab_co == NULL) {
         assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
-        assert(param->lxi == 0); // the CO_Table does not have an ionization
+        assert(param->lxi == 0); // the CO_Table does not have an ionization (weak test to assert it has its default value)
         init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, status);
         CHECK_STATUS_RET(*status, NULL);
       }
