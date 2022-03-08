@@ -33,6 +33,14 @@ double calculate_ecut_on_disk(const relParam *rel_param,
                               const relline_spec_multizone *rel_profile,
                               const IonGradient &ion_gradient,
                               int ii);
+double calc_ecut_at_primary_source(const xillParam *xill_param,
+                                   const relParam *rel_param,
+                                   double ecut_input,
+                                   int *status);
+void free_arrays_relxill_kernel(int n_zones,
+                                const double *conv_out,
+                                const double *single_spec_inp,
+                                double *const *xill_angledep_spec);
 /**
  * check if the complete spectrum is cached and if the energy grid did not change
  *  -> additionally we adapt the energy grid to the new dimensions and energy values
@@ -139,10 +147,10 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
   }
 }
 
-
 /**
- * @brief get the energy shift in order to calculate the proper Ecut value  on the disk (if nzones>1)
+ * @brief get the energy shift in order to calculate the proper Ecut value on the disk (if nzones>1)
  *        - the cutoff is calculated for the (linear) middle of the radial zone
+ *        - for nzones=1 the value at the primary source is returned
  * @param rel_param
  * @param ecut0
  * @param ecut_primary
@@ -152,14 +160,15 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
  * @param ii
  * @return
  */
-double calculate_ecut_on_disk(const relParam *rel_param, double ecut0, double ecut_primary,
-                              const double* rgrid, int num_zones, const IonGradient &ion_gradient, int ii) {
+double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary,
+                              const double *rgrid, int num_zones, const IonGradient &ion_gradient, int ii) {
 
   if (num_zones == 1) {
-    return ecut0; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
+    return ecut_primary; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
   } else {
     double rzone = 0.5 * (rgrid[ii] + rgrid[ii + 1]);
-    double del_emit = (ion_gradient.del_emit== nullptr) ? 0.0 : ion_gradient.del_emit[ii] ;  // only relevant if beta!=0 (doppler boosting)
+    double del_emit = (ion_gradient.del_emit == nullptr) ? 0.0
+                                                         : ion_gradient.del_emit[ii];  // only relevant if beta!=0 (doppler boosting)
     return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
   }
 }
@@ -189,18 +198,12 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   // TODO: better treatment of the input parameter
   double ecut0 = xill_param->ect;
 
-  /** note that in case of the nthcomp model Ecut is in the frame of the primary source
-      but for the bkn_powerlaw it is given in the observer frame */
-  double ecut_primary = 0.0;
-  if (xill_param->prim_type == PRIM_SPEC_ECUT) {
-    ecut_primary = ecut0 * (1 + grav_redshift(rel_param));
-  } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
-    ecut_primary = ecut0;
-  }
-
-  specCache *spec_cache = init_global_specCache(status);
+  double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, ecut0, status);
   CHECK_STATUS_VOID(*status);
 
+  specCache *spec_cache = init_global_specCache(status);
+  assert(spec_cache != nullptr);
+  CHECK_STATUS_VOID(*status);
 
   auto caching_status = CachingStatus();
   check_caching_parameters(caching_status, rel_param, xill_param);
@@ -236,7 +239,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
       // set xillver parameters for the given zone TODO: do not use xill_param struct here
       xill_param->ect =
-          calculate_ecut_on_disk(rel_param, ecut0, ecut_primary, rgrid, rel_param->num_zones, ion_gradient, ii);
+          calculate_ecut_on_disk(rel_param, ecut_primary, rgrid, rel_param->num_zones, ion_gradient, ii);
       xill_param->lxi = ion_gradient.lxi[ii];
 
 
@@ -282,37 +285,27 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
 
     // make sure the output array is set to 0
-    for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
-      spectrum.flux[ii] = 0.0;
+    for (int ie = 0; ie < spectrum.num_flux_bins(); ie++) {
+      spectrum.flux[ie] = 0.0;
     }
 
     auto conv_out = new double[n_ener_conv];
     auto single_spec_inp = new double[spectrum.num_flux_bins()];
+    auto xill_angledep_spec = new double *[rel_param->num_zones];
 
     // loop over ionization zones
-    auto xill_angledep_spec = new double*[rel_param->num_zones];
     for (int ii = 0; ii < rel_profile->n_zones; ii++) {
-      assert(spec_cache != nullptr);
-
-      xill_angledep_spec[ii] = new double[n_ener_conv];
 
       /** avoid problems where no relxill bin falls into an ionization bin **/
       if (calcSum(rel_profile->flux[ii], rel_profile->n_ener) < 1e-12) {
         continue;
       }
 
-      // --- 3 --- calculate xillver spectrum
-      xillSpec *xill_spec_table = spec_cache->xill_spec[ii];
-
       // -- 6 -- get angle-dependent spectrum
-      get_xillver_angdep_spec(xill_angledep_spec[ii], ener_conv,n_ener_conv, rel_profile->rel_cosne->dist[ii],  xill_spec_table,
-                              status);
+      xill_angledep_spec[ii] = new double[n_ener_conv];
+      get_xillver_angdep_spec(xill_angledep_spec[ii], ener_conv, n_ener_conv, rel_profile->rel_cosne->dist[ii],
+                              spec_cache->xill_spec[ii], status);
       CHECK_STATUS_VOID(*status);
-
-    }
-
-    // loop over ionization zones
-    for (int ii = 0; ii < rel_profile->n_zones; ii++) {
 
       // -- 7 -- convolve the spectrum **
       int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
@@ -339,17 +332,55 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     copy_spectrum_to_cache(spectrum, spec_cache, status);
     CHECK_STATUS_VOID(*status);
 
-    delete[] single_spec_inp;
-    delete[] conv_out;
-    for (int ii = 0; ii < rel_profile->n_zones; ii++) {
-      delete[] xill_angledep_spec[ii];
-    }
-    delete[] xill_angledep_spec;
+    free_arrays_relxill_kernel(rel_profile->n_zones, conv_out, single_spec_inp, xill_angledep_spec);
 
-  } /************* END OF THE HUGE COMPUTATION ********************/
+  }
 
   /** add a primary spectral component and normalize according to the given refl_frac parameter**/
   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, status);
+}
+
+/**
+ * @brief free arrays allocated and needed by relxill_kernel
+ * @param n_zones
+ * @param conv_out
+ * @param single_spec_inp
+ * @param xill_angledep_spec
+ */
+void free_arrays_relxill_kernel(int n_zones,
+                                const double *conv_out,
+                                const double *single_spec_inp,
+                                double *const *xill_angledep_spec) {
+  delete[] single_spec_inp;
+  delete[] conv_out;
+  for (int ii = 0; ii < n_zones; ii++) {
+    delete[] xill_angledep_spec[ii];
+  }
+  delete[] xill_angledep_spec;
+}
+
+/** @brief calculate the ecut/kTe value at the primary source (from the xspec parameter input value)
+ *  @details in case of the nthcomp model Ecut is already input in the frame of the primary source
+ *   but for the bkn_powerlaw it is given in the observer frame. In case of a BB spectrum, it is also
+ *   given in the source frame.
+ * @param xill_param
+ * @param rel_param
+ * @param ecut_input
+ * @param status
+ * @return
+ */
+double calc_ecut_at_primary_source(const xillParam *xill_param,
+                                   const relParam *rel_param,
+                                   double ecut_input,
+                                   int *status) {
+  if (xill_param->prim_type == PRIM_SPEC_ECUT) {
+    return ecut_input * (1 + grav_redshift(rel_param));
+  } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP || xill_param->prim_type == PRIM_SPEC_BB) {
+    return ecut_input;
+  } else {
+    RELXILL_ERROR("unknown primary spectrum type, can not calculate Ecut at the primary source", status);
+    return -1;
+  }
 }
 
 
