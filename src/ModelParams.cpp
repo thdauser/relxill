@@ -18,8 +18,8 @@
 
 #include "ModelParams.h"
 #include "ModelDatabase.h"
+#include "Relmodels.h"
 extern "C" {
-#include "relmodels.h"
 #include "relutility.h"
 }
 

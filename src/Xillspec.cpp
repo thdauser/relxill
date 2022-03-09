@@ -16,11 +16,16 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "xillspec.h"
+#include "Xillspec.h"
 
+extern "C" {
 #include "xilltable.h"
 #include "writeOutfiles.h"
-#include "relbase.h"
+#include "common.h"
+}
+
+
+double *global_ener_xill = nullptr;
 
 /** @brief main routine for the xillver table: returns a spectrum for the given parameters
  *  @details
@@ -33,13 +38,13 @@
  */
 xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
-  xillTable *tab = NULL;
+  xillTable *tab = nullptr;
   const char *fname = get_init_xillver_table(&tab, param, status);
 
-  CHECK_STATUS_RET(*status, NULL);
-  assert(fname != NULL);
+  CHECK_STATUS_RET(*status, nullptr);
+  assert(fname != nullptr);
 
   // =1=  get the inidices
   int *indparam = get_xilltab_indices_for_paramvals(param, tab, status);
@@ -65,11 +70,11 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
  */
 xillSpec *get_xillver_spectra(xillParam *param, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   xillTableParam *param_table = get_xilltab_param(param, status);
   xillSpec *xill_spec = get_xillver_spectra_table(param_table, status);
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   free(param_table);
 
@@ -84,10 +89,10 @@ xillSpec *get_xillver_spectra(xillParam *param, int *status) {
  */
 double *calc_angle_averaged_xill_spec(const xillSpec *xill_spec, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
-  double *output_spec = malloc(sizeof(double) * xill_spec->n_ener);
-  CHECK_MALLOC_RET_STATUS(output_spec, status, NULL)
+  auto *output_spec = new double[xill_spec->n_ener];
+  CHECK_MALLOC_RET_STATUS(output_spec, status, nullptr)
 
   memset(output_spec, 0, xill_spec->n_ener * sizeof(output_spec[0]));
   for (int ii = 0; ii < xill_spec->n_incl; ii++) {
@@ -137,10 +142,153 @@ static double get_photon_flux_band(const double *ener,
   return sum;
 }
 
+
+
+void set_stdNormXillverEnerygrid(int *status) {
+  if (global_ener_xill == nullptr) {
+    global_ener_xill = (double *) malloc((N_ENER_XILLVER + 1) * sizeof(double));
+    CHECK_MALLOC_VOID_STATUS(global_ener_xill, status)
+    get_log_grid(global_ener_xill, N_ENER_XILLVER + 1, EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
+  }
+}
+
+EnerGrid *get_stdXillverEnergygrid(int *status) {
+  CHECK_STATUS_RET(*status, nullptr);
+
+  set_stdNormXillverEnerygrid(status);
+  CHECK_STATUS_RET(*status, nullptr);
+
+  EnerGrid *egrid = new_EnerGrid(status);
+  egrid->ener = global_ener_xill;
+  egrid->nbins = N_ENER_XILLVER;
+
+  return egrid;
+}
+
+double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status) {
+  /* get the normalization of the spectrum with respect to xillver
+ *  - everything is normalized using dens=10^15 cm^3
+ *  - normalization defined, e.g., in Appendix of Dauser+2016
+ *  - needs to be calculated on the specific energy grid (defined globally)
+ */
+
+  set_stdNormXillverEnerygrid(status);
+  assert(global_ener_xill != nullptr);
+
+  double keV2erg = 1.602177e-09;
+
+  // need this to make sure no floating point problems arise
+  double floatCompFactor = 1e-6;
+
+  if (ener[n] < (EMAX_XILLVER_NORMALIZATION - floatCompFactor)
+      || ener[0] > (EMIN_XILLVER_NORMALIZATION + floatCompFactor)) {
+    RELXILL_ERROR("can not calculate the primary spectrum normalization", status);
+    printf("  the given energy grid from %e keV to %e keV does not cover the boundaries\n", ener[0], ener[n]);
+    printf("  from [%e,%e] necessary for the calcualtion\n", EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
+    return 0.0;
+  }
+
+  double sum_pl = 0.0;
+  for (int ii = 0; ii < n; ii++) {
+    if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii] <= EMAX_XILLVER_NORMALIZATION) {
+      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg;
+    }
+  }
+  double norm_xillver_table = 1e15 / 4.0 / M_PI;
+  return sum_pl / norm_xillver_table;
+}
+
+
+void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
+                              const relParam *rel_param, const xillTableParam *xill_param, int *status) {
+
+  CHECK_STATUS_VOID(*status);
+  assert(global_ener_xill != nullptr);
+
+  if (xill_param->prim_type == PRIM_SPEC_ECUT) {
+    /** note that in case of the nthcomp model Ecut is in the frame of the primary source
+	    but for the bkn_powerlaw it is given in the observer frame */
+
+    /** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
+    /**    (in case of the nthcomp primary continuum ect is actually kte ) **/
+    double ecut_rest = xill_param->ect;
+
+    for (int ii = 0; ii < n_ener; ii++) {
+      pl_flux_xill[ii] = exp(1.0 / ecut_rest) *
+          pow(0.5 * (ener[ii] + ener[ii + 1]), -xill_param->gam) *
+          exp(-0.5 * (ener[ii] + ener[ii + 1]) / ecut_rest) *
+          (ener[ii + 1] - ener[ii]);
+    }
+
+  } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
+
+    double nthcomp_param[5];
+    /** important, kTe is given in the primary source frame, so we have to add the redshift here
+		 *     however, only if the REL model **/
+    double z = 0.0;
+    if (rel_param != nullptr && rel_param->emis_type == EMIS_TYPE_LP) {
+      z = grav_redshift(rel_param);
+    }
+    get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
+    c_donthcomp(ener, n_ener, nthcomp_param, pl_flux_xill);
+
+  } else if (xill_param->prim_type == PRIM_SPEC_BB) {
+
+    double en;
+    for (int ii = 0; ii < n_ener; ii++) {
+      en = 0.5 * (ener[ii] + ener[ii + 1]);
+      pl_flux_xill[ii] = en * en / (pow(xill_param->kTbb, 4) * (exp(en / xill_param->kTbb) - 1));
+      pl_flux_xill[ii] *= (ener[ii + 1] - ener[ii]);
+    }
+  } else {
+    RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",
+                  status);
+  }
+}
+
+
+/**
+ *
+ * @param ener
+ * @param n_ener
+ * @param rel_param
+ * @param xill_param
+ * @param status
+ * @return
+ */
+double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
+                                                 const relParam *rel_param, const xillTableParam *xill_param, int *status) {
+
+  /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
+  EnerGrid *egrid = get_stdXillverEnergygrid(status);
+  // CHECK_STATUS_VOID(*status);
+  double pl_flux_xill[egrid->nbins]; // global energy grid
+  calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, status);
+
+  double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, status);
+
+  auto *o_flux = new double[n_ener];
+  CHECK_MALLOC_RET_STATUS(o_flux, status, nullptr);
+
+  /** bin the primary continuum onto the Input grid **/
+  rebin_spectrum(ener, o_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
+
+  free(egrid);
+
+  for (int ii = 0; ii < n_ener; ii++) {
+    o_flux[ii] *= primarySpecNormFactor;
+  }
+
+  return o_flux;
+}
+
+
+
+
 double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
                             const xillTableParam *xill_table_param, int *status) {
   double *direct_spec =
-      calc_normalized_xillver_primary_spectrum(ener, n_ener, NULL, xill_table_param, status);
+      calc_normalized_xillver_primary_spectrum(ener, n_ener, nullptr, xill_table_param, status);
 
   double emin = 0.1;
   double emax = 1000;
@@ -217,12 +365,12 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
   double *angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
   CHECK_STATUS_VOID(*status);
 
-  if (fac_fluxcorr != NULL) {
+  if (fac_fluxcorr != nullptr) {
     *fac_fluxcorr =
         get_xillver_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_table_param, status);
   }
 
-  if (fac_gshift_fluxcorr != NULL) {
+  if (fac_gshift_fluxcorr != nullptr) {
     *fac_gshift_fluxcorr =
         get_xillver_gshift_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_table_param->gam);
   }

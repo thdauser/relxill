@@ -15,18 +15,21 @@
 
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
-#include "relprofile.h"
+#include "Relprofile.h"
+#include "Relcache.h"
+#include "Rellp.h"
 
+extern "C" {
 #include "relutility.h"
 #include "writeOutfiles.h"
-#include "relcache.h"
 #include "reltable.h"
+}
 
-cnode *cache_syspar = NULL;
+cnode *cache_syspar = nullptr;
 
 /** global parameters, which can be used for several calls of the model */
-relTable *ptr_rellineTable = NULL;
-RelSysPar *cached_tab_sysPar = NULL;
+relTable *ptr_rellineTable = nullptr;
+RelSysPar *cached_tab_sysPar = nullptr;
 
 // precision to calculate gstar from [H:1-H] instead of [0:1]
 const double GFAC_H = 5e-3;
@@ -81,13 +84,13 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
                                     int *status) {
 
   // load tables
-  if (ptr_rellineTable == NULL) {
+  if (ptr_rellineTable == nullptr) {
     print_version_number();
     read_relline_table(RELTABLE_FILENAME, &ptr_rellineTable, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
   }
   relTable *tab = ptr_rellineTable;
-  assert(tab != NULL);
+  assert(tab != nullptr);
 
   double rms = kerr_rms(a);
 
@@ -102,9 +105,9 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
   /**************************************/
 
   // get a structure to store the values from the interpolation in the A-MU0-plane
-  if (cached_tab_sysPar == NULL) {
+  if (cached_tab_sysPar == nullptr) {
     cached_tab_sysPar = new_relSysPar(tab->n_r, tab->n_g, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
   }
 
   int ind_a = binary_search_float(tab->a, tab->n_a, (float) a);
@@ -167,7 +170,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
 
   //  need to initialize and allocate memory
   RelSysPar *sysPar = new_relSysPar(N_FRAD, tab->n_g, status);
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
   get_fine_radial_grid(rin, rout, sysPar->re, sysPar->nr);
 
   /** we do not have rmax=1000.0 in the table, but just values close to it so let's do this trick**/
@@ -199,7 +202,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
           RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
           printf("   --> radius %.4e ABOVE the maximal possible radius of %.4e \n",
                  sysPar->re[ii], RELTABLE_MAX_R);
-          CHECK_STATUS_RET(*status, NULL);
+          CHECK_STATUS_RET(*status, nullptr);
         }
       }
     }
@@ -213,7 +216,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
       RELXILL_ERROR("interpolation of rel_table on fine radial grid failed due to corrupted grid", status);
       printf("   --> radius %.4e not found in [%.4e,%.4e]  \n",
              sysPar->re[ii], cached_tab_sysPar->re[ind_tabr + 1], cached_tab_sysPar->re[ind_tabr]);
-      CHECK_STATUS_RET(*status, NULL);
+      CHECK_STATUS_RET(*status, nullptr);
     }
 
     for (jj = 0; jj < sysPar->ng; jj++) {
@@ -248,15 +251,15 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
  */
 RelSysPar *get_system_parameters(relParam *param, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   inpar *sysinp = set_input_syspar(param, status);
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   cache_info *ca_info = cli_check_cache(cache_syspar, sysinp, check_cache_syspar, status);
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
-  RelSysPar *sysPar = NULL;
+  RelSysPar *sysPar = nullptr;
   if (ca_info->syscache == 1 ) {
     // system parameter values are cached, so we can take it from there
     sysPar = ca_info->store->data->relSysPar;
@@ -266,13 +269,13 @@ RelSysPar *get_system_parameters(relParam *param, int *status) {
   } else {
     // NOT CACHED, so we need to calculate the system parameters
     sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     sysPar->limb_law = param->limb;
 
     // get emissivity profile
     sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     // now add (i.e., prepend) the current calculation to the cache
     set_cache_syspar(&cache_syspar, param, sysPar, status);
@@ -289,8 +292,8 @@ RelSysPar *get_system_parameters(relParam *param, int *status) {
 
   // make a sanity check for now
   if (*status == EXIT_SUCCESS) {
-    assert(cache_syspar != NULL);
-    assert(sysPar != NULL);
+    assert(cache_syspar != nullptr);
+    assert(sysPar != nullptr);
   }
 
   return sysPar;
@@ -301,7 +304,7 @@ RelSysPar *get_system_parameters(relParam *param, int *status) {
 relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status) {
 
   relline_spec_multizone *spec = (relline_spec_multizone *) malloc(sizeof(relline_spec_multizone));
-  CHECK_MALLOC_RET_STATUS(spec, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
 
   spec->n_zones = nzones;
   spec->n_ener = n_ener;
@@ -319,8 +322,8 @@ relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status) 
   spec->ener = (double *) malloc((spec->n_ener + 1) * sizeof(double));
   CHECK_MALLOC_RET_STATUS(spec->ener, status, spec)
 
-  spec->rgrid = NULL; // will be allocated later
-  spec->rel_cosne = NULL; // will be allocated later (only if need)
+  spec->rgrid = nullptr; // will be allocated later
+  spec->rel_cosne = nullptr; // will be allocated later (only if need)
 
   return spec;
 }
@@ -329,7 +332,7 @@ relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status) 
 RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 
   RelCosne *spec = (RelCosne *) malloc(sizeof(RelCosne));
-  CHECK_MALLOC_RET_STATUS(spec, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
 
   spec->n_zones = nzones;
   spec->n_cosne = n_incl;
@@ -361,7 +364,7 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
   /** in case of the relxill-LP model multiple zones are used **/
   int nzones = param->num_zones;
 
-  if ((*spec) == NULL) {
+  if ((*spec) == nullptr) {
     (*spec) = new_rel_spec(nzones, n_ener, status);
   } else {
     // check if the number of zones changed or number of energy bins
@@ -376,8 +379,8 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
     (*spec)->ener[ii] = (*pt_ener)[ii];
   }
 
-  if (xill_tab != NULL) {
-    if ((*spec)->rel_cosne == NULL) {
+  if (xill_tab != nullptr) {
+    if ((*spec)->rel_cosne == nullptr) {
       (*spec)->rel_cosne = new_rel_cosne(nzones, xill_tab->n_incl, status);
     }
     for (int ii = 0; ii < (*spec)->rel_cosne->n_cosne; ii++) {
@@ -386,7 +389,7 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
   }
 
   // if the grid changed, we called new_rel_spec
-  if ((*spec)->rgrid == NULL) {
+  if ((*spec)->rgrid == nullptr) {
     (*spec)->rgrid = radialZones;
   } else {
     free(radialZones);
@@ -403,7 +406,7 @@ static void zero_rel_spec_flux(relline_spec_multizone *spec) {
     for (jj = 0; jj < spec->n_ener; jj++) {
       spec->flux[ii][jj] = 0.0;
     }
-    if (spec->rel_cosne != NULL) {
+    if (spec->rel_cosne != nullptr) {
       for (jj = 0; jj < spec->rel_cosne->n_cosne; jj++) {
         spec->rel_cosne->dist[ii][jj] = 0.0;
       }
@@ -414,7 +417,7 @@ static void zero_rel_spec_flux(relline_spec_multizone *spec) {
 /** relat. transfer function, which we will need to integrate over the energy bin then **/
 static str_relb_func *new_str_relb_func(RelSysPar *sysPar, int *status) {
   str_relb_func *str = (str_relb_func *) malloc(sizeof(str_relb_func));
-  CHECK_MALLOC_RET_STATUS(str, status, NULL)
+  CHECK_MALLOC_RET_STATUS(str, status, nullptr)
 
   str->gstar = sysPar->gstar;
   str->ng = sysPar->ng;
@@ -718,7 +721,7 @@ void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, c
     }
   }
 
-  if (spec->rel_cosne != NULL) {
+  if (spec->rel_cosne != nullptr) {
     for (ii = 0; ii < spec->n_zones; ii++) {
       // normalize it for each zone, the overall flux will be taken care of by the normal structure
       sum = 0.0;
@@ -739,7 +742,7 @@ int static get_cosne_bin(double mu, RelCosne *dat) {
 }
 
 /** calculate the relline profile(s) for all given zones **/
-str_relb_func *cached_str_relb_func = NULL;
+str_relb_func *cached_str_relb_func = nullptr;
 
 static double calculate_radiallyResolvedFluxObs(str_relb_func *relb_func, relline_spec_multizone *spec, double weight) {
 
@@ -755,9 +758,9 @@ static double calculate_radiallyResolvedFluxObs(str_relb_func *relb_func, rellin
 }
 
 static void free_str_relb_func(str_relb_func **str) {
-  if (*str != NULL) {
+  if (*str != nullptr) {
     free(*str);
-    *str = NULL;
+    *str = nullptr;
   }
 }
 
@@ -770,12 +773,12 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
   // very important: set all fluxes to zero
   zero_rel_spec_flux(spec);
 
-  if (cached_str_relb_func == NULL) {
+  if (cached_str_relb_func == nullptr) {
     cached_str_relb_func = new_str_relb_func(sysPar, status);
   }
 
   // store the (energy)-integrated flux in an array for debugging
-  double *radialFlux = NULL;
+  double *radialFlux = nullptr;
   if (shouldOutfilesBeWritten()) {
     radialFlux = (double *) malloc(sizeof(double) * sysPar->nr);
     CHECK_MALLOC_VOID_STATUS(radialFlux, status)
@@ -829,12 +832,12 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
       }
 
       if (shouldOutfilesBeWritten() && spec->n_zones == 1) {
-        assert(radialFlux != NULL);
+        assert(radialFlux != nullptr);
         radialFlux[ii] = calculate_radiallyResolvedFluxObs(cached_str_relb_func, spec, weight);
       }
 
       /** only calculate the distribution if we need it here  **/
-      if (spec->rel_cosne != NULL) {
+      if (spec->rel_cosne != nullptr) {
         int kk;
         int imu;
         str_relb_func *da = cached_str_relb_func; // define a shortcut
@@ -878,7 +881,7 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
 
 RelSysPar *new_relSysPar(int nr, int ng, int *status) {
   RelSysPar *sysPar = (RelSysPar *) malloc(sizeof(RelSysPar));
-  CHECK_MALLOC_RET_STATUS(sysPar, status, NULL)
+  CHECK_MALLOC_RET_STATUS(sysPar, status, nullptr)
 
   sysPar->ng = ng;
   sysPar->nr = nr;
@@ -890,7 +893,7 @@ RelSysPar *new_relSysPar(int nr, int ng, int *status) {
   sysPar->gmax = (double *) malloc(nr * sizeof(double));
   CHECK_MALLOC_RET_STATUS(sysPar->gmax, status, sysPar)
 
-  sysPar->emis = NULL;
+  sysPar->emis = nullptr;
 
   sysPar->gstar = (double *) malloc(ng * sizeof(double));
   CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
@@ -935,7 +938,7 @@ RelSysPar *new_relSysPar(int nr, int ng, int *status) {
 }
 
 void free_relSysPar(RelSysPar *sysPar) {
-  if (sysPar != NULL) {
+  if (sysPar != nullptr) {
     free(sysPar->re);
     free(sysPar->gmin);
     free(sysPar->gmax);
@@ -944,10 +947,10 @@ void free_relSysPar(RelSysPar *sysPar) {
 
     free_emisProfile(sysPar->emis);
 
-    if (sysPar->trff != NULL) {
+    if (sysPar->trff != nullptr) {
       int ii;
       for (ii = 0; ii < sysPar->nr; ii++) {
-        if (sysPar->trff[ii] != NULL) {
+        if (sysPar->trff[ii] != nullptr) {
           int jj;
           for (jj = 0; jj < sysPar->ng; jj++) {
             free(sysPar->trff[ii][jj]);
@@ -958,10 +961,10 @@ void free_relSysPar(RelSysPar *sysPar) {
       free(sysPar->trff);
     }
 
-    if (sysPar->cosne != NULL) {
+    if (sysPar->cosne != nullptr) {
       int ii;
       for (ii = 0; ii < sysPar->nr; ii++) {
-        if (sysPar->cosne[ii] != NULL) {
+        if (sysPar->cosne[ii] != nullptr) {
           int jj;
           for (jj = 0; jj < sysPar->ng; jj++) {
             free(sysPar->cosne[ii][jj]);

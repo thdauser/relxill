@@ -19,10 +19,8 @@
 #include "catch2/catch_amalgamated.hpp"
 
 #include "LocalModel.h"
+#include "Relbase.h"
 
-extern "C" {
-#include "relbase.h"
-}
 
 
 TEST_CASE(" creating of new xillver table ", "[xilltab]") {

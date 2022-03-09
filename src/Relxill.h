@@ -19,13 +19,13 @@
 #define RELXILL_H_
 
 #include "XspecSpectrum.h"
+#include "Relbase.h"
+#include "Relmodels.h"
+#include "Xillspec.h"
 
 extern "C" {
-#include "relmodels.h"
-#include "relbase.h"
 #include "writeOutfiles.h"
 #include "relutility.h"
-#include "xillspec.h"
 }
 
 

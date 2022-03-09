@@ -20,10 +20,11 @@
 #include "LocalModel.h"
 #include "XspecSpectrum.h"
 #include "common-functions.h"
+#include "Rellp.h"
+
 extern "C" {
 #include "relutility.h"
 #include "writeOutfiles.h"
-#include "rellp.h"
 #include "xilltable.h"
 }
 
@@ -168,7 +169,7 @@ emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* statu
     emis->emis[ii] /= emis->emis[0]; //
   }
 
-  emisProfile* emis_return = calc_rrad_emis_corona(rf, 1.0, emis, gamma, status);
+  emisProfile* emis_return = calc_rrad_emis_corona(rf, nullptr, emis, gamma, status);
 
   free_returningFractions(&rf);
   free_emisProfile(emis);

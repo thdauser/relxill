@@ -18,8 +18,10 @@
 #ifndef RELCACHE_H_
 #define RELCACHE_H_
 
+extern "C" {
 #include "common.h"
 #include "relutility.h"
+}
 
 #define CACHE_LIMIT 1e-8
 

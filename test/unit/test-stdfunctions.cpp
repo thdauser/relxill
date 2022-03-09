@@ -19,10 +19,10 @@
 #include "catch2/catch_amalgamated.hpp"
 
 #include "common-functions.h"
+#include "Relbase.h"
 
 extern "C" {
 #include "relutility.h"
-#include "relbase.h"
 #include "relphysics.h"
 }
 #define LIMIT_PREC 1e-6

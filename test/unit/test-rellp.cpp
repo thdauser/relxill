@@ -22,11 +22,7 @@
 #include "xspec_wrapper_lmodels.h"
 #include "XspecSpectrum.h"
 #include "common-functions.h"
-
-
-extern "C" {
-#include "rellp.h"
-}
+#include "Rellp.h"
 
 #define PREC 1e-6
 

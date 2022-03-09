@@ -17,9 +17,7 @@
 */
 
 #include "relreturn_table.h"
-
 #include "xilltable.h"
-#include "relbase.h"
 
 returnTable *cached_retTable = NULL;
 

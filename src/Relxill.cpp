@@ -18,6 +18,11 @@
 #include "Relxill.h"
 #include "IonGradient.h"
 #include "XspecSpectrum.h"
+#include "Relreturn_Corona.h"
+
+extern "C" {
+#include "xilltable.h"
+}
 
 /** caching parameters **/
 relParam *cached_rel_param = nullptr;
@@ -157,6 +162,39 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
 }
 
 
+/**
+ * @brief calculate the correction factors for the given radial grid
+ * @details only calculated if the return_rad!=0 is set, otherwise a nullptr
+ *  is returned, which means no correction is calculated
+ * @param rel_param
+ * @param xill_spec
+ * @param rgrid
+ * @param xill_table_param
+ * @param status
+ * @return
+ */
+rradCorrFactors* calc_rrad_corr_factors(relParam *rel_param, xillSpec **xill_spec, double *rgrid,
+                                       xillTableParam *const *xill_table_param, int *status) {
+
+  if (rel_param->return_rad == 0) {
+    return nullptr;
+  }
+
+  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid, rel_param->num_zones, status);
+
+  if (rrad_corr_factors == nullptr || *status != EXIT_SUCCESS) {
+    assert(rrad_corr_factors != nullptr);
+    return rrad_corr_factors;
+  }
+
+  for (int ii = 0; ii < rel_param->num_zones; ii++) {
+      get_xillver_fluxcorrection_factors(xill_spec[ii],
+                                         &(rrad_corr_factors->corrfac_flux[ii]),
+                                         &(rrad_corr_factors->corrfac_gshift[ii]),
+                                         xill_table_param[ii], status);
+  }
+  return rrad_corr_factors;
+}
 
 
 ///////////////////////////////////////
@@ -244,14 +282,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     }
 
     // -- 4 -- returning radiation
-    for (int ii = 0; ii < rel_param->num_zones; ii++) {
-       if (rel_param->return_rad > 0) {
-        get_xillver_fluxcorrection_factors(spec_cache->xill_spec[ii], &(rel_param->return_rad_flux_correction_factor),
-                                           &(rel_param->xillver_gshift_corr_fac),
-                                           xill_table_param[ii], status);
-        CHECK_STATUS_VOID(*status);
-      }
-    }
+    rel_param->rrad_corr_factors = calc_rrad_corr_factors(rel_param, spec_cache->xill_spec, rgrid, xill_table_param, status);
 
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the calc_relline_profile call
@@ -276,6 +307,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     copy_spectrum_to_cache(spectrum, spec_cache, status);
     CHECK_STATUS_VOID(*status);
+
+    free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
 
   }
 

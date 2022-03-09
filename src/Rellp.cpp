@@ -16,11 +16,11 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "rellp.h"
+#include "Rellp.h"
 
 #include "writeOutfiles.h"
 
-lpTable *cached_lp_table = NULL;
+lpTable *cached_lp_table = nullptr;
 
 
 /*
@@ -34,9 +34,9 @@ lpTable *cached_lp_table = NULL;
 static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_max, const relParam *param, int *status) {
 
   // in case there is no relativity information, the refl_frac is 1
-  if (param == NULL) {
+  if (param == nullptr) {
     printf(" *** Warning: can not calculate reflection fraction as no relat. parameters are given \n");
-    return NULL;
+    return nullptr;
   }
 
   // get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
@@ -213,7 +213,7 @@ static void interpol_emisprofile_spin_height(emisProfile *emis_profile_table,
  */
 emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status){
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   int ind_a;
   double ifac_a;
@@ -223,7 +223,7 @@ emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status
   lpDat *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
   double* jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
-  CHECK_MALLOC_RET_STATUS(jet_rad,status,NULL)
+  CHECK_MALLOC_RET_STATUS(jet_rad,status,nullptr)
   for (int ii = 0; ii < tab->n_rad; ii++) {
     jet_rad[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->rad[ii], dat_ind_a[1]->rad[ii]);
   }
@@ -398,11 +398,11 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 
 
 static lpTable* get_lp_table(int* status){
-  CHECK_STATUS_RET(*status,NULL);
+  CHECK_STATUS_RET(*status,nullptr);
 
-  if (cached_lp_table == NULL) {
+  if (cached_lp_table == nullptr) {
     read_lp_table(LPTABLE_FILENAME, &cached_lp_table, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
   }
   return cached_lp_table;
 }
@@ -512,7 +512,7 @@ static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* s
  */
 emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   emisProfile *emis = new_emisProfile(re, nr, status);
 
@@ -544,7 +544,7 @@ emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status)
 
     RELXILL_ERROR(" calculation of emissivity profile not possible \n", status);
     printf("   -> emis_type=%i not known \n", param->emis_type);
-    return NULL;
+    return nullptr;
   }
 
 
@@ -564,19 +564,19 @@ emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status)
 
 extPrimSource *new_extendedPrimarySource(int nh, int *status) {
 
-  extPrimSource *source = malloc(sizeof(extPrimSource));
+  auto *source = new extPrimSource;
   CHECK_MALLOC_RET_STATUS(source, status, source)
 
   source->nh = nh;
-  source->heightArr = malloc(sizeof(double) * nh + 1);
-  source->heightMean = malloc(sizeof(double) * nh);
-  source->beta = malloc(sizeof(double) * nh);
+  source->heightArr = new double[nh + 1];
+  source->heightMean = new double[nh];
+  source->beta = new double[nh];
 
   return source;
 }
 
 void free_extendedPrimarySource(extPrimSource *source) {
-  if (source != NULL) {
+  if (source != nullptr) {
     free(source->heightArr);
     free(source->heightMean);
     free(source->beta);
@@ -587,8 +587,8 @@ void free_extendedPrimarySource(extPrimSource *source) {
 
 lpReflFrac *new_lpReflFrac(int *status) {
 
-  lpReflFrac *str = (lpReflFrac *) malloc(sizeof(lpReflFrac));
-  CHECK_MALLOC_RET_STATUS(str, status, NULL)
+  auto *str = new lpReflFrac;
+  CHECK_MALLOC_RET_STATUS(str, status, nullptr)
   str->refl_frac = 0.0;
   str->f_inf = 0.0;
   str->f_ad = 0.0;
@@ -598,16 +598,16 @@ lpReflFrac *new_lpReflFrac(int *status) {
 }
 
 void free_lpReflFrac(lpReflFrac **str) {
-  if (*str != NULL) {
+  if (*str != nullptr) {
     free(*str);
-    *str = NULL;
+    *str = nullptr;
   }
 }
 
 emisProfile *new_emisProfile(double *re, int nr, int *status) {
 
   emisProfile *emis = (emisProfile *) malloc(sizeof(emisProfile));
-  CHECK_MALLOC_RET_STATUS(emis, status, NULL)
+  CHECK_MALLOC_RET_STATUS(emis, status, nullptr)
 
   emis->re = re;
   emis->nr = nr;
@@ -627,13 +627,13 @@ emisProfile *new_emisProfile(double *re, int nr, int *status) {
 
   emis->normFactorPrimSpec = 0.0;
 
-  emis->photon_fate_fractions = NULL;
+  emis->photon_fate_fractions = nullptr;
 
   return emis;
 }
 
 void free_emisProfile(emisProfile *emis_profile) {
-  if (emis_profile != NULL) {
+  if (emis_profile != nullptr) {
     free(emis_profile->emis);
     free(emis_profile->del_emit);
     free(emis_profile->del_inc);

@@ -2,16 +2,16 @@
 set(SOURCE_FILES
         common.h
         donthcomp.c
-        relbase.c relbase.h
-        relcache.c relcache.h
-        rellp.c rellp.h
-        relmodels.c relmodels.h
+        Relbase.cpp Relbase.h
+        Relcache.cpp Relcache.h
+        Rellp.cpp Rellp.h
+        Relmodels.cpp Relmodels.h
         reltable.c reltable.h
         relutility.c relutility.h
         xilltable.c xilltable.h
         relphysics.c relphysics.h
         writeOutfiles.c writeOutfiles.h
-        relprofile.c relprofile.h
+        Relprofile.cpp Relprofile.h
         Relxill.cpp Relxill.h
         ModelDatabase.h
         LocalModel.cpp LocalModel.h
@@ -20,11 +20,11 @@ set(SOURCE_FILES
         ModelInfo.h
         Relreturn_BlackBody.cpp Relreturn_BlackBody.h
         IonGradient.cpp IonGradient.h
-        relreturn_corona.c relreturn_corona.h
+        Relreturn_Corona.cpp Relreturn_Corona.h
         relreturn_datastruct.c relreturn_datastruct.h
         relreturn_table.c relreturn_table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
-        xillspec.c xillspec.h)
+        Xillspec.cpp Xillspec.h)
 ############################################
 
 set(CONFIG_FILE ${PROJECT_BINARY_DIR}/config.h)

@@ -16,9 +16,9 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "IonGradient.h"
+#include "Relbase.h"
 
 extern "C"{
-#include "relprofile.h"
 #include "writeOutfiles.h"
 }
 

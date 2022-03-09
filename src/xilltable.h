@@ -21,36 +21,9 @@
 #include "relutility.h"
 #include "common.h"
 
-// currently the number of different parameters that can be given in a table
-#define N_PARAM_MAX 10  // has to be as long as the NAME_ array
-#define PARAM_GAM 0
-#define PARAM_AFE 1
-#define PARAM_ACO 1  // caveat: internally we use it same as AFE
-#define PARAM_LXI 2
-#define PARAM_ECT 3
-#define PARAM_KTE 3  // caveat: internally we treat kTe as Ecut
-#define PARAM_DNS 4
-#define PARAM_KTB 5
-#define PARAM_FRA 6
-#define PARAM_INC 7
-
-#define NAME_GAM "Gamma"
-#define NAME_AFE "A_Fe"
-#define NAME_LXI "logXi"
-#define NAME_ECT "Ecut"
-#define NAME_KTE "kTe"
-#define NAME_KTB "kTbb"
-#define NAME_DNS "Dens"
-#define NAME_ACO "A_CO"
-#define NAME_FRA "Frac"
-#define NAME_INC "Incl"
 
 
-/** name of the XILLVER table */
-#define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
-#define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.4.fits"
-#define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
-#define XILLTABLE_CO_FILENAME "xillverCO.fits"
+void renorm_xill_spec(float *spec, int n, double lxi, double dens);
 
 enum xillTableIds get_xilltable_id(int model_id, int prim_type);
 

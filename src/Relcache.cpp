@@ -16,13 +16,13 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "relcache.h"
-#include "relbase.h"
+#include "Relcache.h"
+#include "Relbase.h"
 
 /** probably best move to "utils" **/
 inpar *get_inputvals_struct(double *ener, int n_ener, relParam *rel_par, int *status) {
-  inpar *inp = (inpar *) malloc(sizeof(inpar));
-  CHECK_MALLOC_RET_STATUS(inp, status, NULL)
+  auto *inp = (inpar *) malloc(sizeof(inpar));
+  CHECK_MALLOC_RET_STATUS(inp, status, nullptr)
 
   inp->ener = ener;
   inp->n_ener = n_ener;
@@ -33,10 +33,10 @@ inpar *get_inputvals_struct(double *ener, int n_ener, relParam *rel_par, int *st
 
 /** probably best move to "utils" **/
 inpar *set_input_syspar(relParam *rel_par, int *status) {
-  inpar *inp = (inpar *) malloc(sizeof(inpar));
-  CHECK_MALLOC_RET_STATUS(inp, status, NULL)
+  auto *inp = (inpar *) malloc(sizeof(inpar));
+  CHECK_MALLOC_RET_STATUS(inp, status, nullptr)
 
-  inp->ener = NULL;
+  inp->ener = nullptr;
   inp->n_ener = 0;
   inp->rel_par = rel_par;
 
@@ -86,10 +86,7 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
   if (comp_single_param_val(par->rout, cpar->rout)) {
     return 1;
   }
-  if (comp_single_param_val(par->return_rad_flux_correction_factor, cpar->return_rad_flux_correction_factor)) {
-    return 1;
-  }
-  if (comp_single_param_val(par->xillver_gshift_corr_fac, cpar->xillver_gshift_corr_fac)) {
+  if (comp_single_param_val(par->return_rad, cpar->return_rad)) {
     return 1;
   }
 
@@ -105,7 +102,7 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
 
 int did_rel_param_change(const relParam *cpar, const relParam *par) {
 
-  if (cpar == NULL) {
+  if (cpar == nullptr) {
     return 1;
   }
 
@@ -147,9 +144,9 @@ int did_rel_param_change(const relParam *cpar, const relParam *par) {
 
 void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
 
-  assert(ca_rel_param != NULL);
+  assert(ca_rel_param != nullptr);
 
-  if ((*ca_rel_param) == NULL) {
+  if ((*ca_rel_param) == nullptr) {
     (*ca_rel_param) = (relParam *) malloc(sizeof(relParam));
     CHECK_MALLOC_VOID_STATUS((*ca_rel_param), status)
   }
@@ -178,14 +175,11 @@ void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
   (*ca_rel_param)->num_zones = par->num_zones;
 
   (*ca_rel_param)->return_rad = par->return_rad;
-  (*ca_rel_param)->return_rad_flux_correction_factor = par->return_rad_flux_correction_factor;
-  (*ca_rel_param)->xillver_gshift_corr_fac = par->xillver_gshift_corr_fac;
-
 }
 
 void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *status) {
 
-  if ((*ca_xill_param) == NULL) {
+  if ((*ca_xill_param) == nullptr) {
     (*ca_xill_param) = (xillParam *) malloc(sizeof(xillParam));
     CHECK_MALLOC_VOID_STATUS((*ca_xill_param), status)
   }
@@ -211,7 +205,7 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
 static int did_energy_grid_change(double *ener, int n_ener, relline_spec_multizone *ca) {
   int change = 0;
 
-  if (ca == NULL) {
+  if (ca == nullptr) {
     return change;
   }
 
@@ -230,8 +224,8 @@ static int did_energy_grid_change(double *ener, int n_ener, relline_spec_multizo
 }
 
 cnode *cli_create(cdata *data, cnode *next, int *status) {
-  cnode *new_node = (cnode *) malloc(sizeof(cnode));
-  CHECK_MALLOC_RET_STATUS(new_node, status, NULL)
+  auto *new_node = new cnode;
+  CHECK_MALLOC_RET_STATUS(new_node, status, nullptr)
 
   new_node->data = data;
   new_node->next = next;
@@ -240,7 +234,7 @@ cnode *cli_create(cdata *data, cnode *next, int *status) {
 }
 
 cnode *cli_prepend(cnode *head, cdata *data, int *status) {
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
   cnode *new_node = cli_create(data, head, status);
   head = new_node;
   return head;
@@ -250,7 +244,7 @@ cnode *cli_prepend(cnode *head, cdata *data, int *status) {
 int cli_count_elements(cnode *head) {
   cnode *cursor = head;
   int nelem = 0;
-  while (cursor != NULL) {
+  while (cursor != nullptr) {
     nelem++;
     cursor = cursor->next;
   }
@@ -261,26 +255,26 @@ int cli_count_elements(cnode *head) {
 void cli_delete_list(cnode **pt_head) {
   cnode *cursor = *pt_head;
 
-  cnode *next = NULL;
+  cnode *next = nullptr;
 
-  while (cursor != NULL) {
+  while (cursor != nullptr) {
     next = cursor->next;
     free_cnode(&cursor);
     cursor = next;
   }
 
-  *pt_head = NULL;
+  *pt_head = nullptr;
 }
 
 static cache_info *init_cache_info(cnode *node, int *status) {
-  cache_info *ca = (cache_info *) malloc(sizeof(cache_info));
-  CHECK_MALLOC_RET_STATUS(ca, status, NULL)
+  auto *ca = (cache_info *) malloc(sizeof(cache_info));
+  CHECK_MALLOC_RET_STATUS(ca, status, nullptr)
 
   // set where the storage is pointing to, to the current node pointer
   ca->store = node;
 
-  ca->read = NULL;  // not used right now!!
-  ca->store = NULL;
+  ca->read = nullptr;  // not used right now!!
+  ca->store = nullptr;
   ca->relcache = 0;
   ca->syscache = 0;
   ca->xilcache = 0;
@@ -293,9 +287,9 @@ cnode *check_cache_syspar(cache_info *ca_info, inpar *inp, cnode *node) {
   if (comp_sys_param(node->data->par_rel, inp->rel_par) == 0) {
     // system parameters did not change in this iteration
     ca_info->syscache = 1;
-    ca_info->read = NULL;
+    ca_info->read = nullptr;
     ca_info->store = node;
-    return NULL;
+    return nullptr;
 
   } else {
     // parameters did change, let's try the next node
@@ -314,9 +308,9 @@ cnode *check_cache_relpar(cache_info *ca_info, inpar *inp, cnode *node) {
       // energy grid AND parameters did not change: found a MATCH
     } else {
       ca_info->relcache = 1;
-      ca_info->read = NULL;
+      ca_info->read = nullptr;
       ca_info->store = node;
-      return NULL;
+      return nullptr;
     }
 
   } else {
@@ -340,10 +334,10 @@ cache_info *cli_check_cache(cnode *head,
                             cnode *(*check_cache)(cache_info *, inpar *, cnode *),
                             int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   cache_info *ca_info = init_cache_info(head, status);
-  CHECK_MALLOC_RET_STATUS(ca_info, status, NULL)
+  CHECK_MALLOC_RET_STATUS(ca_info, status, nullptr)
 
   const int cache_maxsize = get_cache_maxsize();
 
@@ -353,26 +347,26 @@ cache_info *cli_check_cache(cnode *head,
 
   int c = 0;
   cnode *cursor = head;
-  cnode *next = NULL;
-  while (cursor != NULL ) {
+  cnode *next = nullptr;
+  while (cursor != nullptr ) {
 
-    // if cursor is not NULL, we already have one element
+    // if cursor is not nullptr, we already have one element
     c++;
 
-    // let's check the cache: return value can be NULL for 2 conditions:
+    // let's check the cache: return value can be nullptr for 2 conditions:
     // (1) found a match
     // (2) end of the list
     next = check_cache(ca_info, inp, cursor);
 
     // if we are above the maximal number of elements, delete the rest and break
-    // (+) we need to set the cursor->next=NULL
-    if (next != NULL && c >= cache_maxsize - 1) {
+    // (+) we need to set the cursor->next=nullptr
+    if (next != nullptr && c >= cache_maxsize - 1) {
       if (is_debug_run()) {
         printf(" DEBUG: Cached reached its limiting size of %i\n", cache_maxsize);
       }
       cli_delete_list(&next);
-      cursor->next = NULL;
-      assert(next == NULL);
+      cursor->next = nullptr;
+      assert(next == nullptr);
     }
     cursor = next;
   }
@@ -383,23 +377,23 @@ cache_info *cli_check_cache(cnode *head,
 // prepend new node and set parameters
 cnode *add_node_to_cache(cnode *head, relParam *relpar, xillParam *xillpar, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   cdata *data = init_cdata(status);
 
-  assert(data != NULL);
-  if (relpar != NULL) {
+  assert(data != nullptr);
+  if (relpar != nullptr) {
     set_cached_rel_param(relpar, &(data->par_rel), status);
   }
 
-  if (xillpar != NULL) {
+  if (xillpar != nullptr) {
     set_cached_xill_param(xillpar, &(data->par_xill), status);
   }
 
   // prepend (i.e., create new node, assign data, and set the new head)
   cnode *new_head = cli_prepend(head, data, status);
 
-  assert(new_head != NULL);
+  assert(new_head != nullptr);
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
@@ -413,7 +407,7 @@ void add_relspec_to_cache(cnode **node, relParam *param, relline_spec_multizone 
   cnode *old_head = *node;
 
   // prepend new node and set parameters
-  cnode *new_head = add_node_to_cache(old_head, param, NULL, status);
+  cnode *new_head = add_node_to_cache(old_head, param, nullptr, status);
 
   // set the data
   new_head->data->relbase_spec = spec;
@@ -428,7 +422,7 @@ void set_cache_syspar(cnode **pt_head, relParam *param, RelSysPar *syspar, int *
   CHECK_STATUS_VOID(*status);
 
   // prepend new node and set parameters
-  cnode *new_head = add_node_to_cache(*pt_head, param, NULL, status);
+  cnode *new_head = add_node_to_cache(*pt_head, param, nullptr, status);
 
   // set the data
   new_head->data->relSysPar = syspar;
@@ -443,16 +437,16 @@ void set_cache_syspar(cnode **pt_head, relParam *param, RelSysPar *syspar, int *
 
 cdata *init_cdata(int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
   cdata *data = (cdata *) malloc(sizeof(cdata));
-  CHECK_MALLOC_RET_STATUS(data, status, NULL)
+  CHECK_MALLOC_RET_STATUS(data, status, nullptr)
 
-  data->par_rel = NULL;
-  data->par_xill = NULL;
-  data->relSysPar = NULL;
-  data->relbase_spec = NULL;
-  data->relxill_cache = NULL;
+  data->par_rel = nullptr;
+  data->par_xill = nullptr;
+  data->relSysPar = nullptr;
+  data->relbase_spec = nullptr;
+  data->relxill_cache = nullptr;
 
   return data;
 }
@@ -461,21 +455,21 @@ void free_relxill_cache(specCache *ca) {
 
   int ii;
   int m = 2;
-  if (ca != NULL) {
-    if (ca->xill_spec != NULL) {
+  if (ca != nullptr) {
+    if (ca->xill_spec != nullptr) {
       for (ii = 0; ii < ca->n_cache; ii++) {
-        if (ca->xill_spec[ii] != NULL) {
+        if (ca->xill_spec[ii] != nullptr) {
           free_xill_spec(ca->xill_spec[ii]);
         }
       }
       free(ca->xill_spec);
     }
 
-    if (ca->fft_xill != NULL) {
+    if (ca->fft_xill != nullptr) {
       free_fft_cache(ca->fft_xill, ca->n_cache, m);
     }
 
-    if (ca->fft_rel != NULL) {
+    if (ca->fft_rel != nullptr) {
       free_fft_cache(ca->fft_rel, ca->n_cache, m);
     }
 
@@ -489,7 +483,7 @@ void free_relxill_cache(specCache *ca) {
 
 static void free_cdata(cdata **pt_data) {
 
-  if (*pt_data != NULL) {
+  if (*pt_data != nullptr) {
     cdata *data = *pt_data;
     free(data->par_rel);
     free(data->par_xill);
@@ -503,12 +497,12 @@ static void free_cdata(cdata **pt_data) {
 
 void free_cnode(cnode **node) {
 
-  if ((*node) != NULL) {
-    if ((*node)->data != NULL) {
+  if ((*node) != nullptr) {
+    if ((*node)->data != nullptr) {
       free_cdata(&((*node)->data));
     }
     free(*node);
-    *node = NULL;
+    *node = nullptr;
   }
 
 }

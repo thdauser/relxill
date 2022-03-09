@@ -18,10 +18,13 @@
 #ifndef RELLP_H_
 #define RELLP_H_
 
-#include "relbase.h"
+#include "Relbase.h"
+
+extern "C" {
 #include "relutility.h"
 #include "reltable.h"
 #include "common.h"
+}
 
 #define NHBINS_VERTICALLY_EXTENDED_SOURCE 50
 

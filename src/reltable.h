@@ -18,7 +18,6 @@
 #ifndef RELTABLE_H_
 #define RELTABLE_H_
 
-#include "relbase.h"
 #include "relutility.h"
 
 /** a single element in the RELLINE table array */

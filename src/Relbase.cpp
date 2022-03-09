@@ -15,92 +15,93 @@
 
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
-#include "relbase.h"
-#include "complex.h"   // needed by fftw3 (has to be included before fftw3.h)
-#include "fftw/fftw3.h"   // assumes installation in heasoft
+#include "Relbase.h"
+#include "Xillspec.h"
 
+extern "C" {
+#include "fftw/fftw3.h"   // assumes installation in heasoft
 #include "writeOutfiles.h"
+}
 
 // new CACHE routines
-cnode *cache_relbase = NULL;
+cnode *cache_relbase = nullptr;
 
 
 int save_1eV_pos = 0;
 
-double *global_ener_xill = NULL;
 
 const int n_ener_std = N_ENER_CONV;
-double *global_ener_std = NULL;
+double *global_ener_std = nullptr;
 
-specCache *global_spec_cache = NULL;
+specCache *global_spec_cache = nullptr;
 
 
 static specCache *new_specCache(int n_cache, int *status) {
 
   specCache *spec = (specCache *) malloc(sizeof(specCache));
-  CHECK_MALLOC_RET_STATUS(spec, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
 
   spec->n_cache = n_cache;
   spec->nzones = 0;
   spec->n_ener = N_ENER_CONV;
 
-  spec->conversion_factor_energyflux = NULL;
+  spec->conversion_factor_energyflux = nullptr;
 
   spec->fft_xill = (double ***) malloc(sizeof(double **) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fft_xill, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->fft_xill, status, nullptr)
 
   spec->fft_rel = (double ***) malloc(sizeof(double **) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fft_rel, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->fft_rel, status, nullptr)
 
   spec->fftw_xill = (fftw_complex**) malloc(sizeof(fftw_complex*) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_xill, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->fftw_xill, status, nullptr)
 
   spec->fftw_rel = (fftw_complex**) malloc(sizeof(fftw_complex*) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_rel, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->fftw_rel, status, nullptr)
 
   spec->fftw_backwards_input = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_backwards_input, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->fftw_backwards_input, status, nullptr)
   spec->fftw_output = (double*) fftw_malloc(sizeof(double) * spec->n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_output, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->fftw_output, status, nullptr)
 
   spec->plan_c2r = fftw_plan_dft_c2r_1d(spec->n_ener, spec->fftw_backwards_input, spec->fftw_output,FFTW_ESTIMATE);
 
 
   spec->xill_spec = (xillSpec **) malloc(sizeof(xillSpec *) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->xill_spec, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->xill_spec, status, nullptr)
 
   int ii;
   int jj;
   int m = 2;
   for (ii = 0; ii < n_cache; ii++) {
     spec->fft_xill[ii] = (double **) malloc(sizeof(double *) * m);
-    CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii], status, NULL)
+    CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii], status, nullptr)
     spec->fft_rel[ii] = (double **) malloc(sizeof(double *) * m);
-    CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii], status, NULL)
+    CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii], status, nullptr)
 
     spec->fftw_xill[ii] = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
-    CHECK_MALLOC_RET_STATUS(spec->fftw_xill[ii], status, NULL)
+    CHECK_MALLOC_RET_STATUS(spec->fftw_xill[ii], status, nullptr)
     spec->fftw_rel[ii] = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
-    CHECK_MALLOC_RET_STATUS(spec->fftw_rel[ii], status, NULL)
+    CHECK_MALLOC_RET_STATUS(spec->fftw_rel[ii], status, nullptr)
 
     for (jj = 0; jj < m; jj++) {
       spec->fft_xill[ii][jj] = (double *) malloc(sizeof(double) * spec->n_ener);
-      CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii][jj], status, NULL)
+      CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii][jj], status, nullptr)
       spec->fft_rel[ii][jj] = (double *) malloc(sizeof(double) * spec->n_ener);
-      CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii][jj], status, NULL)
+      CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii][jj], status, nullptr)
     }
 
-    spec->xill_spec[ii] = NULL;
+    spec->xill_spec[ii] = nullptr;
 
   }
 
-  spec->out_spec = NULL;
+  spec->out_spec = nullptr;
 
   return spec;
 }
 
 static void init_specCache(specCache **spec, const int n_zones, int *status) {
-  if ((*spec) == NULL) {
+  if ((*spec) == nullptr) {
     (*spec) = new_specCache(n_zones, status);
   }
 }
@@ -115,7 +116,7 @@ specCache *init_global_specCache(int *status) {
 static double* calculate_energyflux_conversion(const double* ener, int n_ener, int* status){
 
   double* factor = (double *) malloc(sizeof(double) * n_ener );
-  CHECK_MALLOC_RET_STATUS(factor, status, NULL)
+  CHECK_MALLOC_RET_STATUS(factor, status, nullptr)
 
   for(int ii=0; ii<n_ener; ii++){
     factor[ii] = 0.5*(ener[ii]+ener[ii+1]) / (ener[ii+1] - ener[ii]);
@@ -144,9 +145,9 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   CHECK_STATUS_VOID(*status);
 
   // needs spec cache to be set up
-  assert(cache != NULL);
+  assert(cache != nullptr);
 
-  if (cache->conversion_factor_energyflux == NULL){
+  if (cache->conversion_factor_energyflux == nullptr){
     cache->conversion_factor_energyflux = calculate_energyflux_conversion(ener, n, status);
   }
 
@@ -189,9 +190,17 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
     fftw_destroy_plan(plan_rel);
   }
 
-  // complex multiplication
+  // complex multiplication (TODO: fix that it is not by hand)
   for (ii = 0; ii < n; ii++) {
-    cache->fftw_backwards_input[ii] = cache->fftw_xill[izone][ii] * cache->fftw_rel[izone][ii];
+//    cache->fftw_backwards_input[ii] = cache->fftw_xill[izone][ii] * cache->fftw_rel[izone][ii];
+    cache->fftw_backwards_input[ii][0] =
+        cache->fftw_xill[izone][ii][0] * cache->fftw_rel[izone][ii][0] -
+        cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][1];
+
+    cache->fftw_backwards_input[ii][0] =
+        cache->fftw_xill[izone][ii][0] * cache->fftw_rel[izone][ii][1] +
+            cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][0];
+
   }
 
   fftw_execute(cache->plan_c2r);
@@ -244,17 +253,8 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
 
 }
 
-void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
-  for (int ii = 0; ii < n; ii++) {
-    spec[ii] /=  pow(10, lxi);  // do not cast to float (fails refdata)
-    if (fabs(dens - 15) > 1e-6) {
-      spec[ii] /=  pow(10, dens - 15); // do not cast to float (fails refdata)
-    }
-  }
-}
-
 void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status) {
-  if (global_ener_std == NULL) {
+  if (global_ener_std == nullptr) {
     global_ener_std = (double *) malloc((N_ENER_CONV + 1) * sizeof(double));
     CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
     get_log_grid(global_ener_std, (N_ENER_CONV + 1), EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
@@ -300,60 +300,6 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
 }
 
 
-void set_stdNormXillverEnerygrid(int *status) {
-  if (global_ener_xill == NULL) {
-    global_ener_xill = (double *) malloc((N_ENER_XILLVER + 1) * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(global_ener_xill, status)
-    get_log_grid(global_ener_xill, N_ENER_XILLVER + 1, EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
-  }
-}
-
-EnerGrid *get_stdXillverEnergygrid(int *status) {
-  CHECK_STATUS_RET(*status, NULL);
-
-  set_stdNormXillverEnerygrid(status);
-  CHECK_STATUS_RET(*status, NULL);
-
-  EnerGrid *egrid = new_EnerGrid(status);
-  egrid->ener = global_ener_xill;
-  egrid->nbins = N_ENER_XILLVER;
-
-  return egrid;
-}
-
-double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status) {
-  /* get the normalization of the spectrum with respect to xillver
- *  - everything is normalized using dens=10^15 cm^3
- *  - normalization defined, e.g., in Appendix of Dauser+2016
- *  - needs to be calculated on the specific energy grid (defined globally)
- */
-
-  set_stdNormXillverEnerygrid(status);
-  assert(global_ener_xill != NULL);
-
-  double keV2erg = 1.602177e-09;
-
-  // need this to make sure no floating point problems arise
-  double floatCompFactor = 1e-6;
-
-  if (ener[n] < (EMAX_XILLVER_NORMALIZATION - floatCompFactor)
-      || ener[0] > (EMIN_XILLVER_NORMALIZATION + floatCompFactor)) {
-    RELXILL_ERROR("can not calculate the primary spectrum normalization", status);
-    printf("  the given energy grid from %e keV to %e keV does not cover the boundaries\n", ener[0], ener[n]);
-    printf("  from [%e,%e] necessary for the calcualtion\n", EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
-    return 0.0;
-  }
-
-  double sum_pl = 0.0;
-  for (int ii = 0; ii < n; ii++) {
-    if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii] <= EMAX_XILLVER_NORMALIZATION) {
-      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg;
-    }
-  }
-  double norm_xillver_table = 1e15 / 4.0 / M_PI;
-  return sum_pl / norm_xillver_table;
-}
-
 static void print_reflection_strength(double *ener,
                                       int n_ener,
                                       const double *flu,
@@ -385,89 +331,6 @@ static void print_reflection_strength(double *ener,
   printf(" - gravitational redshift from the primary source to the observer is %.3f\n", grav_redshift(rel_param));
 }
 
-void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
-                              const relParam *rel_param, const xillTableParam *xill_param, int *status) {
-
-  CHECK_STATUS_VOID(*status);
-  assert(global_ener_xill != NULL);
-
-  if (xill_param->prim_type == PRIM_SPEC_ECUT) {
-    /** note that in case of the nthcomp model Ecut is in the frame of the primary source
-	    but for the bkn_powerlaw it is given in the observer frame */
-
-    /** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
-    /**    (in case of the nthcomp primary continuum ect is actually kte ) **/
-    double ecut_rest = xill_param->ect;
-
-    for (int ii = 0; ii < n_ener; ii++) {
-      pl_flux_xill[ii] = exp(1.0 / ecut_rest) *
-          pow(0.5 * (ener[ii] + ener[ii + 1]), -xill_param->gam) *
-          exp(-0.5 * (ener[ii] + ener[ii + 1]) / ecut_rest) *
-          (ener[ii + 1] - ener[ii]);
-    }
-
-  } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
-
-    double nthcomp_param[5];
-    /** important, kTe is given in the primary source frame, so we have to add the redshift here
-		 *     however, only if the REL model **/
-    double z = 0.0;
-    if (rel_param != NULL && rel_param->emis_type == EMIS_TYPE_LP) {
-      z = grav_redshift(rel_param);
-    }
-    get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
-    c_donthcomp(ener, n_ener, nthcomp_param, pl_flux_xill);
-
-  } else if (xill_param->prim_type == PRIM_SPEC_BB) {
-
-    double en;
-    for (int ii = 0; ii < n_ener; ii++) {
-      en = 0.5 * (ener[ii] + ener[ii + 1]);
-      pl_flux_xill[ii] = en * en / (pow(xill_param->kTbb, 4) * (exp(en / xill_param->kTbb) - 1));
-      pl_flux_xill[ii] *= (ener[ii + 1] - ener[ii]);
-    }
-  } else {
-    RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",
-                  status);
-  }
-}
-
-
-/**
- *
- * @param ener
- * @param n_ener
- * @param rel_param
- * @param xill_param
- * @param status
- * @return
- */
-double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
-                                                 const relParam *rel_param, const xillTableParam *xill_param, int *status) {
-
-  /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-  EnerGrid *egrid = get_stdXillverEnergygrid(status);
-  // CHECK_STATUS_VOID(*status);
-  double pl_flux_xill[egrid->nbins]; // global energy grid
-  calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, status);
-
-  double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, status);
-
-  double *o_flux = malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(o_flux, status, NULL);
-
-  /** bin the primary continuum onto the Input grid **/
-  rebin_spectrum(ener, o_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
-
-  free(egrid);
-
-  for (int ii = 0; ii < n_ener; ii++) {
-    o_flux[ii] *= primarySpecNormFactor;
-  }
-
-  return o_flux;
-}
-
 
 
 void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
@@ -486,7 +349,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     }
   } else {
 
-    assert(rel_param != NULL);
+    assert(rel_param != nullptr);
 
     // should be cached, as it has been calculated before
     RelSysPar *sysPar = get_system_parameters(rel_param, status);
@@ -583,7 +446,7 @@ int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
 
   int redo = 1;
 
-  if ((ca_rel_param != NULL) && (ca_xill_param != NULL)) {
+  if ((ca_rel_param != nullptr) && (ca_xill_param != nullptr)) {
 
     redo = did_xill_param_change(ca_xill_param, xill_param);
 
@@ -627,7 +490,7 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
 
   inpar* inp = get_inputvals_struct(ener, n_ener, param, status);
   cache_info *ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
-  relline_spec_multizone *spec = NULL;
+  relline_spec_multizone *spec = nullptr;
 
   // set a pointer to the spectrum
   if (is_relbase_cached((ca_info)) == 0) {
@@ -671,7 +534,7 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
  *  @details
  *    - for more details see relbase_profile function
  *    - uses only a single zone on the disk
- *    - not used for any relxill-case (xill_table=NULL, as no angular dependency is taken into account)
+ *    - not used for any relxill-case (xill_table=nullptr, as no angular dependency is taken into account)
  * input: ener(n_ener), param
  * optional input: xillver grid
  * output: photar(n_ener)  [photons/bin]
@@ -680,21 +543,21 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
 
   // initialize parameter values (has an internal cache)
   RelSysPar *sysPar = get_system_parameters(param, status);
-  CHECK_STATUS_RET(*status, NULL);
-  assert(sysPar != NULL);
+  CHECK_STATUS_RET(*status, nullptr);
+  assert(sysPar != nullptr);
 
   double *rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
 
-  return relbase_profile(ener, n_ener, param, sysPar, NULL, rgrid, param->num_zones, status);
+  return relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid, param->num_zones, status);
 }
 
 
 
 void free_rel_cosne(RelCosne *spec) {
-  if (spec != NULL) {
+  if (spec != nullptr) {
     //	free(spec->ener);  we do not need this, as only a pointer for ener is assigned
     free(spec->cosne);
-    if (spec->dist != NULL) {
+    if (spec->dist != nullptr) {
       int ii;
       for (ii = 0; ii < spec->n_zones; ii++) {
         free(spec->dist[ii]);
@@ -706,19 +569,19 @@ void free_rel_cosne(RelCosne *spec) {
 }
 
 void free_rel_spec(relline_spec_multizone *spec) {
-  if (spec != NULL) {
+  if (spec != nullptr) {
     free(spec->ener);
     free(spec->rgrid);
-    if (spec->flux != NULL) {
+    if (spec->flux != nullptr) {
       int ii;
       for (ii = 0; ii < spec->n_zones; ii++) {
-        if (spec->flux[ii] != NULL) {
+        if (spec->flux[ii] != nullptr) {
           free(spec->flux[ii]);
         }
       }
     }
     free(spec->flux);
-    if (spec->rel_cosne != NULL) {
+    if (spec->rel_cosne != nullptr) {
       free_rel_cosne(spec->rel_cosne);
     }
     free(spec);
@@ -740,7 +603,7 @@ void free_cached_tables(void) {
   free_specCache(global_spec_cache);
 
   free(global_ener_std);
-  free(global_ener_xill);
+  // free(global_ener_xill); // TODO, implement free of this global energy grid
 
 }
 
@@ -748,9 +611,9 @@ void free_fft_cache(double ***sp, int n1, int n2) {
 
   int ii;
   int jj;
-  if (sp != NULL) {
+  if (sp != nullptr) {
     for (ii = 0; ii < n1; ii++) {
-      if (sp[ii] != NULL) {
+      if (sp[ii] != nullptr) {
         for (jj = 0; jj < n2; jj++) {
           free(sp[ii][jj]);
         }
@@ -765,13 +628,13 @@ void free_fft_cache(double ***sp, int n1, int n2) {
 OutSpec *init_out_spec(int n_ener, const double *ener, int *status) {
 
   OutSpec *spec = (OutSpec *) malloc(sizeof(OutSpec));
-  CHECK_MALLOC_RET_STATUS(spec, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
 
   spec->n_ener = n_ener;
   spec->ener = (double *) malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->ener, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->ener, status, nullptr)
   spec->flux = (double *) malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->flux, status, NULL)
+  CHECK_MALLOC_RET_STATUS(spec->flux, status, nullptr)
 
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
@@ -783,7 +646,7 @@ OutSpec *init_out_spec(int n_ener, const double *ener, int *status) {
 }
 
 void free_out_spec(OutSpec *spec) {
-  if (spec != NULL) {
+  if (spec != nullptr) {
     free(spec->ener);
     free(spec->flux);
     free(spec);
@@ -800,21 +663,21 @@ void free_specCache(specCache* spec_cache) {
 
   int ii;
   int m = 2;
-  if (spec_cache != NULL) {
-    if (spec_cache->xill_spec != NULL) {
+  if (spec_cache != nullptr) {
+    if (spec_cache->xill_spec != nullptr) {
       for (ii = 0; ii < spec_cache->n_cache; ii++) {
-        if (spec_cache->xill_spec[ii] != NULL) {
+        if (spec_cache->xill_spec[ii] != nullptr) {
           free_xill_spec(spec_cache->xill_spec[ii]);
         }
       }
       free(spec_cache->xill_spec);
     }
 
-    if (spec_cache->fft_xill != NULL) {
+    if (spec_cache->fft_xill != nullptr) {
       free_fft_cache(spec_cache->fft_xill, spec_cache->n_cache, m);
     }
 
-    if (spec_cache->fftw_rel != NULL) {
+    if (spec_cache->fftw_rel != nullptr) {
       free_fft_cache(spec_cache->fft_rel, spec_cache->n_cache, m);
     }
 
@@ -824,7 +687,7 @@ void free_specCache(specCache* spec_cache) {
     fftw_destroy_plan(spec_cache->plan_c2r);
     free(spec_cache->fftw_output);
 
-    if (spec_cache->conversion_factor_energyflux != NULL){
+    if (spec_cache->conversion_factor_energyflux != nullptr){
       free(spec_cache->conversion_factor_energyflux);
     }
 

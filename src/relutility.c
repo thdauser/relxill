@@ -17,9 +17,9 @@
 */
 
 #include "relutility.h"
-
+#include "common.h"
+#include "config.h"
 #include "relphysics.h"
-#include "relbase.h"
 #include "writeOutfiles.h"
 
 /** linear interpolation in 1 dimension **/
@@ -32,6 +32,13 @@ double interp_lin_1d_float(double ifac_r, float rlo, float rhi) {
   return ifac_r * rhi + (1.0 - ifac_r) * rlo;
 }
 
+int version_number_printed = 0;
+void print_version_number(void) {
+  if (version_number_printed == 0) {
+    printf(" *** loading RELXILL model (version %s) *** \n", PROJECT_VER);
+    version_number_printed = 1;
+  }
+}
 
 double interp_log_1d(double ifac_r, double rlo, double rhi) {
   return exp(ifac_r * log(rhi) + (1.0 - ifac_r) * log(rlo));
@@ -64,7 +71,6 @@ void relxill_warning(const char *const msg) {
 int is_xill_model(int model_type) {
   if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)
       || (model_type == MOD_TYPE_XILLVERNS) || (model_type == MOD_TYPE_XILLVERCO)
-      || (model_type == MOD_TYPE_XILLVERDENS_NTHCOMP)
       || (model_type == MOD_TYPE_XILLVER_NTHCOMP)) {
     return 1;
   } else {

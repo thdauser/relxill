@@ -18,49 +18,13 @@
 #ifndef MODELS_H_
 #define MODELS_H_
 
-#include "relbase.h"
-#include "relutility.h"
+#include "Relbase.h"
+
+extern "C" {
 #include "xilltable.h"
+#include "relutility.h"
+}
 
-/**** DEFINES **/
-#define MOD_TYPE_RELLINE 1
-#define MOD_TYPE_RELLINELP 2
-
-#define MOD_TYPE_RELCONV 11
-#define MOD_TYPE_RELCONVLP 12
-
-#define MOD_TYPE_XILLVER 0
-#define MOD_TYPE_XILLVER_NTHCOMP 100
-
-#define MOD_TYPE_RELXILL -1
-#define MOD_TYPE_RELXILLLP -2
-
-/** density models **/
-#define MOD_TYPE_RELXILLDENS -10
-#define MOD_TYPE_RELXILLLPDENS -11
-#define MOD_TYPE_XILLVERDENS -100
-
-/** ion grad models **/
-#define MOD_TYPE_RELXILLLPION -21
-
-/** CO models **/
-#define MOD_TYPE_RELXILLCO -200
-#define MOD_TYPE_XILLVERCO -210
-
-/** Neutron Star / BB models **/
-#define MOD_TYPE_RELXILLNS -30
-#define MOD_TYPE_XILLVERNS -101
-
-/** Density Models **/
-#define MOD_TYPE_XILLVERDENS_NTHCOMP 1000
-#define MOD_TYPE_RELXILLDENS_NTHCOMP -1001
-#define MOD_TYPE_RELXILLLPDENS_NTHCOMP -1002
-
-
-// unpublished models
-#define MOD_TYPE_RELXILLBBRET -300
-#define MOD_TYPE_RELXILLALPHA -2000
-#define MOD_TYPE_RELXILLLPALPHA -2001
 
 /**** FUNCTION DEFINITIONS ****/
 

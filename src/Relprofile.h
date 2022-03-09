@@ -18,7 +18,9 @@
 #ifndef RELPROFILE_H_
 #define RELPROFILE_H_
 
+extern "C" {
 #include "common.h"
+}
 
 void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
 

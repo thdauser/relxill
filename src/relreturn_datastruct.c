@@ -17,9 +17,7 @@
 */
 
 #include "relreturn_datastruct.h"
-
 #include "common.h"
-#include "relbase.h"
 #include "relreturn_table.h"
 
 /* using an universal energy grid for calculating a BBODY spectrum

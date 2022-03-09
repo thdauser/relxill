@@ -16,8 +16,9 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "xillspec.h"
-#include "relbase.h"
+#include "xilltable.h"
+#include "common.h"
+
 
 // possible parameters for the xillver tables
 int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_KTE, PARAM_DNS,
@@ -494,6 +495,17 @@ static int convertTo6dimTableIndex(int num_param, int indexTable) {
   }
   return indexTable;
 }
+
+
+void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
+  for (int ii = 0; ii < n; ii++) {
+    spec[ii] /=  pow(10, lxi);  // do not cast to float (fails refdata)
+    if (fabs(dens - 15) > 1e-6) {
+      spec[ii] /=  pow(10, dens - 15); // do not cast to float (fails refdata)
+    }
+  }
+}
+
 
 static void normalizeXillverSpecLogxiDensity(float *spec,
                                              xillTable *tab,

@@ -28,9 +28,9 @@
 
 extern "C" {
 #include "common.h"
-#include "relmodels.h"
 }
 
+#include "Relmodels.h"
 #include "Relreturn_BlackBody.h"
 #include "Relxill.h"
 #include "ModelDatabase.h"

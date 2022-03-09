@@ -18,15 +18,14 @@
 
 #include <iostream>
 #include "Relreturn_BlackBody.h"
+#include "Relbase.h"
 
 extern "C" {
+#include "xilltable.h"
 #include "common.h"
-#include "relbase.h"
 #include "relutility.h"
 #include "relphysics.h"
 #include "relreturn_datastruct.h"
-#include "relmodels.h"
-#include "xilltable.h"
 }
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account

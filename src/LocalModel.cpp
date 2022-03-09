@@ -78,8 +78,7 @@ relParam *LocalModel::get_rel_params() {
   param->limb = static_cast<int>(lround(m_model_params.get_otherwise_default(XPar::limb,0)));
   param->return_rad = get_returnrad_switch(m_model_params, m_info.irradiation() );
 
-  param->return_rad_flux_correction_factor = 1.0; // needs to be calculated in the code
-  param->xillver_gshift_corr_fac = 1.0; // needs to be calculated in the code
+  param->rrad_corr_factors = nullptr; //
 
   // this is set by the environment variable "RELLINE_PHYSICAL_NORM"
   param->do_renorm_relline = do_renorm_model(param);

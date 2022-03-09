@@ -22,66 +22,27 @@
 #define _GNU_SOURCE  // seems necessary for standard Makefile
 #endif
 
+#include "Rellp.h"
+#include "Relreturn_Corona.h"
+#include "Relcache.h"
+#include "Relprofile.h"
+#include "Xillspec.h"
+
+extern "C" {
+#include "xilltable.h"
 #include "config.h"
-
 #include "common.h"
-
 #include "relutility.h"
 #include "reltable.h"
-#include "rellp.h"
-#include "xillspec.h"
-#include "relcache.h"
-#include "relprofile.h"
+}
 
-#define RRAD
-
-#ifdef RRAD
-#include "relreturn_corona.h"
-#endif
 
 /*********** DEFINE STATEMENTS *********/
-
-#define PARAM_DEFAULT 0.0
-
-/** path to all RELXILL tables */
-#define RELXILL_TABLE_PATH "./"
-
-/** dimensions of the RELLINE table */
-#define RELTABLE_NA 25
-#define RELTABLE_NR 100
-#define RELTABLE_NG 40
-#define RELTABLE_MAX_R 1000.0
-#define RELTABLE_FILENAME "rel_table_v0.5a.fits"
-#define RELTABLE_NMU0 30
-
-
-/** dimensions of the LP table */
-#define LPTABLE_NA 20
-#define LPTABLE_NH 250
-#define LPTABLE_FILENAME "rel_lp_table_v0.5b.fits"
-#define LPTABLE_NR 100
-
-/** dimensions of the RR table */
-#define RETURNRAD_TABLE_NR 50
-#define RETURNRAD_TABLE_NG 20
-#define RETURNRAD_TABLE_FILENAME "table_returnRad_v20210304.fits"
-
-
-/** parameters for interpolation an interagration **/
-#define N_FRAD 1000      // values of radial bins (from rmin to rmax)
-#define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
-#define N_ZONES_IONGRAD 25  // default number of radial zones for iongrad models
-#define N_ZONES_MAX 50  // maximal number of radial zones
 
 /** parameters for the convolution **/
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
 #define EMIN_RELXILL_CONV 0.00035  // minimal energy of the convolution (in keV)
 #define EMAX_RELXILL_CONV 2000.0 // minimal energy of the convolution (in keV)
-#define EMIN_XILLVER_NORMALIZATION 0.1
-#define EMAX_XILLVER_NORMALIZATION 1000.0
-#define EMIN_XILLVER 0.01
-#define EMAX_XILLVER EMAX_XILLVER_NORMALIZATION
-#define N_ENER_XILLVER 3000
 
 /** minimal and maximal energy for reflection strength calculation **/
 #define RSTRENGTH_EMIN 20.0
@@ -177,8 +138,6 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
                                    int re_rel, int re_xill, int izone, specCache *local_spec_cache, int *status);
 
 void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status);
-
-void renorm_xill_spec(float *spec, int n, double lxi, double dens);
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status);
 

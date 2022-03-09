@@ -19,13 +19,19 @@
 #ifndef RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 #define RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 
+#include "Relmodels.h"
+
+extern "C" {
 #include "common.h"
-#include "relmodels.h"
 #include "relreturn_table.h"
+}
 
 emisProfile *get_rrad_emis_corona(const emisProfile*, const relParam*, int* );
-emisProfile *calc_rrad_emis_corona(const returningFractions *ret_fractions, double gshift_corr_factor,
+emisProfile *calc_rrad_emis_corona(const returningFractions *ret_fractions, rradCorrFactors* corr_factors,
                                    const emisProfile *emis_input, double gamma, int *status);
 double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, double gamma);
+
+rradCorrFactors* init_rrad_corr_factors(double* rgrid, int n_zones, int* status);
+void free_rrad_corr_factors(rradCorrFactors** p_corr_factors);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_CORONA_H_

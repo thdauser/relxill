@@ -16,12 +16,13 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "relreturn_corona.h"
+#include "Relreturn_Corona.h"
+#include "Relbase.h"
 
+extern "C" {
 #include "relreturn_datastruct.h"
 #include "relutility.h"
-#include "relbase.h"
-
+}
 
 /**
  * @brief From the known ratio between xillver and power law flux boost, calculate the expected flux
@@ -85,12 +86,12 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
 }
 
 
-emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, double gshift_corr_factor,
+emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rradCorrFactors* corr_factors,
                                    const emisProfile* emis_input, double gamma, int* status) {
 
   // make very rough sanity checks here
-  assert(gshift_corr_factor>1e-3);
-  assert(gshift_corr_factor<1e3);
+  // assert(gshift_corr_factor>1e-3);
+  // assert(gshift_corr_factor<1e3);
 
   int ng = ret_fractions->tabData->ng;
   int nrad = ret_fractions->nrad;
@@ -124,7 +125,8 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, doub
         double corr_fac_new_deriv = ratio_ut_obs2emit / gfac[jj];
         assert(corr_fac_new_deriv > 0);
 
-        emis_single_zone[i_rad_emitted] += corrected_gshift_fluxboost_factor(gshift_corr_factor, gfac[jj], gamma)
+        emis_single_zone[i_rad_emitted] +=
+            corrected_gshift_fluxboost_factor(corr_factors->corrfac_gshift[i_rad_emitted], gfac[jj], gamma)
             * ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj]
             * corr_fac_new_deriv;
       }
@@ -136,7 +138,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, doub
 
     }
 
-    emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);
+    emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad) * corr_factors->corrfac_flux[i_rad_incident];
   }
 
 
@@ -160,12 +162,45 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
   assert((*rlo_emis) < (*rhi_emis));
 }
 
-static void apply_returnrad_flux_correction(emisProfile* emis, double flux_correction_factor){
+/*static void apply_returnrad_flux_correction(emisProfile* emis, rradCorrFactors* flux_correction_factor){
   for (int ii=0; ii < emis->nr; ii++){
     emis->emis[ii] *= flux_correction_factor;
   }
+} */
+
+
+
+
+
+rradCorrFactors* init_rrad_corr_factors(double* rgrid, int n_zones, int* status){
+  CHECK_STATUS_RET(*status, nullptr);
+
+  auto* corr_factors = new rradCorrFactors;
+  CHECK_MALLOC_RET_STATUS(corr_factors, status, nullptr);
+
+  corr_factors->rgrid = rgrid;
+  corr_factors->n_zones= n_zones;
+
+  corr_factors->corrfac_flux = new double[n_zones];
+  corr_factors->corrfac_gshift = new double[n_zones];
+
+  return corr_factors;
 }
 
+void free_rrad_corr_factors(rradCorrFactors** p_corr_factors){
+  delete[] (*p_corr_factors)->corrfac_flux;
+  delete[] (*p_corr_factors)->corrfac_gshift;
+  delete (*p_corr_factors);
+  p_corr_factors = nullptr;
+}
+
+
+static rradCorrFactors* apply_corrfactors_to_rradtable_grid(rradCorrFactors* input_corr_factors, returningFractions* ret_fractions, int* status){
+
+  rradCorrFactors* rtable_corr_factors = init_rrad_corr_factors(ret_fractions->rad, ret_fractions->nrad, status);
+
+  // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
+}
 
 /**
  * main function to calculate the returning radiation emissivity profile.
@@ -186,14 +221,17 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   inv_rebin_mean(emis_input->re, emis_input->emis, emis_input->nr,
                  emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
 
-  emisProfile *emis_return = calc_rrad_emis_corona(ret_fractions, param->xillver_gshift_corr_fac,
+
+  rradCorrFactors* rrad_corr_factors = apply_corrfactors_to_rradtable_grid(param->rrad_corr_factors, ret_fractions, status);
+
+  emisProfile *emis_return = calc_rrad_emis_corona(ret_fractions, rrad_corr_factors,
                                                    emis_input_rebinned, param->gamma, status);
   CHECK_STATUS_RET(*status, NULL);
 
   emisProfile *emis_return_rebinned = new_emisProfile(emis_input->re, emis_input->nr, status);
   rebin_emisprofile_on_radial_grid(emis_return_rebinned, emis_return, status);
 
-  apply_returnrad_flux_correction(emis_return_rebinned, param->return_rad_flux_correction_factor);
+  // apply_returnrad_flux_correction(emis_return_rebinned, param->rrad_corr_factors);
 
   free_emisProfile(emis_return);
   free_emisProfile(emis_input_rebinned);

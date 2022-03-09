@@ -53,6 +53,108 @@
 #define ION_GRAD_TYPE_ALPHA 2
 /***************************************/
 
+/** dimensions of the RELLINE table */
+#define RELTABLE_NA 25
+#define RELTABLE_NR 100
+#define RELTABLE_NG 40
+#define RELTABLE_MAX_R 1000.0
+#define RELTABLE_FILENAME "rel_table_v0.5a.fits"
+#define RELTABLE_NMU0 30
+
+
+/** dimensions of the LP table */
+#define LPTABLE_NA 20
+#define LPTABLE_NH 250
+#define LPTABLE_FILENAME "rel_lp_table_v0.5b.fits"
+#define LPTABLE_NR 100
+
+
+/**** DEFINES **/
+#define MOD_TYPE_RELLINE 1
+#define MOD_TYPE_RELLINELP 2
+
+#define MOD_TYPE_RELCONV 11
+#define MOD_TYPE_RELCONVLP 12
+
+#define MOD_TYPE_XILLVER 0
+#define MOD_TYPE_XILLVER_NTHCOMP 100
+
+#define MOD_TYPE_RELXILL -1
+#define MOD_TYPE_RELXILLLP -2
+
+/** density models **/
+#define MOD_TYPE_RELXILLDENS -10
+#define MOD_TYPE_RELXILLLPDENS -11
+#define MOD_TYPE_XILLVERDENS -100
+
+/** ion grad models **/
+#define MOD_TYPE_RELXILLLPION -21
+
+/** CO models **/
+#define MOD_TYPE_RELXILLCO -200
+#define MOD_TYPE_XILLVERCO -210
+
+/** Neutron Star / BB models **/
+#define MOD_TYPE_RELXILLNS -30
+#define MOD_TYPE_XILLVERNS -101
+
+// unpublished models
+#define MOD_TYPE_RELXILLBBRET -300
+#define MOD_TYPE_RELXILLALPHA -2000
+#define MOD_TYPE_RELXILLLPALPHA -2001
+
+
+
+#define PARAM_DEFAULT 0.0
+
+/** path to all RELXILL tables */
+#define RELXILL_TABLE_PATH "./"
+
+
+/** dimensions of the RR table */
+#define RETURNRAD_TABLE_NR 50
+#define RETURNRAD_TABLE_NG 20
+#define RETURNRAD_TABLE_FILENAME "table_returnRad_v20210304.fits"
+
+
+/** parameters for interpolation an interagration **/
+#define N_FRAD 1000      // values of radial bins (from rmin to rmax)
+#define N_ZONES 10       // number of radial zones (as each zone is convolved with the input spectrum N_ZONES < N_FRAD)
+#define N_ZONES_IONGRAD 25  // default number of radial zones for iongrad models
+#define N_ZONES_MAX 50  // maximal number of radial zones
+
+
+// currently the number of different parameters that can be given in a table
+#define N_PARAM_MAX 10  // has to be as long as the NAME_ array
+#define PARAM_GAM 0
+#define PARAM_AFE 1
+#define PARAM_ACO 1  // caveat: internally we use it same as AFE
+#define PARAM_LXI 2
+#define PARAM_ECT 3
+#define PARAM_KTE 3  // caveat: internally we treat kTe as Ecut
+#define PARAM_DNS 4
+#define PARAM_KTB 5
+#define PARAM_FRA 6
+#define PARAM_INC 7
+
+#define NAME_GAM "Gamma"
+#define NAME_AFE "A_Fe"
+#define NAME_LXI "logXi"
+#define NAME_ECT "Ecut"
+#define NAME_KTE "kTe"
+#define NAME_KTB "kTbb"
+#define NAME_DNS "Dens"
+#define NAME_ACO "A_CO"
+#define NAME_FRA "Frac"
+#define NAME_INC "Incl"
+
+
+/** name of the XILLVER table */
+#define XILLTABLE_FILENAME "xillver-a-Ec5.fits"
+#define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.4.fits"
+#define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
+#define XILLTABLE_CO_FILENAME "xillverCO.fits"
+
 
 enum xillTableIds {
   XILLTABLE_ID_STANDARD,
@@ -64,6 +166,13 @@ enum xillTableIds {
 #define AD_ROUT_MAX 1000
 
 /****** TYPE DEFINITIONS ******/
+
+typedef struct{
+  double* rgrid;
+  int n_zones;
+  double* corrfac_flux;
+  double* corrfac_gshift;
+} rradCorrFactors;
 
 typedef struct {
   int model_type;
@@ -86,9 +195,7 @@ typedef struct {
   int do_renorm_relline;
   int num_zones;
   int return_rad;
-  double
-      return_rad_flux_correction_factor; // calculated ratio from xillver reflection to primary spectrum (energy flux)
-  double xillver_gshift_corr_fac; // correction factor of flux boost from xillver wrt to g^Gamma (for g=1.5)
+  rradCorrFactors* rrad_corr_factors;
 } relParam;
 
 typedef struct {

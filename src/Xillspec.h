@@ -19,8 +19,19 @@
 #ifndef XILLSPEC_H_
 #define XILLSPEC_H_
 
+
+extern "C" {
+#include "xilltable.h"
 #include "relutility.h"
 #include "common.h"
+}
+
+#define EMIN_XILLVER_NORMALIZATION 0.1
+#define EMAX_XILLVER_NORMALIZATION 1000.0
+#define EMIN_XILLVER 0.01
+#define EMAX_XILLVER EMAX_XILLVER_NORMALIZATION
+#define N_ENER_XILLVER 3000
+
 
 double norm_factor_semi_infinite_slab(double incl_deg);
 void norm_xillver_spec(xillSpec *spec, double incl);

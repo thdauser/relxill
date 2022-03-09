@@ -198,4 +198,6 @@ void get_fine_radial_grid(double rin, double rout, double *re, int nr);
 
 int shouldAuxInfoGetPrinted(void);
 
+void print_version_number(void);
+
 #endif /* RELUTILITY_H_ */

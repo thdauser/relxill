@@ -16,9 +16,7 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "relmodels.h"
-
-int version_number_printed = 0;
+#include "Relmodels.h"
 
 static void setNegativeRadiiToRisco(double *r, double a) {
   if (*r < 0) {
@@ -29,13 +27,6 @@ static void setNegativeRadiiToRisco(double *r, double a) {
 static void setNegativeHeightToRplus(double *h, double a) {
   if (*h < 0) {
     *h = -1.0 * (*h) * kerr_rplus(a);
-  }
-}
-
-void print_version_number(void) {
-  if (version_number_printed == 0) {
-    printf(" *** loading RELXILL model (version %s) *** \n", PROJECT_VER);
-    version_number_printed = 1;
   }
 }
 
@@ -168,7 +159,7 @@ void xillver_base(double *ener_inp, const int n_ener0, double *photar, xillParam
 
   rebin_spectrum(ener_inp, photar, n_ener0, spec->ener, spec->flu[0], spec->n_ener);
 
-  add_primary_component(ener_inp, n_ener0, photar, NULL, param_struct, status);
+  add_primary_component(ener_inp, n_ener0, photar, nullptr, param_struct, status);
 
 //  rebin_spectrum(ener, photar, n_ener, ener, flux, n_ener);
 
@@ -186,10 +177,10 @@ void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *
 
 /* get a new relbase parameter structure and initialize it */
 relParam *new_relParam(int model_type, int emis_type, int *status) {
-  relParam *param = (relParam *) malloc(sizeof(relParam));
-  if (param == NULL) {
+  auto *param = (relParam *) malloc(sizeof(relParam));
+  if (param == nullptr) {
     RELXILL_ERROR("memory allocation failed", status);
-    return NULL;
+    return nullptr;
   }
   param->model_type = model_type;
   param->emis_type = emis_type;
@@ -224,9 +215,9 @@ relParam *new_relParam(int model_type, int emis_type, int *status) {
 /* get a new relbase parameter structure and initialize it */
 xillParam *new_xillParam(int model_type, int prim_type, int *status) {
   xillParam *param = (xillParam *) malloc(sizeof(xillParam));
-  if (param == NULL) {
+  if (param == nullptr) {
     RELXILL_ERROR("memory allocation failed", status);
-    return NULL;
+    return nullptr;
   }
   param->model_type = model_type;
   param->prim_type = prim_type;
