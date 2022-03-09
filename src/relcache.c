@@ -20,14 +20,13 @@
 #include "relbase.h"
 
 /** probably best move to "utils" **/
-inpar *set_input(double *ener, int n_ener, relParam *rel_par, xillParam *xill_par, int *status) {
+inpar *get_inputvals_struct(double *ener, int n_ener, relParam *rel_par, int *status) {
   inpar *inp = (inpar *) malloc(sizeof(inpar));
   CHECK_MALLOC_RET_STATUS(inp, status, NULL)
 
   inp->ener = ener;
   inp->n_ener = n_ener;
   inp->rel_par = rel_par;
-  inp->xil_par = xill_par;
 
   return inp;
 }
@@ -40,7 +39,6 @@ inpar *set_input_syspar(relParam *rel_par, int *status) {
   inp->ener = NULL;
   inp->n_ener = 0;
   inp->rel_par = rel_par;
-  inp->xil_par = NULL;
 
   return inp;
 }
@@ -408,11 +406,11 @@ cnode *add_node_to_cache(cnode *head, relParam *relpar, xillParam *xillpar, int 
   return new_head;
 }
 
-void set_cache_relbase(cnode **pt_head, relParam *param, relline_spec_multizone *spec, int *status) {
+void add_relspec_to_cache(cnode **node, relParam *param, relline_spec_multizone *spec, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  cnode *old_head = *pt_head;
+  cnode *old_head = *node;
 
   // prepend new node and set parameters
   cnode *new_head = add_node_to_cache(old_head, param, NULL, status);
@@ -420,7 +418,7 @@ void set_cache_relbase(cnode **pt_head, relParam *param, relline_spec_multizone 
   // set the data
   new_head->data->relbase_spec = spec;
 
-  *pt_head = new_head;
+  *node = new_head;
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 }

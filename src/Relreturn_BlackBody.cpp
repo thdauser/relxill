@@ -537,8 +537,9 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
                                                       rel_param->rout, rel_param->a, status);
 
   double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
+  RelSysPar* sys_par = get_system_parameters(rel_param, status);
   relline_spec_multizone
-      *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
+      *rel_profile = relbase_profile(ener, n_ener, rel_param, sys_par, xill_tab, radialGrid, returnSpec->nrad, status);
 
   // ========== //
   auto single_spec_inp = new double[n_ener_inp];

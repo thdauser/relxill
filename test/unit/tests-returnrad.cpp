@@ -263,11 +263,11 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
   Spectrum *spec = getNewSpec(0.05, 10, 1000, &status);
 
   rel_param->return_rad=0;
-  relline_spec_multizone *rel_profile_norrad = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
+  relline_spec_multizone *rel_profile_norrad = relbase(spec->ener, spec->nbins, rel_param, &status);
 
   setenv(env_name_outfiles, "1", 1);
   rel_param->return_rad = 1;
-  relline_spec_multizone *rel_profile = relbase(spec->ener, spec->nbins, rel_param, nullptr, &status);
+  relline_spec_multizone *rel_profile = relbase(spec->ener, spec->nbins, rel_param, &status);
   setenv(env_name_outfiles, "0", 1);
 
   REQUIRE(status==EXIT_SUCCESS);

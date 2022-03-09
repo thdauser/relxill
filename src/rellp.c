@@ -480,7 +480,8 @@ static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* s
   if ( is_debug_run() ) {
     write_data_to_file("test-rrad-emis-input.dat", emis0->re, emis0->emis, emis0->nr);
   }
-    emisProfile* emisReturn = get_rrad_emis_corona(emis0, param, status);
+
+  emisProfile* emisReturn = get_rrad_emis_corona(emis0, param, status);
 
   if ( is_debug_run() ) {
     write_data_to_file("test-rrad-emis-rrad.dat",emis0->re,emisReturn->emis, emis0->nr);
@@ -493,7 +494,6 @@ static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* s
       emis0->emis[ii] += emisReturn->emis[ii];
     } else if (param->return_rad == -1 || param->return_rad == 2) { // only return rad (for debugging only)
       emis0->emis[ii] = emisReturn->emis[ii];
-
     } else {
       RELXILL_ERROR("adding returning radiation failed ", status);
       printf("    return_rad = %i is not allowed \n", param->return_rad);

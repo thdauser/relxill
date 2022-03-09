@@ -258,11 +258,17 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     get_init_xillver_table(&xill_tab, get_xilltab_param(xill_param, status), status);
     CHECK_STATUS_VOID(*status);
 
+    // --- 5a --- calculate the emissivity including the rrad correction factors
+    RelSysPar *sysPar_returnrad = get_system_parameters(rel_param, status);
+
+    // --- 5b --- calculate the relbase profile
     int n_ener_conv; // energy grid for the convolution, only created
     double *ener_conv;
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
-    relline_spec_multizone *rel_profile = relbase_multizone(ener_conv, n_ener_conv, rel_param, xill_tab, rgrid,
-                                                            rel_param->num_zones, status);
+    relline_spec_multizone *rel_profile =
+        relbase_profile(ener_conv, n_ener_conv, rel_param, sysPar_returnrad, xill_tab, rgrid, rel_param->num_zones, status);
+
+    assert(rel_profile != nullptr);
     CHECK_STATUS_VOID(*status);
 
 

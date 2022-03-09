@@ -55,16 +55,14 @@ typedef struct cache_info {
 } cache_info;
 
 typedef struct inpar {
-
   relParam *rel_par;
-  xillParam *xil_par;
   double *ener;
   int n_ener;
 } inpar;
 
 
 /** set the input parameters in one single structure **/
-inpar *set_input(double *ener, int n_ener, relParam *rel_par, xillParam *xill_par, int *status);
+inpar *get_inputvals_struct(double *ener, int n_ener, relParam *rel_par, int *status);
 inpar *set_input_syspar(relParam *rel_par, int *status);
 
 int comp_single_param_val(double val1, double val2);
@@ -82,7 +80,7 @@ cnode *cli_prepend(cnode *head, cdata *data, int *status);
 cdata *init_cdata(int *status);
 
 // Routines to set the cached parameters
-void set_cache_relbase(cnode **node, relParam *param, relline_spec_multizone *spec, int *status);
+void add_relspec_to_cache(cnode **node, relParam *param, relline_spec_multizone *spec, int *status);
 void set_cache_syspar(cnode **node, relParam *param, RelSysPar *syspar, int *status);
 void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *status);
 

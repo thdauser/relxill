@@ -37,7 +37,7 @@ TEST_CASE(" Ion Grad PL Index ", "[iongrad]") {
   xillParam* xill_param = local_model.get_xill_params();
   relParam* rel_param = local_model.get_rel_params();
 
-  relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, nullptr, &status);
+  relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, &status);
 
   IonGradient ion_gradient{rel_profile->rgrid, rel_profile->n_zones,xill_param->ion_grad_type};
   ion_gradient.calculate(rel_param, xill_param);
