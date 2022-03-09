@@ -125,12 +125,14 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
         double corr_fac_new_deriv = ratio_ut_obs2emit / gfac[jj];
         assert(corr_fac_new_deriv > 0);
 
-        double
-            emis_g_zone = ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj] * corr_fac_new_deriv;
+        double emis_g_zone =
+            ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj] * corr_fac_new_deriv;
 
-        if (corr_factors != nullptr) {
+        if (corr_factors != nullptr) {  // TODO: fix this ugly nullptr-if-case
           emis_g_zone *=
               corrected_gshift_fluxboost_factor(corr_factors->corrfac_gshift[i_rad_emitted], gfac[jj], gamma);
+        } else {
+          emis_g_zone *= corrected_gshift_fluxboost_factor(1.0, gfac[jj], gamma);
         }
 
         emis_single_zone[i_rad_emitted] += emis_g_zone;
