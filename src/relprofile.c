@@ -683,7 +683,7 @@ static void set_str_relbf(str_relb_func *str, double re, double gmin, double gma
   str->save_g_ind = 0;
 }
 
-/** function to properly re-normalize the relline_profile **/
+/** function to properly re-normalize the calc_relline_profile **/
 void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, const int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -761,7 +761,7 @@ static void free_str_relb_func(str_relb_func **str) {
   }
 }
 
-void relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status) {
+void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status) {
 
   CHECK_STATUS_VOID(*status);
 

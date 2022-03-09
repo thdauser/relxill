@@ -20,7 +20,7 @@
 
 #include "common.h"
 
-void relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
+void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
 
 RelSysPar *new_relSysPar(int nr, int ng, int *status);
 

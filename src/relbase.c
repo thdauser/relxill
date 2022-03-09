@@ -131,8 +131,8 @@ static double* calculate_energyflux_conversion(const double* ener, int n_ener, i
 
 
 
-/** FFTW VERSION: convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
- *  fout: gives the output
+/** @brief FFTW VERSION: convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
+ *  @details fout: gives the output
  *  f1 input (reflection) specrum
  *  f2 filter
  *  ener has length n+1 and is the energy array
@@ -204,95 +204,6 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
 
 
 
-/** convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
- *  fout: gives the output
- *  f1 input (reflection) specrum
- *  f2 filter
- *  ener has length n+1 and is the energy array
- *  requirements: needs "spec_cache" to be set up
- * **/
-void fft_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
-                              int re_rel, int re_xill, int izone, specCache *cache, int *status) {
-
-  long m = 0;
-  switch (n) {
-    case 2048: m = 11;
-      break;
-    case 4096: m = 12;
-      break;
-    case 8192: m = 13;
-      break;
-    default: *status = EXIT_FAILURE;
-      printf(" *** error: Number of Bins %i not allowed in Convolution!! \n", n);
-      break;
-  }
-  CHECK_STATUS_VOID(*status);
-
-  // needs spec cache to be set up
-  assert(cache != NULL);
-
-  if (cache->conversion_factor_energyflux == NULL){
-    cache->conversion_factor_energyflux = calculate_energyflux_conversion(ener, n, status);
-  }
-
-
-  /* need to find out where the 1keV for the filter is, which defines if energies are blue or redshifted*/
-  if (save_1eV_pos == 0 ||
-      (!((ener[save_1eV_pos] <= 1.0) &&
-          (ener[save_1eV_pos + 1] > 1.0)))) {
-    save_1eV_pos = binary_search(ener, n + 1, 1.0);
-  }
-
-  int ii;
-  int irot;
-  double xcomb[n];
-  double ycomb[n];
-
-  /**********************************************************************/
-  /** cache either the relat. or the xillver part, as only one of the
-   * two changes most of the time (reduce time by 1/3 for convolution) **/
-  /**********************************************************************/
-
-  /** #1: for the xillver part **/
-  if (re_xill) {
-    for (ii = 0; ii < n; ii++) {
-      cache->fft_xill[izone][0][ii] = fxill[ii] * cache->conversion_factor_energyflux[ii] ;
-      cache->fft_xill[izone][1][ii] = 0.0;
-    }
-    FFT_R2CT(1, m, cache->fft_xill[izone][0], cache->fft_xill[izone][1]);
-  }
-  double *x1 = cache->fft_xill[izone][0];
-  double *y1 = cache->fft_xill[izone][1];
-
-  /** #2: for the relat. part **/
-  if (re_rel) {
-    for (ii = 0; ii < n; ii++) {
-      irot = (ii - save_1eV_pos + n) % n;
-      cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii];
-      cache->fft_rel[izone][1][ii] = 0.0;
-    }
-    FFT_R2CT(1, m, cache->fft_rel[izone][0], cache->fft_rel[izone][1]);
-  }
-
-  double *x2 = cache->fft_rel[izone][0];
-  double *y2 = cache->fft_rel[izone][1];
-
-  /* complex multiplication
-   * (we need the real part, so we already use the output variable here
-   *  to save computing time */
-  for (ii = 0; ii < n; ii++) {
-    xcomb[ii] = x1[ii] * x2[ii] - y1[ii] * y2[ii];
-    ycomb[ii] = y1[ii] * x2[ii] + x1[ii] * y2[ii];
-  }
-
-  FFT_R2CT(-1, m, xcomb, ycomb);
-
-  for (ii = 0; ii < n; ii++) {
-    fout[ii] = xcomb[ii] /  cache->conversion_factor_energyflux[ii];
-  }
-
-}
-
 /**
  * @Function: calcFFTNormFactor
  * @Synopsis: calculate the normalization of the FFT, which is defined to keep the normalization of the
@@ -327,7 +238,6 @@ void normalizeFFTOutput(const double *ener, const double *fxill, const double *f
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
                                    int re_rel, int re_xill, int izone, specCache *spec_cache_ptr, int *status) {
 
-//  fft_conv_spectrum(ener, fxill, frel, fout, n, re_rel, re_xill, izone, spec_cache_ptr, status);
   fftw_conv_spectrum(ener, fxill, frel, fout, n, re_rel, re_xill, izone, spec_cache_ptr, status);
 
   normalizeFFTOutput(ener, fxill, frel, fout, n);
@@ -735,7 +645,7 @@ relline_spec_multizone *relbase_multizone(double *ener,
     init_relline_spec_multizone(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
 
     // calculate line profile (returned units are 'photons/bin')
-    relline_profile(spec, sysPar, status);
+    calc_relline_profile(spec, sysPar, status);
 
     // normalize it and calculate the angular distribution (if necessary)
     renorm_relline_profile(spec, param, status);
@@ -929,27 +839,4 @@ void free_cache(void) {
   cli_delete_list(&cache_relbase);
 }
 
-
-/**
- * @details on works for certain types, will produce an error for the rest
- * @param relxill_model_type
- * @param status
- * @return
- */
-int convert_relxill_to_xillver_model_type(int relxill_model_type, int *status) {
-
-  switch (relxill_model_type) {
-
-    case MOD_TYPE_RELXILL: return MOD_TYPE_XILLVER;
-    case MOD_TYPE_RELXILLDENS: return MOD_TYPE_XILLVERDENS;
-    case MOD_TYPE_RELXILLLP: return MOD_TYPE_XILLVER;
-    case MOD_TYPE_RELXILLLPDENS: return MOD_TYPE_XILLVERDENS;
-    case MOD_TYPE_RELXILLLPION: return MOD_TYPE_XILLVER;
-    case MOD_TYPE_RELXILLDENS_NTHCOMP: return MOD_TYPE_XILLVERDENS_NTHCOMP;
-    case MOD_TYPE_RELXILLLPDENS_NTHCOMP: return MOD_TYPE_XILLVERDENS_NTHCOMP;
-    default: RELXILL_ERROR("Error converting relxill model type to xillver model type", status);
-      return 0;
-  }
-
-}
 
