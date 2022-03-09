@@ -38,8 +38,7 @@ specCache *global_spec_cache = nullptr;
 
 static specCache *new_specCache(int n_cache, int *status) {
 
-  specCache *spec = (specCache *) malloc(sizeof(specCache));
-  CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
+  auto *spec = new specCache;
 
   spec->n_cache = n_cache;
   spec->nzones = 0;
@@ -47,54 +46,35 @@ static specCache *new_specCache(int n_cache, int *status) {
 
   spec->conversion_factor_energyflux = nullptr;
 
-  spec->fft_xill = (double ***) malloc(sizeof(double **) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fft_xill, status, nullptr)
+  spec->fft_xill = new double**[n_cache];
+  spec->fft_rel = new double**[n_cache];
 
-  spec->fft_rel = (double ***) malloc(sizeof(double **) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fft_rel, status, nullptr)
+  spec->fftw_xill = new fftw_complex*[n_cache];
+  spec->fftw_rel = new fftw_complex*[n_cache];
 
-  spec->fftw_xill = (fftw_complex**) malloc(sizeof(fftw_complex*) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_xill, status, nullptr)
-
-  spec->fftw_rel = (fftw_complex**) malloc(sizeof(fftw_complex*) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_rel, status, nullptr)
-
-  spec->fftw_backwards_input = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_backwards_input, status, nullptr)
-  spec->fftw_output = (double*) fftw_malloc(sizeof(double) * spec->n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->fftw_output, status, nullptr)
+  spec->fftw_backwards_input = new fftw_complex[spec->n_ener];
+  spec->fftw_output = new double[spec->n_ener];
 
   spec->plan_c2r = fftw_plan_dft_c2r_1d(spec->n_ener, spec->fftw_backwards_input, spec->fftw_output,FFTW_ESTIMATE);
 
-
-  spec->xill_spec = (xillSpec **) malloc(sizeof(xillSpec *) * n_cache);
-  CHECK_MALLOC_RET_STATUS(spec->xill_spec, status, nullptr)
+  spec->xill_spec = new xillSpec*[n_cache];
 
   int ii;
   int jj;
   int m = 2;
   for (ii = 0; ii < n_cache; ii++) {
-    spec->fft_xill[ii] = (double **) malloc(sizeof(double *) * m);
-    CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii], status, nullptr)
-    spec->fft_rel[ii] = (double **) malloc(sizeof(double *) * m);
-    CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii], status, nullptr)
+    spec->fft_xill[ii] = new double*[m];
+    spec->fft_rel[ii] = new double*[m];
 
-    spec->fftw_xill[ii] = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
-    CHECK_MALLOC_RET_STATUS(spec->fftw_xill[ii], status, nullptr)
-    spec->fftw_rel[ii] = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) * spec->n_ener);
-    CHECK_MALLOC_RET_STATUS(spec->fftw_rel[ii], status, nullptr)
+    spec->fftw_xill[ii] = new fftw_complex[spec->n_ener];
+    spec->fftw_rel[ii] = new fftw_complex[spec->n_ener];
 
-    for (jj = 0; jj < m; jj++) {
-      spec->fft_xill[ii][jj] = (double *) malloc(sizeof(double) * spec->n_ener);
-      CHECK_MALLOC_RET_STATUS(spec->fft_xill[ii][jj], status, nullptr)
-      spec->fft_rel[ii][jj] = (double *) malloc(sizeof(double) * spec->n_ener);
-      CHECK_MALLOC_RET_STATUS(spec->fft_rel[ii][jj], status, nullptr)
+   for (jj = 0; jj < m; jj++) {
+      spec->fft_xill[ii][jj] = new double[spec->n_ener];
+      spec->fft_rel[ii][jj] = new double[spec->n_ener];
     }
-
     spec->xill_spec[ii] = nullptr;
-
   }
-
   spec->out_spec = nullptr;
 
   return spec;
@@ -115,7 +95,7 @@ specCache *init_global_specCache(int *status) {
 
 static double* calculate_energyflux_conversion(const double* ener, int n_ener, int* status){
 
-  double* factor = (double *) malloc(sizeof(double) * n_ener );
+  auto* factor = new double[n_ener];
   CHECK_MALLOC_RET_STATUS(factor, status, nullptr)
 
   for(int ii=0; ii<n_ener; ii++){
@@ -190,14 +170,14 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
     fftw_destroy_plan(plan_rel);
   }
 
-  // complex multiplication (TODO: fix that it is not by hand)
+  // complex multiplication (TODO: fix that complex multiplication is not by hand)
   for (ii = 0; ii < n; ii++) {
 //    cache->fftw_backwards_input[ii] = cache->fftw_xill[izone][ii] * cache->fftw_rel[izone][ii];
     cache->fftw_backwards_input[ii][0] =
         cache->fftw_xill[izone][ii][0] * cache->fftw_rel[izone][ii][0] -
         cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][1];
 
-    cache->fftw_backwards_input[ii][0] =
+    cache->fftw_backwards_input[ii][1] =
         cache->fftw_xill[izone][ii][0] * cache->fftw_rel[izone][ii][1] +
             cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][0];
 
@@ -399,7 +379,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     }
   }
 
-  free(pl_flux);
+  delete[] pl_flux;
 
 }
 
@@ -588,8 +568,7 @@ void free_rel_spec(relline_spec_multizone *spec) {
   }
 }
 
-void free_cached_tables(void) {
-
+void free_cached_tables() {
   free_relprofile_cache();
 
   free_cached_relTable();
@@ -627,14 +606,10 @@ void free_fft_cache(double ***sp, int n1, int n2) {
 
 OutSpec *init_out_spec(int n_ener, const double *ener, int *status) {
 
-  OutSpec *spec = (OutSpec *) malloc(sizeof(OutSpec));
-  CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
-
+  auto *spec = new OutSpec;
   spec->n_ener = n_ener;
-  spec->ener = (double *) malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->ener, status, nullptr)
-  spec->flux = (double *) malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(spec->flux, status, nullptr)
+  spec->ener = new double[n_ener];
+  spec->flux = new double[n_ener];
 
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
@@ -701,7 +676,7 @@ void free_specCache(specCache* spec_cache) {
 
 /** free the CLI cache **/
 
-void free_cache(void) {
+void free_cache() {
   free_cache_syspar();
   cli_delete_list(&cache_relbase);
 }

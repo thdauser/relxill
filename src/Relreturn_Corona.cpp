@@ -125,10 +125,16 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
         double corr_fac_new_deriv = ratio_ut_obs2emit / gfac[jj];
         assert(corr_fac_new_deriv > 0);
 
-        emis_single_zone[i_rad_emitted] +=
-            corrected_gshift_fluxboost_factor(corr_factors->corrfac_gshift[i_rad_emitted], gfac[jj], gamma)
-            * ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj]
-            * corr_fac_new_deriv;
+        double
+            emis_g_zone = ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj] * corr_fac_new_deriv;
+
+        if (corr_factors != nullptr) {
+          emis_g_zone *=
+              corrected_gshift_fluxboost_factor(corr_factors->corrfac_gshift[i_rad_emitted], gfac[jj], gamma);
+        }
+
+        emis_single_zone[i_rad_emitted] += emis_g_zone;
+
       }
 
       emis_single_zone[i_rad_emitted] *=
@@ -138,7 +144,10 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
 
     }
 
-    emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad) * corr_factors->corrfac_flux[i_rad_incident];
+    emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);
+    if (corr_factors != nullptr){
+      corr_factors->corrfac_flux[i_rad_incident];
+    }
   }
 
 
@@ -188,16 +197,28 @@ rradCorrFactors* init_rrad_corr_factors(double* rgrid, int n_zones, int* status)
 }
 
 void free_rrad_corr_factors(rradCorrFactors** p_corr_factors){
-  delete[] (*p_corr_factors)->corrfac_flux;
-  delete[] (*p_corr_factors)->corrfac_gshift;
-  delete (*p_corr_factors);
-  p_corr_factors = nullptr;
+  if (*p_corr_factors != nullptr ) {
+    delete[] (*p_corr_factors)->corrfac_flux;
+    delete[] (*p_corr_factors)->corrfac_gshift;
+    delete (*p_corr_factors);
+    p_corr_factors = nullptr;
+  }
 }
 
 
 static rradCorrFactors* apply_corrfactors_to_rradtable_grid(rradCorrFactors* input_corr_factors, returningFractions* ret_fractions, int* status){
 
-  rradCorrFactors* rtable_corr_factors = init_rrad_corr_factors(ret_fractions->rad, ret_fractions->nrad, status);
+  if (input_corr_factors == nullptr){
+    return nullptr;
+  } else { // fill in this loop
+
+    rradCorrFactors* rtable_corr_factors = init_rrad_corr_factors(ret_fractions->rad, ret_fractions->nrad, status);
+
+//    rebin_mean_flux()
+
+    return nullptr;
+  }
+
 
   // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
 }

@@ -296,7 +296,7 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
       get_energy_flux_band(ener, flu, n_ener, emin, emax) /
           get_energy_flux_band(ener, direct_spec, n_ener, emin, emax);
 
-  free(direct_spec);
+  delete[] direct_spec;
   return ratio_refl_direct;
 }
 
@@ -375,7 +375,7 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
         get_xillver_gshift_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_table_param->gam);
   }
 
-  free(angle_averaged_xill_spec);
+  delete[] angle_averaged_xill_spec;
 
   if (*status != EXIT_SUCCESS) {
     RELXILL_ERROR("failed to calculate the flux correction factor", status);

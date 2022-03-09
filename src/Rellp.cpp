@@ -79,7 +79,7 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   return str;
 }
 
-static void norm_emis_profile(const double *re, int nr, double *emis) {
+static void norm_emis_profile(const double *re, const int nr, double *emis) {
 
   double integ_area = 0.0;
   double delta_area[nr];

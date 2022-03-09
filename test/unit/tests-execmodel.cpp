@@ -106,9 +106,9 @@ TEST_CASE(" Execute ALL local models", "[model]") {
 
 TEST_CASE(" Execute single model", "[single]") {
   DefaultSpec default_spec{};
-  REQUIRE_NOTHROW(test_xspec_lmod_call(ModelName::relxilllpCp, default_spec) );
+  REQUIRE_NOTHROW(test_xspec_lmod_call(ModelName::relxilllp, default_spec) );
 
-  LocalModel lmod(ModelName::relxilllpCp);
+  LocalModel lmod(ModelName::relxilllp);
 
   auto spec = default_spec.get_xspec_spectrum();
   REQUIRE_NOTHROW(lmod.eval_model(spec));

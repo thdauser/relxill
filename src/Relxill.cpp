@@ -286,7 +286,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the calc_relline_profile call
-    get_init_xillver_table(&xill_tab, get_xilltab_param(xill_param, status), status);
+    xillTableParam* xill_tab_input_param = get_xilltab_param(xill_param, status);
+    get_init_xillver_table(&xill_tab, xill_tab_input_param, status);
+    free(xill_tab_input_param);
     CHECK_STATUS_VOID(*status);
 
     // --- 5a --- calculate the emissivity including the rrad correction factors
@@ -309,6 +311,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     CHECK_STATUS_VOID(*status);
 
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
+    for (int ii=0; ii<rel_param->num_zones; ii++) {
+      free(xill_table_param[ii]);
+    }
 
   }
 
@@ -326,7 +331,7 @@ void relxill_convolution_multizone(const XspecSpectrum &spectrum,
 
   CHECK_STATUS_VOID(*status);
 
-  int n_ener_conv = rel_profile->n_ener;
+  const int n_ener_conv = rel_profile->n_ener;
   double* ener_conv = rel_profile->ener;
 
   auto conv_out = new double[n_ener_conv];
