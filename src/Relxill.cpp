@@ -31,8 +31,7 @@ xillParam *cached_xill_param = nullptr;
 ///////////////////////////////////////
 // Forward Definitions of Functions  //
 ///////////////////////////////////////
-double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary,
-                              const double *rgrid, int num_zones, const IonGradient &ion_gradient, int ii);
+double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary, const IonGradient &ion_gradient, int ii);
 
 double calc_ecut_at_primary_source(const xillParam *xill_param,
                                    const relParam *rel_param,
@@ -173,21 +172,18 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
  * @param status
  * @return
  */
-rradCorrFactors* calc_rrad_corr_factors(relParam *rel_param, xillSpec **xill_spec, double *rgrid,
+rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,
                                        xillTableParam *const *xill_table_param, int *status) {
 
-  if (rel_param->return_rad == 0) {
-    return nullptr;
-  }
 
-  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid, rel_param->num_zones, status);
+  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid.radius, rgrid.num_zones);
 
   if (rrad_corr_factors == nullptr || *status != EXIT_SUCCESS) {
     assert(rrad_corr_factors != nullptr);
     return rrad_corr_factors;
   }
 
-  for (int ii = 0; ii < rel_param->num_zones; ii++) {
+  for (int ii = 0; ii < rgrid.num_zones; ii++) {
       get_xillver_fluxcorrection_factors(xill_spec[ii],
                                          &(rrad_corr_factors->corrfac_flux[ii]),
                                          &(rrad_corr_factors->corrfac_gshift[ii]),
@@ -244,8 +240,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     CHECK_STATUS_VOID(*status);
 
     // --- 0 ---
-    double *rgrid = get_rzone_grid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height, status);
-    CHECK_STATUS_VOID(*status);
+    auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
+//    double *rgrid = get_rzone_grid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height, status);
+//    CHECK_STATUS_VOID(*status);
 
     // --- 1 --- calculate disk irradiation
     RelSysPar *sysPar = get_system_parameters(rel_param, status);
@@ -253,8 +250,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
 
     // --- 2 --- calculate ionization gradient
-    IonGradient ion_gradient{rgrid, rel_param->num_zones, xill_param->ion_grad_type};
-    ion_gradient.calculate(rel_param, xill_param);
+    IonGradient ion_gradient{radial_grid, xill_param->ion_grad_type};
+    ion_gradient.calculate(sysPar->emis, xill_param);
 
     xillTableParam* xill_table_param[rel_param->num_zones];
 
@@ -264,8 +261,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       xill_table_param[ii] = get_xilltab_param(xill_param, status);
 
       // set xillver parameters for the given zone
-      xill_table_param[ii]->ect =
-          calculate_ecut_on_disk(rel_param, ecut_primary, rgrid, rel_param->num_zones, ion_gradient, ii);
+      xill_table_param[ii]->ect =  calculate_ecut_on_disk(rel_param, ecut_primary, ion_gradient, ii);
       xill_table_param[ii]->lxi = ion_gradient.lxi[ii];
       xill_table_param[ii]->dens = ion_gradient.dens[ii];
 
@@ -282,7 +278,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     }
 
     // -- 4 -- returning radiation
-    rel_param->rrad_corr_factors = calc_rrad_corr_factors(rel_param, spec_cache->xill_spec, rgrid, xill_table_param, status);
+    if (rel_param->return_rad != 0) {
+      rel_param->rrad_corr_factors =
+          calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_table_param, status);
+    }
+
 
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the calc_relline_profile call
@@ -299,7 +299,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     double *ener_conv;
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
     relline_spec_multizone *rel_profile =
-        relbase_profile(ener_conv, n_ener_conv, rel_param, sysPar_returnrad, xill_tab, rgrid, rel_param->num_zones, status);
+        relbase_profile(ener_conv, n_ener_conv, rel_param, sysPar_returnrad, xill_tab, ion_gradient.radial_grid.radius, ion_gradient.nzones(), status);
 
     assert(rel_profile != nullptr);
     CHECK_STATUS_VOID(*status);
@@ -429,18 +429,17 @@ double calc_ecut_at_primary_source(const xillParam *xill_param,
  * @param rgrid
  * @param num_zones
  * @param ion_gradient
- * @param ii
+ * @param izone
  * @return
  */
-double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary,
-                              const double *rgrid, int num_zones, const IonGradient &ion_gradient, int ii) {
+double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary, const IonGradient &ion_gradient, int izone) {
 
-  if (num_zones == 1) {
+  if (ion_gradient.radial_grid.num_zones == 1) {
     return ecut_primary; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
   } else {
-    double rzone = 0.5 * (rgrid[ii] + rgrid[ii + 1]);
+    double rzone = 0.5 * (ion_gradient.radial_grid.radius[izone] + ion_gradient.radial_grid.radius[izone + 1]);
     double del_emit = (ion_gradient.del_emit == nullptr) ? 0.0
-                                                         : ion_gradient.del_emit[ii];  // only relevant if beta!=0 (doppler boosting)
+                                                         : ion_gradient.del_emit[izone];  // only relevant if beta!=0 (doppler boosting)
     return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
   }
 }

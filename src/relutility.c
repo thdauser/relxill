@@ -281,7 +281,7 @@ double *get_rzone_grid(double rmin, double rmax, int nzones, double h, int *stat
     if (indr < nzones) {
 
       double rlo = r_transition;
-      double rhi = rmax; // rgrid[nzones];
+      double rhi = rmax; // radius[nzones];
       // add 1/r for larger radii
       int ii;
       for (ii = indr; ii < nzones + 1; ii++) {

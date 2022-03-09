@@ -84,7 +84,7 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
 relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *param,
                                         RelSysPar *sysPar,
                                         xillTable *xill_tab,
-                                        double *radialZones,
+                                        const double *radialZones,
                                         int nzones,
                                         int *status);
 

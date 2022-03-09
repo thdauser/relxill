@@ -463,7 +463,7 @@ int redo_relbase_calc(const relParam *rel_param, const relParam *ca_rel_param) {
 relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *param,
                                        RelSysPar *sysPar,
                                        xillTable *xill_tab,
-                                       double *radialZones,
+                                       const double *radialZones,
                                        int nzones,
                                        int *status) {
 
@@ -494,7 +494,6 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
       printf(" DEBUG:  RELBASE-Cache: re-using calculated values\n");
     }
     spec = ca_info->store->data->relbase_spec;
-    free(radialZones); // necessary is it is allocated outside this function TODO: change it!
   }
 
   if (shouldOutfilesBeWritten()) {
@@ -528,7 +527,11 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
 
   double *rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
 
-  return relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid, param->num_zones, status);
+  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid, param->num_zones, status);
+
+  delete[] rgrid;
+
+  return rel_spec;
 }
 
 

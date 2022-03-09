@@ -19,6 +19,8 @@
 #define IONGRADIENT_H_
 
 #include "vector"
+#include <memory>
+#include <array>
 
 extern "C" {
 #include "relutility.h"
@@ -26,22 +28,44 @@ extern "C" {
 }
 
 
+
+class RadialGrid{
+
+ public:
+//  RadialGrid(const double* _radius, int nzones) : radius(_radius), num_zones(nzones) {  }
+  RadialGrid(double rmin, double rmax, int nzones, double h) : num_zones(nzones) {
+    radius = calculate_radial_grid(rmin, rmax, nzones, h) ;
+  }
+
+  const int num_zones;
+  const double* radius;
+
+  ~RadialGrid(){
+      delete[] radius;
+  }
+
+ private:
+  static const double* calculate_radial_grid(double rmin, double rmax, int nzones, double h);
+};
+
+
+
 class IonGradient{
 
  public:
-  IonGradient(double* radius, const int nzones , const int ion_grad_type)
-  : m_radius{radius},  // radius is of length nzones+1
-  m_nzones{nzones},
+  IonGradient(const RadialGrid& _radial_grid , const int ion_grad_type)
+  : radial_grid{_radial_grid},  // radius is of length nzones+1
+    m_nzones{_radial_grid.num_zones},
     m_ion_grad_type{ion_grad_type}
   {
-    lxi = new double[nzones];
-    fx = new double[nzones];
-    del_emit = new double[nzones];
-    dens = new double[nzones];
+    lxi = new double[m_nzones];
+    irradiating_flux = new double[m_nzones];
+    del_emit = new double[m_nzones];
+    dens = new double[m_nzones];
+    m_rmean = new double[m_nzones];
 
-    m_rmean = new double[nzones];
-    for ( int ii=0; ii<nzones; ii++){
-      m_rmean[ii] = 0.5*(m_radius[ii]+m_radius[ii+1]);
+    for ( int ii=0; ii<m_nzones; ii++){
+      m_rmean[ii] = 0.5*(radial_grid.radius[ii]+radial_grid.radius[ii+1]);
       del_emit[ii] = M_PI / 4.; // assume default 45 deg (xillver assumption), only used if beta>0
       dens[ii] = 15.0;
     }
@@ -49,19 +73,19 @@ class IonGradient{
     if (m_nzones>1){
       assert(m_rmean[0] < m_rmean[1]); // make sure we have an ascending radial grid
     }
-
   };
 
   ~IonGradient(){
     delete[] lxi;
-    delete[] fx;
+    delete[] irradiating_flux;
     delete[] del_emit;
     delete[] dens;
     delete[] m_rmean;
   }
 
+  const RadialGrid radial_grid;
   double* lxi{nullptr};
-  double* fx{nullptr};
+  double* irradiating_flux{nullptr};
   double* del_emit{nullptr};
   double* dens{nullptr};
 
@@ -69,21 +93,22 @@ class IonGradient{
     return m_nzones;
   }
 
-  void calculate(relParam* rel_param, xillParam* xill_param);
+  void calculate(emisProfile* emis_profile, xillParam* xill_param);
 
   void write_to_file( const char* fout);
 
  private:
-  double* m_radius;
+  double* m_rmean;
   const int m_nzones;
   const int m_ion_grad_type;
 
-  double* m_rmean;
 
-  void calc_ion_grad_alpha(relParam* rel_param, double param_xlxi0, double param_density);
+  void calc_ion_grad_alpha(emisProfile* emis_profile, double param_xlxi0, double param_density);
 
   void calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens);
 
 };
+
+
 
 #endif

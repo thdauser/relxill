@@ -62,21 +62,17 @@ static double cal_lxi_max_ss73(double *re, double *emis, double* delinc, int nr,
 }
 
 
-void IonGradient::calc_ion_grad_alpha(relParam *rel_param, double param_xlxi0, double param_density) {
+void IonGradient::calc_ion_grad_alpha(emisProfile* emis_profile, double param_xlxi0, double param_density) {
 
-  double rin = m_radius[0];
+  double rin = radial_grid.radius[0];
 
-  auto emis_zones = new double[m_nzones];
+  irradiating_flux = new double[m_nzones];
   auto del_inc = new double[m_nzones];
 
   int status = EXIT_SUCCESS;
 
-  // we need the emissivity profile (should be cached, so no extra effort required here)
-  RelSysPar *sysPar = get_system_parameters(rel_param, &status);
-  emisProfile *emis_profile = sysPar->emis;
-
   assert(emis_profile->del_inc != nullptr);
-  inv_rebin_mean(emis_profile->re, emis_profile->emis, emis_profile->nr, m_rmean, emis_zones, m_nzones, &status);
+  inv_rebin_mean(emis_profile->re, emis_profile->emis, emis_profile->nr, m_rmean, irradiating_flux, m_nzones, &status);
   inv_rebin_mean(emis_profile->re, emis_profile->del_inc, emis_profile->nr, m_rmean, del_inc, m_nzones, &status);
   inv_rebin_mean(emis_profile->re, emis_profile->del_emit, emis_profile->nr, m_rmean, del_emit, m_nzones, &status);
 
@@ -93,7 +89,7 @@ void IonGradient::calc_ion_grad_alpha(relParam *rel_param, double param_xlxi0, d
 
     // now we can use the emissivity to calculate the ionization
     // (note we need a density which is normalized to dens(rin)=1 )
-    lxi[ii] = cal_lxi(density_normed, emis_zones[ii], del_inc[ii]);
+    lxi[ii] = cal_lxi(density_normed, irradiating_flux[ii], del_inc[ii]);
     lxi[ii] += fac_lxi_norm;
 
   }
@@ -114,13 +110,13 @@ void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex, double inputval_
 }
 
 
-void IonGradient::calculate(relParam *rel_param, xillParam *xill_param) {
+void IonGradient::calculate(emisProfile* emis_profile, xillParam *xill_param) {
 
   if (m_ion_grad_type == ION_GRAD_TYPE_PL) {
     calc_ion_grad_pl(xill_param->lxi, xill_param->iongrad_index, xill_param->dens);
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_ALPHA) {
-    calc_ion_grad_alpha(rel_param, xill_param->lxi, xill_param->dens);
+    calc_ion_grad_alpha(emis_profile, xill_param->lxi, xill_param->dens);
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_CONST) {
     for (int ii = 0; ii < m_nzones; ii++) {
@@ -151,9 +147,47 @@ void IonGradient::write_to_file(const char* fout) {
 
   fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n");
     for (int ii = 0; ii < m_nzones; ii++) {
-      fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", m_radius[ii], m_radius[ii + 1],
+      fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", radial_grid.radius[ii], radial_grid.radius[ii + 1],
               lxi[ii], dens[ii], del_emit[ii]);
     }
     fclose_errormsg(fp, fout);
 }
 
+
+const double* RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double h) {
+
+  auto rgrid =  new double[nzones + 1];
+
+  if (nzones == 1) {
+    rgrid[0] = rmin;
+    rgrid[1] = rmax;
+  } else {
+
+    double r_transition = rmin;
+    int indr = 0;
+
+    if (h > rmin) { // if h > rmin we choose a log grid for r<h
+      r_transition = h;
+
+      get_log_grid(rgrid, nzones + 1, rmin, rmax);
+      indr = binary_search(rgrid, nzones + 1, r_transition);
+
+      r_transition = rgrid[indr];
+    }
+
+    if (indr < nzones) {
+      double rlo = r_transition;
+      double rhi = rmax; // radius[nzones];
+      // add 1/r for larger radii
+      int ii;
+      for (ii = indr; ii < nzones + 1; ii++) {
+        rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
+        rgrid[ii] = fabs(1.0 / rgrid[ii]);
+      }
+
+    }
+
+  }
+
+  return rgrid;
+}

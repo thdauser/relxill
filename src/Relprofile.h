@@ -32,8 +32,8 @@ RelSysPar *get_system_parameters(relParam *param, int *status);
 
 void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, const int *status);
 
-void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, double *radialZones,
-                                 double **pt_ener, const int n_ener, int *status);
+void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, const double *radial_zones,
+                                 double **pt_ener, int n_ener, int *status);
 
 void free_cached_relTable(void);
 void free_relprofile_cache(void);

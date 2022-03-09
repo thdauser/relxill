@@ -18,6 +18,7 @@
 
 #include "Relreturn_Corona.h"
 #include "Relbase.h"
+#include "IonGradient.h"
 
 extern "C" {
 #include "relreturn_datastruct.h"
@@ -181,15 +182,13 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
 
 
 
-
-
-rradCorrFactors* init_rrad_corr_factors(double* rgrid, int n_zones, int* status){
-  CHECK_STATUS_RET(*status, nullptr);
-
+rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones) {
   auto* corr_factors = new rradCorrFactors;
-  CHECK_MALLOC_RET_STATUS(corr_factors, status, nullptr);
 
-  corr_factors->rgrid = rgrid;
+  corr_factors->rgrid = new double[n_zones];
+  for (int ii=0; ii<n_zones; ii++){
+    corr_factors->rgrid[ii] = rgrid[ii];
+  }
   corr_factors->n_zones= n_zones;
 
   corr_factors->corrfac_flux = new double[n_zones];
@@ -200,6 +199,7 @@ rradCorrFactors* init_rrad_corr_factors(double* rgrid, int n_zones, int* status)
 
 void free_rrad_corr_factors(rradCorrFactors** p_corr_factors){
   if (*p_corr_factors != nullptr ) {
+    delete[] (*p_corr_factors)->rgrid;
     delete[] (*p_corr_factors)->corrfac_flux;
     delete[] (*p_corr_factors)->corrfac_gshift;
     delete (*p_corr_factors);
@@ -212,17 +212,20 @@ static rradCorrFactors* apply_corrfactors_to_rradtable_grid(rradCorrFactors* inp
 
   if (input_corr_factors == nullptr){
     return nullptr;
-  } else { // fill in this loop
+  } else {
 
-    rradCorrFactors* rtable_corr_factors = init_rrad_corr_factors(ret_fractions->rad, ret_fractions->nrad, status);
+    rradCorrFactors* rtable_corr_factors = init_rrad_corr_factors(ret_fractions->rad, ret_fractions->nrad);
 
-//    rebin_mean_flux()
+    rebin_mean_flux(input_corr_factors->rgrid, input_corr_factors->corrfac_flux, input_corr_factors->n_zones,
+                    ret_fractions->rad, rtable_corr_factors->corrfac_flux, ret_fractions->nrad, status);
 
-    return nullptr;
+    rebin_mean_flux(input_corr_factors->rgrid, input_corr_factors->corrfac_gshift, input_corr_factors->n_zones,
+                    ret_fractions->rad, rtable_corr_factors->corrfac_gshift, ret_fractions->nrad, status);
+
+    return rtable_corr_factors;
   }
 
 
-  // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXxx
 }
 
 /**

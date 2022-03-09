@@ -356,7 +356,7 @@ RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 /**
   * Initialize the structure to store the relline spectra for multiple radial zones
   **/
-void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, double *radialZones,
+void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, const double *radial_zones,
                                  double **pt_ener, const int n_ener, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -388,11 +388,12 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
     }
   }
 
-  // if the grid changed, we called new_rel_spec
+ // copy the radial grid to the structure
   if ((*spec)->rgrid == nullptr) {
-    (*spec)->rgrid = radialZones;
-  } else {
-    free(radialZones);
+    (*spec)->rgrid = new double[param->num_zones + 1];
+    for (int ii=0; ii<param->num_zones; ii++){
+      (*spec)->rgrid[ii] = radial_zones[ii];
+    }
   }
 
   CHECK_RELXILL_DEFAULT_ERROR(status);

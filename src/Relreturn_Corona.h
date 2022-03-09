@@ -31,7 +31,7 @@ emisProfile *calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
                                    const emisProfile *emis_input, double gamma, int *status);
 double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, double gamma);
 
-rradCorrFactors* init_rrad_corr_factors(double* rgrid, int n_zones, int* status);
+rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones);
 void free_rrad_corr_factors(rradCorrFactors** p_corr_factors);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
