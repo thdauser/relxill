@@ -18,7 +18,9 @@
 
 #include "Rellp.h"
 
+extern "C" {
 #include "writeOutfiles.h"
+}
 
 lpTable *cached_lp_table = nullptr;
 
