@@ -175,7 +175,6 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
 rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,
                                        xillTableParam *const *xill_table_param, int *status) {
 
-
   rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid.radius, rgrid.num_zones);
 
   if (rrad_corr_factors == nullptr || *status != EXIT_SUCCESS) {
@@ -217,8 +216,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     rel_param->num_zones = get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type);
   }
 
-  double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, xill_param->ect, status);
-  CHECK_STATUS_VOID(*status);
 
   specCache *spec_cache = init_global_specCache(status);
   assert(spec_cache != nullptr);
@@ -255,6 +252,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     xillTableParam* xill_table_param[rel_param->num_zones];
 
     // --- 3 --- calculate xillver reflection spectra  (for every zone)
+    double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, xill_param->ect, status);
+    CHECK_STATUS_VOID(*status);
     for (int ii = 0; ii < rel_param->num_zones; ii++) {
 
       xill_table_param[ii] = get_xilltab_param(xill_param, status);
@@ -263,7 +262,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       xill_table_param[ii]->ect =  calculate_ecut_on_disk(rel_param, ecut_primary, ion_gradient, ii);
       xill_table_param[ii]->lxi = ion_gradient.lxi[ii];
       xill_table_param[ii]->dens = ion_gradient.dens[ii];
-      
+
       // --- 3a: load xillver spectra
       if (caching_status.xill == cached::no) {
         //  - always need to re-compute for an ionization gradient, TODO: can we do better caching?
@@ -279,9 +278,10 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     if (rel_param->return_rad != 0) {
       rel_param->rrad_corr_factors =
           calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_table_param, status);
-
     }
-
+    for (int ii=0; ii<rel_param->num_zones; ii++) {
+      free(xill_table_param[ii]);
+    }
 
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the calc_relline_profile call
@@ -309,9 +309,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     copy_spectrum_to_cache(spectrum, spec_cache, status);
     CHECK_STATUS_VOID(*status);
 
-    for (int ii=0; ii<rel_param->num_zones; ii++) {
-      free(xill_table_param[ii]);
-    }
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
   }
 

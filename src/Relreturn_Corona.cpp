@@ -130,8 +130,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
             ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj] * corr_fac_new_deriv;
 
         if (corr_factors != nullptr) {  // TODO: fix this ugly nullptr-if-case
-          emis_g_zone *=
-              corrected_gshift_fluxboost_factor(corr_factors->corrfac_gshift[i_rad_emitted], gfac[jj], gamma);
+          emis_g_zone *= corrected_gshift_fluxboost_factor(corr_factors->corrfac_gshift[i_rad_emitted], gfac[jj], gamma);
         } else {
           emis_g_zone *= corrected_gshift_fluxboost_factor(1.0, gfac[jj], gamma);
         }
@@ -148,7 +147,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
     }
 
     emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);
-    if (corr_factors != nullptr){
+   if (corr_factors != nullptr){
       emis_return->emis[i_rad_incident] *= corr_factors->corrfac_flux[i_rad_incident];
     }
   }
@@ -174,11 +173,11 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
   assert((*rlo_emis) < (*rhi_emis));
 }
 
-/*static void apply_returnrad_flux_correction(emisProfile* emis, rradCorrFactors* flux_correction_factor){
+static void apply_returnrad_flux_correction(emisProfile* emis, double flux_correction_factor){
   for (int ii=0; ii < emis->nr; ii++){
     emis->emis[ii] *= flux_correction_factor;
   }
-} */
+}
 
 
 
@@ -224,13 +223,12 @@ static void rebin_to_grid(double* value, const double* rmean, const double n,
       ind = n0 -1;
     }
     value[ii] = value0[ind];
-
-    // printf("[%i] %.3f, %.3f \n", ii, rmean[ii], value[ii]);
   }
 
 }
 
-static rradCorrFactors* apply_corrfactors_to_rradtable_grid(rradCorrFactors* input_corr_factors, returningFractions* ret_fractions, int* status){
+rradCorrFactors* rebin_corrfactors_to_rradtable_grid
+    (rradCorrFactors* input_corr_factors, returningFractions* ret_fractions, int* status) {
 
   if (input_corr_factors == nullptr){
     return nullptr;
@@ -270,7 +268,8 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
                  emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
 
 
-  rradCorrFactors* rrad_corr_factors = apply_corrfactors_to_rradtable_grid(param->rrad_corr_factors, ret_fractions, status);
+  rradCorrFactors* rrad_corr_factors =
+      rebin_corrfactors_to_rradtable_grid(param->rrad_corr_factors, ret_fractions, status);
 
   emisProfile *emis_return = calc_rrad_emis_corona(ret_fractions, rrad_corr_factors,
                                                    emis_input_rebinned, param->gamma, status);
@@ -278,8 +277,6 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
 
   emisProfile *emis_return_rebinned = new_emisProfile(emis_input->re, emis_input->nr, status);
   rebin_emisprofile_on_radial_grid(emis_return_rebinned, emis_return, status);
-
-  // apply_returnrad_flux_correction(emis_return_rebinned, param->rrad_corr_factors);
 
   free_emisProfile(emis_return);
   free_emisProfile(emis_input_rebinned);

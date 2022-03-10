@@ -22,6 +22,7 @@
 #include "Relbase.h"
 #include "Relmodels.h"
 #include "Xillspec.h"
+#include "IonGradient.h"
 
 extern "C" {
 #include "writeOutfiles.h"
@@ -64,5 +65,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                     xillParam *xill_param,
                     relParam *rel_param,
                     int *status);
+
+rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,
+                                        xillTableParam *const *xill_table_param, int *status);
 
 #endif
