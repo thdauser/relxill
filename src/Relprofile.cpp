@@ -391,7 +391,7 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
  // copy the radial grid to the structure
   if ((*spec)->rgrid == nullptr) {
     (*spec)->rgrid = new double[param->num_zones + 1];
-    for (int ii=0; ii<param->num_zones; ii++){
+    for (int ii=0; ii<param->num_zones+1; ii++){
       (*spec)->rgrid[ii] = radial_zones[ii];
     }
   }
