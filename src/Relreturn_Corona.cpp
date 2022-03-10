@@ -149,7 +149,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
 
     emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);
     if (corr_factors != nullptr){
-      corr_factors->corrfac_flux[i_rad_incident];
+      emis_return->emis[i_rad_incident] *= corr_factors->corrfac_flux[i_rad_incident];
     }
   }
 

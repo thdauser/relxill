@@ -263,8 +263,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       xill_table_param[ii]->ect =  calculate_ecut_on_disk(rel_param, ecut_primary, ion_gradient, ii);
       xill_table_param[ii]->lxi = ion_gradient.lxi[ii];
       xill_table_param[ii]->dens = ion_gradient.dens[ii];
-
-
+      
       // --- 3a: load xillver spectra
       if (caching_status.xill == cached::no) {
         //  - always need to re-compute for an ionization gradient, TODO: can we do better caching?
