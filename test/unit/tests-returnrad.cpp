@@ -21,6 +21,8 @@
 #include "XspecSpectrum.h"
 #include "common-functions.h"
 #include "Rellp.h"
+#include "IonGradient.h"
+#include "Xillspec.h"
 
 extern "C" {
 #include "relutility.h"
@@ -563,4 +565,79 @@ TEST_CASE(" Test return rad ENV variable", "[returnrad]") {
 
   // env variable can not change if parameter value is given
   REQUIRE( fabs(model_rrad_flux - model_no_rrad_flux) <1e-8);
+}
+
+static void require_all_values_the_same(const double* val, const int n){
+  double avg = calcSum(val, n) / n;
+  REQUIRE( fabs( avg - val[0]) < 1e-6);
+}
+
+static void require_values_differ(const double* val, const int n){
+  double avg = calcSum(val, n) / n;
+  REQUIRE( fabs( (avg - val[0]) / avg) > 1e-2);
+  REQUIRE( fabs( (avg - val[n-1]) / avg) > 1e-2);
+}
+
+TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
+
+  int status = EXIT_SUCCESS;
+
+  LocalModel lmod{ModelName::relxilllp};
+  lmod.set_par(XPar::switch_switch_returnrad, 1);
+
+  relParam* rel_param = lmod.get_rel_params();
+
+  const auto n_zones = rel_param->num_zones;
+  double logxi_min = 0.0;
+  double logxi_max = 4.0;
+
+  auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, n_zones, rel_param->height);
+
+  xillTableParam* xill_table_param[n_zones];
+  xillSpec* xill_spec[n_zones];
+
+  // TEST contant spectrum over the disk
+  xillParam* xill_param = lmod.get_xill_params();
+  for (int ii = 0; ii < n_zones; ii++) {
+    xill_table_param[ii] = get_xilltab_param(xill_param, &status);
+    xill_spec[ii] = get_xillver_spectra_table(xill_table_param[ii], &status);
+  }
+
+  rel_param->rrad_corr_factors =
+      calc_rrad_corr_factors(xill_spec, radial_grid, xill_table_param, &status);
+
+  require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_flux, n_zones);
+  require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_gshift, n_zones);
+
+  returningFractions *ret_fractions = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
+
+  rradCorrFactors* tab_corrfactors =
+      rebin_corrfactors_to_rradtable_grid(rel_param->rrad_corr_factors, ret_fractions, &status);
+
+  require_all_values_the_same(tab_corrfactors->corrfac_flux, tab_corrfactors->n_zones);
+  require_all_values_the_same(tab_corrfactors->corrfac_gshift, tab_corrfactors->n_zones);
+
+  // as all values are the same, re-binning should not change the actual value
+  REQUIRE(rel_param->rrad_corr_factors->corrfac_flux[0] == tab_corrfactors->corrfac_flux[0]);
+  REQUIRE(rel_param->rrad_corr_factors->corrfac_gshift[0] == tab_corrfactors->corrfac_gshift[0]);
+
+
+  // TEST ionization gradient
+  xillSpec* xill_spec_grad[n_zones];
+  for (int ii = 0; ii < n_zones; ii++) {
+    xill_table_param[ii]->lxi = (logxi_max - logxi_min) * (ii * 1.0 / (n_zones - 1)) + logxi_min;
+    xill_spec_grad[ii] = get_xillver_spectra_table(xill_table_param[ii], &status);
+  }
+
+  rradCorrFactors* grad_corrfactors =
+      calc_rrad_corr_factors(xill_spec_grad, radial_grid, xill_table_param, &status);
+
+  require_values_differ(grad_corrfactors->corrfac_flux, n_zones);
+  require_values_differ(grad_corrfactors->corrfac_gshift, n_zones);
+
+  rradCorrFactors* tab_grad_corrfactors =
+      rebin_corrfactors_to_rradtable_grid(grad_corrfactors, ret_fractions, &status);
+  require_values_differ(tab_grad_corrfactors->corrfac_flux, tab_grad_corrfactors->n_zones);
+  require_values_differ(tab_grad_corrfactors->corrfac_gshift, tab_grad_corrfactors->n_zones);
+
 }
