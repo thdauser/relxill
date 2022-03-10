@@ -83,7 +83,7 @@ class IonGradient{
     delete[] m_rmean;
   }
 
-  const RadialGrid radial_grid;
+  const RadialGrid& radial_grid;
   double* lxi{nullptr};
   double* irradiating_flux{nullptr};
   double* del_emit{nullptr};

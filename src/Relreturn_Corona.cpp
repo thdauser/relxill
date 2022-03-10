@@ -71,7 +71,7 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
   // ensure that we are not over-correcting (meaning that for g>1 we do not allow a flux reduction)
 
   if (g > 1)
-    assert(fluxboost_factor >= 1);
+    assert(fluxboost_factor >= 0.9);
   if (g < 1){
     if (fluxboost_factor>1){
       if (fluxboost_factor > 1.1 ) { // print warning for a deviation of >10%
@@ -185,8 +185,8 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
 rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones) {
   auto* corr_factors = new rradCorrFactors;
 
-  corr_factors->rgrid = new double[n_zones];
-  for (int ii=0; ii<n_zones; ii++){
+  corr_factors->rgrid = new double[n_zones+1];
+  for (int ii=0; ii<n_zones+1; ii++){
     corr_factors->rgrid[ii] = rgrid[ii];
   }
   corr_factors->n_zones= n_zones;
@@ -203,10 +203,32 @@ void free_rrad_corr_factors(rradCorrFactors** p_corr_factors){
     delete[] (*p_corr_factors)->corrfac_flux;
     delete[] (*p_corr_factors)->corrfac_gshift;
     delete (*p_corr_factors);
-    p_corr_factors = nullptr;
+    *p_corr_factors = nullptr;
   }
 }
 
+/** @brief assign binned values to new grid
+ *  - input is the x (rgrid0) and y (value0), which is the bin_lo/bin_hi-grid with n0+1 values
+ *  - use the input radius (rmean), which is the mean value to determine in which bin of the new
+ *    grid the value falls
+ *  - no interpolation is used
+ */
+static void rebin_to_grid(double* value, const double* rmean, const double n,
+                          const double*rgrid0, const double* value0, const int n0){
+
+  for (int ii=0; ii<n; ii++){
+    int ind = binary_search(rgrid0, n0, rmean[ii]);
+    if (rmean[ii] < rgrid0[0]) {
+      ind = 0;
+    } else if (rmean[ii] > rgrid0[n0-1]) {
+      ind = n0 -1;
+    }
+    value[ii] = value0[ind];
+
+    // printf("[%i] %.3f, %.3f \n", ii, rmean[ii], value[ii]);
+  }
+
+}
 
 static rradCorrFactors* apply_corrfactors_to_rradtable_grid(rradCorrFactors* input_corr_factors, returningFractions* ret_fractions, int* status){
 
@@ -216,11 +238,11 @@ static rradCorrFactors* apply_corrfactors_to_rradtable_grid(rradCorrFactors* inp
 
     rradCorrFactors* rtable_corr_factors = init_rrad_corr_factors(ret_fractions->rad, ret_fractions->nrad);
 
-    rebin_mean_flux(input_corr_factors->rgrid, input_corr_factors->corrfac_flux, input_corr_factors->n_zones,
-                    ret_fractions->rad, rtable_corr_factors->corrfac_flux, ret_fractions->nrad, status);
+    rebin_to_grid(rtable_corr_factors->corrfac_flux, ret_fractions->rad, ret_fractions->nrad,
+                  input_corr_factors->rgrid, input_corr_factors->corrfac_flux, input_corr_factors->n_zones);
 
-    rebin_mean_flux(input_corr_factors->rgrid, input_corr_factors->corrfac_gshift, input_corr_factors->n_zones,
-                    ret_fractions->rad, rtable_corr_factors->corrfac_gshift, ret_fractions->nrad, status);
+    rebin_to_grid(rtable_corr_factors->corrfac_gshift, ret_fractions->rad, ret_fractions->nrad,
+                  input_corr_factors->rgrid, input_corr_factors->corrfac_gshift, input_corr_factors->n_zones);
 
     return rtable_corr_factors;
   }

@@ -184,11 +184,12 @@ rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &
   }
 
   for (int ii = 0; ii < rgrid.num_zones; ii++) {
-      get_xillver_fluxcorrection_factors(xill_spec[ii],
-                                         &(rrad_corr_factors->corrfac_flux[ii]),
-                                         &(rrad_corr_factors->corrfac_gshift[ii]),
-                                         xill_table_param[ii], status);
+    get_xillver_fluxcorrection_factors(xill_spec[ii],
+                                       &(rrad_corr_factors->corrfac_flux[ii]),
+                                       &(rrad_corr_factors->corrfac_gshift[ii]),
+                                       xill_table_param[ii], status);
   }
+
   return rrad_corr_factors;
 }
 
@@ -241,8 +242,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // --- 0 ---
     auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
-//    double *rgrid = get_rzone_grid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height, status);
-//    CHECK_STATUS_VOID(*status);
 
     // --- 1 --- calculate disk irradiation
     RelSysPar *sysPar = get_system_parameters(rel_param, status);
@@ -281,6 +280,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     if (rel_param->return_rad != 0) {
       rel_param->rrad_corr_factors =
           calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_table_param, status);
+
     }
 
 
@@ -310,14 +310,14 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     copy_spectrum_to_cache(spectrum, spec_cache, status);
     CHECK_STATUS_VOID(*status);
 
-    free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
     for (int ii=0; ii<rel_param->num_zones; ii++) {
       free(xill_table_param[ii]);
     }
-
+    free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
   }
 
   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, status);
+
 }
 
 

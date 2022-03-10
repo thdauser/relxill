@@ -303,7 +303,7 @@ RelSysPar *get_system_parameters(relParam *param, int *status) {
     important note: ener has n_ener+1 number of bins **/
 relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status) {
 
-  relline_spec_multizone *spec = (relline_spec_multizone *) malloc(sizeof(relline_spec_multizone));
+  auto *spec = new relline_spec_multizone;
   CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
 
   spec->n_zones = nzones;

@@ -86,14 +86,17 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
   if (comp_single_param_val(par->rout, cpar->rout)) {
     return 1;
   }
-  if (comp_single_param_val(par->return_rad, cpar->return_rad)) {
-    return 1;
-  }
 
   if (par->limb != cpar->limb) {
     return 1;
   }
   if (par->return_rad != cpar->return_rad) {
+    return 1;
+  }
+
+  // for now, if we have correction factors, there is no caching of rel_param results possible
+  // TODO: move correction factors and therefore the return rad emis profile outside of the system parameters
+  if (par->rrad_corr_factors != nullptr){
     return 1;
   }
 

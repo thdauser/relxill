@@ -74,7 +74,7 @@ TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad]") {
   unsetenv(env_outfiles);
 }
 
-TEST_CASE(" Exec single iongrad model, should change with xindex", "[iongradt]") {
+TEST_CASE(" Exec single iongrad model, should change with xindex", "[iongrad]") {
   DefaultSpec default_spec{};
 
   LocalModel lmod(ModelName::relxilllpCp);
