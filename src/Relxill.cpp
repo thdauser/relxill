@@ -225,6 +225,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   check_caching_parameters(caching_status, rel_param, xill_param);
   check_caching_energy_grid(caching_status, spec_cache, spectrum);
 
+  RelSysPar *sys_par = get_system_parameters(rel_param, status);
+  CHECK_STATUS_VOID(*status);
+
   if (caching_status.is_all_cached()) { // already cached, simply use the cached output flux value
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
       spectrum.flux[ii] = spec_cache->out_spec->flux[ii];
@@ -241,13 +244,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
 
     // --- 1 --- calculate disk irradiation
-    RelSysPar *sysPar = get_system_parameters(rel_param, status);
-    CHECK_STATUS_VOID(*status);
 
 
     // --- 2 --- calculate ionization gradient
     IonGradient ion_gradient{radial_grid, xill_param->ion_grad_type};
-    ion_gradient.calculate(sysPar->emis, xill_param);
+    ion_gradient.calculate(sys_par->emis, xill_param);
 
     xillTableParam* xill_table_param[rel_param->num_zones];
 
@@ -291,14 +292,14 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     CHECK_STATUS_VOID(*status);
 
     // --- 5a --- calculate the emissivity including the rrad correction factors
-    RelSysPar *sysPar_returnrad = get_system_parameters(rel_param, status);
+    sys_par = get_system_parameters(rel_param, status); // no need to free this, is automatically done by the cache
 
     // --- 5b --- calculate the relbase profile
     int n_ener_conv; // energy grid for the convolution, only created
     double *ener_conv;
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
     relline_spec_multizone *rel_profile =
-        relbase_profile(ener_conv, n_ener_conv, rel_param, sysPar_returnrad, xill_tab, ion_gradient.radial_grid.radius, ion_gradient.nzones(), status);
+        relbase_profile(ener_conv, n_ener_conv, rel_param, sys_par, xill_tab, ion_gradient.radial_grid.radius, ion_gradient.nzones(), status);
 
     assert(rel_profile != nullptr);
     CHECK_STATUS_VOID(*status);
@@ -312,7 +313,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
   }
 
-  add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, status);
+  add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param,
+                        sys_par, status);
 
 }
 

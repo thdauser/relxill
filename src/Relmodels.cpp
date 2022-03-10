@@ -159,7 +159,7 @@ void xillver_base(double *ener_inp, const int n_ener0, double *photar, xillParam
 
   rebin_spectrum(ener_inp, photar, n_ener0, spec->ener, spec->flu[0], spec->n_ener);
 
-  add_primary_component(ener_inp, n_ener0, photar, nullptr, param_struct, status);
+  add_primary_component(ener_inp, n_ener0, photar, nullptr, param_struct, nullptr, status);
 
 //  rebin_spectrum(ener, photar, n_ener, ener, flux, n_ener);
 

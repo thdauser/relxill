@@ -313,8 +313,8 @@ static void print_reflection_strength(double *ener,
 
 
 
-void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param,
-                           xillParam *xill_input_param, int *status) {
+void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param, xillParam *xill_input_param,
+                           RelSysPar *sys_par, int *status) {
 
   xillTableParam* xill_table_param = get_xilltab_param(xill_input_param, status);
   double *pl_flux = calc_normalized_xillver_primary_spectrum(ener, n_ener, rel_param, xill_table_param, status);
@@ -331,10 +331,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
     assert(rel_param != nullptr);
 
-    // should be cached, as it has been calculated before
-    RelSysPar *sysPar = get_system_parameters(rel_param, status);
-
-    lpReflFrac *struct_refl_frac = sysPar->emis->photon_fate_fractions;
+    lpReflFrac *struct_refl_frac = sys_par->emis->photon_fate_fractions;
 
 
     /** 4 ** and apply it to primary and reflected spectra **/

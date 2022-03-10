@@ -109,6 +109,7 @@ void add_primary_component(double *ener,
                            double *flu,
                            relParam *rel_param,
                            xillParam *xill_input_param,
+                           RelSysPar *sys_par,
                            int *status);
 
 void free_rel_spec(relline_spec_multizone *spec);
