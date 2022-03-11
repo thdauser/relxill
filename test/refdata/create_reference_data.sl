@@ -236,24 +236,33 @@ define create_refdata_relxilllp(filename_refdata){ %{{{
 define create_refdata_relxilllpCp(filename_refdata){ %{{{
 
 %   message("\n creating special relxilllpCp reference for Alpha-Disk Gradients \n");
-   __set_hard_limits("relxilllp","h",-100,1000);
-   fit_fun("relxilllpCp");
+   __set_hard_limits("relxilllpCp","h",-100,1000);
+   fit_fun_default("relxilllpCp");
    
    set_par("*.iongrad_type",2);
    set_par("*.switch_reflfrac_boost",1);
    set_par("*.refl_frac",1);
-   set_par("*.switch_returnrad",0);
-   
-   set_par("*.a",0.998);
-   set_par("*.h",2.0,0,-100,100);   
-   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
-   
-   set_par("*.h",20.0,0,-100,100);
-   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
 
-   set_par("*.a",0.0);
-   set_par("*.h",3.0,0,-100,100);   
-   fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
+   set_par("*.Afe",5.0);
+   
+   variable rrad_array = [0,1];
+   variable rrad;
+   
+   foreach rrad(rrad_array){
+      
+      set_par("*.switch_returnrad",rrad);
+      
+      set_par("*.a",0.998);
+      set_par("*.h",2.0,0,-100,100);   
+      fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
+      
+      set_par("*.h",200.0,0,-100,200);
+      fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
+      
+      set_par("*.a",0.8);
+      set_par("*.h",3.0,0,-100,100);
+      fits_write_model_struct(get_refdata_filename(filename_refdata);; __qualifiers() );
+   }
    
 }
 %}}}

@@ -642,8 +642,30 @@ TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
 
 }
 
+TEST_CASE(" Test that no warning is printed", "[returnrad]") {
 
-TEST_CASE(" Caching of spectrum with return radiation correction factors", "[returnrad2]"){
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  LocalModel local_model{ModelName::relxilllpCp};
+
+  local_model.set_par(XPar::a, 0.8);
+  local_model.set_par(XPar::switch_switch_reflfrac_boost, 1);
+  local_model.set_par(XPar::refl_frac, 1);
+  local_model.set_par(XPar::afe, 10.0);
+  local_model.set_par(XPar::h, 6.);
+  local_model.set_par(XPar::switch_iongrad_type,2);
+  local_model.set_par(XPar::switch_switch_returnrad, 1);
+
+//  relParam* rel_param = local_model.get_rel_params();
+//  xillParam * xill_param = local_model.get_xill_params();
+
+  local_model.eval_model(spec);
+  double model1 = sum_flux(spec.flux, spec.num_flux_bins());
+
+}
+
+TEST_CASE(" Caching of spectrum with return radiation correction factors", "[returnrad]"){
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -652,6 +674,10 @@ TEST_CASE(" Caching of spectrum with return radiation correction factors", "[ret
 
   double a_default = 0.998;
   local_model.set_par(XPar::a, a_default);
+  local_model.set_par(XPar::h, 3.);
+  local_model.set_par(XPar::switch_switch_reflfrac_boost, 1);
+  local_model.set_par(XPar::refl_frac, 1);
+
 
   local_model.eval_model(spec);
   double model1 = sum_flux(spec.flux, spec.num_flux_bins());
@@ -665,6 +691,35 @@ TEST_CASE(" Caching of spectrum with return radiation correction factors", "[ret
   local_model.eval_model(spec);
   double model2 = sum_flux(spec.flux, spec.num_flux_bins());
   REQUIRE( fabs(model1 - model2)/model1 < 1e-6);
+
+
+}
+
+
+TEST_CASE(" Test that returnrad is also implemented for low spin","[returnrad2]"){
+
+  LocalModel local_model{ModelName::relxilllpCp};
+
+  local_model.set_par(XPar::a, 0.0 );
+  local_model.set_par(XPar::switch_switch_reflfrac_boost, 1);
+  local_model.set_par(XPar::refl_frac, -1);
+  local_model.set_par(XPar::afe, 1.0);
+  local_model.set_par(XPar::h, 3.);
+  local_model.set_par(XPar::rin, 10);
+  local_model.set_par(XPar::switch_iongrad_type,0);
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  local_model.set_par(XPar::switch_switch_returnrad, 1);
+  local_model.eval_model(spec);
+  double model1 = sum_flux(spec.flux, spec.num_flux_bins());
+
+  local_model.set_par(XPar::switch_switch_returnrad, 0);
+  local_model.eval_model(spec);
+  double model2 = sum_flux(spec.flux, spec.num_flux_bins());
+
+  REQUIRE( fabs(model1 - model2)/model1 > 1e-3 );
 
 
 }
