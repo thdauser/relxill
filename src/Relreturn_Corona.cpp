@@ -75,8 +75,10 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
   if (g < 1){
     if (fluxboost_factor>1){
       if (fluxboost_factor > 1.1 ) { // print warning for a deviation of >10%
-        printf(" *** warning: for g=%.4f the gshift-fluxboost factor = %.4f > 1 -> resetting to 1 \n",
-               g, fluxboost_factor);
+        if (is_debug_run()) {
+          printf(" *** warning: for g=%.4f the gshift-fluxboost factor = %.4f > 1 -> resetting to 1 \n",
+                 g, fluxboost_factor);
+        }
       }
       fluxboost_factor = 1;
     }
