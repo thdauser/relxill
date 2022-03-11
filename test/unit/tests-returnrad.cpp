@@ -641,3 +641,30 @@ TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
   require_values_differ(tab_grad_corrfactors->corrfac_gshift, tab_grad_corrfactors->n_zones);
 
 }
+
+
+TEST_CASE(" Caching of spectrum with return radiation correction factors", "[returnrad2]"){
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  LocalModel local_model{ModelName::relxilllpAlpha};
+
+  double a_default = 0.998;
+  local_model.set_par(XPar::a, a_default);
+
+  local_model.eval_model(spec);
+  double model1 = sum_flux(spec.flux, spec.num_flux_bins());
+
+  // reset relxill total cache by this
+  local_model.set_par(XPar::a, a_default*0.99);
+  local_model.eval_model(spec);
+
+  // evaluate wih the same values again, should give the same result
+  local_model.set_par(XPar::a, a_default);
+  local_model.eval_model(spec);
+  double model2 = sum_flux(spec.flux, spec.num_flux_bins());
+  REQUIRE( fabs(model1 - model2)/model1 < 1e-6);
+
+
+}

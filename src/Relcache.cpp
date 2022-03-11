@@ -96,7 +96,7 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
 
   // for now, if we have correction factors, there is no caching of rel_param results possible
   // TODO: move correction factors and therefore the return rad emis profile outside of the system parameters
-  if (par->rrad_corr_factors != nullptr){
+  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors!= nullptr ){
     return 1;
   }
 
@@ -178,6 +178,7 @@ void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
   (*ca_rel_param)->num_zones = par->num_zones;
 
   (*ca_rel_param)->return_rad = par->return_rad;
+  (*ca_rel_param)->rrad_corr_factors = par->rrad_corr_factors; // is not checked and therefore not used
 }
 
 void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *status) {

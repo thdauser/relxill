@@ -5,8 +5,7 @@ load_relxill_model_devel(modlib);
 variable msg_log = "\n";
 
 define runtest(ffs){
-
-
+   
    variable ff;
    variable stdpar;
    foreach ff(ffs){
@@ -30,7 +29,7 @@ define runtest(ffs){
        
       
       putenv("RELLINE_PHYSICAL_NORM=1");
-      set_par("*.a",stdpar*0.99);
+      set_par("*.a",stdpar*0.98);
       () = eval_fun_keV(1,2);
       set_par("*.a",stdpar);
       variable val_set1 = eval_fun_keV(0.05,2);
@@ -50,6 +49,7 @@ define runtest(ffs){
 	 %% should always have physical normalization, does not depend
 	 %% on ENV
 	 if (not ( env0_changes_default==0 && env1_changes_default==0 )) {
+	    vmessage( "normalization of %s does not behave as expected", ff);
 	    status = EXIT_FAILURE;
 	 }
 	 
