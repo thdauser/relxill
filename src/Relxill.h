@@ -29,6 +29,7 @@ extern "C" {
 #include "relutility.h"
 }
 
+#define SPIN_MIN_RRAD_CALC_CORRFAC (0.0)  // minimal value for which returning radiation is calculated (for relxill_kernel)
 
 enum cached {
   yes,

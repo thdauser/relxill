@@ -275,10 +275,12 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     }
 
-    // -- 4 -- returning radiation
-    if (rel_param->return_rad != 0) {
+    // -- 4 -- returning radiation correction factors (only calculated if above a given threshold)
+    if (rel_param->return_rad != 0 && rel_param->a > SPIN_MIN_RRAD_CALC_CORRFAC  ) {
       rel_param->rrad_corr_factors =
           calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_table_param, status);
+    } else {
+      rel_param->rrad_corr_factors = nullptr;
     }
     for (int ii=0; ii<rel_param->num_zones; ii++) {
       free(xill_table_param[ii]);
