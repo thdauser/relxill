@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 #ifndef RELXILL__CPPSPECTRUM_H_

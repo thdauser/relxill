@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef RELRETURN_TABLE_H_
 #define RELRETURN_TABLE_H_

@@ -13,7 +13,7 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 #ifndef RELPROFILE_H_
 #define RELPROFILE_H_
