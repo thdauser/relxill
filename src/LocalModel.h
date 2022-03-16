@@ -57,7 +57,7 @@ class ModelEvalFailed : public std::exception {
 
 /*
 explicit ParamList(ModelName model_name) :
-ParamList(model_name, &ModelDatabase::instance().default_values(model_name)[0]) {
+ParamList(model_name, &ModelDatabase::instance().get_default_values_array(model_name)[0]) {
 };
 
 explicit ParamList(ModelName model_name, const double* parvalues) {
@@ -81,13 +81,13 @@ class LocalModel {
     {  };
 
     LocalModel(const double* inp_param, ModelName model_name)
-        : LocalModel(ParamList(ModelDatabase::instance().param_names(model_name), inp_param), model_name )
-    {  };
+        : LocalModel(ModelDatabase::instance().param_list(model_name), model_name )
+    {
+      set_input_params(inp_param);
+    };
 
     explicit LocalModel(ModelName model_name) :
-        LocalModel(ParamList(ModelDatabase::instance().param_names(model_name),
-                             &ModelDatabase::instance().default_values(model_name)[0]),
-                   model_name)
+        LocalModel(ModelDatabase::instance().param_list(model_name), model_name)
     {  };
 
     /** set the value of a single parameter
@@ -96,6 +96,14 @@ class LocalModel {
      */
     void set_par(const XPar param, double value){
       m_model_params.set(param,value);
+    }
+
+    void set_input_params(const double* inp_par_values){
+      auto parnames = m_model_params.get_parnames();
+      for (size_t ii = 0; ii < m_model_params.num_params() ; ++ii){
+        m_model_params.set( parnames[ii],inp_par_values[ii]);
+      }
+
     }
 
     std::string get_model_string(){

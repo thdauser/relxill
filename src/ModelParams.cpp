@@ -102,7 +102,7 @@ int convertPrimSpecType(T_PrimSpec name) {
  */
 const double *get_xspec_default_parameter_array(ModelName model_name) {
 
-  auto const default_values = ModelDatabase::instance().default_values(model_name);
+  auto const default_values = ModelDatabase::instance().get_default_values_array(model_name);
 
   auto output_param_array = new double[default_values.size()];
 

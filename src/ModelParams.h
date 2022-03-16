@@ -109,15 +109,12 @@ class ParamList {
 
  public:
 
-  explicit ParamList( std::vector<XPar> parnames, const double* parvalues){
-    for (size_t ii = 0; ii < parnames.size() ; ++ii){
-      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
-    }
-  }
+  explicit ParamList( std::vector<XPar> parnames, std::vector<double> parvalues) :
+      m_parnames{std::move(parnames)}
+  {
 
-  explicit ParamList( std::vector<XPar> parnames, std::vector<double> parvalues){
-    for (size_t ii = 0; ii < parnames.size() ; ++ii){
-      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
+    for (size_t ii = 0; ii < m_parnames.size() ; ++ii){
+      m_param.insert(std::make_pair(m_parnames[ii],parvalues[ii]));
     }
   }
 
@@ -137,6 +134,14 @@ class ParamList {
     }
   }
 
+  auto num_params(){
+    return m_parnames.size();
+  }
+
+  auto get_parnames(){
+    return m_parnames;
+  }
+
   /**
    * get the parameter value for "name", otherwise return the default
    * value "def_value"
@@ -153,9 +158,13 @@ class ParamList {
   }
 
  private:
+  std::vector<XPar> m_parnames = {};  // need this as this needs to be in order given by Xspec TODO: could be fixed in xspec_wrapper
   std::unordered_map<XPar, double> m_param = {};
 };
 
+/* class InputParamList: public ParamList{
+
+}; */
 
 // class Model
 

@@ -208,29 +208,22 @@ def get_implemented_lmod(local_model_name, param_list):
 def write_class_definition(file):
     class_definition_cpp = """
 
-class XspecParamList {
+#include "ModelParams.h"
+
+class XspecParamList: public ParamList {
 
  public:
   XspecParamList(std::string model_name, std::vector<XPar> parnames, std::vector<double> parvalues):
-      m_name{std::move(model_name)}, m_parnames{std::move(parnames)}, m_values{std::move(parvalues)} { };
-
+      ParamList(std::move(parnames), std::move(parvalues)) {
+        m_name = std::move(model_name);
+      };
 
   [[nodiscard]] std::string name() const {
     return m_name;
   }
 
-  [[nodiscard]] std::vector<XPar> parnames() const {
-    return m_parnames;
-  }
-
-  [[nodiscard]] std::vector<double> default_values() const {
-    return m_values;
-  }
-
  private:
   std::string m_name;
-  std::vector<XPar> m_parnames;
-  std::vector<double> m_values;
 };
 
 
@@ -241,12 +234,8 @@ class XspecModelDatabase{
     return model_definition.at(name).name();
   }
 
-  std::vector<XPar> params(ModelName name) const{
-    return model_definition.at(name).parnames();
-  }
-
-  std::vector<double> default_values(ModelName name) const{
-    return model_definition.at(name).default_values();
+  ParamList param_list(ModelName name) const{
+    return model_definition.at(name);
   }
 
   std::unordered_map<ModelName, XspecParamList> all_models() const{

@@ -84,24 +84,27 @@ class ModelDatabase {
    * @param ModelName
    * @return ModelParamVector
    */
-  std::vector<XPar> param_names(ModelName name){
+  ParamList param_list(ModelName name){
     try {
-      return lmodel_database.params(name);
+      return lmodel_database.param_list(name);
     } catch (std::out_of_range &e) {
       throw ModelNotFound(lmodel_database.name_string(name));
     }
   }
 
-  std::vector<double> default_values(ModelName name){
-    try {
-      return lmodel_database.default_values(name);
-    } catch (std::out_of_range &e) {
-      throw ModelNotFound("not in local model database");
-    }
-  }
-
   std::string model_string(ModelName name){
     return lmodel_database.name_string(name);
+  }
+
+  std::vector<double> get_default_values_array(ModelName name){
+    auto param_list = lmodel_database.param_list(name);
+    auto parnames = param_list.get_parnames();
+    const auto num_param = param_list.num_params();
+    std::vector<double> values;
+    for (size_t ii = 0; ii <  num_param; ++ii){
+      values.push_back(param_list[parnames[ii]]);
+    }
+    return values;
   }
 
   ModelName model_name(const std::string& model_string){
