@@ -133,10 +133,9 @@ void check_parameter_bounds(relParam *param, int *status) {
                h_fac);
         printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
         printf("      Setting    h =  1.1*r_event  = %.3f \n", r_event * h_fac);
-        param->height = r_event * h_fac;
         warned_height = 1;
       }
-
+      param->height = r_event * h_fac;
     }
   }
 

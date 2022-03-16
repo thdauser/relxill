@@ -73,12 +73,10 @@ m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
    */
 class LocalModel {
 
-   public:
-    LocalModel(ParamList par, ModelName model_name)
-        : m_name{model_name},
-          m_model_params{std::move(par)},
-          m_info{ModelDatabase::instance().model_info(model_name)}
-    {  };
+ public:
+  LocalModel(const ParamList& par, ModelName model_name):
+      m_model_params{ ModelParams(par, model_name, ModelDatabase::instance().model_info(model_name)) }
+          {  };
 
     LocalModel(const double* inp_param, ModelName model_name)
         : LocalModel(ModelDatabase::instance().param_list(model_name), model_name )
@@ -95,11 +93,11 @@ class LocalModel {
      * @param double value
      */
     void set_par(const XPar param, double value){
-      m_model_params.set(param,value);
+      m_model_params.set_par(param, value);
     }
 
     std::string get_model_string(){
-      return ModelDatabase::instance().model_string(m_name);
+      return ModelDatabase::instance().model_string(m_model_params.get_model_name());
     }
 
     /**
@@ -113,7 +111,7 @@ class LocalModel {
       spectrum.shift_energy_grid_redshift(m_model_params.get_otherwise_default(XPar::z,0));
 
       try {
-        switch (m_info.type()) {
+        switch (m_model_params.model_type()) {
           case T_Model::Line: line_model(spectrum);
             break;
           case T_Model::Relxill: relxill_model(spectrum);
@@ -130,13 +128,15 @@ class LocalModel {
 
     }
 
-    relParam *get_rel_params();
-    xillParam *get_xill_params();
+    relParam* get_rel_params(){
+      return ::get_rel_params(m_model_params);
+    }
+    xillParam *get_xill_params(){
+      return ::get_xill_params(m_model_params);
+    }
 
  private:
-  ModelName m_name;
-  ParamList m_model_params;
-  ModelInfo m_info;
+  ModelParams m_model_params;
 
   void line_model(const XspecSpectrum &spectrum);
   void relxill_model(const XspecSpectrum &spectrum);
@@ -146,7 +146,7 @@ class LocalModel {
   void set_input_params(const double* inp_par_values){
     auto parnames = m_model_params.get_parnames();
     for (size_t ii = 0; ii < m_model_params.num_params() ; ++ii){
-      m_model_params.set( parnames[ii],inp_par_values[ii]);
+      m_model_params.set_par(parnames[ii], inp_par_values[ii]);
     }
   }
 

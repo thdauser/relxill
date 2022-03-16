@@ -16,6 +16,7 @@
     Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "Relxill.h"
+
 #include "IonGradient.h"
 #include "XspecSpectrum.h"
 #include "Relreturn_Corona.h"
@@ -205,9 +206,11 @@ rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &
  * @param status
  */
 void relxill_kernel(const XspecSpectrum &spectrum,
-                    xillParam *xill_param,
-                    relParam *rel_param,
+                    const ModelParams &params,
                     int *status) {
+
+  relParam *rel_param = get_rel_params(params);
+  xillParam *xill_param = get_xill_params(params);
 
 
   // TODO: this should be done when loading the input parameters
@@ -317,6 +320,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param,
                         sys_par, status);
+
+  delete rel_param;
+  delete xill_param;
 
 }
 

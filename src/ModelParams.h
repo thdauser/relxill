@@ -118,13 +118,22 @@ class ParamList {
     }
   }
 
-  void set(XPar name, double value){
+  void set_par(XPar name, double value){
     try {
       m_param.at(name) = value;
     } catch (std::out_of_range &e){
       throw ParamInputException("parameter not found");
     }
   }
+
+  auto get_par(XPar name) const{
+    try {
+      return m_param.at(name);
+    } catch (std::out_of_range &e){
+      throw ParamInputException("parameter not found");
+    }
+  }
+
 
   auto &operator[](const XPar &name) const {
     try {
@@ -138,8 +147,49 @@ class ParamList {
     return m_parnames.size();
   }
 
+  bool does_parameter_exist(const XPar &name) const {
+    if (m_param.find(name) != m_param.end()){
+      return true;
+    } else {
+      return false;
+    }
+  }
+
   auto get_parnames(){
     return m_parnames;
+  }
+
+
+ private:
+  std::vector<XPar> m_parnames = {};  // need this as this needs to be in order given by Xspec TODO: could be fixed in xspec_wrapper
+ protected:
+  std::unordered_map<XPar, double> m_param = {};
+};
+
+
+
+class ModelParams: public ParamList{
+
+ public:
+  ModelParams( const ParamList &param_list, ModelName model_name, const ModelInfo &model_info ) :
+      ParamList(param_list), m_model_name{model_name}, m_model_info{model_info}
+  {
+  };
+
+  auto get_model_name() const{
+    return m_model_name;
+  }
+
+  auto irradiation() const{
+    return m_model_info.irradiation();
+  }
+
+  auto primeSpec() const{
+    return m_model_info.primeSpec();
+  }
+
+  auto model_type() const{
+    return m_model_info.type();
   }
 
   /**
@@ -150,23 +200,21 @@ class ParamList {
    * @return
    */
   double get_otherwise_default(const XPar &name, double def_value) const {
-    if (m_param.find(name) != m_param.end()){
+    if (does_parameter_exist(name) ){
       return m_param.at(name);
     } else {
       return def_value;
     }
   }
 
+
  private:
-  std::vector<XPar> m_parnames = {};  // need this as this needs to be in order given by Xspec TODO: could be fixed in xspec_wrapper
-  std::unordered_map<XPar, double> m_param = {};
+  ModelInfo m_model_info;
+  ModelName m_model_name;
+
 };
 
-/* class InputParamList: public ParamList{
-
-}; */
-
-// class Model
-
+relParam* get_rel_params(const ModelParams& params);
+xillParam* get_xill_params(const ModelParams& params);
 
 #endif //RELXILL_SRC_MODELPARAMS_H_
