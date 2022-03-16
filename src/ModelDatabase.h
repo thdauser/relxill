@@ -47,8 +47,6 @@ class ModelNotFound : public std::exception {
   std::string m_msg{"*** model not found: "};
 };
 
-
-
 /**
  * @brief not a real class, but rather a global database (container) for all possible
  * local models with, using instances of the class "ModelDefinition":

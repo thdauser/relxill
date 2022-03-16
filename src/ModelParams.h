@@ -29,6 +29,8 @@
 #include "ModelInfo.h"
 #include "common.h"
 
+#include <vector>
+
 enum class XPar {
   linee,
   index1,
@@ -92,5 +94,70 @@ int convertPrimSpecType(T_PrimSpec name);
 //relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 //xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 const double *get_xspec_default_parameter_array(ModelName model_name);
+
+
+
+/**
+ * @brief class storing the name and the parameter list
+ * - used by the python script from the lmodel.dat file to create the xspec_wrapper
+ */
+
+/**
+ * class to store all input parameters of the model (explicit or hidden)
+ */
+class ParamList {
+
+ public:
+
+  explicit ParamList( std::vector<XPar> parnames, const double* parvalues){
+    for (size_t ii = 0; ii < parnames.size() ; ++ii){
+      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
+    }
+  }
+
+  explicit ParamList( std::vector<XPar> parnames, std::vector<double> parvalues){
+    for (size_t ii = 0; ii < parnames.size() ; ++ii){
+      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
+    }
+  }
+
+  void set(XPar name, double value){
+    try {
+      m_param.at(name) = value;
+    } catch (std::out_of_range &e){
+      throw ParamInputException("parameter not found");
+    }
+  }
+
+  auto &operator[](const XPar &name) const {
+    try {
+      return m_param.at(name);
+    } catch (std::exception &e){
+      throw ParamInputException("parameter not found");
+    }
+  }
+
+  /**
+   * get the parameter value for "name", otherwise return the default
+   * value "def_value"
+   * @param name
+   * @param def_value
+   * @return
+   */
+  double get_otherwise_default(const XPar &name, double def_value) const {
+    if (m_param.find(name) != m_param.end()){
+      return m_param.at(name);
+    } else {
+      return def_value;
+    }
+  }
+
+ private:
+  std::unordered_map<XPar, double> m_param = {};
+};
+
+
+// class Model
+
 
 #endif //RELXILL_SRC_MODELPARAMS_H_

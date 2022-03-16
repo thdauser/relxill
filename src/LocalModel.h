@@ -55,65 +55,17 @@ class ModelEvalFailed : public std::exception {
   std::string m_msg{"*** relxill-error: "};
 };
 
-
-/**
- * @brief class storing the name and the parameter list
- * - used by the python script from the lmodel.dat file to create the xspec_wrapper
- */
-
-/**
- * class to store all input parameters of the model (explicit or hidden)
- */
-class ParamList {
-
- public:
-  explicit ParamList(ModelName model_name) :
-      ParamList(model_name, &ModelDatabase::instance().default_values(model_name)[0]) {
-  };
-
-  explicit ParamList(ModelName model_name, const double* parvalues) {
-    auto parnames = ModelDatabase::instance().param_names(model_name);
-    for (size_t ii = 0; ii < parnames.size() ; ++ii){
-      m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
-    }
-  };
-
-
-
-  void set(XPar name, double value){
-    try {
-      m_param.at(name) = value;
-    } catch (std::out_of_range &e){
-      throw ParamInputException("parameter not found");
-    }
-  }
-
-  auto &operator[](const XPar &name) const {
-    try {
-      return m_param.at(name);
-    } catch (std::exception &e){
-      throw ParamInputException("parameter not found");
-    }
-  }
-
-  /**
-   * get the parameter value for "name", otherwise return the default
-   * value "def_value"
-   * @param name
-   * @param def_value
-   * @return
-   */
-  double get_otherwise_default(const XPar &name, double def_value) const {
-    if (m_param.find(name) != m_param.end()){
-      return m_param.at(name);
-    } else {
-      return def_value;
-    }
-  }
-
- private:
-  std::unordered_map<XPar, double> m_param = {};
+/*
+explicit ParamList(ModelName model_name) :
+ParamList(model_name, &ModelDatabase::instance().default_values(model_name)[0]) {
 };
+
+explicit ParamList(ModelName model_name, const double* parvalues) {
+auto parnames = ModelDatabase::instance().param_names(model_name);
+for (size_t ii = 0; ii < parnames.size() ; ++ii){
+m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
+}
+}; */
 
 
 /**
@@ -129,11 +81,13 @@ class LocalModel {
     {  };
 
     LocalModel(const double* inp_param, ModelName model_name)
-        : LocalModel(ParamList(model_name, inp_param), model_name )
+        : LocalModel(ParamList(ModelDatabase::instance().param_names(model_name), inp_param), model_name )
     {  };
 
     explicit LocalModel(ModelName model_name) :
-        LocalModel(ParamList(model_name), model_name)
+        LocalModel(ParamList(ModelDatabase::instance().param_names(model_name),
+                             &ModelDatabase::instance().default_values(model_name)[0]),
+                   model_name)
     {  };
 
     /** set the value of a single parameter
