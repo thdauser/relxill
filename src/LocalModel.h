@@ -98,14 +98,6 @@ class LocalModel {
       m_model_params.set(param,value);
     }
 
-    void set_input_params(const double* inp_par_values){
-      auto parnames = m_model_params.get_parnames();
-      for (size_t ii = 0; ii < m_model_params.num_params() ; ++ii){
-        m_model_params.set( parnames[ii],inp_par_values[ii]);
-      }
-
-    }
-
     std::string get_model_string(){
       return ModelDatabase::instance().model_string(m_name);
     }
@@ -150,6 +142,13 @@ class LocalModel {
   void relxill_model(const XspecSpectrum &spectrum);
   void conv_model(const XspecSpectrum &spectrum);
   void xillver_model(const XspecSpectrum &spectrum);
+
+  void set_input_params(const double* inp_par_values){
+    auto parnames = m_model_params.get_parnames();
+    for (size_t ii = 0; ii < m_model_params.num_params() ; ++ii){
+      m_model_params.set( parnames[ii],inp_par_values[ii]);
+    }
+  }
 
 };
 
