@@ -50,12 +50,14 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
  */
 void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
-  relParam *rel_param = LocalModel::get_rel_params();
-  xillParam *xill_param = LocalModel::get_xill_params();
 
   int status = EXIT_SUCCESS;
   if (m_model_params.irradiation() == T_Irrad::Const){
+    relParam *rel_param = LocalModel::get_rel_params();
+    xillParam *xill_param = LocalModel::get_xill_params();
     relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), xill_param, rel_param, &status);
+    delete rel_param;
+    delete xill_param;
   } else {
     relxill_kernel(spectrum, m_model_params, &status);
   }
@@ -64,8 +66,6 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
     throw std::exception();
   }
 
-  delete rel_param;
-  delete xill_param;
 }
 
 /**
