@@ -193,6 +193,24 @@ rradCorrFactors *init_rrad_corr_factors(const double *rlo, const double *rhi, in
   return corr_factors;
 }
 
+rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones) {
+  auto* corr_factors = new rradCorrFactors;
+
+  corr_factors->rgrid = new double[n_zones+1];
+  for (int ii=0; ii<n_zones+1; ii++){
+    corr_factors->rgrid[ii] = rgrid[ii];
+  }
+
+  corr_factors->n_zones= n_zones;
+
+  corr_factors->corrfac_flux = new double[n_zones];
+  corr_factors->corrfac_gshift = new double[n_zones];
+
+  return corr_factors;
+}
+
+
+
 void free_rrad_corr_factors(rradCorrFactors** p_corr_factors){
   if (*p_corr_factors != nullptr ) {
     delete[] (*p_corr_factors)->rgrid;

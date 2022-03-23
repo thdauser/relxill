@@ -32,13 +32,12 @@ extern "C" {
 class RadialGrid{
 
  public:
-//  RadialGrid(const double* _radius, int nzones) : radius(_radius), num_zones(nzones) {  }
   RadialGrid(double rmin, double rmax, int nzones, double h) : num_zones(nzones) {
     radius = calculate_radial_grid(rmin, rmax, nzones, h) ;
   }
 
   const int num_zones;
-  const double* radius;
+  const double* radius; // has length num_zones+1
 
   ~RadialGrid(){
       delete[] radius;

@@ -176,7 +176,7 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
 rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,
                                        xillTableParam *const *xill_table_param, int *status) {
 
-  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid.radius, nullptr, rgrid.num_zones);
+  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid.radius, rgrid.num_zones);
 
   if (rrad_corr_factors == nullptr || *status != EXIT_SUCCESS) {
     assert(rrad_corr_factors != nullptr);

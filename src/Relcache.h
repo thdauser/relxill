@@ -18,6 +18,9 @@
 #ifndef RELCACHE_H_
 #define RELCACHE_H_
 
+#include "ModelParams.h"
+#include <deque>
+
 extern "C" {
 #include "common.h"
 #include "relutility.h"
@@ -102,5 +105,57 @@ int is_xill_cached(cache_info *self);
 int is_cached(cache_info *self);
 
 void free_cnode(cnode **node);
+
+
+/*
+class Cache{
+
+  explicit Cache(ModelParams model_params) : m_model_params{model_params}
+  {};
+
+
+  bool operator==(const Cache& _comp_cache){
+    auto parnames = m_model_params.get_parnames();
+
+     for(auto par=parnames.begin(); par!=parnames.cend(); ++par ) {
+       if (comp_single_param_val( m_model_params.get_par(*par), _comp_cache.m_model_params.get_par(*par) ) == 0){
+         return false;
+       }
+     }
+     return true;
+  }
+
+ private:
+  ModelParams m_model_params;
+
+};
+
+class PrimarySourceCache: Cache{
+
+
+
+};
+
+class CacheStorage{
+
+ public:
+
+  CacheStorage(size_t _max_size) : max_size{_max_size}
+  {};
+
+  void add(Cache _cache){
+    if (m_cache.size() > max_size){
+      m_cache.pop_front();
+    }
+    m_cache.push_back(_cache);
+  }
+
+ private:
+  std::deque<Cache> m_cache;
+  size_t max_size;
+};
+
+ */
+
 
 #endif /* RELCACHE_H_ */
