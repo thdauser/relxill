@@ -242,6 +242,43 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
 }
 
 
+/**
+ * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
+ */
+primeSourceParam* get_primesource_params(const ModelParams& inp_param) {
+  auto *param = new primeSourceParam ;
+
+  param->prim_type = convertPrimSpecType(inp_param.primeSpec());
+
+  // these parameters have to be given for any xillver parameter structure
+  try {
+    param->z = inp_param.get_par(XPar::z);
+    param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp)
+                 ? inp_param.get_otherwise_default(XPar::kte, 0)  // TODO: make kTe own parameter
+                 : inp_param.get_otherwise_default(XPar::ecut, 300);
+
+  } catch (ParamInputException &e) {
+    throw ParamInputException("get_xill_params: model evaluation failed due to missing xillver parameters");
+  }
+
+  // important default values
+  param->boost = inp_param.get_otherwise_default(XPar::boost, -1);
+
+  // those values should never be used, unless it is set by the model
+  param->refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);
+  param->mass = inp_param.get_otherwise_default(XPar::mass, 0);
+  param->distance = inp_param.get_otherwise_default(XPar::distance, 0);
+  param->lbol = inp_param.get_otherwise_default(XPar::lbol, 0);
+  param->kTbb = inp_param.get_otherwise_default(XPar::ktbb, 0);
+
+  param->interpret_reflfrac_as_boost =
+      static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
+
+  return param;
+}
+
+
+
 int get_iongrad_type(const ModelParams &params) {
   if (params.get_model_name() == ModelName::relxilllpAlpha || params.get_model_name() == ModelName::relxillAlpha){
     return ION_GRAD_TYPE_ALPHA;

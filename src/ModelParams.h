@@ -61,7 +61,10 @@ enum class XPar {
   switch_switch_reflfrac_boost,
   switch_switch_returnrad,
   switch_iongrad_type,
-  shifttmaxrrad  // only for testing relxillBB
+  shifttmaxrrad,  // only for testing relxillBB
+  lbol,
+  mass,
+  distance
 };
 
 enum class AuxPar{
@@ -219,5 +222,6 @@ class ModelParams: public ParamList{
 
 relParam* get_rel_params(const ModelParams& inp_param);
 xillParam* get_xill_params(const ModelParams& inp_param);
+primeSourceParam * get_primesource_params(const ModelParams& inp_param);
 
 #endif //RELXILL_SRC_MODELPARAMS_H_

@@ -239,6 +239,20 @@ typedef struct {
 } xillParam;
 
 
+
+typedef struct{
+  double lbol;
+  double mass;
+  double distance;
+  int prim_type;
+  double z;
+  double refl_frac;
+  int interpret_reflfrac_as_boost;
+  double ect;
+  double kTbb;
+  double boost;
+}primeSourceParam;
+
 /** the XILLVER table structure */
 typedef struct {
 
