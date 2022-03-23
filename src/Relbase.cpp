@@ -263,19 +263,21 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   // simple convolution only makes sense for 1 zone !
   assert(rel_profile->n_zones == 1);
 
-  double rebin_flux[n_ener];
-  double conv_out[n_ener];
-  rebin_spectrum(ener, rebin_flux, n_ener,
-                 ener_inp, spec_inp, n_ener_inp);
+  auto rebin_flux =  new double[n_ener];
+  rebin_spectrum(ener, rebin_flux, n_ener, ener_inp, spec_inp, n_ener_inp);
 
   specCache* spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
+  auto conv_out = new double[n_ener];
   convolveSpectrumFFTNormalized(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
                     1, 1, 0, spec_cache, status);
   CHECK_STATUS_VOID(*status);
 
   // rebin to the output grid
   rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener, conv_out, n_ener);
+
+  delete[] rebin_flux;
+  delete[] conv_out;
 
 }
 

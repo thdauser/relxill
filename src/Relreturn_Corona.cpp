@@ -96,8 +96,8 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
   // assert(gshift_corr_factor>1e-3);
   // assert(gshift_corr_factor<1e3);
 
-  int ng = ret_fractions->tabData->ng;
-  int nrad = ret_fractions->nrad;
+  const int ng = ret_fractions->tabData->ng;
+  const int nrad = ret_fractions->nrad;
 
   // need to have emis_input on the SAME radial zone grid, ASCENDING (as tables are ascending in radius)
   //  -> require the grid of the emissivity profile to be identical, means they share the same pointer
@@ -105,8 +105,8 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
   assert(emis_input->nr == ret_fractions->nrad);
   assert(emis_input->re[0] < emis_input->re[1]);
 
-  double emis_single_zone[nrad];
-  double gfac[ng];
+  auto emis_single_zone = new double[nrad];
+  auto gfac  = new double[ng];
 
   emisProfile* emis_return = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emisReturn
 
@@ -154,6 +154,8 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
     }
   }
 
+  delete[] emis_single_zone;
+  delete[] gfac;
 
   return emis_return;
 }
@@ -174,14 +176,6 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
   }
   assert((*rlo_emis) < (*rhi_emis));
 }
-
-static void apply_returnrad_flux_correction(emisProfile* emis, double flux_correction_factor){
-  for (int ii=0; ii < emis->nr; ii++){
-    emis->emis[ii] *= flux_correction_factor;
-  }
-}
-
-
 
 rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones) {
   auto* corr_factors = new rradCorrFactors;

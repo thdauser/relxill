@@ -365,7 +365,7 @@ static double getXillverNormFactorFromPrimarySpectrum(double* spec, double* ener
   // divide by the primary normalization factor, to get the scaling of the xillver reflection spectrum
   double normFactorXill = calcNormWrtXillverTableSpec(xillverInputSpec, egrid->ener, egrid->nbins, status);
 
-  free(xillverInputSpec);
+  delete[] xillverInputSpec;
 
   return normFactorXill;
 }

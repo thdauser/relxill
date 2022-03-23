@@ -262,7 +262,7 @@ double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
   /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
   EnerGrid *egrid = get_stdXillverEnergygrid(status);
   // CHECK_STATUS_VOID(*status);
-  double pl_flux_xill[egrid->nbins]; // global energy grid
+  auto pl_flux_xill = new double[egrid->nbins]; // global energy grid
   calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, status);
 
   double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, status);
@@ -273,6 +273,7 @@ double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
   /** bin the primary continuum onto the Input grid **/
   rebin_spectrum(ener, o_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
 
+  delete[] pl_flux_xill;
   free(egrid);
 
   for (int ii = 0; ii < n_ener; ii++) {
@@ -320,17 +321,19 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
 
   const double gshift_refvalue = 2. / 3.;  // shift it 1.5 to lower energies
 
-  double ener_z[n_ener + 1];
+  auto ener_z = new double[n_ener + 1];
   for (int ii = 0; ii <= n_ener; ii++) {  // ener array has n_ener+1 entries
     ener_z[ii] = ener[ii] / gshift_refvalue;
   }
 
-  double flu_z[n_ener];
+  auto flu_z = new double[n_ener];
 
   rebin_spectrum(ener_z, flu_z, n_ener, ener, flu, n_ener);
   for (int ii = 0; ii < n_ener; ii++) {
     flu_z[ii] *= gshift_refvalue;  // take time dilation into account (dE already taken into account as bin-integ)
   }
+
+  delete[] ener_z;
 
   double emin = 0.15;
   double emax = 500.0;
@@ -340,6 +343,8 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
   double gshift_ratio =
       get_photon_flux_band(ener, flu, n_ener, emin, emax) /
           get_photon_flux_band(ener, flu_z, n_ener, emin, emax);
+
+  delete[] flu_z;
 
   return gshift_ratio / pow(1.5, gamma);
 }
@@ -439,12 +444,14 @@ void get_xillver_angdep_spec(double *o_xill_flux,
                              xillSpec *xill_spec,
                              int *status) {
 
-  double xill_angdist_inp[xill_spec->n_ener];
+  auto xill_angdist_inp = new double[xill_spec->n_ener];
 
   calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
 
   rebin_spectrum(ener, o_xill_flux, n_ener,
                  xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
+
+  delete[] xill_angdist_inp;
 
 }
 

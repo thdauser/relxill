@@ -175,8 +175,6 @@ class ModelParams: public ParamList{
   {
   };
 
-
-
   auto get_model_name() const{
     return m_model_name;
   }
@@ -210,8 +208,8 @@ class ModelParams: public ParamList{
 
 
  private:
-  ModelInfo m_model_info;
   ModelName m_model_name;
+  ModelInfo m_model_info;
 
 };
 
