@@ -183,7 +183,7 @@ rradCorrFactors *init_rrad_corr_factors(const double *rlo, const double *rhi, in
   for (int ii=0; ii<n_zones; ii++){
     corr_factors->rgrid[ii] = rlo[ii];
   }
-  corr_factors->rgrid[n_zones] = rhi[n_zones];
+  corr_factors->rgrid[n_zones] = rhi[n_zones-1];
 
   corr_factors->n_zones= n_zones;
 
