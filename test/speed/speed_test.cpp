@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     printf("./speed_test <model> [<rel|xill>]");
   } else {
 
-    const int num_evaluations = 100;
+    const int num_evaluations = 1;
 
     const int num_zones = 25;
     setenv("RELXILL_NUM_RZONES", std::to_string(num_zones).c_str(), 1);
@@ -93,7 +93,7 @@ int main(int argc, char *argv[]) {
     auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
         (std::chrono::steady_clock::now() - tstart ).count();
 
-    printf("Time elapsed:              %.2fsec\n", time_elapsed_msec * 0.001);
+    printf("Time elapsed:              %.2fsec\n", static_cast<double>(time_elapsed_msec) * 0.001);
     printf("Time per model evaluation: %.0fmsec ", static_cast<double>(time_elapsed_msec) / num_evaluations);
 
   }

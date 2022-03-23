@@ -110,7 +110,7 @@ double calc_norm_factor_primary_spectrum(double height, double a, double gamma, 
 /**
  *
  * @param emis_prof (required to be descending in radius)
- * @param emis_prof_tab (required to be ascending in radius
+ * @param emis_prof_tab (required to be ascending in radius)
  * @param status
  *
  * @detail function "invert_emis_profile" can be used to convert
@@ -225,7 +225,7 @@ emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status
 
   lpDat *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
-  double* jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
+  auto* jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
   CHECK_MALLOC_RET_STATUS(jet_rad,status,nullptr)
   for (int ii = 0; ii < tab->n_rad; ii++) {
     jet_rad[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->rad[ii], dat_ind_a[1]->rad[ii]);
@@ -609,7 +609,7 @@ void free_lpReflFrac(lpReflFrac **str) {
 
 emisProfile *new_emisProfile(double *re, int nr, int *status) {
 
-  emisProfile *emis = (emisProfile *) malloc(sizeof(emisProfile));
+  auto *emis = (emisProfile *) malloc(sizeof(emisProfile));
   CHECK_MALLOC_RET_STATUS(emis, status, nullptr)
 
   emis->re = re;
@@ -647,6 +647,6 @@ void free_emisProfile(emisProfile *emis_profile) {
   }
 }
 
-void free_cached_lpTable(void) {
+void free_cached_lpTable() {
   free_lpTable(cached_lp_table);
 }

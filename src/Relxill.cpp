@@ -176,7 +176,7 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
 rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,
                                        xillTableParam *const *xill_table_param, int *status) {
 
-  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid.radius, rgrid.num_zones);
+  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid.radius, nullptr, rgrid.num_zones);
 
   if (rrad_corr_factors == nullptr || *status != EXIT_SUCCESS) {
     assert(rrad_corr_factors != nullptr);
@@ -250,7 +250,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
     ion_gradient.calculate(sys_par->emis, xill_param);
 
-    xillTableParam* xill_table_param[rel_param->num_zones];
+    auto xill_table_param = new xillTableParam*[rel_param->num_zones];
 
     // --- 3 --- calculate xillver reflection spectra  (for every zone)
     double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, xill_param->ect, status);
@@ -285,6 +285,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     for (int ii=0; ii<rel_param->num_zones; ii++) {
       free(xill_table_param[ii]);
     }
+    delete[] xill_table_param;
 
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the calc_relline_profile call

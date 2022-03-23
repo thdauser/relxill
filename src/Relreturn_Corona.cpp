@@ -18,7 +18,6 @@
 
 #include "Relreturn_Corona.h"
 #include "Relbase.h"
-#include "IonGradient.h"
 
 extern "C" {
 #include "relreturn_datastruct.h"
@@ -177,13 +176,15 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
   assert((*rlo_emis) < (*rhi_emis));
 }
 
-rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones) {
+rradCorrFactors *init_rrad_corr_factors(const double *rlo, const double *rhi, int n_zones) {
   auto* corr_factors = new rradCorrFactors;
 
   corr_factors->rgrid = new double[n_zones+1];
-  for (int ii=0; ii<n_zones+1; ii++){
-    corr_factors->rgrid[ii] = rgrid[ii];
+  for (int ii=0; ii<n_zones; ii++){
+    corr_factors->rgrid[ii] = rlo[ii];
   }
+  corr_factors->rgrid[n_zones] = rhi[n_zones];
+
   corr_factors->n_zones= n_zones;
 
   corr_factors->corrfac_flux = new double[n_zones];
@@ -204,19 +205,24 @@ void free_rrad_corr_factors(rradCorrFactors** p_corr_factors){
 
 /** @brief assign binned values to new grid
  *  - input is the x (rgrid0) and y (value0), which is the bin_lo/bin_hi-grid with n0+1 values
- *  - use the input radius (rmean), which is the mean value to determine in which bin of the new
+ *  - use the radius (rmean), which is the mean value to determine in which bin of the new
  *    grid the value falls
  *  - no interpolation is used
+ *  @param value[nzones]
+ *  @param rmean[nzones]
+ *  @param rgrid[n0+1]
+ *  @param value0[n0-1]
+ *
  */
-static void rebin_to_grid(double* value, const double* rmean, const double n,
+static void rebin_to_grid(double* value, const double* rmean, const double nzones,
                           const double*rgrid0, const double* value0, const int n0){
 
-  for (int ii=0; ii<n; ii++){
-    int ind = binary_search(rgrid0, n0, rmean[ii]);
+  for (int ii=0; ii<nzones; ii++){
+    int ind = binary_search(rgrid0, n0+1, rmean[ii]);
     if (rmean[ii] < rgrid0[0]) {
       ind = 0;
-    } else if (rmean[ii] > rgrid0[n0-1]) {
-      ind = n0 -1;
+    } else if (rmean[ii] > rgrid0[n0]) {
+      ind = n0;
     }
     value[ii] = value0[ind];
   }
@@ -230,7 +236,8 @@ rradCorrFactors* rebin_corrfactors_to_rradtable_grid
     return nullptr;
   } else {
 
-    rradCorrFactors* rtable_corr_factors = init_rrad_corr_factors(ret_fractions->rad, ret_fractions->nrad);
+    rradCorrFactors* rtable_corr_factors =
+        init_rrad_corr_factors(ret_fractions->rlo, ret_fractions->rhi, ret_fractions->nrad);
 
     rebin_to_grid(rtable_corr_factors->corrfac_flux, ret_fractions->rad, ret_fractions->nrad,
                   input_corr_factors->rgrid, input_corr_factors->corrfac_flux, input_corr_factors->n_zones);
@@ -277,6 +284,7 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   free_emisProfile(emis_return);
   free_emisProfile(emis_input_rebinned);
   free_returningFractions(&ret_fractions);
+  free_rrad_corr_factors(&rrad_corr_factors);
 
   return emis_return_rebinned;
 }
