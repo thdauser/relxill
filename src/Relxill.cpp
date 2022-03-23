@@ -213,11 +213,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   xillParam *xill_param = get_xill_params(params);
 
 
-  // TODO: this should be done when loading the input parameters
   // in case of an ionization gradient, we need to update the number of zones
-  if (is_iongrad_model(xill_param->ion_grad_type)) {
-    rel_param->num_zones = get_num_zones(rel_param->model_type, rel_param->emis_type, xill_param->ion_grad_type);
-  }
+  assert(rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, rel_param->ion_grad_type));
 
 
   specCache *spec_cache = init_global_specCache(status);
@@ -250,7 +247,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
 
     // --- 2 --- calculate ionization gradient
-    IonGradient ion_gradient{radial_grid, xill_param->ion_grad_type};
+    IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
     ion_gradient.calculate(sys_par->emis, xill_param);
 
     xillTableParam* xill_table_param[rel_param->num_zones];

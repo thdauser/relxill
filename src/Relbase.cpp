@@ -301,7 +301,7 @@ static void print_reflection_strength(double *ener,
   }
 
   printf("For a = %.3f, Rin = %.3f, and h = %.2f rg", rel_param->a, rel_param->rin, rel_param->height);
-  if (is_iongrad_model(xill_param->ion_grad_type) || rel_param->beta > 1e-6) {
+  if (is_iongrad_model(rel_param->ion_grad_type) || rel_param->beta > 1e-6) {
     printf(" and beta=%.3f v/c", rel_param->beta);
   }
   printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
@@ -412,7 +412,6 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
   if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) return 1;
 
   if (comp_single_param_val(par->iongrad_index, cpar->iongrad_index)) return 1;
-  if (comp_single_param_val((double) par->ion_grad_type, (double) cpar->ion_grad_type)) return 1;
 
   return 0;
 }

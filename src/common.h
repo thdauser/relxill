@@ -195,6 +195,7 @@ typedef struct {
   int do_renorm_relline;
   int num_zones;
   int return_rad;
+  int ion_grad_type;
   rradCorrFactors* rrad_corr_factors;
 } relParam;
 
@@ -226,7 +227,6 @@ typedef struct {
   int interpret_reflfrac_as_boost;
   double iongrad_index;
   double kTbb;
-  int ion_grad_type;
   double boost;
   double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end
 } xillParam;

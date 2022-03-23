@@ -136,6 +136,7 @@ int did_rel_param_change(const relParam *cpar, const relParam *par) {
     return 1;
   }
 
+  if (comp_single_param_val((double) par->ion_grad_type, (double) cpar->ion_grad_type)) return 1;
 
   /** also check if the number of zones changed **/
   if (par->num_zones != cpar->num_zones) {
@@ -175,7 +176,9 @@ void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
   (*ca_rel_param)->rout = par->rout;
 
   (*ca_rel_param)->do_renorm_relline = par->do_renorm_relline;
+  (*ca_rel_param)->ion_grad_type = par->ion_grad_type;
   (*ca_rel_param)->num_zones = par->num_zones;
+
 
   (*ca_rel_param)->return_rad = par->return_rad;
   (*ca_rel_param)->rrad_corr_factors = par->rrad_corr_factors; // is not checked and therefore not used
@@ -202,7 +205,6 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
   (*ca_xill_param)->model_type = par->model_type;
 
   (*ca_xill_param)->iongrad_index = par->iongrad_index;
-  (*ca_xill_param)->ion_grad_type = par->ion_grad_type;
 
 }
 

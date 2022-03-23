@@ -41,7 +41,7 @@ TEST_CASE(" Ion Grad PL Index ", "[iongrad]") {
   RelSysPar* sys_par = get_system_parameters(rel_param, &status);
 
   RadialGrid radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
-  IonGradient ion_gradient{radial_grid,xill_param->ion_grad_type};
+  IonGradient ion_gradient{radial_grid,rel_param->ion_grad_type};
   ion_gradient.calculate(sys_par->emis, xill_param);
 
   for (int ii=0; ii<rel_param->num_zones; ii++){

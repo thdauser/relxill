@@ -19,6 +19,7 @@
 #include "ModelParams.h"
 #include "ModelDatabase.h"
 #include "Relmodels.h"
+int get_iongrad_type(const ModelParams &params);
 extern "C" {
 #include "relutility.h"
 }
@@ -143,36 +144,36 @@ static int get_returnrad_switch(const ModelParams& model_params){
 /**
  * @brief get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
-relParam* get_rel_params(const ModelParams& params) {
+relParam* get_rel_params(const ModelParams& inp_param) {
   auto *param = new relParam;
 
-  param->model_type = convertModelType(params.get_model_name());
-  param->emis_type = convertIrradType(params.irradiation());
+  param->model_type = convertModelType(inp_param.get_model_name());
+  param->emis_type = convertIrradType(inp_param.irradiation());
 
   // these parameters have to be given for any relativistic parameter structure
   try {
-    param->a = params.get_par(XPar::a);
-    param->incl = params.get_par(XPar::incl) * M_PI / 180;  // conversion to rad is heritage from the old code
-    param->rin = params.get_par(XPar::rin);
-    param->rout = params.get_par(XPar::rout);
+    param->a = inp_param.get_par(XPar::a);
+    param->incl = inp_param.get_par(XPar::incl) * M_PI / 180;  // conversion to rad is heritage from the old code
+    param->rin = inp_param.get_par(XPar::rin);
+    param->rout = inp_param.get_par(XPar::rout);
   } catch (ParamInputException &e) {
     throw ParamInputException("get_rel_params: model evaluation failed due to missing relativistic parameters");
   }
 
   // those values should never be used, unless it is set by the model
-  param->emis1 = params.get_otherwise_default(XPar::index1, 0);
-  param->emis2 = params.get_otherwise_default(XPar::index2,0);
-  param->rbr = params.get_otherwise_default(XPar::rbr,0);
-  param->lineE = params.get_otherwise_default(XPar::linee,0);
-  param->gamma = params.get_otherwise_default(XPar::gamma, 0);
-  param->height = params.get_otherwise_default(XPar::h,0);
-  param->htop = params.get_otherwise_default(XPar::htop,0);
+  param->emis1 = inp_param.get_otherwise_default(XPar::index1, 0);
+  param->emis2 = inp_param.get_otherwise_default(XPar::index2, 0);
+  param->rbr = inp_param.get_otherwise_default(XPar::rbr, 0);
+  param->lineE = inp_param.get_otherwise_default(XPar::linee, 0);
+  param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
+  param->height = inp_param.get_otherwise_default(XPar::h, 0);
+  param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
 
   // important default values
-  param->z = params.get_otherwise_default(XPar::z, 0);
-  param->beta = params.get_otherwise_default(XPar::beta,0);
-  param->limb = static_cast<int>(lround(params.get_otherwise_default(XPar::limb,0)));
-  param->return_rad = get_returnrad_switch(params );
+  param->z = inp_param.get_otherwise_default(XPar::z, 0);
+  param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
+  param->limb = static_cast<int>(lround(inp_param.get_otherwise_default(XPar::limb, 0)));
+  param->return_rad = get_returnrad_switch(inp_param );
 
   param->rrad_corr_factors = nullptr; //
 
@@ -186,8 +187,10 @@ relParam* get_rel_params(const ModelParams& params) {
     throw ParamInputException();
   }
 
+  param->ion_grad_type = get_iongrad_type(inp_param);
+
   // set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
-  param->num_zones = get_num_zones(param->model_type, param->emis_type, ION_GRAD_TYPE_CONST);
+  param->num_zones = get_num_zones(param->model_type, param->emis_type, get_iongrad_type(inp_param));
 
   return param;
 }
@@ -228,18 +231,22 @@ xillParam* get_xill_params(const ModelParams& params) {
   param->refl_frac = params.get_otherwise_default(XPar::refl_frac, 0);
   param->frac_pl_bb = params.get_otherwise_default(XPar::frac_pl_bb, 0);
   param->kTbb = params.get_otherwise_default(XPar::ktbb, 0);
-  param->ion_grad_type = static_cast<int>(lround(params.get_otherwise_default(XPar::switch_iongrad_type, 0)));
 
   param->interpret_reflfrac_as_boost =
       static_cast<int>(lround(params.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
-
-  if (params.get_model_name() == ModelName::relxilllpAlpha || params.get_model_name() == ModelName::relxillAlpha) {
-    param->ion_grad_type = ION_GRAD_TYPE_ALPHA;
-  }
 
   // to be deleted, only for testing
   param->shiftTmaxRRet = params.get_otherwise_default(XPar::shifttmaxrrad, 0.0);
 
   return param;
+}
+
+
+int get_iongrad_type(const ModelParams &params) {
+  if (params.get_model_name() == ModelName::relxilllpAlpha || params.get_model_name() == ModelName::relxillAlpha){
+    return ION_GRAD_TYPE_ALPHA;
+  } else {
+    return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_iongrad_type, 0)));
+  }
 }
 

@@ -200,6 +200,7 @@ relParam *new_relParam(int model_type, int emis_type, int *status) {
   param->htop = 0.0;
   param->limb = 0;
   param->return_rad = 0;
+  param->ion_grad_type = ION_GRAD_TYPE_CONST; // no ion grad
 
   // this is set by the environment variable "RELLINE_PHYSICAL_NORM"
   param->do_renorm_relline = do_renorm_model(param);
@@ -232,7 +233,6 @@ xillParam *new_xillParam(int model_type, int prim_type, int *status) {
   param->dens = 15;  // the standard value for every table, given in "log-units"
   param->frac_pl_bb = PARAM_DEFAULT;
   param->kTbb = PARAM_DEFAULT;
-  param->ion_grad_type = ION_GRAD_TYPE_CONST; // no ion grad
   param->iongrad_index = PARAM_DEFAULT;
 
   return param;

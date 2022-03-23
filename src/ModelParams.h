@@ -167,7 +167,6 @@ class ParamList {
 };
 
 
-
 class ModelParams: public ParamList{
 
  public:
@@ -175,6 +174,8 @@ class ModelParams: public ParamList{
       ParamList(param_list), m_model_name{model_name}, m_model_info{model_info}
   {
   };
+
+
 
   auto get_model_name() const{
     return m_model_name;
@@ -214,7 +215,7 @@ class ModelParams: public ParamList{
 
 };
 
-relParam* get_rel_params(const ModelParams& params);
+relParam* get_rel_params(const ModelParams& inp_param);
 xillParam* get_xill_params(const ModelParams& params);
 
 #endif //RELXILL_SRC_MODELPARAMS_H_
