@@ -64,6 +64,10 @@ enum class XPar {
   shifttmaxrrad  // only for testing relxillBB
 };
 
+enum class AuxPar{
+  num_radial_zones
+
+};
 
 /**
  * @brief exception if anything is wrong with the input parameters
@@ -214,6 +218,6 @@ class ModelParams: public ParamList{
 };
 
 relParam* get_rel_params(const ModelParams& inp_param);
-xillParam* get_xill_params(const ModelParams& params);
+xillParam* get_xill_params(const ModelParams& inp_param);
 
 #endif //RELXILL_SRC_MODELPARAMS_H_

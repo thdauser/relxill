@@ -326,7 +326,7 @@ cnode *check_cache_relpar(cache_info *ca_info, inpar *inp, cnode *node) {
 }
 
 
-static int get_cache_maxsize(void){
+static int get_cache_maxsize(){
   if (shouldOutfilesBeWritten()){
     return 1;
   } else {
@@ -445,7 +445,7 @@ cdata *init_cdata(int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);
 
-  cdata *data = (cdata *) malloc(sizeof(cdata));
+  auto *data = (cdata *) malloc(sizeof(cdata));
   CHECK_MALLOC_RET_STATUS(data, status, nullptr)
 
   data->par_rel = nullptr;
@@ -515,10 +515,6 @@ void free_cnode(cnode **node) {
 
 int is_relbase_cached(cache_info *self) {
   return self->relcache;
-}
-
-int is_xill_cached(cache_info *self) {
-  return self->xilcache;
 }
 
 int is_cached(cache_info *self) {

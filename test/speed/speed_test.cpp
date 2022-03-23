@@ -64,7 +64,7 @@ int main(int argc, char *argv[]) {
     printf("./speed_test <model> [<rel|xill>]");
   } else {
 
-    const int num_evaluations = 1;
+    const int num_evaluations = 100;
 
     const int num_zones = 25;
     setenv("RELXILL_NUM_RZONES", std::to_string(num_zones).c_str(), 1);

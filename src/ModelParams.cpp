@@ -198,45 +198,45 @@ relParam* get_rel_params(const ModelParams& inp_param) {
 /**
  * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
-xillParam* get_xill_params(const ModelParams& params) {
+xillParam* get_xill_params(const ModelParams& inp_param) {
   auto *param = new xillParam;
 
-  param->model_type = convertModelType(params.get_model_name());
-  param->prim_type = convertPrimSpecType(params.primeSpec());
+  param->model_type = convertModelType(inp_param.get_model_name());
+  param->prim_type = convertPrimSpecType(inp_param.primeSpec());
 
   // these parameters have to be given for any xillver parameter structure
   try {
     param->afe = (is_co_model(param->model_type))
-                 ? params.get_par(XPar::a_co)  // special definition of the xillver-co table
-                 : params.get_par(XPar::afe);
-    param->incl = params.get_par(XPar::incl);
-    param->z = params.get_par(XPar::z);
+                 ? inp_param.get_par(XPar::a_co)  // special definition of the xillver-co table
+                 : inp_param.get_par(XPar::afe);
+    param->incl = inp_param.get_par(XPar::incl);
+    param->z = inp_param.get_par(XPar::z);
 
   } catch (ParamInputException &e) {
     throw ParamInputException("get_xill_params: model evaluation failed due to missing xillver parameters");
   }
 
   // important default values
-  param->ect = (params.primeSpec() == T_PrimSpec::Nthcomp)
-               ? params.get_otherwise_default(XPar::kte, 0)  // TODO: make kTe own parameter
-               : params.get_otherwise_default(XPar::ecut,300);
-  param->lxi = params.get_otherwise_default(XPar::logxi, 0);  // default value for CO table
-  param->dens = params.get_otherwise_default(XPar::logn,               // CO-table has logN=17
+  param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp)
+               ? inp_param.get_otherwise_default(XPar::kte, 0)  // TODO: make kTe own parameter
+               : inp_param.get_otherwise_default(XPar::ecut, 300);
+  param->lxi = inp_param.get_otherwise_default(XPar::logxi, 0);  // default value for CO table
+  param->dens = inp_param.get_otherwise_default(XPar::logn,               // CO-table has logN=17
                                                      is_co_model(param->model_type) ? 17 : 15);
-  param->iongrad_index = params.get_otherwise_default(XPar::iongrad_index, 0);
-  param->boost = params.get_otherwise_default(XPar::boost, -1);
+  param->iongrad_index = inp_param.get_otherwise_default(XPar::iongrad_index, 0);
+  param->boost = inp_param.get_otherwise_default(XPar::boost, -1);
 
   // those values should never be used, unless it is set by the model
-  param->gam = params.get_otherwise_default(XPar::gamma, 0);
-  param->refl_frac = params.get_otherwise_default(XPar::refl_frac, 0);
-  param->frac_pl_bb = params.get_otherwise_default(XPar::frac_pl_bb, 0);
-  param->kTbb = params.get_otherwise_default(XPar::ktbb, 0);
+  param->gam = inp_param.get_otherwise_default(XPar::gamma, 0);
+  param->refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);
+  param->frac_pl_bb = inp_param.get_otherwise_default(XPar::frac_pl_bb, 0);
+  param->kTbb = inp_param.get_otherwise_default(XPar::ktbb, 0);
 
   param->interpret_reflfrac_as_boost =
-      static_cast<int>(lround(params.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
+      static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
 
   // to be deleted, only for testing
-  param->shiftTmaxRRet = params.get_otherwise_default(XPar::shifttmaxrrad, 0.0);
+  param->shiftTmaxRRet = inp_param.get_otherwise_default(XPar::shifttmaxrrad, 0.0);
 
   return param;
 }
