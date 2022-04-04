@@ -298,7 +298,7 @@ static tabulatedReturnFractions *fits_rr_load_single_fractions(fitsfile *fptr, c
   dat->rhi = fits_rr_load_1d_data(fptr, "rhi", nrad, status);
 
   dat->frac_e = fits_rr_load_2d_data(fptr, "frac_e", nrad, nrad, status);
-  dat->frac_i = fits_rr_load_2d_data(fptr, "frac_i", nrad, nrad, status);
+  dat->frac_i = fits_rr_load_2d_data(fptr, "tf_r", nrad, nrad, status);
 
   dat->gmin = fits_rr_load_2d_data(fptr, "gmin", nrad, nrad, status);
   dat->gmax = fits_rr_load_2d_data(fptr, "gmax", nrad, nrad, status);
