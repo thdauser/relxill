@@ -1,5 +1,3 @@
-
-
 define load_relxill_model_devel(modlib){
    
    if (stat_file(modlib) == NULL){
@@ -65,8 +63,10 @@ define fit_fun_default(ff){ %{{{
 %}}}
 
 
+require("rand");
 define randomize_params() { %{{{
    variable p = get_params();
+   
    
    variable i;   
    for (i = 0; i < length(p); i++)   {

@@ -1,4 +1,3 @@
-#!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
 %%% OPTIONS %%%
@@ -7,6 +6,7 @@ variable verbose = 0;
 verbose=1;
 #endif
 
+add_to_isis_load_path("./");
 
 %%% "isis-script [-DSTABLE] test_driver.sl [tests/test_*.sl]"
 %%% - setting the option -DSTABLE means that only the release models in
@@ -29,9 +29,9 @@ if (length(__argv)>1){
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
+require("load_test_setup.sl");
 require("isisscripts");
 require("subs_fitfunctions.sl");
-require("load_test_setup.sl");
 
 variable ALL_FF = get_implemented_fitfunctions(;dev=TEST_DEVEL);
 Fit_Verbose=-1;

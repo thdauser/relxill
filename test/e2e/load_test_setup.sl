@@ -1,14 +1,14 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
-require("isisscripts");
 require("subs_fitfunctions.sl");
+variable modlib = "../build/librelxill.so";
+load_relxill_model_devel(modlib);
+
+require("isisscripts");
 
 variable counter = 0;
 _traceback=1;
-
-variable modlib = "../build/librelxill.so";
-load_relxill_model_devel(modlib);
 
 
 variable goodness_lim = 1e-4;
