@@ -317,21 +317,20 @@ TEST_CASE(" Increasing Rin has to reduce the flux at the next zone (in radius)",
   int status = EXIT_SUCCESS;
   double spin = 0.99;
   double rin = kerr_rms(spin);
-  double rin_grid = rin*1.001;
+  double rin_grid = rin * 1.001;
   double rout = 1000;
 
-  returningFractions *rf0 = get_rrad_fractions(spin, rin , rout, &status);
-  returningFractions *rf_grid = get_rrad_fractions(spin, rin_grid , rout, &status);
+  returningFractions *rf0 = get_rrad_fractions(spin, rin, rout, &status);
+  returningFractions *rf_grid = get_rrad_fractions(spin, rin_grid, rout, &status);
 
-  REQUIRE(rf0!=NULL);
-  REQUIRE(rf_grid!=NULL);
+  REQUIRE(rf0 != NULL);
+  REQUIRE(rf_grid != NULL);
 
   INFO("changing Rin slightly has to reduce the returning incident fraction onto the next zone ");
-  REQUIRE(abs(rf_grid->frac_i[1][0] - rf0->frac_i[1][0]) > 1e-8); // frac_i[ind_ri][ind_re]
+  REQUIRE(abs(rf_grid->tf_r[1][0] - rf0->tf_r[1][0]) > 1e-8); // tf_r[ind_ri][ind_re]
 
   INFO("but not change for any other emitting radius");
-  REQUIRE(abs(rf_grid->frac_i[1][1] - rf0->frac_i[1][1]) < 1e-8);
-
+  REQUIRE(abs(rf_grid->tf_r[1][1] - rf0->tf_r[1][1]) < 1e-8);
 
 }
 

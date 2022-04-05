@@ -33,7 +33,7 @@ typedef struct {
 
   /*  2d array of fractions, first dimension is r_i, second is r_e */
   double **frac_e;  // not necessary, only use for debugging
-  double **frac_i;  //
+  double **tf_r;  //
 
   /* extending to the 3rd dimension to g */
   double ***frac_g;
@@ -64,7 +64,7 @@ typedef struct {
 
   double *rlo; // for debugging only
   double *rhi; // for debugging only
-  double* rad; // grid for r_i and r_e
+  double *rad; // grid for r_i and r_e
   int nrad;
 
   double *proper_area_ring;  // proper area of this ring
@@ -74,7 +74,8 @@ typedef struct {
   int *irad;
 
   /*  2d array of fractions, first dimension is r_incident, second is r_emitted */
-  double **frac_i;  //
+  double **tf_r;  //
+  double **frac_e;  //
 
   double *f_ret; // fraction of returning photons  [dimension r_incident]
   double *f_inf; // fraction of photons reaching the observed [dimension r_incident]

@@ -139,7 +139,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
       }
 
       emis_single_zone[i_rad_emitted] *=
-          ret_fractions->frac_i[i_rad_incident][i_rad_emitted]
+          ret_fractions->tf_r[i_rad_incident][i_rad_emitted]
               * emis_input->emis[i_rad_emitted];
     }
 

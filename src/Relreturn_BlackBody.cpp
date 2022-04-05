@@ -94,7 +94,7 @@ void fits_rr_write_2Dspec(const char *fname, double **spec_arr, double *ener, in
 
   if (dat!=nullptr) {
     for (int ii = 0; ii < n1; ii++) {
-      fits_write_col(fptr, TDOUBLE, 5, firstrow + ii, firstelem, n1, dat->frac_i[ii], status);
+      fits_write_col(fptr, TDOUBLE, 5, firstrow + ii, firstelem, n1, dat->tf_r[ii], status);
     }
     fits_write_col(fptr, TDOUBLE, 6, firstrow, firstelem, n1, dat->tabData->f_ret, status);
     if( fits_write_key(fptr, TDOUBLE, "SPIN", &(dat->a),nullptr, status) ) {}
@@ -200,7 +200,7 @@ static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad,
 
     // apply the correct fractions and add it to the zone output spectrum
     for (int jj = 0; jj < nener; jj++) {
-      spec[jj] += spec_r[jj] * dat->tabData->f_ret[ii] * dat->frac_i[irad][ii];
+      spec[jj] += spec_r[jj] * dat->tabData->f_ret[ii] * dat->tf_r[irad][ii];
     }
 
   }
@@ -225,7 +225,7 @@ static double **get_returnrad_specs(double *ener_inp, int nener_inp, returningFr
 
   double **spec_zones = new_specZonesArr(nener_inp, dat->nrad, status);
 
-  assert(dat->frac_i[0] != nullptr);
+  assert(dat->tf_r[0] != nullptr);
 
   auto spec = new double[nener];
   for (int ii = 0; ii < dat->nrad; ii++) {
