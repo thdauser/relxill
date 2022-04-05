@@ -39,7 +39,8 @@ double calc_proper_area_ring(double rlo, double rhi, double a) {
   double del = rmean * rmean - 2 * rmean + a * a;
 
   double area_gr = 2 * M_PI / sqrt(del);
-  area_gr *= sqrt((rho2 * rho2 + 2 * a * a * rmean));
+  //  area_gr *= sqrt((rho2 * rho2 + 2 * a * a * rmean));
+  area_gr *= sqrt((rho2 * rho2 - a * a * del));
 
   area_gr *= (rhi - rlo);
 

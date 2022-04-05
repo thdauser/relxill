@@ -534,7 +534,7 @@ static double **trim_fraci_to_radial_grid(double** tab_fraci, const int* ind_arr
 }
 
 
-static double get_area_correction_factor(int index_radius, returningFractions* ret_fractions){
+static double get_alt_area_correction_factor(int index_radius, returningFractions *ret_fractions) {
   double rlo_table = ret_fractions->tabData->rlo[ret_fractions->irad[index_radius]];
 
   if (ret_fractions->irad[index_radius]==0 && rlo_table>kerr_rms(ret_fractions->a)){ //TODO: will beremoved with dated table
@@ -545,8 +545,9 @@ static double get_area_correction_factor(int index_radius, returningFractions* r
 
 
   double rhi_table = ret_fractions->tabData->rhi[ret_fractions->irad[index_radius]];
-  double area_table = calc_proper_area_ring( rlo_table , rhi_table, ret_fractions->a);
-  double area_model = calc_proper_area_ring( ret_fractions->rlo[index_radius] , ret_fractions->rhi[index_radius], ret_fractions->a);
+  double area_table = 0.5 * (rlo_table + rhi_table) * (rhi_table - rlo_table);
+  double area_model = 0.5 * (ret_fractions->rlo[index_radius] + ret_fractions->rhi[index_radius]) *
+      (ret_fractions->rhi[index_radius] - ret_fractions->rlo[index_radius]);
 
   return area_model / area_table;
 }
@@ -565,8 +566,8 @@ static double** get_interpolated_fraci(returningFractions *ret_fractions, int *s
   int i_rad_rin = 0;
   int i_rad_rout = ret_fractions->nrad-1;
 
-  double area_correction_rin = get_area_correction_factor(i_rad_rin, ret_fractions);
-  double area_correction_rout = get_area_correction_factor(i_rad_rout, ret_fractions);
+  double area_correction_rin = get_alt_area_correction_factor(i_rad_rin, ret_fractions);
+  double area_correction_rout = get_alt_area_correction_factor(i_rad_rout, ret_fractions);
 
   assert( area_correction_rin-1  <1e-6);
   assert( area_correction_rout-1 <1e-6);
@@ -604,7 +605,6 @@ returningFractions *get_rrad_fractions(double spin, double rin, double rout, int
 
   allocate_radial_grid(ret_fractions, rin, rout, status);
   ret_fractions->frac_i = get_interpolated_fraci(ret_fractions, status);
-
 
   return ret_fractions;
 }

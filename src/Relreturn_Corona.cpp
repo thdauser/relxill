@@ -123,9 +123,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
                     ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
       emis_single_zone[i_rad_emitted] = 0.0;
       for (int jj = 0; jj < ng; jj++) {
-        // TODO: switch to new table, means removing this factor
-        double corr_fac_new_deriv = ratio_ut_obs2emit / gfac[jj];
-        assert(corr_fac_new_deriv > 0);
+        double corr_fac_new_deriv = 1. / gfac[jj];
 
         double emis_g_zone =
             ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj] * corr_fac_new_deriv;
@@ -142,9 +140,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
 
       emis_single_zone[i_rad_emitted] *=
           ret_fractions->frac_i[i_rad_incident][i_rad_emitted]
-              * emis_input->emis[i_rad_emitted]
-              * ret_fractions->tabData->f_ret[ret_fractions->irad[i_rad_emitted]];
-
+              * emis_input->emis[i_rad_emitted];
     }
 
     emis_return->emis[i_rad_incident] = calcSum(emis_single_zone, nrad);

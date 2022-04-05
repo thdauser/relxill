@@ -114,7 +114,7 @@
 /** dimensions of the RR table */
 #define RETURNRAD_TABLE_NR 50
 #define RETURNRAD_TABLE_NG 20
-#define RETURNRAD_TABLE_FILENAME "table_returnRad_old_v20220301.fits"
+#define RETURNRAD_TABLE_FILENAME "table_returnRad_v20220301.fits"
 
 
 /** parameters for interpolation an interagration **/

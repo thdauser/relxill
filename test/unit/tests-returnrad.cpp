@@ -292,7 +292,7 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 
 
 // ------- //
-TEST_CASE(" Write emissivity profile", "[returnrad]") {
+TEST_CASE(" Write emissivity profile", "[returnrad-emis]") {
 
   int status = EXIT_SUCCESS;
 
@@ -302,12 +302,6 @@ TEST_CASE(" Write emissivity profile", "[returnrad]") {
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
   emisProfile *emis_profile = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   write_emis_profile("__output_emis_profile_rrad.dat", emis_profile);
-
-  lmod.set_par(XPar::switch_switch_returnrad, -1);  // need this for the comparison (which is without return_rad)
-  relParam *norrad_rel_param = lmod.get_rel_params();
-  RelSysPar *norrad_sysPar = get_system_parameters(norrad_rel_param, &status);
-  emisProfile *norrad_emis_profile = calc_emis_profile(norrad_sysPar->re, norrad_sysPar->nr, norrad_rel_param, &status);
-  write_emis_profile("__output_emis_profile_norrad.dat", norrad_emis_profile);
 
   REQUIRE(status == EXIT_SUCCESS);
 
@@ -341,7 +335,7 @@ TEST_CASE(" Increasing Rin has to reduce the flux at the next zone (in radius)",
 
 }
 
-
+/*
 // ------- //
 TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
 
@@ -379,7 +373,7 @@ TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
   // fractional change in both direction of the grid point should be fairly similar
   REQUIRE( abs( sum_lo/sum_0 - sum_0/sum_hi) < 1e-4 );
 
-}
+} */
 
 
 // ------- //
