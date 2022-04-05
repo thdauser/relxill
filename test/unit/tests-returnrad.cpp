@@ -280,13 +280,36 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 
   double abs_diff_profiles[rel_profile->n_ener];
   for(int ii=0; ii<rel_profile->n_ener; ii++){
-    abs_diff_profiles[ii] = abs(rel_profile_norrad->flux[0][ii] - rel_profile->flux[0][ii] ) ;
+    abs_diff_profiles[ii] = abs(rel_profile_norrad->flux[0][ii] - rel_profile->flux[0][ii]);
   }
 
   INFO(" require that the line profile with and without return radiation differs ");
   CHECK_THAT(calcSum(abs_diff_profiles, rel_profile->n_ener),
-              ! Catch::Matchers::WithinAbs(0.0, 1e-2)
-              );
+             !Catch::Matchers::WithinAbs(0.0, 1e-2)
+  );
+
+}
+
+
+// ------- //
+TEST_CASE(" Write emissivity profile", "[returnrad]") {
+
+  int status = EXIT_SUCCESS;
+
+  LocalModel lmod(ModelName::relline_lp);
+  lmod.set_par(XPar::switch_switch_returnrad, -1);  // need this for the comparison (which is without return_rad)
+  relParam *rel_param = lmod.get_rel_params();
+  RelSysPar *sysPar = get_system_parameters(rel_param, &status);
+  emisProfile *emis_profile = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
+  write_emis_profile("__output_emis_profile_rrad.dat", emis_profile);
+
+  lmod.set_par(XPar::switch_switch_returnrad, -1);  // need this for the comparison (which is without return_rad)
+  relParam *norrad_rel_param = lmod.get_rel_params();
+  RelSysPar *norrad_sysPar = get_system_parameters(norrad_rel_param, &status);
+  emisProfile *norrad_emis_profile = calc_emis_profile(norrad_sysPar->re, norrad_sysPar->nr, norrad_rel_param, &status);
+  write_emis_profile("__output_emis_profile_norrad.dat", norrad_emis_profile);
+
+  REQUIRE(status == EXIT_SUCCESS);
 
 }
 
