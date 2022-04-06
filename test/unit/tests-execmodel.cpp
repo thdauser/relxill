@@ -113,7 +113,8 @@ TEST_CASE(" Execute single model", "[single]") {
   auto spec = default_spec.get_xspec_spectrum();
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 
-  lmod.set_par(XPar::h,6.12);
+  lmod.set_par(XPar::h,6.00);
+  lmod.set_par(XPar::rin,-1.088889);
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 
 }

@@ -69,8 +69,9 @@ typedef struct {
 
   double *proper_area_ring;  // proper area of this ring
 
-  /* indicies of the radial bins that are used here from tabData, i.e., that are
-   * now the new rlo, rhi and therefore rlo = tabData->rlo[irad] (except for Rin and Rout bin)*/
+  // indicies of the radial bins that are used here from tabData, i.e., that are
+  //  now the new rlo, rhi and therefore rlo = tabData->rlo[irad] (except for Rin and Rout bin)
+  //  that means, this array has a length of nrad, and maps to the tabData
   int *irad;
 
   /*  2d array of fractions, first dimension is r_incident, second is r_emitted */

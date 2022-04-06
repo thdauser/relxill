@@ -36,14 +36,6 @@ extern "C" {
  */
 double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, double gamma) {
 
-  if (fabs(g - 1) <= 1e-3) { // without any significant energy shift, there is no need for a flux correction
-    return 1.0;
-  }
-
-  if (fabs(xill_gshift_fac - 1) < 1e-3) { // if the correction is not significant, we don't need any corrections
-    return pow(g, gamma);
-  }
-
   double g0 = 2. / 3;  // 1/g, where g is used to calculate xill_gshift_fac
 
   double alin; double blin;
@@ -67,79 +59,96 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
 
   double fluxboost_factor = pow(g, gamma) * gshift_corr_factor;
 
-  // ensure that we are not over-correcting (meaning that for g>1 we do not allow a flux reduction)
-
-  if (g > 1)
-    assert(fluxboost_factor >= 0.9);
   if (g < 1){
     if (fluxboost_factor>1){
-      if (fluxboost_factor > 1.1 ) { // print warning for a deviation of >10%
-        if (is_debug_run()) {
-          printf(" *** warning: for g=%.4f the gshift-fluxboost factor = %.4f > 1 -> resetting to 1 \n",
-                 g, fluxboost_factor);
-        }
+      if (fluxboost_factor > 1.1 && is_debug_run()) {
+        printf(" *** warning: for g=%.4f the gshift-fluxboost factor = %.4f > 1 -> resetting to 1 \n",
+               g, fluxboost_factor);
       }
       fluxboost_factor = 1;
     }
   }
-  assert(fluxboost_factor > 0);
+  if (fluxboost_factor < 0){
+    printf(" *** warning: for g=%.4f the gshift-fluxboost factor = %.4f < 0 -> resetting to 0 \n",
+           g, fluxboost_factor);
+    fluxboost_factor = 0;
+    // assert(fluxboost_factor >= 0);
+  }
 
   return fluxboost_factor;
 }
 
 
-emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rradCorrFactors* corr_factors,
-                                   const emisProfile* emis_input, double gamma, int* status) {
 
-  // make very rough sanity checks here
-  // assert(gshift_corr_factor>1e-3);
-  // assert(gshift_corr_factor<1e3);
+/**
+ * @brief calculates the emissivity of a single zone, given by \sum f_g/g * g^-gamma = \sum f_g * g^gamma-1
+ *  for the given table at the indices of emission (ind_table_re) and the observer (ind_table_ro)
+ * @details
+ *   - uses the correction factor to apply the relevant gshift corrections (see Dauser+22)
+ *   - is only applied if the energy shift is significantly different from
+ * @param tabData
+ * @param ind_table_ro
+ * @param ind_table_re
+ * @param gamma (double) photon index)
+ * @param corrfac_gshift (double)
+ * @return
+ */
+static double calc_rrad_emis_zone(tabulatedReturnFractions* tabData, int ind_table_ro, int ind_table_re,
+                                  double gamma, double corrfac_gshift) {
 
-  const int ng = ret_fractions->tabData->ng;
-  const int nrad = ret_fractions->nrad;
+  const int ng = tabData->ng;
+  auto g  = new double[ng];
+  get_gfac_grid(g, tabData->gmin[ind_table_ro][ind_table_re], tabData->gmax[ind_table_ro][ind_table_re], ng);
 
+  double emis_zone = 0.0;
+  for (int jj = 0; jj < ng; jj++) {
+    double emis_single_g = tabData->frac_g[ind_table_ro][ind_table_re][jj];
+    if (fabs(corrfac_gshift - 1) > 1e-3) {  // only flux boost (plus correction) for a significant correction
+      emis_single_g *= corrected_gshift_fluxboost_factor(corrfac_gshift, g[jj], gamma) / g[jj];
+    } else if (fabs(g[jj] - 1) > 1e-3) {
+      emis_single_g *= pow(g[jj], gamma - 1);
+    }
+    emis_zone += emis_single_g;
+  }
+  return emis_zone;
+}
+
+static void test_radial_emis_grid(const returningFractions *ret_fractions,
+                           const emisProfile *emis_input) {
   // need to have emis_input on the SAME radial zone grid, ASCENDING (as tables are ascending in radius)
   //  -> require the grid of the emissivity profile to be identical, means they share the same pointer
   assert(emis_input->re == ret_fractions->rad);
   assert(emis_input->nr == ret_fractions->nrad);
   assert(emis_input->re[0] < emis_input->re[1]);
+}
 
+emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rradCorrFactors* corr_factors,
+                                   const emisProfile* emis_input, double gamma, int* status) {
+
+
+  if (is_debug_run()){
+    test_radial_emis_grid(ret_fractions, emis_input);
+  }
+
+  const int nrad = ret_fractions->nrad;
   auto emis_single_zone = new double[nrad];
-  auto gfac  = new double[ng];
 
   emisProfile* emis_return = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emisReturn
 
   for (int i_rad_incident = 0; i_rad_incident < nrad; i_rad_incident++) {
-    int itab_rad_incident = ret_fractions->irad[i_rad_incident];
+    int ind_table_ro = ret_fractions->irad[i_rad_incident];
 
     for (int i_rad_emitted = 0; i_rad_emitted < nrad; i_rad_emitted++) {
-      int itab_rad_emitted = ret_fractions->irad[i_rad_emitted];
 
-      double ratio_ut_obs2emit =
-          ut_disk(ret_fractions->rad[i_rad_incident], ret_fractions->a)
-              / ut_disk(ret_fractions->rad[i_rad_emitted], ret_fractions->a);
+      int ind_table_re = ret_fractions->irad[i_rad_emitted];
 
-      get_gfac_grid(gfac, ret_fractions->tabData->gmin[itab_rad_incident][itab_rad_emitted],
-                    ret_fractions->tabData->gmax[itab_rad_incident][itab_rad_emitted], ng);
-      emis_single_zone[i_rad_emitted] = 0.0;
-      for (int jj = 0; jj < ng; jj++) {
-        double corr_fac_new_deriv = 1. / gfac[jj];
+      double corr_factor_gshift = (corr_factors != nullptr)
+                                  ? corr_factors->corrfac_gshift[i_rad_emitted] : 1.0;
 
-        double emis_g_zone =
-            ret_fractions->tabData->frac_g[itab_rad_incident][itab_rad_emitted][jj] * corr_fac_new_deriv;
-
-        if (corr_factors != nullptr) {  // TODO: fix this ugly nullptr-if-case
-          emis_g_zone *= corrected_gshift_fluxboost_factor(corr_factors->corrfac_gshift[i_rad_emitted], gfac[jj], gamma);
-        } else {
-          emis_g_zone *= corrected_gshift_fluxboost_factor(1.0, gfac[jj], gamma);
-        }
-
-        emis_single_zone[i_rad_emitted] += emis_g_zone;
-
-      }
-
-      emis_single_zone[i_rad_emitted] *=
-          ret_fractions->tf_r[i_rad_incident][i_rad_emitted]
+      // emis_single_zone = Tf_r * emis(re) * \sum_g f_g * g^(gamma-1)
+      emis_single_zone[i_rad_emitted] =
+          calc_rrad_emis_zone(ret_fractions->tabData, ind_table_ro, ind_table_re, gamma, corr_factor_gshift)
+              * ret_fractions->tf_r[i_rad_incident][i_rad_emitted]
               * emis_input->emis[i_rad_emitted];
     }
 
@@ -150,7 +159,6 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
   }
 
   delete[] emis_single_zone;
-  delete[] gfac;
 
   return emis_return;
 }
