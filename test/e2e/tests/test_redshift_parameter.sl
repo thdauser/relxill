@@ -2,7 +2,6 @@ require("load_test_setup.sl","Global");
 
 variable msg_log = "";
 
-
 define check_z_param(ff){ %{{{
    fit_fun(ff);
    
@@ -30,10 +29,12 @@ define check_z_param(ff){ %{{{
    
    variable i_en;
    
-   if (string_match(ff,"\.*line") == 0){
-      i_en = where(1.0 < lo < 120.0);
-   } else {
+   if (string_match(ff,"\.*line") == 1){
       i_en = where(1.0 < lo < 6.0);
+   } else  if (string_match(ff,"\.*NS") == 1){
+      i_en = where(1.0 < lo < 12.0);
+   } else {
+      i_en = where(1.0 < lo < 120.0);
    }
 	
    lo = lo[i_en];
