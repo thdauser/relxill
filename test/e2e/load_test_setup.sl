@@ -2,9 +2,8 @@
 % -*- mode: slang; mode: fold -*-
 
 require("subs_fitfunctions.sl");
-variable modlib = "../build/librelxill.so";
-load_relxill_model_devel(modlib);
 
+putenv("ISISSCRIPTS_USE_MODELS");  %% do not load any models by default
 require("isisscripts");
 
 variable counter = 0;
@@ -19,6 +18,7 @@ variable EXIT_FAILURE = 0;
 variable msg_log = NULL;
  
 variable sum_name = "plot_check_model_functions_sum.pdf";
+variable relxill_modlib = "build/librelxill.so";
 
 variable lo0, hi0;
 (lo0,hi0) = log_grid(0.1,1000,3000);

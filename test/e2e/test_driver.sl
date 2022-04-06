@@ -6,6 +6,7 @@ variable verbose = 0;
 verbose=1;
 #endif
 
+
 add_to_isis_load_path("./");
 
 %%% "isis-script [-DSTABLE] test_driver.sl [tests/test_*.sl]"
@@ -30,13 +31,16 @@ if (length(__argv)>1){
 
 
 require("load_test_setup.sl");
-require("isisscripts");
+putenv("ISISSCRIPTS_USE_MODELS"); require("isisscripts");
 require("subs_fitfunctions.sl");
+
+load_relxill_model_devel(relxill_modlib);
 
 variable ALL_FF = get_implemented_fitfunctions(;dev=TEST_DEVEL);
 Fit_Verbose=-1;
 
 variable test_scripts = glob(filename_tests);
+test_scripts = test_scripts[array_sort(test_scripts)];
 variable ntests = length(test_scripts);
 variable retval = Int_Type[ntests];
 

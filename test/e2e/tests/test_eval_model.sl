@@ -1,6 +1,7 @@
 require("load_test_setup.sl","Global");
 
 variable msg_log = "";
+load_relxill_model_devel(relxill_modlib);
 
 define runtest(ffs){ %{{{
 

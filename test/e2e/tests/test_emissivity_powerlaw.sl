@@ -3,9 +3,6 @@ require("load_test_setup.sl","Global");
 
 variable msg_log = "";
 
-load_relxill_model_devel(modlib);
-
-
 define test_linemodel_normalization(){ %{{{
    
    variable status = EXIT_SUCCESS;
@@ -48,8 +45,6 @@ define test_linemodel_normalization(){ %{{{
    return status;
 }
 %}}}
-
-
 define test_convmodel_normalization(){ %{{{
    
    variable status = EXIT_SUCCESS;
@@ -114,8 +109,6 @@ define test_convmodel_normalization(){ %{{{
    return status;
 }
 %}}}
-
-
 
 
 define runtest(ffs){ %{{{

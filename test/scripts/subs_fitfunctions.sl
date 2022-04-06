@@ -1,3 +1,5 @@
+putenv("ISISSCRIPTS_USE_MODELS");require("isisscripts");
+
 define load_relxill_model_devel(modlib){
    
    if (stat_file(modlib) == NULL){

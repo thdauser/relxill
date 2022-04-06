@@ -17,17 +17,21 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 
-require("isisscripts");
+
+add_to_isis_load_path("./");
+
+
 require("subs_fitfunctions.sl");
 require("fits_model_struct");
 
 require("test_setup.sl");
+load_relxill_model_devel(modlib);
+
 
 _traceback=1;
 %putenv("RELXILL_WRITE_OUTFILES=1");
 %putenv("DEBUG_RELXILL=1");
 
-load_relxill_model_devel("build/librelxill.so");
 
 define get_refdata_files(){ %{{{
    %% we can load any model
@@ -156,6 +160,7 @@ define check_single_model(fn){ %{{{
    dat = struct_combine(dat, struct{model=m_dat} );
    
    struct_filter(dat, where(dat.value != 0) );
+   struct_filter(dat, where(dat.value > 1e-10) );
    
    variable ind = where(600 > dat.bin_lo>0.2);
    variable goodness =  sqrt(sum((dat.model[ind]/dat.value[ind]-1)^2))/length(dat.model[ind]);
