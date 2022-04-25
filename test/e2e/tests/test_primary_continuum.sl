@@ -42,13 +42,16 @@ define check_prim_cont_single(ff,ff_cont,assoc){ %{{{
    val0 = val0/sum(val0)*sum(val1);
       
    if (not qualifier_exists("nopl")){
+      title(ff);
       xlog;ylog;
       hplot(lo0,hi0,val1);
       ohplot(lo0,hi0,val0);
+      sleep(3);
    }
    
    variable gn = goodness(val1,val0/sum(val0)*sum(val1));
    msg_log += sprintf("   -> primary continum %s for reflection model %s  [gn=%.2e]\n",ff_cont,ff,gn);
+   
 
    return gn; 
 }

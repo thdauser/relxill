@@ -65,4 +65,9 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         int *status);
 
 
+void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
+                              const relParam *rel_param, const xillTableParam *xill_param, int *status);
+double calcNormWrtXillverTableSpec(const double *flux, const double *ener, int n, int *status);
+EnerGrid *get_stdXillverEnergygrid(int *status);
+
 #endif //XILLSPEC_H_
