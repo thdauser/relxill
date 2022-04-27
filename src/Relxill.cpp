@@ -144,9 +144,13 @@ static void write_output_spec_zones(const XspecSpectrum &spectrum, double *spec_
   save_xillver_spectrum(spectrum.energy, spec_inp_single, spectrum.num_flux_bins(), vstr);
 }
 
+/** initialize the cached output spec array **/
 void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
                             specCache *spec_cache,
-                            int *status) {/** initialize the cached output spec array **/
+                            int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
   if ((spec_cache->out_spec != nullptr)) {
     if (spec_cache->out_spec->n_ener != spectrum.num_flux_bins()) {
       free_out_spec(spec_cache->out_spec);
@@ -191,6 +195,13 @@ rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &
   }
 
   return rrad_corr_factors;
+}
+
+static void free_xill_table_param_array(const relParam *rel_param, xillTableParam *const *xill_table_param) {
+  for (int ii = 0; ii < rel_param->num_zones; ii++) {
+    free(xill_table_param[ii]);
+  }
+  delete[] xill_table_param;
 }
 
 
@@ -250,49 +261,41 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
     ion_gradient.calculate(sys_par->emis, xill_param);
 
-    auto xill_table_param = new xillTableParam*[rel_param->num_zones];
+    auto xill_param_zone = new xillTableParam *[rel_param->num_zones];
 
     // --- 3 --- calculate xillver reflection spectra  (for every zone)
-    double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, xill_param->ect, status);
-    CHECK_STATUS_VOID(*status);
-    for (int ii = 0; ii < rel_param->num_zones; ii++) {
 
-      xill_table_param[ii] = get_xilltab_param(xill_param, status);
+    double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, xill_param->ect, status);
+
+    for (int ii = 0; ii < rel_param->num_zones; ii++) {
+      xill_param_zone[ii] = get_xilltab_param(xill_param, status);
 
       // set xillver parameters for the given zone
-      xill_table_param[ii]->ect =  calculate_ecut_on_disk(rel_param, ecut_primary, ion_gradient, ii);
-      xill_table_param[ii]->lxi = ion_gradient.lxi[ii];
-      xill_table_param[ii]->dens = ion_gradient.dens[ii];
+      xill_param_zone[ii]->ect = calculate_ecut_on_disk(rel_param, ecut_primary, ion_gradient, ii);
+      xill_param_zone[ii]->lxi = ion_gradient.lxi[ii];
+      xill_param_zone[ii]->dens = ion_gradient.dens[ii];
 
       // --- 3a: load xillver spectra
+      // (always need to re-compute for an ionization gradient, TODO: can we do better caching?)
       if (caching_status.xill == cached::no) {
-        //  - always need to re-compute for an ionization gradient, TODO: can we do better caching?
         if (spec_cache->xill_spec[ii] != nullptr) {
           free_xill_spec(spec_cache->xill_spec[ii]);
         }
-        spec_cache->xill_spec[ii] = get_xillver_spectra_table(xill_table_param[ii], status);
+        spec_cache->xill_spec[ii] = get_xillver_spectra_table(xill_param_zone[ii], status);
       }
-
     }
 
     // -- 4 -- returning radiation correction factors (only calculated if above a given threshold)
-    if (rel_param->return_rad != 0 && rel_param->a > SPIN_MIN_RRAD_CALC_CORRFAC  ) {
-      rel_param->rrad_corr_factors =
-          calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_table_param, status);
-    } else {
-      rel_param->rrad_corr_factors = nullptr;
-    }
-    for (int ii=0; ii<rel_param->num_zones; ii++) {
-      free(xill_table_param[ii]);
-    }
-    delete[] xill_table_param;
+    rel_param->rrad_corr_factors =
+        (rel_param->return_rad != 0 && rel_param->a > SPIN_MIN_RRAD_CALC_CORRFAC) ?
+        calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_param_zone, status) :
+        nullptr;
+
+    free_xill_table_param_array(rel_param, xill_param_zone);
 
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the calc_relline_profile call
-    xillTableParam* xill_tab_input_param = get_xilltab_param(xill_param, status);
-    get_init_xillver_table(&xill_tab, xill_tab_input_param, status);
-    free(xill_tab_input_param);
-    CHECK_STATUS_VOID(*status);
+    get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
 
     // --- 5a --- calculate the emissivity including the rrad correction factors
     sys_par = get_system_parameters(rel_param, status); // no need to free this, is automatically done by the cache
@@ -302,17 +305,13 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     double *ener_conv;
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
     relline_spec_multizone *rel_profile =
-        relbase_profile(ener_conv, n_ener_conv, rel_param, sys_par, xill_tab, ion_gradient.radial_grid.radius, ion_gradient.nzones(), status);
+        relbase_profile(ener_conv, n_ener_conv, rel_param, sys_par, xill_tab,
+                        ion_gradient.radial_grid.radius, ion_gradient.nzones(), status);
 
-    assert(rel_profile != nullptr);
-    CHECK_STATUS_VOID(*status);
-
-
+    // --- 6 --- convolve the reflection with the relativistic kernel
     relxill_convolution_multizone(spectrum, rel_profile, spec_cache, rel_param, caching_status, status);
 
     copy_spectrum_to_cache(spectrum, spec_cache, status);
-    CHECK_STATUS_VOID(*status);
-
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
   }
 

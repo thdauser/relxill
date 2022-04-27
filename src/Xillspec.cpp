@@ -41,7 +41,7 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
   CHECK_STATUS_RET(*status, nullptr);
 
   xillTable *tab = nullptr;
-  const char *fname = get_init_xillver_table(&tab, param, status);
+  const char *fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, status);
 
   CHECK_STATUS_RET(*status, nullptr);
   assert(fname != nullptr);

@@ -528,9 +528,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   get_relxill_conv_energy_grid(&n_ener, &ener, status);
 
   xillTable *xill_tab = nullptr;
-  xillTableParam *xilltab_param = get_xilltab_param(xill_param, status);
-  get_init_xillver_table(&xill_tab, xilltab_param, status);
-  free(xilltab_param);
+  get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
 
   returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, nullptr, nullptr, n_ener, xill_param->kTbb, rel_param->rin,
                                                       rel_param->rout, rel_param->a, status);
