@@ -110,6 +110,9 @@ static double calc_rrad_emis_zone(tabulatedReturnFractions* tabData, int ind_tab
     }
     emis_zone += emis_single_g;
   }
+
+  delete[] g;
+
   return emis_zone;
 }
 
