@@ -175,8 +175,6 @@ define runtest(ffs){
    
    variable ff_arr = Assoc_Type[Array_Type];
 
-%   putenv("RELXILL_OUTPUT_FILES=0");
-   
    variable std_rel_param = ["Rin","a","Incl"];
    variable std_xill_param = ["logxi","Afe","z"];
    

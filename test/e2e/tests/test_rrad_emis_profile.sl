@@ -7,7 +7,7 @@ define runtest(ffs){
       
    variable status = EXIT_SUCCESS; 
 
-   putenv("RELXILL_OUTPUT_FILES=1");
+   putenv("RELXILL_WRITE_FILES=1");
    
    fit_fun("relline_lp");
    set_par("*.h",2.0,0,2.0,50);
@@ -54,7 +54,7 @@ define runtest(ffs){
    }
 
    
-   putenv("RELXILL_OUTPUT_FILES=0");
+   putenv("RELXILL_WRITE_FILES=0");
    
    return status;
 }

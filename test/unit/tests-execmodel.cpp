@@ -145,7 +145,7 @@ static void require_file_exists(const string& fname){
 
 TEST_CASE(" Execute single model with output writing ", "[output]") {
   DefaultSpec default_spec{};
-  const char* env_outfiles = "RELXILL_OUTPUT_FILES";
+  const char* env_outfiles = "RELXILL_WRITE_FILES";
 
   setenv(env_outfiles, "1", 1);
 
@@ -159,7 +159,7 @@ TEST_CASE(" Execute single model with output writing ", "[output]") {
 
 TEST_CASE(" Execute iongrad model with output writing ", "[output]") {
   DefaultSpec default_spec{};
-  const char* env_outfiles = "RELXILL_OUTPUT_FILES";
+  const char* env_outfiles = "RELXILL_WRITE_FILES";
 
   setenv(env_outfiles, "1", 1);
 
