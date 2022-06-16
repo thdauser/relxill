@@ -1,40 +1,34 @@
-[1.4.20210812] many changes for a complete model update
- - includes returning radiation in the relevant models (currently
-   still includes a switch to turn it off)
- - adds "boost" parameter for LP type models instead of "refl_frac"
-   and "fixReflFrac"
- - adds ENV variable RELXILL_PRINT_DETAILS to print information on
-   reflection fraction and strength (if set to 1)
+[2.0]: major update: includes returning radiation (Dauser et al., 2022) and adds a switch to allow a boost parameter instead of reflection fraction. Some parameter names were slightly changed to make the naming more consistent. - 2022-06-16
 
-[1.4.20210210] improves interpolation of xillver spectra from
-table (potentially a >50% increase in speed)
+[1.4.3]: fixes small memory leak for the Cp-models using the standard tables - 2021-01-22
 
-[1.4.20210202] changes fft-convolution to use energy flux instead
-of photon flux; removes double precision problems for Gamma>2.8
-(appeared at logxi < 1 and logN~18)
+[1.4.2]: fixes memory problems if a 6-dim table was used - 2021-01-21
 
-[1.4.20210125] small leak fixed when loading either 5 or 6 dim
-nthcomp table
-
-[1.4.20210121] fixes memory error when DCp xillver table is used
-
-[1.4.20210111] changes relxill normalization:
-
-if physical_norm is set, the result will be following the integrated
- emissivtiy profile (also for the relline model), otherwise the flux
- follows F=1/2*cos(incl)
+[1.4.1]: corrects the (loose) definition of the reflection fraction in the relxill (non-LP) type models, which now directly follows the xillver/pexrav definition of the flux. This implies that the normalization (i.e., the flux) now depends on the inclination as F=1/2*cos(incl). - 2021-01-06
 
 
-------------
+[v1.4.0] improves the interpolation of the xillver reflection spectra. This mainly affects the logN parameter and the relative normalization of xillverD and relxillD type models. - 2020-10-07
+
+[v1.3.10] Cp-type models can again be loaded using the standard xillver reflection table (xillver-comp.fits) - 2020-08-03
+
+[v1.3.9] fixes model sometimes crashing for a few, specific values of spin - 2020-07-10
+
+[v1.3.7] restricts Incl < 87 degrees in the lmodel.dat to be consistent with the provided tables - 2020-04-15
+
+[v1.3.5] works with new heasoft and stricter compiler options - 2019-10-17
+
+[v1.3.3] new model relxilllpionCp added, which provides the ionization gradient and a moving primary source, but now also for the nthcomp primary continuum. - 2019-08-09
+
+[v1.3.2] add "beta" parmeter (velocity of the primary source) to the relxilllpion model - 2019-08-02
+
+[v1.3.0] ionization gradient and high density models
+    - Included model relxilllpion predicting an ionization gradient (more information is given in the model section)
+    - Update of the high-density models (xillverD, relxillD) to include a larger range in Gamma up to 3.6 (table is now xillverD-5.fits) - 2019-07-12
 
 [1.2.1] Update density table to xillverD-5.fits and change number of
 Gamma bins accordingly (now Gamma extends up to 3.6)
 
-[1.2.0] IMPORTANT reverting the wrong change for the emissivity
-profile, in 1.1.0, change (1). Besides this change, the environment
-variable RELLINE_PHYSICAL_NORM has been added. If set to 1, it will
-return the acutal normalization of the relline and relconv type models
-(not recommended for fitting).
+[v1.2.0] reverting the wrong change for the emissivity profile introduced by 1.1.0, change (1). Information on the update from 1.0.x to 1.2.0 can be found in this pdf. Besides this change, the environment variable RELLINE_PHYSICAL_NORM has been added. If set to 1, it will return the acutal normalization of the relline and relconv type models (not recommended for fitting). - 2018-08-07
 
 [1.1.0] major update and bug fix for the lamp post version of relxill:
 
