@@ -1,6 +1,6 @@
 ## relxill - Astrophysics local model for Relativistic Reflection 
 
-Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
+Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 
 ### 1. General
 The model description and download of released version can be found on the homepage at 
@@ -16,8 +16,9 @@ version of Heasoft installed (https://heasarc.gsfc.nasa.gov/lheasoft/).
 ### 3. Usage
 The relxill code is written in C and C++. While its routines can be used directly, its main intention
 is to be used as *local model* in X-ray data analysis software such as ISIS, Xspec, or Sherpa. The 
-description and meaning of the model parameters can be found on the relxill homepage (see above). If the
-default installation does not work for you, you might need to check how to install local models for your
+description and meaning of the model parameters can be found in the relxill documentation (https://www.sternwarte.uni-erlangen.de/~dauser/research/relxill/relxill_docu.pdf)
+and on the relxill homepage.
+If the default installation does not work for you, you might need to check how to install local models for your
 data analysis software.
 
 ### 4. Contributing
