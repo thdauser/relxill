@@ -31,7 +31,14 @@
 #include "fftw/fftw3.h"   // assumes installation in heasoft
 
 
+
 /*********** DEFINE STATEMENTS *********/
+
+// make sure M_PI is defined, also with old/strange compiler options
+#ifndef M_PI
+    #define M_PI 3.14159265358979323846
+#endif
+
 
 /** define Emissivity Model Type **/
 #define EMIS_TYPE_BKN 1

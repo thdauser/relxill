@@ -686,7 +686,7 @@ TEST_CASE(" Caching of spectrum with return radiation correction factors", "[ret
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::relxilllpAlpha};
+  LocalModel local_model{ModelName::relxilllp};
 
   double a_default = 0.998;
   local_model.set_par(XPar::a, a_default);
