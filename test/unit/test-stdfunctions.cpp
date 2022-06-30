@@ -297,5 +297,3 @@ TEST_CASE(" Normlization of the FFT Convolution", "[bbasic]") {
 
 }
 
-
-

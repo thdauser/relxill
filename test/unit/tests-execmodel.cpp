@@ -194,3 +194,34 @@ TEST_CASE(" Test setting input parameters outside the allowed range","[test]") {
 }
 
 
+
+
+TEST_CASE(" Relconv applied outside defined energy range should reset to zero", "[new]") {
+
+  const double test_val = 1000.0;
+
+  auto input_spec_outside = DefaultSpec(0.001, 0.01, 1);
+  input_spec_outside.flux[input_spec_outside.num_flux_bins/2] = test_val;
+
+  auto spec_outside = input_spec_outside.get_xspec_spectrum();
+
+  LocalModel lmod(ModelName::relconv);
+  REQUIRE_NOTHROW(lmod.eval_model(spec_outside));
+
+  // should be set to zero
+  REQUIRE(sum_flux(spec_outside.flux, spec_outside.num_flux_bins()) < 1e-8);
+
+  auto input_spec = DefaultSpec(0.01, 1, 100);
+  input_spec.flux[input_spec.num_flux_bins/2] = test_val;
+
+  auto spec = input_spec.get_xspec_spectrum();
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+
+  // should be very close to the test value  (as it is normalized)
+  REQUIRE( fabs(sum_flux(spec.flux, spec.num_flux_bins()) - test_val) < 0.1);
+
+
+}
+
+
+

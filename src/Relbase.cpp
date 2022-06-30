@@ -30,7 +30,6 @@ cnode *cache_relbase = nullptr;
 int save_1eV_pos = 0;
 
 
-const int n_ener_std = N_ENER_CONV;
 double *global_ener_std = nullptr;
 
 specCache *global_spec_cache = nullptr;
@@ -244,18 +243,37 @@ void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status) {
 
 }
 
-/** BASIC RELCONV FUNCTION : convole any input spectrum with the relbase kernel
- *  (ener has the length n_ener+1)
+
+void set_flux_outside_defined_range_to_zero(const double* ener, double* spec, int n_ener, double emin, double emax){
+  int warned = 0;
+  for (int ii=0; ii<n_ener; ii++){
+    if (ener[ii+1]<emin || ener[ii]>emax){
+      if (is_debug_run() && warned==0){
+        printf(" *** warning: relconv applied outside the allowed energy range %.2f-%.0f\n",
+               RELCONV_EMIN, RELCONV_EMAX);
+        printf("     -> values outside are set to zero\n\n");
+        warned=1;
+      }
+      spec[ii] = 0;
+    }
+  }
+}
+
+
+/**
+ * @brief basic relconv function: convolve any input spectrum with the relbase kernel
+ * @description
+ *   it is only defined the in energy range of 0.01-1000 keV (see RELCONV_EMIN, RELCONV_EMAX variables)
+ *   and zero outside this range
+ * @param double[n_ener_inp+1] ener_inp
+ * @param double[n_ener_inp] spec_ener_inp
  *  **/
 void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam *rel_param, int *status) {
 
-  /* get the (fixed!) energy grid for a RELLINE for a convolution
-   * -> as we do a simple FFT, we can now take into account that we
-   *    need it to be number = 2^N */
-
-  // always do the convolution on this grid
-  int n_ener;
-  double *ener;
+  // get the (fixed!) energy grid for a RELLINE for a convolution
+  // -> as we do a simple FFT, we can now take into account that we
+  // need it to be number = 2^N */
+  int n_ener; double *ener;
   get_relxill_conv_energy_grid(&n_ener, &ener, status);
 
   relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, status);
@@ -275,6 +293,8 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
 
   // rebin to the output grid
   rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener, conv_out, n_ener);
+
+  set_flux_outside_defined_range_to_zero(ener_inp, spec_inp, n_ener_inp, RELCONV_EMIN, RELCONV_EMAX);
 
   delete[] rebin_flux;
   delete[] conv_out;

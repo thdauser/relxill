@@ -42,11 +42,15 @@ extern "C" {
 /** parameters for the convolution **/
 #define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
 #define EMIN_RELXILL_CONV 0.00035  // minimal energy of the convolution (in keV)
-#define EMAX_RELXILL_CONV 2000.0 // minimal energy of the convolution (in keV)
+#define EMAX_RELXILL_CONV 2000.0 // maximal energy of the convolution (in keV)
 
 /** minimal and maximal energy for reflection strength calculation **/
 #define RSTRENGTH_EMIN 20.0
 #define RSTRENGTH_EMAX 40.0
+
+// minimal and maximal values allowed for the convolution
+#define RELCONV_EMIN 0.01
+#define RELCONV_EMAX 1000.0
 
 /****** TYPE DEFINITIONS ******/
 

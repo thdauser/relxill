@@ -68,8 +68,11 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
 }
 
+
 /**
  * @brief calculate convolution of a given spectrum
+ * @description note the model is only defined in the 0.01-1000 keV energy range and will
+ * return 0 outside this range (see function relconv_kernel for more details)
  */
 void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 
