@@ -200,8 +200,8 @@ int shouldAuxInfoGetPrinted(void);
 
 void print_version_number(void);
 
+
 double doppler_factor_source_obs(const relParam *rel_param);
 double energy_shift_source_obs(const relParam *rel_param);
-double grav_redshift(const relParam *param);
 
 #endif /* RELUTILITY_H_ */

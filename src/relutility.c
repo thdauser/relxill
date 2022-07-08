@@ -896,12 +896,11 @@ double doppler_factor_source_obs(const relParam *rel_param) {
   return doppler;
 }
 
-double calc_g_inf(double height, double a) {
-  return sqrt(1.0 - (2 * height / (height * height + a * a)));
-}
 
 /**
- * @brief calculate the energy shift from the disk to the observer
+ * @brief calculate the energy shift from the LP to the observer, also taking
+ * a potential velocity of the source into account
+ *
  * TODO: we currently set δ_obs = incl, which is not true in GR, however,
  *   this needs to be calculated by ray-tracing
  */
@@ -909,25 +908,10 @@ double energy_shift_source_obs(const relParam *rel_param) {
 
   double g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
 
-  return g_inf_0;
-
   if (rel_param->beta < 1e-4) {
     return g_inf_0;
   } else {
     // glp = D*glp(beta=0)
-    printf(" D=%.4e (beta=%.3f, g_inf_0=%.4e) \n",
-           doppler_factor_source_obs(rel_param), rel_param->beta, g_inf_0);
     return g_inf_0 * doppler_factor_source_obs(rel_param);
   }
 }
-
-/** calculate the gravitational redshift (the energy shift) **/
-double grav_redshift(const relParam *param) {
-  if (param->emis_type == EMIS_TYPE_LP) {
-    return calc_g_inf(param->height, param->a);
-  } else {
-    // important: without a geometrical assumption no grav. redshift can be calculated
-    return 0.0;
-  }
-}
-

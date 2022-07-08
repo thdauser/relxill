@@ -33,4 +33,6 @@ void bbody_spec(double *ener, int n, double *spec, double temperature, double gf
 
 double density_ss73_zone_a(double radius, double rms);
 
+double calc_g_inf(double height, double a);
+
 #endif //RELXILL__RELPHYSICS_H_

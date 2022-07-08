@@ -266,6 +266,7 @@ void spec_blackbody(double *pl_flux_xill, const double *ener, int n_ener, const 
  * @brief calculate the primary spectrum, which can be shifted by the factor ener_shift
  * @param pl_flux_xill: photon flux in xspec units (cts/bin)
  * @param ener_shift: shift the spectrum by this factor in energy
+ * @param at_the_observer: if set to 1, it will use the energy shift to calculate the spectrum at the observer
  */
 void calc_primary_spectrum(double *pl_flux_xill,
                            double *ener,

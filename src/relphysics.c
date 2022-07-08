@@ -125,3 +125,10 @@ double density_ss73_zone_a(double radius, double rms) {
 double relat_abberation(double del, double beta) {
   return acos((cos(del) - beta) / (1 - beta * cos(del)));
 }
+
+/**
+ * @brief calculates the energy shift from a lamp post source at h to infinity
+ */
+double calc_g_inf(double height, double a) {
+  return sqrt(1.0 - (2 * height / (height * height + a * a)));
+}

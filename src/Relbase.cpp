@@ -330,7 +330,7 @@ static void print_reflection_strength(double *ener,
          struct_refl_frac->refl_frac,
          sum / sum_pl);
   printf(" - photons falling into the black hole or plunging region: %.2f%%\n", struct_refl_frac->f_bh * 100);
-  printf(" - gravitational redshift from the primary source to the observer is %.3f\n", grav_redshift(rel_param));
+  printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
 }
 
 
@@ -361,13 +361,13 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
     //   double g_inf = energy_shift_source_obs(rel_param);  // SHOULD THIS BE taken int account by a simple shift of the spectrum (need to consider Normalization)
     //  double prim_fac = struct_refl_frac->f_inf / 0.5; // sys_par->emis->normFactorPrimSpec; struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
-    double g_inf = calc_g_inf(rel_param->height, rel_param->a);
+    double g_inf = energy_shift_source_obs(rel_param);
     double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
 
-    /*   if (rel_param->beta > 1e-4){
+    if (rel_param->beta > 1e-4){
          double doppler_fac = doppler_factor_source_obs(rel_param);
          prim_fac *= doppler_fac*doppler_fac;
-       } */
+    }
 
     // if the user sets the refl_frac parameter manually, we need to calculate the ratio
     // to end up with the correct normalization

@@ -56,6 +56,7 @@ TEST_CASE(" beta>0 of a lamp post changes the primary spectrum", "[beta]") {
   lmod.set_par(XPar::switch_switch_reflfrac_boost, 1);
   lmod.set_par(XPar::kte, 100);
   lmod.set_par(XPar::h, 30);
+  lmod.set_par(XPar::incl, 30);
   auto spec = default_spec.get_xspec_spectrum();
 
   lmod.set_par(XPar::beta, 0.2);
