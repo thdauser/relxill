@@ -47,6 +47,31 @@ TEST_CASE(" test printing of reflection strength", "[rellp]" ){
 
 }
 
+TEST_CASE(" beta>0 of a lamp post changes the primary spectrum", "[beta]") {
+
+  DefaultSpec default_spec{};
+  LocalModel lmod(ModelName::relxilllpCp);
+
+  lmod.set_par(XPar::refl_frac, 0);
+  lmod.set_par(XPar::switch_switch_reflfrac_boost, 1);
+  lmod.set_par(XPar::kte, 100);
+  lmod.set_par(XPar::h, 30);
+  auto spec = default_spec.get_xspec_spectrum();
+
+  lmod.set_par(XPar::beta, 0.2);
+  lmod.eval_model(spec);
+
+  double sum0 = calcSumInEnergyBand(spec.flux, spec.num_flux_bins(), spec.energy, 1, 10);
+
+  lmod.set_par(XPar::beta, 0.0);
+  lmod.eval_model(spec);
+
+  double sum1 = calcSumInEnergyBand(spec.flux, spec.num_flux_bins(), spec.energy, 1, 10);
+
+  REQUIRE(sum0 > sum1);
+
+}
+
 /*
 
 static void test_pointSourceDecision(int *status) {
