@@ -455,8 +455,8 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
     sign = -1.0;
   }
 
-// ** Adam, 6.7.2021: **
-// So given the expression for Carter’s q:
+// ** Adam, 28.7.2021: **
+  // So given the expression for Carter’s q:
 //q^2 = \sin^2\delta (h^2+a^2)^2/\Delta_h - a^2,
 //it is clear that
 //q^2 + a^2 = \sin^2\delta (h^2+a^2)^2/\Delta_h
@@ -732,11 +732,6 @@ void get_fine_radial_grid(double rin, double rout, double *re, int nr) {
 }
 
 
-double calc_g_inf(double height, double a) {
-  return sqrt(1.0 - (2 * height /
-      (height * height + a * a)));
-}
-
 void setArrayToZero(double *arr, int n) {
   for (int jj = 0; jj < n; jj++) {
     arr[jj] = 0.0;
@@ -877,3 +872,62 @@ void invertArray(double *vals, int n) {
   }
 
 }
+
+/**
+ * @brief calculate the doppler factor from source to the observer
+ * we currently assume that delta_obs and incl are the same (so no GR light-bending
+ * is accounted for).
+ * @param incl [in rad]
+ * @param beta [in v/c]
+ * @return
+ */
+double doppler_factor_source_obs(const relParam *rel_param) {
+  // note that the angles incl and delta_obs are defined the opposite way
+  double delta_obs = M_PI - rel_param->incl;
+  assert(delta_obs > M_PI / 2);
+  assert(delta_obs < M_PI);
+
+  // glp = D*glp(beta=0) = glp(beta=0) / { \gamma [ 1 -/+ \beta\cos\delta ] }
+  // Adam: we use the minus sign for δ > π/2 and the plus sign for δ < π/2 to get
+  // -> as always δ > π/2 in this case, we directly can use the minus sign
+  double doppler = doppler_factor(delta_obs, rel_param->beta);
+  // assert(doppler >= 1-1e-8);
+
+  return doppler;
+}
+
+double calc_g_inf(double height, double a) {
+  return sqrt(1.0 - (2 * height / (height * height + a * a)));
+}
+
+/**
+ * @brief calculate the energy shift from the disk to the observer
+ * TODO: we currently set δ_obs = incl, which is not true in GR, however,
+ *   this needs to be calculated by ray-tracing
+ */
+double energy_shift_source_obs(const relParam *rel_param) {
+
+  double g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
+
+  return g_inf_0;
+
+  if (rel_param->beta < 1e-4) {
+    return g_inf_0;
+  } else {
+    // glp = D*glp(beta=0)
+    printf(" D=%.4e (beta=%.3f, g_inf_0=%.4e) \n",
+           doppler_factor_source_obs(rel_param), rel_param->beta, g_inf_0);
+    return g_inf_0 * doppler_factor_source_obs(rel_param);
+  }
+}
+
+/** calculate the gravitational redshift (the energy shift) **/
+double grav_redshift(const relParam *param) {
+  if (param->emis_type == EMIS_TYPE_LP) {
+    return calc_g_inf(param->height, param->a);
+  } else {
+    // important: without a geometrical assumption no grav. redshift can be calculated
+    return 0.0;
+  }
+}
+

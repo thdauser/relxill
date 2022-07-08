@@ -192,12 +192,16 @@ void invertArray(double *vals, int n);
 
 double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius);
 
-void get_ipol_factor(const float value, const float* arr, const int n_arr, int *ind, double *ifac);
+void get_ipol_factor(const float value, const float *arr, const int n_arr, int *ind, double *ifac);
 
 void get_fine_radial_grid(double rin, double rout, double *re, int nr);
 
 int shouldAuxInfoGetPrinted(void);
 
 void print_version_number(void);
+
+double doppler_factor_source_obs(const relParam *rel_param);
+double energy_shift_source_obs(const relParam *rel_param);
+double grav_redshift(const relParam *param);
 
 #endif /* RELUTILITY_H_ */
