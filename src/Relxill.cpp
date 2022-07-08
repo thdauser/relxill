@@ -414,7 +414,7 @@ double calc_ecut_at_primary_source(const xillParam *xill_param,
                                    double ecut_input,
                                    int *status) {
   if (xill_param->prim_type == PRIM_SPEC_ECUT) {
-    return ecut_input * (1 + grav_redshift(rel_param));
+    return ecut_input / energy_shift_source_obs(rel_param);
   } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP || xill_param->prim_type == PRIM_SPEC_BB) {
     return ecut_input;
   } else {

@@ -122,8 +122,6 @@ double density_ss73_zone_a(double radius, double rms) {
   return pow( (radius/rms) , (3. / 2)) * pow((1 - sqrt(rms  / radius)), -2);
 }
 
-
-
 double relat_abberation(double del, double beta) {
   return acos((cos(del) - beta) / (1 - beta * cos(del)));
 }
