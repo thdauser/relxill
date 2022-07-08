@@ -205,7 +205,7 @@ double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const
  * @param ener
  * @param n_ener
  * @param xill_param
- * @param ener_shift  (spectrum shifted in energy by this value)
+ * @param ener_shift: spectrum shifted in energy by this value, normalization is kept constant (i.e, norm not shifted by g^Gamma)
  */
 void spec_cutoffpl(double *pl_flux_xill,
                    const double *ener,
@@ -215,13 +215,13 @@ void spec_cutoffpl(double *pl_flux_xill,
   /** note that in case of the nthcomp model Ecut is in the frame of the primary source
       but for the bkn_powerlaw it is given in the observer frame */
 
-  double ecut_rest = xill_param->ect; // Important: Ecut is given in the frame of the observer
+  double ecut = xill_param->ect* ener_shift ; // Important: Ecut is given in the frame of the observer
 
   for (int ii = 0; ii < n_ener; ii++) {
-    double en = 0.5 * (ener[ii] + ener[ii + 1]) * ener_shift;
-    pl_flux_xill[ii] = exp(1.0 / ecut_rest) *
+    double en = 0.5 * (ener[ii] + ener[ii + 1]);
+    pl_flux_xill[ii] = exp(1.0 / ecut) *
         pow(en, -xill_param->gam) *
-        exp(-en / ecut_rest) *
+        exp(-en / ecut) *
         (ener[ii + 1] - ener[ii]);
   }
 }
@@ -232,7 +232,7 @@ void spec_cutoffpl(double *pl_flux_xill,
 * @param ener
 * @param n_ener
 * @param xill_param
-* @param ener_shift  (spectrum shifted in energy by this value)
+* @param ener_shift  spectrum shifted in energy by this value, normalization is kept constant! (i.e, norm not shifted by g^Gamma)
 */
 void spec_nthcomp(double *pl_flux_xill,
                   double *ener,
@@ -263,9 +263,9 @@ void spec_blackbody(double *pl_flux_xill, const double *ener, int n_ener, const 
 }
 
 /**
- * @brief calculate the primary spectrum, which can be shifted by the factor ener_shift
+ * @brief calculate the primary spectrum, which can be shifted by the factor ener_shift_source_obs
  * @param pl_flux_xill: photon flux in xspec units (cts/bin)
- * @param ener_shift: shift the spectrum by this factor in energy
+ * @param ener_shift_source_obs: energy shift between source and observer
  * @param at_the_observer: if set to 1, it will use the energy shift to calculate the spectrum at the observer
  */
 void calc_primary_spectrum(double *pl_flux_xill,
@@ -274,24 +274,25 @@ void calc_primary_spectrum(double *pl_flux_xill,
                            const xillTableParam *xill_param,
                            int *status,
                            int at_the_observer = 1,
-                           double ener_shift = 1.0) {
+                           double ener_shift_source_obs = 1.0) {
 
   CHECK_STATUS_VOID(*status);
   assert(global_ener_xill != nullptr);
-  assert(ener_shift > 0.0);
+  assert(ener_shift_source_obs > 0.0);
 
   if (xill_param->prim_type == PRIM_SPEC_ECUT) {
+    // important, ecut is given in the frame of the source
     if (at_the_observer) {
-      ener_shift = 1.0;
+      ener_shift_source_obs = 1.0;
     }
-    spec_cutoffpl(pl_flux_xill, ener, n_ener, xill_param, ener_shift);
+    spec_cutoffpl(pl_flux_xill, ener, n_ener, xill_param, 1./ener_shift_source_obs);
 
   } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
     // important, kTe is given in the primary source frame, so we have to add the energy shift only there
     if (!at_the_observer) {
-      ener_shift = 1.0;
+      ener_shift_source_obs = 1.0;
     }
-    spec_nthcomp(pl_flux_xill, ener, n_ener, xill_param, ener_shift);
+    spec_nthcomp(pl_flux_xill, ener, n_ener, xill_param, ener_shift_source_obs);
 
   } else if (xill_param->prim_type == PRIM_SPEC_BB) {
     spec_blackbody(pl_flux_xill, ener, n_ener, xill_param);
