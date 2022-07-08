@@ -124,19 +124,6 @@ double density_ss73_zone_a(double radius, double rms) {
 
 
 
-
-
-/** calculate the gravitational redshift **/
-double grav_redshift(const relParam *param) {
-  if (param->emis_type == EMIS_TYPE_LP) {
-    return 1.0 / sqrt(1.0 - 2 * param->height /
-    (param->height * param->height + param->a * param->a)) - 1.0;
-  } else {
-    // important: without a geometrical assumption no grav. redshift can be calculated
-    return 0.0;
-  }
-}
-
 double relat_abberation(double del, double beta) {
   return acos((cos(del) - beta) / (1 - beta * cos(del)));
 }

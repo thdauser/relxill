@@ -55,8 +55,7 @@ void get_xillver_angdep_spec(double *o_xill_flux,
                              int *status);
 
 void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillParam* xill_param,
-                              double* rel_cosne_dist, int* status );
-
+                              double *rel_cosne_dist, int *status);
 
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         double *fac_fluxcorr,
@@ -64,9 +63,13 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         xillTableParam *xill_table_param,
                                         int *status);
 
+void calc_primary_spectrum(double *pl_flux_xill, double *ener, int n_ener,
+                           const xillTableParam *xill_param, int *status,
+                           int at_the_observer, double ener_shift_to_observer);
 
-void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
-                              const relParam *rel_param, const xillTableParam *xill_param, int *status);
+double *calc_observed_primary_spectrum(const double *ener, int n_ener,
+                                       const relParam *rel_param, const xillTableParam *xill_param, int *status);
+
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, int n, int *status);
 EnerGrid *get_stdXillverEnergygrid(int *status);
 

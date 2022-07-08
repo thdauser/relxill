@@ -22,6 +22,7 @@ extern "C" {
 #include "xilltable.h"
 #include "writeOutfiles.h"
 #include "common.h"
+#include "relphysics.h"
 }
 
 
@@ -198,54 +199,107 @@ double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const
   return sum_pl / norm_xillver_table;
 }
 
+/**
+ * @brief cutoff pl model in xpsec units
+ * @param pl_flux_xill [return] photon flux in counts/bin
+ * @param ener
+ * @param n_ener
+ * @param xill_param
+ * @param ener_shift  (spectrum shifted in energy by this value)
+ */
+void spec_cutoffpl(double *pl_flux_xill,
+                   const double *ener,
+                   int n_ener,
+                   const xillTableParam *xill_param,
+                   double ener_shift = 1.0) {
+  /** note that in case of the nthcomp model Ecut is in the frame of the primary source
+      but for the bkn_powerlaw it is given in the observer frame */
 
-void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
-                              const relParam *rel_param, const xillTableParam *xill_param, int *status) {
+  double ecut_rest = xill_param->ect; // Important: Ecut is given in the frame of the observer
+
+  for (int ii = 0; ii < n_ener; ii++) {
+    double en = 0.5 * (ener[ii] + ener[ii + 1]) * ener_shift;
+    pl_flux_xill[ii] = exp(1.0 / ecut_rest) *
+        pow(en, -xill_param->gam) *
+        exp(-en / ecut_rest) *
+        (ener[ii + 1] - ener[ii]);
+  }
+}
+
+/**
+* @brief nthcomp model in xpsec units
+* @param pl_flux_xill [return] photon flux in counts/bin
+* @param ener
+* @param n_ener
+* @param xill_param
+* @param ener_shift  (spectrum shifted in energy by this value)
+*/
+void spec_nthcomp(double *pl_flux_xill,
+                  double *ener,
+                  int n_ener,
+                  const xillTableParam *xill_param,
+                  double ener_shift = 1.0) {
+  double nthcomp_param[5];
+  double kTe = xill_param->ect; // Important: kTe is given in the frame of the source
+  double z = 1 / ener_shift - 1; // convert energy shift to redshift
+  get_nthcomp_param(nthcomp_param, xill_param->gam, kTe, z);
+  c_donthcomp(ener, n_ener, nthcomp_param, pl_flux_xill);
+}
+
+/**
+* @brief blackbody model in xpsec units
+* @param pl_flux_xill [return] photon flux in counts/bin
+* @param ener
+* @param n_ener
+* @param xill_param
+*/
+void spec_blackbody(double *pl_flux_xill, const double *ener, int n_ener, const xillTableParam *xill_param) {
+  double en;
+  for (int ii = 0; ii < n_ener; ii++) {
+    en = 0.5 * (ener[ii] + ener[ii + 1]);
+    pl_flux_xill[ii] = en * en / (pow(xill_param->kTbb, 4) * (exp(en / xill_param->kTbb) - 1));
+    pl_flux_xill[ii] *= (ener[ii + 1] - ener[ii]);
+  }
+}
+
+/**
+ * @brief calculate the primary spectrum, which can be shifted by the factor ener_shift
+ * @param pl_flux_xill: photon flux in xspec units (cts/bin)
+ * @param ener_shift: shift the spectrum by this factor in energy
+ */
+void calc_primary_spectrum(double *pl_flux_xill,
+                           double *ener,
+                           int n_ener,
+                           const xillTableParam *xill_param,
+                           int *status,
+                           int at_the_observer = 1,
+                           double ener_shift = 1.0) {
 
   CHECK_STATUS_VOID(*status);
   assert(global_ener_xill != nullptr);
+  assert(ener_shift > 0.0);
 
   if (xill_param->prim_type == PRIM_SPEC_ECUT) {
-    /** note that in case of the nthcomp model Ecut is in the frame of the primary source
-	    but for the bkn_powerlaw it is given in the observer frame */
-
-    /** IMPORTANT: defintion of Ecut is ALWAYS in the frame of the observer by definition **/
-    /**    (in case of the nthcomp primary continuum ect is actually kte ) **/
-    double ecut_rest = xill_param->ect;
-
-    for (int ii = 0; ii < n_ener; ii++) {
-      pl_flux_xill[ii] = exp(1.0 / ecut_rest) *
-          pow(0.5 * (ener[ii] + ener[ii + 1]), -xill_param->gam) *
-          exp(-0.5 * (ener[ii] + ener[ii + 1]) / ecut_rest) *
-          (ener[ii + 1] - ener[ii]);
+    if (at_the_observer) {
+      ener_shift = 1.0;
     }
+    spec_cutoffpl(pl_flux_xill, ener, n_ener, xill_param, ener_shift);
 
   } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP) {
-
-    double nthcomp_param[5];
-    /** important, kTe is given in the primary source frame, so we have to add the redshift here
-		 *     however, only if the REL model **/
-    double z = 0.0;
-    if (rel_param != nullptr && rel_param->emis_type == EMIS_TYPE_LP) {
-      z = grav_redshift(rel_param);
+    // important, kTe is given in the primary source frame, so we have to add the energy shift only there
+    if (!at_the_observer) {
+      ener_shift = 1.0;
     }
-    get_nthcomp_param(nthcomp_param, xill_param->gam, xill_param->ect, z);
-    c_donthcomp(ener, n_ener, nthcomp_param, pl_flux_xill);
+    spec_nthcomp(pl_flux_xill, ener, n_ener, xill_param, ener_shift);
 
   } else if (xill_param->prim_type == PRIM_SPEC_BB) {
+    spec_blackbody(pl_flux_xill, ener, n_ener, xill_param);
 
-    double en;
-    for (int ii = 0; ii < n_ener; ii++) {
-      en = 0.5 * (ener[ii] + ener[ii + 1]);
-      pl_flux_xill[ii] = en * en / (pow(xill_param->kTbb, 4) * (exp(en / xill_param->kTbb) - 1));
-      pl_flux_xill[ii] *= (ener[ii + 1] - ener[ii]);
-    }
   } else {
     RELXILL_ERROR("trying to add a primary continuum to a model where this does not make sense (should not happen!)",
                   status);
   }
 }
-
 
 /**
  *
@@ -256,40 +310,58 @@ void calculatePrimarySpectrum(double *pl_flux_xill, double *ener, int n_ener,
  * @param status
  * @return
  */
-double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
-                                                 const relParam *rel_param, const xillTableParam *xill_param, int *status) {
+double *calc_observed_primary_spectrum(const double *ener, int n_ener,
+                                       const relParam *rel_param, const xillTableParam *xill_param, int *status) {
 
   /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
   EnerGrid *egrid = get_stdXillverEnergygrid(status);
-  // CHECK_STATUS_VOID(*status);
-  auto pl_flux_xill = new double[egrid->nbins]; // global energy grid
-  calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, status);
+  auto prim_spec_observer = new double[egrid->nbins];
+  double norm_factor_prim_spec = 0.0;
 
-  double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, status);
+  // if we have the LP geometry defined, the spectrum will be different between the primary source and the observer
+  // due to energy shift: need to calculate the normalization for the source, but the spectrum at the observer
+
+  if (rel_param != nullptr && rel_param->emis_type == EMIS_TYPE_LP) {
+    double ener_shift_to_observer = energy_shift_source_obs(rel_param);
+
+    auto prim_spec_source = new double[egrid->nbins];
+    calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, status, 0, ener_shift_to_observer);
+    //     norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
+    delete[] prim_spec_source;
+
+    calc_primary_spectrum(prim_spec_observer, egrid->ener, egrid->nbins, xill_param, status, 1, ener_shift_to_observer);
+    norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_observer, egrid->ener, egrid->nbins, status);
+
+  } else {
+    calc_primary_spectrum(prim_spec_observer, egrid->ener, egrid->nbins, xill_param, status);
+    norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_observer, egrid->ener, egrid->nbins, status);
+  }
 
   auto *o_flux = new double[n_ener];
   CHECK_MALLOC_RET_STATUS(o_flux, status, nullptr);
 
   /** bin the primary continuum onto the Input grid **/
-  rebin_spectrum(ener, o_flux, n_ener, egrid->ener, pl_flux_xill, egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
+  rebin_spectrum(ener,
+                 o_flux,
+                 n_ener,
+                 egrid->ener,
+                 prim_spec_observer,
+                 egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
 
-  delete[] pl_flux_xill;
+  delete[] prim_spec_observer;
   free(egrid);
 
   for (int ii = 0; ii < n_ener; ii++) {
-    o_flux[ii] *= primarySpecNormFactor;
+    o_flux[ii] *= norm_factor_prim_spec;
   }
 
   return o_flux;
 }
 
-
-
-
 double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
                             const xillTableParam *xill_table_param, int *status) {
   double *direct_spec =
-      calc_normalized_xillver_primary_spectrum(ener, n_ener, nullptr, xill_table_param, status);
+      calc_observed_primary_spectrum(ener, n_ener, nullptr, xill_table_param, status);
 
   double emin = 0.1;
   double emax = 1000;

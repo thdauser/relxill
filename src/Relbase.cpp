@@ -334,64 +334,58 @@ static void print_reflection_strength(double *ener,
 }
 
 
-
 void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param, xillParam *xill_input_param,
                            RelSysPar *sys_par, int *status) {
 
-  xillTableParam* xill_table_param = get_xilltab_param(xill_input_param, status);
-  double *pl_flux = calc_normalized_xillver_primary_spectrum(ener, n_ener, rel_param, xill_table_param, status);
+  xillTableParam *xill_table_param = get_xilltab_param(xill_input_param, status);
+  double *pl_flux = calc_observed_primary_spectrum(ener, n_ener, rel_param, xill_table_param, status);
   free(xill_table_param);
   CHECK_STATUS_VOID(*status);
 
-  /** 2 **  decide if we need to do relat. calculations **/
-  if (is_xill_model(xill_input_param->model_type)) {
-
+  // For the non-relativistic model and if not the LP geometry, we simply multiply by the reflection fraction
+  if (is_xill_model(xill_input_param->model_type) || rel_param->emis_type != EMIS_TYPE_LP) {
     for (int ii = 0; ii < n_ener; ii++) {
       flu[ii] *= fabs(xill_input_param->refl_frac);
     }
-  } else {
+
+  } else { // we are in the LP geometry
 
     assert(rel_param != nullptr);
 
     lpReflFrac *struct_refl_frac = sys_par->emis->photon_fate_fractions;
 
+    if (xill_input_param->interpret_reflfrac_as_boost) {
+      xill_input_param->refl_frac *=
+          struct_refl_frac->refl_frac;  // if set, it is given as boost, wrt predicted refl_frac
+    }
 
-    /** 4 ** and apply it to primary and reflected spectra **/
-    if (rel_param->emis_type == EMIS_TYPE_LP) {
+    //   double g_inf = energy_shift_source_obs(rel_param);  // SHOULD THIS BE taken int account by a simple shift of the spectrum (need to consider Normalization)
+    //  double prim_fac = struct_refl_frac->f_inf / 0.5; // sys_par->emis->normFactorPrimSpec; struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
+    double g_inf = calc_g_inf(rel_param->height, rel_param->a);
+    double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
 
-      if (xill_input_param->interpret_reflfrac_as_boost) {
-        xill_input_param->refl_frac *= struct_refl_frac->refl_frac;  // if set, it is given as boost, wrt predicted refl_frac
-      }
+    /*   if (rel_param->beta > 1e-4){
+         double doppler_fac = doppler_factor_source_obs(rel_param);
+         prim_fac *= doppler_fac*doppler_fac;
+       } */
 
-      double g_inf = sqrt(1.0 - (2 * rel_param->height /
-          (rel_param->height * rel_param->height + rel_param->a * rel_param->a)));
+    // if the user sets the refl_frac parameter manually, we need to calculate the ratio
+    // to end up with the correct normalization
+    double norm_fac_refl = (fabs(xill_input_param->refl_frac)) / struct_refl_frac->refl_frac;
 
-
-      /** if the user sets the refl_frac parameter manually, we need to calculate the ratio
-       *  to end up with the correct normalization
-       */
-      double norm_fac_refl = (fabs(xill_input_param->refl_frac)) / struct_refl_frac->refl_frac;
-
-      double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
-
-      for (int ii = 0; ii < n_ener; ii++) {
-        pl_flux[ii] *= prim_fac;
-        flu[ii] *= norm_fac_refl;
-      }
-    } else {
-      for (int ii = 0; ii < n_ener; ii++) {
-        flu[ii] *= fabs(xill_input_param->refl_frac);
-      }
+    for (int ii = 0; ii < n_ener; ii++) {
+      pl_flux[ii] *= prim_fac;
+      flu[ii] *= norm_fac_refl;
     }
 
     /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
-    if ( shouldAuxInfoGetPrinted()  && (rel_param->emis_type == EMIS_TYPE_LP) ) {
+    if (shouldAuxInfoGetPrinted()) {
       print_reflection_strength(ener, n_ener, flu, rel_param, xill_input_param, pl_flux, struct_refl_frac);
     }
 
   }
 
-  /** 6 ** add power law component only if desired (i.e., refl_frac > 0)**/
+  // Finally, add the power law component if refl_frac >= 0
   if (xill_input_param->refl_frac >= 0) {
     for (int ii = 0; ii < n_ener; ii++) {
       flu[ii] += pl_flux[ii];

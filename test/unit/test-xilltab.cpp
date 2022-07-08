@@ -250,22 +250,22 @@ TEST_CASE(" normalization of the primary continuum","[prim]"){
   relParam *rel_param = lmod.get_rel_params();
   xillTableParam *xill_param = get_xilltab_param(lmod.get_xill_params(), &status);
 
-  auto spec =  DefaultSpec(0.1,1000,3000);
+  auto spec = DefaultSpec(0.1, 1000, 3000);
 
   /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
   EnerGrid *egrid = get_stdXillverEnergygrid(&status);
   // CHECK_STATUS_VOID(*status);
   auto pl_flux_xill = new double[egrid->nbins]; // global energy grid
-  calculatePrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, rel_param, xill_param, &status);
+  calc_primary_spectrum(pl_flux_xill, egrid->ener, egrid->nbins, xill_param, &status,
+                        1, 1.0);
 
   double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, &status);
-
 
   for (int ii = 0; ii < egrid->nbins; ii++) {
     pl_flux_xill[ii] *= primarySpecNormFactor;
   }
   for (int ii = 0; ii < egrid->nbins; ii++) { // make it energy flux
-    pl_flux_xill[ii] *= 0.5*(egrid->ener[ii]+egrid->ener[ii+1]);
+    pl_flux_xill[ii] *= 0.5 * (egrid->ener[ii] + egrid->ener[ii + 1]);
   }
   double sum_orig = calcSumInEnergyBand(pl_flux_xill, egrid->nbins, egrid->ener, 0.1, 1000);
 
