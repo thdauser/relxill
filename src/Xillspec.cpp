@@ -278,7 +278,7 @@ void calc_primary_spectrum(double *pl_flux_xill,
 
   CHECK_STATUS_VOID(*status);
   assert(global_ener_xill != nullptr);
-  assert(ener_shift_source_obs > 0.0);
+  assert(ener_shift_source_obs >= 0.0);
 
   if (xill_param->prim_type == PRIM_SPEC_ECUT) {
     // important, ecut is given in the frame of the source
@@ -328,11 +328,10 @@ double *calc_observed_primary_spectrum(const double *ener, int n_ener,
 
     auto prim_spec_source = new double[egrid->nbins];
     calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, status, 0, ener_shift_to_observer);
-    //     norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
+    norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
     delete[] prim_spec_source;
 
     calc_primary_spectrum(prim_spec_observer, egrid->ener, egrid->nbins, xill_param, status, 1, ener_shift_to_observer);
-    norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_observer, egrid->ener, egrid->nbins, status);
 
   } else {
     calc_primary_spectrum(prim_spec_observer, egrid->ener, egrid->nbins, xill_param, status);

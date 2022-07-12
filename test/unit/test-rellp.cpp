@@ -59,7 +59,7 @@ TEST_CASE(" beta>0 of a lamp post changes the primary spectrum", "[beta]") {
   lmod.set_par(XPar::incl, 30);
   auto spec = default_spec.get_xspec_spectrum();
 
-  lmod.set_par(XPar::beta, 0.2);
+  lmod.set_par(XPar::beta, 0.66);
   lmod.eval_model(spec);
 
   double sum0 = calcSumInEnergyBand(spec.flux, spec.num_flux_bins(), spec.energy, 1, 10);
@@ -70,6 +70,36 @@ TEST_CASE(" beta>0 of a lamp post changes the primary spectrum", "[beta]") {
   double sum1 = calcSumInEnergyBand(spec.flux, spec.num_flux_bins(), spec.energy, 1, 10);
 
   REQUIRE(sum0 > sum1);
+
+}
+
+TEST_CASE(" normalization of LP primary spectrum", "[beta]") {
+
+  int status = EXIT_SUCCESS;
+
+  EnerGrid *egrid = get_stdXillverEnergygrid(&status);
+
+  DefaultSpec default_spec{};
+  LocalModel lmod(ModelName::relxilllpCp);
+  lmod.set_par(XPar::refl_frac, 0);
+  lmod.set_par(XPar::switch_switch_reflfrac_boost, 1);
+  lmod.set_par(XPar::kte, 100);
+  lmod.set_par(XPar::h, 30);
+  lmod.set_par(XPar::incl, 20);
+  xillTableParam *xill_param = get_xilltab_param(lmod.get_xill_params(), &status);
+
+  auto prim_spec_source = new double[egrid->nbins];
+  xill_param->ect = 100;
+  calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, &status, 0, 0.3);
+  double norm_fac1 = 1./calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
+
+  xill_param->ect = 100;
+  calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, &status, 1, 0.3);
+  double norm_fac2 = 1./calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
+
+  REQUIRE(norm_fac1 < norm_fac2);
+
+  // printf(" norm1=%e   norm2=%e\n", norm_fac1, norm_fac2);
 
 }
 
