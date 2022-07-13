@@ -134,7 +134,6 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
     } */
 
   // now set the velocity to beta>0
-  free_relSysPar(sys_par);
   rel_param->beta = 0.66;
   sys_par = get_system_parameters(rel_param, &status);
   ion_gradient.calculate(*(sys_par->emis), xill_param);
