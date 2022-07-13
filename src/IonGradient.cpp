@@ -16,7 +16,6 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "IonGradient.h"
-#include "Relbase.h"
 
 extern "C"{
 #include "writeOutfiles.h"
@@ -62,7 +61,7 @@ static double cal_lxi_max_ss73(double *re, double *emis, double* delinc, int nr,
 }
 
 
-void IonGradient::calc_ion_grad_alpha(emisProfile* emis_profile, double param_xlxi0, double param_density) {
+void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density) {
 
   double rin = radial_grid.radius[0];
 
@@ -71,13 +70,16 @@ void IonGradient::calc_ion_grad_alpha(emisProfile* emis_profile, double param_xl
 
   int status = EXIT_SUCCESS;
 
-  assert(emis_profile->del_inc != nullptr);
-  inv_rebin_mean(emis_profile->re, emis_profile->emis, emis_profile->nr, m_rmean, irradiating_flux, m_nzones, &status);
-  inv_rebin_mean(emis_profile->re, emis_profile->del_inc, emis_profile->nr, m_rmean, del_inc, m_nzones, &status);
-  inv_rebin_mean(emis_profile->re, emis_profile->del_emit, emis_profile->nr, m_rmean, del_emit, m_nzones, &status);
+  assert(emis_profile.del_inc != nullptr);
+  inv_rebin_mean(emis_profile.re, emis_profile.emis, emis_profile.nr, m_rmean, irradiating_flux, m_nzones, &status);
+  inv_rebin_mean(emis_profile.re, emis_profile.del_inc, emis_profile.nr, m_rmean, del_inc, m_nzones, &status);
+
+  if (status != EXIT_SUCCESS) {
+    throw std::exception();
+  }
 
   // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
-  double lxi_max = cal_lxi_max_ss73(emis_profile->re, emis_profile->emis, emis_profile->del_inc, emis_profile->nr, rin);
+  double lxi_max = cal_lxi_max_ss73(emis_profile.re, emis_profile.emis, emis_profile.del_inc, emis_profile.nr, rin);
 
   // the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
   double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
@@ -109,8 +111,9 @@ void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex, double inputval_
   }
 }
 
+void IonGradient::calculate(const emisProfile &emis_profile, xillParam *xill_param) {
 
-void IonGradient::calculate(emisProfile* emis_profile, xillParam *xill_param) {
+  calc_zones_delta_emit(emis_profile);
 
   if (m_ion_grad_type == ION_GRAD_TYPE_PL) {
     calc_ion_grad_pl(xill_param->lxi, xill_param->iongrad_index, xill_param->dens);
@@ -141,22 +144,57 @@ void IonGradient::calculate(emisProfile* emis_profile, xillParam *xill_param) {
 
 }
 
-void IonGradient::write_to_file(const char* fout) {
+void IonGradient::write_to_file(const char *fout) const {
 
   FILE *fp = fopen(fout, "w+");
 
   fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n");
-    for (int ii = 0; ii < m_nzones; ii++) {
-      fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", radial_grid.radius[ii], radial_grid.radius[ii + 1],
-              lxi[ii], dens[ii], del_emit[ii]);
-    }
-    fclose_errormsg(fp, fout);
+  for (int ii = 0; ii < m_nzones; ii++) {
+    fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", radial_grid.radius[ii], radial_grid.radius[ii + 1],
+            lxi[ii], dens[ii], del_emit[ii]);
+  }
+  fclose_errormsg(fp, fout);
 }
 
+void IonGradient::calc_zones_delta_emit(const emisProfile &emis_profile) {
+  int status = EXIT_SUCCESS;
+  if (del_emit == nullptr) {
+    del_emit = new double[m_nzones];
+  }
+  inv_rebin_mean(emis_profile.re, emis_profile.del_emit, emis_profile.nr, m_rmean, del_emit, m_nzones, &status);
+  if (status != EXIT_SUCCESS) {
+    throw std::exception();
+  }
+}
 
-const double* RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double h) {
+/** @brief calculate the Ecut/kTe value as seen by the disk zone (if nzones>1)
+ *        - for nzones=1 the value at the primary source is returned
+ *        - the cutoff is calculated for the (linear) middle of the radial zone
+ * @param rel_param
+ * @param ecut_primary [ecut/kTe value at the primary source]
+ * @param izone [zone index]
+ * @return
+ */
+double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_primary, int izone) const {
 
-  auto rgrid =  new double[nzones + 1];
+  if (radial_grid.num_zones == 1) {
+    return ecut_primary; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
+  } else {
+    double rzone = 0.5 * (radial_grid.radius[izone] + radial_grid.radius[izone + 1]);
+
+    if (del_emit == nullptr) { // del_emit relevant if beta!=0 (doppler boosting)
+      printf(" *** error in IonGradient: ionization gradient not calculated \n");
+      printf("       can not calculate Ecut/kTe on the disk \n\n");
+      throw std::exception();
+    }
+
+    return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit[izone]);
+  }
+}
+
+const double *RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double h) {
+
+  auto rgrid = new double[nzones + 1];
 
   if (nzones == 1) {
     rgrid[0] = rmin;

@@ -259,7 +259,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // --- 2 --- calculate ionization gradient
     IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
-    ion_gradient.calculate(sys_par->emis, xill_param);
+    ion_gradient.calculate(*(sys_par->emis), xill_param);
 
     auto xill_param_zone = new xillTableParam *[rel_param->num_zones];
 
@@ -271,7 +271,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       xill_param_zone[ii] = get_xilltab_param(xill_param, status);
 
       // set xillver parameters for the given zone
-      xill_param_zone[ii]->ect = calculate_ecut_on_disk(rel_param, ecut_primary, ion_gradient, ii);
+      xill_param_zone[ii]->ect = ion_gradient.get_ecut_disk_zone(rel_param, ecut_primary, ii);
       xill_param_zone[ii]->lxi = ion_gradient.lxi[ii];
       xill_param_zone[ii]->dens = ion_gradient.dens[ii];
 
@@ -423,27 +423,4 @@ double calc_ecut_at_primary_source(const xillParam *xill_param,
   }
 }
 
-/** @brief get the energy shift in order to calculate the proper Ecut value on the disk (if nzones>1)
- *        - the cutoff is calculated for the (linear) middle of the radial zone
- *        - for nzones=1 the value at the primary source is returned
- * @param rel_param
- * @param ecut0
- * @param ecut_primary
- * @param rgrid
- * @param num_zones
- * @param ion_gradient
- * @param izone
- * @return
- */
-double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary, const IonGradient &ion_gradient, int izone) {
-
-  if (ion_gradient.radial_grid.num_zones == 1) {
-    return ecut_primary; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
-  } else {
-    double rzone = 0.5 * (ion_gradient.radial_grid.radius[izone] + ion_gradient.radial_grid.radius[izone + 1]);
-    double del_emit = (ion_gradient.del_emit == nullptr) ? 0.0
-                                                         : ion_gradient.del_emit[izone];  // only relevant if beta!=0 (doppler boosting)
-    return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit);
-  }
-}
 

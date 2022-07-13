@@ -58,15 +58,13 @@ class IonGradient{
     m_ion_grad_type{ion_grad_type}
   {
     lxi = new double[m_nzones];
-    irradiating_flux = new double[m_nzones];
-    del_emit = new double[m_nzones];
     dens = new double[m_nzones];
     m_rmean = new double[m_nzones];
 
     for ( int ii=0; ii<m_nzones; ii++){
       m_rmean[ii] = 0.5*(radial_grid.radius[ii]+radial_grid.radius[ii+1]);
-      del_emit[ii] = M_PI / 4.; // assume default 45 deg (xillver assumption), only used if beta>0
       dens[ii] = 15.0;
+      lxi[ii] = 0.0;
     }
 
     if (m_nzones>1){
@@ -84,27 +82,30 @@ class IonGradient{
 
   const RadialGrid& radial_grid;
   double* lxi{nullptr};
-  double* irradiating_flux{nullptr};
-  double* del_emit{nullptr};
-  double* dens{nullptr};
+  double *irradiating_flux{nullptr};
+  double *del_emit{nullptr};
+  double *dens{nullptr};
 
-  [[nodiscard]] int nzones() const{
+  [[nodiscard]] int nzones() const {
     return m_nzones;
   }
 
-  void calculate(emisProfile* emis_profile, xillParam* xill_param);
+  void calculate(const emisProfile &emis_profile, xillParam *xill_param);
 
-  void write_to_file( const char* fout);
+  double get_ecut_disk_zone(const relParam *rel_param, double ecut_primary, int izone) const;
+
+  void write_to_file(const char *fout) const;
 
  private:
-  double* m_rmean;
+  double *m_rmean;
   const int m_nzones;
   const int m_ion_grad_type;
 
-
-  void calc_ion_grad_alpha(emisProfile* emis_profile, double param_xlxi0, double param_density);
+  void calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density);
 
   void calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens);
+
+  void calc_zones_delta_emit(const emisProfile &emis_profile);
 
 };
 

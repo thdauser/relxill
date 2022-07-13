@@ -95,13 +95,69 @@ TEST_CASE(" normalization of LP primary spectrum", "[beta]") {
 
   xill_param->ect = 100;
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, &status, 1, 0.3);
-  double norm_fac2 = 1./calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
+  double norm_fac2 = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
 
   REQUIRE(norm_fac1 < norm_fac2);
 
   // printf(" norm1=%e   norm2=%e\n", norm_fac1, norm_fac2);
 
 }
+
+TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
+
+  int status = EXIT_SUCCESS;
+
+  double kte_primary = 40.0;
+
+  LocalModel local_model{ModelName::relxilllpCp};
+  local_model.set_par(XPar::switch_iongrad_type, 0);
+  local_model.set_par(XPar::h, 50.0);
+  local_model.set_par(XPar::kte, kte_primary);
+
+  xillParam *xill_param = local_model.get_xill_params();
+  relParam *rel_param = local_model.get_rel_params();
+  RelSysPar *sys_par = get_system_parameters(rel_param, &status);
+
+  RadialGrid radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
+  IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
+  ion_gradient.calculate(*(sys_par->emis), xill_param);
+
+  double ecut_in_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
+  double ecut_out_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 1);
+
+
+  /*  for (int ii=0; ii<rel_param->num_zones; ii++){
+      double rad = 0.5 * (ion_gradient.radial_grid.radius[ii] + ion_gradient.radial_grid.radius[ii + 1]);
+      printf(" del_emit=%.1f, rad=%.2e, kTe= %.2e \n",
+             ion_gradient.del_emit[ii]*180.0/M_PI, rad,
+             ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, ii) );
+    } */
+
+  // now set the velocity to beta>0
+  free_relSysPar(sys_par);
+  rel_param->beta = 0.66;
+  sys_par = get_system_parameters(rel_param, &status);
+  ion_gradient.calculate(*(sys_par->emis), xill_param);
+  double ecut_in_beta = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
+
+
+
+  /* for (int ii=0; ii<rel_param->num_zones; ii++){
+     double rad = 0.5 * (ion_gradient.radial_grid.radius[ii] + ion_gradient.radial_grid.radius[ii + 1]);
+     printf(" del_emit=%.1f, rad=%.2e, kTe= %.2e \n",
+            ion_gradient.del_emit[ii]*180.0/M_PI, rad,
+            ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, ii) );
+   } */
+
+
+  // require that the first zone is most blue-shifted
+  REQUIRE(ecut_in_0 > ecut_out_0);
+
+  // require that if we have beta>0 ecut is redshift wrt to beta=0
+  REQUIRE(ecut_in_0 > ecut_in_beta);
+
+}
+
 
 /*
 
