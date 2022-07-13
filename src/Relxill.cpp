@@ -32,7 +32,6 @@ xillParam *cached_xill_param = nullptr;
 ///////////////////////////////////////
 // Forward Definitions of Functions  //
 ///////////////////////////////////////
-double calculate_ecut_on_disk(const relParam *rel_param, double ecut_primary, const IonGradient &ion_gradient, int izone);
 
 double calc_ecut_at_primary_source(const xillParam *xill_param,
                                    const relParam *rel_param,

@@ -442,9 +442,10 @@ int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
 
     redo = did_xill_param_change(ca_xill_param, xill_param);
 
-    /** did spin or h change (means xillver needs to be re-computed as well, due to Ecut) **/
+    // xillver needs to be re-computed, Ecut changes for the following parameters **/
     if (comp_single_param_val(rel_param->a, ca_rel_param->a) ||
-        comp_single_param_val(rel_param->height, ca_rel_param->height)) {
+        comp_single_param_val(rel_param->height, ca_rel_param->height) ||
+        comp_single_param_val(rel_param->beta, ca_rel_param->beta)) {
       redo = 1;
     }
 
