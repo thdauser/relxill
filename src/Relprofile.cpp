@@ -78,6 +78,63 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
   }
 }
 
+RelSysPar *new_relSysPar(int nr, int ng, int *status) {
+  auto *sysPar = (RelSysPar *) malloc(sizeof(RelSysPar));
+  CHECK_MALLOC_RET_STATUS(sysPar, status, nullptr)
+
+  sysPar->ng = ng;
+  sysPar->nr = nr;
+
+  sysPar->re = (double *) malloc(nr * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(sysPar->re, status, sysPar)
+  sysPar->gmin = (double *) malloc(nr * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(sysPar->gmin, status, sysPar)
+  sysPar->gmax = (double *) malloc(nr * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(sysPar->gmax, status, sysPar)
+
+  sysPar->emis = nullptr;
+
+  sysPar->gstar = (double *) malloc(ng * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
+
+  // we already set the values as they are fixed
+  int ii;
+  int jj;
+  for (ii = 0; ii < ng; ii++) {
+    sysPar->gstar[ii] = GFAC_H + (1.0 - 2 * GFAC_H) / (ng - 1) * ((float) (ii));
+  }
+
+  sysPar->d_gstar = (double *) malloc(ng * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
+  for (ii = 0; ii < ng; ii++) {
+    if ((ii == 0) || (ii == (ng - 1))) {
+      sysPar->d_gstar[ii] = 0.5 * (sysPar->gstar[1] - sysPar->gstar[0]) + GFAC_H;
+    } else {
+      sysPar->d_gstar[ii] = sysPar->gstar[1] - sysPar->gstar[0];
+    }
+  }
+
+  sysPar->trff = (double ***) malloc(nr * sizeof(double **));
+  CHECK_MALLOC_RET_STATUS(sysPar->trff, status, sysPar)
+  sysPar->cosne = (double ***) malloc(nr * sizeof(double **));
+  CHECK_MALLOC_RET_STATUS(sysPar->cosne, status, sysPar)
+  for (ii = 0; ii < nr; ii++) {
+    sysPar->trff[ii] = (double **) malloc(ng * sizeof(double *));
+    CHECK_MALLOC_RET_STATUS(sysPar->trff[ii], status, sysPar)
+    sysPar->cosne[ii] = (double **) malloc(ng * sizeof(double *));
+    CHECK_MALLOC_RET_STATUS(sysPar->cosne[ii], status, sysPar)
+    for (jj = 0; jj < ng; jj++) {
+      sysPar->trff[ii][jj] = (double *) malloc(2 * sizeof(double));
+      CHECK_MALLOC_RET_STATUS(sysPar->trff[ii][jj], status, sysPar)
+      sysPar->cosne[ii][jj] = (double *) malloc(2 * sizeof(double));
+      CHECK_MALLOC_RET_STATUS(sysPar->cosne[ii][jj], status, sysPar)
+    }
+  }
+
+  sysPar->limb_law = 0;
+
+  return sysPar;
+}
 
 /* function interpolating the rel table values for rin,rout,mu0,incl   */
 static RelSysPar *interpol_relTable(double a, double incl, double rin, double rout,
@@ -880,64 +937,11 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
 
 }
 
-RelSysPar *new_relSysPar(int nr, int ng, int *status) {
-  RelSysPar *sysPar = (RelSysPar *) malloc(sizeof(RelSysPar));
-  CHECK_MALLOC_RET_STATUS(sysPar, status, nullptr)
-
-  sysPar->ng = ng;
-  sysPar->nr = nr;
-
-  sysPar->re = (double *) malloc(nr * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(sysPar->re, status, sysPar)
-  sysPar->gmin = (double *) malloc(nr * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(sysPar->gmin, status, sysPar)
-  sysPar->gmax = (double *) malloc(nr * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(sysPar->gmax, status, sysPar)
-
-  sysPar->emis = nullptr;
-
-  sysPar->gstar = (double *) malloc(ng * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
-
-  // we already set the values as they are fixed
-  int ii;
-  int jj;
-  for (ii = 0; ii < ng; ii++) {
-    sysPar->gstar[ii] = GFAC_H + (1.0 - 2 * GFAC_H) / (ng - 1) * ((float) (ii));
-  }
-
-  sysPar->d_gstar = (double *) malloc(ng * sizeof(double));
-  CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
-  for (ii = 0; ii < ng; ii++) {
-    if ((ii == 0) || (ii == (ng - 1))) {
-      sysPar->d_gstar[ii] = 0.5 * (sysPar->gstar[1] - sysPar->gstar[0]) + GFAC_H;
-    } else {
-      sysPar->d_gstar[ii] = sysPar->gstar[1] - sysPar->gstar[0];
-    }
-  }
-
-  sysPar->trff = (double ***) malloc(nr * sizeof(double **));
-  CHECK_MALLOC_RET_STATUS(sysPar->trff, status, sysPar)
-  sysPar->cosne = (double ***) malloc(nr * sizeof(double **));
-  CHECK_MALLOC_RET_STATUS(sysPar->cosne, status, sysPar)
-  for (ii = 0; ii < nr; ii++) {
-    sysPar->trff[ii] = (double **) malloc(ng * sizeof(double *));
-    CHECK_MALLOC_RET_STATUS(sysPar->trff[ii], status, sysPar)
-    sysPar->cosne[ii] = (double **) malloc(ng * sizeof(double *));
-    CHECK_MALLOC_RET_STATUS(sysPar->cosne[ii], status, sysPar)
-    for (jj = 0; jj < ng; jj++) {
-      sysPar->trff[ii][jj] = (double *) malloc(2 * sizeof(double));
-      CHECK_MALLOC_RET_STATUS(sysPar->trff[ii][jj], status, sysPar)
-      sysPar->cosne[ii][jj] = (double *) malloc(2 * sizeof(double));
-      CHECK_MALLOC_RET_STATUS(sysPar->cosne[ii][jj], status, sysPar)
-    }
-  }
-
-  sysPar->limb_law = 0;
-
-  return sysPar;
+void free_cached_relTable() {
+  free_relTable(ptr_rellineTable);
 }
 
+// should not be called manually as it is automatically freed in the cache
 void free_relSysPar(RelSysPar *sysPar) {
   if (sysPar != nullptr) {
     free(sysPar->re);
@@ -979,15 +983,11 @@ void free_relSysPar(RelSysPar *sysPar) {
   }
 }
 
-void free_cached_relTable(void) {
-  free_relTable(ptr_rellineTable);
-}
-
-void free_relprofile_cache(void) {
+void free_relprofile_cache() {
   free_relSysPar(cached_tab_sysPar);
   free_str_relb_func(&cached_str_relb_func);
 }
 
-void free_cache_syspar(void) {
+void free_cache_syspar() {
   cli_delete_list(&cache_syspar);
 }
