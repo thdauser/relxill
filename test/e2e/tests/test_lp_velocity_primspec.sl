@@ -37,7 +37,6 @@ define set_model(ff){
 
 define calc_boost_beta_primary(beta){
 
-%   variable ener_shift_0 = 1/(1+kerr_lp_redshift(get_par("*.h")[0], get_par("*.a")[0]));
    variable doppler_factor =  doppler(get_par("*.Incl")[0]*PI/180., -beta);
 
    variable gam = get_par("*.gamma")[0];
@@ -152,9 +151,6 @@ define runtest(ffs){
 
    if (test_veloc_boost(ff,veloc;reflected) != EXIT_SUCCESS)
      return EXIT_FAILURE;
-
-   
-   sleep(100);
    
    return EXIT_SUCCESS;
 }
