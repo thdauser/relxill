@@ -46,6 +46,7 @@ xillSpec *get_xillver_spectra(xillParam *param, int *status);
 xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
 void free_xill_spec(xillSpec *spec);
 
+void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status);
 
 void get_xillver_angdep_spec(double *o_xill_flux,
                              double *ener,

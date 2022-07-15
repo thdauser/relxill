@@ -37,6 +37,50 @@ enum cached {
   no
 };
 
+class SpectrumZones{
+
+ public:
+  SpectrumZones(const double* _energy, int _num_flux, int _num_zones):
+      num_flux_bins(_num_flux), num_zones(_num_zones), num_ener_bins(_num_flux+1) {
+
+    flux = new double*[num_zones];
+    for (int ii=0; ii<num_zones; ii++){
+      flux[ii] = new double[num_flux_bins];
+      for (int jj=0; jj<num_flux_bins; jj++) {
+        flux[ii][jj] = 0.0;
+      }
+    }
+
+    m_energy = new double[num_flux_bins+1];
+    for (int ii=0; ii<num_ener_bins; ii++) {
+      m_energy[ii] = _energy[ii];
+    }
+  }
+
+  ~SpectrumZones(){
+    for (int ii=0; ii<num_zones; ii++) {
+      delete[] flux[ii];
+    }
+    delete[] m_energy;
+    delete[] flux;
+  }
+
+  [[nodiscard]] double* energy() const{
+    return m_energy;
+  }
+
+  const int num_zones;
+  const int num_flux_bins;
+  const int num_ener_bins;
+  double** flux;
+
+ private:
+  double* m_energy;
+
+};
+
+
+
 class CachingStatus {
 
  public:

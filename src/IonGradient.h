@@ -60,11 +60,14 @@ class IonGradient{
     lxi = new double[m_nzones];
     dens = new double[m_nzones];
     m_rmean = new double[m_nzones];
+    //  scaling of the reflection spectrum for the zone (can be necessary if kTe/Ecut is shifted by energy)
+    reflection_scaling_factor = new double[m_nzones];
 
     for ( int ii=0; ii<m_nzones; ii++){
       m_rmean[ii] = 0.5*(radial_grid.radius[ii]+radial_grid.radius[ii+1]);
       dens[ii] = 15.0;
       lxi[ii] = 0.0;
+      reflection_scaling_factor[ii] = 1.0;
     }
 
     if (m_nzones>1){
@@ -78,6 +81,7 @@ class IonGradient{
     delete[] del_emit;
     delete[] dens;
     delete[] m_rmean;
+    delete[] reflection_scaling_factor;
   }
 
   const RadialGrid& radial_grid;
@@ -85,6 +89,7 @@ class IonGradient{
   double *irradiating_flux{nullptr};
   double *del_emit{nullptr};
   double *dens{nullptr};
+  double *reflection_scaling_factor{nullptr};
 
   [[nodiscard]] int nzones() const {
     return m_nzones;

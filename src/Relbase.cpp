@@ -620,9 +620,9 @@ void free_fft_cache(double ***sp, int n1, int n2) {
 
 }
 
-OutSpec *init_out_spec(int n_ener, const double *ener, int *status) {
+spectrum *new_spectrum(int n_ener, const double *ener, int *status) {
 
-  auto *spec = new OutSpec;
+  auto *spec = new spectrum;
   spec->n_ener = n_ener;
   spec->ener = new double[n_ener];
   spec->flux = new double[n_ener];
@@ -636,7 +636,7 @@ OutSpec *init_out_spec(int n_ener, const double *ener, int *status) {
   return spec;
 }
 
-void free_out_spec(OutSpec *spec) {
+void free_spectrum(spectrum *spec) {
   if (spec != nullptr) {
     free(spec->ener);
     free(spec->flux);
@@ -682,7 +682,7 @@ void free_specCache(specCache* spec_cache) {
       free(spec_cache->conversion_factor_energyflux);
     }
 
-    free_out_spec(spec_cache->out_spec);
+    free_spectrum(spec_cache->out_spec);
 
   }
 

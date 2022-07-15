@@ -125,9 +125,9 @@ double calcFFTNormFactor(const double *ener, const double *fxill, const double *
 specCache *init_global_specCache(int *status);
 void free_specCache(specCache *spec_cache);
 void free_fft_cache(double ***sp, int n1, int n2);
-void free_out_spec(OutSpec *spec);
+void free_spectrum(spectrum *spec);
 
-OutSpec *init_out_spec(int n_ener, const double *ener, int *status);
+spectrum *new_spectrum(int n_ener, const double *ener, int *status);
 
 int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
                       const relParam *ca_rel, const xillParam *ca_xill);

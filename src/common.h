@@ -336,7 +336,7 @@ typedef struct {
   int n_ener;
   double *ener;
   double *flux;
-} OutSpec;
+} spectrum;
 
 typedef struct {
   int nzones;   // number of zones actually stored there
@@ -355,7 +355,7 @@ typedef struct {
 
 
   xillSpec **xill_spec;
-  OutSpec *out_spec;
+  spectrum *out_spec;
 } specCache;
 
 typedef struct {

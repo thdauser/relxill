@@ -479,7 +479,7 @@ void free_relxill_cache(specCache *ca) {
       free_fft_cache(ca->fft_rel, ca->n_cache, m);
     }
 
-    free_out_spec(ca->out_spec);
+    free_spectrum(ca->out_spec);
 
   }
 

@@ -480,8 +480,14 @@ void norm_xillver_spec(xillSpec *spec, double incl) {
 
 
 
-
-static void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status) {
+/**
+ * @Function: calc_xillver_angdep
+ * @Synopsis: Calculate the Angle Weighted Xillver Spectrum on the Standard Relxill Spectrum
+ * @Input: xill_spec
+ *         rel_dist[n_incl]
+ * @Output: xill_flux  (needs to be allocated, will be overwritten)
+ **/
+void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status) {
 
   CHECK_STATUS_VOID(*status);
 
