@@ -397,6 +397,9 @@ double calc_xillver_normalization_change(double ener_shift_source_observer, xill
   // reset the parameter (in case we still would use it)
   xill_param->ect = ecut_source;
 
+  delete[] prime_spec;
+  free(egrid);
+
   return disk_spec_norm_factor / source_spec_norm_factor;
 }
 
