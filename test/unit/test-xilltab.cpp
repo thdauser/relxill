@@ -301,13 +301,19 @@ TEST_CASE(" test normalization factor when shifting ecut/kTe", "[prim]") {
                                                        nullptr, xill_param, &status);
   double norm_fac_shifted = calc_xillver_normalization_change(energy_shift, xill_param);
 
+  // if kTe to lower energies, the normalization increases
+  REQUIRE(norm_fac_shifted > 1.0);
+
   xill_param->ect *= energy_shift;
   auto prime_spec_shifted = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
                                                              nullptr, xill_param, &status);
 
   double spec_ratio = prime_spec_shifted[0] / prime_spec_0[0];
-
   REQUIRE(fabs(spec_ratio - norm_fac_shifted) < 1e-3);
+
+  // if kTe to higher energies, the normalization decreases
+  double norm_fac_shifted_higher_energies = calc_xillver_normalization_change(2.0, xill_param);
+  REQUIRE(norm_fac_shifted_higher_energies < 1.0);
 
   delete[] prime_spec_0;
   delete[] prime_spec_shifted;
