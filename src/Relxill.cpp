@@ -299,8 +299,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
         calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_param_zone, status) :
         nullptr;
 
-    free_xill_table_param_array(rel_param, xill_param_zone);
-
     // --- 5 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the relbase_profile call
     get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
@@ -321,20 +319,36 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     auto xillver_spectra_zones =  SpectrumZones(spec_cache->xill_spec[0]->ener, spec_cache->xill_spec[0]->n_ener, rel_param->num_zones);
 
     for (int ii=0; ii <  rel_param->num_zones; ii++){
-     calc_xillver_angdep(xillver_spectra_zones.flux[ii], spec_cache->xill_spec[ii], rel_profile->rel_cosne->dist[ii], status);
+      calc_xillver_angdep(xillver_spectra_zones.flux[ii],
+                          spec_cache->xill_spec[ii],
+                          rel_profile->rel_cosne->dist[ii],
+                          status);
 
-      // need to renormalize the spectra due to the energy shift from the source to the disk
+      // need to re-normalize the spectra due to the energy shift from the source to the disk
       // reason: xillver is defined on a fixed energy flux integrated from 0.1-1000keV (see Dauser+16, A1), therefore
       // shifting ecut/kTe in energy will change the normalization of the primary spectrum, which was used to calculate
       // the reflected spectrum
       ion_gradient.reflection_scaling_factor[ii] = 1.0;  // todo: move calculation outside of IonGrad and here
-      for (int jj; jj <  xillver_spectra_zones.num_flux_bins; jj++) {
-        xillver_spectra_zones.flux[ii][jj] *= ion_gradient.reflection_scaling_factor[ii];
+      double ener_shift = xill_param->ect / xill_param_zone[ii]->ect;
+      // normalization change from disk to observer
+      double norm_change = calc_xillver_normalization_change(ener_shift, xill_param_zone[ii]);
+      for (int jj; jj < xillver_spectra_zones.num_flux_bins; jj++) {
+        xillver_spectra_zones.flux[ii][jj] *= norm_change;
+
       }
     }
 
+    free_xill_table_param_array(rel_param, xill_param_zone);
+
+
     // --- 6 --- convolve the reflection with the relativistic kernel
-    relxill_convolution_multizone(spectrum, rel_profile, xillver_spectra_zones, spec_cache, rel_param, caching_status, status);
+    relxill_convolution_multizone(spectrum,
+                                  rel_profile,
+                                  xillver_spectra_zones,
+                                  spec_cache,
+                                  rel_param,
+                                  caching_status,
+                                  status);
 
     copy_spectrum_to_cache(spectrum, spec_cache, status);
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));

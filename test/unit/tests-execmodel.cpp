@@ -107,14 +107,16 @@ TEST_CASE(" Execute ALL local models", "[model]") {
 TEST_CASE(" Execute single model", "[single]") {
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relxilllp);
+  LocalModel lmod(ModelName::relxilllpCp);
   lmod.set_par(XPar::switch_switch_returnrad, 0);
+  lmod.set_par(XPar::h, 3.0);
+  lmod.set_par(XPar::beta, 0.0);
 
   auto spec = default_spec.get_xspec_spectrum();
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 
-  lmod.set_par(XPar::h,6.00);
-  lmod.set_par(XPar::rin,-1.088889);
+  lmod.set_par(XPar::h, 6.00);
+  lmod.set_par(XPar::rin, -1.088889);
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 
 }
