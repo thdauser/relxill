@@ -332,9 +332,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       double ener_shift = xill_param->ect / xill_param_zone[ii]->ect;
       // normalization change from disk to observer
       double norm_change = calc_xillver_normalization_change(ener_shift, xill_param_zone[ii]);
-      for (int jj; jj < xillver_spectra_zones.num_flux_bins; jj++) {
+      for (int jj = 0; jj < xillver_spectra_zones.num_flux_bins; jj++) {
         xillver_spectra_zones.flux[ii][jj] *= norm_change;
-
       }
     }
 

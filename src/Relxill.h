@@ -69,8 +69,8 @@ class SpectrumZones{
     return m_energy;
   }
 
-  const int num_zones;
   const int num_flux_bins;
+  const int num_zones;
   const int num_ener_bins;
   double** flux;
 
