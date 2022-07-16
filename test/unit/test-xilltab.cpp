@@ -277,12 +277,39 @@ TEST_CASE(" normalization of the primary continuum","[prim]"){
 
   REQUIRE(fabs(sum_orig/norm_xillver_table - 1) < 1e-6);
 
-
   delete[] pl_flux_xill;
   free(egrid);
 
-
-  REQUIRE( status == EXIT_SUCCESS );
+  REQUIRE(status == EXIT_SUCCESS);
 
 }
 
+TEST_CASE(" test normalization factor when shifting ecut/kTe", "[prim]") {
+
+  int status = EXIT_SUCCESS;
+
+  LocalModel lmod(ModelName::relxilllpCp);
+  lmod.set_par(XPar::kte, 40.0);
+  xillTableParam *xill_param = get_xilltab_param(lmod.get_xill_params(), &status);
+  relParam *rel_param = lmod.get_rel_params();
+
+  EnerGrid *egrid = get_stdXillverEnergygrid(&status);
+
+  double energy_shift = 0.5;
+
+  auto prime_spec_0 = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
+                                                       nullptr, xill_param, &status);
+  double norm_fac_shifted = calc_xillver_normalization_change(energy_shift, xill_param);
+
+  xill_param->ect *= energy_shift;
+  auto prime_spec_shifted = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
+                                                             nullptr, xill_param, &status);
+
+  double spec_ratio = prime_spec_shifted[0] / prime_spec_0[0];
+
+  REQUIRE(fabs(spec_ratio - norm_fac_shifted) < 1e-3);
+
+  delete[] prime_spec_0;
+  delete[] prime_spec_shifted;
+
+}

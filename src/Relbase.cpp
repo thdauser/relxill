@@ -338,7 +338,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
                            RelSysPar *sys_par, int *status) {
 
   xillTableParam *xill_table_param = get_xilltab_param(xill_input_param, status);
-  double *pl_flux = calc_observed_primary_spectrum(ener, n_ener, rel_param, xill_table_param, status);
+  double *pl_flux = calc_normalized_primary_spectrum(ener, n_ener, rel_param, xill_table_param, status);
   free(xill_table_param);
   CHECK_STATUS_VOID(*status);
 

@@ -68,8 +68,10 @@ void calc_primary_spectrum(double *pl_flux_xill, double *ener, int n_ener,
                            const xillTableParam *xill_param, int *status,
                            double ener_shift_source_obs = 1.0);
 
-double *calc_observed_primary_spectrum(const double *ener, int n_ener,
-                                       const relParam *rel_param, const xillTableParam *xill_param, int *status);
+double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
+                                         const relParam *rel_param, const xillTableParam *xill_param, int *status);
+
+double calc_xillver_normalization_change(double ener_shift_source_observer, xillTableParam *xill_param);
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, int n, int *status);
 EnerGrid *get_stdXillverEnergygrid(int *status);

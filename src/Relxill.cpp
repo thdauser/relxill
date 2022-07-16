@@ -204,33 +204,6 @@ static void free_xill_table_param_array(const relParam *rel_param, xillTablePara
   delete[] xill_table_param;
 }
 
-/**
- *
- * @param g_source_disk [energy shift from the source to the disk]
- * @return
- */
-double calc_normalization_factor(double ener_shift_source_observer,
-                                 double ecut_source,
-                                 double gam,
-                                 xillParam *xill_param_global) {
-
-  int status = EXIT_SUCCESS;
-  EnerGrid *egrid = get_stdXillverEnergygrid(&status);
-  auto prime_spec = new double[egrid->nbins];
-
-  xillTableParam *xill_param = get_xilltab_param(xill_param_global, &status);
-
-  if (xill_param->prim_type == PRIM_SPEC_ECUT) {
-  }
-
-  /*  calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins,
-                          xill_param, status, 0, ener_shift_source_observer);
-
-    calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins,
-                           xill_param, status, 0, ener_shift_source_observer);
-  */
-  return -1.0;
-}
 
 void get_relxill_params(const ModelParams &params, relParam *&rel_param, xillParam *&xill_param) {
   rel_param = get_rel_params(params);
