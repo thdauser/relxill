@@ -217,12 +217,12 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
   }
 
   // important default values
-  param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp)
-               ? inp_param.get_otherwise_default(XPar::kte, 0)  // TODO: make kTe own parameter
+  param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp)   // can be either ecut or kte
+               ? inp_param.get_otherwise_default(XPar::kte, 0)
                : inp_param.get_otherwise_default(XPar::ecut, 300);
   param->lxi = inp_param.get_otherwise_default(XPar::logxi, 0);  // default value for CO table
   param->dens = inp_param.get_otherwise_default(XPar::logn,               // CO-table has logN=17
-                                                     is_co_model(param->model_type) ? 17 : 15);
+                                                is_co_model(param->model_type) ? 17 : 15);
   param->iongrad_index = inp_param.get_otherwise_default(XPar::iongrad_index, 0);
   param->boost = inp_param.get_otherwise_default(XPar::boost, -1);
 

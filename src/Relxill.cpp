@@ -204,6 +204,46 @@ static void free_xill_table_param_array(const relParam *rel_param, xillTablePara
   delete[] xill_table_param;
 }
 
+/**
+ *
+ * @param g_source_disk [energy shift from the source to the disk]
+ * @return
+ */
+double calc_normalization_factor(double ener_shift_source_observer,
+                                 double ecut_source,
+                                 double gam,
+                                 xillParam *xill_param_global) {
+
+  int status = EXIT_SUCCESS;
+  EnerGrid *egrid = get_stdXillverEnergygrid(&status);
+  auto prime_spec = new double[egrid->nbins];
+
+  xillTableParam *xill_param = get_xilltab_param(xill_param_global, &status);
+
+  if (xill_param->prim_type == PRIM_SPEC_ECUT) {
+  }
+
+  /*  calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins,
+                          xill_param, status, 0, ener_shift_source_observer);
+
+    calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins,
+                           xill_param, status, 0, ener_shift_source_observer);
+  */
+  return -1.0;
+}
+
+void get_relxill_params(const ModelParams &params, relParam *&rel_param, xillParam *&xill_param) {
+  rel_param = get_rel_params(params);
+  xill_param = get_xill_params(params);
+
+  // special case, for the LP model and the Ecut model, the cutoff energy is given in the observer frame
+  // -> change it such that the parameter "ect" is always given in the source frame
+  if (rel_param->emis_type == EMIS_TYPE_LP && xill_param->prim_type == PRIM_SPEC_ECUT) {
+    xill_param->ect /= energy_shift_source_obs(rel_param);
+  }
+
+}
+
 
 ///////////////////////////////////////
 // MAIN: Relxill Kernel Function     //
@@ -219,14 +259,12 @@ static void free_xill_table_param_array(const relParam *rel_param, xillTablePara
 void relxill_kernel(const XspecSpectrum &spectrum,
                     const ModelParams &params,
                     int *status) {
-
-  relParam *rel_param = get_rel_params(params);
-  xillParam *xill_param = get_xill_params(params);
-
+  relParam *rel_param;
+  xillParam *xill_param;
+  get_relxill_params(params, rel_param, xill_param);
 
   // in case of an ionization gradient, we need to update the number of zones
   assert(rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, rel_param->ion_grad_type));
-
 
   specCache *spec_cache = init_global_specCache(status);
   assert(spec_cache != nullptr);
@@ -264,14 +302,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     auto xill_param_zone = new xillTableParam *[rel_param->num_zones];
 
     // --- 3 --- calculate xillver reflection spectra  (for every zone)
-
-    double ecut_primary = calc_ecut_at_primary_source(xill_param, rel_param, xill_param->ect, status);
-
     for (int ii = 0; ii < rel_param->num_zones; ii++) {
       xill_param_zone[ii] = get_xilltab_param(xill_param, status);
 
       // set xillver parameters for the given zone
-      xill_param_zone[ii]->ect = ion_gradient.get_ecut_disk_zone(rel_param, ecut_primary, ii);
+      xill_param_zone[ii]->ect = ion_gradient.get_ecut_disk_zone(rel_param, xill_param->ect, ii);
       xill_param_zone[ii]->lxi = ion_gradient.lxi[ii];
       xill_param_zone[ii]->dens = ion_gradient.dens[ii];
 
@@ -311,6 +346,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // --- 5c --- calculate the xillver spectra depending on the angular distribution (stored in the rel_profile)
 
     auto xillver_spectra_zones =  SpectrumZones(spec_cache->xill_spec[0]->ener, spec_cache->xill_spec[0]->n_ener, rel_param->num_zones);
+
     for (int ii=0; ii <  rel_param->num_zones; ii++){
      calc_xillver_angdep(xillver_spectra_zones.flux[ii], spec_cache->xill_spec[ii], rel_profile->rel_cosne->dist[ii], status);
 
@@ -318,15 +354,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       // reason: xillver is defined on a fixed energy flux integrated from 0.1-1000keV (see Dauser+16, A1), therefore
       // shifting ecut/kTe in energy will change the normalization of the primary spectrum, which was used to calculate
       // the reflected spectrum
-
       ion_gradient.reflection_scaling_factor[ii] = 1.0;  // todo: move calculation outside of IonGrad and here
       for (int jj; jj <  xillver_spectra_zones.num_flux_bins; jj++) {
         xillver_spectra_zones.flux[ii][jj] *= ion_gradient.reflection_scaling_factor[ii];
       }
     }
-
-
-
 
     // --- 6 --- convolve the reflection with the relativistic kernel
     relxill_convolution_multizone(spectrum, rel_profile, xillver_spectra_zones, spec_cache, rel_param, caching_status, status);

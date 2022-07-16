@@ -66,7 +66,7 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
 
 void calc_primary_spectrum(double *pl_flux_xill, double *ener, int n_ener,
                            const xillTableParam *xill_param, int *status,
-                           int at_the_observer, double ener_shift_source_obs);
+                           double ener_shift_source_obs = 1.0);
 
 double *calc_observed_primary_spectrum(const double *ener, int n_ener,
                                        const relParam *rel_param, const xillTableParam *xill_param, int *status);
