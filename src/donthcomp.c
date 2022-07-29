@@ -54,56 +54,56 @@ static int f_mcdint__(double *et, double *value)
     static double gc[3] = { .078196667,-1.066202,1.192418 };
     static double gw[3] = { .5207874,.513457,.4077983 };
     static double gn[3] = { .3728691,.039775528,.037766505 };
-    static double res[98] = { 9.6198382e-4,.0010901181,.0012310012,
-	    .0013841352,.0015481583,.0017210036,.0018988943,.002076939,
-	    .0022484281,.0024049483,.0025366202,.0026316255,.0026774985,
-	    .0026613059,.0025708784,.0023962965,.002130655,.0017725174,
-	    .0013268656,8.0657672e-4,2.3337584e-4,-3.6291778e-4,-9.4443569e-4,
-	    -.0014678875,-.0018873741,-.0021588493,-.0022448371,-.0021198179,
-	    -.0017754602,-.0012246034,-5.0414167e-4,3.2507078e-4,.0011811065,
-	    .0019673402,.0025827094,.0029342526,.0029517083,.0026012166,
-	    .0018959062,9.0128649e-4,-2.6757144e-4,-.0014567885,-.002492855,
-	    -.0032079776,-.0034678637,-.0031988217,-.0024080969,-.001193624,
-	    2.6134145e-4,.0017117758,.0028906898,.0035614435,.0035711778,
-	    .0028921374,.0016385898,4.9857464e-5,-.0015572671,-.0028578151,
-	    -.0035924212,-.0036253044,-.002975086,-.0018044436,-3.7796664e-4,
-	    .0010076215,.0020937327,.0027090854,.0028031667,.0024276576,
-	    .0017175597,8.1030795e-4,-1.2592304e-4,-9.4888491e-4,-.0015544816,
-	    -.0018831972,-.0019203142,-.0016905849,-.0012487737,-6.6789911e-4,
-	    -2.7079461e-5,5.9931935e-4,.0011499748,.0015816521,.0018709224,
-	    .0020129966,.0020184702,.0019089181,.0017122289,.001458377,
-	    .0011760717,8.9046768e-4,6.2190822e-4,3.8553762e-4,1.9155022e-4,
-	    4.5837109e-5,-4.9177834e-5,-9.3670762e-5,-8.9622968e-5,
-	    -4.01538532e-5 };
+    static double res[98] = {9.6198382e-4, .0010901181, .0012310012,
+                             .0013841352, .0015481583, .0017210036, .0018988943, .002076939,
+                             .0022484281, .0024049483, .0025366202, .0026316255, .0026774985,
+                             .0026613059, .0025708784, .0023962965, .002130655, .0017725174,
+                             .0013268656, 8.0657672e-4, 2.3337584e-4, -3.6291778e-4, -9.4443569e-4,
+                             -.0014678875, -.0018873741, -.0021588493, -.0022448371, -.0021198179,
+                             -.0017754602, -.0012246034, -5.0414167e-4, 3.2507078e-4, .0011811065,
+                             .0019673402, .0025827094, .0029342526, .0029517083, .0026012166,
+                             .0018959062, 9.0128649e-4, -2.6757144e-4, -.0014567885, -.002492855,
+                             -.0032079776, -.0034678637, -.0031988217, -.0024080969, -.001193624,
+                             2.6134145e-4, .0017117758, .0028906898, .0035614435, .0035711778,
+                             .0028921374, .0016385898, 4.9857464e-5, -.0015572671, -.0028578151,
+                             -.0035924212, -.0036253044, -.002975086, -.0018044436, -3.7796664e-4,
+                             .0010076215, .0020937327, .0027090854, .0028031667, .0024276576,
+                             .0017175597, 8.1030795e-4, -1.2592304e-4, -9.4888491e-4, -.0015544816,
+                             -.0018831972, -.0019203142, -.0016905849, -.0012487737, -6.6789911e-4,
+                             -2.7079461e-5, 5.9931935e-4, .0011499748, .0015816521, .0018709224,
+                             .0020129966, .0020184702, .0019089181, .0017122289, .001458377,
+                             .0011760717, 8.9046768e-4, 6.2190822e-4, 3.8553762e-4, 1.9155022e-4,
+                             4.5837109e-5, -4.9177834e-5, -9.3670762e-5, -8.9622968e-5,
+                             -4.01538532e-5};
 
-    /* System generated locals */
-    double d__1;
+  /* System generated locals */
+  double d__1;
 
 
-    /* Local variables */
-    static int j;
-    static double z__, pos, loget, gaufact, resfact;
+  /* Local variables */
+  static int j;
+  static double z__, pos, loget, gaufact, resfact;
 
-    loget = d_lg10(et);
-    pos = (loget - d_lg10(&c_b45)) / .06 + 1;
-    j = (int) pos;
-    if (j < 1) {
-	resfact = res[0];
-    } else if (j >= 98) {
-	resfact = res[97];
-    } else {
-	pos -= j;
-	resfact = res[j - 1] * (1. - pos) + res[j] * pos;
-    }
-    gaufact = 1.;
-    for (j = 1; j <= 3; ++j) {
-	z__ = (loget - gc[j - 1]) / gw[j - 1];
-	gaufact += gn[j - 1] * exp(-z__ * z__ / 2.);
-    }
-    d__1 = *et / .001;
-    *value = pow_dd(&d__1, &c_b46) * 193.21556 * (pow_dd(et, &c_b47) *
-	    .52876731 + 1.) * exp(-(*et)) * gaufact * (resfact + 1.);
-    return 0;
+  loget = d_lg10(et);
+  pos = (loget - d_lg10(&c_b45)) / .06 + 1;
+  j = (int) pos;
+  if (j < 1) {
+    resfact = res[0];
+  } else if (j >= 98) {
+    resfact = res[97];
+  } else {
+    pos -= j;
+    resfact = res[j - 1] * (1. - pos) + res[j] * pos;
+  }
+  gaufact = 1.;
+  for (j = 1; j <= 3; ++j) {
+    z__ = (loget - gc[j - 1]) / gw[j - 1];
+    gaufact += gn[j - 1] * exp(-z__ * z__ / 2.);
+  }
+  d__1 = *et / .001;
+  *value = pow(d__1, c_b46) * 193.21556 * (pow_dd(et, &c_b47) *
+      .52876731 + 1.) * exp(-(*et)) * gaufact * (resfact + 1.);
+  return 0;
 } /* f_mcdint__ */
 
 /*     Multi-Color Disk SPECTRUM */
@@ -307,10 +307,6 @@ static int f_thcompton__(double *tempbb, double *theta,
     int i__1, i__2;
     double d__1;
 
-    /* Builtin functions */
-    double pow_dd(double *, double *), sqrt(double), log(
-	    double), d_lg10(double *), exp(double);
-
     /* Local variables */
     static int j;
     static double w;
@@ -337,8 +333,8 @@ static int f_thcompton__(double *tempbb, double *theta,
     --x;
 
     /* Function Body */
-    d__1 = *gamma + .5;
-    tautom = sqrt(3. / (*theta * (pow_dd(&d__1, &c_b2) - 2.25)) + 2.25) - 1.5;
+  d__1 = *gamma + .5;
+  tautom = sqrt(3. / (*theta * (d__1 * d__1 - 2.25)) + 2.25) - 1.5;
 
 /* clear arrays (important for repeated calls) */
     for (j = 1; j <= 900; ++j) {
@@ -367,8 +363,8 @@ static int f_thcompton__(double *tempbb, double *theta,
 
     i__1 = *jmax + 1;
     for (j = 1; j <= i__1; ++j) {
-	d__1 = (j - 1) * delta;
-	x[j] = xmin * pow_dd(&c_b8, &d__1);
+      d__1 = (j - 1) * delta;
+      x[j] = xmin * pow(c_b8, d__1);
 /* L4: */
     }
 
@@ -381,14 +377,14 @@ static int f_thcompton__(double *tempbb, double *theta,
 /* c2 is the Cooper's coefficient calculated at w1 */
 /* w1 is x(j+1/2) (x(i) defined up to jmax+1) */
 	w1 = sqrt(x[j] * x[j + 1]);
-	c2[j - 1] = (double) (pow_dd(&w1, &c_b10) / (w1 * 4.6 + 1. + w1 * 1.1 *
-		w1));
+      c2[j - 1] = (double) (pow(w1, c_b10) / (w1 * 4.6 + 1. + w1 * 1.1 *
+          w1));
 	if (w <= .05) {
 /* use asymptotic limit for rel(x) for x less than 0.05 */
 	    rel[j - 1] = (double) (1. - w * 2. + w * 26. * w / 5.);
 	} else {
-	    z1 = (w + 1.) / pow_dd(&w, &c_b11);
-	    z2 = w * 2. + 1.;
+      z1 = (w + 1.) / pow(w, c_b11);
+      z2 = w * 2. + 1.;
 	    z3 = log(z2);
 	    z4 = w * 2. * (w + 1.) / z2;
 	    z5 = z3 / 2. / w;
@@ -406,12 +402,12 @@ static int f_thcompton__(double *tempbb, double *theta,
 /*           print *,'thcomp: ',jmaxth,jmax */
 	jmaxth = *jmax;
     }
-    d__1 = pi * *tempbb;
-    planck = 15. / pow_dd(&d__1, &c_b10);
-    i__1 = jmaxth;
+  d__1 = pi * *tempbb;
+  planck = 15. / pow(d__1, c_b10);
+  i__1 = jmaxth;
     for (j = 1; j <= i__1; ++j) {
-	dphdot[j - 1] = planck * pow_dd(&x[j], &c_b2) / (exp(x[j] / *tempbb) 
-		- 1.);
+      dphdot[j - 1] = planck * x[j] * x[j] / (exp(x[j] / *tempbb)
+          - 1.);
 /* L5: */
     }
 
@@ -456,7 +452,7 @@ static int f_thcompton__(double *tempbb, double *theta,
 /*     the spectrum in E F_E */
     i__1 = *jmax - 1;
     for (j = 1; j <= i__1; ++j) {
-	sptot[j] = dphesc[j - 1] * pow_dd(&x[j], &c_b2);
+      sptot[j] = dphesc[j - 1] * x[j] * x[j];
 /*          write(1,*) x(j), sptot(j) */
 /* L497: */
     }
@@ -476,16 +472,9 @@ static int f_thdscompton__(double *tempbb, double *theta,
     int i__1, i__2;
     double d__1;
 
-    /* Builtin functions */
-    double pow_dd(double *, double *), sqrt(double), log(
-	    double), d_lg10(double *);
-
     /* Local variables */
     static int j;
     static double w;
-    extern /* Subroutine */ int f_thermlc__(double *, double *,
-	    double *, double *, int *, double *, double *,
-	     double *, double *);
     static double c2[900], w1, z1, z2, z3, z4, z5, z6;
     static int ne;
     static double xr, ear[5001], arg, bet[900];
@@ -512,8 +501,8 @@ static int f_thdscompton__(double *tempbb, double *theta,
     --x;
 
     /* Function Body */
-    d__1 = *gamma + .5;
-    tautom = sqrt(3. / (*theta * (pow_dd(&d__1, &c_b2) - 2.25)) + 2.25) - 1.5;
+  d__1 = *gamma + .5;
+  tautom = sqrt(3. / (*theta * (d__1 * d__1 - 2.25)) + 2.25) - 1.5;
 
 /* clear arrays (important for repeated calls) */
     for (j = 1; j <= 900; ++j) {
@@ -542,8 +531,8 @@ static int f_thdscompton__(double *tempbb, double *theta,
 
     i__1 = *jmax + 1;
     for (j = 1; j <= i__1; ++j) {
-	d__1 = (j - 1) * delta;
-	x[j] = xmin * pow_dd(&c_b8, &d__1);
+      d__1 = (j - 1) * delta;
+      x[j] = xmin * pow_dd(&c_b8, &d__1);
 /* L4: */
     }
 
@@ -691,27 +680,24 @@ static double f_spp__(double *y, double *xnonth, int *nnonth,
     return ret_val;
 } /* f_spp__ */
 
-void c_donthcomp(double *ear, int ne, double* param, double *photar){
-    /* Initialized data */
-	double prim[ne];
+void c_donthcomp(const double *ear, int ne, double *param, double *photar) {
+  /* Initialized data */
+  double prim[ne];
 
-    static double pa0[5] = { 9999.,9999.,9999.,9999.,9999. };
+  static double pa0[5] = {9999., 9999., 9999., 9999., 9999.};
 
-    /* System generated locals */
-    int i__1;
-    double d__1, d__2;
+  /* System generated locals */
+  int i__1;
+  double d__1, d__2;
 
-    /* Builtin functions */
-    double pow_dd(double *, double *);
-
-    /* Local variables */
+  /* Local variables */
     static int i__, j, n, jl, np;
     static double xn;
     static int fl0;
     static int nth;
     static double xth[900], spt[900];
-    static double z_red__;
-    static double normfac, normlum;
+  static double z_red__;
+  static double normfac;
 
 
 /*     driver for the Comptonization code solving Kompaneets equation */
@@ -764,15 +750,15 @@ void c_donthcomp(double *ear, int ne, double* param, double *photar){
     xn = (z_red__ + 1) / 511.;
     d__1 = 1 / xn;
     normfac = 1 / f_spp__(&d__1, xth, &nth, spt);
-/* Calculate luminosity normalization  (used in another model!) */
-    normlum = 0.;
-    i__1 = nth - 1;
-    for (i__ = 2; i__ <= i__1; ++i__) {
-	normlum += (spt[i__ - 1] / xth[i__ - 1] + spt[i__ - 2] / xth[i__ - 2])
-		 * .5 * (xth[i__ - 1] - xth[i__ - 2]);
-    }
-    normlum *= normfac;
-/*     zero arrays */
+  /* Calculate luminosity normalization  (used in another model!) */
+  /*    double normlum = 0.;
+      i__1 = nth - 1;
+      for (i__ = 2; i__ <= i__1; ++i__) {
+      normlum += (spt[i__ - 1] / xth[i__ - 1] + spt[i__ - 2] / xth[i__ - 2])
+           * .5 * (xth[i__ - 1] - xth[i__ - 2]);
+      }
+      normlum *= normfac; */
+  /*     zero arrays */
     i__1 = ne;
     for (i__ = 1; i__ <= i__1; ++i__) {
 	photar[i__] = 0.;
@@ -800,9 +786,8 @@ void c_donthcomp(double *ear, int ne, double* param, double *photar){
     }
     i__1 = ne;
     for (i__ = 1; i__ <= i__1; ++i__) {
-	photar[i__] = (prim[i__] / pow_dd(&ear[i__], &c_b2) + prim[i__ - 1] /
-		pow_dd(&ear[i__ - 1], &c_b2)) * .5 * (ear[i__] - ear[i__ - 1])
-		 * normfac;
+      photar[i__] = (prim[i__] / pow(ear[i__], c_b2) + prim[i__ - 1] /
+          pow(ear[i__ - 1], c_b2)) * .5 * (ear[i__] - ear[i__ - 1])
+          * normfac;
     }
-    return;
 } /* f_donthcomp__ */
