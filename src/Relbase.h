@@ -147,7 +147,7 @@ void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status);
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status);
 
 void set_stdNormXillverEnerygrid(int *status);
-EnerGrid *get_stdXillverEnergygrid(int *status);
+EnerGrid *get_coarse_xillver_energrid(int *status);
 
 double *calc_normalized_xillver_primary_spectrum(const double *ener, int n_ener,
                                                  const relParam *rel_param, const xillTableParam *xill_param, int *status);

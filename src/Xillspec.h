@@ -30,7 +30,7 @@ extern "C" {
 #define EMAX_XILLVER_NORMALIZATION 1000.0
 #define EMIN_XILLVER 0.01
 #define EMAX_XILLVER EMAX_XILLVER_NORMALIZATION
-#define N_ENER_XILLVER 3000
+#define N_ENER_COARSE 3000
 
 
 double norm_factor_semi_infinite_slab(double incl_deg);
@@ -64,7 +64,7 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         xillTableParam *xill_table_param,
                                         int *status);
 
-void calc_primary_spectrum(double *pl_flux_xill, double *ener, int n_ener,
+void calc_primary_spectrum(double *pl_flux_xill, const double *ener, int n_ener,
                            const xillTableParam *xill_param, int *status,
                            double ener_shift_source_obs = 1.0);
 
@@ -74,6 +74,6 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
 double calc_xillver_normalization_change(double ener_shift_source_observer, xillTableParam *xill_param);
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, int n, int *status);
-EnerGrid *get_stdXillverEnergygrid(int *status);
+EnerGrid *get_coarse_xillver_energrid(int *status);
 
 #endif //XILLSPEC_H_

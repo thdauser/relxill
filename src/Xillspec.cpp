@@ -25,8 +25,7 @@ extern "C" {
 #include "relphysics.h"
 }
 
-
-double *global_ener_xill = nullptr;
+EnerGrid *global_xill_egrid_coarse = nullptr;
 
 /** @brief main routine for the xillver table: returns a spectrum for the given parameters
  *  @details
@@ -143,27 +142,19 @@ static double get_photon_flux_band(const double *ener,
   return sum;
 }
 
+EnerGrid *get_coarse_xillver_energrid(int *status) {
+  CHECK_STATUS_RET(*status, nullptr);
 
-
-void set_stdNormXillverEnerygrid(int *status) {
-  if (global_ener_xill == nullptr) {
-    global_ener_xill = (double *) malloc((N_ENER_XILLVER + 1) * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(global_ener_xill, status)
-    get_log_grid(global_ener_xill, N_ENER_XILLVER + 1, EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
+  if (global_xill_egrid_coarse == nullptr) {
+    global_xill_egrid_coarse = new_EnerGrid(status);
+    global_xill_egrid_coarse->nbins = N_ENER_COARSE;
+    global_xill_egrid_coarse->ener = new double[global_xill_egrid_coarse->nbins + 1];
+    get_log_grid(global_xill_egrid_coarse->ener, global_xill_egrid_coarse->nbins + 1,
+                 EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
   }
-}
-
-EnerGrid *get_stdXillverEnergygrid(int *status) {
   CHECK_STATUS_RET(*status, nullptr);
 
-  set_stdNormXillverEnerygrid(status);
-  CHECK_STATUS_RET(*status, nullptr);
-
-  EnerGrid *egrid = new_EnerGrid(status);
-  egrid->ener = global_ener_xill;
-  egrid->nbins = N_ENER_XILLVER;
-
-  return egrid;
+  return global_xill_egrid_coarse;
 }
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status) {
@@ -172,15 +163,10 @@ double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const
  *  - normalization defined, e.g., in Appendix of Dauser+2016
  *  - needs to be calculated on the specific energy grid (defined globally)
  */
-
-  set_stdNormXillverEnerygrid(status);
-  assert(global_ener_xill != nullptr);
-
   double keV2erg = 1.602177e-09;
 
   // need this to make sure no floating point problems arise
   double floatCompFactor = 1e-6;
-
   if (ener[n] < (EMAX_XILLVER_NORMALIZATION - floatCompFactor)
       || ener[0] > (EMIN_XILLVER_NORMALIZATION + floatCompFactor)) {
     RELXILL_ERROR("can not calculate the primary spectrum normalization", status);
@@ -236,7 +222,7 @@ void spec_cutoffpl(double *pl_flux_xill,
 * @param ener_shift  spectrum shifted in energy by this value, normalization is kept constant! (i.e, norm not shifted by g^Gamma)
 */
 void spec_nthcomp(double *pl_flux_xill,
-                  double *ener,
+                  const double *ener,
                   int n_ener,
                   const xillTableParam *xill_param,
                   double ener_shift = 1.0) {
@@ -269,14 +255,13 @@ void spec_blackbody(double *pl_flux_xill, const double *ener, int n_ener, const 
  * @param ener_shift_source_obs: energy shift applied the spectrum
  */
 void calc_primary_spectrum(double *pl_flux_xill,
-                           double *ener,
+                           const double *ener,
                            int n_ener,
                            const xillTableParam *xill_param,
                            int *status,
                            double ener_shift_source_obs) {
 
   CHECK_STATUS_VOID(*status);
-  assert(global_ener_xill != nullptr);
   assert(ener_shift_source_obs >= 0.0);
 
   // ecut and kTe are given in the frame of the source
@@ -295,72 +280,62 @@ void calc_primary_spectrum(double *pl_flux_xill,
   }
 }
 
-/**
- *
- * @param ener
- * @param n_ener
- * @param rel_param
- * @param xill_param
- * @param status
- * @return
- */
 double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
                                          const relParam *rel_param, const xillTableParam *xill_param, int *status) {
 
-  /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-  EnerGrid *egrid = get_stdXillverEnergygrid(status);
-  auto prim_spec_observer = new double[egrid->nbins];
-  double norm_factor_prim_spec = 0.0;
+  // need to create a specific energy grid for the primary component normalization to
+  // fulfill the XILLVER NORM condition (Dauser+2016)
+  EnerGrid *egrid = get_coarse_xillver_energrid(status);
+  auto prim_spec_source = new double[egrid->nbins];
+  calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, status);
+
+  // calculate the normalization at the primary source
+  double norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
+  delete[] prim_spec_source;
 
   // if we have the LP geometry defined, the spectrum will be different between the primary source and the observer
   // due to energy shift: need to calculate the normalization for the source, but the spectrum at the observer
-
+  double energy_shift = 1.0;
   if (rel_param != nullptr && rel_param->emis_type == EMIS_TYPE_LP) {
-
-    auto prim_spec_source = new double[egrid->nbins];
-    calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, status);
-    norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
-    delete[] prim_spec_source;
-
-    calc_primary_spectrum(prim_spec_observer, egrid->ener, egrid->nbins, xill_param, status,
-                          energy_shift_source_obs(rel_param));
-
-  } else {
-    calc_primary_spectrum(prim_spec_observer, egrid->ener, egrid->nbins, xill_param, status);
-    norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_observer, egrid->ener, egrid->nbins, status);
+    energy_shift = energy_shift_source_obs(rel_param);
   }
+  // output flux
+  auto prim_spec_observer = new double[n_ener];
+  calc_primary_spectrum(prim_spec_observer, ener, n_ener, xill_param, status, energy_shift);
 
-  auto *o_flux = new double[n_ener];
-  CHECK_MALLOC_RET_STATUS(o_flux, status, nullptr);
-
-  /** bin the primary continuum onto the Input grid **/
-  rebin_spectrum(ener,
-                 o_flux,
-                 n_ener,
-                 egrid->ener,
-                 prim_spec_observer,
-                 egrid->nbins); //TODO: bug, if E<0.1keV in ener grid
-
-  delete[] prim_spec_observer;
-  free(egrid);
-
+  // take the normalization factor into account
   for (int ii = 0; ii < n_ener; ii++) {
-    o_flux[ii] *= norm_factor_prim_spec;
+    prim_spec_observer[ii] *= norm_factor_prim_spec;
   }
 
-  return o_flux;
+  return prim_spec_observer;
 }
 
+/**
+ * @brief calculate the flux ration between the xillver reflection spectrum and its
+ * input spectrum in the 0.1-1000 keV energy range
+ * @param flu
+ * @param ener
+ * @param n_ener
+ * @param xill_table_param
+ * @param status
+ * @return
+ */
 double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
                             const xillTableParam *xill_table_param, int *status) {
-  double *direct_spec =
-      calc_normalized_primary_spectrum(ener, n_ener, nullptr, xill_table_param, status);
+
+  // use a coarser energy grid to evalute the direct spectrum, as we are only interested
+  // in the total flux in the band
+  auto egrid_coarse = get_coarse_xillver_energrid(status);
+  auto direct_spec =
+      calc_normalized_primary_spectrum(egrid_coarse->ener, egrid_coarse->nbins,
+                                       nullptr, xill_table_param, status);
 
   double emin = 0.1;
   double emax = 1000;
   double ratio_refl_direct =
       get_energy_flux_band(ener, flu, n_ener, emin, emax) /
-          get_energy_flux_band(ener, direct_spec, n_ener, emin, emax);
+          get_energy_flux_band(egrid_coarse->ener, direct_spec, egrid_coarse->nbins, emin, emax);
 
   delete[] direct_spec;
   return ratio_refl_direct;
@@ -375,7 +350,7 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
 double calc_xillver_normalization_change(double ener_shift_source_observer, xillTableParam *xill_param) {
 
   int status = EXIT_SUCCESS;
-  EnerGrid *egrid = get_stdXillverEnergygrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
   auto prime_spec = new double[egrid->nbins];
 
   double ecut_source = xill_param->ect;
@@ -398,7 +373,6 @@ double calc_xillver_normalization_change(double ener_shift_source_observer, xill
   xill_param->ect = ecut_source;
 
   delete[] prime_spec;
-  free(egrid);
 
   return disk_spec_norm_factor / source_spec_norm_factor;
 }

@@ -253,7 +253,7 @@ TEST_CASE(" normalization of the primary continuum","[prim]"){
   auto spec = DefaultSpec(0.1, 1000, 3000);
 
   /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-  EnerGrid *egrid = get_stdXillverEnergygrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
   // CHECK_STATUS_VOID(*status);
   auto pl_flux_xill = new double[egrid->nbins]; // global energy grid
   calc_primary_spectrum(pl_flux_xill, egrid->ener, egrid->nbins, xill_param, &status);
@@ -268,17 +268,18 @@ TEST_CASE(" normalization of the primary continuum","[prim]"){
   }
   double sum_orig = calcSumInEnergyBand(pl_flux_xill, egrid->nbins, egrid->ener, 0.1, 1000);
 
-
   double keV2erg = 1.602177e-09;
   double norm_fac_pl = 1e20 * keV2erg;
   double norm_xillver_table = 1e15 / 4.0 / M_PI;
 
   sum_orig *= norm_fac_pl;
 
-  REQUIRE(fabs(sum_orig/norm_xillver_table - 1) < 1e-6);
+  REQUIRE(fabs(sum_orig / norm_xillver_table - 1) < 1e-6);
 
   delete[] pl_flux_xill;
-  free(egrid);
+
+  free(xill_param);
+  free(rel_param);
 
   REQUIRE(status == EXIT_SUCCESS);
 
@@ -290,10 +291,11 @@ TEST_CASE(" test normalization factor when shifting ecut/kTe", "[prim]") {
 
   LocalModel lmod(ModelName::relxilllpCp);
   lmod.set_par(XPar::kte, 40.0);
-  xillTableParam *xill_param = get_xilltab_param(lmod.get_xill_params(), &status);
+  xillParam *xill_param_full = lmod.get_xill_params();
+  xillTableParam *xill_param = get_xilltab_param(xill_param_full, &status);
   relParam *rel_param = lmod.get_rel_params();
 
-  EnerGrid *egrid = get_stdXillverEnergygrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
 
   double energy_shift = 0.5;
 
@@ -317,5 +319,6 @@ TEST_CASE(" test normalization factor when shifting ecut/kTe", "[prim]") {
 
   delete[] prime_spec_0;
   delete[] prime_spec_shifted;
+  free(xill_param);
 
 }

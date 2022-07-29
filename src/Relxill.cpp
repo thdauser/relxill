@@ -324,17 +324,20 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                           rel_profile->rel_cosne->dist[ii],
                           status);
 
+      // XXXXXX currently switched off as too inefficient TODO: make it better and switch on XXXXX
+
       // need to re-normalize the spectra due to the energy shift from the source to the disk
       // reason: xillver is defined on a fixed energy flux integrated from 0.1-1000keV (see Dauser+16, A1), therefore
       // shifting ecut/kTe in energy will change the normalization of the primary spectrum, which was used to calculate
       // the reflected spectrum
       ion_gradient.reflection_scaling_factor[ii] = 1.0;  // todo: move calculation outside of IonGrad and here
       double ener_shift = xill_param->ect / xill_param_zone[ii]->ect;
-      // normalization change from disk to observer
+      // normalization change from source to disk
       double norm_change = calc_xillver_normalization_change(ener_shift, xill_param_zone[ii]);
       for (int jj = 0; jj < xillver_spectra_zones.num_flux_bins; jj++) {
         xillver_spectra_zones.flux[ii][jj] *= norm_change;
       }
+
     }
 
     free_xill_table_param_array(rel_param, xill_param_zone);

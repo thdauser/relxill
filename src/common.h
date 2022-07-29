@@ -376,6 +376,6 @@ typedef struct {
 
 /******************************/
 /* define the c_donthcomp function here */
-void c_donthcomp(double *ear, int ne, double *param, double *photar);
+void c_donthcomp(const double *ear, int ne, double *param, double *photar);
 
 #endif /* COMMON_H_ */
