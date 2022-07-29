@@ -30,7 +30,7 @@ extern "C" {
 #define EMAX_XILLVER_NORMALIZATION 1000.0
 #define EMIN_XILLVER 0.01
 #define EMAX_XILLVER EMAX_XILLVER_NORMALIZATION
-#define N_ENER_COARSE 3000
+#define N_ENER_COARSE 500
 
 
 double norm_factor_semi_infinite_slab(double incl_deg);
