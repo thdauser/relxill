@@ -28,10 +28,9 @@ lpTable *cached_lp_table = nullptr;
 /*
  * @synopsis: calculate the reflection fraction as defined in Dauser+2016 *
  * @input:
- *  - emis_profile (calculated for the given Rin/Rout of the model)
- *  - del_emit_ad_max (emission angle hitting the outer edge of the fully, simulated accretion disk,
- *    needed to calculate fraction of photons reaching infinity, as no photons are allowed to cross the
- *    disk plane)
+ *  - emis_profile: calculated for the given Rin/Rout of the model
+ *  - del_emit_ad_max: emission angle hitting the outer edge of the fully, simulated accretion disk at
+ *    1000Rg, regardless of Rout (as photons are not allowed to cross the disk plane)
  **/
 static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_max, const relParam *param, int *status) {
 
@@ -46,6 +45,13 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   double del_bh = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, param->rin)];
   double del_ad = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, param->rout)];
 
+  // photons are not allowed to cross the disk plane, so no photon (for beta=0) emitted
+  // at del<pi/2 is allowed to be counted to reaching infinity
+  // (this can happen for a large height, as Rout_simulation=1000Rg)
+  if (del_emit_ad_max < M_PI / 2.0) {
+    del_emit_ad_max = M_PI / 2.0;
+  }
+
   /** calculate the coordinate transformation / relat abberation
    *   - an observer on the accretion disk sees the rays from
    *     del_bh up to del_ad
@@ -57,7 +63,7 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   if (param->beta > 1e-6) {
     del_bh = relat_abberation(del_bh, -1. * param->beta);
     del_ad = relat_abberation(del_ad, -1. * param->beta);
-    del_emit_ad_max = relat_abberation(del_ad, -1. * param->beta);
+    del_emit_ad_max = relat_abberation(del_emit_ad_max, -1. * param->beta);
   }
 
   lpReflFrac *str = new_lpReflFrac(status);
@@ -65,14 +71,9 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
 
   str->f_bh = 0.5 * (1.0 - cos(del_bh));
   str->f_ad = 0.5 * (cos(del_bh) - cos(del_ad));
-  /** photons are not allowed to cross the disk
-   *  (so they only reach infinity if they don't hit the disk plane) */
-  str->f_inf = 0.5 * (1.0 + cos(del_emit_ad_max));
 
-  // photons are not allowed to cross the disk plane TODO: check if f_inf>0.5 makes (a) sense for beta>0 and is necessary anyways for beta=0
-  if (str->f_inf > 0.5) {
-    str->f_inf = 0.5;
-  }
+  // photons are not allowed to cross the disk plane, so we need the angle del_emit_ad_max
+  str->f_inf = 0.5 * (1.0 + cos(del_emit_ad_max));
 
   str->refl_frac = str->f_ad / str->f_inf;
 
