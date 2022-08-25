@@ -247,16 +247,16 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   auto caching_status = CachingStatus();
   check_caching_parameters(caching_status, rel_param, xill_param);
   check_caching_energy_grid(caching_status, spec_cache, spectrum);
+  CHECK_STATUS_VOID(*status);
 
   RelSysPar *sys_par = get_system_parameters(rel_param, status);
-  CHECK_STATUS_VOID(*status);
 
   if (caching_status.is_all_cached()) { // already cached, simply use the cached output flux value
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
       spectrum.flux[ii] = spec_cache->out_spec->flux[ii];
     }
 
-  } else { // if NOT, we need to do a whole lot of COMPUTATIONS
+  } else { // if NOT, we need to do a lot of COMPUTATIONS
 
     // stored the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
@@ -324,8 +324,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                           spec_cache->xill_spec[ii],
                           rel_profile->rel_cosne->dist[ii],
                           status);
-
-      // XXXXXX currently switched off as too inefficient TODO: make it better and switch on XXXXX
 
       // need to re-normalize the spectra due to the energy shift from the source to the disk
       // reason: xillver is defined on a fixed energy flux integrated from 0.1-1000keV (see Dauser+16, A1), therefore
