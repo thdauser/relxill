@@ -68,11 +68,13 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
       fluxboost_factor = 1;
     }
   }
+
   if (fluxboost_factor < 0){
-    printf(" *** warning: for g=%.4f the gshift-fluxboost factor = %.4f < 0 -> resetting to 0 \n",
-           g, fluxboost_factor);
     fluxboost_factor = 0;
-    // assert(fluxboost_factor >= 0);
+    if (fabs(fluxboost_factor)>1e-4) { // warning only for cases where it would at least slightly matter
+      printf(" *** warning: for g=%.4e the gshift-fluxboost factor = %.4e < 0 -> resetting to 0 \n",
+             g, fluxboost_factor);
+    }
   }
 
   return fluxboost_factor;
