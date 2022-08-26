@@ -270,6 +270,7 @@ typedef struct {
   double f_bh;
   double f_ad;
   double f_inf;
+  double f_inf_rest;  // f_inf in the rest frame of the system (not taking beta of the LP into account)
 } lpReflFrac;
 
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
@@ -282,7 +283,8 @@ typedef struct {
   double *del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
 
   lpReflFrac *photon_fate_fractions;
-  double normFactorPrimSpec;  // determined from the f_inf and g_inf, the factor to multiply the direct radiation with
+  double
+      normFactorPrimSpec;  // determined from the f_inf_rest and g_inf, the factor to multiply the direct radiation with
 
 } emisProfile;
 

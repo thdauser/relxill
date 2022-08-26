@@ -355,18 +355,15 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     lpReflFrac *struct_refl_frac = sys_par->emis->photon_fate_fractions;
 
     if (xill_input_param->interpret_reflfrac_as_boost) {
-      xill_input_param->refl_frac *=
-          struct_refl_frac->refl_frac;  // if set, it is given as boost, wrt predicted refl_frac
+      // if set, it is given as boost, wrt predicted refl_frac
+      xill_input_param->refl_frac *= struct_refl_frac->refl_frac;
     }
 
-    //   double g_inf = energy_shift_source_obs(rel_param);  // SHOULD THIS BE taken int account by a simple shift of the spectrum (need to consider Normalization)
-    //  double prim_fac = struct_refl_frac->f_inf / 0.5; // sys_par->emis->normFactorPrimSpec; struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
     double g_inf = energy_shift_source_obs(rel_param);
-    double prim_fac = struct_refl_frac->f_inf / 0.5 * pow(g_inf, xill_input_param->gam);
-
-    if (rel_param->beta > 1e-4){
-         double doppler_fac = doppler_factor_source_obs(rel_param);
-         prim_fac *= doppler_fac*doppler_fac;
+    double prim_fac = struct_refl_frac->f_inf_rest / 0.5 * pow(g_inf, xill_input_param->gam);
+    if (rel_param->beta
+        > 1e-4) { // flux boost of primary radiation taking into account here (therfore we need f_inf_rest above)
+      prim_fac *= pow(doppler_factor_source_obs(rel_param), 2);
     }
 
     // if the user sets the refl_frac parameter manually, we need to calculate the ratio

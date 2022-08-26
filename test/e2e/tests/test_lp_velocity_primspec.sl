@@ -112,9 +112,7 @@ define test_veloc_boost(ff,veloc){
       
       ratio_sum_predicted_boost[ii] = sum_norm/boost;
       
-      msg_log += sprintf("          sum in 1-10keV: %.4e -> norm/boost:%.2f\n", sum_norm, ratio_sum_predicted_boost[ii]);
-      
-      
+      msg_log += sprintf("          sum in 1-10keV: %.4e -> norm/boost:%.2f\n", sum_norm, ratio_sum_predicted_boost[ii]);            
    }
 
    
@@ -124,6 +122,7 @@ define test_veloc_boost(ff,veloc){
    if ( length(where(relative_diff > 0.1)) == 0) {
       return EXIT_SUCCESS;
    } else {
+      vmessage(" *** error *** ");
       return EXIT_FAILURE;
    }
    

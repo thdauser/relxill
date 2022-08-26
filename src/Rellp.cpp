@@ -63,7 +63,6 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   if (param->beta > 1e-6) {
     del_bh = relat_abberation(del_bh, -1. * param->beta);
     del_ad = relat_abberation(del_ad, -1. * param->beta);
-    del_emit_ad_max = relat_abberation(del_emit_ad_max, -1. * param->beta);
   }
 
   lpReflFrac *str = new_lpReflFrac(status);
@@ -73,7 +72,16 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   str->f_ad = 0.5 * (cos(del_bh) - cos(del_ad));
 
   // photons are not allowed to cross the disk plane, so we need the angle del_emit_ad_max
-  str->f_inf = 0.5 * (1.0 + cos(del_emit_ad_max));
+  str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
+
+  // in case of a moving source, we also have f_inf different from f_inf_rest (need for calculating the refl_frac)
+  if (param->beta > 1e-6) {
+    str->f_inf = 0.5 * (1.0 + cos(relat_abberation(del_emit_ad_max, -1. * param->beta)));
+  } else {
+    str->f_inf = str->f_inf_rest;
+  }
+
+  assert(str->f_inf + str->f_ad < 1.0);
 
   str->refl_frac = str->f_ad / str->f_inf;
 
@@ -99,12 +107,6 @@ static void norm_emis_profile(const double *re, const int nr, double *emis) {
     emis[ii] /= integ_area;
   }
 
-}
-
-
-double calc_norm_factor_primary_spectrum(double height, double a, double gamma, double f_inf) {
-  double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!)
-  return f_inf / 0.5 * pow(g_inf, gamma);
 }
 
 
@@ -271,13 +273,11 @@ static void calc_emis_jet_point_source(emisProfile *emisProf, const relParam *pa
   free(emis_profile_table->re); // is not freed by free_emisProfile
   free_emisProfile(emis_profile_table);
 
-
   apply_emis_relativity_flux_corrections(emisProf, param->a, height, param->gamma, beta);
 
   emisProf->photon_fate_fractions = calc_refl_frac(emisProf, del_emit_ad_max, param, status);
 
-  emisProf->normFactorPrimSpec =
-      calc_norm_factor_primary_spectrum(height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
+  emisProf->normFactorPrimSpec = 0.0; // currently not used, calculated directly in add_primary_component
 
 }
 
@@ -339,13 +339,13 @@ static void addSingleReturnFractions(lpReflFrac *reflFracAvg, lpReflFrac *single
 
   reflFracAvg->refl_frac += singleReflFrac->refl_frac * fraction;
   reflFracAvg->f_ad += singleReflFrac->f_ad * fraction;
-  reflFracAvg->f_inf += singleReflFrac->f_inf * fraction;
+  reflFracAvg->f_inf_rest += singleReflFrac->f_inf_rest * fraction;
   reflFracAvg->f_bh += singleReflFrac->f_bh * fraction;
 
 }
 
 /*
- *  EXTENDED LAMP POST:
+ *  EXTENDED LAMP POST:  [deprecated, currently not used in any model]
  *  - if htop <= heigh=hbase we assume it's a point-like jet
  *  - the meaning of beta for the extended jet is the velocity at 100Rg, in case the
  *    profile is of interest, it will be output in the debug mode
@@ -380,10 +380,8 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 
     for (int jj = 0; jj < emisProf->nr; jj++) {
       emisProf->emis[jj] += emisProfSingle->emis[jj] * heightIntegrationFactor;
-
       emisProf->del_inc[jj] += emisProfSingle->del_inc[jj] * heightIntegrationFactor;
       emisProf->del_emit[jj] += emisProfSingle->del_emit[jj] * heightIntegrationFactor;
-
     }
 
     addSingleReturnFractions(emisProf->photon_fate_fractions,
@@ -594,7 +592,7 @@ lpReflFrac *new_lpReflFrac(int *status) {
   auto *str = new lpReflFrac;
   CHECK_MALLOC_RET_STATUS(str, status, nullptr)
   str->refl_frac = 0.0;
-  str->f_inf = 0.0;
+  str->f_inf_rest = 0.0;
   str->f_ad = 0.0;
   str->f_bh = 0.0;
 
