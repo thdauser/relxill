@@ -635,9 +635,9 @@ spectrum *new_spectrum(int n_ener, const double *ener, int *status) {
 
 void free_spectrum(spectrum *spec) {
   if (spec != nullptr) {
-    free(spec->ener);
-    free(spec->flux);
-    free(spec);
+    delete[]spec->ener;
+    delete[] spec->flux;
+    delete spec;
   }
 }
 
