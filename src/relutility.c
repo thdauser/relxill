@@ -901,17 +901,23 @@ double doppler_factor_source_obs(const relParam *rel_param) {
  * @brief calculate the energy shift from the LP to the observer, also taking
  * a potential velocity of the source into account
  *
- * TODO: we currently set δ_obs = incl, which is not true in GR, however,
- *   this needs to be calculated by ray-tracing
+ * note that this routine uses  the function "doppler_factor_source_obs", which
+ * sets δ_obs = incl, which is not fully true in GR, however, within 1% accurancy
  */
 double energy_shift_source_obs(const relParam *rel_param) {
+
+  // if we do NOT have the LP geometry, the energy shift is just 1
+  // (as without geometry we can not define an energy shift)
+  if (rel_param->emis_type != EMIS_TYPE_LP) {
+    return 1;
+  }
 
   double g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
 
   if (rel_param->beta < 1e-4) {
     return g_inf_0;
   } else {
-    // glp = D*glp(beta=0)
     return g_inf_0 * doppler_factor_source_obs(rel_param);
   }
+
 }

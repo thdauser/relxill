@@ -245,12 +245,14 @@ typedef struct{
   double mass;
   double distance;
   int prim_type;
+  int emis_type;
   double z;
   double refl_frac;
   int interpret_reflfrac_as_boost;
   double ect;
   double kTbb;
-  double boost;
+  // double boost;
+  double energy_shift_source_observer;
 }primeSourceParam;
 
 /** the XILLVER table structure */

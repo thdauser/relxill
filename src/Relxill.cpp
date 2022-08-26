@@ -233,8 +233,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                     const ModelParams &params,
                     int *status) {
 
-  relParam *rel_param = get_rel_params(params);
-  xillParam *xill_param = get_xill_params(params);
+  relParam *rel_param;
+  xillParam *xill_param;
+  get_relxill_params(params, rel_param, xill_param);
+  //relParam *rel_param = get_rel_params(params);
+  //xillParam *xill_param = get_xill_params(params);
   primeSourceParam *prim_param = get_primesource_params(params);
 
   // in case of an ionization gradient, we need to update the number of zones

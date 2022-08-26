@@ -243,36 +243,42 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
 
 
 /**
- * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
+ * @brief get a new PRIMARY SOURCE PARAMETER STRUCTURE and initialize it with the input values
  */
 primeSourceParam* get_primesource_params(const ModelParams& inp_param) {
-  auto *param = new primeSourceParam ;
+  auto *param = new primeSourceParam;
 
-  param->prim_type = convertPrimSpecType(inp_param.primeSpec());
+  relParam *rel_param = get_rel_params(inp_param);
+  xillParam *xill_param = get_xill_params(inp_param);
 
-  // these parameters have to be given for any xillver parameter structure
-  try {
-    param->z = inp_param.get_par(XPar::z);
-    param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp)
-                 ? inp_param.get_otherwise_default(XPar::kte, 0)  // TODO: make kTe own parameter
-                 : inp_param.get_otherwise_default(XPar::ecut, 300);
+  param->prim_type = xill_param->prim_type;
+  param->emis_type = rel_param->emis_type;
 
-  } catch (ParamInputException &e) {
-    throw ParamInputException("get_xill_params: model evaluation failed due to missing xillver parameters");
+  param->ect = xill_param->ect;  // can be Ecut or kTe depending on the xillver model
+  param->kTbb = xill_param->kTbb;
+
+  param->energy_shift_source_observer = energy_shift_source_obs(rel_param);
+
+  // special case, for the LP model and the Ecut model, the cutoff energy is given in the observer frame
+  // -> convert it such that ecut is also given in the source frame
+  if (param->emis_type == EMIS_TYPE_LP && param->prim_type == PRIM_SPEC_ECUT) {
+    param->ect /= param->energy_shift_source_observer;
   }
 
   // important default values
-  param->boost = inp_param.get_otherwise_default(XPar::boost, -1);
+  // param->boost = inp_param.get_otherwise_default(XPar::boost, -1);
 
   // those values should never be used, unless it is set by the model
   param->refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);
   param->mass = inp_param.get_otherwise_default(XPar::mass, 0);
   param->distance = inp_param.get_otherwise_default(XPar::distance, 0);
   param->lbol = inp_param.get_otherwise_default(XPar::lbol, 0);
-  param->kTbb = inp_param.get_otherwise_default(XPar::ktbb, 0);
 
   param->interpret_reflfrac_as_boost =
       static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
+
+  delete rel_param;
+  delete xill_param;
 
   return param;
 }
