@@ -220,10 +220,38 @@ TEST_CASE(" Relconv applied outside defined energy range should reset to zero", 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 
   // should be very close to the test value  (as it is normalized)
-  REQUIRE( fabs(sum_flux(spec.flux, spec.num_flux_bins()) - test_val) < 0.1);
-
+  REQUIRE(fabs(sum_flux(spec.flux, spec.num_flux_bins()) - test_val) < 0.1);
 
 }
 
+TEST_CASE(" Testing caching an change of parameters for memory leaks", "[valgrind]") {
 
+  DefaultSpec def_spec1{0.1, 1000.0, 3000};
+  auto spec1 = def_spec1.get_xspec_spectrum();
 
+  LocalModel lmod(ModelName::relxilllpCp);
+
+  // first evaluation
+  REQUIRE_NOTHROW(lmod.eval_model(spec1));
+
+  // check parameter change
+  lmod.set_par(XPar::a, 0.912);
+  REQUIRE_NOTHROW(lmod.eval_model(spec1));
+
+  // check caching
+  REQUIRE_NOTHROW(lmod.eval_model(spec1));
+
+  // check changing the number of bins (without changing the parameters!)
+  DefaultSpec def_spec2{0.1, 1000.0, 1000};
+  auto spec2 = def_spec2.get_xspec_spectrum();
+  REQUIRE_NOTHROW(lmod.eval_model(spec2));
+
+  // again, change relativistic parameter
+  lmod.set_par(XPar::h, 0.546);
+  REQUIRE_NOTHROW(lmod.eval_model(spec2));
+
+  // lastly, change a xillver parameter
+  lmod.set_par(XPar::logxi, 2.135);
+  REQUIRE_NOTHROW(lmod.eval_model(spec2));
+
+}
