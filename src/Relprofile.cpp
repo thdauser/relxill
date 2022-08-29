@@ -822,6 +822,15 @@ static void free_str_relb_func(str_relb_func **str) {
   }
 }
 
+/**
+ * @brief check if output files for the radial flux should be written
+ * - only if the respective ENV variable(s) for OUTFILES is set
+ * - also, only works for 1 zone
+ */
+bool write_outfile_radial_flux(int n_zones) {
+  return shouldOutfilesBeWritten() && n_zones == 1;
+}
+
 void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -837,7 +846,7 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
 
   // store the (energy)-integrated flux in an array for debugging
   double *radialFlux = nullptr;
-  if (shouldOutfilesBeWritten()) {
+  if (write_outfile_radial_flux(spec->n_zones)) {
     radialFlux = (double *) malloc(sizeof(double) * sysPar->nr);
     CHECK_MALLOC_VOID_STATUS(radialFlux, status)
   }
@@ -889,7 +898,7 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
         spec->flux[izone][jj] += tmp_var * weight;
       }
 
-      if (shouldOutfilesBeWritten() && spec->n_zones == 1) {
+      if (write_outfile_radial_flux(spec->n_zones)) {
         assert(radialFlux != nullptr);
         radialFlux[ii] = calculate_radiallyResolvedFluxObs(cached_str_relb_func, spec, weight);
       }
@@ -929,8 +938,12 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
        which is freed if the cache is full and therefore causes "invalid reads" **/
   free_str_relb_func(&cached_str_relb_func);
 
-  if (shouldOutfilesBeWritten() && spec->n_zones == 1) {
+  if (write_outfile_radial_flux(spec->n_zones)) {
     save_relline_radial_flux_profile(sysPar->re, radialFlux, sysPar->nr);
+  }
+  if (radialFlux != nullptr) {
+    free(radialFlux);
+    radialFlux = nullptr;
   }
 
   CHECK_RELXILL_DEFAULT_ERROR(status);

@@ -96,7 +96,7 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
 
   }
 
-
+  delete[] del_inc;
 
 }
 
