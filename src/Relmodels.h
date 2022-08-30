@@ -34,8 +34,6 @@ void check_parameter_bounds(relParam *param, int *status);
 /** basic xillver model function **/
 void xillver_base(double *ener0, int n_ener0, double *photar, const ModelParams &inp_params, int *status);
 
-void relline_base(double *ener1keV, double *photar,int n_ener, relParam *param_struct, int *status);
-
 /* get the version number text on the screen (if not already printed before */
 void print_version_number(void);
 

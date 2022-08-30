@@ -25,24 +25,29 @@
 
 
 /*
- * @brief calculate line model
+ * @brief: calculate line model
+ * @description: simply shift the energy grid by the line energy and call to the relbase function, which calculates
+ *  the line for 1 keV
  */
 void LocalModel::line_model(const XspecSpectrum &spectrum) {
 
-  relParam *rel_param = LocalModel::get_rel_params();
+  auto rel_param = get_rel_params();
 
-  // relline_base calculates the line for 1keV -> shift the energy grid accordingly
+  // relbase calculates the line for 1keV, i.e., shift the energy grid accordingly
   spectrum.shift_energy_grid_1keV(rel_param->lineE);
 
   int status = EXIT_SUCCESS;
+  relline_spec_multizone *spec = relbase(spectrum.energy, spectrum.num_flux_bins(), rel_param, &status);
+  delete rel_param;
 
-  relline_base(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_param, &status);
+  for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+    spectrum.flux[ii] = spec->flux[0][ii];
+  }
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();
   }
 
-  delete rel_param;
 }
 
 /*
