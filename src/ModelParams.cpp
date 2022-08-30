@@ -145,6 +145,12 @@ static int get_returnrad_switch(const ModelParams& model_params){
  * @brief get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
 relParam* get_rel_params(const ModelParams& inp_param) {
+
+  // if we have a xillver model, there are no "relativistic parameters"
+  if (is_xill_model(convertModelType(inp_param.get_model_name()))) {
+    return nullptr;
+  }
+
   auto *param = new relParam;
 
   param->model_type = convertModelType(inp_param.get_model_name());
@@ -257,16 +263,16 @@ primeSourceParam* get_primesource_params(const ModelParams& inp_param) {
   param->ect = xill_param->ect;  // can be Ecut or kTe depending on the xillver model
   param->kTbb = xill_param->kTbb;
 
-  param->energy_shift_source_observer = energy_shift_source_obs(rel_param);
+  // energy shiftset to "1" for non-LP and xillver models
+  param->energy_shift_source_observer = (param->emis_type == EMIS_TYPE_LP) ?
+                                        energy_shift_source_obs(rel_param) :
+                                        1.0;
 
   // special case, for the LP model and the Ecut model, the cutoff energy is given in the observer frame
   // -> convert it such that ecut is also given in the source frame
   if (param->emis_type == EMIS_TYPE_LP && param->prim_type == PRIM_SPEC_ECUT) {
     param->ect /= param->energy_shift_source_observer;
   }
-
-  // important default values
-  // param->boost = inp_param.get_otherwise_default(XPar::boost, -1);
 
   // those values should never be used, unless it is set by the model
   param->refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);

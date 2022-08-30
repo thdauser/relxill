@@ -908,7 +908,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
 
   // if we do NOT have the LP geometry, the energy shift is just 1
   // (as without geometry we can not define an energy shift)
-  if (rel_param->emis_type != EMIS_TYPE_LP) {
+  if (rel_param == NULL || rel_param->emis_type != EMIS_TYPE_LP) {
     return 1;
   }
 
