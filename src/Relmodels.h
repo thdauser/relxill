@@ -19,6 +19,7 @@
 #define MODELS_H_
 
 #include "Relbase.h"
+#include "ModelParams.h"
 
 extern "C" {
 #include "xilltable.h"
@@ -29,25 +30,13 @@ extern "C" {
 /**** FUNCTION DEFINITIONS ****/
 
 void check_parameter_bounds(relParam *param, int *status);
-double *shift_energ_spec_1keV(const double *ener, int n_ener, double line_energ, double z, int *status);
 
 /** basic xillver model function **/
-void xillver_base(double *ener0, int n_ener0, double *photar, xillParam *param_struct, int *status);
+void xillver_base(double *ener0, int n_ener0, double *photar, const ModelParams &inp_params, int *status);
 
 void relline_base(double *ener1keV, double *photar,int n_ener, relParam *param_struct, int *status);
 
-
 /* get the version number text on the screen (if not already printed before */
 void print_version_number(void);
-
-/* get a new relbase parameter structure and initialize it */
-relParam *new_relParam(int model_type, int emis_type, int *status);
-
-/* free relbase parameter */
-void free_relParam(relParam *);
-
-xillParam *new_xillParam(int model_type, int prim_type, int *status);
-void free_xillParam(xillParam *);
-
 
 #endif /* MODELS_H_ */

@@ -143,26 +143,26 @@ void check_parameter_bounds(relParam *param, int *status) {
 
 
 /** BASIC XILLVER MODEL FUNCTION **/
-void xillver_base(double *ener_inp, const int n_ener0, double *photar, xillParam *param_struct, int *status) {
+void xillver_base(double *ener_inp, const int n_ener0, double *photar, const ModelParams &inp_params, int *status) {
 
+  xillParam *xill_param = get_xill_params(inp_params);
 
   // call the function which calculates the xillver spectrum
-  xillSpec *spec = get_xillver_spectra(param_struct, status);
+  xillSpec *spec = get_xillver_spectra(xill_param, status);
   CHECK_STATUS_VOID(*status);
 
   // =4= rebin to the input grid
   assert(spec->n_incl == 1); // make sure there is only one spectrum given (for the chosen inclination)
 
   /** add the dependence on incl, assuming a semi-infinite slab **/
-  norm_xillver_spec(spec, param_struct->incl);
+  norm_xillver_spec(spec, xill_param->incl);
 
   rebin_spectrum(ener_inp, photar, n_ener0, spec->ener, spec->flu[0], spec->n_ener);
 
-  add_primary_component(ener_inp, n_ener0, photar, nullptr, param_struct, nullptr, status);
-
-//  rebin_spectrum(ener, photar, n_ener, ener, flux, n_ener);
+  add_primary_component(ener_inp, n_ener0, photar, nullptr, xill_param, nullptr, status);
 
   free_xill_spec(spec);
+  delete xill_param;
 }
 
 void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *param_struct, int *status) {
@@ -174,66 +174,3 @@ void relline_base(double *ener1keV, double *photar, const int n_ener, relParam *
   }
 }
 
-/* get a new relbase parameter structure and initialize it */
-relParam *new_relParam(int model_type, int emis_type, int *status) {
-  auto *param = (relParam *) malloc(sizeof(relParam));
-  if (param == nullptr) {
-    RELXILL_ERROR("memory allocation failed", status);
-    return nullptr;
-  }
-  param->model_type = model_type;
-  param->emis_type = emis_type;
-
-  param->a = PARAM_DEFAULT;
-  param->incl = PARAM_DEFAULT;
-  param->emis1 = PARAM_DEFAULT;
-  param->emis2 = PARAM_DEFAULT;
-  param->rbr = PARAM_DEFAULT;
-  param->rin = PARAM_DEFAULT;
-  param->rout = PARAM_DEFAULT;
-  param->lineE = PARAM_DEFAULT;
-  param->z = PARAM_DEFAULT;
-  param->height = 0.0;
-  param->gamma = PARAM_DEFAULT;
-  param->beta = 0.0; // special case, in order to prevent strange results
-  param->height = PARAM_DEFAULT;
-  param->htop = 0.0;
-  param->limb = 0;
-  param->return_rad = 0;
-  param->ion_grad_type = ION_GRAD_TYPE_CONST; // no ion grad
-
-  // this is set by the environment variable "RELLINE_PHYSICAL_NORM"
-  param->do_renorm_relline = do_renorm_model(param);
-
-  // set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
-  //  -> note as this is onl for relat. models, in case of an ion gradient this needs to be updated
-  param->num_zones = get_num_zones(param->model_type, param->emis_type, ION_GRAD_TYPE_CONST);
-
-  return param;
-}
-
-/* get a new relbase parameter structure and initialize it */
-xillParam *new_xillParam(int model_type, int prim_type, int *status) {
-  xillParam *param = (xillParam *) malloc(sizeof(xillParam));
-  if (param == nullptr) {
-    RELXILL_ERROR("memory allocation failed", status);
-    return nullptr;
-  }
-  param->model_type = model_type;
-  param->prim_type = prim_type;
-
-  param->gam = PARAM_DEFAULT;
-  param->afe = PARAM_DEFAULT;
-  param->lxi = PARAM_DEFAULT;
-  param->ect = PARAM_DEFAULT;
-  param->incl = PARAM_DEFAULT;
-  param->z = PARAM_DEFAULT;
-  param->refl_frac = PARAM_DEFAULT;
-  param->boost = -1;
-  param->dens = 15;  // the standard value for every table, given in "log-units"
-  param->frac_pl_bb = PARAM_DEFAULT;
-  param->kTbb = PARAM_DEFAULT;
-  param->iongrad_index = PARAM_DEFAULT;
-
-  return param;
-}

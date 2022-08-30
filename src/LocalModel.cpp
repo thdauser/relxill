@@ -98,16 +98,12 @@ void LocalModel::conv_model(const XspecSpectrum &spectrum) {
  */
 void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
 
-  xillParam *xill_param = LocalModel::get_xill_params();
-
   int status = EXIT_SUCCESS;
-  xillver_base(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, xill_param, &status);
+  xillver_base(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, m_model_params, &status);
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();
   }
-
-  delete xill_param;
 }
 
 
