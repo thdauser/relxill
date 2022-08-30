@@ -1,3 +1,12 @@
+[2.2]:
+- for the relxilllpCp model with beta>0, fixed a bug which resulted for some cases (very low height and large beta) in an over-estimated value of the fitted reflection fraction. Any fits done with switch_reflfrac_boost=1 are not affected, and also not the spectral shape, but only the value of the refl_frac parameter
+- fixes memory leak if the ENV variable RELXILL_WRITE_FILES=1 was set - 2022-08-30
+
+[2.1]:
+- spectrum was not shifted correctly in energy and also the normalization was not calculated correctly
+- for the Lamp Post models, improved how the normalization of the reflection emitted from each zone on the accretion disk is calculated. Previously, to calculate the normalization of the xillver reflection spectrum, the primary spectrum was taken with the cutoff energy (or kTe for nthcomp) as emitted from the primary source. Now, the normalization is calculated for each radial zone on the disk separately, taking into account the energy shift of the cutoff from the source to each zone on the disk when calculating the normalization. Note that this change only applies to the normalization; the energy shift of the cutoff energy for the spectrum itself has already been implemented since version 1.0.
+- slightly increase the speed of the relxilllpCp model when including returning radiation - 2022-07-01
+
 [2.0]: major update: includes returning radiation (Dauser et al., 2022) and adds a switch to allow a boost parameter instead of reflection fraction. Some parameter names were slightly changed to make the naming more consistent. - 2022-06-16
 
 [1.4.3]: fixes small memory leak for the Cp-models using the standard tables - 2021-01-22
