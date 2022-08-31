@@ -533,10 +533,13 @@ static double **trim_transfun_to_radial_grid(double **tab_tfr, const int *ind_ar
 static double get_ring_area_correction_factor(int index_radius, returningFractions *ret_fractions) {
   double rlo_table = ret_fractions->tabData->rlo[ret_fractions->irad[index_radius]];
 
-  if (ret_fractions->irad[index_radius] == 0
-      && rlo_table > kerr_rms(ret_fractions->a)) { //TODO: will beremoved with dated table
-    printf(" *** warning: resetting rlo to the ISCO at %f  (was %f before)\n",
-           kerr_rms(ret_fractions->a), rlo_table);
+  // make sure the lowest radial value of the table is at the ISCO
+  if (ret_fractions->irad[index_radius] == 0 && rlo_table > kerr_rms(ret_fractions->a)) {
+    // only print a warning for significant deviations
+    if (fabs(rlo_table-kerr_rms(ret_fractions->a)) > 1e-4) {
+      printf(" *** warning: resetting Rin of the return radiation table to the ISCO at %e  (was %e before)\n",
+             kerr_rms(ret_fractions->a), rlo_table);
+    }
     rlo_table = kerr_rms(ret_fractions->a);
   }
 
