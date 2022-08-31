@@ -92,6 +92,8 @@ class PrimarySourceParameters {
 
 };
 
+// TODO:
+//  - properly include the reflection fraction and a nice error message
 class PrimarySource {
 
  public:
@@ -99,9 +101,14 @@ class PrimarySource {
       m_param{PrimarySourceParameters(_model_params)} {
   }
 
+  PrimarySource(const ModelParams &_model_params, lpReflFrac *struct_refl_frac) :
+      m_param{_model_params}, m_struct_refl_frac{struct_refl_frac} {
+  }
+
   void print_reflection_strength(const XspecSpectrum &spectrum,
-                                 const double *pl_flux,
-                                 lpReflFrac *struct_refl_frac) const {
+                                 const double *pl_flux) const {
+
+    assert(m_struct_refl_frac != nullptr);
 
     relParam *rel_param = m_param.rel_param;
 
@@ -121,14 +128,14 @@ class PrimarySource {
       printf(" and beta=%.3f v/c", rel_param->beta);
     }
     printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
-           struct_refl_frac->refl_frac,
+           m_struct_refl_frac->refl_frac,
            sum / sum_pl);
-    printf(" - photons falling into the black hole or plunging region: %.2f%%\n", struct_refl_frac->f_bh * 100);
+    printf(" - photons falling into the black hole or plunging region: %.2f%%\n", m_struct_refl_frac->f_bh * 100);
     printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
   }
 
   // @brief: adds primary spectrum to the input spectrum
-  void add_primary_spectrum(const XspecSpectrum &spectrum, lpReflFrac *struct_refl_frac) {
+  void add_primary_spectrum(const XspecSpectrum &spectrum) {
 
     int status = EXIT_SUCCESS;
 
@@ -146,13 +153,15 @@ class PrimarySource {
 
     } else { // we are in the LP geometry
 
+      assert(m_struct_refl_frac != nullptr);
+
       if (m_param.interpret_reflfrac_as_boost) {
         // if set, it is given as boost, wrt predicted refl_frac
-        m_param.refl_frac *= struct_refl_frac->refl_frac;
+        m_param.refl_frac *= m_struct_refl_frac->refl_frac;
       }
 
       double prim_fac =
-          struct_refl_frac->f_inf_rest / 0.5 * pow(m_param.energy_shift_source_observer, m_param.xill_param->gam);
+          m_struct_refl_frac->f_inf_rest / 0.5 * pow(m_param.energy_shift_source_observer, m_param.xill_param->gam);
       // flux boost of primary radiation taking into account here (therfore we need f_inf_rest above)
       if (m_param.rel_param->beta > 1e-4) {
         prim_fac *= pow(doppler_factor_source_obs(m_param.rel_param), 2);
@@ -160,7 +169,7 @@ class PrimarySource {
 
       // if the user sets the refl_frac parameter manually, we need to calculate the ratio
       // to end up with the correct normalization
-      double norm_fac_refl = (fabs(m_param.xill_param->refl_frac)) / struct_refl_frac->refl_frac;
+      double norm_fac_refl = (fabs(m_param.xill_param->refl_frac)) / m_struct_refl_frac->refl_frac;
 
       spectrum.multiply_flux_by(norm_fac_refl);
       for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
@@ -169,7 +178,7 @@ class PrimarySource {
 
       /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
       if (shouldAuxInfoGetPrinted()) {
-        print_reflection_strength(spectrum, pl_flux, struct_refl_frac);
+        print_reflection_strength(spectrum, pl_flux);
       }
 
     }
@@ -187,6 +196,7 @@ class PrimarySource {
 
  private:
   PrimarySourceParameters m_param;
+  lpReflFrac *m_struct_refl_frac = nullptr;
 };
 
 #endif //RELXILL_SRC_PRIMARYSOURCE_H_

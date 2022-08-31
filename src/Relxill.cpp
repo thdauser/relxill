@@ -356,8 +356,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
   }
 
-  auto primary_source = PrimarySource(params);
-  primary_source.add_primary_spectrum(spectrum, sys_par->emis->photon_fate_fractions);
+  auto primary_source = PrimarySource(params, sys_par->emis->photon_fate_fractions);
+  primary_source.add_primary_spectrum(spectrum);
 
   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param,
                         sys_par, status);
