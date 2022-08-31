@@ -22,14 +22,13 @@
 #include <memory>
 #include <array>
 
+#include "Relphysics.h"
+
 extern "C" {
 #include "relutility.h"
-#include "relphysics.h"
 }
 
-
-
-class RadialGrid{
+class RadialGrid {
 
  public:
   RadialGrid(double rmin, double rmax, int nzones, double h) : num_zones(nzones) {

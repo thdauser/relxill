@@ -18,9 +18,10 @@
 
 #include "Relreturn_Corona.h"
 #include "Relbase.h"
+#include "Relreturn_Datastruct.h"
+#include "Relreturn_Table.h"
 
 extern "C" {
-#include "relreturn_datastruct.h"
 #include "relutility.h"
 }
 

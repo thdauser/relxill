@@ -19,13 +19,13 @@
 #include <iostream>
 #include "Relreturn_BlackBody.h"
 #include "Relbase.h"
+#include "Relphysics.h"
+#include "Relreturn_Datastruct.h"
 
 extern "C" {
 #include "xilltable.h"
 #include "common.h"
 #include "relutility.h"
-#include "relphysics.h"
-#include "relreturn_datastruct.h"
 }
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
@@ -332,7 +332,7 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin,  double spin, in
   sum_2Dspec(spec, spec_arr, n, dat->nrad, status);
 
   free_2d(&spec_arr, dat->nrad);
-  free(temperature);
+  delete[]temperature;
 }
 
 

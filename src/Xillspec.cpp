@@ -17,12 +17,12 @@
 */
 
 #include "Xillspec.h"
+#include "Relphysics.h"
 
 extern "C" {
 #include "xilltable.h"
 #include "writeOutfiles.h"
 #include "common.h"
-#include "relphysics.h"
 }
 
 EnerGrid *global_xill_egrid_coarse = nullptr;

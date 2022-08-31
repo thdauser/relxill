@@ -16,10 +16,15 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "relreturn_table.h"
-#include "xilltable.h"
+#include "Relphysics.h"
+#include "Relreturn_Table.h"
 
-returnTable *cached_retTable = NULL;
+extern "C" {
+#include "relutility.h"
+#include "xilltable.h"
+}
+
+returnTable *cached_retTable = nullptr;
 
 int global_rr_do_interpolation = 1;
 
@@ -28,7 +33,7 @@ static returnTable *new_returnTable(int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  returnTable *tab = (returnTable *) malloc(sizeof(returnTable));
+  auto tab = (returnTable *) malloc(sizeof(returnTable));
   CHECK_MALLOC_RET_STATUS(tab, status, tab)
 
   return tab;
@@ -294,20 +299,20 @@ static tabulatedReturnFractions *fits_rr_load_single_fractions(fitsfile *fptr, c
 
   tabulatedReturnFractions *dat = new_returnFracData(nrad, ng, status);
 
-  dat->rlo = fits_rr_load_1d_data(fptr, "rlo", nrad, status);
-  dat->rhi = fits_rr_load_1d_data(fptr, "rhi", nrad, status);
+  dat->rlo = fits_rr_load_1d_data(fptr, (char *) "rlo", nrad, status);
+  dat->rhi = fits_rr_load_1d_data(fptr, (char *) "rhi", nrad, status);
 
-  dat->frac_e = fits_rr_load_2d_data(fptr, "frac_e", nrad, nrad, status);
-  dat->tf_r = fits_rr_load_2d_data(fptr, "tf_r", nrad, nrad, status);
+  dat->frac_e = fits_rr_load_2d_data(fptr, (char *) "frac_e", nrad, nrad, status);
+  dat->tf_r = fits_rr_load_2d_data(fptr, (char *) "tf_r", nrad, nrad, status);
 
-  dat->gmin = fits_rr_load_2d_data(fptr, "gmin", nrad, nrad, status);
-  dat->gmax = fits_rr_load_2d_data(fptr, "gmax", nrad, nrad, status);
+  dat->gmin = fits_rr_load_2d_data(fptr, (char *) "gmin", nrad, nrad, status);
+  dat->gmax = fits_rr_load_2d_data(fptr, (char *) "gmax", nrad, nrad, status);
 
-  dat->frac_g = fits_rr_load_3d_data(fptr, "frac_g", nrad, nrad, ng, status);
+  dat->frac_g = fits_rr_load_3d_data(fptr, (char *) "frac_g", nrad, nrad, ng, status);
 
-  dat->f_ret = fits_rr_load_1d_data(fptr, "f_ret", nrad, status);
-  dat->f_bh = fits_rr_load_1d_data(fptr, "f_ret", nrad, status);
-  dat->f_inf = fits_rr_load_1d_data(fptr, "f_ret", nrad, status);
+  dat->f_ret = fits_rr_load_1d_data(fptr, (char *) "f_ret", nrad, status);
+  dat->f_bh = fits_rr_load_1d_data(fptr, (char *) "f_ret", nrad, status);
+  dat->f_inf = fits_rr_load_1d_data(fptr, (char *) "f_ret", nrad, status);
 
   return dat;
 }
@@ -343,7 +348,7 @@ static void fits_rr_load_returnRadTable(fitsfile *fptr, returnTable **inp_tab, i
   /* get the number and values of the spin */
   double *spin;
   int nspin = 0;
-  get_reltable_axis_double(&spin, &nspin, "SPIN", "a", fptr, status);
+  get_reltable_axis_double(&spin, &nspin, (char *) "SPIN", (char *) "a", fptr, status);
 
   /* initialize the table with them */
   init_returnTable(tab, nspin, status);
@@ -381,7 +386,7 @@ static void fits_read_returnRadTable(char *filename, returnTable **inp_tab, int 
 returnTable *get_returnrad_table(int *status) {
 
   if (cached_retTable==NULL) {
-    fits_read_returnRadTable(RETURNRAD_TABLE_FILENAME, &cached_retTable, status);
+    fits_read_returnRadTable((char *) RETURNRAD_TABLE_FILENAME, &cached_retTable, status);
   }
 
   return cached_retTable;

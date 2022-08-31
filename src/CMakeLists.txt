@@ -8,7 +8,7 @@ set(SOURCE_FILES
         reltable.c reltable.h
         relutility.c relutility.h
         xilltable.c xilltable.h
-        relphysics.c relphysics.h
+        Relphysics.cpp Relphysics.h
         writeOutfiles.c writeOutfiles.h
         Relprofile.cpp Relprofile.h
         Relxill.cpp Relxill.h
@@ -20,8 +20,8 @@ set(SOURCE_FILES
         Relreturn_BlackBody.cpp Relreturn_BlackBody.h
         IonGradient.cpp IonGradient.h
         Relreturn_Corona.cpp Relreturn_Corona.h
-        relreturn_datastruct.c relreturn_datastruct.h
-        relreturn_table.c relreturn_table.h
+        Relreturn_Datastruct.cpp Relreturn_Datastruct.h
+        Relreturn_Table.cpp Relreturn_Table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
         Xillspec.cpp Xillspec.h)
 ############################################

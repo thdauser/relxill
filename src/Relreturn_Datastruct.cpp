@@ -16,9 +16,13 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "relreturn_datastruct.h"
+#include "Relreturn_Datastruct.h"
+#include "Relreturn_Table.h"
+
+extern "C" {
 #include "common.h"
-#include "relreturn_table.h"
+#include "relutility.h"
+}
 
 /* using an universal energy grid for calculating a BBODY spectrum
  * this will save us many mallocs and loops
@@ -78,10 +82,10 @@ void sum_2Dspec(double *spec, double **spec_arr, int nener, int nrad, const int 
 }
 
 double **new_specZonesArr(int nener_inp, int nrad, int *status) {
-  double **spec_zones = malloc(sizeof(double *) * nrad);
+  auto **spec_zones = (double **) malloc(sizeof(double *) * nrad);
   CHECK_MALLOC_RET_STATUS(spec_zones, status, spec_zones);
   for (int ii = 0; ii < nrad; ii++) {
-    spec_zones[ii] = malloc(sizeof(double) * nener_inp);
+    spec_zones[ii] = (double *) malloc(sizeof(double) * nener_inp);
     CHECK_MALLOC_RET_STATUS(spec_zones[ii], status, spec_zones);
   }
   return spec_zones;
@@ -90,7 +94,7 @@ double **new_specZonesArr(int nener_inp, int nrad, int *status) {
 
 returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status) {
 
-  returnSpec2D *rspec = malloc(sizeof(returnSpec2D));
+  auto rspec = (returnSpec2D *) malloc(sizeof(returnSpec2D));
   CHECK_MALLOC_RET_STATUS(rspec, status, rspec)
 
   rspec->rlo = rlo;

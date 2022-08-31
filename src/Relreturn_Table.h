@@ -18,9 +18,6 @@
 #ifndef RELRETURN_TABLE_H_
 #define RELRETURN_TABLE_H_
 
-#include "relutility.h"
-#include "relphysics.h"
-
 #define RMAX_RELRET 1000
 
 typedef struct {

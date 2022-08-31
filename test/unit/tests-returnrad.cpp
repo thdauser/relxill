@@ -23,6 +23,9 @@
 #include "Rellp.h"
 #include "IonGradient.h"
 #include "Xillspec.h"
+#include "Relphysics.h"
+#include "Relreturn_Datastruct.h"
+#include "Relreturn_Table.h"
 
 extern "C" {
 #include "relutility.h"
@@ -30,7 +33,6 @@ extern "C" {
 #include "xilltable.h"
 }
 
-#include "Relreturn_BlackBody.h"
 #include <vector>
 
 #define PREC 1e-6
@@ -277,9 +279,8 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
   REQUIRE(rel_profile->n_zones == 1);
   REQUIRE(calcSum(rel_profile->flux[0], rel_profile->n_ener) > 1e-8);
 
-
   double abs_diff_profiles[rel_profile->n_ener];
-  for(int ii=0; ii<rel_profile->n_ener; ii++){
+  for (int ii = 0; ii < rel_profile->n_ener; ii++) {
     abs_diff_profiles[ii] = abs(rel_profile_norrad->flux[0][ii] - rel_profile->flux[0][ii]);
   }
 
@@ -287,6 +288,8 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
   CHECK_THAT(calcSum(abs_diff_profiles, rel_profile->n_ener),
              !Catch::Matchers::WithinAbs(0.0, 1e-2)
   );
+
+  free_Spectrum(&spec);
 
 }
 

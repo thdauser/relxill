@@ -18,6 +18,7 @@
 #include "Relprofile.h"
 #include "Relcache.h"
 #include "Rellp.h"
+#include "Relphysics.h"
 
 extern "C" {
 #include "relutility.h"

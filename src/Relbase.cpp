@@ -17,6 +17,7 @@
 */
 #include "Relbase.h"
 #include "Xillspec.h"
+#include "Relphysics.h"
 
 extern "C" {
 #include "fftw/fftw3.h"   // assumes installation in heasoft

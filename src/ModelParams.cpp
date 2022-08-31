@@ -18,6 +18,7 @@
 
 #include "ModelParams.h"
 #include "ModelDatabase.h"
+#include "Relphysics.h"
 int get_iongrad_type(const ModelParams &params);
 extern "C" {
 #include "relutility.h"

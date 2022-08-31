@@ -16,10 +16,12 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "relphysics.h"
+#include "Relphysics.h"
 
+extern "C" {
 #include "common.h"
 #include "relutility.h"
+}
 
 // calculate the u^t component of the 4-velocity of a thin accretion disk
 // (see Bardeen, Press, Teukolsky; 1972)
@@ -49,7 +51,7 @@ double calc_proper_area_ring(double rlo, double rhi, double a) {
 
 // Black Body Spectrum (returns ph/s/cm²/keV)  (verified with Xspec bbody model)
 // ToDO: use a properly integrated model (?)x
-void bbody_spec(double *ener, int n, double *spec, double temperature, double gfac) {
+void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac) {
   for (int ii = 0; ii < n; ii++) {
     double emean = 0.5 * (ener[ii] + ener[ii + 1]);
     spec[ii] = pow((emean / gfac), 2) / (exp(emean / gfac / temperature) - 1);
@@ -92,10 +94,10 @@ void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, in
 
 double *get_tprofile(double *rlo, double *rhi, const int nrad, double Rin, double Tin, int type, int *status) {
 
-  CHECK_STATUS_RET(*status, NULL);
+  CHECK_STATUS_RET(*status, nullptr);
 
-  double *tprofile = (double *) malloc(sizeof(double) * nrad);
-  CHECK_MALLOC_RET_STATUS(tprofile, status, NULL)
+  auto tprofile = new double[nrad];
+  CHECK_MALLOC_RET_STATUS(tprofile, status, nullptr)
 
   if (type == TPROFILE_ALPHA) {
     disk_Tprofile_alpha(rlo, rhi, tprofile, nrad, Rin, Tin);
@@ -131,4 +133,123 @@ double relat_abberation(double del, double beta) {
  */
 double calc_g_inf(double height, double a) {
   return sqrt(1.0 - (2 * height / (height * height + a * a)));
+}
+
+/* get RMS (ISCO) for the Kerr Case */
+double kerr_rms(double a) {
+  //	 accounts for negative spin
+  double sign = 1.0;
+  if (a < 0) {
+    sign = -1.0;
+  }
+
+  double Z1 = 1.0 + pow(1.0 - a * a, 1.0 / 3.0) * (pow(1.0 + a, 1.0 / 3.0) + pow(1.0 - a, 1.0 / 3.0));
+  double Z2 = sqrt((3.0 * a * a) + (Z1 * Z1));
+
+  return 3.0 + Z2 - sign * sqrt((3.0 - Z1) * (3.0 + Z1 + (2 * Z2)));
+}
+
+/* get the rplus value (size if the black hole event horizon */
+double kerr_rplus(double a) {
+  return 1 + sqrt(1 - a * a);
+}
+
+/** calculate the doppler factor for a moving primary source **/
+double doppler_factor(double del, double bet) {
+  return sqrt(1.0 - bet * bet) / (1.0 + bet * cos(del));
+}
+
+/** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
+double gi_potential_lp(double r, double a, double h, double bet, double del) {
+
+  /** ! calculates g = E/E_i in the lamp post geometry
+    ! (see, e.g., page 48, Diploma Thesis, Thomas Dauser) **/
+  double ut_d = ((r * sqrt(r) + a) / (sqrt(r) * sqrt(r * r - 3 * r + 2 * a * sqrt(r))));
+  double ut_h = sqrt((h * h + a * a) / (h * h - 2 * h + a * a));
+
+  double gi = ut_d / ut_h;
+
+  // check if we need to calculate the additional factor for the velocity
+  if (fabs(bet) < 1e-6) {
+    return gi;
+  }
+
+  double gam = 1.0 / sqrt(1.0 - bet * bet);
+
+  // get the sign for the equation
+  double sign = 1.0;
+  if (del > M_PI / 2) {
+    sign = -1.0;
+  }
+
+  // ** Adam, 28.7.2021: **
+  // So given the expression for Carter’s q:
+  //q^2 = \sin^2\delta (h^2+a^2)^2/\Delta_h - a^2,
+  //it is clear that
+  //q^2 + a^2 = \sin^2\delta (h^2+a^2)^2/\Delta_h
+  //Therefore:
+  //(h^2+a^2)^2 - \Delta_h (q^2+a^2) = (h^2+a^2)^2 - \sin^2\delta (h^2+a^2)^2
+  //= (h^2+a^2)^2 \cos^2\delta
+  //
+  //Therefore:
+  //\sqrt{ (h^2+a^2)^2 - \Delta_h (q^2+a^2) } / (h^2+a^2) = \cos\delta
+  //
+  //Therefore your equation (27) becomes:
+  //glp = glp(beta=0) / { \gamma [ 1 -/+ \beta\cos\delta ] }
+
+  double delta_eq = h * h - 2 * h + a * a;
+  double q2 = (pow(sin(del), 2)) * (pow((h * h + a * a), 2) / delta_eq) - a * a;
+
+  double beta_fac = sqrt(pow((h * h + a * a), 2) - delta_eq * (q2 + a * a));
+  beta_fac = gam * (1.0 + sign * beta_fac / (h * h + a * a) * bet);
+
+  return gi / beta_fac;
+}
+
+/**
+ * @brief calculate the doppler factor from source to the observer
+ * we currently assume that delta_obs and incl are the same (so no GR light-bending
+ * is accounted for).
+ * @param incl [in rad]
+ * @param beta [in v/c]
+ * @return
+ */
+double doppler_factor_source_obs(const relParam *rel_param) {
+  // note that the angles incl and delta_obs are defined the opposite way
+  double delta_obs = M_PI - rel_param->incl;
+  assert(delta_obs > M_PI / 2);
+  assert(delta_obs < M_PI);
+
+  // glp = D*glp(beta=0) = glp(beta=0) / { \gamma [ 1 -/+ \beta\cos\delta ] }
+  // Adam: we use the minus sign for δ > π/2 and the plus sign for δ < π/2 to get
+  // -> as always δ > π/2 in this case, we directly can use the minus sign
+  double doppler = doppler_factor(delta_obs, rel_param->beta);
+  // assert(doppler >= 1-1e-8);
+
+  return doppler;
+}
+
+/**
+ * @brief calculate the energy shift from the LP to the observer, also taking
+ * a potential velocity of the source into account
+ *
+ * note that this routine uses  the function "doppler_factor_source_obs", which
+ * sets δ_obs = incl, which is not fully true in GR, however, within 1% accurancy
+ */
+double energy_shift_source_obs(const relParam *rel_param) {
+
+  // if we do NOT have the LP geometry, the energy shift is just 1
+  // (as without geometry we can not define an energy shift)
+  if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
+    return 1;
+  }
+
+  double g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
+
+  if (rel_param->beta < 1e-4) {
+    return g_inf_0;
+  } else {
+    return g_inf_0 * doppler_factor_source_obs(rel_param);
+  }
+
 }

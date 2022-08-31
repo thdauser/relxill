@@ -19,7 +19,7 @@
 #ifndef RELXILL_RELRETURN_C_RELRETURN_GRIDS_H_
 #define RELXILL_RELRETURN_C_RELRETURN_GRIDS_H_
 
-#include "relreturn_table.h"
+#include "Relreturn_Table.h"
 
 typedef struct {
 

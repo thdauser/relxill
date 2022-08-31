@@ -20,10 +20,10 @@
 
 #include "common-functions.h"
 #include "Relbase.h"
+#include "Relphysics.h"
 
 extern "C" {
 #include "relutility.h"
-#include "relphysics.h"
 }
 #define LIMIT_PREC 1e-6
 

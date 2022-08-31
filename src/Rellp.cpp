@@ -17,6 +17,7 @@
 */
 
 #include "Rellp.h"
+#include "Relphysics.h"
 
 extern "C" {
 #include "writeOutfiles.h"

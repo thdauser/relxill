@@ -50,7 +50,6 @@
         return retval;\
     }
 
-#define PRINT_RELXILL_TEST_MSG_DEFAULT() (print_relxill_test_msg(__func__,""))
 #define PRINT_RELXILL_TEST_MSG(msg) (print_relxill_test_msg(__func__,msg))
 
 /**************************/
@@ -88,8 +87,6 @@ void relxill_check_fits_error(const int *status);
 
 void print_relxill_test_msg(const char *const func, const char *const msg);
 
-void print_relxill_test_result(int status);
-
 /* inverse binary search */
 int inv_binary_search(const double *arr, int n, double val);
 
@@ -101,17 +98,9 @@ int binary_search_float(const float *arr, int n, float val);
 
 int binary_search(const double *arr, int n, double val);
 
-double relat_abberation(double del, double beta);
-
 /** trapez integration around a single bin (returns only r*dr*PI!) **/
 double trapez_integ_single(const double *re, int ii, int nr);
 double trapez_integ_single_rad_ascending(const double *re, int ii, int nr);
-
-/* calculate the radius of marginal stability */
-double kerr_rms(double a);
-
-/* get the rplus value (size if the black hole event horizon */
-double kerr_rplus(double a);
 
 /** test if it is a relxill flavor model **/
 int is_relxill_model(int model_type);
@@ -127,23 +116,8 @@ void getLogGrid(double *ener, int n_ener, double emin, double emax);
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener);
 
-/** calculate the doppler factor for a moving primary source **/
-double doppler_factor(double del, double bet);
-
-/** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
-double gi_potential_lp(double r, double a, double h, double bet, double del);
-
-
-/* A simple implementation of the FFT taken
-   from http://paulbourke.net/miscellaneous/dft/
-   (uses the Radix-2 Cooley-Tukey algorithm) */
-void FFT_R2CT(short int dir, long m, double *x, double *y);
-
 /** rebin spectrum to a given energy grid length of ener is nbins+1       **/
 void rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
-
-/** calculate the gravitational redshift **/
-double grav_redshift(const relParam *param);
 
 /** get the relxill table path (dynamically from env variable)  **/
 char *get_relxill_table_path(void);
@@ -169,16 +143,10 @@ void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int 
 
 void rebin_mean_flux(double *x0, double *y0, int n0, double *xn, double *yn, int nn, int *status);
 
-// energy shift from the primary source to the observer
-double calc_g_inf(double height, double a);
-
 double calcSum(const double *array, int n_array);
 double calcSumInEnergyBand(const double *array, int n_array, double *ener, double valLo, double valHi);
 
-void normSpec(double *spec, int n_ener);
-
 void setArrayToZero(double *arr, int n);
-void multiplyArray(double *arr, int n, double factor);
 
 EnerGrid *new_EnerGrid(int *status);
 
@@ -199,9 +167,5 @@ void get_fine_radial_grid(double rin, double rout, double *re, int nr);
 int shouldAuxInfoGetPrinted(void);
 
 void print_version_number(void);
-
-
-double doppler_factor_source_obs(const relParam *rel_param);
-double energy_shift_source_obs(const relParam *rel_param);
 
 #endif /* RELUTILITY_H_ */
