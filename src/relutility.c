@@ -81,8 +81,24 @@ int is_xill_model(int model_type) {
 // ion-gradient model, which is not set to constant ionization
 //  - in case ion_grad_type=constant, it is working as a normal model
 int is_iongrad_model(int ion_grad_type) {
-//  if ((model_id == MOD_TYPE_RELXILLLPION) && (ion_grad_type != ION_GRAD_TYPE_CONST)) {
-    if (ion_grad_type != ION_GRAD_TYPE_CONST) {
+  //  if ((model_id == MOD_TYPE_RELXILLLPION) && (ion_grad_type != ION_GRAD_TYPE_CONST)) {
+  if (ion_grad_type != ION_GRAD_TYPE_CONST) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int is_ns_model(int model_type) {
+  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) || model_type == MOD_TYPE_RELXILLBBRET) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int is_co_model(int model_type) {
+  if ((model_type == MOD_TYPE_RELXILLCO) || (model_type == MOD_TYPE_XILLVERCO)) {
     return 1;
   } else {
     return 0;

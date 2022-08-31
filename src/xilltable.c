@@ -34,22 +34,6 @@ xillTable *cached_xill_tab_dens_nthcomp = NULL;
 xillTable *cached_xill_tab_ns = NULL;
 xillTable *cached_xill_tab_co = NULL;
 
-int is_ns_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) || model_type == MOD_TYPE_RELXILLBBRET) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
-int is_co_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLCO) || (model_type == MOD_TYPE_XILLVERCO)) {
-    return 1;
-  } else {
-    return 0;
-  }
-}
-
 static int get_num_elem(const int *n_parvals, int npar) {
 
   assert(npar >= 1);

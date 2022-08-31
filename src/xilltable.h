@@ -58,8 +58,6 @@ int checkIfTableExists(const char *filename, int *status);
 
 int is_6dim_table(int model_type);
 
-int is_ns_model(int model_type);
-int is_co_model(int model_type);
 
 void free_xill_spec(xillSpec *spec);
 

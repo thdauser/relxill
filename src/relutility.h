@@ -151,9 +151,6 @@ char *get_relxill_table_path(void);
 /** get the number of zones **/
 int get_num_zones(int model_type, int emis_type, int ion_grad_type);
 
-/** check if it is the xillver model **/
-int is_xill_model(int model_type);
-
 void get_nthcomp_param(double *nthcomp_param, double gam, double kte, double z);
 
 int do_renorm_model(relParam *rel_param);
@@ -161,8 +158,11 @@ int do_renorm_model(relParam *rel_param);
 /** check if we should return the relline/relconv physical norm from ENV **/
 int do_not_normalize_relline(void);
 
-/** is is a model for which we want to calculate the ionization gradient? **/
+// check for the model type
 int is_iongrad_model(int ion_grad_type);
+int is_ns_model(int model_type);
+int is_co_model(int model_type);
+int is_xill_model(int model_type);
 
 /** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
 void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int nn, int *status);

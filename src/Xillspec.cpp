@@ -472,6 +472,9 @@ double norm_factor_semi_infinite_slab(double incl_deg) {
  *  under inclination angle incl
  **/
 void norm_xillver_spec(xillSpec *spec, double incl) {
+
+  assert(spec->n_incl == 1); // make sure there is only one spectrum given (for the chosen inclination)
+
   double norm_factor = norm_factor_semi_infinite_slab(incl);
   for (int ii = 0; ii < spec->n_ener; ii++) {
     spec->flu[0][ii] *= norm_factor;

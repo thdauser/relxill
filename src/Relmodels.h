@@ -29,12 +29,4 @@ extern "C" {
 
 /**** FUNCTION DEFINITIONS ****/
 
-void check_parameter_bounds(relParam *param, int *status);
-
-/** basic xillver model function **/
-void xillver_base(double *ener0, int n_ener0, double *photar, const ModelParams &inp_params, int *status);
-
-/* get the version number text on the screen (if not already printed before */
-void print_version_number(void);
-
 #endif /* MODELS_H_ */

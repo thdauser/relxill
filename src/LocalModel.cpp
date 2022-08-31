@@ -104,7 +104,25 @@ void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
 
   int status = EXIT_SUCCESS;
-  xillver_base(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, m_model_params, &status);
+
+  xillParam *xill_param = get_xill_params();
+  xillSpec *spec = get_xillver_spectra(xill_param, &status);
+
+  // add the dependence on incl, assuming a semi-infinite slab
+  norm_xillver_spec(spec, xill_param->incl);
+
+  rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), spec->ener, spec->flu[0], spec->n_ener);
+  free_xill_spec(spec);
+
+  add_primary_component(spectrum.energy,
+                        spectrum.num_flux_bins(),
+                        spectrum.flux,
+                        nullptr,
+                        xill_param,
+                        nullptr,
+                        &status);
+
+  delete xill_param;
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();
