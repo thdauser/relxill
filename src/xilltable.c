@@ -122,7 +122,6 @@ static int get_num_param_auto(fitsfile *fptr, int *status) {
 
   CHECK_STATUS_RET(*status, 0);
 
-  // get the number of rows
   long n;
   fits_get_num_rows(fptr, &n, status);
   relxill_check_fits_error(status);
@@ -166,7 +165,7 @@ void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parna
   }
 }
 
-/** read the parameters of the xillver FITS table   */
+// read the parameters of the xillver FITS table
 static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -178,11 +177,10 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status
     return;
   }
 
-  // we know the column for the Number of Parameter-Values
+  // we know the column numbers
   int colnum_n = 9;
   int colnum_vals = 10;
 
-  // get the number of rows
   long n;
   if (fits_get_num_rows(fptr, &n, status)) return;
 
@@ -197,7 +195,6 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status
   char strnull[10];
   strcpy(strnull, " ");
 
-  // get the name
   for (ii = 0; ii < tab->num_param; ii++) {
     tab->param_names[ii] = (char *) malloc(sizeof(char) * 8);
     CHECK_MALLOC_VOID_STATUS(tab->param_names, status)
@@ -222,20 +219,24 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status
     CHECK_STATUS_BREAK(*status);
   }
 
-  // set the index of each parameter according to the NAME column we found in the table
   set_parindex_from_parname(tab->param_index, tab->param_names, tab->num_param, status);
 
   if (is_debug_run()) {
     print_xilltable_parameters(tab, tab->param_names);
   }
 
-  // now we set a pointer to the inclination separately (assuming it is the last parameter)
+  // now we set a pointer to the inclination separately (it is by definition the last parameter of each xillver table)
+  assert(tab->param_names[tab->num_param - 1][0] == 'I'
+             && tab->param_names[tab->num_param - 1][1] == 'n'
+             && tab->param_names[tab->num_param - 1][2] == 'c'
+             && tab->param_names[tab->num_param - 1][3] == 'l'
+  );
+
   tab->incl = tab->param_vals[tab->num_param - 1];
   tab->n_incl = tab->num_param_vals[tab->num_param - 1];
 
 }
 
-// static void get_reltable_axis(int nrows, float** val, char* extname, char* colname, fitsfile* fptr, int* status){
 static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *fptr, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -257,7 +258,6 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
   // (strongly assume they fit in Integer range)
   *n_ener = (int) nrows;
 
-  // allocate memory for the array
   *elo = (float *) malloc((*n_ener) * sizeof(float));
   CHECK_MALLOC_VOID_STATUS(*elo, status)
   *ehi = (float *) malloc((*n_ener) * sizeof(float));
@@ -271,7 +271,6 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
 
   relxill_check_fits_error(status);
 
-  // simply let's check if something went wrong
   CHECK_RELXILL_ERROR("reading of energy grid of the xillver table failed", status);
 
 }
@@ -282,7 +281,7 @@ float *get_xilltab_paramvals(const xillTableParam *param, int *status) {
 
   float *param_vals = (float *) malloc(N_PARAM_MAX * sizeof(float));
   CHECK_MALLOC_RET_STATUS(param_vals, status, NULL)
-  // store the input in a variable
+
   param_vals[PARAM_GAM] = (float) param->gam;
   param_vals[PARAM_AFE] = (float) param->afe;
   param_vals[PARAM_LXI] = (float) param->lxi;
@@ -408,7 +407,6 @@ fitsfile *open_fits_table_stdpath(const char *filename, int *status) {
   return fptr;
 }
 
-/** load the complete relline table */
 void init_xillver_table(const char *filename, xillTable **inp_tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -426,16 +424,12 @@ void init_xillver_table(const char *filename, xillTable **inp_tab, int *status) 
   int num_param = get_num_param_auto(fptr, status);
   CHECK_STATUS_VOID(*status);
 
-  /** =1= allocate space for the new table  **/
   tab = new_xillTable(num_param, status);
 
-  /** =2= now load the energy grid **/
   get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
 
-  /** =3= and now the stored parameter values (also check if the correct number of parameters) **/
   get_xilltable_parameters(fptr, tab, status);
 
-  /** =4= finally set up the complete data structure **/
   init_xilltable_data_struct(tab, status);
 
   if (*status == EXIT_SUCCESS) {
