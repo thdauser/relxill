@@ -30,7 +30,6 @@ extern "C" {
 #include "common.h"
 }
 
-#include "Relmodels.h"
 #include "Relreturn_BlackBody.h"
 #include "Relxill.h"
 #include "ModelDatabase.h"

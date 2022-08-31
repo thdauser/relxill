@@ -19,8 +19,6 @@
 #ifndef RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 #define RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 
-#include "Relmodels.h"
-
 extern "C" {
 #include "common.h"
 #include "relreturn_table.h"

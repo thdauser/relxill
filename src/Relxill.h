@@ -20,7 +20,6 @@
 
 #include "XspecSpectrum.h"
 #include "Relbase.h"
-#include "Relmodels.h"
 #include "Xillspec.h"
 #include "IonGradient.h"
 #include "ModelParams.h"

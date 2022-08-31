@@ -5,7 +5,6 @@ set(SOURCE_FILES
         Relbase.cpp Relbase.h
         Relcache.cpp Relcache.h
         Rellp.cpp Rellp.h
-        Relmodels.cpp Relmodels.h
         reltable.c reltable.h
         relutility.c relutility.h
         xilltable.c xilltable.h
