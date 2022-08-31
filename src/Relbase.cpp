@@ -303,36 +303,6 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
 }
 
 
-static void print_reflection_strength(double *ener,
-                                      int n_ener,
-                                      const double *flu,
-                                      relParam *rel_param,
-                                      xillParam *xill_param,
-                                      const double *pl_flux,
-                                      lpReflFrac *struct_refl_frac) {
-
-
-  // todo: all this to be set by a ENV
-  int imin = binary_search(ener, n_ener + 1, RSTRENGTH_EMIN);
-  int imax = binary_search(ener, n_ener + 1, RSTRENGTH_EMAX);
-
-  double sum_pl = 0.0;
-  double sum = 0.0;
-  for (int ii = imin; ii <= imax; ii++) {
-    sum_pl += pl_flux[ii];
-    sum += flu[ii];
-  }
-
-  printf("For a = %.3f, Rin = %.3f, and h = %.2f rg", rel_param->a, rel_param->rin, rel_param->height);
-  if (is_iongrad_model(rel_param->ion_grad_type) || rel_param->beta > 1e-6) {
-    printf(" and beta=%.3f v/c", rel_param->beta);
-  }
-  printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
-         struct_refl_frac->refl_frac,
-         sum / sum_pl);
-  printf(" - photons falling into the black hole or plunging region: %.2f%%\n", struct_refl_frac->f_bh * 100);
-  printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
-}
 
 
 void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param, xillParam *xill_input_param,
@@ -378,7 +348,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
     /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
     if (shouldAuxInfoGetPrinted()) {
-      print_reflection_strength(ener, n_ener, flu, rel_param, xill_input_param, pl_flux, struct_refl_frac);
+     // print_reflection_strength(ener, n_ener, flu, rel_param, xill_input_param, pl_flux, struct_refl_frac);
     }
 
   }

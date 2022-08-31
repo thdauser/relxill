@@ -367,48 +367,6 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
 }
 
 
-/**
- * @brief get a new PRIMARY SOURCE PARAMETER STRUCTURE and initialize it with the input values
- */
-primeSourceParam* get_primesource_params(const ModelParams& inp_param) {
-  auto *param = new primeSourceParam;
-
-  relParam *rel_param = get_rel_params(inp_param);
-  xillParam *xill_param = get_xill_params(inp_param);
-
-  param->prim_type = xill_param->prim_type;
-  param->emis_type = rel_param->emis_type;
-
-  param->ect = xill_param->ect;  // can be Ecut or kTe depending on the xillver model
-  param->kTbb = xill_param->kTbb;
-
-  // energy shiftset to "1" for non-LP and xillver models
-  param->energy_shift_source_observer = (param->emis_type == EMIS_TYPE_LP) ?
-                                        energy_shift_source_obs(rel_param) :
-                                        1.0;
-
-  // special case, for the LP model and the Ecut model, the cutoff energy is given in the observer frame
-  // -> convert it such that ecut is also given in the source frame
-  if (param->emis_type == EMIS_TYPE_LP && param->prim_type == PRIM_SPEC_ECUT) {
-    param->ect /= param->energy_shift_source_observer;
-  }
-
-  // those values should never be used, unless it is set by the model
-  param->refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);
-  param->mass = inp_param.get_otherwise_default(XPar::mass, 0);
-  param->distance = inp_param.get_otherwise_default(XPar::distance, 0);
-  param->lbol = inp_param.get_otherwise_default(XPar::lbol, 0);
-
-  param->interpret_reflfrac_as_boost =
-      static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
-
-  delete rel_param;
-  delete xill_param;
-
-  return param;
-}
-
-
 
 int get_iongrad_type(const ModelParams &params) {
   if (params.get_model_name() == ModelName::relxilllpAlpha || params.get_model_name() == ModelName::relxillAlpha){

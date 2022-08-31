@@ -222,6 +222,5 @@ class ModelParams: public ParamList{
 
 relParam* get_rel_params(const ModelParams& inp_param);
 xillParam* get_xill_params(const ModelParams& inp_param);
-primeSourceParam * get_primesource_params(const ModelParams& inp_param);
 
 #endif //RELXILL_SRC_MODELPARAMS_H_

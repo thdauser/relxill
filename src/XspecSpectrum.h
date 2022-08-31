@@ -73,6 +73,20 @@ class XspecSpectrum {
     }
   }
 
+  // multiply the spectrum (i.e., the flux!!) by a given value
+  const XspecSpectrum &operator*=(double value) const {
+    for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
+      flux[ii] *= value;
+    }
+    return *this;
+  }
+
+  void multiply_flux_by(double value) const {
+    for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
+      flux[ii] *= value;
+    }
+  }
+
  public:
   double *energy{nullptr};
   double *flux{nullptr};

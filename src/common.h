@@ -240,20 +240,6 @@ typedef struct {
 
 
 
-typedef struct{
-  double lbol;
-  double mass;
-  double distance;
-  int prim_type;
-  int emis_type;
-  double z;
-  double refl_frac;
-  int interpret_reflfrac_as_boost;
-  double ect;
-  double kTbb;
-  double energy_shift_source_observer;
-}primeSourceParam;
-
 /** the XILLVER table structure */
 typedef struct {
 

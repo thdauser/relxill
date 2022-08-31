@@ -20,6 +20,7 @@
 #include "IonGradient.h"
 #include "XspecSpectrum.h"
 #include "Relreturn_Corona.h"
+#include "PrimarySource.h"
 
 extern "C" {
 #include "xilltable.h"
@@ -236,9 +237,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   relParam *rel_param;
   xillParam *xill_param;
   get_relxill_params(params, rel_param, xill_param);
-  //relParam *rel_param = get_rel_params(params);
-  //xillParam *xill_param = get_xill_params(params);
-  primeSourceParam *prim_param = get_primesource_params(params);
 
   // in case of an ionization gradient, we need to update the number of zones
   assert(rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, rel_param->ion_grad_type));
@@ -357,6 +355,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     copy_spectrum_to_cache(spectrum, spec_cache, status);
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
   }
+
+  auto primary_source = PrimarySource(params);
+  primary_source.add_primary_spectrum(spectrum, sys_par->emis->photon_fate_fractions);
 
   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param,
                         sys_par, status);
