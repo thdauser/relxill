@@ -78,7 +78,7 @@ define flux_in_band(beta, refl_frac){
       yrange(5e-2,3500);
       
       xlog;ylog;
-      line_style(nint(refl_frac)+1);
+      line_style(nint(refl_frac)+2);
       ohplot(lo,hi,val*(0.5*(lo+hi)^2));
    }
 
@@ -108,7 +108,7 @@ define test_veloc_boost(ff,veloc){
 	(qualifier_exists("reflected"))
 	? calc_boost_beta_reflected(veloc[ii])
 	: calc_boost_beta_primary(veloc[ii]);
-      variable sum_norm = flux_in_band(veloc[ii], refl_frac;plot) / sum_norm_0;
+      variable sum_norm = flux_in_band(veloc[ii], refl_frac) / sum_norm_0;
       
       ratio_sum_predicted_boost[ii] = sum_norm/boost;
       
