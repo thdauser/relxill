@@ -89,7 +89,7 @@ static void check_caching_energy_grid(CachingStatus &caching_status, specCache *
 }
 
 /**
- * @brief test if the rel_param number of zones is different from the global cache
+ * @brief test if the m_rel_param number of zones is different from the global cache
  * @param rel_param
  * @return bool
  */
@@ -359,8 +359,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   auto primary_source = PrimarySource(params, sys_par->emis->photon_fate_fractions);
   primary_source.add_primary_spectrum(spectrum);
 
-  add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param,
-                        sys_par, status);
+  //   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, sys_par, status);
 
   delete rel_param;
   delete xill_param;
