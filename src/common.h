@@ -41,6 +41,7 @@
 
 
 /** define Emissivity Model Type **/
+#define EMIS_TYPE_NONE 0
 #define EMIS_TYPE_BKN 1
 #define EMIS_TYPE_LP 2
 #define EMIS_TYPE_ALPHA 3

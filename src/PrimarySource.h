@@ -25,9 +25,13 @@
 #include <unordered_map>
 #include <utility>
 
-#include "common.h"
 #include "ModelParams.h"
 #include "Relphysics.h"
+
+extern "C" {
+#include "common.h"
+#include "xilltable.h"
+}
 
 #include <vector>
 
@@ -40,55 +44,74 @@ class PrimarySourceParameters {
 
   explicit PrimarySourceParameters(const ModelParams &inp_param) {
 
-    rel_param = get_rel_params(inp_param);  // can be nullptr if xillver model
-    xill_param = get_xill_params(inp_param);
+    m_rel_param = get_rel_params(inp_param);  // can be nullptr if xillver model
 
-    prim_type = xill_param->prim_type;
-    emis_type = rel_param->emis_type;
+    int status = EXIT_SUCCESS;
+    auto xill_param = get_xill_params(inp_param);
+    m_xilltab_param = get_xilltab_param(xill_param, &status);
+    delete xill_param;
 
-    ect = xill_param->ect;  // can be Ecut or kTe depending on the xillver model
-    kTbb = xill_param->kTbb;
+    if (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) {
+      energy_shift_source_observer = energy_shift_source_obs(m_rel_param);
 
-    // energy shiftset to "1" for non-LP and xillver models
-    energy_shift_source_observer = (emis_type == EMIS_TYPE_LP) ?
-                                   energy_shift_source_obs(rel_param) :
-                                   1.0;
-
-    // special case, for the LP model and the Ecut model, the cutoff energy is given in the observer frame
-    // -> convert it such that ecut is also given in the source frame
-    if (emis_type == EMIS_TYPE_LP && prim_type == PRIM_SPEC_ECUT) {
-      ect /= energy_shift_source_observer;
+      // special case, for the LP model with the Ecut spectrum: cutoff energy is given in the observer frame
+      // -> convert it such that ecut is also given in the source frame
+      if (m_xilltab_param->prim_type == PRIM_SPEC_ECUT) {
+        m_xilltab_param->ect /= energy_shift_source_observer;
+      }
+    } else { // energy shift set to "1" for non-LP and xillver models
+      energy_shift_source_observer = 1.0;
     }
 
-    // those values should never be used, unless it is set by the model
     refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);
     mass = inp_param.get_otherwise_default(XPar::mass, 0);
     distance = inp_param.get_otherwise_default(XPar::distance, 0);
     lbol = inp_param.get_otherwise_default(XPar::lbol, 0);
-
     interpret_reflfrac_as_boost =
         static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
-
   }
 
   ~PrimarySourceParameters() {
-    delete rel_param;
-    delete xill_param;
+    delete m_rel_param;
+    delete m_xilltab_param;
+  }
+
+  // return full xilltab and rel_param structures (TODO: refactoring methods such that this is not needed, at least for rel_param?)
+  [[nodiscard]] const xillTableParam *xilltab_param() const {
+    return m_xilltab_param;
+  }
+  [[nodiscard]] const relParam *rel_param() const {
+    return m_rel_param;
+  }
+
+  int model_type() {
+    return m_xilltab_param->model_type;
+  }
+  int prim_type() {
+    return m_xilltab_param->prim_type;
+  }
+  int emis_type() { // need to make sure it works for xillver models as well
+    return (m_rel_param != nullptr) ? m_rel_param->emis_type : EMIS_TYPE_NONE;
   }
 
   double lbol;
   double mass;
   double distance;
-  int prim_type;
-  int emis_type;
   double refl_frac;
   int interpret_reflfrac_as_boost;
-  double ect;
-  double kTbb;
-  double energy_shift_source_observer;
+  double energy_shift_source_observer = 1.0; // by default, no energy shift
 
-  relParam *rel_param = nullptr;
-  xillParam *xill_param = nullptr;
+  // functions for parameters we need
+  [[nodiscard]] double gam() const {
+    return m_xilltab_param->gam;
+  }
+  [[nodiscard]] double beta() const {
+    return m_rel_param->beta;
+  }
+
+ private:
+  relParam *m_rel_param = nullptr;
+  xillTableParam *m_xilltab_param = nullptr;
 
 };
 
@@ -105,14 +128,16 @@ class PrimarySource {
       m_param{_model_params}, m_struct_refl_frac{struct_refl_frac} {
   }
 
-  void print_reflection_strength(const XspecSpectrum &spectrum,
-                                 const double *pl_flux) const {
+  /*
+   * @brief: print the reflection strength on the screen (requires struct_refl_frac to be set)
+   */
+  void print_reflection_strength(const XspecSpectrum &spectrum, const double *pl_flux) const {
+    if (m_struct_refl_frac != nullptr) {
+      return;
+    } // will do nothing if the refl_frac structure is not set
 
-    assert(m_struct_refl_frac != nullptr);
+    const relParam *rel_param = m_param.rel_param();
 
-    relParam *rel_param = m_param.rel_param;
-
-    // todo: all this to be set by a ENV
     int imin = binary_search(spectrum.energy, spectrum.num_flux_bins() + 1, RSTRENGTH_EMIN);
     int imax = binary_search(spectrum.energy, spectrum.num_flux_bins() + 1, RSTRENGTH_EMAX);
 
@@ -138,17 +163,12 @@ class PrimarySource {
   void add_primary_spectrum(const XspecSpectrum &spectrum) {
 
     int status = EXIT_SUCCESS;
-
-    xillTableParam *xill_table_param =
-        get_xilltab_param(m_param.xill_param, &status);  // make this separate for the primary source
-
     double *pl_flux = calc_normalized_primary_spectrum(spectrum.energy, spectrum.num_flux_bins(),
-                                                       m_param.rel_param, xill_table_param, &status);
-    free(xill_table_param);
+                                                       m_param.rel_param(), m_param.xilltab_param(), &status);
     CHECK_STATUS_VOID(status);
 
     // For the non-relativistic model and if not the LP geometry, we simply multiply by the reflection fraction
-    if (is_xill_model(m_param.rel_param->model_type) || m_param.emis_type != EMIS_TYPE_LP) {
+    if (is_xill_model(m_param.model_type()) || m_param.emis_type() != EMIS_TYPE_LP) {
       spectrum.multiply_flux_by(fabs(m_param.refl_frac));
 
     } else { // we are in the LP geometry
@@ -161,15 +181,15 @@ class PrimarySource {
       }
 
       double prim_fac =
-          m_struct_refl_frac->f_inf_rest / 0.5 * pow(m_param.energy_shift_source_observer, m_param.xill_param->gam);
+          m_struct_refl_frac->f_inf_rest / 0.5 * pow(m_param.energy_shift_source_observer, m_param.gam());
       // flux boost of primary radiation taking into account here (therfore we need f_inf_rest above)
-      if (m_param.rel_param->beta > 1e-4) {
-        prim_fac *= pow(doppler_factor_source_obs(m_param.rel_param), 2);
+      if (m_param.beta() > 1e-4) {
+        prim_fac *= pow(doppler_factor_source_obs(m_param.rel_param()), 2);
       }
 
       // if the user sets the refl_frac parameter manually, we need to calculate the ratio
       // to end up with the correct normalization
-      double norm_fac_refl = (fabs(m_param.xill_param->refl_frac)) / m_struct_refl_frac->refl_frac;
+      double norm_fac_refl = (fabs(m_param.refl_frac)) / m_struct_refl_frac->refl_frac;
 
       spectrum.multiply_flux_by(norm_fac_refl);
       for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
