@@ -62,7 +62,7 @@ ParamList(model_name, &ModelDatabase::instance().get_default_values_array(model_
 explicit ParamList(ModelName model_name, const double* parvalues) {
 auto parnames = ModelDatabase::instance().param_names(model_name);
 for (size_t ii = 0; ii < parnames.size() ; ++ii){
-m_param.insert(std::make_pair(parnames[ii],parvalues[ii]));
+param.insert(std::make_pair(parnames[ii],parvalues[ii]));
 }
 }; */
 

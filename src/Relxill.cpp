@@ -237,6 +237,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   relParam *rel_param;
   xillParam *xill_param;
   get_relxill_params(params, rel_param, xill_param);
+  //  auto rel_param = get_rel_params(params);
+  //  auto xill_param = get_xill_params(params);
+
 
   // in case of an ionization gradient, we need to update the number of zones
   assert(rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, rel_param->ion_grad_type));
@@ -251,24 +254,21 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   CHECK_STATUS_VOID(*status);
 
   RelSysPar *sys_par = get_system_parameters(rel_param, status);
+  auto primary_source = PrimarySource(params, sys_par);
 
   if (caching_status.is_all_cached()) { // already cached, simply use the cached output flux value
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
       spectrum.flux[ii] = spec_cache->out_spec->flux[ii];
     }
 
-  } else { // if NOT, we need to do a lot of COMPUTATIONS
-
-    // stored the parameters for which we are calculating
+  } else {
+    // store the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
     set_cached_rel_param(rel_param, &cached_rel_param, status);
     CHECK_STATUS_VOID(*status);
 
     // --- 0 ---
     auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
-
-    // --- 1 --- calculate disk irradiation
-
 
     // --- 2 --- calculate ionization gradient
     IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
@@ -278,10 +278,12 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // --- 3 --- calculate xillver reflection spectra  (for every zone)
     for (int ii = 0; ii < rel_param->num_zones; ii++) {
-      xill_param_zone[ii] = get_xilltab_param(xill_param, status);
+      xill_param_zone[ii] = primary_source.get_xillver_params_primary_source();
 
       // set xillver parameters for the given zone
-      xill_param_zone[ii]->ect = ion_gradient.get_ecut_disk_zone(rel_param, xill_param->ect, ii);
+      xill_param_zone[ii]->ect = ion_gradient.get_ecut_disk_zone(rel_param,
+                                                                 primary_source.parameters.ect(),
+                                                                 ii);
       xill_param_zone[ii]->lxi = ion_gradient.lxi[ii];
       xill_param_zone[ii]->dens = ion_gradient.dens[ii];
 
@@ -342,7 +344,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     free_xill_table_param_array(rel_param, xill_param_zone);
 
-
     // --- 6 --- convolve the reflection with the relativistic kernel
     relxill_convolution_multizone(spectrum,
                                   rel_profile,
@@ -356,7 +357,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
   }
 
-  auto primary_source = PrimarySource(params, sys_par->emis->photon_fate_fractions);
   primary_source.add_primary_spectrum(spectrum);
 
   //   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, sys_par, status);
