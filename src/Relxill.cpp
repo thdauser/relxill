@@ -348,14 +348,12 @@ void relxill_kernel(const XspecSpectrum &spectrum,
       // on the disk, we need to correct for the change in normalization, in order for the incident spectrum matching
       // the normalization of the primary source spectrum
 
-      // we need to calculate the normalization from disk to source, therefore calculate from source to disk and take
+      // we need to calculate the normalization change from disk to source, therefore calculate from source to disk and take
       // the inverse
-      double norm_change =
-          calc_xillver_normalization_change(1. / ion_gradient.m_energy_shift_source_disk[ii], xill_param_zone[ii]);
-      double norm_change2 = calc_xillver_normalization_change(ion_gradient.m_energy_shift_source_disk[ii],
-                                                              primary_source.parameters.xilltab_param());
+      double norm_change = calc_xillver_normalization_change(ion_gradient.m_energy_shift_source_disk[ii],
+                                                             primary_source.parameters.xilltab_param());
       for (int jj = 0; jj < xillver_spectra_zones.num_flux_bins; jj++) {
-        xillver_spectra_zones.flux[ii][jj] /= norm_change2;
+        xillver_spectra_zones.flux[ii][jj] /= norm_change;
       }
 
     }
@@ -376,8 +374,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   }
 
   primary_source.add_primary_spectrum(spectrum);
-
-  //   add_primary_component(spectrum.energy, spectrum.num_flux_bins(), spectrum.flux, rel_param, xill_param, sys_par, status);
 
   delete rel_param;
   delete xill_param;
