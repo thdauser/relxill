@@ -27,6 +27,7 @@
 
 #include "ModelParams.h"
 #include "Relphysics.h"
+#include "Relbase.h"
 
 extern "C" {
 #include "common.h"

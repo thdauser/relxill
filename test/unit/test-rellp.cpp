@@ -120,7 +120,7 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
 
   RadialGrid radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
   IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
-  ion_gradient.calculate(*(sys_par->emis), xill_param);
+  ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
 
   double ecut_in_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
   double ecut_out_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 1);
@@ -136,7 +136,7 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
   // now set the velocity to beta>0
   rel_param->beta = 0.66;
   sys_par = get_system_parameters(rel_param, &status);
-  ion_gradient.calculate(*(sys_par->emis), xill_param);
+  ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
   double ecut_in_beta = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
 
 

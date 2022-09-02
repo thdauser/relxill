@@ -342,39 +342,38 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
 }
 
 /**
- * @brief calculate the normalization factor for xillver primary spectra
- * from the 0.1-1000keV normalization for the given energy shift
+ * @brief calculate the normalization factor to convert the initial xillver primary spectrum
+ * (given by xill_param_0) under the given energy shift, by taking the fixed xillver incident
+ * spectrum normalization in the 0.1-1000keV range into account (Dauser+16, A1). Note that the
+ * normalization of the primary spectrum therefore scales as 1/normalization_factor.
  * @param energy_shift_source_disk [energy shift from the source to the disk]
- * @return
+ * @param xill_param_0 [xillver parameters for the inital spectrum]
+ * @return normalization_factor
  */
-double calc_xillver_normalization_change(double ener_shift_source_observer, xillTableParam *xill_param) {
+double calc_xillver_normalization_change(double energy_shift, const xillTableParam *xill_param_0) {
 
   int status = EXIT_SUCCESS;
   EnerGrid *egrid = get_coarse_xillver_energrid(&status);
   auto prime_spec = new double[egrid->nbins];
 
-  double ecut_source = xill_param->ect;
+  calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
+  double disk_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+  // normalized disk spec: prime_disk_source*disk_spec_norm_factor
 
-  calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param, &status);
+  // get parameters for the source spectrum (ecut shifted in energy)
+  auto xill_param_source = new xillTableParam;
+  *xill_param_source = *xill_param_0; // shallow copy
+  xill_param_source->ect = xill_param_0->ect * energy_shift;
+
+  // calculate the primary spectrum at the source
+  calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_source, &status);
   double source_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
   // normalized prime spec: prime_spec_source*source_spec_norm_factor
 
-  xill_param->ect = ecut_source * ener_shift_source_observer;
-  calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param, &status);
-  double disk_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
-  // normalized disk (prime) spec: prime_spec_disk*disk_spec_norm_factor
-
-  // nthcomp and cutoffpl is defined such that the value at the lower boundary is constant when kTe/Ecut changes
-  // (TODO: implement test to verify this)
-  // however, the xillver reflection spectrum assumes it is normalized according to the output of "calcNormWrtXillverTableSpec"
-  // therefore we need
-
-  // reset the parameter (in case we still would use it)
-  xill_param->ect = ecut_source;
-
+  delete xill_param_source;
   delete[] prime_spec;
 
-  return disk_spec_norm_factor / source_spec_norm_factor;
+  return source_spec_norm_factor / disk_spec_norm_factor;
 }
 
 /**

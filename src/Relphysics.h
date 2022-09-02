@@ -56,5 +56,6 @@ double relat_abberation(double del, double beta);
 
 double doppler_factor_source_obs(const relParam *rel_param);
 double energy_shift_source_obs(const relParam *rel_param);
+double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit);
 
 #endif //RELXILL__RELPHYSICS_H_

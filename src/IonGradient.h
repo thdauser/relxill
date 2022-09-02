@@ -23,6 +23,7 @@
 #include <array>
 
 #include "Relphysics.h"
+#include "PrimarySource.h"
 
 extern "C" {
 #include "relutility.h"
@@ -51,23 +52,24 @@ class RadialGrid {
 class IonGradient{
 
  public:
-  IonGradient(const RadialGrid& _radial_grid , const int ion_grad_type)
-  : radial_grid{_radial_grid},  // radius is of length nzones+1
-    m_nzones{_radial_grid.num_zones},
-    m_ion_grad_type{ion_grad_type}
+  IonGradient(const RadialGrid &_radial_grid, int ion_grad_type)
+      : radial_grid{_radial_grid},  // radius is of length nzones+1
+        m_nzones{_radial_grid.num_zones},
+        m_ion_grad_type{ion_grad_type}
   {
     lxi = new double[m_nzones];
     dens = new double[m_nzones];
     m_rmean = new double[m_nzones];
     //  scaling of the reflection spectrum for the zone (can be necessary if kTe/Ecut is shifted by energy)
-    reflection_scaling_factor = new double[m_nzones];
+    m_energy_shift_source_disk = new double[m_nzones];
 
     for ( int ii=0; ii<m_nzones; ii++){
       m_rmean[ii] = 0.5*(radial_grid.radius[ii]+radial_grid.radius[ii+1]);
       dens[ii] = 15.0;
       lxi[ii] = 0.0;
-      reflection_scaling_factor[ii] = 1.0;
+      m_energy_shift_source_disk[ii] = 1.0;
     }
+
 
     if (m_nzones>1){
       assert(m_rmean[0] < m_rmean[1]); // make sure we have an ascending radial grid
@@ -80,21 +82,23 @@ class IonGradient{
     delete[] del_emit;
     delete[] dens;
     delete[] m_rmean;
-    delete[] reflection_scaling_factor;
+    delete[] m_energy_shift_source_disk;
   }
 
   const RadialGrid& radial_grid;
-  double* lxi{nullptr};
+  double *lxi{nullptr};
   double *irradiating_flux{nullptr};
   double *del_emit{nullptr};
   double *dens{nullptr};
-  double *reflection_scaling_factor{nullptr};
+  double *m_energy_shift_source_disk{nullptr};
 
   [[nodiscard]] int nzones() const {
     return m_nzones;
   }
 
-  void calculate(const emisProfile &emis_profile, xillParam *xill_param);
+  void calculate_gradient(const emisProfile &emis_profile, const relParam *rel_param, xillParam *xill_param);
+
+  [[nodiscard]] xillTableParam **calculate_incident_spectra_for_each_zone(const xillTableParam *primary_source_spec_params) const;
 
   double get_ecut_disk_zone(const relParam *rel_param, double ecut_primary, int izone) const;
 
@@ -109,7 +113,9 @@ class IonGradient{
 
   void calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens);
 
-  void calc_zones_delta_emit(const emisProfile &emis_profile);
+  void calc_energy_shift_from_source_to_disk(const relParam *rel_param) const;
+
+  void set_del_emit_for_each_zone(const emisProfile &emis_profile);
 
 };
 

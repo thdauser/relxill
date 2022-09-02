@@ -42,7 +42,7 @@ TEST_CASE(" Ion Grad PL Index ", "[iongrad]") {
 
   RadialGrid radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
   IonGradient ion_gradient{radial_grid,rel_param->ion_grad_type};
-  ion_gradient.calculate(*(sys_par->emis), xill_param);
+  ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
 
   for (int ii=0; ii<rel_param->num_zones; ii++){
     REQUIRE(ion_gradient.dens[ii] >=15.0);

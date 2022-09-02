@@ -253,3 +253,20 @@ double energy_shift_source_obs(const relParam *rel_param) {
   }
 
 }
+
+/**
+ * @brief calculate the energy shift from the LP to the disk zone with mean radius radius_disk of photon trajectories
+ * emitted under del_emit (in the frame of the non-moving source); del_emit is only important for beta>0
+ *
+ * The connection for which del_emit which radius radius_disk is hit, is stored in the LP table structure
+ */
+double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit) {
+
+  // if we do NOT have the LP geometry, the energy shift is just 1
+  // (as without geometry we can not define an energy shift)
+  if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
+    return 1;
+  }
+
+  return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
+}

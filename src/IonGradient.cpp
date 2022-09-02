@@ -101,19 +101,52 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
 }
 
 
-void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens){
+void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens) {
   for (int ii = 0; ii < m_nzones; ii++) {
     lxi[ii] = (exp(xlxi0))
         * pow((m_rmean[ii] / m_rmean[0]), -1.0 * xindex);  // TODO: check if we need to subtract xlxi_tab_min here
-        lxi[ii] = log(lxi[ii]);
+    lxi[ii] = log(lxi[ii]);
 
     dens[ii] = inputval_dens;
   }
 }
 
-void IonGradient::calculate(const emisProfile &emis_profile, xillParam *xill_param) {
+void IonGradient::calc_energy_shift_from_source_to_disk(const relParam *rel_param) const {
+  assert (del_emit != nullptr);
 
-  calc_zones_delta_emit(emis_profile);
+  for (int ii = 0; ii < m_nzones; ii++) {
+    if (rel_param->emis_type == EMIS_TYPE_LP) {
+      m_energy_shift_source_disk[ii] = energy_shift_source_disk(rel_param, m_rmean[ii], del_emit[ii]);
+    } else {
+      m_energy_shift_source_disk[ii] = 1.0;
+    }
+  }
+}
+
+xillTableParam **IonGradient::calculate_incident_spectra_for_each_zone(const xillTableParam *primary_source_spec_params) const {
+
+  auto xill_param_zone = new xillTableParam *[m_nzones];
+
+  for (int ii = 0; ii < m_nzones; ii++) {
+    xill_param_zone[ii] = new xillTableParam;
+    (*xill_param_zone[ii]) = (*primary_source_spec_params);  // shallow copy (enough for the parameter structure)
+
+    // set xillver parameters for the given zone
+    xill_param_zone[ii]->ect = primary_source_spec_params->ect * m_energy_shift_source_disk[ii];
+    xill_param_zone[ii]->lxi = lxi[ii];
+    xill_param_zone[ii]->dens = dens[ii];
+  }
+
+  return xill_param_zone;
+}
+
+void IonGradient::calculate_gradient(const emisProfile &emis_profile,
+                                     const relParam *rel_param,
+                                     xillParam *xill_param) {
+
+  set_del_emit_for_each_zone(emis_profile);
+
+  calc_energy_shift_from_source_to_disk(rel_param);
 
   if (m_ion_grad_type == ION_GRAD_TYPE_PL) {
     calc_ion_grad_pl(xill_param->lxi, xill_param->iongrad_index, xill_param->dens);
@@ -136,12 +169,10 @@ void IonGradient::calculate(const emisProfile &emis_profile, xillParam *xill_par
 
   // need to make sure lxi and logn are within the xillver table values //  TODO: Need to define this automatically
   adjust_parameter_to_be_within_xillver_bounds(lxi, m_nzones, 0.0, 4.7);
-//  adjust_parameter_to_be_within_xillver_bounds(dens, m_nzones, 15, 19);
 
   if  (shouldOutfilesBeWritten()) {
     IonGradient::write_to_file("__relxillOutput_iongrad.dat");
   }
-
 }
 
 void IonGradient::write_to_file(const char *fout) const {
@@ -156,7 +187,7 @@ void IonGradient::write_to_file(const char *fout) const {
   fclose_errormsg(fp, fout);
 }
 
-void IonGradient::calc_zones_delta_emit(const emisProfile &emis_profile) {
+void IonGradient::set_del_emit_for_each_zone(const emisProfile &emis_profile) {
   int status = EXIT_SUCCESS;
   if (del_emit == nullptr) {
     del_emit = new double[m_nzones];

@@ -297,28 +297,28 @@ TEST_CASE(" test normalization factor when shifting ecut/kTe", "[prim]") {
 
   EnerGrid *egrid = get_coarse_xillver_energrid(&status);
 
-  double energy_shift = 0.5;
+  double energy_shift_disk_source = 0.5;
 
-  auto prime_spec_0 = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
-                                                       nullptr, xill_param, &status);
-  double norm_fac_shifted = calc_xillver_normalization_change(energy_shift, xill_param);
+  auto prime_spec_disk = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
+                                                          nullptr, xill_param, &status);
+  double norm_fac_shifted = calc_xillver_normalization_change(energy_shift_disk_source, xill_param);
 
   // if kTe to lower energies, the normalization increases
   REQUIRE(norm_fac_shifted > 1.0);
 
-  xill_param->ect *= energy_shift;
-  auto prime_spec_shifted = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
-                                                             nullptr, xill_param, &status);
+  xill_param->ect *= energy_shift_disk_source;
+  auto prime_spec_source = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
+                                                            nullptr, xill_param, &status);
 
-  double spec_ratio = prime_spec_shifted[0] / prime_spec_0[0];
+  double spec_ratio = prime_spec_source[0] / prime_spec_disk[0];
   REQUIRE(fabs(spec_ratio - norm_fac_shifted) < 1e-3);
 
   // if kTe to higher energies, the normalization decreases
   double norm_fac_shifted_higher_energies = calc_xillver_normalization_change(2.0, xill_param);
   REQUIRE(norm_fac_shifted_higher_energies < 1.0);
 
-  delete[] prime_spec_0;
-  delete[] prime_spec_shifted;
+  delete[] prime_spec_disk;
+  delete[] prime_spec_source;
   free(xill_param);
 
 }

@@ -218,11 +218,43 @@ void get_relxill_params(const ModelParams &params, relParam *&rel_param, xillPar
 
 }
 
+/*
+ * @brief: calculate the xillver reflection spectra for the parameter array given as input
+ *
+ * @details:
+ *  - the spec_cache structure has the spec_cache->xill_spec structure allocated with the maximal number of allowed zones
+ *  - if the xillver parameters did not change, it will be re-used and not re-calculated
+ */
+xillSpec **get_xillver_reflection_spectra(specCache *spec_cache,
+                                          xillTableParam **xill_param_zone,
+                                          int nzones,
+                                          cached caching_status_xill) {
+  auto xill_spec = spec_cache->xill_spec;
+
+  int status = EXIT_SUCCESS;
+  // --- 3 --- calculate xillver reflection spectra  (for every zone)
+  for (int ii = 0; ii < nzones; ii++) {
+    if (caching_status_xill
+        == cached::no) { // (always need to re-compute for an ionization gradient, TODO: can we do better caching?)
+      if (xill_spec[ii]
+          != nullptr) { // as the spectrum is not cached, free the memory to be able to load a new spectrum
+        free_xill_spec(xill_spec[ii]);
+      }
+      xill_spec[ii] = get_xillver_spectra_table(xill_param_zone[ii], &status);
+    }
+  }
+
+  if (status != EXIT_SUCCESS) {
+    throw std::exception();
+  }
+
+  return xill_spec;
+}
+
 
 ///////////////////////////////////////
 // MAIN: Relxill Kernel Function     //
 ///////////////////////////////////////
-
 
 /** @brief convolve a xillver spectrum with the relbase kernel
  * @param spectrum
@@ -267,40 +299,22 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     set_cached_rel_param(rel_param, &cached_rel_param, status);
     CHECK_STATUS_VOID(*status);
 
-    // --- 0 ---
+    // --- 1 --- calculate the accretion disk zones and set their parameters
     auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
-
-    // --- 2 --- calculate ionization gradient
     IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
-    ion_gradient.calculate(*(sys_par->emis), xill_param);
+    ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
 
-    auto xill_param_zone = new xillTableParam *[rel_param->num_zones];
+    auto xill_param_zone =
+        ion_gradient.calculate_incident_spectra_for_each_zone(primary_source.parameters.xilltab_param());
 
-    // --- 3 --- calculate xillver reflection spectra  (for every zone)
-    for (int ii = 0; ii < rel_param->num_zones; ii++) {
-      xill_param_zone[ii] = primary_source.get_xillver_params_primary_source();
-
-      // set xillver parameters for the given zone
-      xill_param_zone[ii]->ect = ion_gradient.get_ecut_disk_zone(rel_param,
-                                                                 primary_source.parameters.ect(),
-                                                                 ii);
-      xill_param_zone[ii]->lxi = ion_gradient.lxi[ii];
-      xill_param_zone[ii]->dens = ion_gradient.dens[ii];
-
-      // --- 3a: load xillver spectra
-      // (always need to re-compute for an ionization gradient, TODO: can we do better caching?)
-      if (caching_status.xill == cached::no) {
-        if (spec_cache->xill_spec[ii] != nullptr) {
-          free_xill_spec(spec_cache->xill_spec[ii]);
-        }
-        spec_cache->xill_spec[ii] = get_xillver_spectra_table(xill_param_zone[ii], status);
-      }
-    }
+    // we store it in a general structure (SpecCache) such that we can re-use it if desired
+    auto xill_refl_spectra_zone =
+        get_xillver_reflection_spectra(spec_cache, xill_param_zone, ion_gradient.nzones(), caching_status.xill);
 
     // -- 4 -- returning radiation correction factors (only calculated if above a given threshold)
     rel_param->rrad_corr_factors =
         (rel_param->return_rad != 0 && rel_param->a > SPIN_MIN_RRAD_CALC_CORRFAC) ?
-        calc_rrad_corr_factors(spec_cache->xill_spec, radial_grid, xill_param_zone, status) :
+        calc_rrad_corr_factors(xill_refl_spectra_zone, radial_grid, xill_param_zone, status) :
         nullptr;
 
     // --- 5 --- calculate multi-zone relline profile
@@ -319,25 +333,29 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                         ion_gradient.radial_grid.radius, ion_gradient.nzones(), status);
 
     // --- 5c --- calculate the xillver spectra depending on the angular distribution (stored in the rel_profile)
-
-    auto xillver_spectra_zones =  SpectrumZones(spec_cache->xill_spec[0]->ener, spec_cache->xill_spec[0]->n_ener, rel_param->num_zones);
-
-    for (int ii=0; ii <  rel_param->num_zones; ii++){
+    auto xillver_spectra_zones =
+        SpectrumZones(xill_refl_spectra_zone[0]->ener, xill_refl_spectra_zone[0]->n_ener, ion_gradient.nzones());
+    for (int ii = 0; ii < ion_gradient.nzones(); ii++) {
       calc_xillver_angdep(xillver_spectra_zones.flux[ii],
-                          spec_cache->xill_spec[ii],
+                          xill_refl_spectra_zone[ii],
                           rel_profile->rel_cosne->dist[ii],
                           status);
 
       // need to re-normalize the spectra due to the energy shift from the source to the disk
       // reason: xillver is defined on a fixed energy flux integrated from 0.1-1000keV (see Dauser+16, A1), therefore
       // shifting ecut/kTe in energy will change the normalization of the primary spectrum, which was used to calculate
-      // the reflected spectrum
-      ion_gradient.reflection_scaling_factor[ii] = 1.0;  // todo: move calculation outside of IonGrad and here
-      double ener_shift = xill_param->ect / xill_param_zone[ii]->ect;
-      // normalization change from source to disk
-      double norm_change = calc_xillver_normalization_change(ener_shift, xill_param_zone[ii]);
+      // the reflected spectrum. As the normalization of reflection is calculated for the normalized incident spectrum
+      // on the disk, we need to correct for the change in normalization, in order for the incident spectrum matching
+      // the normalization of the primary source spectrum
+
+      // we need to calculate the normalization from disk to source, therefore calculate from source to disk and take
+      // the inverse
+      double norm_change =
+          calc_xillver_normalization_change(1. / ion_gradient.m_energy_shift_source_disk[ii], xill_param_zone[ii]);
+      double norm_change2 = calc_xillver_normalization_change(ion_gradient.m_energy_shift_source_disk[ii],
+                                                              primary_source.parameters.xilltab_param());
       for (int jj = 0; jj < xillver_spectra_zones.num_flux_bins; jj++) {
-        xillver_spectra_zones.flux[ii][jj] *= norm_change;
+        xillver_spectra_zones.flux[ii][jj] /= norm_change2;
       }
 
     }
