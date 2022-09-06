@@ -34,10 +34,6 @@ xillParam *cached_xill_param = nullptr;
 // Forward Definitions of Functions  //
 ///////////////////////////////////////
 
-double calc_ecut_at_primary_source(const xillParam *xill_param,
-                                   const relParam *rel_param,
-                                   double ecut_input,
-                                   int *status);
 void free_arrays_relxill_kernel(int n_zones,
                                 const double *conv_out,
                                 const double *single_spec_inp,
@@ -453,29 +449,4 @@ void free_arrays_relxill_kernel(int n_zones,
   }
   delete[] xill_angledep_spec;
 }
-
-/** @brief calculate the ecut/kTe value at the primary source (from the xspec parameter input value)
- *  @details in case of the nthcomp model Ecut is already input in the frame of the primary source
- *   but for the bkn_powerlaw it is given in the observer frame. In case of a BB spectrum, it is also
- *   given in the source frame.
- * @param xill_param
- * @param rel_param
- * @param ecut_input
- * @param status
- * @return
- */
-double calc_ecut_at_primary_source(const xillParam *xill_param,
-                                   const relParam *rel_param,
-                                   double ecut_input,
-                                   int *status) {
-  if (xill_param->prim_type == PRIM_SPEC_ECUT) {
-    return ecut_input / energy_shift_source_obs(rel_param);
-  } else if (xill_param->prim_type == PRIM_SPEC_NTHCOMP || xill_param->prim_type == PRIM_SPEC_BB) {
-    return ecut_input;
-  } else {
-    RELXILL_ERROR("unknown primary spectrum type, can not calculate Ecut at the primary source", status);
-    return -1;
-  }
-}
-
 
