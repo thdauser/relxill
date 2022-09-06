@@ -152,7 +152,6 @@ class ModelDatabase {
       {ModelName::relxilllpD, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpionCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
 
-      {ModelName::relxillAlpha, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::Nthcomp)},
       {ModelName::relxilllpAlpha, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
 
       {ModelName::xillver, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},

@@ -21,6 +21,8 @@
 
 #include <xsTypes.h>
 
+#include "common.h"
+
 typedef RealArray Array; // using the Xspec defined std::valarray type
 
 
@@ -87,6 +89,15 @@ class XspecSpectrum {
     }
   }
 
+  // get the energy flux in ergs/cm^2/s
+  [[nodiscard]] double get_energy_flux() const {
+    double ener_flux = 0.0;
+    for (size_t ii = 0; ii < m_num_flux_bins - 1; ii++) {
+      ener_flux += flux[ii] * 0.5 * (energy[ii] + energy[ii + 1]);
+    }
+    return ener_flux * CONVERT_KEV2ERG;
+  }
+
  public:
   double *energy{nullptr};
   double *flux{nullptr};
@@ -124,7 +135,7 @@ class DefaultSpec {
    * @return XspecSpectrum
    */
   [[nodiscard]] XspecSpectrum get_xspec_spectrum() const {
-    return XspecSpectrum(energy, flux, num_flux_bins);
+    return {energy, flux, num_flux_bins};
   }
 
 

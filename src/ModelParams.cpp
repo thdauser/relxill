@@ -51,7 +51,6 @@ int convertModelType(ModelName name) {
     case ModelName::xillverCO: return MOD_TYPE_XILLVERCO;
     case ModelName::relxillNS: return MOD_TYPE_RELXILLNS;
     case ModelName::relxillCO: return MOD_TYPE_RELXILLCO;
-    case ModelName::relxillAlpha: return MOD_TYPE_RELXILLALPHA;
     case ModelName::relxilllpAlpha: return MOD_TYPE_RELXILLLPALPHA;
     case ModelName::relxillBB: return MOD_TYPE_RELXILLBBRET;
   }
@@ -369,7 +368,7 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
 
 
 int get_iongrad_type(const ModelParams &params) {
-  if (params.get_model_name() == ModelName::relxilllpAlpha || params.get_model_name() == ModelName::relxillAlpha){
+  if (params.get_model_name() == ModelName::relxilllpAlpha) {
     return ION_GRAD_TYPE_ALPHA;
   } else {
     return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_iongrad_type, 0)));

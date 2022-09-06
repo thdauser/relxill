@@ -163,6 +163,8 @@
 #define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
 #define XILLTABLE_CO_FILENAME "xillverCO.fits"
 
+// useful constants
+#define CONVERT_KEV2ERG 1.6021773000008302e-09  // 1 keV in erg
 
 enum xillTableIds {
   XILLTABLE_ID_STANDARD,

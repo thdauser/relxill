@@ -84,6 +84,14 @@ int is_iongrad_model(int ion_grad_type) {
   }
 }
 
+int is_alpha_model(int model_type) {
+  if (model_type == MOD_TYPE_RELXILLLPALPHA) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
 int is_ns_model(int model_type) {
   if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) || model_type == MOD_TYPE_RELXILLBBRET) {
     return 1;

@@ -56,9 +56,8 @@ class PrimarySourceParameters {
     m_xilltab_param = m_get_xillver_params_primary_source(m_rel_param, energy_shift_source_observer);
 
     refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);
-    mass = inp_param.get_otherwise_default(XPar::mass, 0);
+    normalization_factor = inp_param.get_otherwise_default(XPar::norm_factor, 1); // only used for the alpha model
     distance = inp_param.get_otherwise_default(XPar::distance, 0);
-    lbol = inp_param.get_otherwise_default(XPar::lbol, 0);
     interpret_reflfrac_as_boost =
         static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)));
   }
@@ -91,8 +90,7 @@ class PrimarySourceParameters {
     return m_get_xillver_params_primary_source(m_rel_param, energy_shift_source_observer);
   }
 
-  double lbol;
-  double mass;
+  double normalization_factor;
   double distance;
   double refl_frac;
   int interpret_reflfrac_as_boost;
@@ -177,6 +175,7 @@ class PrimarySource {
     printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
   }
 
+
   // @brief: adds primary spectrum to the input spectrum
   void add_primary_spectrum(const XspecSpectrum &spectrum) {
 
@@ -193,26 +192,38 @@ class PrimarySource {
 
       assert(m_struct_refl_frac != nullptr);
 
-      double refl_frac = parameters.refl_frac;  // todo: disentable refl_frac and boost
+      double refl_frac = parameters.refl_frac;  // todo: disentangle refl_frac and boost
       if (parameters.interpret_reflfrac_as_boost) {
         // if set, it is given as boost, wrt predicted refl_frac
         refl_frac *= m_struct_refl_frac->refl_frac;
       }
 
-      double prim_fac =
+      double prime_spec_factors_source_to_observer =
           m_struct_refl_frac->f_inf_rest / 0.5 * pow(parameters.energy_shift_source_observer, parameters.gam());
       // flux boost of primary radiation taking into account here (therfore we need f_inf_rest above)
       if (parameters.beta() > 1e-4) {
-        prim_fac *= pow(doppler_factor_source_obs(parameters.rel_param()), 2);
+        prime_spec_factors_source_to_observer *= pow(doppler_factor_source_obs(parameters.rel_param()), 2);
       }
 
       // if the user sets the refl_frac parameter manually, we need to calculate the ratio
       // to end up with the correct normalization
       double norm_fac_refl = (fabs(refl_frac)) / m_struct_refl_frac->refl_frac;
 
-      spectrum.multiply_flux_by(norm_fac_refl);
-      for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
-        pl_flux[ii] *= prim_fac;
+      if (is_alpha_model(parameters.model_type())) {
+        //  for the alpha model, which includes the distance, the normalization is defined over "normalization_factor"
+        double prime_norm_factor = parameters.normalization_factor / get_normalized_primary_spectrum_flux_in_ergs();
+
+        for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+          pl_flux[ii] *= prime_norm_factor;
+        }
+        // multiply the reflection spectrum also with the normalization factor and the inverse of primary source
+        // factors to take those into account in the reflection spectrum
+        spectrum.multiply_flux_by(prime_norm_factor * norm_fac_refl / prime_spec_factors_source_to_observer);
+      } else {
+        spectrum.multiply_flux_by(norm_fac_refl);
+        for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+          pl_flux[ii] *= prime_spec_factors_source_to_observer;
+        }
       }
 
       /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
@@ -233,16 +244,31 @@ class PrimarySource {
 
   }
 
-  xillTableParam *get_xillver_params_primary_source() {
-    auto *xilltab_param = new xillTableParam;
-    *xilltab_param = *parameters.xilltab_param();
-    return xilltab_param;
-  }
-
   const PrimarySourceParameters parameters;
 
  private:
   lpReflFrac *m_struct_refl_frac = nullptr;
+
+  // calculate the flux of the primary spectrum in ergs/cm2/sec
+  double get_normalized_primary_spectrum_flux_in_ergs() {
+    int status = EXIT_SUCCESS;
+    EnerGrid *egrid = get_coarse_xillver_energrid(&status);
+    auto prim_spec_source = new double[egrid->nbins];
+    double *pl_flux = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
+                                                       parameters.rel_param(), parameters.xilltab_param(), &status);
+
+    double ener_flux = 0.0;
+    for (int ii = 0; ii < egrid->nbins; ii++) {
+      if (egrid->ener[ii] >= EMIN_XILLVER_NORMALIZATION && egrid->ener[ii + 1] < EMAX_XILLVER_NORMALIZATION) {
+        ener_flux += pl_flux[ii] * 0.5 * (egrid->ener[ii] + egrid->ener[ii + 1]);
+      }
+    }
+
+    delete[] prim_spec_source;
+
+    return ener_flux * CONVERT_KEV2ERG;
+  }
+
 };
 
 #endif //RELXILL_SRC_PRIMARYSOURCE_H_

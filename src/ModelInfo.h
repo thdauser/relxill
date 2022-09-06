@@ -35,7 +35,6 @@ enum class ModelName {
   relxilllpCp,
   relxilllpion,
   relxilllpionCp,
-  relxillAlpha,
   relxilllpAlpha,
   xillver,
   xillverCp,
