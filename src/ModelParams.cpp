@@ -292,6 +292,7 @@ relParam *get_rel_params(const ModelParams &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
+  param->d_offaxis = inp_param.get_otherwise_default(XPar::d_offaxis, 0);
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);

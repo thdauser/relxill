@@ -357,8 +357,8 @@ double calc_xillver_normalization_change(double energy_shift, const xillTablePar
   auto prime_spec = new double[egrid->nbins];
 
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
-  double disk_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
-  // normalized disk spec: prime_disk_source*disk_spec_norm_factor
+  double source_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+  // normalized source spec: prime_source_source*source_spec_norm_factor
 
   // get parameters for the source spectrum (ecut shifted in energy)
   auto xill_param_source = new xillTableParam;
@@ -367,13 +367,56 @@ double calc_xillver_normalization_change(double energy_shift, const xillTablePar
 
   // calculate the primary spectrum at the source
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_source, &status);
-  double source_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
-  // normalized prime spec: prime_spec_source*source_spec_norm_factor
+  double disk_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+  // normalized prime spec: prime_spec_disk*disk_spec_norm_factor
 
   delete xill_param_source;
   delete[] prime_spec;
 
-  return source_spec_norm_factor / disk_spec_norm_factor;
+  return disk_spec_norm_factor / source_spec_norm_factor;
+}
+
+/**
+ * @brief calculate the normalization factor to convert the initial xillver primary spectrum
+ * (given by xill_param_0) under the given energy shift, by taking the fixed xillver incident
+ * spectrum normalization in the 0.1-1000keV range into account (Dauser+16, A1).
+ * @param energy_shift_source_disk [energy shift from the source to the disk for each zone]
+ * @param n_zones [number of zones]
+ * @param xill_param_0 [xillver parameters for the inital spectrum]
+ * @return normalization_factor
+ */
+double *calc_xillver_normalization_change_source_to_disk(const double *energy_shift,
+                                                         int n_zones,
+                                                         const xillTableParam *xill_param_0) {
+
+  int status = EXIT_SUCCESS;
+  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
+  auto prime_spec = new double[egrid->nbins];
+
+  calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
+  double source_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+  // normalized disk spec: prime_spec_source*source_spec_norm_factor
+
+  auto norm_factors = new double[n_zones];
+
+  // get parameters for the source spectrum (ecut shifted in energy)
+  auto xill_param_disk = new xillTableParam;
+  *xill_param_disk = *xill_param_0; // shallow copy
+  for (int ii = 0; ii < n_zones; ii++) {
+    xill_param_disk->ect = xill_param_0->ect * energy_shift[ii];
+
+    // calculate the primary spectrum at the source
+    calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_disk, &status);
+    double disk_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+    // normalized prime spec: prime_spec_source*source_spec_norm_factor
+
+    norm_factors[ii] = disk_spec_norm_factor / source_spec_norm_factor;
+  }
+
+  delete xill_param_disk;
+  delete[] prime_spec;
+
+  return norm_factors;
 }
 
 /**

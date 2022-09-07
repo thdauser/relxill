@@ -72,6 +72,9 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
                                          const relParam *rel_param, const xillTableParam *xill_param, int *status);
 
 double calc_xillver_normalization_change(double energy_shift, const xillTableParam *xill_param_0);
+double *calc_xillver_normalization_change_source_to_disk(const double *energy_shift,
+                                                         int n_zones,
+                                                         const xillTableParam *xill_param_0);
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, int n, int *status);
 EnerGrid *get_coarse_xillver_energrid(int *status);
