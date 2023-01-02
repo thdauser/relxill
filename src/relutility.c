@@ -757,14 +757,14 @@ EnerGrid *new_EnerGrid(int *status) {
   return egrid;
 }
 
-Spectrum *new_Spectrum(int *status) {
+TestSpectrum *new_Spectrum(int *status) {
 
-  Spectrum *spec = malloc(sizeof(Spectrum));
+  TestSpectrum *spec = malloc(sizeof(TestSpectrum));
   CHECK_MALLOC_RET_STATUS(spec, status, spec)
   return spec;
 }
 
-void free_Spectrum(Spectrum **spec) {
+void free_Spectrum(TestSpectrum **spec) {
 
   if (*spec != NULL) {
     free((*spec)->ener);
@@ -774,12 +774,12 @@ void free_Spectrum(Spectrum **spec) {
 
 }
 
-Spectrum *getNewSpec(double emin, double emax, int nbins, int *status) {
+TestSpectrum *getNewSpec(double emin, double emax, int nbins, int *status) {
 
   double *ener = malloc(sizeof(double) * (nbins + 1));
   double *flux = malloc(sizeof(double) * nbins);
 
-  Spectrum *spec = new_Spectrum(status);
+  TestSpectrum *spec = new_Spectrum(status);
 
   get_log_grid(ener, nbins + 1, emin, emax);
 

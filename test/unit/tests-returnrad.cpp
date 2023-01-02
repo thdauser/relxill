@@ -265,7 +265,7 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
 
   const char* env_name_outfiles = "RELXILL_WRITE_OUTFILES";
 
-  Spectrum *spec = getNewSpec(0.05, 10, 1000, &status);
+  TestSpectrum *spec = getNewSpec(0.05, 10, 1000, &status);
 
   rel_param->return_rad=0;
   relline_spec_multizone *rel_profile_norrad = relbase(spec->ener, spec->nbins, rel_param, &status);

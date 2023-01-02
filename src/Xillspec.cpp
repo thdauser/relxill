@@ -171,7 +171,7 @@ double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const
       || ener[0] > (EMIN_XILLVER_NORMALIZATION + floatCompFactor)) {
     RELXILL_ERROR("can not calculate the primary spectrum normalization", status);
     printf("  the given energy grid from %e keV to %e keV does not cover the boundaries\n", ener[0], ener[n]);
-    printf("  from [%e,%e] necessary for the calcualtion\n", EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
+    printf("  from [%e,%e] necessary for the calculation\n", EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
     return 0.0;
   }
 
@@ -290,7 +290,8 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, status);
 
   // calculate the normalization at the primary source
-  double norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
+  double const
+      norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
   delete[] prim_spec_source;
 
   // if we have the LP geometry defined, the spectrum will be different between the primary source and the observer
@@ -324,16 +325,16 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
 double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
                             const xillTableParam *xill_table_param, int *status) {
 
-  // use a coarser energy grid to evalute the direct spectrum, as we are only interested
+  // use a coarser energy grid to evaluate the direct spectrum, as we are only interested
   // in the total flux in the band
   auto egrid_coarse = get_coarse_xillver_energrid(status);
   auto direct_spec =
       calc_normalized_primary_spectrum(egrid_coarse->ener, egrid_coarse->nbins,
                                        nullptr, xill_table_param, status);
 
-  double emin = 0.1;
-  double emax = 1000;
-  double ratio_refl_direct =
+  double const emin = 0.1;
+  double const emax = 1000;
+  double const ratio_refl_direct =
       get_energy_flux_band(ener, flu, n_ener, emin, emax) /
           get_energy_flux_band(egrid_coarse->ener, direct_spec, egrid_coarse->nbins, emin, emax);
 

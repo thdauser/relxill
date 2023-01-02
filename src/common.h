@@ -377,7 +377,7 @@ typedef struct {
   double *ener;  // has nbins+1
   double *flux; // has length
 
-} Spectrum;
+} TestSpectrum;
 
 
 /******************************/

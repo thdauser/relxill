@@ -155,13 +155,61 @@ class DefaultSpec {
 
  private:
   void set_input_flux() const {
-    for (size_t ii = 0; ii<num_flux_bins; ii++){
+    for (size_t ii = 0; ii < num_flux_bins; ii++) {
       flux[ii] = 0.0;
     }
     flux[num_flux_bins / 2] = 1.0;
   }
 };
 
+class Spectrum {
+ public:
+  Spectrum(const double *_energy, size_t n_bins) : num_flux_bins{n_bins} {
+    size_t n_energy = n_bins + 1;
+    m_energy = new double[n_energy];
+    flux = new double[n_bins];
 
+    for (size_t ii = 0; ii < n_energy; ii++) {
+      m_energy[ii] = _energy[ii];
+    }
+
+    set_input_flux_zero();
+  };
+
+  ~Spectrum() {
+    delete[] m_energy;
+    delete[] flux;
+  }
+
+  // delete copy and move assignment constructor
+  Spectrum(const DefaultSpec &other) = delete;
+  Spectrum &operator=(const DefaultSpec &other) = delete;
+
+  /**
+   * return the energy and flux as an XspecSpectrum
+   * @return XspecSpectrum
+   */
+  [[nodiscard]] XspecSpectrum get_xspec_spectrum() const {
+    return {m_energy, flux, num_flux_bins};
+  }
+
+  [[nodiscard]] double *energy() const {
+    return m_energy;
+  }
+
+ public:
+  const size_t num_flux_bins;
+  double *flux{nullptr};
+
+ private:
+  void set_input_flux_zero() const {
+    for (size_t ii = 0; ii < num_flux_bins; ii++) {
+      flux[ii] = 0.0;
+    }
+  }
+
+  double *m_energy{nullptr};
+
+};
 
 #endif //RELXILL__CPPSPECTRUM_H_

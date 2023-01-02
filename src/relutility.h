@@ -151,9 +151,9 @@ void setArrayToZero(double *arr, int n);
 
 EnerGrid *new_EnerGrid(int *status);
 
-Spectrum *new_Spectrum(int *status);
-void free_Spectrum(Spectrum **spec);
-Spectrum *getNewSpec(double emin, double emax, int nbins, int *status);
+TestSpectrum *new_Spectrum(int *status);
+void free_Spectrum(TestSpectrum **spec);
+TestSpectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
 int shouldOutfilesBeWritten(void);
 
