@@ -155,11 +155,10 @@ void IonGradient::calculate_gradient(const emisProfile &emis_profile,
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_ALPHA) {
 
-    const double lxi_rin =
-        (rel_param->model_type == MOD_TYPE_RELXILLLPALPHA) ?
-        xill_param->lxi :
-        //        calculate_lxi_on_disk_from_distance(primary_source, rin) :
-        xill_param->lxi;
+    const double lxi_rin = (is_alpha_model(rel_param->model_type)) ?
+                           xill_param->lxi : //        calculate_lxi_on_disk_from_distance(primary_source, rin) :
+
+                           xill_param->lxi;
 
     calc_ion_grad_alpha(emis_profile, lxi_rin, xill_param->dens);
 

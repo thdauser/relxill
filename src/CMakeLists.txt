@@ -24,7 +24,7 @@ set(SOURCE_FILES
         Relreturn_Table.cpp Relreturn_Table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
         Xillspec.cpp Xillspec.h
-        PrimarySource.h
+        PrimarySource.cpp PrimarySource.h
         )
 ############################################
 

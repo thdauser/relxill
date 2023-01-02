@@ -295,10 +295,10 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // --- 1 --- calculate the accretion disk zones and set their parameters
     auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
     IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
-    ion_gradient.calculate_gradient(*(sys_par->emis), primary_source.parameters);
+    ion_gradient.calculate_gradient(*(sys_par->emis), primary_source.source_parameters);
 
     auto xill_param_zone =
-        ion_gradient.calculate_incident_spectra_for_each_zone(primary_source.parameters.xilltab_param());
+        ion_gradient.calculate_incident_spectra_for_each_zone(primary_source.source_parameters.xilltab_param());
 
     // --- 2 --- get xillver reflection spectra (are internally stored in a general, cached structure "SpecCache")
     //           such that they are re-used of the caching_status.xill==yes
@@ -349,7 +349,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // we need to calculate the normalization change from disk to source, therefore calculate from source to disk and take
     // the inverse
     auto norm_change_factors = calc_xillver_normalization_change_source_to_disk(
-        ion_gradient.m_energy_shift_source_disk, ion_gradient.nzones(), primary_source.parameters.xilltab_param()
+        ion_gradient.m_energy_shift_source_disk, ion_gradient.nzones(), primary_source.source_parameters.xilltab_param()
     );
     for (int ii = 0; ii < ion_gradient.nzones(); ii++) {
       for (int jj = 0; jj < xillver_spectra_zones.num_flux_bins; jj++) {

@@ -57,20 +57,20 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   lmod_alpha.set_par(XPar::refl_frac, 0.0);
   set_default_par(lmod_alpha);
 
-  double norm_factor_ergs = 1.0;
+  const double norm_factor_ergs = 1.0;
   lmod_alpha.set_par(XPar::norm_factor, norm_factor_ergs);
 
   // make sure the primary continuum normalization is given by XPar::norm_factor
   auto spec = default_spec.get_xspec_spectrum();
   lmod_alpha.eval_model(spec);
 
-  double primary_energy_flux = spec.get_energy_flux();
+  const double primary_energy_flux = spec.get_energy_flux();
   REQUIRE(fabs(primary_energy_flux - norm_factor_ergs) < 0.005);
   // printf(" ENERGY FLUX: %e \n", spec.get_energy_flux());
 
   lmod_alpha.set_par(XPar::refl_frac, -1.0);
   lmod_alpha.eval_model(spec);
-  double refl_energy_flux = spec.get_energy_flux();
+  const double refl_energy_flux = spec.get_energy_flux();
 
   // TODO: once logxi is not a parameter any more, we need to output the calculated
   // logxi and then use it as input to the relxilllpCp model
@@ -80,13 +80,13 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   set_default_par(lmod_std);
 
   lmod_std.eval_model(spec);
-  double std_primary_energy_flux = spec.get_energy_flux();
+  const double std_primary_energy_flux = spec.get_energy_flux();
   lmod_std.set_par(XPar::refl_frac, -1.0);
   lmod_std.eval_model(spec);
-  double std_refl_energy_flux = spec.get_energy_flux();
+  const double std_refl_energy_flux = spec.get_energy_flux();
 
-  double flux_ratio_alpha = refl_energy_flux / primary_energy_flux;
-  double flux_ratio_std = std_refl_energy_flux / std_primary_energy_flux;
+  const double flux_ratio_alpha = refl_energy_flux / primary_energy_flux;
+  const double flux_ratio_std = std_refl_energy_flux / std_primary_energy_flux;
 
   // now test that the flux ratio to the reflection spectrum is the same as in
   REQUIRE(fabs(flux_ratio_alpha - flux_ratio_std) < 0.01);

@@ -289,7 +289,7 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
   auto prim_spec_source = new double[egrid->nbins];
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, status);
 
-  // calculate the normalization at the primary source
+  // calculate the normalization at the primary source (i.e., not shifted by the energy shift)
   double const
       norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
   delete[] prim_spec_source;
