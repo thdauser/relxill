@@ -107,7 +107,7 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
 
   int status = EXIT_SUCCESS;
 
-  double kte_primary = 40.0;
+  double const kte_primary = 40.0;
 
   LocalModel local_model{ModelName::relxilllpCp};
   local_model.set_par(XPar::switch_iongrad_type, 0);
@@ -118,12 +118,13 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
   relParam *rel_param = local_model.get_rel_params();
   RelSysPar *sys_par = get_system_parameters(rel_param, &status);
 
-  RadialGrid radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
-  IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
-  ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
+  RadialGrid const radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
+  IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
+  auto primary_source_params = PrimarySourceParameters{local_model.get_model_params()};
+  ion_gradient.calculate_gradient(*(sys_par->emis), primary_source_params);
 
-  double ecut_in_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
-  double ecut_out_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 1);
+  double const ecut_in_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
+  double const ecut_out_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 1);
 
 
   /*  for (int ii=0; ii<rel_param->num_zones; ii++){
@@ -134,19 +135,15 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
     } */
 
   // now set the velocity to beta>0
-  rel_param->beta = 0.66;
-  sys_par = get_system_parameters(rel_param, &status);
-  ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
-  double ecut_in_beta = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
+  local_model.set_par(XPar::beta, 0.66);
 
+  auto primary_source_params_beta = PrimarySourceParameters{local_model.get_model_params()};
+  auto rel_param_beta = primary_source_params.rel_param();
+  sys_par = get_system_parameters(rel_param_beta, &status);
 
+  ion_gradient.calculate_gradient(*(sys_par->emis), primary_source_params);
+  const double ecut_in_beta = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
 
-  /* for (int ii=0; ii<rel_param->num_zones; ii++){
-     double rad = 0.5 * (ion_gradient.radial_grid.radius[ii] + ion_gradient.radial_grid.radius[ii + 1]);
-     printf(" del_emit=%.1f, rad=%.2e, kTe= %.2e \n",
-            ion_gradient.del_emit[ii]*180.0/M_PI, rad,
-            ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, ii) );
-   } */
 
 
   // require that the first zone is most blue-shifted

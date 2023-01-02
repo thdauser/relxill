@@ -24,7 +24,7 @@ extern "C" {
 
 void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
 
-RelSysPar *get_system_parameters(relParam *param, int *status);
+RelSysPar *get_system_parameters(const relParam *param, int *status);
 
 void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, const int *status);
 

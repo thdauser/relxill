@@ -38,7 +38,7 @@ typedef struct {
 } extPrimSource;
 
 
-emisProfile *calc_emis_profile(double *r, int nr, relParam *param, int *status);
+emisProfile *calc_emis_profile(double *r, int nr, const relParam *param, int *status);
 
 void get_emis_bkn(double *emis, const double *re, int nr,
                   double index1, double index2, double rbr);

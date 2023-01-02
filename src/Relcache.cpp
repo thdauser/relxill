@@ -20,7 +20,7 @@
 #include "Relbase.h"
 
 /** probably best move to "utils" **/
-inpar *get_inputvals_struct(double *ener, int n_ener, relParam *rel_par, int *status) {
+inpar *get_inputvals_struct(double *ener, int n_ener, const relParam *rel_par, int *status) {
   auto *inp = (inpar *) malloc(sizeof(inpar));
   CHECK_MALLOC_RET_STATUS(inp, status, nullptr)
 
@@ -32,8 +32,8 @@ inpar *get_inputvals_struct(double *ener, int n_ener, relParam *rel_par, int *st
 }
 
 /** probably best move to "utils" **/
-inpar *set_input_syspar(relParam *rel_par, int *status) {
-  auto *inp = (inpar *) malloc(sizeof(inpar));
+inpar *set_input_syspar(const relParam *rel_par, int *status) {
+  auto inp = (inpar *) malloc(sizeof(inpar));
   CHECK_MALLOC_RET_STATUS(inp, status, nullptr)
 
   inp->ener = nullptr;
@@ -146,7 +146,7 @@ int did_rel_param_change(const relParam *cpar, const relParam *par) {
   return 0;
 }
 
-void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status) {
+void set_cached_rel_param(const relParam *par, relParam **ca_rel_param, int *status) {
 
   assert(ca_rel_param != nullptr);
 
@@ -381,7 +381,7 @@ cache_info *cli_check_cache(cnode *head,
 }
 
 // prepend new node and set parameters
-cnode *add_node_to_cache(cnode *head, relParam *relpar, xillParam *xillpar, int *status) {
+cnode *add_node_to_cache(cnode *head, const relParam *relpar, xillParam *xillpar, int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);
 
@@ -406,7 +406,7 @@ cnode *add_node_to_cache(cnode *head, relParam *relpar, xillParam *xillpar, int 
   return new_head;
 }
 
-void add_relspec_to_cache(cnode **node, relParam *param, relline_spec_multizone *spec, int *status) {
+void add_relspec_to_cache(cnode **node, const relParam *param, relline_spec_multizone *spec, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -423,7 +423,7 @@ void add_relspec_to_cache(cnode **node, relParam *param, relline_spec_multizone 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 }
 
-void set_cache_syspar(cnode **pt_head, relParam *param, RelSysPar *syspar, int *status) {
+void set_cache_syspar(cnode **pt_head, const relParam *param, RelSysPar *syspar, int *status) {
 
   CHECK_STATUS_VOID(*status);
 

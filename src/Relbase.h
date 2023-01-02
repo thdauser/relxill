@@ -133,7 +133,7 @@ int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
                       const relParam *ca_rel, const xillParam *ca_xill);
 int redo_relbase_calc(const relParam *rel_param, const relParam *ca_rel_param);
 
-void set_cached_rel_param(relParam *par, relParam **ca_rel_param, int *status);
+void set_cached_rel_param(const relParam *par, relParam **ca_rel_param, int *status);
 
 int did_xill_param_change(const xillParam *cpar, const xillParam *par);
 

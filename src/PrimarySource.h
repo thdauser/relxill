@@ -145,10 +145,6 @@ class PrimarySourceParameters {
 class PrimarySource {
 
  public:
-  explicit PrimarySource(const ModelParams &_model_params, const XspecSpectrum &_xspec_spec) :
-      PrimarySource(_model_params, nullptr, _xspec_spec) {
-  }
-
   PrimarySource(const ModelParams &_model_params, RelSysPar *sys_par, const XspecSpectrum &_xspec_spec) :
       parameters{_model_params},
       m_struct_refl_frac((sys_par == nullptr) ? nullptr : sys_par->emis->photon_fate_fractions),

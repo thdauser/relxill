@@ -34,21 +34,21 @@ TEST_CASE(" Ion Grad PL Index ", "[iongrad]") {
 
   local_model.eval_model(spec);
 
-  xillParam* xill_param = local_model.get_xill_params();
-  relParam* rel_param = local_model.get_rel_params();
+  xillParam *xill_param = local_model.get_xill_params();
+  relParam *rel_param = local_model.get_rel_params();
 
- // relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, &status);
-  RelSysPar* sys_par = get_system_parameters(rel_param, &status);
+  // relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, &status);
+  RelSysPar *sys_par = get_system_parameters(rel_param, &status);
 
   RadialGrid radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
-  IonGradient ion_gradient{radial_grid,rel_param->ion_grad_type};
-  ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
+  IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
+  ion_gradient.calculate_gradient(*(sys_par->emis), PrimarySourceParameters{local_model.get_model_params()});
 
-  for (int ii=0; ii<rel_param->num_zones; ii++){
-    REQUIRE(ion_gradient.dens[ii] >=15.0);
-    REQUIRE(ion_gradient.dens[ii] <=22.0);
-    REQUIRE(ion_gradient.lxi[ii] >=0.0);
-    REQUIRE(ion_gradient.lxi[ii] <=4.7);
+  for (int ii = 0; ii < rel_param->num_zones; ii++) {
+    REQUIRE(ion_gradient.dens[ii] >= 15.0);
+    REQUIRE(ion_gradient.dens[ii] <= 22.0);
+    REQUIRE(ion_gradient.lxi[ii] >= 0.0);
+    REQUIRE(ion_gradient.lxi[ii] <= 4.7);
   }
 
 }

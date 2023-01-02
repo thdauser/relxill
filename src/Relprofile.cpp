@@ -307,7 +307,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
  *   of the rel-table, and the emissivity; caching is implemented
  *   Input: relParam* param   Output: relSysPar* system_parameter_struct
  */
-RelSysPar *get_system_parameters(relParam *param, int *status) {
+RelSysPar *get_system_parameters(const relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);
 

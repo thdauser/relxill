@@ -294,8 +294,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // --- 1 --- calculate the accretion disk zones and set their parameters
     auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
-    IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type};
-    ion_gradient.calculate_gradient(*(sys_par->emis), rel_param, xill_param);
+    IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
+    ion_gradient.calculate_gradient(*(sys_par->emis), primary_source.parameters);
 
     auto xill_param_zone =
         ion_gradient.calculate_incident_spectra_for_each_zone(primary_source.parameters.xilltab_param());

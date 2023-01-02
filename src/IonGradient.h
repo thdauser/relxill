@@ -52,10 +52,11 @@ class RadialGrid {
 class IonGradient{
 
  public:
-  IonGradient(const RadialGrid &_radial_grid, int ion_grad_type)
+  IonGradient(const RadialGrid &_radial_grid, int ion_grad_type, double ion_grad_index)
       : radial_grid{_radial_grid},  // radius is of length nzones+1
         m_nzones{_radial_grid.num_zones},
-        m_ion_grad_type{ion_grad_type}
+        m_ion_grad_type{ion_grad_type},
+        m_ion_grad_index{ion_grad_index}
   {
     lxi = new double[m_nzones];
     dens = new double[m_nzones];
@@ -96,7 +97,7 @@ class IonGradient{
     return m_nzones;
   }
 
-  void calculate_gradient(const emisProfile &emis_profile, const relParam *rel_param, xillParam *xill_param);
+  void calculate_gradient(const emisProfile &emis_profile, const PrimarySourceParameters &primary_source_params);
 
   [[nodiscard]] xillTableParam **calculate_incident_spectra_for_each_zone(const xillTableParam *primary_source_spec_params) const;
 
@@ -106,8 +107,9 @@ class IonGradient{
 
  private:
   double *m_rmean;
-  const int m_nzones;
-  const int m_ion_grad_type;
+  int m_nzones;
+  int m_ion_grad_type;
+  double m_ion_grad_index; // only used for the PL gradient
 
   void calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density);
 

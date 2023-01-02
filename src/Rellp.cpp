@@ -513,13 +513,13 @@ static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* s
  *  @synopsis: calculate the emissivity profile on a given radial grid,
  *  depending the the given emis-type and parameters
  */
-emisProfile *calc_emis_profile(double *re, int nr, relParam *param, int *status) {
+emisProfile *calc_emis_profile(double *re, int nr, const relParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);
 
   emisProfile *emis = new_emisProfile(re, nr, status);
 
-  double invalid_angle = -1.0;
+  const double invalid_angle = -1.0;
 
   /**  *** Broken Power Law Emissivity ***  **/
   if (param->emis_type == EMIS_TYPE_BKN) {

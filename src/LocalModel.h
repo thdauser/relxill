@@ -127,12 +127,16 @@ class LocalModel {
 
     }
 
-    relParam* get_rel_params(){
-      return ::get_rel_params(m_model_params);
-    }
-    xillParam *get_xill_params(){
-      return ::get_xill_params(m_model_params);
-    }
+  relParam *get_rel_params() {
+    return ::get_rel_params(m_model_params);
+  }
+  xillParam *get_xill_params() {
+    return ::get_xill_params(m_model_params);
+  }
+
+  const ModelParams &get_model_params() {
+    return m_model_params;
+  }
 
  private:
   ModelParams m_model_params;
@@ -142,7 +146,7 @@ class LocalModel {
   void conv_model(const XspecSpectrum &spectrum);
   void xillver_model(const XspecSpectrum &spectrum);
 
-  void set_input_params(const double* inp_par_values){
+  void set_input_params(const double *inp_par_values) {
     auto parnames = m_model_params.get_parnames();
     for (size_t ii = 0; ii < m_model_params.num_params() ; ++ii){
       m_model_params.set_par(parnames[ii], inp_par_values[ii]);

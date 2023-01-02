@@ -141,18 +141,27 @@ xillTableParam **IonGradient::calculate_incident_spectra_for_each_zone(const xil
 }
 
 void IonGradient::calculate_gradient(const emisProfile &emis_profile,
-                                     const relParam *rel_param,
-                                     xillParam *xill_param) {
+                                     const PrimarySourceParameters &primary_source_params) {
 
   set_del_emit_for_each_zone(emis_profile);
+
+  auto rel_param = primary_source_params.rel_param();
+  auto xill_param = primary_source_params.xilltab_param();
 
   calc_energy_shift_from_source_to_disk(rel_param);
 
   if (m_ion_grad_type == ION_GRAD_TYPE_PL) {
-    calc_ion_grad_pl(xill_param->lxi, xill_param->iongrad_index, xill_param->dens);
+    calc_ion_grad_pl(xill_param->lxi, m_ion_grad_index, xill_param->dens);
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_ALPHA) {
-    calc_ion_grad_alpha(emis_profile, xill_param->lxi, xill_param->dens);
+
+    const double lxi_rin =
+        (rel_param->model_type == MOD_TYPE_RELXILLLPALPHA) ?
+        xill_param->lxi :
+        //        calculate_lxi_on_disk_from_distance(primary_source, rin) :
+        xill_param->lxi;
+
+    calc_ion_grad_alpha(emis_profile, lxi_rin, xill_param->dens);
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_CONST) {
     for (int ii = 0; ii < m_nzones; ii++) {
