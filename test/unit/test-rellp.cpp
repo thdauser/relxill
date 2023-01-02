@@ -127,22 +127,15 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
   double const ecut_out_0 = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 1);
 
 
-  /*  for (int ii=0; ii<rel_param->num_zones; ii++){
-      double rad = 0.5 * (ion_gradient.radial_grid.radius[ii] + ion_gradient.radial_grid.radius[ii + 1]);
-      printf(" del_emit=%.1f, rad=%.2e, kTe= %.2e \n",
-             ion_gradient.del_emit[ii]*180.0/M_PI, rad,
-             ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, ii) );
-    } */
-
   // now set the velocity to beta>0
   local_model.set_par(XPar::beta, 0.66);
 
   auto primary_source_params_beta = PrimarySourceParameters{local_model.get_model_params()};
-  auto rel_param_beta = primary_source_params.rel_param();
+  auto rel_param_beta = primary_source_params_beta.rel_param();
   sys_par = get_system_parameters(rel_param_beta, &status);
 
-  ion_gradient.calculate_gradient(*(sys_par->emis), primary_source_params);
-  const double ecut_in_beta = ion_gradient.get_ecut_disk_zone(rel_param, kte_primary, 0);
+  ion_gradient.calculate_gradient(*(sys_par->emis), primary_source_params_beta);
+  const double ecut_in_beta = ion_gradient.get_ecut_disk_zone(rel_param_beta, kte_primary, 0);
 
 
 
