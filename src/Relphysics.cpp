@@ -270,3 +270,19 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
 
   return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
 }
+
+/**
+ * @brief calculate the geometric/Newtonian emissivity for the LP geometry
+ * @details the emissivity profiles are normalized such that at large height and
+ * radii the GR profiles converge towards this defintion
+ * @param h
+ * @param r
+ * @return
+ */
+double calc_lp_emissivity_newton(double h, double r) {
+
+  double emis = pow(1. / (pow((r / h), 2) + 1), (3. / 2));
+  emis /= (2 * M_PI * h * h);
+
+  return emis;
+}

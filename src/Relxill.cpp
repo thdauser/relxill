@@ -262,8 +262,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                     const ModelParams &params,
                     int *status) {
 
-  relParam *rel_param;
-  xillParam *xill_param;
+  relParam *rel_param = nullptr;
+  xillParam *xill_param = nullptr;
   get_relxill_params(params, rel_param, xill_param);
   //  auto rel_param = get_rel_params(params);
   //  auto xill_param = get_xill_params(params);
@@ -313,8 +313,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     //  calculate the emissivity including the rrad correction factors (for those the disk parameters need to be known)
     sys_par = get_system_parameters(rel_param, status); // no need to free this, is automatically done by the cache
-    //  sys_par->emis = calc_emis_profile(sys_par->re, sys_par->nr, rel_param, status);
-
 
     // --- 4 --- calculate multi-zone relline profile
     xillTable *xill_tab = nullptr; // needed for the relbase_profile call
@@ -322,7 +320,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // calculate the relline profile
     int n_ener_conv; // energy grid for the convolution, only created
-    double *ener_conv;
+    double *ener_conv = nullptr;
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
     relline_spec_multizone *rel_profile =
         relbase_profile(ener_conv, n_ener_conv, rel_param, sys_par, xill_tab,

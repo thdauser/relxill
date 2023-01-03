@@ -32,8 +32,8 @@ static double cal_lxi(double dens, double emis, double delta_inc) {
 /**
   * adjust "values" to be within the limits of the xillver table
   **/
-void adjust_parameter_to_be_within_xillver_bounds(double* values, int nzones, double tab_min, double tab_max) {
-  for (int ii=0; ii<nzones; ii++){
+void adjust_parameter_to_be_within_xillver_bounds(double *values, int nzones, double tab_min, double tab_max) {
+  for (int ii = 0; ii < nzones; ii++) {
     if (values[ii] < tab_min) {
       values[ii] = tab_min;
     } else if (values[ii] > tab_max) {
@@ -42,20 +42,40 @@ void adjust_parameter_to_be_within_xillver_bounds(double* values, int nzones, do
   }
 }
 
-// determine the maximal ionization
-static double cal_lxi_max_ss73(double *re, double *emis, double* delinc, int nr, double rin) {
+// we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
+static double get_radius_lxi_max_ss73(double rin) {
+  return pow((11. / 9.), 2) * rin;
+}
 
-  // we use the same definition as Adam with r_peak = (11/9)^2 rin to be consistent (does not matter much)
-  double rad_max_lxi = pow((11. / 9.), 2) * rin;
+/**
+ * @brief calculate the emissivity and del_inc (incident angle on the disk) for the give radius
+ * from interpolation of the emissivity profile
+ * @param rad            [input]
+ * @param emis_profile   [input]
+ * @param emis           [output]
+ * @param del_inc        [output]
+ */
+static void get_emis_at_rad(double rad, const emisProfile &emis_profile,
+                            double &emis, double &del_inc) {
 
   // radial AD grid is sorted descending (!)
-  int kk = inv_binary_search(re, nr, rad_max_lxi);
-  double interp = (rad_max_lxi - re[kk + 1]) / (re[kk] - re[kk + 1]);
+  const int kk = inv_binary_search(emis_profile.re, emis_profile.nr, rad);
+  const double interp = (rad - emis_profile.re[kk + 1]) / (emis_profile.re[kk] - emis_profile.re[kk + 1]);
 
-  double emis_max_lxi = interp_lin_1d(interp, emis[kk + 1], emis[kk]);
-  double delinc_max_lxi = interp_lin_1d(interp, delinc[kk + 1], delinc[kk]);
+  emis = interp_lin_1d(interp, emis_profile.emis[kk + 1], emis_profile.emis[kk]);
+  del_inc = interp_lin_1d(interp, emis_profile.del_inc[kk + 1], emis_profile.del_inc[kk]);
+}
 
-  double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi, delinc_max_lxi);
+// determine the maximal ionization
+static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
+
+  const double rad_max_lxi = get_radius_lxi_max_ss73(rin);
+
+  double emis_max_lxi = -1.0;
+  double delinc_max_lxi = -1.0;
+  get_emis_at_rad(rad_max_lxi, emis_profile, emis_max_lxi, delinc_max_lxi);
+
+  const double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi, delinc_max_lxi);
 
   return lxi_max;
 }
@@ -63,7 +83,7 @@ static double cal_lxi_max_ss73(double *re, double *emis, double* delinc, int nr,
 
 void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density) {
 
-  double rin = radial_grid.radius[0];
+  const double rin = radial_grid.radius[0];
 
   irradiating_flux = new double[m_nzones];
   auto del_inc = new double[m_nzones];
@@ -79,10 +99,10 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
   }
 
   // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
-  double lxi_max = cal_lxi_max_ss73(emis_profile.re, emis_profile.emis, emis_profile.del_inc, emis_profile.nr, rin);
+  const double lxi_max = cal_lxi_max_ss73(emis_profile, rin);
 
   // the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
-  double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
+  const double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
 
   /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
   for (int ii = 0; ii < m_nzones; ii++) {
@@ -140,6 +160,46 @@ xillTableParam **IonGradient::calculate_incident_spectra_for_each_zone(const xil
   return xill_param_zone;
 }
 
+double calc_flux_rin_cgs(double l_source, double height, double Rin, double mass) {
+
+  const double CONST_rgIncm = 1.4822e5;  // G / c^2 * (M/Msolar)
+
+  const double dRay_rg = sqrt(pow(height, 2) + pow(Rin, 2));
+  const double dRay_cm = dRay_rg * CONST_rgIncm * mass;
+
+  return l_source / (4 * M_PI * pow(dRay_cm, 2));
+}
+
+double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_profile,
+                                                    const PrimarySourceParameters &primary_source, double density_rin) {
+
+  const auto &rel_param = (*primary_source.rel_param());
+
+  // Rin is the inner zone of the ionization gradient
+  const double radius_lxi_max = get_radius_lxi_max_ss73(rel_param.rin);
+
+  const double l_source_cgs = primary_source.luminosity_source_cgs((*emis_profile.photon_fate_fractions));
+
+  const double flux_rad_lxi_max_newton_cgs =
+      calc_flux_rin_cgs(l_source_cgs, rel_param.height, radius_lxi_max, primary_source.mass_msolar());
+
+  // the routine "density_ss73_zone_a" returns a density of 1 at rin
+  const double density_lxi_max = density_ss73_zone_a(radius_lxi_max, rel_param.rin) * density_rin;
+
+  double emis_max_lxi = -1.0;
+  double delinc_max_lxi = -1.0;
+  get_emis_at_rad(radius_lxi_max, emis_profile, emis_max_lxi, delinc_max_lxi);
+
+  // calculate the lensing factor from the given emissivity profile, as it is defined such that for large
+  // radii (i.e., neglecting GR effects it coincides with the Newtonian version normalized as \int \emis dA = 1
+  const double lensing_factor = emis_max_lxi / calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
+  const double flux_rad_lxi_max_cgs = flux_rad_lxi_max_newton_cgs * lensing_factor;
+
+  const double lxi_max = cal_lxi(density_lxi_max, flux_rad_lxi_max_cgs, delinc_max_lxi);
+
+  return lxi_max;
+}
+
 void IonGradient::calculate_gradient(const emisProfile &emis_profile,
                                      const PrimarySourceParameters &primary_source_params) {
 
@@ -155,10 +215,11 @@ void IonGradient::calculate_gradient(const emisProfile &emis_profile,
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_ALPHA) {
 
-    const double lxi_rin = (is_alpha_model(rel_param->model_type)) ?
-                           xill_param->lxi : //        calculate_lxi_on_disk_from_distance(primary_source, rin) :
-
-                           xill_param->lxi;
+    const double lxi_rin = (is_alpha_model(rel_param->model_type))
+                           ? IonGradient::calculate_lxi_max_from_distance(emis_profile,
+                                                                          primary_source_params,
+                                                                          xill_param->dens)
+                           : xill_param->lxi;
 
     calc_ion_grad_alpha(emis_profile, lxi_rin, xill_param->dens);
 

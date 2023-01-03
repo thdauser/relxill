@@ -119,6 +119,10 @@ class IonGradient{
 
   void set_del_emit_for_each_zone(const emisProfile &emis_profile);
 
+  static double calculate_lxi_max_from_distance(const emisProfile &emis_profile,
+                                                const PrimarySourceParameters &primary_source_params,
+                                                double density_rin);
+
 };
 
 

@@ -48,8 +48,9 @@ class PrimarySourceParameters {
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
       m_refl_frac{inp_param.get_otherwise_default(XPar::refl_frac, 0)},
-      m_flux_observer{inp_param.get_otherwise_default(XPar::norm_factor, 1)},
-      m_distance{inp_param.get_otherwise_default(XPar::distance, 0)},
+      m_flux_observer{inp_param.get_otherwise_default(XPar::A_flux_cgs, 1)},
+      m_distance_kpc{inp_param.get_otherwise_default(XPar::distance, 0)},
+      m_mass_msolar{inp_param.get_otherwise_default(XPar::mass, 0)},
       m_interpret_reflfrac_as_boost{
           static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))} {
     m_energy_shift_source_observer = (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
@@ -64,21 +65,42 @@ class PrimarySourceParameters {
   }
 
   /**
+   * @brief calculates the boost of the flux (i.e. also the spectrum normalization) from source to observer
+   * due to (1) the energy shift from source to observer and (2) a potential velocity of the primary source
+   * @param lp_refl_frac
+   * @return
+   */
+  double flux_boost_source_to_observer(const lpReflFrac &lp_refl_frac) const {
+    double prime_spec_factors_source_to_observer =
+        lp_refl_frac.f_inf_rest / 0.5 * pow(m_energy_shift_source_observer, PrimarySourceParameters::gam());
+
+    // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
+    if (PrimarySourceParameters::beta() > 1e-4) {
+      prime_spec_factors_source_to_observer *= pow(doppler_factor_source_obs(m_rel_param), 2);
+    }
+    return prime_spec_factors_source_to_observer;
+  }
+
+  /**
    * @brief: calculate the flux boost from the source spectrum to the observed spectrum
    * @param f_inf
    * @return luminosity source [ergs/s]
    */
-  double luminosity_source_cgs(double f_inf) {
-    const double lum_observed = 4 * M_PI * m_distance * m_distance * m_flux_observer;
+  double luminosity_source_cgs(const lpReflFrac &lp_refl_frac) const {
+
+    const double CONST_cm2kpc = 3.2407792700054E-22;
+
+    const double distance_cm = m_distance_kpc / CONST_cm2kpc;
+    const double lum_observed = 4 * M_PI * distance_cm * distance_cm * m_flux_observer;
 
     // add energy shift and flux boost
     const double flux_boost_source_observer =
-        pow(m_energy_shift_source_observer, m_rel_param->gamma) * f_inf / 0.5 * doppler_factor_source_obs(m_rel_param);
+        pow(m_energy_shift_source_observer, m_rel_param->gamma) * lp_refl_frac.f_inf_rest / 0.5
+            * doppler_factor_source_obs(m_rel_param);
 
-    return lum_observed / flux_boost_source_observer;
+    return lum_observed / flux_boost_source_to_observer(lp_refl_frac);
   }
 
-  // return full xilltab and rel_param structures (TODO: refactoring methods such that this is not needed, at least for rel_param?)
   [[nodiscard]] const xillTableParam *xilltab_param() const {
     return m_xilltab_param;
   }
@@ -104,8 +126,13 @@ class PrimarySourceParameters {
     return m_flux_observer;
   }
   double distance() const {
-    return m_distance;
+    return m_distance_kpc;
   }
+
+  double mass_msolar() const {
+    return m_mass_msolar;
+  }
+
   double refl_frac() const {
     return m_refl_frac;
   }
@@ -130,8 +157,9 @@ class PrimarySourceParameters {
  private:
 
   double m_flux_observer;
-  double m_distance;
+  double m_distance_kpc;
   double m_refl_frac;
+  double m_mass_msolar;
   int m_interpret_reflfrac_as_boost;
   double m_energy_shift_source_observer;
 
@@ -155,8 +183,7 @@ class PrimarySourceParameters {
   }
 };
 
-// TODO:
-//  - properly include the reflection fraction and a nice error message
+
 ////////////////////////////////////////////
 class PrimarySource {
   ////////////////////////////////////////////
@@ -164,7 +191,7 @@ class PrimarySource {
  public:
   PrimarySource(const ModelParams &_model_params, RelSysPar *sys_par, const XspecSpectrum &_xspec_spec) :
       source_parameters{_model_params},
-      m_struct_refl_frac((sys_par == nullptr) ? nullptr : sys_par->emis->photon_fate_fractions),
+      m_lp_refl_frac((sys_par == nullptr) ? nullptr : sys_par->emis->photon_fate_fractions),
       m_prime_spec_observer{get_observed_primary_spectrum(_xspec_spec, source_parameters)} {
   }
 
@@ -191,14 +218,14 @@ class PrimarySource {
     return spec;
   }
 
-  void print_reflection_strength(const XspecSpectrum &spectrum, const double *pl_flux) const;
-  void add_primary_spectrum(const XspecSpectrum &spectrum);
+  void print_reflection_strength(const XspecSpectrum &refl_spec, const Spectrum &primary_spec) const;
+  void add_primary_spectrum(const XspecSpectrum &reflection_spectrum);
 
   PrimarySourceParameters source_parameters;
 
  private:
 
-  lpReflFrac *m_struct_refl_frac = nullptr;
+  lpReflFrac *m_lp_refl_frac = nullptr;
   Spectrum m_prime_spec_observer;  // (xillver) normalized spectrum
 
 
