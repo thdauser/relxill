@@ -53,13 +53,14 @@ define check_z_param(ff){ %{{{
       xlog;
       ylog;
       open_plot("/xw",2,1);
+      yrange(1e-1,1e2);
       hplot(lo,hi,val*fac);
       ohplot(lo,hi,val_z_corr*fac);
 %      ohplot(zlo,zhi,val_z/(zhi-zlo)*(0.5*(zlo+zhi))^2);
-      ohplot(lo,hi,val_z*fac);
+%      ohplot(lo,hi,val_z*fac);
       
       ylin;
-      yrange(0.95,1.05);
+      yrange(0.9,1.1);
       hplot(lo[ind],hi[ind],val[ind]/val_z[ind]);
       ohplot(lo[ind],hi[ind],val[ind]/val_z_corr[ind]);
    }
@@ -67,6 +68,8 @@ define check_z_param(ff){ %{{{
    variable gn = goodness(val,val_z_corr);
    msg_log += sprintf("    -> %s goodness value: %.3e\n",
 	    ff, gn);
+
+   
    return gn;
 }
 %}}}
@@ -79,7 +82,7 @@ define runtest(ffs){
    
    variable ff;   
    foreach ff(ffs){            
-      if (check_z_param(ff;nopl) > goodness_lim){
+      if (check_z_param(ff;nopl) > 1e-3){
 	 msg_log += sprintf(" *** error: there seems to be a problem with the redshift in %s \n",ff);
 	 return EXIT_FAILURE;
       }
