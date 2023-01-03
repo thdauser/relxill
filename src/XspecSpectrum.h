@@ -77,14 +77,14 @@ class XspecSpectrum {
 
   // multiply the spectrum (i.e., the flux!!) by a given value
   const XspecSpectrum &operator*=(double value) const {
-    for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
+    for (size_t ii = 0; ii < m_num_flux_bins; ii++) {
       flux[ii] *= value;
     }
     return *this;
   }
 
   void multiply_flux_by(double value) const {
-    for (size_t ii = 0; ii < m_num_flux_bins + 1; ii++) {
+    for (size_t ii = 0; ii < m_num_flux_bins; ii++) {
       flux[ii] *= value;
     }
   }
@@ -92,7 +92,7 @@ class XspecSpectrum {
   // get the energy flux in ergs/cm^2/s
   [[nodiscard]] double get_energy_flux() const {
     double ener_flux = 0.0;
-    for (size_t ii = 0; ii < m_num_flux_bins - 1; ii++) {
+    for (size_t ii = 0; ii < m_num_flux_bins; ii++) {
       ener_flux += flux[ii] * 0.5 * (energy[ii] + energy[ii + 1]);
     }
     return ener_flux * CONVERT_KEV2ERG;
@@ -165,7 +165,7 @@ class DefaultSpec {
 class Spectrum {
  public:
   Spectrum(const double *_energy, size_t n_bins) : num_flux_bins{n_bins} {
-    size_t n_energy = n_bins + 1;
+    size_t const n_energy = n_bins + 1;
     m_energy = new double[n_energy];
     flux = new double[n_bins];
 
@@ -195,6 +195,12 @@ class Spectrum {
 
   [[nodiscard]] double *energy() const {
     return m_energy;
+  }
+
+  void multiply_flux_by(double value) const {
+    for (size_t ii = 0; ii < num_flux_bins; ii++) {
+      flux[ii] *= value;
+    }
   }
 
  public:

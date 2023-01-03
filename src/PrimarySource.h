@@ -48,16 +48,14 @@ class PrimarySourceParameters {
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
       m_refl_frac{inp_param.get_otherwise_default(XPar::refl_frac, 0)},
-      m_normalization_factor{inp_param.get_otherwise_default(XPar::norm_factor, 1)},
+      m_flux_observer{inp_param.get_otherwise_default(XPar::norm_factor, 1)},
       m_distance{inp_param.get_otherwise_default(XPar::distance, 0)},
       m_interpret_reflfrac_as_boost{
           static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))} {
-
     m_energy_shift_source_observer = (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
                                      energy_shift_source_obs(m_rel_param) : 1.0;
 
     m_xilltab_param = m_get_xillver_params_primary_source(m_rel_param, m_energy_shift_source_observer);
-
   }
 
   ~PrimarySourceParameters() {
@@ -66,12 +64,12 @@ class PrimarySourceParameters {
   }
 
   /**
-   * @brief: calculate the flux boost from the source spectrum to the observered spectrum
+   * @brief: calculate the flux boost from the source spectrum to the observed spectrum
    * @param f_inf
-   * @return
+   * @return luminosity source [ergs/s]
    */
   double luminosity_source_cgs(double f_inf) {
-    const double lum_observed = 4 * M_PI * m_distance * m_distance * m_normalization_factor;
+    const double lum_observed = 4 * M_PI * m_distance * m_distance * m_flux_observer;
 
     // add energy shift and flux boost
     const double flux_boost_source_observer =
@@ -103,7 +101,7 @@ class PrimarySourceParameters {
   }
 
   double normalization_factor() const {
-    return m_normalization_factor;
+    return m_flux_observer;
   }
   double distance() const {
     return m_distance;
@@ -131,14 +129,14 @@ class PrimarySourceParameters {
 
  private:
 
-  double m_normalization_factor;
+  double m_flux_observer;
   double m_distance;
   double m_refl_frac;
   int m_interpret_reflfrac_as_boost;
   double m_energy_shift_source_observer;
 
   ModelParams m_inp_param;
-  relParam *m_rel_param = nullptr;
+  relParam *m_rel_param;
   xillTableParam *m_xilltab_param = nullptr;
 
   xillTableParam *m_get_xillver_params_primary_source(relParam *_rel_param, double _energy_shift_source_observer) {
@@ -167,38 +165,29 @@ class PrimarySource {
   PrimarySource(const ModelParams &_model_params, RelSysPar *sys_par, const XspecSpectrum &_xspec_spec) :
       source_parameters{_model_params},
       m_struct_refl_frac((sys_par == nullptr) ? nullptr : sys_par->emis->photon_fate_fractions),
-      m_prime_spec_observer{calculate_observed_primary_spectrum(_xspec_spec, source_parameters)} {
-
-    //  m_prime_spec_xillver_norm_factor = 1. / calculate_source_prime_spec_xillver_norm();
-    // source to obs normalization
-    //
+      m_prime_spec_observer{get_observed_primary_spectrum(_xspec_spec, source_parameters)} {
   }
 
-  double calculate_source_prime_spec_xillver_norm() const {
-    int status = EXIT_SUCCESS;
-    // need to create a specific energy grid for the primary component normalization to
-    // fulfill the XILLVER NORM condition (Dauser+2016)
-    EnerGrid *egrid = get_coarse_xillver_energrid(&status);
-    auto prim_spec_source = new double[egrid->nbins];
-    calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins,
-                          source_parameters.xilltab_param(), &status);
-
-    // calculate the normalization at the primary source
-    double const
-        norm_xillver_prim_spec = calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
-    delete[] prim_spec_source;
-
-    return norm_xillver_prim_spec;
-  }
-
-  //
-  static Spectrum calculate_observed_primary_spectrum(const XspecSpectrum &_xspec_spec,
-                                                      const PrimarySourceParameters &_parameters) {
+  /**
+   * @brief calculates the observed primary spectrum, normalized according to Dauser+2016
+   * in the source frame
+   * @details The normalization is always given in the source frame (for the parameters of
+   * Ecut/kTe in this frame).
+   * @param _xspec_spec
+   * @param _parameters
+   * @return
+   */
+  Spectrum get_observed_primary_spectrum(const XspecSpectrum &_xspec_spec,
+                                         const PrimarySourceParameters &_parameters) {
     int status = EXIT_SUCCESS;
     auto spec = Spectrum(_xspec_spec.energy, _xspec_spec.num_flux_bins());
     calc_primary_spectrum(spec.flux, spec.energy(), spec.num_flux_bins,
                           _parameters.xilltab_param(), &status,
                           _parameters.energy_shift_source_observer());
+
+    // take the xillver normalization factor into account
+    spec.multiply_flux_by(calc_normalization_factor_source());
+
     return spec;
   }
 
@@ -210,28 +199,46 @@ class PrimarySource {
  private:
 
   lpReflFrac *m_struct_refl_frac = nullptr;
-  Spectrum m_prime_spec_observer;  // not normalized
-  // double m_prime_spec_xillver_norm_factor = 1.0;
+  Spectrum m_prime_spec_observer;  // (xillver) normalized spectrum
 
-  // calculate the flux of the primary spectrum in ergs/cm2/sec
-  double get_normalized_primary_spectrum_flux_in_ergs() const {
+
+  /**
+   * @brief calculate the normalization factor of the observed primary source spectrum
+   * according to the xillver normalization given in Dauser+2016.
+   *
+   * It is defined such that F_E(E) = calc_primary_spectrum*norm_factor follows the
+   * definition of the normalization
+   * @details note that for the LP the normalization is applied for the spectrum in the frame
+   * of the source (and NOT the observer); the energy shift is automatically taken into account
+   * @return norm_factor [double]
+   */
+  double calc_normalization_factor_source() const {
     int status = EXIT_SUCCESS;
+
+    // need to use a specific energy grid for the primary component normalization to
+    // fulfill the XILLVER NORM condition (Dauser+2016)
     EnerGrid *egrid = get_coarse_xillver_energrid(&status);
     auto prim_spec_source = new double[egrid->nbins];
-    double *pl_flux = calc_normalized_primary_spectrum(egrid->ener,
-                                                       egrid->nbins,
-                                                       source_parameters.rel_param(),
-                                                       source_parameters.xilltab_param(),
-                                                       &status);
+    calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, source_parameters.xilltab_param(), &status);
+
+    // calculate the normalization at the primary source (i.e., not shifted by the energy shift)
+    double const norm_factor_prim_spec =
+        1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
+    delete[] prim_spec_source;
+    return norm_factor_prim_spec;
+  }
+
+  // calculate the flux of the observed primary spectrum in ergs/cm2/sec
+  double get_normalized_primary_spectrum_flux_in_ergs() const {
+
+    const double *ener = m_prime_spec_observer.energy();
 
     double ener_flux = 0.0;
-    for (int ii = 0; ii < egrid->nbins; ii++) {
-      if (egrid->ener[ii] >= EMIN_XILLVER_NORMALIZATION && egrid->ener[ii + 1] < EMAX_XILLVER_NORMALIZATION) {
-        ener_flux += pl_flux[ii] * 0.5 * (egrid->ener[ii] + egrid->ener[ii + 1]);
+    for (int ii = 0; ii < m_prime_spec_observer.num_flux_bins; ii++) {
+      if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii + 1] < EMAX_XILLVER_NORMALIZATION) {
+        ener_flux += m_prime_spec_observer.flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
       }
     }
-
-    delete[] prim_spec_source;
 
     return ener_flux * CONVERT_KEV2ERG;
   }
