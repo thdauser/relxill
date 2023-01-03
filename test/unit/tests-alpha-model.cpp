@@ -50,15 +50,46 @@ void set_default_par(LocalModel &lmod) {
   lmod.set_par(XPar::switch_switch_reflfrac_boost, 1.0);
 }
 
+TEST_CASE(" Calculate L_source", "[alpha-lsource]") {
+
+  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+  set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::distance, 1e3);  // distance of 1e3 kpc
+  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+  lmod_alpha.set_par(XPar::h, 300.0);  // to be in the Newtonian regime
+
+  const double norm_factor_ergs = 1e-12; // Flux in the 0.01-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::A_flux_cgs, norm_factor_ergs);
+
+  auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
+
+  int status = EXIT_SUCCESS;
+  RelSysPar *sys_par = get_system_parameters(lmod_alpha.get_rel_params(), &status);
+
+  auto lp_refl_frac = new_lpReflFrac(&status);
+  lp_refl_frac->f_inf_rest = 0.5;
+  const double l_source_0 = primary_source_params.luminosity_source_cgs((*lp_refl_frac));
+  const double l_source = primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions));
+
+  const double REF_value_l_source = 1.196495197217232e+38;
+  REQUIRE(fabs(REF_value_l_source / l_source - 1) < 0.01);
+  printf(" L_source: %.5e (no boost etc: %.5e)\n", l_source, l_source_0);
+
+}
+
 TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
 
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+  lmod_alpha.set_par(XPar::distance, 1e3);  // distance of 1e3 kpc
+  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+
+
   lmod_alpha.set_par(XPar::refl_frac, 0.0);
   set_default_par(lmod_alpha);
 
-  const double norm_factor_ergs = 1.0;
-  lmod_alpha.set_par(XPar::norm_factor, norm_factor_ergs);
+  const double norm_factor_ergs = 1e-12; // Flux in the 0.01-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::A_flux_cgs, norm_factor_ergs);
 
   // make sure the primary continuum normalization is given by XPar::norm_factor
   auto spec = default_spec.get_xspec_spectrum();
