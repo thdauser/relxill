@@ -48,7 +48,7 @@ class PrimarySourceParameters {
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
       m_refl_frac{inp_param.get_otherwise_default(XPar::refl_frac, 0)},
-      m_flux_observer{inp_param.get_otherwise_default(XPar::A_flux_cgs, 1)},
+      m_flux_observer{inp_param.get_otherwise_default(XPar::norm_flux_cgs, 1)},
       m_distance_kpc{inp_param.get_otherwise_default(XPar::distance, 0)},
       m_mass_msolar{inp_param.get_otherwise_default(XPar::mass, 0)},
       m_interpret_reflfrac_as_boost{
