@@ -67,9 +67,9 @@ class PrimarySourceParameters {
     delete m_xilltab_param;
   }
 
-  // delete the copy constructor and copy assignment operator
-  PrimarySourceParameters(const PrimarySourceParameters &) = delete;
-  PrimarySourceParameters &operator=(const PrimarySourceParameters &) = delete;
+  // delete the copy constructor and copy assignment operator [deleted as it crashes gitlab]
+  // PrimarySourceParameters(const PrimarySourceParameters &) = delete;
+  // PrimarySourceParameters &operator=(const PrimarySourceParameters &) = delete;
 
   /**
    * @brief calculates the boost of the flux (i.e. also the spectrum normalization) from source to observer
