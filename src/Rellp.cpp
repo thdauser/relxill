@@ -27,8 +27,8 @@ lpTable *cached_lp_table = nullptr;
 
 
 /*
- * @synopsis: calculate the reflection fraction as defined in Dauser+2016 *
- * @input:
+ * @brief: calculate the reflection fraction as defined in Dauser+2016 *
+ * @params:
  *  - emis_profile: calculated for the given Rin/Rout of the model
  *  - del_emit_ad_max: emission angle hitting the outer edge of the fully, simulated accretion disk at
  *    1000Rg, regardless of Rout (as photons are not allowed to cross the disk plane)
@@ -106,7 +106,6 @@ static void norm_emis_profile(const double *re, const int nr, double *emis) {
   for (int ii = 0; ii < nr; ii++) {
     emis[ii] /= integ_area;
   }
-
 }
 
 

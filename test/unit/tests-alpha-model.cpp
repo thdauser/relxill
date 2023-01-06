@@ -43,7 +43,7 @@ void set_default_par(LocalModel &lmod) {
   lmod.set_par(XPar::afe, 1.0);
   lmod.set_par(XPar::incl, 30.0);
   lmod.set_par(XPar::logxi, 3.1);
-  lmod.set_par(XPar::logn, 18);
+  lmod.set_par(XPar::logn, 15);
   lmod.set_par(XPar::gamma, 2.0);
   lmod.set_par(XPar::kte, 60);
   lmod.set_par(XPar::beta, 0.0);
@@ -94,7 +94,7 @@ double calculate_lxi(const LocalModel &lmod) {
 
 }
 
-TEST_CASE(" Calculate lxi ", "[alpha-test]") {
+TEST_CASE(" Calculate lxi ", "[alpha]") {
 
   int status = EXIT_SUCCESS;
 
@@ -104,6 +104,7 @@ TEST_CASE(" Calculate lxi ", "[alpha-test]") {
   lmod_alpha.set_par(XPar::mass, 20);      // mass of 20 Msolar
   lmod_alpha.set_par(XPar::h, 6.0);  // to be in the Newtonian regime
   lmod_alpha.set_par(XPar::norm_flux_cgs, 1e-10); // Flux in the 0.01-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::logn, 18);
 
   const double ref_value_l_source = 2.5972e36;
   auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
@@ -117,28 +118,35 @@ TEST_CASE(" Calculate lxi ", "[alpha-test]") {
   const double lxi_max = calculate_lxi(lmod_alpha);
 
   // ref value (not taking into account the delt_inc correction, so this is only estimated)
-  const double ref_value_emis_lxi_max = 9.486850040102149e+21;
-  const double logn = lmod_alpha.get_model_params().get_par(XPar::logn);
-  const double ref_approx_lxi_max = log10(4.0 * M_PI * ref_value_emis_lxi_max / pow(10, logn));
+  const double ref_value_emis_lxi_max = 6.83e+21;
 
-  //  REQUIRE( fabs(lxi_max - ref_approx_lxi_max) < 0.1);
+  const double logn_rin = lmod_alpha.get_model_params().get_par(XPar::logn);
+  const double rin = lmod_alpha.get_model_params().get_par(XPar::rin);
+  const double r_lximax = pow(11. / 9, 2) * rin;
 
+  const double density_r_lximax = density_ss73_zone_a(r_lximax, rin) * pow(10, logn_rin);
+  // const double ref_value_density = 5.5230109739368972e+19;
+  // REQUIRE(fabs(ref_value_density/density_r_lximax - 1) < 1e-4);
 
+  const double ref_approx_lxi_max = log10(4.0 * M_PI * ref_value_emis_lxi_max / density_r_lximax);
+
+  // although we do not use the delta_inc correction, the value should be within 10% precise
+  REQUIRE(fabs(lxi_max / ref_approx_lxi_max - 1) < 0.1);
 
 }
 
-TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
+TEST_CASE(" Flux Normalization of the Continuum", "[alpha-test]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
 
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
-  lmod_alpha.set_par(XPar::distance, 1e3);  // distance of 1e3 kpc
+  set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
   lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
 
 
   lmod_alpha.set_par(XPar::refl_frac, 0.0);
-  set_default_par(lmod_alpha);
 
-  const double norm_factor_ergs = 1e-12; // Flux in the 0.01-1000keV band in erg/cm^2/s
+  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
   lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
 
   // make sure the primary continuum normalization is given by XPar::norm_factor
@@ -157,10 +165,10 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   // this should give the same result
   const double lxi_max_alpha = calculate_lxi(lmod_alpha);
   LocalModel lmod_std(ModelName::relxilllpCp);
+  set_default_par(lmod_std);
   lmod_std.set_par(XPar::logxi, lxi_max_alpha);
   lmod_std.set_par(XPar::switch_iongrad_type, 2.0);
   lmod_std.set_par(XPar::refl_frac, 0.0);
-  set_default_par(lmod_std);
 
   lmod_std.eval_model(spec);
   const double std_primary_energy_flux = spec.get_energy_flux();
@@ -172,6 +180,6 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   const double flux_ratio_std = std_refl_energy_flux / std_primary_energy_flux;
 
   // now test that the flux ratio to the reflection spectrum is the same as in
-  //  REQUIRE(fabs(flux_ratio_alpha - flux_ratio_std) < 0.01);
+  REQUIRE(fabs(flux_ratio_alpha / flux_ratio_std - 1) < 0.01);
 
 }

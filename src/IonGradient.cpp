@@ -48,34 +48,42 @@ static double get_radius_lxi_max_ss73(double rin) {
 }
 
 /**
- * @brief calculate the emissivity and del_inc (incident angle on the disk) for the give radius
+ * @brief calculate the emissivit profile (emissivity, del_inc, del_emit)for the give radius
  * from interpolation of the emissivity profile
  * @param rad            [input]
  * @param emis_profile   [input]
- * @param emis           [output]
- * @param del_inc        [output]
  */
-static void get_emis_at_rad(double rad, const emisProfile &emis_profile,
-                            double &emis, double &del_inc) {
+static emisProfile *get_emis_at_rad(double rad, const emisProfile &emis_profile) {
+
+  // we only need one bin of the emissivity profile
+  const int nbins = 1;
+  const int ibin = 0;
+
+  int status = EXIT_SUCCESS;
+  auto emis_struct = new_emisProfile(&rad, nbins, &status);
 
   // radial AD grid is sorted descending (!)
   const int kk = inv_binary_search(emis_profile.re, emis_profile.nr, rad);
   const double interp = (rad - emis_profile.re[kk + 1]) / (emis_profile.re[kk] - emis_profile.re[kk + 1]);
 
-  emis = interp_lin_1d(interp, emis_profile.emis[kk + 1], emis_profile.emis[kk]);
-  del_inc = interp_lin_1d(interp, emis_profile.del_inc[kk + 1], emis_profile.del_inc[kk]);
+  emis_struct->emis[ibin] = interp_lin_1d(interp, emis_profile.emis[kk + 1], emis_profile.emis[kk]);
+  emis_struct->del_inc[ibin] = interp_lin_1d(interp, emis_profile.del_inc[kk + 1], emis_profile.del_inc[kk]);
+  emis_struct->del_emit[ibin] = interp_lin_1d(interp, emis_profile.del_emit[kk + 1], emis_profile.del_emit[kk]);
+
+  return emis_struct;
 }
 
 // determine the maximal ionization
 static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
 
-  const double rad_max_lxi = get_radius_lxi_max_ss73(rin);
+  const double rad_lxi = get_radius_lxi_max_ss73(rin);
+  auto emis_profile_rad = get_emis_at_rad(rad_lxi, emis_profile);  // 1dim arrays
 
-  double emis_max_lxi = -1.0;
-  double delinc_max_lxi = -1.0;
-  get_emis_at_rad(rad_max_lxi, emis_profile, emis_max_lxi, delinc_max_lxi);
+  const double lxi_max = cal_lxi(density_ss73_zone_a(rad_lxi, rin),
+                                 emis_profile_rad->emis[0],
+                                 emis_profile_rad->del_inc[0]);
 
-  const double lxi_max = cal_lxi(density_ss73_zone_a(rad_max_lxi, rin), emis_max_lxi, delinc_max_lxi);
+  free_emisProfile(emis_profile_rad);
 
   return lxi_max;
 }
@@ -187,16 +195,17 @@ double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_prof
   // the routine "density_ss73_zone_a" returns a density of 1 at rin
   const double density_lxi_max = density_ss73_zone_a(radius_lxi_max, rel_param.rin) * pow(10, log_density_rin);
 
-  double emis_max_lxi = -1.0;
-  double delinc_max_lxi = -1.0;
-  get_emis_at_rad(radius_lxi_max, emis_profile, emis_max_lxi, delinc_max_lxi);
+  auto emis_profile_rad = get_emis_at_rad(radius_lxi_max, emis_profile);
 
-  // calculate the lensing factor from the given emissivity profile, as it is defined such that for large
+  // calculate the flux boost wrt to Newton from the given emissivity profile, as it is defined such that for large
   // radii (i.e., neglecting GR effects it coincides with the Newtonian version normalized as \int \emis dA = 1
-  const double lensing_factor = emis_max_lxi / calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
-  const double flux_rad_lxi_max_cgs = flux_rad_lxi_max_newton_cgs * lensing_factor;
+  const double boost_newton_to_gr =
+      emis_profile.photon_fate_fractions->refl_frac * emis_profile_rad->emis[0]
+          / calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
 
-  const double lxi_max = cal_lxi(density_lxi_max, flux_rad_lxi_max_cgs, delinc_max_lxi);
+  const double flux_rad_lxi_max_cgs = flux_rad_lxi_max_newton_cgs * boost_newton_to_gr;
+
+  const double lxi_max = cal_lxi(density_lxi_max, flux_rad_lxi_max_cgs, emis_profile_rad->del_inc[0]);
 
   return lxi_max;
 }
