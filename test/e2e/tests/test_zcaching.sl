@@ -13,9 +13,9 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
    
    % #1# for v each spectrum should be different
    _for ii(0,n-2,1){
-      tmp = sum(  (v[ii] - v[ii+1] )^2 ) ;
+      tmp = sum(  (v[ii]/v[ii+1] - 1 )^2 ) ;
       if (tmp < lim ){
-	 vmessage("     caching spectra not correct (did not change while it should), %.3e < %.3e for values %.2e [%i] and %.2e [%i]",
+	 msg_log += sprintf("     caching spectra not correct (did not change while it should), %.3e < %.3e for values %.2e [%i] and %.2e [%i]",
 		  tmp, lim, inp[ii], ii, inp[ii+1], ii+1 );
 	 return EXIT_FAILURE;
       }
@@ -24,9 +24,9 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
    
    % #2# for v0 each spectrum should be the same
    _for ii(0,n-2,1){
-      tmp = sum(  (v0[ii] - v0[ii+1] )^2 );
+      tmp = sum(  (v0[ii]/v0[ii+1] -1  )^2 );
       if (tmp > lim){
-	 vmessage(" *** caching spectra not correct (did change while it should NOT), %.3e > %.3e", tmp, lim);
+	 msg_log += sprintf(" *** caching spectra not correct (did change while it should NOT), %.3e > %.3e", tmp, lim);
 	 return EXIT_FAILURE;
       }
       
@@ -35,7 +35,7 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
    % #3# by design the last elements should be the same
    tmp = sum(  (v[-1] - v0[-1] )^2 );
    if (tmp > lim){
-      vmessage(" *** caching spectra not correct (spectra are different while they should NOT), %.3e > %.3e", tmp, lim);
+      msg_log += sprintf(" *** caching spectra not correct (spectra are different while they should NOT), %.3e > %.3e", tmp, lim);
       return EXIT_FAILURE;
    }
    
@@ -46,8 +46,8 @@ define test_caching_spec(v,v0,inp,inp0){ %{{{
 
 define check_caching_single(ff,par){ %{{{
 
-   fit_fun_default(ff);   
-   
+   fit_fun_default(ff);
+
    %% some bad hack to have an ionization gradient here
    if (ff == "relxilllpCp"){
       set_par("relxilllpCp(1).iongrad_type",2);
@@ -184,7 +184,7 @@ define runtest(ffs){
    ff_arr["relxillNS"] = [std_rel_param, "logN", "kTbb"];
 #ifndef STABLE
    ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
-   ff_arr["relxilllpAlpha"] = [std_rel_param, "h", "refl_frac"];
+   ff_arr["relxilllpAlpha"] = [std_rel_param, "Afe", "z", "logN", "h", "refl_frac", "distance"];
 #endif
    
    variable ff, params;
