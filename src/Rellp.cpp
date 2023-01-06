@@ -33,18 +33,17 @@ lpTable *cached_lp_table = nullptr;
  *  - del_emit_ad_max: emission angle hitting the outer edge of the fully, simulated accretion disk at
  *    1000Rg, regardless of Rout (as photons are not allowed to cross the disk plane)
  **/
-static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_max, const relParam *param, int *status) {
-
-  // in case there is no relativity information, the refl_frac is 1
-  if (param == nullptr) {
-    printf(" *** Warning: can not calculate reflection fraction as no relat. parameters are given \n");
-    return nullptr;
-  }
+static lpReflFrac *calc_refl_frac(emisProfile *emis_profile,
+                                  double rin,
+                                  double rout,
+                                  double del_emit_ad_max,
+                                  double beta,
+                                  int *status) {
 
   // get the angle emitted in the rest-frame of the primary source, which hits the inner and outer edge of the disk
   //  -> important: get the radial values for which the RELLINE is calculated
-  double del_bh = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, param->rin)];
-  double del_ad = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, param->rout)];
+  double del_bh = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, rin)];
+  double del_ad = emis_profile->del_emit[inv_binary_search(emis_profile->re, emis_profile->nr, rout)];
 
   // photons are not allowed to cross the disk plane, so no photon (for beta=0) emitted
   // at del<pi/2 is allowed to be counted to reaching infinity
@@ -61,9 +60,9 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
    *     local frame
    *   -> therefore we need to calculate the abberation of -beta
    */
-  if (param->beta > 1e-6) {
-    del_bh = relat_abberation(del_bh, -1. * param->beta);
-    del_ad = relat_abberation(del_ad, -1. * param->beta);
+  if (beta > 1e-6) {
+    del_bh = relat_abberation(del_bh, -1. * beta);
+    del_ad = relat_abberation(del_ad, -1. * beta);
   }
 
   lpReflFrac *str = new_lpReflFrac(status);
@@ -76,8 +75,8 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile, double del_emit_ad_
   str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
 
   // in case of a moving source, we also have f_inf different from f_inf_rest (need for calculating the refl_frac)
-  if (param->beta > 1e-6) {
-    str->f_inf = 0.5 * (1.0 + cos(relat_abberation(del_emit_ad_max, -1. * param->beta)));
+  if (beta > 1e-6) {
+    str->f_inf = 0.5 * (1.0 + cos(relat_abberation(del_emit_ad_max, -1. * beta)));
   } else {
     str->f_inf = str->f_inf_rest;
   }
@@ -167,7 +166,7 @@ void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile*
       }
     }
 
-    double inter_r = get_ipol_factor_radius(re_tab[kk], re_tab[kk + 1], emis_prof_tab->del_emit[kk], re[ii]);
+    const double inter_r = get_ipol_factor_radius(re_tab[kk], re_tab[kk + 1], emis_prof_tab->del_emit[kk], re[ii]);
 
     //  log grid for the intensity (due to the function profile)
     emis_prof->emis[ii] = interp_log_1d(inter_r, emis_prof_tab->emis[kk], emis_prof_tab->emis[kk + 1]);
@@ -245,45 +244,49 @@ emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status
 
   interpol_emisprofile_spin_height(emis_profile_table, ifac_a, ifac_h, ind_h, dat_ind_a, tab->n_rad);
 
-
   return emis_profile_table;
 }
 
-void apply_emis_relativity_flux_corrections(emisProfile *emisProf, double a, double height, double gamma, double beta) {
+void apply_emis_fluxboost_source_disk(emisProfile *emisProf, double a, double height, double gamma, double beta) {
   for (int ii = 0; ii < emisProf->nr; ii++) {
-
-      /** multiply by the additional factor gi^gamma (see Dauser et al., 2013) **/
-    emisProf->emis[ii] *= pow(gi_potential_lp(emisProf->re[ii], a, height, beta, emisProf->del_emit[ii]), gamma);
-
-    // take the beaming of the jet into account (see Dauser et al., 2013)
-    if (beta > 1e-6) {
-      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], beta), 2);
-    }
+    emisProf->emis[ii] *= calc_fluxboost_source_disk(emisProf->re[ii], emisProf->del_emit[ii], a, height, gamma, beta);
   }
-
 }
-static void calc_emis_jet_point_source(emisProfile *emisProf, const relParam *param, double height, double beta,
+
+/**
+ * @brief calculate the emissivity profile of a lamp post point source
+ * Important: from the relParam input values, height and beta will be ignored (as this allows
+ * the routine to be called for different values if height and beta for an extended source)
+ * @param emis_profile
+ * @param param
+ * @param height
+ * @param beta
+ * @param tab
+ * @param status
+ */
+static void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param, double height, double beta,
                                        lpTable *tab, int *status) {
   CHECK_STATUS_VOID(*status);
 
-  emisProfile* emis_profile_table = interpol_lptable(param->a, height, tab, status);
+  emisProfile *emis_profile_table = interpol_lptable(param->a, height, tab, status);
 
-  rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
+  rebin_emisprofile_on_radial_grid(emis_profile, emis_profile_table, status);
 
-  double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
+  // calculate the angle under which photons are emitted from the source such that they hit the outer edge of
+  // the simulated accretion disk (i.e., photons with a larger emission angle are able to reach the observer)
+  const double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
+  emis_profile->photon_fate_fractions =
+      calc_refl_frac(emis_profile, param->rin, param->rout, del_emit_ad_max, param->beta, status);
   free(emis_profile_table->re); // is not freed by free_emisProfile
   free_emisProfile(emis_profile_table);
 
-  apply_emis_relativity_flux_corrections(emisProf, param->a, height, param->gamma, beta);
+  apply_emis_fluxboost_source_disk(emis_profile, param->a, height, param->gamma, beta);
 
-  emisProf->photon_fate_fractions = calc_refl_frac(emisProf, del_emit_ad_max, param, status);
-
-  emisProf->normFactorPrimSpec = 0.0; // currently not used, calculated directly in add_primary_component
-
+  emis_profile->normFactorPrimSpec = 0.0; // currently not used, calculated directly in add_primary_component
 }
 
 int modelLampPostPointsource(const relParam *param) {
-  double htopPrecLimit = 1e-3;
+  const double htopPrecLimit = 1e-3;
   if ((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) {
     return 1;
   } else {

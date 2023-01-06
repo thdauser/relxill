@@ -286,3 +286,26 @@ double calc_lp_emissivity_newton(double h, double r) {
 
   return emis;
 }
+
+/**
+ * @brief calculate the fluxboost from the (moving) primary source to the accretion disk
+ * at radius rad, following g^Gamma*Doppler_factor^2 (see Dauser et al., 2013)
+ * @param rad
+ * @param del_emit
+ * @param a
+ * @param height
+ * @param gamma
+ * @param beta
+ * @return
+ */
+double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta) {
+
+  // then energy shift factor gi^gamma (see Dauser et al., 2013)
+  double boost = pow(gi_potential_lp(rad, a, height, beta, del_emit), gamma);
+
+  // take the beaming of the jet into account (see Dauser et al., 2013)
+  if (beta > 1e-6) {
+    boost *= pow(doppler_factor(del_emit, beta), 2);
+  }
+  return boost;
+}

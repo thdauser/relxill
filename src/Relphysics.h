@@ -59,5 +59,6 @@ double energy_shift_source_obs(const relParam *rel_param);
 double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit);
 
 double calc_lp_emissivity_newton(double h, double r);
+double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta);
 
 #endif //RELXILL__RELPHYSICS_H_
