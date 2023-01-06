@@ -42,7 +42,6 @@ void set_default_par(LocalModel &lmod) {
   lmod.set_par(XPar::rout, 400);
   lmod.set_par(XPar::afe, 1.0);
   lmod.set_par(XPar::incl, 30.0);
-  lmod.set_par(XPar::logxi, 3.1);
   lmod.set_par(XPar::logn, 15);
   lmod.set_par(XPar::gamma, 2.0);
   lmod.set_par(XPar::kte, 60);
@@ -135,7 +134,7 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
 
 }
 
-TEST_CASE(" Flux Normalization of the Continuum", "[alpha-test]") {
+TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
 
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
@@ -181,5 +180,51 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha-test]") {
 
   // now test that the flux ratio to the reflection spectrum is the same as in
   REQUIRE(fabs(flux_ratio_alpha / flux_ratio_std - 1) < 0.01);
+
+}
+
+TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[alpha-test]") {
+  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
+  auto spec = default_spec.get_xspec_spectrum();
+
+  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+  set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
+  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+
+  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
+
+  lmod_alpha.set_par(XPar::refl_frac, 1.0);
+  lmod_alpha.eval_model(spec);
+  const double refl_energy_flux_1 = spec.get_energy_flux();
+  const double lxi_max_1 = calculate_lxi(lmod_alpha);
+
+  lmod_alpha.set_par(XPar::refl_frac, -1.0);
+  lmod_alpha.eval_model(spec);
+  const double refl_energy_flux_1_refl = spec.get_energy_flux();
+
+  lmod_alpha.set_par(XPar::refl_frac, 2.0);
+  lmod_alpha.eval_model(spec);
+  const double refl_energy_flux_2 = spec.get_energy_flux();
+  const double lxi_max_2 = calculate_lxi(lmod_alpha);
+  lmod_alpha.set_par(XPar::refl_frac, -2.0);
+  lmod_alpha.eval_model(spec);
+  const double refl_energy_flux_2_refl = spec.get_energy_flux();
+
+  // the energy flux should be different
+  REQUIRE(fabs(refl_energy_flux_1 / refl_energy_flux_2 - 1) > 1e-4);
+
+  // for larger boost, we have a higher ionization
+  REQUIRE(lxi_max_2 > lxi_max_1);
+
+  // as the  boost is twice as large, we expect also the reflection strength ROUGHLY to be twice as high
+  // (not exactly, though, as the ionization changes!)
+  REQUIRE(fabs(refl_energy_flux_2_refl / refl_energy_flux_1_refl - 2) < 1e-2);
+
+  // the primary normalization should not change (it is fixed by norm_flux_cgs)
+  const double prim_energy_flux_1 = refl_energy_flux_1 - refl_energy_flux_1_refl;
+  const double prim_energy_flux_2 = refl_energy_flux_2 - refl_energy_flux_2_refl;
+  REQUIRE(fabs(prim_energy_flux_1 / prim_energy_flux_2 - 1) < 1e-4);
 
 }

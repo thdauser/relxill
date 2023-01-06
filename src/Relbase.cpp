@@ -365,49 +365,49 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 }
 
 int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
-  if (comp_single_param_val(par->afe, cpar->afe)) {
+  if (are_values_different(par->afe, cpar->afe)) {
     return 1;
   }
-  if (comp_single_param_val(par->dens, cpar->dens)) {
+  if (are_values_different(par->dens, cpar->dens)) {
     return 1;
   }
-  if (comp_single_param_val(par->ect, cpar->ect)) {
+  if (are_values_different(par->ect, cpar->ect)) {
     return 1;
   }
-  if (comp_single_param_val(par->gam, cpar->gam)) {
+  if (are_values_different(par->gam, cpar->gam)) {
     return 1;
   }
-  if (comp_single_param_val(par->lxi, cpar->lxi)) {
+  if (are_values_different(par->lxi, cpar->lxi)) {
     return 1;
   }
-  if (comp_single_param_val(par->kTbb, cpar->kTbb)) {
+  if (are_values_different(par->kTbb, cpar->kTbb)) {
     return 1;
   }
-  if (comp_single_param_val(par->frac_pl_bb, cpar->frac_pl_bb)) {
+  if (are_values_different(par->frac_pl_bb, cpar->frac_pl_bb)) {
     return 1;
   }
-  if (comp_single_param_val(par->z, cpar->z)) {
-    return 1;
-  }
-
-  if (comp_single_param_val((double) par->prim_type, (double) cpar->prim_type)) {
-    return 1;
-  }
-  if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) {
+  if (are_values_different(par->z, cpar->z)) {
     return 1;
   }
 
-  if (comp_single_param_val(par->iongrad_index, cpar->iongrad_index)) {
+  if (are_values_different((double) par->prim_type, (double) cpar->prim_type)) {
+    return 1;
+  }
+  if (are_values_different((double) par->model_type, (double) cpar->model_type)) {
     return 1;
   }
 
-  if (comp_single_param_val(par->distance, cpar->distance)) {
+  if (are_values_different(par->iongrad_index, cpar->iongrad_index)) {
     return 1;
   }
-  if (comp_single_param_val(par->mass_msolar, cpar->mass_msolar)) {
+
+  if (are_values_different(par->distance, cpar->distance)) {
     return 1;
   }
-  if (comp_single_param_val(par->norm_flux_cgs, cpar->norm_flux_cgs)) {
+  if (are_values_different(par->mass_msolar, cpar->mass_msolar)) {
+    return 1;
+  }
+  if (are_values_different(par->norm_flux_cgs, cpar->norm_flux_cgs)) {
     return 1;
   }
 
@@ -425,9 +425,16 @@ int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
     redo = did_xill_param_change(ca_xill_param, xill_param);
 
     // xillver needs to be re-computed, Ecut changes for the following parameters **/
-    if (comp_single_param_val(rel_param->a, ca_rel_param->a) ||
-        comp_single_param_val(rel_param->height, ca_rel_param->height) ||
-        comp_single_param_val(rel_param->beta, ca_rel_param->beta)) {
+    if (are_values_different(rel_param->a, ca_rel_param->a) ||
+        are_values_different(rel_param->height, ca_rel_param->height) ||
+        are_values_different(rel_param->beta, ca_rel_param->beta)) {
+      redo = 1;
+    }
+
+    // special case for the alpha model: the reflection fraction determines the incident flux and therfore
+    // also the ionization, therefore we need to take care of this parameter
+    if (is_alpha_model(xill_param->model_type)
+        && are_values_different(xill_param->refl_frac, ca_xill_param->refl_frac)) {
       redo = 1;
     }
 

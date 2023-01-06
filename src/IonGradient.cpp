@@ -187,7 +187,11 @@ double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_prof
   // Rin is the inner zone of the ionization gradient
   const double radius_lxi_max = get_radius_lxi_max_ss73(rel_param.rin);
 
-  const double l_source_cgs = primary_source.luminosity_source_cgs((*emis_profile.photon_fate_fractions));
+  // calculate the source luminosity for boost to get a higher/lower source luminosity
+  // note: at add_primary_component this still needs to be added to the normalization of the reflection spectrum
+  double l_source_cgs = primary_source.luminosity_source_cgs((*emis_profile.photon_fate_fractions));
+  const double boost = primary_source.get_boost_parameter(emis_profile.photon_fate_fractions);
+  l_source_cgs *= boost;
 
   const double flux_rad_lxi_max_newton_cgs =
       calc_flux_rin_cgs(l_source_cgs, rel_param.height, radius_lxi_max, primary_source.mass_msolar());
@@ -199,7 +203,7 @@ double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_prof
 
   // calculate the flux boost wrt to Newton from the given emissivity profile, as it is defined such that for large
   // radii (i.e., neglecting GR effects it coincides with the Newtonian version normalized as \int \emis dA = 1
-  const double boost_newton_to_gr =
+  double boost_newton_to_gr =
       emis_profile.photon_fate_fractions->refl_frac * emis_profile_rad->emis[0]
           / calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
 

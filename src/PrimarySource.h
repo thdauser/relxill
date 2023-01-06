@@ -93,7 +93,7 @@ class PrimarySourceParameters {
    * @param f_inf
    * @return luminosity source [ergs/s]
    */
-  double luminosity_source_cgs(const lpReflFrac &lp_refl_frac) const {
+  double luminosity_source_cgs(const lpReflFrac &lp_refl_frac, double boost = 1.0) const {
 
     const double CONST_cm2kpc = 3.2407792700054E-22;
 
@@ -101,10 +101,6 @@ class PrimarySourceParameters {
     const double lum_observed = 4 * M_PI * distance_cm * distance_cm * m_norm_flux_cgs;
 
     // add energy shift and flux boost
-    const double flux_boost_source_observer =
-        pow(m_energy_shift_source_observer, m_rel_param->gamma) * lp_refl_frac.f_inf_rest / 0.5
-            * doppler_factor_source_obs(m_rel_param);
-
     return lum_observed / flux_boost_source_to_observer(lp_refl_frac);
   }
 
@@ -159,6 +155,25 @@ class PrimarySourceParameters {
   }
   [[nodiscard]] double ect() const {
     return m_xilltab_param->ect;
+  }
+
+  /**
+   * @brief: get the absolute value of the boost parameter for the current configuration
+   **/
+  double get_boost_parameter(lpReflFrac *lp_refl_frac) const {
+
+    if (lp_refl_frac == nullptr) {
+      printf(
+          " *** error: can not calculate the boost parameter if the reflection fraction information is not available\n");
+      throw std::exception();
+    }
+
+    if (m_interpret_reflfrac_as_boost) {
+      return fabs(m_refl_frac);
+    } else {
+      return fabs(m_refl_frac) / lp_refl_frac->refl_frac;
+    }
+
   }
 
  private:
@@ -223,6 +238,10 @@ class PrimarySource {
     spec.multiply_flux_by(calc_normalization_factor_source());
 
     return spec;
+  }
+
+  double get_boost_parameter() const {
+    return source_parameters.get_boost_parameter(m_lp_refl_frac);
   }
 
   void print_reflection_strength(const XspecSpectrum &refl_spec, const Spectrum &primary_spec) const;

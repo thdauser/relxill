@@ -43,7 +43,7 @@ inpar *set_input_syspar(const relParam *rel_par, int *status) {
   return inp;
 }
 
-int comp_single_param_val(double val1, double val2) {
+int are_values_different(double val1, double val2) {
   if (fabs(val1 - val2) <= CACHE_LIMIT) {
     return 0;
   } else {
@@ -53,37 +53,37 @@ int comp_single_param_val(double val1, double val2) {
 
 static int comp_sys_param(const relParam *cpar, const relParam *par) {
 
-  if (comp_single_param_val(par->a, cpar->a)) {
+  if (are_values_different(par->a, cpar->a)) {
     return 1;
   }
-  if (comp_single_param_val(par->emis1, cpar->emis1)) {
+  if (are_values_different(par->emis1, cpar->emis1)) {
     return 1;
   }
-  if (comp_single_param_val(par->emis2, cpar->emis2)) {
+  if (are_values_different(par->emis2, cpar->emis2)) {
     return 1;
   }
-  if (comp_single_param_val(par->gamma, cpar->gamma)) {
+  if (are_values_different(par->gamma, cpar->gamma)) {
     return 1;
   }
-  if (comp_single_param_val(par->height, cpar->height)) {
+  if (are_values_different(par->height, cpar->height)) {
     return 1;
   }
-  if (comp_single_param_val(par->htop, cpar->htop)) {
+  if (are_values_different(par->htop, cpar->htop)) {
     return 1;
   }
-  if (comp_single_param_val(par->incl, cpar->incl)) {
+  if (are_values_different(par->incl, cpar->incl)) {
     return 1;
   }
-  if (comp_single_param_val(par->beta, cpar->beta)) {
+  if (are_values_different(par->beta, cpar->beta)) {
     return 1;
   }
-  if (comp_single_param_val(par->rin, cpar->rin)) {
+  if (are_values_different(par->rin, cpar->rin)) {
     return 1;
   }
-  if (comp_single_param_val(par->rbr, cpar->rbr)) {
+  if (are_values_different(par->rbr, cpar->rbr)) {
     return 1;
   }
-  if (comp_single_param_val(par->rout, cpar->rout)) {
+  if (are_values_different(par->rout, cpar->rout)) {
     return 1;
   }
 
@@ -114,17 +114,17 @@ int did_rel_param_change(const relParam *cpar, const relParam *par) {
     return 1;
   }
 
-  if (comp_single_param_val((double) par->emis_type, (double) cpar->emis_type)) {
+  if (are_values_different((double) par->emis_type, (double) cpar->emis_type)) {
     return 1;
   }
-  if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) {
+  if (are_values_different((double) par->model_type, (double) cpar->model_type)) {
     return 1;
   }
 
-  if (comp_single_param_val(par->z, cpar->z)) {
+  if (are_values_different(par->z, cpar->z)) {
     return 1;
   }
-  if (comp_single_param_val(par->lineE, cpar->lineE)) {
+  if (are_values_different(par->lineE, cpar->lineE)) {
     return 1;
   }
 
@@ -136,7 +136,9 @@ int did_rel_param_change(const relParam *cpar, const relParam *par) {
     return 1;
   }
 
-  if (comp_single_param_val((double) par->ion_grad_type, (double) cpar->ion_grad_type)) return 1;
+  if (are_values_different((double) par->ion_grad_type, (double) cpar->ion_grad_type)) {
+    return 1;
+  }
 
   /** also check if the number of zones changed **/
   if (par->num_zones != cpar->num_zones) {
@@ -209,6 +211,8 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
   (*ca_xill_param)->model_type = par->model_type;
 
   (*ca_xill_param)->iongrad_index = par->iongrad_index;
+
+  (*ca_xill_param)->refl_frac = par->refl_frac;
 
 }
 

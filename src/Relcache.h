@@ -69,7 +69,7 @@ typedef struct inpar {
 inpar *get_inputvals_struct(double *ener, int n_ener, const relParam *rel_par, int *status);
 inpar *set_input_syspar(const relParam *rel_par, int *status);
 
-int comp_single_param_val(double val1, double val2);
+int are_values_different(double val1, double val2);
 
 /** create a caching node **/
 cnode *cli_create(cdata *data, cnode *next, int *status);
@@ -117,7 +117,7 @@ class Cache{
     auto parnames = m_model_params.get_parnames();
 
      for(auto par=parnames.begin(); par!=parnames.cend(); ++par ) {
-       if (comp_single_param_val( m_model_params.get_par(*par), _comp_cache.m_model_params.get_par(*par) ) == 0){
+       if (are_values_different( m_model_params.get_par(*par), _comp_cache.m_model_params.get_par(*par) ) == 0){
          return false;
        }
      }
