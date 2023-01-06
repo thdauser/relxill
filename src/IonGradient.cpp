@@ -171,7 +171,8 @@ double calc_flux_rin_cgs(double l_source, double height, double Rin, double mass
 }
 
 double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_profile,
-                                                    const PrimarySourceParameters &primary_source, double density_rin) {
+                                                    const PrimarySourceParameters &primary_source,
+                                                    double log_density_rin) {
 
   const auto &rel_param = (*primary_source.rel_param());
 
@@ -184,7 +185,7 @@ double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_prof
       calc_flux_rin_cgs(l_source_cgs, rel_param.height, radius_lxi_max, primary_source.mass_msolar());
 
   // the routine "density_ss73_zone_a" returns a density of 1 at rin
-  const double density_lxi_max = density_ss73_zone_a(radius_lxi_max, rel_param.rin) * density_rin;
+  const double density_lxi_max = density_ss73_zone_a(radius_lxi_max, rel_param.rin) * pow(10, log_density_rin);
 
   double emis_max_lxi = -1.0;
   double delinc_max_lxi = -1.0;

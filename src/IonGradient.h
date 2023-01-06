@@ -105,6 +105,10 @@ class IonGradient{
 
   void write_to_file(const char *fout) const;
 
+  static double calculate_lxi_max_from_distance(const emisProfile &emis_profile,
+                                                const PrimarySourceParameters &primary_source_params,
+                                                double log_density_rin);
+
  private:
   double *m_rmean;
   int m_nzones;
@@ -119,9 +123,6 @@ class IonGradient{
 
   void set_del_emit_for_each_zone(const emisProfile &emis_profile);
 
-  static double calculate_lxi_max_from_distance(const emisProfile &emis_profile,
-                                                const PrimarySourceParameters &primary_source_params,
-                                                double density_rin);
 
 };
 

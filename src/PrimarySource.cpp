@@ -80,9 +80,9 @@ void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectru
     double const norm_fac_refl = (fabs(refl_frac_input)) / m_lp_refl_frac->refl_frac;
 
     if (is_alpha_model(source_parameters.model_type())) {
-      //  for the alpha model, which includes the distance, the normalization is defined over "normalization_factor"
+      //  for the alpha model, which includes the distance, the normalization is defined over "norm_flux_cgs"
       double const
-          prime_norm_factor = source_parameters.normalization_factor() / get_normalized_primary_spectrum_flux_in_ergs();
+          prime_norm_factor = source_parameters.norm_flux_cgs() / get_normalized_primary_spectrum_flux_in_ergs();
 
       primary_spectrum.multiply_flux_by(prime_norm_factor);
 

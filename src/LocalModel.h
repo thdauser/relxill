@@ -127,14 +127,14 @@ class LocalModel {
 
     }
 
-  relParam *get_rel_params() {
+  relParam *get_rel_params() const {
     return ::get_rel_params(m_model_params);
   }
-  xillParam *get_xill_params() {
+  xillParam *get_xill_params() const {
     return ::get_xill_params(m_model_params);
   }
 
-  const ModelParams &get_model_params() {
+  const ModelParams &get_model_params() const {
     return m_model_params;
   }
 

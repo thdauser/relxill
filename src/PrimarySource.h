@@ -48,7 +48,7 @@ class PrimarySourceParameters {
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
       m_refl_frac{inp_param.get_otherwise_default(XPar::refl_frac, 0)},
-      m_flux_observer{inp_param.get_otherwise_default(XPar::norm_flux_cgs, 1)},
+      m_norm_flux_cgs{inp_param.get_otherwise_default(XPar::norm_flux_cgs, 1)},
       m_distance_kpc{inp_param.get_otherwise_default(XPar::distance, 0)},
       m_mass_msolar{inp_param.get_otherwise_default(XPar::mass, 0)},
       m_interpret_reflfrac_as_boost{
@@ -91,7 +91,7 @@ class PrimarySourceParameters {
     const double CONST_cm2kpc = 3.2407792700054E-22;
 
     const double distance_cm = m_distance_kpc / CONST_cm2kpc;
-    const double lum_observed = 4 * M_PI * distance_cm * distance_cm * m_flux_observer;
+    const double lum_observed = 4 * M_PI * distance_cm * distance_cm * m_norm_flux_cgs;
 
     // add energy shift and flux boost
     const double flux_boost_source_observer =
@@ -122,8 +122,8 @@ class PrimarySourceParameters {
     return m_get_xillver_params_primary_source(m_rel_param, m_energy_shift_source_observer);
   }
 
-  double normalization_factor() const {
-    return m_flux_observer;
+  double norm_flux_cgs() const {
+    return m_norm_flux_cgs;
   }
   double distance() const {
     return m_distance_kpc;
@@ -156,7 +156,7 @@ class PrimarySourceParameters {
 
  private:
 
-  double m_flux_observer;
+  double m_norm_flux_cgs;
   double m_distance_kpc;
   double m_refl_frac;
   double m_mass_msolar;

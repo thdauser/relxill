@@ -346,10 +346,10 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
  * @brief calculate the normalization factor to convert the initial xillver primary spectrum
  * (given by xill_param_0) under the given energy shift, by taking the fixed xillver incident
  * spectrum normalization in the 0.1-1000keV range into account (Dauser+16, A1). Note that the
- * normalization of the primary spectrum therefore scales as 1/normalization_factor.
+ * normalization of the primary spectrum therefore scales as 1/norm_flux_cgs.
  * @param energy_shift_source_disk [energy shift from the source to the disk]
  * @param xill_param_0 [xillver parameters for the inital spectrum]
- * @return normalization_factor
+ * @return norm_flux_cgs
  */
 double calc_xillver_normalization_change(double energy_shift, const xillTableParam *xill_param_0) {
 
@@ -384,7 +384,7 @@ double calc_xillver_normalization_change(double energy_shift, const xillTablePar
  * @param energy_shift_source_disk [energy shift from the source to the disk for each zone]
  * @param n_zones [number of zones]
  * @param xill_param_0 [xillver parameters for the inital spectrum]
- * @return normalization_factor
+ * @return norm_flux_cgs
  */
 double *calc_xillver_normalization_change_source_to_disk(const double *energy_shift,
                                                          int n_zones,
