@@ -239,6 +239,9 @@ typedef struct {
   double kTbb;
   double boost;
   double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end
+  double mass_msolar;
+  double distance;
+  double norm_flux_cgs;
 } xillParam;
 
 

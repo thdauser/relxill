@@ -99,7 +99,7 @@ class IonGradient{
 
   void calculate_gradient(const emisProfile &emis_profile, const PrimarySourceParameters &primary_source_params);
 
-  [[nodiscard]] xillTableParam **calculate_incident_spectra_for_each_zone(const xillTableParam *primary_source_spec_params) const;
+  [[nodiscard]] xillTableParam **get_xill_param_zone(const xillTableParam *primary_source_xilltab_params) const;
 
   double get_ecut_disk_zone(const relParam *rel_param, double ecut_primary, int izone) const;
 

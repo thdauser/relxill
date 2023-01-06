@@ -124,7 +124,7 @@ static void check_caching_parameters(CachingStatus &caching_status,
       caching_status.xill = cached::yes;
     }
 
-    // special case: as return_rad emissivity depends on xillver, if xillver not cached, relat also no cached
+    // special case: as return_rad emissivity depends on xillver, if xill_param as well as rel_paramare not cached
     if (rel_param->return_rad && caching_status.xill == cached::no){
       caching_status.relat = cached::no;
     }
@@ -253,10 +253,6 @@ xillSpec **get_xillver_reflection_spectra(specCache *spec_cache,
 ///////////////////////////////////////
 
 /** @brief convolve a xillver spectrum with the relbase kernel
- * @param spectrum
- * @param xill_param
- * @param rel_param
- * @param status
  */
 void relxill_kernel(const XspecSpectrum &spectrum,
                     const ModelParams &params,
@@ -298,7 +294,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     ion_gradient.calculate_gradient(*(sys_par->emis), primary_source.source_parameters);
 
     auto xill_param_zone =
-        ion_gradient.calculate_incident_spectra_for_each_zone(primary_source.source_parameters.xilltab_param());
+        ion_gradient.get_xill_param_zone(primary_source.source_parameters.xilltab_param());
 
     // --- 2 --- get xillver reflection spectra (are internally stored in a general, cached structure "SpecCache")
     //           such that they are re-used of the caching_status.xill==yes

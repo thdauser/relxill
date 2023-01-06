@@ -393,9 +393,23 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
   if (comp_single_param_val((double) par->prim_type, (double) cpar->prim_type)) {
     return 1;
   }
-  if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) return 1;
+  if (comp_single_param_val((double) par->model_type, (double) cpar->model_type)) {
+    return 1;
+  }
 
-  if (comp_single_param_val(par->iongrad_index, cpar->iongrad_index)) return 1;
+  if (comp_single_param_val(par->iongrad_index, cpar->iongrad_index)) {
+    return 1;
+  }
+
+  if (comp_single_param_val(par->distance, cpar->distance)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->mass_msolar, cpar->mass_msolar)) {
+    return 1;
+  }
+  if (comp_single_param_val(par->norm_flux_cgs, cpar->norm_flux_cgs)) {
+    return 1;
+  }
 
   return 0;
 }

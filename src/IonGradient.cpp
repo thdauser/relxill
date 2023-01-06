@@ -151,16 +151,16 @@ void IonGradient::calc_energy_shift_from_source_to_disk(const relParam *rel_para
   }
 }
 
-xillTableParam **IonGradient::calculate_incident_spectra_for_each_zone(const xillTableParam *primary_source_spec_params) const {
+xillTableParam **IonGradient::get_xill_param_zone(const xillTableParam *primary_source_xilltab_params) const {
 
   auto xill_param_zone = new xillTableParam *[m_nzones];
 
   for (int ii = 0; ii < m_nzones; ii++) {
     xill_param_zone[ii] = new xillTableParam;
-    (*xill_param_zone[ii]) = (*primary_source_spec_params);  // shallow copy (enough for the parameter structure)
+    (*xill_param_zone[ii]) = (*primary_source_xilltab_params);  // shallow copy (enough for the parameter structure)
 
     // set xillver parameters for the given zone
-    xill_param_zone[ii]->ect = primary_source_spec_params->ect * m_energy_shift_source_disk[ii];
+    xill_param_zone[ii]->ect = primary_source_xilltab_params->ect * m_energy_shift_source_disk[ii];
     xill_param_zone[ii]->lxi = lxi[ii];
     xill_param_zone[ii]->dens = dens[ii];
   }

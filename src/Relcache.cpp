@@ -201,6 +201,10 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
 
   (*ca_xill_param)->z = par->z;
 
+  (*ca_xill_param)->distance = par->distance;
+  (*ca_xill_param)->mass_msolar = par->mass_msolar;
+  (*ca_xill_param)->norm_flux_cgs = par->norm_flux_cgs;
+
   (*ca_xill_param)->prim_type = par->prim_type;
   (*ca_xill_param)->model_type = par->model_type;
 
@@ -209,24 +213,25 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
 }
 
 static int did_energy_grid_change(double *ener, int n_ener, relline_spec_multizone *ca) {
-  int change = 0;
+  const int not_changed = 0;
+  const int changed = 1;
 
   if (ca == nullptr) {
-    return change;
+    return not_changed;
   }
 
   if (n_ener != ca->n_ener) {
-    return 1;
+    return changed;
   }
 
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
     if (fabs(ca->ener[ii] - ener[ii]) > 1e-4) {
-      return 1;
+      return changed;
     }
   }
 
-  return change;
+  return not_changed;
 }
 
 cnode *cli_create(cdata *data, cnode *next, int *status) {

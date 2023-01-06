@@ -47,22 +47,29 @@ class PrimarySourceParameters {
   explicit PrimarySourceParameters(const ModelParams &inp_param) :
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
-      m_refl_frac{inp_param.get_otherwise_default(XPar::refl_frac, 0)},
-      m_norm_flux_cgs{inp_param.get_otherwise_default(XPar::norm_flux_cgs, 1)},
-      m_distance_kpc{inp_param.get_otherwise_default(XPar::distance, 0)},
-      m_mass_msolar{inp_param.get_otherwise_default(XPar::mass, 0)},
       m_interpret_reflfrac_as_boost{
           static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))} {
     m_energy_shift_source_observer = (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
                                      energy_shift_source_obs(m_rel_param) : 1.0;
 
-    m_xilltab_param = m_get_xillver_params_primary_source(m_rel_param, m_energy_shift_source_observer);
+    auto xill_param = get_xill_params(m_inp_param);
+    m_refl_frac = xill_param->refl_frac;
+    m_norm_flux_cgs = xill_param->norm_flux_cgs;
+    m_distance_kpc = xill_param->distance;
+    m_mass_msolar = xill_param->mass_msolar;
+    delete xill_param;
+
+    m_xilltab_param = m_get_xilltab_params_primary_source(m_rel_param, m_energy_shift_source_observer);
   }
 
   ~PrimarySourceParameters() {
     delete m_rel_param;
     delete m_xilltab_param;
   }
+
+  // delete the copy constructor and copy assignment operator
+  PrimarySourceParameters(const PrimarySourceParameters &) = delete;
+  PrimarySourceParameters &operator=(const PrimarySourceParameters &) = delete;
 
   /**
    * @brief calculates the boost of the flux (i.e. also the spectrum normalization) from source to observer
@@ -119,7 +126,7 @@ class PrimarySourceParameters {
   }
 
   xillTableParam *get_xillver_params_primary_source() {
-    return m_get_xillver_params_primary_source(m_rel_param, m_energy_shift_source_observer);
+    return m_get_xilltab_params_primary_source(m_rel_param, m_energy_shift_source_observer);
   }
 
   double norm_flux_cgs() const {
@@ -167,7 +174,7 @@ class PrimarySourceParameters {
   relParam *m_rel_param;
   xillTableParam *m_xilltab_param = nullptr;
 
-  xillTableParam *m_get_xillver_params_primary_source(relParam *_rel_param, double _energy_shift_source_observer) {
+  xillTableParam *m_get_xilltab_params_primary_source(relParam *_rel_param, double _energy_shift_source_observer) {
     int status = EXIT_SUCCESS;
     auto xill_param = get_xill_params(m_inp_param);
     auto xilltab_param = get_xilltab_param(xill_param, &status);
