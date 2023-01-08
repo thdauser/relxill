@@ -93,7 +93,7 @@ class PrimarySourceParameters {
    * @param f_inf
    * @return luminosity source [ergs/s]
    */
-  double luminosity_source_cgs(const lpReflFrac &lp_refl_frac, double boost = 1.0) const {
+  double luminosity_source_cgs(const lpReflFrac &lp_refl_frac) const {
 
     const double CONST_cm2kpc = 3.2407792700054E-22;
 

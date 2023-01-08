@@ -183,7 +183,7 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
 
 }
 
-TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[alpha-test]") {
+TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
@@ -226,5 +226,53 @@ TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[
   const double prim_energy_flux_1 = refl_energy_flux_1 - refl_energy_flux_1_refl;
   const double prim_energy_flux_2 = refl_energy_flux_2 - refl_energy_flux_2_refl;
   REQUIRE(fabs(prim_energy_flux_1 / prim_energy_flux_2 - 1) < 1e-4);
+
+}
+
+TEST_CASE(" Test the distance parameter", "[alpha]") {
+  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
+  auto spec = default_spec.get_xspec_spectrum();
+
+  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+  set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
+  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+  lmod_alpha.set_par(XPar::refl_frac, -1.0);      // mass of 1e6 Msolar
+
+  lmod_alpha.eval_model(spec);
+  const double flux_1 = spec.get_energy_flux();
+  const double lxi_1 = calculate_lxi(lmod_alpha);
+
+  lmod_alpha.set_par(XPar::distance, 2e5);
+  lmod_alpha.eval_model(spec);
+  const double flux_2 = spec.get_energy_flux();
+  const double lxi_2 = calculate_lxi(lmod_alpha);
+
+  REQUIRE(fabs(lxi_1 / lxi_2 - 1) > 0.01);
+
+}
+
+TEST_CASE(" Test the mass parameter", "[alpha-test]") {
+  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
+  auto spec = default_spec.get_xspec_spectrum();
+
+  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+  set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
+  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+  lmod_alpha.set_par(XPar::refl_frac, -1.0);      // mass of 1e6 Msolar
+
+  lmod_alpha.eval_model(spec);
+  const double flux_1 = spec.get_energy_flux();
+  const double lxi_1 = calculate_lxi(lmod_alpha);
+
+  lmod_alpha.set_par(XPar::mass, 2e6);
+  lmod_alpha.eval_model(spec);
+  const double flux_2 = spec.get_energy_flux();
+  const double lxi_2 = calculate_lxi(lmod_alpha);
+
+  REQUIRE(fabs(lxi_1 / lxi_2 - 1) > 0.01);
+
+  REQUIRE(fabs(flux_1 / flux_2 - 1) > 1e-6);
 
 }
