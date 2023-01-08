@@ -184,7 +184,7 @@ define runtest(ffs){
    ff_arr["relxillNS"] = [std_rel_param, "logN", "kTbb"];
 #ifndef STABLE
    ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
-   ff_arr["relxilllpAlpha"] = [std_rel_param, "Afe", "z", "logN", "h", "refl_frac", "distance"];
+   ff_arr["relxilllpAlpha"] = [std_rel_param, "Afe", "z", "logN", "h", "refl_frac", "mass", "distance"];
 #endif
    
    variable ff, params;
