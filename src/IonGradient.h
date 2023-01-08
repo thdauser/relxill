@@ -82,6 +82,7 @@ class IonGradient{
     delete[] irradiating_flux;
     delete[] del_emit;
     delete[] dens;
+    delete[] m_physical_irrad_flux;
     delete[] m_rmean;
     delete[] m_energy_shift_source_disk;
   }
@@ -114,6 +115,8 @@ class IonGradient{
   int m_nzones;
   int m_ion_grad_type;
   double m_ion_grad_index; // only used for the PL gradient
+  double m_physical_emis_normalization_factor = 0; // is set in "calculate_lxi_max_from_distance"
+  double *m_physical_irrad_flux{nullptr};
 
   void calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density);
 
@@ -123,6 +126,7 @@ class IonGradient{
 
   void set_del_emit_for_each_zone(const emisProfile &emis_profile);
 
+  void calculate_physical_emissivity(const PrimarySourceParameters &primary_source, const emisProfile &emis_profile);
 
 };
 

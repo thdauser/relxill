@@ -73,6 +73,20 @@ static emisProfile *get_emis_at_rad(double rad, const emisProfile &emis_profile)
   return emis_struct;
 }
 
+/**
+ * @brief calculates the emissivity profile at the radius of maximal ionization [only 1 value]
+ * @param rel_param
+ * @param emis_profile
+ * @return
+ */
+static emisProfile *get_emis_profile_lxi_max(const relParam &rel_param, const emisProfile &emis_profile) {
+
+  const double radius_lxi_max = get_radius_lxi_max_ss73(rel_param.rin);
+  auto emis_profile_rad = get_emis_at_rad(radius_lxi_max, emis_profile);
+
+  return emis_profile_rad;
+}
+
 // determine the maximal ionization
 static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
 
@@ -88,7 +102,12 @@ static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
   return lxi_max;
 }
 
-
+/**
+ * @brief: calculate the ionization gradient for the alpha type models
+ * @param emis_profile
+ * @param param_xlxi0
+ * @param param_density
+ */
 void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density) {
 
   const double rin = radial_grid.radius[0];
@@ -114,7 +133,7 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
 
   /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
   for (int ii = 0; ii < m_nzones; ii++) {
-    double density_normed = density_ss73_zone_a(m_rmean[ii], rin);
+    const double density_normed = density_ss73_zone_a(m_rmean[ii], rin);
     dens[ii] = log10(density_normed) + param_density;  //addition as quantity is logarithm
 
     // now we can use the emissivity to calculate the ionization
@@ -132,7 +151,7 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
 void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens) {
   for (int ii = 0; ii < m_nzones; ii++) {
     lxi[ii] = (exp(xlxi0))
-        * pow((m_rmean[ii] / m_rmean[0]), -1.0 * xindex);  // TODO: check if we need to subtract xlxi_tab_min here
+        * pow((m_rmean[ii] / m_rmean[0]), -1.0 * xindex);
     lxi[ii] = log(lxi[ii]);
 
     dens[ii] = inputval_dens;
@@ -178,40 +197,112 @@ double calc_flux_rin_cgs(double l_source, double height, double Rin, double mass
   return l_source / (4 * M_PI * pow(dRay_cm, 2));
 }
 
+/**
+ * @brief: for a given primary source configuration (mass, distance, observed flux), we calculate the flux at the
+ * given radius on the disk, using no GR for the flux conversion from source to disk (i.e., no energy shifts and
+ * and straight photons paths)
+ * @param photon_fate_fractions
+ * @param primary_source
+ * @param rad
+ * @return
+ */
+double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
+                                 const PrimarySourceParameters &primary_source,
+                                 double rad) {
+
+  const auto &rel_param = (*primary_source.rel_param());
+
+  // calculate the source luminosity for boost to get a higher/lower source luminosity
+  // note: at add_primary_component this still needs to be added to the normalization of the reflection spectrum
+  double l_source_cgs = primary_source.luminosity_source_cgs((*photon_fate_fractions));
+  const double boost = primary_source.get_boost_parameter(photon_fate_fractions);
+  l_source_cgs *= boost;
+
+  return calc_flux_rin_cgs(l_source_cgs, rel_param.height, rad, primary_source.mass_msolar());
+}
+
+/**
+ * @brief calculate the flux on the disk at the radius given by the emissivity profile
+ * (require the emissivity profile to be only of length=1!)
+ * @param photon_fate_fractions
+ * @param emis_profile_lxi_max  (is only allowed to contain one value)
+ * @param rel_param
+ * @return
+ */
+double calc_flux_disk_cgs(const lpReflFrac *photon_fate_fractions,
+                          const emisProfile &emis_profile_lxi_max,
+                          const PrimarySourceParameters &primary_source) {
+  assert(emis_profile_lxi_max.nr == 1);
+
+  const double radius_lxi_max = emis_profile_lxi_max.re[0];
+  const auto &rel_param = (*primary_source.rel_param());
+
+  // calculate the flux boost wrt to Newton from the given emissivity profile, as it is defined such that for large
+  // radii (i.e., neglecting GR effects it coincides with the Newtonian version normalized as \int \emis dA = 1)
+  double const boost_newton_to_gr =
+      photon_fate_fractions->refl_frac * emis_profile_lxi_max.emis[0]
+          / calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
+
+  const double flux_rad_lxi_max_cgs =
+      calc_flux_disk_newton_cgs(photon_fate_fractions, primary_source, radius_lxi_max)
+          * boost_newton_to_gr;
+
+  return flux_rad_lxi_max_cgs;
+}
+
+/**
+ * @brief: calculates the value of maximal value of log(xi) for an alpha disk density gradient for a given
+ * density at the Rin (note that the maximal value of log(xi) is not at Rin, but (11/9)^2*Rin)
+ * @param emis_profile
+ * @param primary_source
+ * @param log_density_rin
+ * @return
+ */
 double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_profile,
                                                     const PrimarySourceParameters &primary_source,
                                                     double log_density_rin) {
 
   const auto &rel_param = (*primary_source.rel_param());
 
-  // Rin is the inner zone of the ionization gradient
-  const double radius_lxi_max = get_radius_lxi_max_ss73(rel_param.rin);
+  auto emis_profile_lxi_max = get_emis_profile_lxi_max(rel_param, emis_profile);
+  const double radius_lxi_max = emis_profile_lxi_max->re[0];
 
-  // calculate the source luminosity for boost to get a higher/lower source luminosity
-  // note: at add_primary_component this still needs to be added to the normalization of the reflection spectrum
-  double l_source_cgs = primary_source.luminosity_source_cgs((*emis_profile.photon_fate_fractions));
-  const double boost = primary_source.get_boost_parameter(emis_profile.photon_fate_fractions);
-  l_source_cgs *= boost;
-
-  const double flux_rad_lxi_max_newton_cgs =
-      calc_flux_rin_cgs(l_source_cgs, rel_param.height, radius_lxi_max, primary_source.mass_msolar());
+  const double flux_rad_lxi_max_cgs =
+      calc_flux_disk_cgs(emis_profile.photon_fate_fractions, (*emis_profile_lxi_max), primary_source);
 
   // the routine "density_ss73_zone_a" returns a density of 1 at rin
   const double density_lxi_max = density_ss73_zone_a(radius_lxi_max, rel_param.rin) * pow(10, log_density_rin);
 
-  auto emis_profile_rad = get_emis_at_rad(radius_lxi_max, emis_profile);
+  const double lxi_max = cal_lxi(density_lxi_max, flux_rad_lxi_max_cgs, emis_profile_lxi_max->del_inc[0]);
 
-  // calculate the flux boost wrt to Newton from the given emissivity profile, as it is defined such that for large
-  // radii (i.e., neglecting GR effects it coincides with the Newtonian version normalized as \int \emis dA = 1
-  double boost_newton_to_gr =
-      emis_profile.photon_fate_fractions->refl_frac * emis_profile_rad->emis[0]
-          / calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
-
-  const double flux_rad_lxi_max_cgs = flux_rad_lxi_max_newton_cgs * boost_newton_to_gr;
-
-  const double lxi_max = cal_lxi(density_lxi_max, flux_rad_lxi_max_cgs, emis_profile_rad->del_inc[0]);
+  free_emisProfile(emis_profile_lxi_max);
 
   return lxi_max;
+}
+
+/**
+ * @brief calculates the physical emissivity (meaning in units of erg/cm2/s) for the given source configuration
+ * @param primary_source
+ * @param emis_profile
+ */
+void IonGradient::calculate_physical_emissivity(const PrimarySourceParameters &primary_source,
+                                                const emisProfile &emis_profile) {
+
+  const auto &rel_param = (*primary_source.rel_param());
+
+  auto emis_profile_lxi_max = get_emis_profile_lxi_max(rel_param, emis_profile);
+  const double radius_lxi_max = emis_profile_lxi_max->re[0];
+
+  const double flux_rad_lxi_max_cgs =
+      calc_flux_disk_cgs(emis_profile.photon_fate_fractions, (*emis_profile_lxi_max), primary_source);
+
+  const double physical_emis_normalization_factor = flux_rad_lxi_max_cgs / emis_profile_lxi_max->emis[0];
+
+  m_physical_irrad_flux = new double[emis_profile.nr];
+  for (int ii = 0; ii < emis_profile.nr; ii++) {
+    m_physical_irrad_flux[ii] = emis_profile.emis[ii] * physical_emis_normalization_factor;
+  }
+
 }
 
 void IonGradient::calculate_gradient(const emisProfile &emis_profile,
@@ -258,14 +349,29 @@ void IonGradient::calculate_gradient(const emisProfile &emis_profile,
   }
 }
 
+/**
+ * @brief: write the ionization gradient to file; for the alpha type gradient, als the irradiating flux
+ * is written
+ * @param fout
+ */
 void IonGradient::write_to_file(const char *fout) const {
 
   FILE *fp = fopen(fout, "w+");
 
-  fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n");
-  for (int ii = 0; ii < m_nzones; ii++) {
-    fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", radial_grid.radius[ii], radial_grid.radius[ii + 1],
-            lxi[ii], dens[ii], del_emit[ii]);
+  double *irrad_flux = irradiating_flux;
+
+  if (irrad_flux != nullptr) {
+    fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n F_x\n");
+    for (int ii = 0; ii < m_nzones; ii++) {
+      fprintf(fp, " %e \t %e \t %e \t %e \t %e \t %e \n", radial_grid.radius[ii], radial_grid.radius[ii + 1],
+              lxi[ii], dens[ii], del_emit[ii], irrad_flux[ii]);
+    }
+  } else {
+    fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n ");
+    for (int ii = 0; ii < m_nzones; ii++) {
+      fprintf(fp, " %e \t %e \t %e \t %e \t %e  \n", radial_grid.radius[ii], radial_grid.radius[ii + 1],
+              lxi[ii], dens[ii], del_emit[ii]);
+    }
   }
   fclose_errormsg(fp, fout);
 }

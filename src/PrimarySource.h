@@ -160,7 +160,7 @@ class PrimarySourceParameters {
   /**
    * @brief: get the absolute value of the boost parameter for the current configuration
    **/
-  double get_boost_parameter(lpReflFrac *lp_refl_frac) const {
+  double get_boost_parameter(const lpReflFrac *lp_refl_frac) const {
 
     if (lp_refl_frac == nullptr) {
       printf(
