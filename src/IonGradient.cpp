@@ -282,11 +282,16 @@ double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_prof
 
 /**
  * @brief calculates the physical emissivity (meaning in units of erg/cm2/s) for the given source configuration
+ * needs the irradiating_flux to be calculated
  * @param primary_source
  * @param emis_profile
  */
 void IonGradient::calculate_physical_emissivity(const PrimarySourceParameters &primary_source,
                                                 const emisProfile &emis_profile) {
+
+  if (irradiating_flux == nullptr) {
+    return;
+  }
 
   const auto &rel_param = (*primary_source.rel_param());
 
@@ -298,12 +303,13 @@ void IonGradient::calculate_physical_emissivity(const PrimarySourceParameters &p
 
   const double physical_emis_normalization_factor = flux_rad_lxi_max_cgs / emis_profile_lxi_max->emis[0];
 
-  m_physical_irrad_flux = new double[emis_profile.nr];
-  for (int ii = 0; ii < emis_profile.nr; ii++) {
-    m_physical_irrad_flux[ii] = emis_profile.emis[ii] * physical_emis_normalization_factor;
+  m_physical_irrad_flux = new double[m_nzones];
+  for (int ii = 0; ii < m_nzones; ii++) {
+    m_physical_irrad_flux[ii] = irradiating_flux[ii] * physical_emis_normalization_factor;
   }
 
 }
+
 
 void IonGradient::calculate_gradient(const emisProfile &emis_profile,
                                      const PrimarySourceParameters &primary_source_params) {
@@ -341,12 +347,18 @@ void IonGradient::calculate_gradient(const emisProfile &emis_profile,
     throw std::exception();
   }
 
+  calculate_physical_emissivity(primary_source_params, emis_profile);
+
+  if (shouldOutfilesBeWritten()) {
+    if (is_alpha_model(rel_param->model_type)) {
+      calculate_physical_emissivity(primary_source_params, emis_profile);
+    }
+    IonGradient::write_to_file("__relxillOutput_iongrad.dat");
+  }
+
   // need to make sure lxi and logn are within the xillver table values //  TODO: Need to define this automatically
   adjust_parameter_to_be_within_xillver_bounds(lxi, m_nzones, 0.0, 4.7);
 
-  if  (shouldOutfilesBeWritten()) {
-    IonGradient::write_to_file("__relxillOutput_iongrad.dat");
-  }
 }
 
 /**
@@ -358,10 +370,12 @@ void IonGradient::write_to_file(const char *fout) const {
 
   FILE *fp = fopen(fout, "w+");
 
-  double *irrad_flux = irradiating_flux;
-
-  if (irrad_flux != nullptr) {
+  if (irradiating_flux != nullptr) {
     fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n F_x\n");
+
+    // if we calculated the physical flux, use this for the output
+    const double *irrad_flux = (m_physical_irrad_flux != nullptr) ? m_physical_irrad_flux : irradiating_flux;
+
     for (int ii = 0; ii < m_nzones; ii++) {
       fprintf(fp, " %e \t %e \t %e \t %e \t %e \t %e \n", radial_grid.radius[ii], radial_grid.radius[ii + 1],
               lxi[ii], dens[ii], del_emit[ii], irrad_flux[ii]);

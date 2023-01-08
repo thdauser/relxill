@@ -186,7 +186,7 @@ class PrimarySourceParameters {
   double m_energy_shift_source_observer;
 
   ModelParams m_inp_param;
-  relParam *m_rel_param;
+  relParam *m_rel_param = nullptr;
   xillTableParam *m_xilltab_param = nullptr;
 
   xillTableParam *m_get_xilltab_params_primary_source(relParam *_rel_param, double _energy_shift_source_observer) {
