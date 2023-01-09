@@ -48,7 +48,8 @@ class PrimarySourceParameters {
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
       m_interpret_reflfrac_as_boost{
-          static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))} {
+          static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))}
+  {
     m_energy_shift_source_observer = (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
                                      energy_shift_source_obs(m_rel_param) : 1.0;
 
@@ -178,15 +179,17 @@ class PrimarySourceParameters {
 
  private:
 
+  ModelParams m_inp_param;
+  relParam *m_rel_param = nullptr;
+  int m_interpret_reflfrac_as_boost;
+
+  double m_energy_shift_source_observer;
+
   double m_norm_flux_cgs;
   double m_distance_kpc;
   double m_refl_frac;
   double m_mass_msolar;
-  int m_interpret_reflfrac_as_boost;
-  double m_energy_shift_source_observer;
 
-  ModelParams m_inp_param;
-  relParam *m_rel_param = nullptr;
   xillTableParam *m_xilltab_param = nullptr;
 
   xillTableParam *m_get_xilltab_params_primary_source(relParam *_rel_param, double _energy_shift_source_observer) {
@@ -287,7 +290,7 @@ class PrimarySource {
     const double *ener = m_prime_spec_observer.energy();
 
     double ener_flux = 0.0;
-    for (int ii = 0; ii < m_prime_spec_observer.num_flux_bins; ii++) {
+    for (size_t ii = 0; ii < m_prime_spec_observer.num_flux_bins; ii++) {
       if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii + 1] < EMAX_XILLVER_NORMALIZATION) {
         ener_flux += m_prime_spec_observer.flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
       }

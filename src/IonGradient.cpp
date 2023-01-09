@@ -314,7 +314,6 @@ void IonGradient::calculate_physical_emissivity(const PrimarySourceParameters &p
   const auto &rel_param = (*primary_source.rel_param());
 
   auto emis_profile_lxi_max = get_emis_profile_lxi_max(rel_param, emis_profile);
-  const double radius_lxi_max = emis_profile_lxi_max->re[0];
 
   const double flux_rad_lxi_max_cgs =
       calc_flux_disk_cgs(emis_profile.photon_fate_fractions, (*emis_profile_lxi_max), primary_source);
