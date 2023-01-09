@@ -64,7 +64,7 @@ class PrimarySourceParameters {
 
   ~PrimarySourceParameters() {
     delete m_rel_param;
-    delete m_xilltab_param;
+    free(m_xilltab_param);
   }
 
   // delete the copy constructor and copy assignment operator [deleted as it crashes gitlab]

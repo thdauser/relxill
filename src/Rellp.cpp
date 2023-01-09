@@ -513,7 +513,7 @@ static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* s
 /*
  *  @function: calc_emis_profile
  *  @synopsis: calculate the emissivity profile on a given radial grid,
- *  depending the the given emis-type and parameters
+ *  depending on the given emis-type and parameters
  */
 emisProfile *calc_emis_profile(double *re, int nr, const relParam *param, int *status) {
 

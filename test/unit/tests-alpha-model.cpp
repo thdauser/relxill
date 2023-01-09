@@ -64,11 +64,14 @@ TEST_CASE(" Calculate L_source", "[alpha]") {
   auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
 
   int status = EXIT_SUCCESS;
-  RelSysPar *sys_par = get_system_parameters(lmod_alpha.get_rel_params(), &status);
+  auto rel_params = lmod_alpha.get_rel_params();
+  RelSysPar *sys_par = get_system_parameters(rel_params, &status);
   const double l_source = primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions));
 
   const double REF_value_l_source = 1.196495197217232e+38;
   REQUIRE(fabs(REF_value_l_source / l_source - 1) < 0.01);
+
+  // delete rel_params;
 
 }
 
@@ -89,6 +92,8 @@ double calculate_lxi(const LocalModel &lmod) {
                                                                       primary_source_params,
                                                                       logn);
 
+  delete rel_param;
+
   return lxi_max;
 
 }
@@ -107,12 +112,15 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
 
   const double ref_value_l_source = 2.5972e36;
   auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
-  auto sys_par = get_system_parameters(lmod_alpha.get_rel_params(), &status);
+  auto rel_params = lmod_alpha.get_rel_params();
+  auto sys_par = get_system_parameters(rel_params, &status);
   REQUIRE(1e-3 > fabs(
       ref_value_l_source /
           primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions))
           - 1)
   );
+
+  // delete rel_params;
 
   const double lxi_max = calculate_lxi(lmod_alpha);
 
@@ -134,7 +142,7 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
 
 }
 
-TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
+TEST_CASE(" Flux Normalization of the Continuum", "[alpha-test]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
 
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);

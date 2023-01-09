@@ -196,7 +196,7 @@ rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &
 
 static void free_xill_table_param_array(const relParam *rel_param, xillTableParam *const *xill_table_param) {
   for (int ii = 0; ii < rel_param->num_zones; ii++) {
-    free(xill_table_param[ii]);
+    delete xill_table_param[ii];
   }
   delete[] xill_table_param;
 }

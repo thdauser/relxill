@@ -60,7 +60,9 @@ static emisProfile *get_emis_at_rad(double rad, const emisProfile &emis_profile)
   const int ibin = 0;
 
   int status = EXIT_SUCCESS;
-  auto emis_struct = new_emisProfile(&rad, nbins, &status);
+  auto radial_grid = new double[nbins];
+  radial_grid[ibin] = rad;
+  auto emis_struct = new_emisProfile(radial_grid, nbins, &status);
 
   // radial AD grid is sorted descending (!)
   const int kk = inv_binary_search(emis_profile.re, emis_profile.nr, rad);
@@ -69,6 +71,8 @@ static emisProfile *get_emis_at_rad(double rad, const emisProfile &emis_profile)
   emis_struct->emis[ibin] = interp_lin_1d(interp, emis_profile.emis[kk + 1], emis_profile.emis[kk]);
   emis_struct->del_inc[ibin] = interp_lin_1d(interp, emis_profile.del_inc[kk + 1], emis_profile.del_inc[kk]);
   emis_struct->del_emit[ibin] = interp_lin_1d(interp, emis_profile.del_emit[kk + 1], emis_profile.del_emit[kk]);
+
+  assert(emis_struct->re[0] > 1.0);
 
   return emis_struct;
 }
@@ -87,6 +91,18 @@ static emisProfile *get_emis_profile_lxi_max(const relParam &rel_param, const em
   return emis_profile_rad;
 }
 
+/**
+ * @brief: free an emissivity profile including the radial grid
+ * @param emis_profile
+ */
+void free_emis_profile_rad(emisProfile *emis_profile) {
+  if (emis_profile != nullptr) {
+    delete[] emis_profile->re;
+    free_emisProfile(emis_profile);
+  }
+
+}
+
 // determine the maximal ionization
 static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
 
@@ -97,7 +113,7 @@ static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
                                  emis_profile_rad->emis[0],
                                  emis_profile_rad->del_inc[0]);
 
-  free_emisProfile(emis_profile_rad);
+  free_emis_profile_rad(emis_profile_rad);
 
   return lxi_max;
 }
@@ -262,20 +278,22 @@ double IonGradient::calculate_lxi_max_from_distance(const emisProfile &emis_prof
                                                     const PrimarySourceParameters &primary_source,
                                                     double log_density_rin) {
 
-  const auto &rel_param = (*primary_source.rel_param());
+  const auto rel_param = primary_source.rel_param();
 
-  auto emis_profile_lxi_max = get_emis_profile_lxi_max(rel_param, emis_profile);
+  auto emis_profile_lxi_max = get_emis_profile_lxi_max((*rel_param), emis_profile);
+  assert(emis_profile_lxi_max->nr == 1);
+  //printf("%e \n", emis_profile_lxi_max->re[0]);
   const double radius_lxi_max = emis_profile_lxi_max->re[0];
 
   const double flux_rad_lxi_max_cgs =
       calc_flux_disk_cgs(emis_profile.photon_fate_fractions, (*emis_profile_lxi_max), primary_source);
 
   // the routine "density_ss73_zone_a" returns a density of 1 at rin
-  const double density_lxi_max = density_ss73_zone_a(radius_lxi_max, rel_param.rin) * pow(10, log_density_rin);
+  const double density_lxi_max = density_ss73_zone_a(radius_lxi_max, rel_param->rin) * pow(10, log_density_rin);
 
   const double lxi_max = cal_lxi(density_lxi_max, flux_rad_lxi_max_cgs, emis_profile_lxi_max->del_inc[0]);
 
-  free_emisProfile(emis_profile_lxi_max);
+  free_emis_profile_rad(emis_profile_lxi_max);
 
   return lxi_max;
 }
@@ -302,6 +320,8 @@ void IonGradient::calculate_physical_emissivity(const PrimarySourceParameters &p
       calc_flux_disk_cgs(emis_profile.photon_fate_fractions, (*emis_profile_lxi_max), primary_source);
 
   const double physical_emis_normalization_factor = flux_rad_lxi_max_cgs / emis_profile_lxi_max->emis[0];
+
+  free_emis_profile_rad(emis_profile_lxi_max);
 
   m_physical_irrad_flux = new double[m_nzones];
   for (int ii = 0; ii < m_nzones; ii++) {
