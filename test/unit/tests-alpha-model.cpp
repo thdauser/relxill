@@ -252,7 +252,7 @@ TEST_CASE(" Test the distance parameter", "[alpha]") {
 
 }
 
-TEST_CASE(" Test the mass parameter", "[alpha-test]") {
+TEST_CASE(" Test the mass parameter", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
