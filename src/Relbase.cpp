@@ -453,6 +453,16 @@ int redo_relbase_calc(const relParam *rel_param, const relParam *ca_rel_param) {
 
 }
 
+void write_output_rel_param(relParam *pa) {
+  printf(" - a = %e \n", pa->a);
+  printf(" - height = %e\n", pa->height);
+  printf(" - Rin = %e\n", pa->rin);
+  printf(" - Rout = %e\n", pa->rout);
+  printf(" - incl = %e\n", pa->incl);
+  printf(" - beta = %e\n", pa->beta);
+  printf(" - gamma = %e\n", pa->gamma);
+}
+
 /** @brief relbase function calculating the basic relativistic line shape for a given parameter setup
  *  @details
  *    - assuming a 1keV line, by a grid given in keV!
@@ -482,6 +492,12 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
     init_relline_spec_multizone(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
 
     calc_relline_profile(spec, sysPar, status); // returned units are 'photons/bin'
+
+    if (*status != EXIT_SUCCESS) {
+      printf(" *** error: calculation of relline profile failed \n");
+      write_output_rel_param(param);
+      throw std::exception();
+    }
 
     // normalize it and calculate the angular distribution (if necessary)
     renorm_relline_profile(spec, param, status);

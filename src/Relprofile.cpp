@@ -920,7 +920,13 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
                     da->trff[jj][kk] * da->emis
                     * weight * sysPar->d_gstar[jj];
 
-            assert(tmp == tmp);
+            // this catches if "tmp" is NaN
+            if (tmp != tmp) {
+              printf(" *** error in function calc_relline_profile (NaN) *** \n");
+              printf(" *** backtrace %e %e %e %e %e\n",
+                     da->re, g, da->gstar[jj], da->trff[jj][kk], weight);
+              *status = EXIT_FAILURE;
+            }
 
             spec->rel_cosne->dist[izone][imu] +=
                 da->re * pow(2 * M_PI * g * da->re, 2) /
