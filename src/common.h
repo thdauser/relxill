@@ -27,7 +27,6 @@
 #include <float.h>
 #include <fitsio.h>
 
-#include "complex.h" // needed by fftw3 (has to be included before fftw3.h)
 #include "fftw/fftw3.h"   // assumes installation in heasoft
 
 

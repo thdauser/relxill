@@ -129,7 +129,7 @@ TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
 
   xillParam *param;
 
-  std::vector<ModelName> names = {
+  std::vector<ModelName> const names = {
       ModelName::xillver,
       ModelName::xillverCO,
       ModelName::xillverCp,
