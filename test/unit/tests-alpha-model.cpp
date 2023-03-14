@@ -107,7 +107,7 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
   lmod_alpha.set_par(XPar::distance, 10);  // distance of 2 kpc
   lmod_alpha.set_par(XPar::mass, 20);      // mass of 20 Msolar
   lmod_alpha.set_par(XPar::h, 6.0);  // to be in the Newtonian regime
-  lmod_alpha.set_par(XPar::norm_flux_cgs, 1e-10); // Flux in the 0.01-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::norm_flux_cgs, 1e-10); // Flux in the 0.1-1000keV band in erg/cm^2/s
   lmod_alpha.set_par(XPar::logn, 18);
 
   const double ref_value_l_source = 2.5972e36;
@@ -197,6 +197,7 @@ TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[
 
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
   set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::logn, 18);
   lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
   lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
 
@@ -282,5 +283,27 @@ TEST_CASE(" Test the mass parameter", "[alpha]") {
   REQUIRE(fabs(lxi_1 / lxi_2 - 1) > 0.01);
 
   REQUIRE(fabs(flux_1 / flux_2 - 1) > 1e-6);
+
+}
+
+
+
+TEST_CASE(" Test the density gradient", "[alpha]") {
+  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
+  auto spec = default_spec.get_xspec_spectrum();
+
+  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+  set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
+  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+  lmod_alpha.set_par(XPar::logn,15);
+
+  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
+
+  lmod_alpha.set_par(XPar::refl_frac, 1.0);
+  lmod_alpha.eval_model(spec);
+
+
 
 }

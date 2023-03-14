@@ -359,6 +359,20 @@ int shouldOutfilesBeWritten(void) {
 }
 
 
+/** check if we are currently debugging the model **/
+int constantDiskDensity(void) {
+  char *env;
+  env = getenv("RELXILL_CONSTANT_DENSITY");
+  if (env != NULL) {
+    int envval = (int) strtod(env, NULL);
+    if (envval == 1) {
+      return 1;
+    }
+  }
+  return 0;
+}
+
+
 /** check if we should return the relline/relconv physical norm from ENV **/
 int do_not_normalize_relline(void) {
   char *env;

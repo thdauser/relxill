@@ -157,6 +157,8 @@ TestSpectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
 int shouldOutfilesBeWritten(void);
 
+int constantDiskDensity(void);
+
 void invertArray(double *vals, int n);
 
 double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius);
