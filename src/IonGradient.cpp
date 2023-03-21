@@ -150,8 +150,6 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
   /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
   const double density_inner_zone = density_ss73_zone_a(m_rmean[0], rin);
   for (int ii = 0; ii < m_nzones; ii++) {
-    auto dens_rin = density_ss73_zone_a(rin, rin);
-
     double density_normed = 1.0;
     if (not constantDiskDensity()){
       density_normed = density_ss73_zone_a(m_rmean[ii], rin) / density_inner_zone;

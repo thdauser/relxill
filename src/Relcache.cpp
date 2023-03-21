@@ -516,7 +516,7 @@ void free_cnode(cnode **node) {
     if ((*node)->data != nullptr) {
       free_cdata(&((*node)->data));
     }
-    free(*node);
+    delete (*node);
     *node = nullptr;
   }
 

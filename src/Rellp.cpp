@@ -604,7 +604,7 @@ lpReflFrac *new_lpReflFrac(int *status) {
 
 void free_lpReflFrac(lpReflFrac **str) {
   if (*str != nullptr) {
-    free(*str);
+    delete (*str);
     *str = nullptr;
   }
 }

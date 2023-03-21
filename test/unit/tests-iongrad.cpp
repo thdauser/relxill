@@ -114,10 +114,13 @@ IonGradient get_ion_gradient(LocalModel const &lmod){
   IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
   ion_gradient.calculate_gradient(*(sys_par->emis), PrimarySourceParameters{lmod.get_model_params()});
 
+  delete rel_param;
+  delete xill_param;
+
   return ion_gradient;
 }
 
-TEST_CASE(" Test Constant Density by Env Variable ", "[iongrad]") {
+TEST_CASE(" Test Constant Density by Env Variable ", "[iongrad-const-density]") {
 
   DefaultSpec const default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -135,10 +138,15 @@ TEST_CASE(" Test Constant Density by Env Variable ", "[iongrad]") {
 
   unsetenv(env_density);
 
+  lmod.set_par(XPar::logn, dens_param*1.1);
+  lmod.eval_model(spec);
+  lmod.set_par(XPar::logn, dens_param*1.2);
+  lmod.eval_model(spec);
+
+
   for (int ii = 0; ii < num_zones; ii++) {
     REQUIRE( fabs(dens_param - ion_grad.dens[ii]) < 1e-6 );
   }
-
 }
 
 TEST_CASE(" Test Density Gradient ", "[iongrad-density]") {
@@ -159,4 +167,29 @@ TEST_CASE(" Test Density Gradient ", "[iongrad-density]") {
   for (int ii = 1; ii < num_zones; ii++) {
     REQUIRE( fabs(dens_param - ion_grad.dens[ii]) > 1e-6 );
   }
+}
+
+TEST_CASE(" Test Density Gradient ", "[iongrad-valgrind]") {
+
+  DefaultSpec const default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+  LocalModel lmod{ModelName::relxilllpAlpha};
+
+  setenv("RELXILL_NUM_RZONES","20",1);
+
+  const double dens_param = 16;
+  const double dens_param_delta = 1;
+  lmod.set_par(XPar::logn, dens_param);
+  lmod.eval_model(spec);
+
+  const char* env_density = "RELXILL_CONSTANT_DENSITY";
+  setenv(env_density, "1", 1);
+
+  const int num_eval = 10;
+  for (int ii = 1; ii < num_eval; ii++) {
+    lmod.set_par(XPar::logn, dens_param+ dens_param_delta*float(ii)/float(num_eval));
+    lmod.eval_model(spec);
+  }
+
+  unsetenv(env_density);
 }
