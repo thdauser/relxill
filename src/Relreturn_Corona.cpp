@@ -20,6 +20,7 @@
 #include "Relbase.h"
 #include "Relreturn_Datastruct.h"
 #include "Relreturn_Table.h"
+#include "IonGradient.h"
 
 extern "C" {
 #include "relutility.h"
@@ -203,15 +204,17 @@ rradCorrFactors *init_rrad_corr_factors(const double *rlo, const double *rhi, in
   return corr_factors;
 }
 
-rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones) {
-  auto* corr_factors = new rradCorrFactors;
+rradCorrFactors *init_rrad_corr_factors(const RadialGrid &rgrid) {
+  auto *corr_factors = new rradCorrFactors;
 
-  corr_factors->rgrid = new double[n_zones+1];
-  for (int ii=0; ii<n_zones+1; ii++){
-    corr_factors->rgrid[ii] = rgrid[ii];
+  const auto n_zones = rgrid.num_zones();
+  const auto n_radial_bins = rgrid.radius.size();
+  corr_factors->rgrid = new double[rgrid.radius.size()];
+  for (int ii = 0; ii < n_radial_bins; ii++) {
+    corr_factors->rgrid[ii] = rgrid.radius[ii];
   }
 
-  corr_factors->n_zones= n_zones;
+  corr_factors->n_zones = static_cast<int>(n_zones);
 
   corr_factors->corrfac_flux = new double[n_zones];
   corr_factors->corrfac_gshift = new double[n_zones];

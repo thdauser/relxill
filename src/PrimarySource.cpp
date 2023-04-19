@@ -16,6 +16,7 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "PrimarySource.h"
+#include "Relbase.h"
 
 /*
   * @brief: print the reflection strength on the screen (requires struct_refl_frac to be set)

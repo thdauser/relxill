@@ -177,14 +177,14 @@ void copy_spectrum_to_cache(const XspecSpectrum &spectrum,
 rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,
                                        xillTableParam *const *xill_table_param, int *status) {
 
-  rradCorrFactors* rrad_corr_factors = init_rrad_corr_factors(rgrid.radius, rgrid.num_zones);
+  rradCorrFactors *rrad_corr_factors = init_rrad_corr_factors(rgrid);
 
   if (rrad_corr_factors == nullptr || *status != EXIT_SUCCESS) {
     assert(rrad_corr_factors != nullptr);
     return rrad_corr_factors;
   }
 
-  for (int ii = 0; ii < rgrid.num_zones; ii++) {
+  for (int ii = 0; ii < rgrid.num_zones(); ii++) {
     get_xillver_fluxcorrection_factors(xill_spec[ii],
                                        &(rrad_corr_factors->corrfac_flux[ii]),
                                        &(rrad_corr_factors->corrfac_gshift[ii]),
@@ -289,8 +289,8 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     CHECK_STATUS_VOID(*status);
 
     // --- 1 --- calculate the accretion disk zones and set their parameters
-    auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
-    IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
+    IonGradient ion_gradient{RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height),
+                             rel_param->ion_grad_type, xill_param->iongrad_index};
     ion_gradient.calculate_gradient(*(sys_par->emis), primary_source.source_parameters);
 
     auto xill_param_zone =
@@ -304,7 +304,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // -- 3 -- returning radiation correction factors (only calculated if above a given threshold)
     rel_param->rrad_corr_factors =
         (rel_param->return_rad != 0 && rel_param->a > SPIN_MIN_RRAD_CALC_CORRFAC) ?
-        calc_rrad_corr_factors(xill_refl_spectra_zone, radial_grid, xill_param_zone, status) :
+        calc_rrad_corr_factors(xill_refl_spectra_zone, ion_gradient.radial_grid, xill_param_zone, status) :
         nullptr;
 
     //  calculate the emissivity including the rrad correction factors (for those the disk parameters need to be known)
@@ -320,7 +320,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
     relline_spec_multizone *rel_profile =
         relbase_profile(ener_conv, n_ener_conv, rel_param, sys_par, xill_tab,
-                        ion_gradient.radial_grid.radius, ion_gradient.nzones(), status);
+                        ion_gradient.radial_grid.radius.data(),
+                        static_cast<int>(ion_gradient.radial_grid.num_zones()),
+                        status);
 
     // --- 5 --- calculate the xillver spectra depending on the angular distribution (stored in the rel_profile)
     auto xillver_spectra_zones =

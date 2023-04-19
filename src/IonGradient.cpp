@@ -16,6 +16,7 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "IonGradient.h"
+#include "Relbase.h"
 
 extern "C"{
 #include "writeOutfiles.h"
@@ -25,7 +26,7 @@ extern "C"{
 // note: delta_inc is taking the correction into account that xillver
 //       is calculated for a fixed delta_inc=PI/4 (see Ingram+19)
 static double cal_lxi(double dens, double emis, double delta_inc) {
-  double lxi_corrfactor = cos(M_PI / 4) / cos(delta_inc);
+  double const lxi_corrfactor = cos(M_PI / 4) / cos(delta_inc);
   return log10(4.0 * M_PI * emis / dens * lxi_corrfactor);
 }
 
@@ -148,11 +149,12 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
   const double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
 
   /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
-  const double density_inner_zone = density_ss73_zone_a(m_rmean[0], rin);
+  const double rad_density_min = (25. / 9.) * rin;
+  const double density_min = density_ss73_zone_a(rad_density_min, rin);
   for (int ii = 0; ii < m_nzones; ii++) {
     double density_normed = 1.0;
-    if (not constantDiskDensity()){
-      density_normed = density_ss73_zone_a(m_rmean[ii], rin) / density_inner_zone;
+    if (not constantDiskDensity()) {
+      density_normed = density_ss73_zone_a(m_rmean[ii], rin) / density_min;
     }
 
     dens[ii] = log10(density_normed) + param_density;  //addition as quantity is logarithm
@@ -371,12 +373,14 @@ void IonGradient::calculate_gradient(const emisProfile &emis_profile,
     throw std::exception();
   }
 
-  calculate_physical_emissivity(primary_source_params, emis_profile);
+  if (is_alpha_model(rel_param->model_type)) {
+    calculate_physical_emissivity(primary_source_params, emis_profile);
+  }
 
   if (shouldOutfilesBeWritten()) {
-    if (is_alpha_model(rel_param->model_type)) {
-      calculate_physical_emissivity(primary_source_params, emis_profile);
-    }
+    //  if (is_alpha_model(rel_param->model_type)) {
+    //    calculate_physical_emissivity(primary_source_params, emis_profile);
+    //  }
     IonGradient::write_to_file("__relxillOutput_iongrad.dat");
   }
 
@@ -435,10 +439,10 @@ void IonGradient::set_del_emit_for_each_zone(const emisProfile &emis_profile) {
  */
 double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_primary, int izone) const {
 
-  if (radial_grid.num_zones == 1) {
+  if (radial_grid.num_zones() == 1) {
     return ecut_primary; // TODO: not obvious what "ecut0" is (it is the input value, from the model fitting)
   } else {
-    double rzone = 0.5 * (radial_grid.radius[izone] + radial_grid.radius[izone + 1]);
+    double const rzone = 0.5 * (radial_grid.radius[izone] + radial_grid.radius[izone + 1]);
 
     if (del_emit == nullptr) { // del_emit relevant if beta!=0 (doppler boosting)
       printf(" *** error in IonGradient: ionization gradient not calculated \n");
@@ -450,9 +454,9 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
   }
 }
 
-const double *RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double h) {
+std::vector<double> RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double h) {
 
-  auto rgrid = new double[nzones + 1];
+  std::vector<double> rgrid(nzones + 1);
 
   if (nzones == 1) {
     rgrid[0] = rmin;
@@ -465,18 +469,17 @@ const double *RadialGrid::calculate_radial_grid(double rmin, double rmax, const 
     if (h > rmin) { // if h > rmin we choose a log grid for r<h
       r_transition = h;
 
-      get_log_grid(rgrid, nzones + 1, rmin, rmax);
-      indr = binary_search(rgrid, nzones + 1, r_transition);
+      get_log_grid(rgrid.data(), nzones + 1, rmin, rmax);
+      indr = binary_search(rgrid.data(), nzones + 1, r_transition);
 
       r_transition = rgrid[indr];
     }
 
     if (indr < nzones) {
-      double rlo = r_transition;
-      double rhi = rmax; // radius[nzones];
+      double const rlo = r_transition;
+      double const rhi = rmax; // radius[nzones];
       // add 1/r for larger radii
-      int ii;
-      for (ii = indr; ii < nzones + 1; ii++) {
+      for (int ii = indr; ii < nzones + 1; ii++) {
         rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
         rgrid[ii] = fabs(1.0 / rgrid[ii]);
       }

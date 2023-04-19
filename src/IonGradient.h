@@ -32,19 +32,19 @@ extern "C" {
 class RadialGrid {
 
  public:
-  RadialGrid(double rmin, double rmax, int nzones, double h) : num_zones(nzones) {
-    radius = calculate_radial_grid(rmin, rmax, nzones, h) ;
+  RadialGrid(double rmin, double rmax, int nzones, double h)
+      : radius{calculate_radial_grid(rmin, rmax, nzones, h)} {
+    assert(nzones == num_zones());
   }
 
-  const int num_zones;
-  const double* radius; // has length num_zones+1
-
-  ~RadialGrid(){
-      delete[] radius;
+  [[nodiscard]] size_t num_zones() const {
+    return radius.size() - 1;
   }
+
+  std::vector<double> radius{}; // has length num_zones+1
 
  private:
-  static const double* calculate_radial_grid(double rmin, double rmax, int nzones, double h);
+  static std::vector<double> calculate_radial_grid(double rmin, double rmax, int nzones, double h);
 };
 
 
@@ -54,7 +54,7 @@ class IonGradient{
  public:
   IonGradient(const RadialGrid &_radial_grid, int ion_grad_type, double ion_grad_index)
       : radial_grid{_radial_grid},  // radius is of length nzones+1
-        m_nzones{_radial_grid.num_zones},
+        m_nzones{static_cast<int>(_radial_grid.num_zones())},
         m_ion_grad_type{ion_grad_type},
         m_ion_grad_index{ion_grad_index}
   {
@@ -87,7 +87,7 @@ class IonGradient{
     delete[] m_energy_shift_source_disk;
   }
 
-  const RadialGrid& radial_grid;
+  RadialGrid radial_grid;
   double *lxi{nullptr};
   double *irradiating_flux{nullptr};
   double *del_emit{nullptr};
