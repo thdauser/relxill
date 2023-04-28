@@ -21,6 +21,7 @@
 #include "Relbase.h"
 #include "Rellp_Extended.h"
 #include "Rellp.h"
+#include "Relphysics.h"
 
 extern "C"{
 #include "relutility.h"
