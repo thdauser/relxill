@@ -7,6 +7,7 @@ set(UNIT_TEST_FILES_CPP
         tests-returnrad.cpp test-stdfunctions.cpp test-xilltab.cpp
         test-rellp.cpp test-relxill.cpp tests-iongrad.cpp
         tests-bbody-returnrad.cpp tests-alpha-model.cpp
+        tests-extended-source.cpp
         )
 
 set(EXEC_FILES_CPP tests)
