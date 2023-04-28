@@ -34,7 +34,7 @@ class RadialGrid {
  public:
   RadialGrid(double rmin, double rmax, int nzones, double h)
       : radius{calculate_radial_grid(rmin, rmax, nzones, h)} {
-    assert(nzones == num_zones());
+    assert(nzones == static_cast<int>( num_zones() ) );
   }
 
   [[nodiscard]] size_t num_zones() const {
