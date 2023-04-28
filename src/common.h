@@ -75,7 +75,6 @@
 #define LPTABLE_FILENAME "rel_lp_table_v0.5b.fits"
 #define LPTABLE_NR 100
 
-
 /**** DEFINES **/
 #define MOD_TYPE_RELLINE 1
 #define MOD_TYPE_RELLINELP 2
@@ -200,6 +199,7 @@ typedef struct {
   double htop;
   double gamma;
   double beta;
+  double distance;
   int limb;
   int do_renorm_relline;
   int num_zones;

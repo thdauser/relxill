@@ -30,6 +30,7 @@
 #define ESTABLE_NENERGYBINS 20
 #define ESTABLE_FILENAME "rel_extended_source_v14.fits"
 
+
 typedef struct {
 
   double *height;
@@ -68,7 +69,7 @@ typedef struct {
 
 
 void printerror(int status);
-void read_extendedSource_table(char *filename, extendedSourceTable **inp_tab, int *status);
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status);
 void get_emis_extendedSource(emisProfile *emisProf, relParam *param, int *status);
 void calc_extended_emis(emisProfile *emisProf, relParam *param,
                         extendedSourceTable *tab, int *status);
