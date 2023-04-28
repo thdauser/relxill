@@ -19,6 +19,7 @@
 #include "catch2/catch_amalgamated.hpp"
 #include "LocalModel.h"
 #include "common-functions.h"
+#include "Rellp_Extended.h"
 
 #define PREC 1e-6
 
@@ -34,4 +35,14 @@ TEST_CASE("Standard  Test", "[extended]") {
 
   REQUIRE(   sum_flux(spec.flux, spec.num_flux_bins() )  > PREC);
 
+
+ //  auto table = get_es_table(&status);
+
 }
+
+
+///
+// TEST_CASE("Standard  Test", "[extended]") {
+//  param->distance = 5.0;
+//  calc_extended_emis(emisProf, param, tab, status);
+// }

@@ -67,6 +67,7 @@ typedef struct {
 } extendedSourceTable;
 
 
+extendedSourceTable* get_es_table(int* status);
 
 void printerror(int status);
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status);

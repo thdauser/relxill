@@ -30,7 +30,7 @@ extern "C"{
 
 extendedSourceTable *cached_extendedSource_table = nullptr;
 
-static extendedSourceTable* get_es_table(int* status){
+extendedSourceTable* get_es_table(int* status){
   CHECK_STATUS_RET(*status,nullptr);
 
   if (cached_extendedSource_table == nullptr) {
@@ -297,6 +297,8 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
   if(fptr != nullptr) {fits_close_file(fptr, status);}
 
 }
+
+/////////////////////////////////////////////////////////
 void calc_extended_emis(emisProfile *emisProf, relParam *param,
                         extendedSourceTable *tab, int *status) {
 
