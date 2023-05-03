@@ -77,7 +77,7 @@ TEST_CASE(" normalization of LP primary spectrum", "[beta]") {
 
   int status = EXIT_SUCCESS;
 
-  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid();
 
   DefaultSpec default_spec{};
   LocalModel lmod(ModelName::relxilllpCp);

@@ -355,7 +355,7 @@ static double getXillverNormFactorFromPrimarySpectrum(double* spec, double* ener
 
   CHECK_STATUS_RET(*status,0.0);
 
-  EnerGrid *egrid = get_coarse_xillver_energrid(status);
+  EnerGrid *egrid = get_coarse_xillver_energrid();
 
   auto xillverInputSpec = new double[egrid->nbins];
   CHECK_MALLOC_RET_STATUS(xillverInputSpec, status, 0.0)

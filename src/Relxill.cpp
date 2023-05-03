@@ -275,7 +275,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   check_caching_energy_grid(caching_status, spec_cache, spectrum);
 
   RelSysPar *sys_par = get_system_parameters(rel_param, status);
-  auto primary_source = PrimarySource(params, sys_par, spectrum);
+  auto primary_source = PrimarySource(params, sys_par);
 
   if (caching_status.is_all_cached()) { // if already cached, simply use the cached output flux value
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {

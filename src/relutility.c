@@ -763,14 +763,6 @@ void normSpec(double *spec, int n_ener) {
 }
 
 
-
-EnerGrid *new_EnerGrid(int *status) {
-
-  EnerGrid *egrid = malloc(sizeof(EnerGrid));
-  CHECK_MALLOC_RET_STATUS(egrid, status, egrid)
-  return egrid;
-}
-
 TestSpectrum *new_Spectrum(int *status) {
 
   TestSpectrum *spec = malloc(sizeof(TestSpectrum));

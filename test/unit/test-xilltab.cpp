@@ -253,7 +253,7 @@ TEST_CASE(" normalization of the primary continuum","[prim]"){
   auto spec = DefaultSpec(0.1, 1000, 3000);
 
   /** need to create a specific energy grid for the primary component to fulfill the XILLVER NORM condition (Dauser+2016) **/
-  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid();
   // CHECK_STATUS_VOID(*status);
   auto pl_flux_xill = new double[egrid->nbins]; // global energy grid
   calc_primary_spectrum(pl_flux_xill, egrid->ener, egrid->nbins, xill_param, &status);
@@ -295,7 +295,7 @@ TEST_CASE(" test normalization factor when shifting ecut/kTe", "[prim]") {
   xillTableParam *xill_param = get_xilltab_param(xill_param_full, &status);
   relParam *rel_param = lmod.get_rel_params();
 
-  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid();
 
   double energy_shift_disk_source = 0.5;
 

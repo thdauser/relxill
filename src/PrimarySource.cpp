@@ -57,7 +57,8 @@ void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, co
 // @brief: adds primary reflection_spectrum to the input reflection_spectrum
 void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectrum) {
 
-  auto primary_spectrum = get_observed_primary_spectrum(reflection_spectrum, source_parameters);
+  // get the primary spectrum on the energy grid of the reflection spectrum
+  auto primary_spectrum = get_observed_primary_spectrum(reflection_spectrum);
 
   // For the non-relativistic model and if not the LP geometry, we simply multiply by the reflection fraction
   if (is_xill_model(source_parameters.model_type()) || source_parameters.emis_type() != EMIS_TYPE_LP) {
@@ -68,10 +69,10 @@ void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectru
     assert(m_lp_refl_frac != nullptr);
 
     double refl_frac_input = source_parameters.refl_frac();
-    if (source_parameters.interpret_reflfrac_as_boost()) {
-      // if set, it is given as boost, wrt predicted refl_frac_input
+    // if set, it is given as boost, wrt predicted refl_frac_input
+    if (source_parameters.interpret_reflfrac_as_boost())
       refl_frac_input *= m_lp_refl_frac->refl_frac;
-    }
+
 
     const double prime_spec_factors_source_to_observer =
         source_parameters.flux_boost_source_to_observer((*m_lp_refl_frac));

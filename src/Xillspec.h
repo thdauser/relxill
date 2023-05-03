@@ -77,6 +77,6 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
                                                          const xillTableParam *xill_param_0);
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, int n, int *status);
-EnerGrid *get_coarse_xillver_energrid(int *status);
+EnerGrid *get_coarse_xillver_energrid();
 
 #endif //XILLSPEC_H_

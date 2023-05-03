@@ -161,7 +161,7 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha-test]") {
   lmod_alpha.eval_model(spec);
 
   const double primary_energy_flux = spec.get_energy_flux();
-  REQUIRE(fabs(primary_energy_flux - norm_factor_ergs) < 0.005);
+  REQUIRE(fabs(primary_energy_flux - norm_factor_ergs)/norm_factor_ergs < 0.005);
   // printf(" ENERGY FLUX: %e \n", spec.get_energy_flux());
 
   lmod_alpha.set_par(XPar::refl_frac, -1.0);
@@ -304,6 +304,47 @@ TEST_CASE(" Test the density gradient", "[alpha]") {
   lmod_alpha.set_par(XPar::refl_frac, 1.0);
   lmod_alpha.eval_model(spec);
 
+
+
+}
+
+
+TEST_CASE("CGS Flux does not change with different energy range of data", "[alpha-test]") {
+  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+  set_default_par(lmod_alpha);
+  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
+  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+  lmod_alpha.set_par(XPar::logn,15);
+
+  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
+  lmod_alpha.set_par(XPar::refl_frac, 0.0); // only the continuum
+
+
+  auto default_spec_narrow =  DefaultSpec(3,10.0, 1000);
+  auto spec_narrow_band = default_spec_narrow.get_xspec_spectrum();
+  lmod_alpha.eval_model(spec_narrow_band);
+  const double narrow_primary_energy_flux = spec_narrow_band.get_energy_flux();
+  REQUIRE(fabs(narrow_primary_energy_flux - norm_factor_ergs)/norm_factor_ergs > 0.005);
+
+  auto default_spec_narrow2 =  DefaultSpec(3.0,100.0, 400);
+  auto spec_narrow_band_2 = default_spec_narrow2.get_xspec_spectrum();
+  lmod_alpha.eval_model(spec_narrow_band_2);
+  const double narrow_primary_energy_flux_2 = spec_narrow_band_2.get_energy_flux();
+  REQUIRE(fabs(narrow_primary_energy_flux_2 - narrow_primary_energy_flux)/norm_factor_ergs > 0.005);
+
+  // flux in the XspecSpectrum is given as integrated per bin (!)
+  double first_flux_bin = spec_narrow_band.flux[0]/(spec_narrow_band.energy[1]-spec_narrow_band.energy[0]);
+  double first_flux_bin_2 = spec_narrow_band_2.flux[0]/(spec_narrow_band_2.energy[1]-spec_narrow_band_2.energy[0]);
+
+  REQUIRE( fabs(first_flux_bin-first_flux_bin_2)/first_flux_bin < 0.01);
+
+
+  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
+  auto spec = default_spec.get_xspec_spectrum();
+  lmod_alpha.eval_model(spec);
+  const double primary_energy_flux = spec.get_energy_flux();
+  REQUIRE(fabs(primary_energy_flux - norm_factor_ergs)/norm_factor_ergs < 0.005);
 
 
 }
