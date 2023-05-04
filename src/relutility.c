@@ -307,6 +307,15 @@ double *get_rzone_grid(double rmin, double rmax, int nzones, double h, int *stat
   return rgrid;
 }
 
+double get_env_otherwise_default(const char *env, double def_value) {
+  char *value_string = getenv(env);
+  if (value_string != NULL) {
+    return strtod(value_string, NULL);
+  } else {
+    return def_value;
+  }
+}
+
 /** get the relxill table path (dynamically from env variable)  **/
 char *get_relxill_table_path(void) {
   char *path;
@@ -378,7 +387,7 @@ int do_not_normalize_relline(void) {
   char *env;
   env = getenv("RELLINE_PHYSICAL_NORM");
   if (env != NULL) {
-    int phys_norm = atof(env);
+    int phys_norm = (int) strtod(env, NULL);
     if (phys_norm == 1) {
       return 1;
     }
@@ -394,16 +403,6 @@ void get_log_grid(double *ener, int n_ener, double emin, double emax) {
     ener[ii] = exp(ener[ii]);
   }
 }
-
-
-/* get a logarithmic grid from emin to emax with n_ener bins  */
-void get_lin_grid(double *ener, int n_ener, double emin, double emax) {
-  int ii;
-  for (ii = 0; ii < n_ener; ii++) {
-    ener[ii] = 1.0 * ii / (n_ener - 1) * (emax - emin) + emin;
-  }
-}
-
 
 double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius) {
   double inter_r;

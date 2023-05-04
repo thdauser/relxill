@@ -253,6 +253,8 @@ class PrimarySource {
  private:
 
   lpReflFrac *m_lp_refl_frac = nullptr;
+  double m_emin_norm = get_env_otherwise_default("RELXILL_ALPHA_CGSNORM_EMIN", EMIN_XILLVER_NORMALIZATION);
+  double m_emax_norm = get_env_otherwise_default("RELXILL_ALPHA_CGSNORM_EMAX", EMAX_XILLVER_NORMALIZATION);
 
   /**
    * @brief calculate the normalization factor of the observed primary source spectrum
@@ -280,7 +282,13 @@ class PrimarySource {
     return norm_factor_prim_spec;
   }
 
-  // calculate the flux of the observed primary spectrum in ergs/cm2/sec
+  /**
+   * @brief calculate the flux of the observed primary spectrum in ergs/cm2/sec
+   *
+   * @details the energy band is given by the Xillver Normalization Definition (from 0.1-1000 keV),
+   * or can be set by using the env variables RELXILL_ALPHA_CGSNORM_EMIN and
+   * RELXILL_ALPHA_CGSNORM_EMIN
+   */
   double get_normalized_primary_spectrum_flux_in_ergs() const {
 
     EnerGrid *egrid = get_coarse_xillver_energrid();
@@ -290,10 +298,13 @@ class PrimarySource {
     const auto prime_spec = PrimarySource::get_observed_primary_spectrum(xspec_spec);
     const auto ener = prime_spec.energy();
 
+    //    const double emin_norm = get_env_otherwise_default("RELXILL_ALPHA_CGSNORM_EMIN", EMIN_XILLVER_NORMALIZATION);
+    //    const double emax_norm = get_env_otherwise_default("RELXILL_ALPHA_CGSNORM_EMIN", EMAX_XILLVER_NORMALIZATION);
+
     // need this for the whole energy range
     double ener_flux = 0.0;
     for (size_t ii = 0; ii < prime_spec.num_flux_bins; ii++) {
-      if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii + 1] < EMAX_XILLVER_NORMALIZATION) {
+      if (ener[ii] >= m_emin_norm && ener[ii + 1] < m_emax_norm) {
         ener_flux += prime_spec.flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]);
       }
     }

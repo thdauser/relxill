@@ -155,6 +155,8 @@ TestSpectrum *new_Spectrum(int *status);
 void free_Spectrum(TestSpectrum **spec);
 TestSpectrum *getNewSpec(double emin, double emax, int nbins, int *status);
 
+double get_env_otherwise_default(const char *env, double def_value);
+
 int shouldOutfilesBeWritten(void);
 
 int constantDiskDensity(void);
