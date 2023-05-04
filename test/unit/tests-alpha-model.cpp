@@ -142,7 +142,7 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
 
 }
 
-TEST_CASE(" Flux Normalization of the Continuum", "[alpha-test]") {
+TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
 
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
@@ -286,9 +286,7 @@ TEST_CASE(" Test the mass parameter", "[alpha]") {
 
 }
 
-
-
-TEST_CASE(" Test the density gradient", "[alpha]") {
+TEST_CASE(" Test the density gradient", "[alpha-test]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
@@ -296,30 +294,27 @@ TEST_CASE(" Test the density gradient", "[alpha]") {
   set_default_par(lmod_alpha);
   lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
   lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
-  lmod_alpha.set_par(XPar::logn,15);
+  lmod_alpha.set_par(XPar::logn, 15);
 
-  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
+  const double norm_factor_ergs = 1e-11; // Flux in the 0.1-1000keV band in erg/cm^2/s
   lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
 
+  // setenv("RELXILL_PRINT_DETAILS","1",1);
   lmod_alpha.set_par(XPar::refl_frac, 1.0);
   lmod_alpha.eval_model(spec);
 
-
-
 }
 
-
-TEST_CASE("CGS Flux does not change with different energy range of data", "[alpha-test]") {
+TEST_CASE("CGS Flux does not change with different energy range of data", "[alpha]") {
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
   set_default_par(lmod_alpha);
   lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
   lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
-  lmod_alpha.set_par(XPar::logn,15);
+  lmod_alpha.set_par(XPar::logn, 15);
 
   const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
   lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
   lmod_alpha.set_par(XPar::refl_frac, 0.0); // only the continuum
-
 
   auto default_spec_narrow =  DefaultSpec(3,10.0, 1000);
   auto spec_narrow_band = default_spec_narrow.get_xspec_spectrum();
@@ -339,12 +334,10 @@ TEST_CASE("CGS Flux does not change with different energy range of data", "[alph
 
   REQUIRE( fabs(first_flux_bin-first_flux_bin_2)/first_flux_bin < 0.01);
 
-
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
   lmod_alpha.eval_model(spec);
   const double primary_energy_flux = spec.get_energy_flux();
   REQUIRE(fabs(primary_energy_flux - norm_factor_ergs)/norm_factor_ergs < 0.005);
-
 
 }

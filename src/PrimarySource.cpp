@@ -24,7 +24,7 @@
   */
 void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, const Spectrum &primary_spec) const {
 
-  if (m_lp_refl_frac != nullptr) {
+  if (m_lp_refl_frac == nullptr) {
     return;
   } // will do nothing if the refl_frac structure is not set
 
@@ -52,6 +52,11 @@ void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, co
          sum / sum_pl);
   printf(" - photons falling into the black hole or plunging region: %.2f%%\n", m_lp_refl_frac->f_bh * 100);
   printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
+
+  if (is_alpha_model(rel_param->model_type)) {
+    printf("Primary source luminosity is %.4e erg/cm2/s (in the energy band %.2f-%.2f keV) \n",
+           source_parameters.luminosity_source_cgs(*m_lp_refl_frac), m_emin_norm, m_emax_norm);
+  }
 }
 
 // @brief: adds primary reflection_spectrum to the input reflection_spectrum
