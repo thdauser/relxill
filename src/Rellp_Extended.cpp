@@ -370,7 +370,7 @@ void calc_extended_emis(emisProfile *emisProf, relParam *param,
   CHECK_STATUS_VOID(*status);
 
   emisProfile* emis_profile_table = interpol_estable(
-      param->a, param->height, param->distance, param->gamma, ESTABLE_NENERGYBINS, tab, status);
+      param->a, param->height, param->d_ring, param->gamma, ESTABLE_NENERGYBINS, tab, status);
 
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 

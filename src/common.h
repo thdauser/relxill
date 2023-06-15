@@ -78,6 +78,7 @@
 /**** DEFINES **/
 #define MOD_TYPE_RELLINE 1
 #define MOD_TYPE_RELLINELP 2
+#define MOD_TYPE_RELLINELPEXT 3
 
 #define MOD_TYPE_RELCONV 11
 #define MOD_TYPE_RELCONVLP 12
@@ -195,7 +196,7 @@ typedef struct {
   double lineE;
   double z;
   double height;
-  double d_offaxis;
+  double d_ring;
   double htop;
   double gamma;
   double beta;

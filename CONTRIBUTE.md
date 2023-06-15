@@ -68,8 +68,8 @@ therefore should only contain stable models with a stable interface.
    It is used to uniquely identify the model.
    
 4) Additionally, a unique model integer 
-   value has to be defined in relmodels.h (for example `#define MOD_TYPE_RELXILL 123`)  and 
-   linked to the model, by adding it to the function `int convertModelType(ModelName name)`
+   value has to be defined in common.h (for example `#define MOD_TYPE_RELXILL 123`)  and 
+   linked to the model, by adding it to the function `int convertModelType(ModelName name)` in ModelParams.h
    (*this part will soon be removed*).
 
 5) The final model is defined in `class ModelDatabase` (ModelDatabase.h), where the 

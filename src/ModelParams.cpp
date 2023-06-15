@@ -35,6 +35,7 @@ int convertModelType(ModelName name) {
     case ModelName::relline: return MOD_TYPE_RELLINE;
     case ModelName::relconv: return MOD_TYPE_RELCONV;
     case ModelName::relline_lp: return MOD_TYPE_RELLINELP;
+    case ModelName::relline_lp_ext: return MOD_TYPE_RELLINELPEXT;
     case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
     case ModelName::relxill  : return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
@@ -292,7 +293,7 @@ relParam *get_rel_params(const ModelParams &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  param->d_offaxis = inp_param.get_otherwise_default(XPar::d_offaxis, 0);
+  param->d_ring = inp_param.get_otherwise_default(XPar::d_ring, 0);
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);

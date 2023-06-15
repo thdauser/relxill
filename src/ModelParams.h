@@ -53,7 +53,7 @@ enum class XPar {
   boost,
   h,
   htop,
-  d_offaxis,
+  d_ring,
   beta,
   frac_pl_bb,
   ktbb,

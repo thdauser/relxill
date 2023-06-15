@@ -65,7 +65,7 @@ TEST_CASE("Standard  Test", "[extended]") {
   // (rel_param).distance = 2.0;
   rel_param->a = 0.99;
   rel_param->height = 5.0;
-  rel_param->distance = 25.0; // setting some manual distance
+  rel_param->d_ring = 25.0; // setting some manual distance
   // calc_extended_emis(sys_par->emis, rel_param, table, &status);
   get_emis_extendedSource(sys_par->emis, rel_param, &status);
   // with a given table and parameters it should give an emissivity for the extended source (with dist)
@@ -88,6 +88,23 @@ TEST_CASE("Standard  Test", "[extended]") {
 
 }
 
+
+TEST_CASE("Default model call  Test", "[extended]") {
+
+  int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
+
+  LocalModel local_model{ModelName::relline_lp_ext}; // defines a local model object (afaiu)
+
+  local_model.set_par(XPar::d_ring, 3.0);
+
+  local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
+
+  
+
+}
 
 ///
 // TEST_CASE("Standard  Test", "[extended]") {
