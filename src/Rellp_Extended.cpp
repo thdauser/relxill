@@ -16,6 +16,14 @@
     Copyright 2020 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+
+/**
+ * @brief This module creates emissivity profile ready for usage in relxill taking it from the input table
+ * @details This module reads values from the table produced with corona-lean by Stefan Licklederer.
+ * The table is read by the columns, the columns are interpolated for further usage.
+ */
+
+
 #include "cfitsio.h"
 // #include "stdio.h"
 #include "Relbase.h"
@@ -30,6 +38,12 @@ extern "C"{
 
 extendedSourceTable *cached_extendedSource_table = nullptr;
 
+/**
+ * @brief Gets extended source table with a given name
+ * @details
+ * @param status pointer, status of the code for debugging
+ * @return extendedSourceTable, cached extended source table
+ */
 extendedSourceTable* get_es_table(int* status){
   CHECK_STATUS_RET(*status,nullptr);
 
@@ -40,6 +54,14 @@ extendedSourceTable* get_es_table(int* status){
   return cached_extendedSource_table;
 }
 
+/**
+ * @brief Gets spin values from the table for each row
+ * @details Uses cfitsio to read preloaded fits file
+ * @param nrows integer, number of rows in the table
+ * @param val two-fold pointer, to the value to be read (or what?)
+ * @param fptr pointer, to the file
+ * @param status pointer, status of the code for debugging
+ */
 static void get_extendedsourcetable_spin(int nrows, float **val, fitsfile *fptr, int *status){
 
   *val = (float*)  malloc(nrows* sizeof(float));
@@ -56,6 +78,19 @@ static void get_extendedsourcetable_spin(int nrows, float **val, fitsfile *fptr,
 
 }
 
+
+/**
+ * @brief Gets data for a single source from the table and then makes a relativistic correction of the flux
+ * @details Need to set the variables for fits_read_col instead of using numbers with unclear origin
+ * Should the relativistic correction be made by a separate function better?
+ * @param fptr pointer, to the fits file location
+ * @param n_h integer, number of heights simulated
+ * @param n_distance integer, number of distances simulated
+ * @param n_rad integer, number of (radial bins??)
+ * @param n_storage integer, number of (what a storage??). Used only to read the fifth column
+ * @param spin double, spin value of the source
+ * @return extendedSourceData, data from the table
+ */
 static extendedSourceData *
 load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
                                int n_rad, int n_storage, int *status,
@@ -104,7 +139,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
     }
   }
 
-////  add correction to flux
+  ////  add correction to flux
   double *r = dat->radius;
   double result;
   for (int i=0; i<n_h; i++) {
@@ -120,7 +155,15 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
 }
 
 
-
+/**
+ * @brief Modifies (?) a table tab making an interpolation of its content to the grid used in further calculations
+ * @details
+ * @param param, const relParam, a pointer to the structure of parameters used, the parameters include:
+ * a - spin, height - height, distance - distance
+ * @param tab, extendedSourceTable, a pointer to the structure containing a table
+ * @return lpReflFrac, a pointer to the structure containing some doubles with parameters of bh and system (?)
+ * probably the interpolated ones
+ */
 static lpReflFrac *calc_refl_frac_ext(const relParam *param,
                                       extendedSourceTable *tab, int *status) {
 
@@ -214,6 +257,12 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
 /*
  * EXTENDED SOURCE GEOMETRY --- MAIN ROUTINE
  * */
+/**
+ * @brief The main routine
+ * @details This routine calculates emissivity for the extended source using calc_extended_emis function declared further
+ * @param emis, emisProfile, pointer to the structure containing emissivity profile
+ * @param param, relParam, pointer to the structure containing the parameters used
+ */
 void get_emis_extendedSource(emisProfile *emis, relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -223,12 +272,19 @@ void get_emis_extendedSource(emisProfile *emis, relParam *param, int *status) {
 
 }
 
+
+/**
+ * @brief reads extended source table
+ * @details
+ * @param filename; const char, pointer to the name of the file (now declared in Rellp_Extended.h)
+ * @param inp_tab; extendedSourceTable, two-fold pointer to the input table data
+ */
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status) {
 
   extendedSourceTable *tab = (*inp_tab);
   fitsfile *fptr = nullptr;
 
-  char fullfilename[999];
+  char fullfilename[999]; // not used now but it would be good to add this option - writing local file name instead of full name
 
   do {
     if (tab != nullptr) {
@@ -251,7 +307,8 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     }
 
     // open the file
-    if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
+    if (fits_open_table(&fptr, filename, READONLY, status)) {
+     // fits_report_error(stdout, *status);
       CHECK_RELXILL_ERROR("opening of the extended source table failed", status);
       printf("    full path given: %s \n", filename);
       break;
@@ -298,7 +355,15 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
 }
 
+
 /////////////////////////////////////////////////////////
+/**
+ * @brief Calculates emissivity
+ * @details
+ * @param emisProf; emisProfile, pointer to the structure with emissivity profile
+ * @param param; relParam, pointer to the parameters structure, as declared above
+ * @param tab; extendedSourceTable, pointer to the table structure, as declared above
+ */
 void calc_extended_emis(emisProfile *emisProf, relParam *param,
                         extendedSourceTable *tab, int *status) {
 
@@ -326,6 +391,18 @@ void calc_extended_emis(emisProfile *emisProf, relParam *param,
       calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
 }
 
+
+/**
+ * @brief Interpolation of the table (not clear yet)
+ * @details
+ * @param a; double, spin
+ * @param height; double, height
+ * @param distance; double, distance
+ * @param gamma; double, photon index
+ * @param n_gshift_storage; int, number of energy shift bins
+ * @param tab; extendedSourceTable, pointer to the table as declared above
+ * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
+ */
 emisProfile *interpol_estable(double a, double height, double distance,
                               double gamma, int n_gshift_storage,
                               extendedSourceTable *tab, int *status) {
@@ -395,6 +472,20 @@ emisProfile *interpol_estable(double a, double height, double distance,
   return emis_profile_table;
 }
 
+
+/**
+ *
+ * @brief Interpolates values in height-distance plane
+ * @details (if I understand correctly)
+ * @param emis_profile_table; emisProfile, pointer to the structure containing emissivity profile table
+ * @param ifac_a; double, interpolated? factor? for spin
+ * @param ifac_h; const double, pointer to interpolated? factor? for height
+ * @param ifac_d; const double, pointer to interpolated? factor? for distance
+ * @param ind_h; const int, pointer to interpolated? index? for height
+ * @param ind_d; const int, pointer to interpolated? index? for distance
+ * @param dat_a; *const extendedSourceData (?), pointer to the structure with data
+ * @param nr; const int, number of ?radial bins?
+ */
 void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                                double ifac_a,
                                                const double *ifac_h,
@@ -443,6 +534,17 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
 }
 
 // constructors and desctructors //
+/**
+ *
+ * @brief Sets the memory for new extended source table
+ * @details
+ * @param n_h; int, number of heights in the table
+ * @param n_rad; int, number of bins in the table
+ * @param n_offaxis; int, number of off-axis sources (??) in the table
+ * @param n_a; int, number of spins in the table
+ * @param n_storage; int, number of storage (??) in the table
+ * @return new_extendedSourceTable, new extended source table
+ */
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_offaxis,
                                              int n_a, int n_storage,
                                              int *status) {
@@ -471,6 +573,13 @@ extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_offaxis,
   return tab;
 }
 
+
+/**
+ *
+ * @brief Sets the memory for new extended source data
+ * @details
+ * @return extendedSourceData, new extended source data
+ */
 extendedSourceData *new_extendedSourceData(int *status) {
 
   extendedSourceData *dat = (extendedSourceData *) malloc(sizeof(extendedSourceData));
@@ -540,6 +649,13 @@ extendedSourceData *new_extendedSourceData(int *status) {
   return dat;
 }
 
+
+/**
+ *
+ * @brief Frees the memory stored before for the data
+ * @details
+ * @param tab; extendedSourceTable, table to be freed from memory
+ */
 void free_extendedSourceTable(extendedSourceTable *tab) {
   if (tab != nullptr) {
     if (tab->dat != nullptr) {
@@ -556,6 +672,13 @@ void free_extendedSourceTable(extendedSourceTable *tab) {
   }
 }
 
+
+/**
+ *
+ * @brief Frees the memory stored before for the data
+ * @details Dobby is free! (crossed out)
+ * @param dat; extendedSourceData, data to be freed
+ */
 void free_extendedSourceData(extendedSourceData *dat) {
   if (dat != nullptr) {
     for (int ii =0; ii < ESTABLE_NHEIGHT; ii++) {
@@ -589,11 +712,27 @@ void free_extendedSourceData(extendedSourceData *dat) {
 
 }
 
+
+/**
+ *
+ * @brief Calculates norm factor of the primary spectrum
+ * @details Calculates normalisation factor of the primary spectrum to the number of photons reaching infinity
+ * Need to add velocity of the source here
+ * @param height; double, height
+ * @param a; double, spin
+ * @param gamma; double, photon index
+ * @param f_inf; double, fraction of photons reaching infinity
+ * @return double, normalisation factor
+ */
 double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf) {
   double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!)
   return f_inf / 0.5 * pow(g_inf, gamma);
 }
 
+/**
+ *
+ * Function which prints error status
+ */
 void printerror(int status) {
   printf("Error Code: %d\n",status);
 }
