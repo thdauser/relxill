@@ -39,17 +39,12 @@ TEST_CASE("Standard  Test", "[extended]") {
 
   LocalModel local_model{ModelName::relxilllpCp}; // defines a local model object (afaiu)
 
-  local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
+  // local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
 
   REQUIRE(   sum_flux(spec.flux, spec.num_flux_bins() )  > PREC); // that's obvious - summary flux should be high enough
 
   float *val;
   fitsfile *fptr = nullptr;
-  // fits_open_table(&fptr, ESTABLE_FILENAME, READONLY, &status);
-  // fits_movabs_hdu(fptr, 2, nullptr, &status);
-  // fits_read_key(fptr, TFLOAT, "SPIN", val, nullptr, &status);
-  // printf("%.2f", val);
-
   auto table = get_es_table(&status); // getting a table with emissivity values - the most important part to manage here
 
 
@@ -65,7 +60,7 @@ TEST_CASE("Standard  Test", "[extended]") {
   // (rel_param).distance = 2.0;
   rel_param->a = 0.99;
   rel_param->height = 5.0;
-  rel_param->d_ring = 25.0; // setting some manual distance
+  rel_param->distance = 5.0; // setting some manual distance
   // calc_extended_emis(sys_par->emis, rel_param, table, &status);
   get_emis_extendedSource(sys_par->emis, rel_param, &status);
   // with a given table and parameters it should give an emissivity for the extended source (with dist)
@@ -74,7 +69,7 @@ TEST_CASE("Standard  Test", "[extended]") {
   int n_rad = sys_par->nr;
   double *rad = sys_par->re;
   double *intens = sys_par->emis->emis;
-  string strname = "/userdata/data/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->distance) + "_v4.dat"; // std::round(rel_param->distance / 0.1) * 0.1
+  string strname = "/userdata/data/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->distance) + "_v6.dat"; // std::round(rel_param->distance / 0.1) * 0.1
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
   // std::to_string(rel_param->a) + std::to_string(rel_param->height) +
@@ -89,25 +84,16 @@ TEST_CASE("Standard  Test", "[extended]") {
 }
 
 
-TEST_CASE("Default model call  Test", "[extended]") {
+// TEST_CASE("Default model call  Test", "[extended]") {
 
-  int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
+ // int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
 
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
+//  DefaultSpec default_spec{};
+  //XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
 
-  LocalModel local_model{ModelName::relline_lp_ext}; // defines a local model object (afaiu)
+  //LocalModel local_model{ModelName::relline_lp_ext}; // defines a local model object (afaiu)
 
-  local_model.set_par(XPar::d_ring, 3.0);
+  //local_model.set_par(XPar::d_ring, 3.0);
 
-  local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
-
-  
-
-}
-
-///
-// TEST_CASE("Standard  Test", "[extended]") {
-//  param->distance = 5.0;
-//  calc_extended_emis(emisProf, param, tab, status);
-// }
+  //local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
+//}
