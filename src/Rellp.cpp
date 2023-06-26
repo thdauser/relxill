@@ -490,13 +490,10 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   lpTable* lp_table = get_lp_table(status);
 
   if (modelLampPostPointSource(param)) {
-    printf("Lp source");
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
   } else if (modelLampPostRingSource(param)){
-    printf("Ring source");
     get_emis_extendedSource(emis_profile, param, status);
   } else if (modelVertExtendSource(param)) {
-    printf("Jet source");
     calc_emis_jet_extended(emis_profile, param, lp_table, status);
   } else {
       RELXILL_ERROR("None of lamppost, radially or vertically extended sources are obtained from input parameters", status);

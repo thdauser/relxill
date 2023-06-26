@@ -38,7 +38,7 @@
 #define ESTABLE_NDISTANCE 8 // number of distance values
 #define ESTABLE_NRAD 199  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "/userdata/data/nekrasov/git/tables/rel_extended_source_test_v5.fits"
+#define ESTABLE_FILENAME "rel_extended_source_test.fits"
 
 
 typedef struct {

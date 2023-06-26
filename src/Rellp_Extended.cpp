@@ -307,16 +307,16 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     }
 
     // open the file
-    if (fits_open_table(&fptr, filename, READONLY, status)) {
+    if (fits_open_table(&fptr, fullfilename, READONLY, status)) {
      // fits_report_error(stdout, *status);
       CHECK_RELXILL_ERROR("opening of the extended source table failed", status);
-      printf("    full path given: %s \n", filename);
+      printf("    full path given: %s \n", fullfilename);
       break;
     }
 
     // first read the spin axes of the table AND move to the correct extension
     printf("************************\n");
-    printf("filename : %s\n", filename);
+    printf("filename : %s\n", fullfilename);
 
 
     get_extendedsourcetable_spin(tab->n_a, &(tab->a) , fptr, status);
