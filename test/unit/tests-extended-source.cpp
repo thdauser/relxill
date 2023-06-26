@@ -84,16 +84,33 @@ TEST_CASE("Standard  Test", "[extended]") {
 }
 
 
-// TEST_CASE("Default model call  Test", "[extended]") {
+TEST_CASE("Default model call  Test", "[extended]") {
 
- // int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
+ int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
 
-//  DefaultSpec default_spec{};
-  //XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
+DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
 
-  //LocalModel local_model{ModelName::relline_lp_ext}; // defines a local model object (afaiu)
+  LocalModel local_model{ModelName::relline_lp_ext}; // defines a local model object (afaiu)
 
-  //local_model.set_par(XPar::d_ring, 3.0);
+  double height = 6.0;
+  double dist = 3.0;
+  local_model.set_par(XPar::h, height);
+  local_model.set_par(XPar::d_ring, dist);
 
-  //local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
-//}
+  local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
+
+  int n_bins = spec.num_flux_bins();
+  double *flux = spec.flux;
+  double *energy = spec.energy;
+  string strname = "/userdata/data/nekrasov/git/tables/test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
+  char *foutName = new char[999];
+  strcpy(foutName, strname.c_str());
+  FILE *fp = fopen(foutName, "w+");
+  printf(" %i", n_bins);
+  for (int ii = 0; ii < n_bins; ii++) {
+    fprintf(fp, " %e \t %e \n", energy[ii], flux[ii]);
+  }
+  fclose(fp);
+
+}
