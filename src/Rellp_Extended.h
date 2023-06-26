@@ -35,10 +35,10 @@
 // this version must work
 #define ESTABLE_NA 3 // number of spin values
 #define ESTABLE_NHEIGHT 8 // number of height values
-#define ESTABLE_NDISTANCE 5 // number of distance values
+#define ESTABLE_NDISTANCE 8 // number of distance values
 #define ESTABLE_NRAD 199  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "/userdata/data/nekrasov/git/tables/rel_extended_source_test_v6.fits"
+#define ESTABLE_FILENAME "/userdata/data/nekrasov/git/tables/rel_extended_source_test_v5.fits"
 
 
 typedef struct {
@@ -81,8 +81,8 @@ extendedSourceTable* get_es_table(int* status);
 
 void printerror(int status);
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status);
-void get_emis_extendedSource(emisProfile *emisProf, relParam *param, int *status);
-void calc_extended_emis(emisProfile *emisProf, relParam *param,
+void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
+void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, int *status);
 
 

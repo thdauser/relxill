@@ -263,7 +263,7 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
  * @param emis, emisProfile, pointer to the structure containing emissivity profile
  * @param param, relParam, pointer to the structure containing the parameters used
  */
-void get_emis_extendedSource(emisProfile *emis, relParam *param, int *status) {
+void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -338,6 +338,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
           tab->a[ii]);
       if (*status != EXIT_SUCCESS) {
         RELXILL_ERROR("failed to load data from the extended source table into memory\n", status);
+
         break;
       }
     }
@@ -364,7 +365,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
  * @param param; relParam, pointer to the parameters structure, as declared above
  * @param tab; extendedSourceTable, pointer to the table structure, as declared above
  */
-void calc_extended_emis(emisProfile *emisProf, relParam *param,
+void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, int *status) {
 
   CHECK_STATUS_VOID(*status);

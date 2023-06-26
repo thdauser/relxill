@@ -18,7 +18,7 @@
 
 #include "Rellp.h"
 #include "Relphysics.h"
-
+#include "Rellp_Extended.h"
 extern "C" {
 #include "writeOutfiles.h"
 }
@@ -284,9 +284,27 @@ static void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam
   emis_profile->normFactorPrimSpec = 0.0; // currently not used, calculated directly in add_primary_component
 }
 
-int modelLampPostPointsource(const relParam *param) {
+int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  if ((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) {
+  if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) && (fabs(param->d_ring) <= htopPrecLimit)) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int modelLampPostRingSource(const relParam *param) {
+  const double radiusPrecLimit = 1e-3;
+  if ((fabs(param->d_ring) >= radiusPrecLimit)) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int modelVertExtendSource(const relParam *param) {
+  const double htopPrecLimit = 1e-3;
+  if ((fabs(param->htop) >= 1.0) || (param->htop - htopPrecLimit >= param->height)) {
     return 1;
   } else {
     return 0;
@@ -471,11 +489,20 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
 
   lpTable* lp_table = get_lp_table(status);
 
-  if (modelLampPostPointsource(param)) {
+  if (modelLampPostPointSource(param)) {
+    printf("Lp source");
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
-  } else {
+  } else if (modelLampPostRingSource(param)){
+    printf("Ring source");
+    get_emis_extendedSource(emis_profile, param, status);
+  } else if (modelVertExtendSource(param)) {
+    printf("Jet source");
     calc_emis_jet_extended(emis_profile, param, lp_table, status);
+  } else {
+      RELXILL_ERROR("None of lamppost, radially or vertically extended sources are obtained from input parameters", status);
   }
+
+  //get_emis_extendedSource(emis_profile, param, status);
 
 }
 

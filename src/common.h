@@ -61,12 +61,12 @@
 /***************************************/
 
 /** dimensions of the RELLINE table */
-#define RELTABLE_NA 25
-#define RELTABLE_NR 100
-#define RELTABLE_NG 40
+#define RELTABLE_NA 25 // number of spins
+#define RELTABLE_NR 100 // number of rows in table
+#define RELTABLE_NG 40 // number of g..? in table
 #define RELTABLE_MAX_R 1000.0
 #define RELTABLE_FILENAME "rel_table_v0.5a.fits"
-#define RELTABLE_NMU0 30
+#define RELTABLE_NMU0 30 // number of mu0? values in table
 
 
 /** dimensions of the LP table */
