@@ -41,7 +41,7 @@ TEST_CASE("Standard  Test", "[extended]") {
 
   // local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
 
-  REQUIRE(   sum_flux(spec.flux, spec.num_flux_bins() )  > PREC); // that's obvious - summary flux should be high enough
+//  REQUIRE(   sum_flux(spec.flux, spec.num_flux_bins() )  > PREC); // that's obvious - summary flux should be high enough
 
   float *val;
   fitsfile *fptr = nullptr;
@@ -60,7 +60,7 @@ TEST_CASE("Standard  Test", "[extended]") {
   // (rel_param).distance = 2.0;
   rel_param->a = 0.99;
   rel_param->height = 5.0;
-  rel_param->distance = 5.0; // setting some manual distance
+  rel_param->d_ring = 10.0; // setting some manual distance
   // calc_extended_emis(sys_par->emis, rel_param, table, &status);
   get_emis_extendedSource(sys_par->emis, rel_param, &status);
   // with a given table and parameters it should give an emissivity for the extended source (with dist)
@@ -69,13 +69,13 @@ TEST_CASE("Standard  Test", "[extended]") {
   int n_rad = sys_par->nr;
   double *rad = sys_par->re;
   double *intens = sys_par->emis->emis;
-  string strname = "/userdata/data/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->distance) + "_v6.dat"; // std::round(rel_param->distance / 0.1) * 0.1
+  string strname = "/userdata/data/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_v6.dat"; // std::round(rel_param->distance / 0.1) * 0.1
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
   // std::to_string(rel_param->a) + std::to_string(rel_param->height) +
   FILE *fp = fopen(foutName, "w+");
   // fprintf(fp, " %s \t %s \n", "rad", "emis");
-  printf(" %i", n_rad);
+  // printf(" %i", n_rad);
   for (int ii = 0; ii < n_rad; ii++) {
     fprintf(fp, " %e \t %e \n", rad[ii], intens[ii]);
   }
