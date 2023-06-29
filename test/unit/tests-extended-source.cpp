@@ -69,18 +69,16 @@ TEST_CASE("Standard  Test", "[extended]") {
   int n_rad = sys_par->nr;
   double *rad = sys_par->re;
   double *intens = sys_par->emis->emis;
-  string strname = "/userdata/data/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_v6.dat"; // std::round(rel_param->distance / 0.1) * 0.1
+  /*
+  string strname = "test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_v5.dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
-  // std::to_string(rel_param->a) + std::to_string(rel_param->height) +
   FILE *fp = fopen(foutName, "w+");
-  // fprintf(fp, " %s \t %s \n", "rad", "emis");
-  // printf(" %i", n_rad);
   for (int ii = 0; ii < n_rad; ii++) {
     fprintf(fp, " %e \t %e \n", rad[ii], intens[ii]);
   }
   fclose(fp);
-
+*/
 }
 
 
@@ -93,7 +91,7 @@ DefaultSpec default_spec{};
 
   LocalModel local_model{ModelName::relline_lp_ext}; // defines a local model object (afaiu)
 
-  double height = 6.0;
+  double height = 20.0;
   double dist = 3.0;
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::d_ring, dist);
@@ -103,14 +101,14 @@ DefaultSpec default_spec{};
   int n_bins = spec.num_flux_bins();
   double *flux = spec.flux;
   double *energy = spec.energy;
-  string strname = "/userdata/data/nekrasov/git/tables/test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
+  /*
+  string strname = "test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
   FILE *fp = fopen(foutName, "w+");
-  printf(" %i", n_bins);
   for (int ii = 0; ii < n_bins; ii++) {
     fprintf(fp, " %e \t %e \n", energy[ii], flux[ii]);
   }
   fclose(fp);
-
+*/
 }
