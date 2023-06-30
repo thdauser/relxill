@@ -69,16 +69,18 @@ TEST_CASE("Standard  Test", "[extended]") {
   int n_rad = sys_par->nr;
   double *rad = sys_par->re;
   double *intens = sys_par->emis->emis;
-  /*
-  string strname = "test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_v5.dat";
+
+  string strname = "/home/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_v5.dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
   FILE *fp = fopen(foutName, "w+");
-  for (int ii = 0; ii < n_rad; ii++) {
-    fprintf(fp, " %e \t %e \n", rad[ii], intens[ii]);
+  if (fp != nullptr) {
+    for (int ii = 0; ii < n_rad; ii++) {
+      fprintf(fp, " %e \t %e \n", rad[ii], intens[ii]);
+    }
   }
   fclose(fp);
-*/
+
 }
 
 
@@ -101,14 +103,15 @@ DefaultSpec default_spec{};
   int n_bins = spec.num_flux_bins();
   double *flux = spec.flux;
   double *energy = spec.energy;
-  /*
-  string strname = "test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
+
+  string strname = "/home/nekrasov/git/tables/test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
   FILE *fp = fopen(foutName, "w+");
-  for (int ii = 0; ii < n_bins; ii++) {
-    fprintf(fp, " %e \t %e \n", energy[ii], flux[ii]);
+  if (fp != nullptr) {
+    for (int ii = 0; ii < n_bins; ii++) {
+      fprintf(fp, " %e \t %e \n", energy[ii], flux[ii]);
+    }
   }
   fclose(fp);
-*/
 }
