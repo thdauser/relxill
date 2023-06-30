@@ -69,7 +69,9 @@ TEST_CASE("Standard  Test", "[extended]") {
   int n_rad = sys_par->nr;
   double *rad = sys_par->re;
   double *intens = sys_par->emis->emis;
-
+  // the part below loads data to file. The file is accessible only locally, so this part failes push to the server if not commented.
+  // Need either to modify this part, or not to use it. The same is in the test below
+/*
   string strname = "/home/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_v5.dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
@@ -80,7 +82,7 @@ TEST_CASE("Standard  Test", "[extended]") {
     }
   }
   fclose(fp);
-
+*/
 }
 
 
@@ -103,7 +105,7 @@ DefaultSpec default_spec{};
   int n_bins = spec.num_flux_bins();
   double *flux = spec.flux;
   double *energy = spec.energy;
-
+/*
   string strname = "/home/nekrasov/git/tables/test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
@@ -114,4 +116,5 @@ DefaultSpec default_spec{};
     }
   }
   fclose(fp);
+  */
 }
