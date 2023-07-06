@@ -95,7 +95,7 @@ DefaultSpec default_spec{};
 
   LocalModel local_model{ModelName::relline_lp_ext}; // defines a local model object (afaiu)
 
-  double height = 20.0;
+  double height = 7.5;
   double dist = 3.0;
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::d_ring, dist);
@@ -105,7 +105,7 @@ DefaultSpec default_spec{};
   int n_bins = spec.num_flux_bins();
   double *flux = spec.flux;
   double *energy = spec.energy;
-/*
+
   string strname = "/home/nekrasov/git/tables/test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
@@ -116,5 +116,24 @@ DefaultSpec default_spec{};
     }
   }
   fclose(fp);
-  */
+
+}
+
+
+
+TEST_CASE("Xspec model call  Test", "[extended]") {
+
+  int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
+
+  // const double * params = []
+  // xspec_C_wrapper_eval_model(ModelName::relline_lp_ext, parameter, flux, Nflux, energy);
+  LocalModel local_model{ModelName::relline_lp_ext}; //parameter_values,
+  local_model.set_par(XPar::d_ring, 5.0);
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+  // XspecSpectrum spectrum{xspec_energy, xspec_flux, static_cast<size_t>(num_flux_bins)};
+
+  local_model.eval_model(spec);
+  printf("%f, %f, %f", spec.flux[1000], spec.flux[1200], spec.flux[1600]);
+
 }

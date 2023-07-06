@@ -86,6 +86,9 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
   if (are_values_different(par->rout, cpar->rout)) {
     return 1;
   }
+  if (are_values_different(par->d_ring, cpar->d_ring)) {
+    return 1;
+  }
 
   if (par->limb != cpar->limb) {
     return 1;
@@ -165,6 +168,7 @@ void set_cached_rel_param(const relParam *par, relParam **ca_rel_param, int *sta
   (*ca_rel_param)->htop = par->htop;
   (*ca_rel_param)->incl = par->incl;
   (*ca_rel_param)->beta = par->beta;
+  (*ca_rel_param)->d_ring = par->d_ring;
 
   (*ca_rel_param)->z = par->z;
   (*ca_rel_param)->limb = par->limb;
