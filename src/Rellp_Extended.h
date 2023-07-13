@@ -23,7 +23,7 @@
 #include "common.h"
 
 /** dimensions of the ES table */
-// this version works
+// this version is the older version of table produced by Jacob Rose with older version of Stefan Licklederer's scripts
 // #define ESTABLE_NA 30
 // #define ESTABLE_NHEIGHT 25
 // #define ESTABLE_NDISTANCE 25
@@ -33,9 +33,9 @@
 
 
 // this version must work
-#define ESTABLE_NA 3 // number of spin values
-#define ESTABLE_NHEIGHT 8 // number of height values
-#define ESTABLE_NDISTANCE 8 // number of distance values
+#define ESTABLE_NA 11 // number of spin values
+#define ESTABLE_NHEIGHT 11 // number of height values
+#define ESTABLE_NDISTANCE 13 // number of distance values
 #define ESTABLE_NRAD 199  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
 #define ESTABLE_FILENAME "rel_extended_source_test.fits"
