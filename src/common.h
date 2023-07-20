@@ -88,6 +88,7 @@
 
 #define MOD_TYPE_RELXILL -1
 #define MOD_TYPE_RELXILLLP -2
+#define MOD_TYPE_RELXILLLPEXT -3
 
 /** density models **/
 #define MOD_TYPE_RELXILLDENS -10

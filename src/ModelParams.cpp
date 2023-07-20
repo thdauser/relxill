@@ -41,6 +41,7 @@ int convertModelType(ModelName name) {
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
     case ModelName::relxillD: return MOD_TYPE_RELXILLDENS;
     case ModelName::relxilllp: return MOD_TYPE_RELXILLLP;
+    case ModelName::relxilllp_ext: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpCp: return MOD_TYPE_RELXILLLP;
     case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
     case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
