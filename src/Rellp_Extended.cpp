@@ -139,7 +139,8 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
     }
   }
 
-  ////  add correction to flux
+  ////  add correction to flux - important that it is done here and not in the post-proc script before the extended table is stored
+  /// note however that the energy shift g^Gamma is not added here
   double *r = dat->radius;
   double result;
   for (int i=0; i<n_h; i++) {
