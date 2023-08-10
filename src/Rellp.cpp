@@ -263,7 +263,7 @@ void apply_emis_fluxboost_source_disk(emisProfile *emisProf, double a, double he
  * @param tab
  * @param status
  */
-static void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param, double height, double beta,
+void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param, double height, double beta,
                                        lpTable *tab, int *status) {
   CHECK_STATUS_VOID(*status);
 
@@ -420,7 +420,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 }
 
 
-static lpTable* get_lp_table(int* status){
+lpTable* get_lp_table(int* status){
   CHECK_STATUS_RET(*status,nullptr);
 
   if (cached_lp_table == nullptr) {
@@ -487,13 +487,15 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
 
   CHECK_STATUS_VOID(*status);
 
-  lpTable* lp_table = get_lp_table(status);
+  // lpTable* lp_table = get_lp_table(status);
 
   if (modelLampPostPointSource(param)) {
+    lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
   } else if (modelLampPostRingSource(param)){
     get_emis_extendedSource(emis_profile, param, status);
   } else if (modelVertExtendSource(param)) {
+    lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_extended(emis_profile, param, lp_table, status);
   } else {
       RELXILL_ERROR("None of lamppost, radially or vertically extended sources are obtained from input parameters", status);

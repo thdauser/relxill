@@ -44,7 +44,7 @@
 typedef struct {
 
   double *height;
-  double **distance;
+  double **d_ring;
 
   double *radius;
 

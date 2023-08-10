@@ -110,7 +110,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
   for (int ii = 0; ii < n_h; ii++) {
     fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_h, 1, 1, &doublenullptr, &(dat->height[ii]),
                   &anynullptr, status);
-    fits_read_col(fptr, TDOUBLE, 3, 1 + ii * n_h, 1, n_distance, &doublenullptr, dat->distance[ii],
+    fits_read_col(fptr, TDOUBLE, 3, 1 + ii * n_h, 1, n_distance, &doublenullptr, dat->d_ring[ii],
                   &anynullptr, status);
   }
 
@@ -158,7 +158,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
 
 /**
  * @brief Modifies (?) a table tab making an interpolation of its content to the grid used in further calculations
- * @details
+ * @details Might be wrong for now, need to check this function.
  * @param param, const relParam, a pointer to the structure of parameters used, the parameters include:
  * a - spin, height - height, distance - distance
  * @param tab, extendedSourceTable, a pointer to the structure containing a table
@@ -197,7 +197,7 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
     } else {
       index = ind_h[ii];
     }
-    get_ipol_factor_double(param->distance, dat_ind_a[ii]->distance[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
+    get_ipol_factor_double(param->d_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
   }
 
 
@@ -285,7 +285,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
   extendedSourceTable *tab = (*inp_tab);
   fitsfile *fptr = nullptr;
 
-  char fullfilename[999]; // not used now but it would be good to add this option - writing local file name instead of full name
+  char fullfilename[999];
 
   do {
     if (tab != nullptr) {
@@ -399,13 +399,14 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
  * @details
  * @param a; double, spin
  * @param height; double, height
- * @param distance; double, distance
+ * @param distance; double, distance - is it a distance to the observer or to the source (d_ring)? Very important, because there are two different parameters
+ * I think that here should be d_ring, not distance.
  * @param gamma; double, photon index
  * @param n_gshift_storage; int, number of energy shift bins
  * @param tab; extendedSourceTable, pointer to the table as declared above
  * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
  */
-emisProfile *interpol_estable(double a, double height, double distance,
+emisProfile *interpol_estable(double a, double height, double d_ring,
                               double gamma, int n_gshift_storage,
                               extendedSourceTable *tab, int *status) {
   CHECK_STATUS_RET(*status, nullptr);
@@ -441,7 +442,7 @@ emisProfile *interpol_estable(double a, double height, double distance,
     } else {
       index = ind_h[ii];
     }
-    get_ipol_factor_double(distance, dat_ind_a[ii]->distance[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
+    get_ipol_factor_double(d_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
   }
 
   // determines the gshift for the two spin values required for
@@ -544,7 +545,7 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
  * @param n_rad; int, number of bins in the table
  * @param n_offaxis; int, number of off-axis sources (??) in the table
  * @param n_a; int, number of spins in the table
- * @param n_storage; int, number of storage (??) in the table
+ * @param n_storage; int, number of storage (??) in the table. Probably the energy shift storage
  * @return new_extendedSourceTable, new extended source table
  */
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_offaxis,
@@ -590,8 +591,8 @@ extendedSourceData *new_extendedSourceData(int *status) {
   dat->height = (double *) malloc(sizeof(double) * ESTABLE_NHEIGHT);
   CHECK_MALLOC_RET_STATUS(dat->height, status, nullptr)
 
-  dat->distance = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
-  CHECK_MALLOC_RET_STATUS(dat->distance, status, nullptr)
+  dat->d_ring = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  CHECK_MALLOC_RET_STATUS(dat->d_ring, status, nullptr)
 
   dat->radius = (double *) malloc(sizeof(double) * ESTABLE_NRAD);
   CHECK_MALLOC_RET_STATUS(dat->radius, status, nullptr)
@@ -619,8 +620,8 @@ extendedSourceData *new_extendedSourceData(int *status) {
     dat->refl_frac[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
     CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-    dat->distance[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
-    CHECK_MALLOC_RET_STATUS(dat->distance, status, nullptr)
+    dat->d_ring[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    CHECK_MALLOC_RET_STATUS(dat->d_ring, status, nullptr)
 
     dat->f_ad[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
     CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
@@ -684,7 +685,7 @@ void free_extendedSourceTable(extendedSourceTable *tab) {
 void free_extendedSourceData(extendedSourceData *dat) {
   if (dat != nullptr) {
     for (int ii =0; ii < ESTABLE_NHEIGHT; ii++) {
-      if (dat->distance != nullptr) free(dat->distance[ii]);
+      if (dat->d_ring != nullptr) free(dat->d_ring[ii]);
       if (dat->flux != nullptr) free(dat->flux[ii]);
       if (dat->gshift != nullptr) free(dat->gshift[ii]);
       if (dat->refl_frac != nullptr) free(dat->refl_frac[ii]);
@@ -704,7 +705,7 @@ void free_extendedSourceData(extendedSourceData *dat) {
   }
     free(dat->radius);
     free(dat->height);
-    free(dat->distance);
+    free(dat->d_ring);
     free(dat->flux);
     free(dat->gshift);
     free(dat->energy_data_storage);

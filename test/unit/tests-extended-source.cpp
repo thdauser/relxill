@@ -22,6 +22,7 @@
 #include "LocalModel.h"
 #include "common-functions.h"
 #include "Rellp_Extended.h"
+#include "Rellp.h"
 
 extern "C" {
 #include "writeOutfiles.h"
@@ -37,16 +38,13 @@ TEST_CASE("Standard  Test", "[extended]") {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
 
-  LocalModel local_model{ModelName::relxilllpCp}; // defines a local model object (afaiu)
+  LocalModel local_model{ModelName::relxilllp_ext}; // defines a local model object (afaiu)
 
   // local_model.eval_model(spec); // evaluates a model with given specifications (spec)..?
 
 //  REQUIRE(   sum_flux(spec.flux, spec.num_flux_bins() )  > PREC); // that's obvious - summary flux should be high enough
 
-  float *val;
-  fitsfile *fptr = nullptr;
   auto table = get_es_table(&status); // getting a table with emissivity values - the most important part to manage here
-
 
 
   relParam* rel_param = local_model.get_rel_params(); // getting parameters for the given model...
@@ -55,12 +53,15 @@ TEST_CASE("Standard  Test", "[extended]") {
 
   // auto emis_profile = new_emisProfile(sys_par->re, sys_par->nr, &status);
 
-
-
   // (rel_param).distance = 2.0;
-  rel_param->a = 0.99;
-  rel_param->height = 5.0;
-  rel_param->d_ring = 10.0; // setting some manual distance
+  rel_param->a = 0.998;
+  rel_param->height = 3.0;
+  rel_param->d_ring = 20.0; // setting some manual distance
+  rel_param->emis1 = 3.0;
+  rel_param->emis2 = 3.0;
+  rel_param->rbr = 30.0;
+  rel_param->lineE = 1.0;
+  rel_param->return_rad = 0.0;
   // calc_extended_emis(sys_par->emis, rel_param, table, &status);
   get_emis_extendedSource(sys_par->emis, rel_param, &status);
   // with a given table and parameters it should give an emissivity for the extended source (with dist)
@@ -72,7 +73,7 @@ TEST_CASE("Standard  Test", "[extended]") {
   // the part below loads data to file. The file is accessible only locally, so this part failes push to the server if not commented.
   // Need either to modify this part, or not to use it. The same is in the test below
 /*
-  string strname = "/home/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_v5.dat";
+  string strname = "/home/nekrasov/git/tables/test-ext-emis-d" + std::to_string(rel_param->d_ring) + "_new.dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
   FILE *fp = fopen(foutName, "w+");
@@ -174,3 +175,64 @@ TEST_CASE("Default relxill model call  Test", "[extended]") {
     fclose(fp);
   */
 }
+
+
+
+TEST_CASE("Test to compare lp and ext", "[extended]") {
+
+  int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
+  LocalModel local_model{ModelName::relxilllp}; // defines a local model object (afaiu)
+  relParam* rel_param = local_model.get_rel_params(); // getting parameters for the given model...
+  auto sys_par = get_system_parameters(rel_param, &status); // also some parameters
+
+  // (rel_param).distance = 2.0;
+  rel_param->a = 0.998;
+  rel_param->height = 3.0;
+  rel_param->emis1 = 3.0;
+  rel_param->emis2 = 3.0;
+  rel_param->rbr = 30.0;
+  rel_param->lineE = 1.0;
+  rel_param->return_rad = 0.0;
+  lpTable *cached_lp_table = get_lp_table(&status);
+  calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta, cached_lp_table, &status);
+  // with a given table and parameters it should give an emissivity for the extended source (with dist)
+  local_model.eval_model(spec);
+
+  LocalModel local_model_ext{ModelName::relxilllp_ext}; // defines a local model object (afaiu)
+  relParam* rel_param_ext = local_model_ext.get_rel_params(); // getting parameters for the given model...
+  auto sys_par_ext = get_system_parameters(rel_param_ext, &status); // also some parameters
+
+  // (rel_param).distance = 2.0;
+  rel_param_ext->a = 0.998;
+  rel_param_ext->height = 3.0;
+  rel_param_ext->d_ring = 0.1; // setting some manual distance
+  rel_param_ext->emis1 = 3.0;
+  rel_param_ext->emis2 = 3.0;
+  rel_param_ext->rbr = 30.0;
+  rel_param_ext->lineE = 1.0;
+  rel_param_ext->return_rad = 0.0;
+  get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
+  local_model_ext.eval_model(spec);
+  int n_rad = sys_par->nr;
+  double *rad = sys_par->re;
+  double *intens = sys_par->emis->emis;
+  int n_rad_ext = sys_par_ext->nr;
+  double *rad_ext = sys_par_ext->re;
+  double *intens_ext = sys_par_ext->emis->emis;
+/*
+  string strname = "/home/nekrasov/analysis/test-ext-emis-d" + std::to_string(rel_param_ext->d_ring) + ".dat";
+  char *foutName = new char[999];
+  strcpy(foutName, strname.c_str());
+  FILE *fp = fopen(foutName, "w+");
+  if (fp != nullptr) {
+    for (int ii = 0; ii < n_rad; ii++) {
+      fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", rad[ii], intens[ii], rad_ext[ii], intens_ext[ii], intens[ii] / intens_ext[ii] / intens[200] * intens_ext[200]);
+    }
+  }
+  fclose(fp);
+*/
+}
+
