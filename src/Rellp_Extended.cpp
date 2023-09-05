@@ -136,11 +136,13 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
 
       dat->refl_frac[ii][jj] = dat->f_ad[ii][jj]/dat->f_inf[ii][jj];
 
+      //printf("load single source function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e \t spin=%e \t height=%e \t dist=%e \n", dat->f_ad[ii][jj], dat->f_inf[ii][jj], dat->f_ad[ii][jj] / dat->f_inf[ii][jj], dat->refl_frac[ii][jj], spin, dat->height[ii], dat->d_ring[ii][jj]);
+      // checked - loaded correctly (at least for n_h == n_distance)
     }
   }
 
   ////  add correction to flux - important that it is done here and not in the post-proc script before the extended table is stored
-  /// note however that the energy shift g^Gamma is not added here
+  /// note however that the energy shift g^Gamma is not added here - its added below in interpol_estable function
   double *r = dat->radius;
   double result;
   for (int i=0; i<n_h; i++) {
@@ -249,8 +251,13 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
   if (str->f_inf > 0.5) {
     str->f_inf = 0.5;
   }
+  /// these are equal for now. f_inf_rest is used to calculate primary spectrum (function flux_boost_source_to_observer in PrimarySource.h)
+  /// later maybe would be good to distinguish them correctly - AN
+  str->f_inf_rest = str->f_inf; /// anyway this is true for non-moving sources (beta=0)
+  // str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
 
-  str->f_bh = 1 - (str->f_ad + str->f_inf);
+  str->f_bh = 1.0 - (str->f_ad + str->f_inf);
+  // printf("calc refl frac function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e \n", str->f_ad, str->f_inf, str->f_ad / str->f_inf, str->refl_frac);
 
   return str;
 }
@@ -267,7 +274,7 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
 void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
-
+  // printf("call get emis\n");
   extendedSourceTable* estable = get_es_table(status);
   calc_extended_emis(emis, param, estable, status);
 
@@ -371,14 +378,14 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 
   CHECK_STATUS_VOID(*status);
 
-  emisProfile* emis_profile_table = interpol_estable(
+  emisProfile *emis_profile_table = interpol_estable(
       param->a, param->height, param->d_ring, param->gamma, ESTABLE_NENERGYBINS, tab, status);
 
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile
   free_emisProfile(emis_profile_table);
-
+  // printf("call calc ext emis\n");
   emisProf->photon_fate_fractions = calc_refl_frac_ext(param, tab, status);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
@@ -388,9 +395,9 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 //      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
 //    }
 //  }
-
-  emisProf->normFactorPrimSpec =
-      calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
+ // AN: not used as far as I see from other routines?
+  emisProf->normFactorPrimSpec = 0.0;
+      //=calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
 }
 
 
@@ -532,7 +539,8 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
     emis_profile_table->emis[ii] *= interp_lin_1d(ifac_a, flo, fhi);
 
     emis_profile_table->del_emit[ii] = 0; // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
-    emis_profile_table->del_inc[ii] = 30 ;
+    emis_profile_table->del_inc[ii] = 30 ; // AN: currently these values are not used for extended sources. They are supposed to be used only for refl_frac calculations,
+    // which are calculated already in the input table for extended model
   }
 }
 
@@ -720,7 +728,7 @@ void free_extendedSourceData(extendedSourceData *dat) {
  *
  * @brief Calculates norm factor of the primary spectrum
  * @details Calculates normalisation factor of the primary spectrum to the number of photons reaching infinity
- * Need to add velocity of the source here
+ * Need to add velocity of the source here. AN: Not used anywhere.
  * @param height; double, height
  * @param a; double, spin
  * @param gamma; double, photon index

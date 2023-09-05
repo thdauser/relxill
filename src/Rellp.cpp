@@ -478,6 +478,52 @@ static void get_emis_constant(double *emis, int n) {
   }
 }
 
+/**
+ * @brief normalizes emissivity so that integral of emissivity * d(area) over all radii equals 1
+ * @details  This function is added here because we need to normalize emissivity values from the extended lamp-post table
+ * (for lp table this normalization is done automatically)
+ * @param emis emissivty profile grid
+ * @param re radial coordinate grid
+ * @param nr number of bins
+ */
+void normalize_emissivity(double *emis, double *re, int nr) {
+
+  double sum = 0.0;
+  for (int ii = 1; ii <= nr; ii++) {
+    //double dA = calc_proper_area_ring(emis_profile->re[N - ii], emis_profile->re[N - ii - 1], param->a);
+    double r_mean = 0.5 * (re[nr - ii + 1] + re[nr - ii]);
+    double dr = abs(re[nr - ii + 1] - re[nr - ii]);
+    double dA = (2.0 * M_PI * r_mean) * dr; //
+    // double dA = area_kerr(r_mean, param->a) * dr;
+    double emis_mean = emis[nr - ii + 1];
+    sum += emis_mean * dA;
+    //printf("emis ext = %e \t %e \t %i \n", emis_profile->emis[N - ii], emis_profile->re[N - ii], N - ii);
+  }
+  /*
+  double r_mean_hi = 0.5 * (re[nr] + re[nr - 1]);
+  double dr_hi = abs(re[nr] - re[nr - 1]);
+  double dA_hi = area_flat(r_mean_hi) * dr_hi;
+  double emis_mean_hi = emis[nr];  // 0.5 * (emis[nr] + emis[nr - 1]);//
+  sum += emis_mean_hi * dA_hi;
+
+  //double r_mean_lo = 0.5 * (re[0] + re[1]);
+  //double dr_lo = abs(re[0] - re[1]);
+  //double dA_lo = area_flat(r_mean_lo) * dr_lo;
+  //double emis_mean_lo = 0.5 * (emis[0] + emis[1]); // emis[nr - ii]; //
+  //sum += emis_mean_lo * dA_lo;
+  //sum /= 4.0;
+  */
+  double dr = abs(re[0] - re[1]);
+  double r_mean = re[0] - 0.5 * dr; // temporary solution how to add "0"-"-1" bins to the summation
+  double dA = (2.0 * M_PI * r_mean) * dr;
+  double emis_mean = emis[0];
+  sum += emis_mean * dA;
+  // printf("sum norm=%e \n", sum);
+  for (int ii = 0; ii <= nr; ii++) {
+    emis[ii] = emis[ii] / sum;
+    // printf("emis ext=%e \n", emis_profile->emis[ii]);
+  }
+}
 
 /**
   * @syopsis: calculate the emissivity profile for any jet like source
@@ -492,8 +538,19 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   if (modelLampPostPointSource(param)) {
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
+    /*
+    double sum = 0.0;
+    for (int ii = 0; ii < emis_profile->nr; ii++) {
+      // printf("emis lp=%e \n", emis_profile->emis[ii]);
+      sum += emis_profile->emis[ii];
+    }
+    printf("sum lp= %e \n", sum);
+     */
   } else if (modelLampPostRingSource(param)){
     get_emis_extendedSource(emis_profile, param, status);
+
+    normalize_emissivity(emis_profile->emis, emis_profile->re, emis_profile->nr);
+
   } else if (modelVertExtendSource(param)) {
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_extended(emis_profile, param, lp_table, status);

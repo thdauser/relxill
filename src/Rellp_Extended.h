@@ -29,15 +29,15 @@
 #define ESTABLE_NDISTANCE 25
 #define ESTABLE_NRAD 199
 #define ESTABLE_NENERGYBINS 20
-// #define ESTABLE_FILENAME "/userdata/data/nekrasov/git/tables/rel_extended_source_v14.fits"
+//#define ESTABLE_FILENAME "/userdata/data/nekrasov/git/tables/rel_extended_source_v14.fits"
 
 
 // this version must work
-// #define ESTABLE_NA 11 // number of spin values
-// #define ESTABLE_NHEIGHT 11 // number of height values
-// #define ESTABLE_NDISTANCE 13 // number of distance values
-// #define ESTABLE_NRAD 199  // number of radial bin values
-// #define ESTABLE_NENERGYBINS 20 // number of energy bin values
+//#define ESTABLE_NA 11 // number of spin values
+//#define ESTABLE_NHEIGHT 12 // number of height values
+//#define ESTABLE_NDISTANCE 12 // number of distance values
+//#define ESTABLE_NRAD 199  // number of radial bin values
+//#define ESTABLE_NENERGYBINS 20 // number of energy bin values
 #define ESTABLE_FILENAME "rel_extended_source_test.fits"
 
 

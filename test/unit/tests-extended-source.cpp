@@ -222,6 +222,8 @@ TEST_CASE("Test to compare lp and ext", "[extended]") {
   int n_rad_ext = sys_par_ext->nr;
   double *rad_ext = sys_par_ext->re;
   double *intens_ext = sys_par_ext->emis->emis;
+
+  double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
 /*
   string strname = "/home/nekrasov/analysis/test-ext-emis-d" + std::to_string(rel_param_ext->d_ring) + ".dat";
   char *foutName = new char[999];
@@ -236,3 +238,83 @@ TEST_CASE("Test to compare lp and ext", "[extended]") {
 */
 }
 
+
+
+TEST_CASE("Checking the reflection fraction", "[extended]") {
+
+  int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
+
+  LocalModel local_model{ModelName::relxilllp};
+  relParam* rel_param = local_model.get_rel_params(); // getting parameters for the given model...
+  auto sys_par = get_system_parameters(rel_param, &status); // also some parameters
+
+  rel_param->a = 0.998;
+  rel_param->height = 2.0;
+ // rel_param->rout= 1000.0;
+  lpTable *cached_lp_table = get_lp_table(&status);
+  calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta, cached_lp_table, &status);
+
+  local_model.eval_model(spec);
+
+  double refl = sys_par->emis->photon_fate_fractions->refl_frac;
+  double frac_inf = sys_par->emis->photon_fate_fractions->f_inf;
+  double frac_disk = sys_par->emis->photon_fate_fractions->f_ad;
+  double frac_bhole = sys_par->emis->photon_fate_fractions->f_bh;
+  printf("%e \n", rel_param->rout);
+  printf("test reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl, frac_disk, frac_inf, frac_bhole, frac_inf + frac_disk + frac_bhole, frac_disk / frac_inf);
+
+  double sumSpec = 0.0;
+  int N = spec.n_energy();
+  for (int ii = 0; ii < N; ii++) {
+    sumSpec += spec.energy[ii]; // / (3.1416 * sys_par->re[N - ii - 1] * sys_par->re[N - ii - 1] - 3.1416 * sys_par->re[N - ii] * sys_par->re[N - ii])
+  }
+  printf("sum flux = %e \n", sumSpec);
+
+
+  DefaultSpec default_spec_ext{};
+  XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
+  LocalModel local_model_ext{ModelName::relxilllp_ext}; // defines a local model object (afaiu)
+  relParam* rel_param_ext = local_model_ext.get_rel_params(); // getting parameters for the given model...
+  auto sys_par_ext = get_system_parameters(rel_param_ext, &status); // also some parameters
+
+  rel_param_ext->a = 0.998;
+  rel_param_ext->height = 2.0;
+  rel_param_ext->d_ring = 15.01; // setting some manual distance
+ // rel_param_ext->rout= 1000.0;
+  get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
+
+  local_model_ext.eval_model(spec_ext);
+  //for (int ii = 0; ii < spec_ext.num_flux_bins(); ii++) {
+  //  printf("compare spec values spec=%e \t spec_ext=%e, ratio=%e \n", spec.flux[ii], spec_ext.flux[ii], spec.flux[ii] / spec_ext.flux[ii]);
+  //}
+
+  double sumSpec_ext = 0.0;
+
+  for (int ii = 0; ii < spec_ext.n_energy(); ii++) {
+    sumSpec_ext += spec_ext.energy[ii];
+  }
+  printf("sum flux ext = %e \n", sumSpec_ext);
+
+/*
+  double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
+  double fraction_inf = sys_par_ext->emis->photon_fate_fractions->f_inf;
+  double fraction_disk = sys_par_ext->emis->photon_fate_fractions->f_ad;
+  double fraction_bhole = sys_par_ext->emis->photon_fate_fractions->f_bh;
+  printf("%e \n", rel_param_ext->rout);
+  printf("ext test reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl_ext, fraction_disk, fraction_inf, fraction_bhole, fraction_inf + fraction_disk + fraction_bhole, fraction_disk / fraction_inf);
+
+  string strname = "/home/nekrasov/analysis/compare_fractions/fractions_upd.dat";
+  char *foutName = new char[999];
+  strcpy(foutName, strname.c_str());
+  FILE *fp = fopen(foutName, "a");
+  if (fp != nullptr) {
+    fprintf(fp, " %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \n", rel_param_ext->a, rel_param_ext->height, rel_param_ext->d_ring, frac_inf, frac_disk, refl, fraction_inf, fraction_disk, refl_ext);
+  }
+
+  fclose(fp);
+
+*/
+}

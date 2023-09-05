@@ -57,7 +57,6 @@ void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, co
 void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectrum) {
 
   auto primary_spectrum = get_observed_primary_spectrum(reflection_spectrum, source_parameters);
-
   // For the non-relativistic model and if not the LP geometry, we simply multiply by the reflection fraction
   if (is_xill_model(source_parameters.model_type()) || source_parameters.emis_type() != EMIS_TYPE_LP) {
     reflection_spectrum.multiply_flux_by(fabs(source_parameters.refl_frac()));
@@ -105,6 +104,8 @@ void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectru
   if (source_parameters.refl_frac() >= 0) {
     for (int ii = 0; ii < reflection_spectrum.num_flux_bins(); ii++) {
       reflection_spectrum.flux[ii] += primary_spectrum.flux[ii];
+
+      // printf("adding prim spec, reflprim=%e \t prim=%e \n", reflection_spectrum.flux[ii], primary_spectrum.flux[ii]);
     }
   }
 
