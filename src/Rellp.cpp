@@ -486,15 +486,15 @@ static void get_emis_constant(double *emis, int n) {
  * @param re radial coordinate grid
  * @param nr number of bins
  */
-void normalize_emissivity(double *emis, double *re, int nr) {
+void normalize_emissivity(double *emis, double *re, double a, double height, double d, int nr) {
 
   double sum = 0.0;
   for (int ii = 1; ii <= nr; ii++) {
-    //double dA = calc_proper_area_ring(emis_profile->re[N - ii], emis_profile->re[N - ii - 1], param->a);
+    //double dA = calc_proper_area_ring(re[nr - ii + 1], re[nr - ii], a);
     double r_mean = 0.5 * (re[nr - ii + 1] + re[nr - ii]);
     double dr = abs(re[nr - ii + 1] - re[nr - ii]);
     double dA = (2.0 * M_PI * r_mean) * dr; //
-    // double dA = area_kerr(r_mean, param->a) * dr;
+    // double dA = area_kerr(r_mean, a) * dr;
     double emis_mean = emis[nr - ii + 1];
     sum += emis_mean * dA;
     //printf("emis ext = %e \t %e \t %i \n", emis_profile->emis[N - ii], emis_profile->re[N - ii], N - ii);
@@ -511,18 +511,29 @@ void normalize_emissivity(double *emis, double *re, int nr) {
   //double dA_lo = area_flat(r_mean_lo) * dr_lo;
   //double emis_mean_lo = 0.5 * (emis[0] + emis[1]); // emis[nr - ii]; //
   //sum += emis_mean_lo * dA_lo;
-  //sum /= 4.0;
+  sum /= 4.0;
   */
+  /*
   double dr = abs(re[0] - re[1]);
   double r_mean = re[0] - 0.5 * dr; // temporary solution how to add "0"-"-1" bins to the summation
-  double dA = (2.0 * M_PI * r_mean) * dr;
+  //double dA = (2.0 * M_PI * r_mean) * dr;
+  double dA = area_kerr(r_mean, a) * dr;
   double emis_mean = emis[0];
   sum += emis_mean * dA;
-  // printf("sum norm=%e \n", sum);
+  */
+  printf("sum norm=%e \n", sum);
+  // sum *= 10.0;
+  double r_out = re[1];
+  double x = height; //sqrt(height * height + d * d);
+  double bracket = 1.0 / (1.0 + pow(r_out / x, 2.0));
+  double emis_newton = pow(bracket, 1.5) / (2 * M_PI * x * x);
+  double emis_out = emis[1];
+  printf("emis newton out=%e at %e but emis=%e\n", emis_newton, r_out, emis_out);
   for (int ii = 0; ii <= nr; ii++) {
-    emis[ii] = emis[ii] / sum;
+    emis[ii] = emis[ii] * emis_newton / emis_out / 10.0; // why so differences??????
     // printf("emis ext=%e \n", emis_profile->emis[ii]);
   }
+
 }
 
 /**
@@ -549,7 +560,7 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   } else if (modelLampPostRingSource(param)){
     get_emis_extendedSource(emis_profile, param, status);
 
-    normalize_emissivity(emis_profile->emis, emis_profile->re, emis_profile->nr);
+    normalize_emissivity(emis_profile->emis, emis_profile->re, param->a, param->height, param->d_ring, emis_profile->nr);
 
   } else if (modelVertExtendSource(param)) {
     lpTable* lp_table = get_lp_table(status);

@@ -282,7 +282,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
 
   rel_param_ext->a = 0.998;
   rel_param_ext->height = 2.0;
-  rel_param_ext->d_ring = 15.01; // setting some manual distance
+  rel_param_ext->d_ring = 1.01; // setting some manual distance
  // rel_param_ext->rout= 1000.0;
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
 

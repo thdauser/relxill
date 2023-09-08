@@ -135,6 +135,18 @@ double calc_g_inf(double height, double a) {
   return sqrt(1.0 - (2 * height / (height * height + a * a)));
 }
 
+double calc_g_inf_ext(double height, double theta, double d, double a) {
+  double r = sqrt(d * d + height * height);
+  double Sigma = r * r + a * a * cos(theta) * cos(theta);
+  double Delta = r * r - 2.0 * r + a * a;
+  double rho_squared = (r * r + a * a) * (r * r + a * a) - a * a * Delta * sin(theta) * sin(theta);
+  double omega = 2.0 * a * r / rho_squared;
+  double corr_factor = 1.0 - (1.0 / (pow(d, 1.5) + a) - omega) * rho_squared * 2.0 * a * r * sin(theta) * sin(theta) / Sigma / Sigma / Delta;
+  //printf("corr_factor = %e \n", corr_factor);
+
+  return sqrt(1.0 - (2 * height / (height * height + a * a))); //corr_factor *
+}
+
 /* get RMS (ISCO) for the Kerr Case */
 double kerr_rms(double a) {
   //	 accounts for negative spin
@@ -238,13 +250,19 @@ double doppler_factor_source_obs(const relParam *rel_param) {
  */
 double energy_shift_source_obs(const relParam *rel_param) {
 
+  double g_inf_0 = 1;
   // if we do NOT have the LP geometry, the energy shift is just 1
   // (as without geometry we can not define an energy shift)
   if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
-    return 1;
+    return g_inf_0;
   }
 
-  double g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
+  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->d_ring, rel_param->a);
+  }
+  else {
+    g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
+  }
 
   if (rel_param->beta < 1e-4) {
     return g_inf_0;
