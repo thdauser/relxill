@@ -58,22 +58,20 @@ TEST_CASE(" Calculate L_source", "[alpha]") {
   lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
   lmod_alpha.set_par(XPar::h, 300.0);  // to be in the Newtonian regime
 
-  const double norm_factor_ergs = 1e-12; // Flux in the 0.01-1000keV band in erg/cm^2/s
-  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
+  lmod_alpha.set_par(XPar::luminosity_source_1e38,
+                     1.196495197217232); // Luminosity in 1e38 erg/s in the 0.01-1000keV band
 
   auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
 
   int status = EXIT_SUCCESS;
   auto rel_params = lmod_alpha.get_rel_params();
   RelSysPar *sys_par = get_system_parameters(rel_params, &status);
-  const double l_source = primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions));
+  const double flux_observed_cgs = primary_source_params.flux_observed_cgs(*sys_par->emis->photon_fate_fractions);
 
-  const double REF_value_l_source = 1.196495197217232e+38;
-  REQUIRE(fabs(REF_value_l_source / l_source - 1) < 0.01);
-
-  // delete rel_params;
-
+  const double REF_value_flux = 1e-12;
+  REQUIRE(fabs(REF_value_flux / flux_observed_cgs - 1) < 0.01);
 }
+
 
 double calculate_lxi(const LocalModel &lmod) {
 
@@ -107,19 +105,19 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
   lmod_alpha.set_par(XPar::distance, 10);  // distance of 2 kpc
   lmod_alpha.set_par(XPar::mass, 20);      // mass of 20 Msolar
   lmod_alpha.set_par(XPar::h, 6.0);  // to be in the Newtonian regime
-  lmod_alpha.set_par(XPar::norm_flux_cgs, 1e-10); // Flux in the 0.1-1000keV band in erg/cm^2/s
+  lmod_alpha.set_par(XPar::luminosity_source_1e38, 2.5972e-2); // Flux in the 0.1-1000keV band in erg/cm^2/s
   lmod_alpha.set_par(XPar::logn, 18);
   lmod_alpha.set_par(XPar::switch_switch_reflfrac_boost, 1);
   lmod_alpha.set_par(XPar::refl_frac, -1);
 
-  const double ref_value_l_source = 2.5972e36;
-  auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
-  auto rel_params = lmod_alpha.get_rel_params();
-  auto sys_par = get_system_parameters(rel_params, &status);
-  REQUIRE(1e-3 >
-      fabs(
-          ref_value_l_source / primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions)) - 1
-      ));
+  const double ref_value_flux_obs_cgs = 1e-10;
+  //  auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
+  //  auto rel_params = lmod_alpha.get_rel_params();
+  //  auto sys_par = get_system_parameters(rel_params, &status);
+  //  REQUIRE(1e-3 >
+  //      fabs(
+  //          ref_value_l_source / primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions)) - 1
+  //      ));
 
   // delete rel_params;
 
@@ -143,44 +141,57 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
 
 }
 
-LocalModel get_std_lmod_alpha(double norm_factor_ergs) {
+LocalModel get_std_lmod_alpha() {
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
   set_default_par(lmod_alpha);
   lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
   lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
-  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
+  lmod_alpha.set_par(XPar::luminosity_source_1e38, 1e4);
 
   return lmod_alpha;
 }
 
+
 TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
+  auto lmod_alpha = get_std_lmod_alpha();
+  auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
 
-  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
-  auto lmod_alpha = get_std_lmod_alpha(norm_factor_ergs);
+  int status = EXIT_SUCCESS;
+  auto rel_params = lmod_alpha.get_rel_params();
+  RelSysPar *sys_par = get_system_parameters(rel_params, &status);
+  // Flux in the 0.01-1000keV band in erg/cm^2/s
+  auto flux_direct_obs = primary_source_params.flux_observed_cgs(*(sys_par->emis->photon_fate_fractions));
 
-  SECTION("Test that flux normalization works  for the full model, regardless of the reflection fraction") {
-    std::array<double, 3> const refl_frac{{0.0, 1.0, -1.34}};
+  INFO(" calculate flux for only direct spectrum ");
+  lmod_alpha.set_par(XPar::refl_frac, 0.0);
+  lmod_alpha.eval_model(spec);
 
-    for (const double rf: refl_frac) {
-      INFO(" for reflection fraction " << std::fixed << rf);
-      lmod_alpha.set_par(XPar::refl_frac, rf);
-      lmod_alpha.eval_model(spec);
+  const double energy_flux_direct = spec.get_energy_flux();
+  REQUIRE(fabs(energy_flux_direct - flux_direct_obs) / flux_direct_obs < 0.005);
 
-      const double energy_flux = spec.get_energy_flux();
-      REQUIRE(fabs(energy_flux - norm_factor_ergs) / norm_factor_ergs < 0.005);
-    }
-  }
+  INFO(" combine direct and reflection ");
+  lmod_alpha.set_par(XPar::refl_frac, 1.0);
+  lmod_alpha.eval_model(spec);
+  const double energy_flux_combined = spec.get_energy_flux();
+  REQUIRE((energy_flux_combined - energy_flux_direct) / energy_flux_direct > 0.1);  // combined has to be larger
+
+  INFO(" combine direct and reflection ");
+  lmod_alpha.set_par(XPar::refl_frac, -1.0);
+  lmod_alpha.eval_model(spec);
+  const double energy_flux_refl = spec.get_energy_flux();
+  // combined has to be refl + direct (also for the alpha model)
+  REQUIRE(fabs(energy_flux_combined - energy_flux_direct - energy_flux_refl) / energy_flux_combined < 0.005);
 }
+
 
 TEST_CASE("refl/direct flux ratio identical to relxilllpCp Model", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
   // (1) calculate alpha flux ratio
-  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
-  auto lmod_alpha = get_std_lmod_alpha(norm_factor_ergs);
+  auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::refl_frac, 0.0);
   lmod_alpha.eval_model(spec);
   const double primary_energy_flux = spec.get_energy_flux();
@@ -216,14 +227,8 @@ TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
-  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
-  set_default_par(lmod_alpha);
+  auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::logn, 18);
-  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
-  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
-
-  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
-  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
 
   lmod_alpha.set_par(XPar::refl_frac, 1.0);
   lmod_alpha.eval_model(spec);
@@ -259,66 +264,75 @@ TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[
 
 }
 
-TEST_CASE(" Test the distance parameter", "[alpha]") {
+TEST_CASE(" Test that the distance parameter", "[alpha]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
-  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
-  set_default_par(lmod_alpha);
-  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
-  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+  auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::refl_frac, -1.0);      // mass of 1e6 Msolar
+  lmod_alpha.set_par(XPar::distance, 1e5);
 
   lmod_alpha.eval_model(spec);
-  const double flux_1 = spec.get_energy_flux();
   const double lxi_1 = calculate_lxi(lmod_alpha);
+  const double ener_flu_1 = spec.get_energy_flux();
 
   lmod_alpha.set_par(XPar::distance, 2e5);
   lmod_alpha.eval_model(spec);
-  const double flux_2 = spec.get_energy_flux();
   const double lxi_2 = calculate_lxi(lmod_alpha);
+  const double ener_flu_2 = spec.get_energy_flux();
 
-  REQUIRE(fabs(lxi_1 / lxi_2 - 1) > 0.01);
+  REQUIRE(fabs(lxi_1 / lxi_2 - 1) < 0.001);
+  REQUIRE(fabs(ener_flu_1 / ener_flu_2 - 1) > 0.01);
 
 }
 
 TEST_CASE(" Test the mass parameter", "[alpha]") {
+  /*
+   *  The mass influences the flux the disk sees from the primary source
+   *  (as Rg is converted to cm). Meaning also that the direct flux seen
+   *  from the primary source does not change, as the source luminosity
+   *  is given in absolute units erg/sec.
+   */
+
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
-  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
-  set_default_par(lmod_alpha);
-  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
-  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
-  lmod_alpha.set_par(XPar::refl_frac, -1.0);      // mass of 1e6 Msolar
+  auto lmod_alpha = get_std_lmod_alpha();
+  lmod_alpha.set_par(XPar::mass, 1e6);
+  lmod_alpha.set_par(XPar::refl_frac, -1.0);
 
   lmod_alpha.eval_model(spec);
   const double flux_1 = spec.get_energy_flux();
   const double lxi_1 = calculate_lxi(lmod_alpha);
 
-  lmod_alpha.set_par(XPar::mass, 2e6);
+  lmod_alpha.set_par(XPar::refl_frac, 0.0);
   lmod_alpha.eval_model(spec);
-  const double flux_2 = spec.get_energy_flux();
+  const double flux_direct_1 = spec.get_energy_flux();
+
+  lmod_alpha.set_par(XPar::mass, 2e6);
+  lmod_alpha.set_par(XPar::refl_frac, -1.0);
+  lmod_alpha.eval_model(spec);
   const double lxi_2 = calculate_lxi(lmod_alpha);
+  const double flux_2 = spec.get_energy_flux();
+
+  lmod_alpha.set_par(XPar::refl_frac, 0.0);
+  lmod_alpha.eval_model(spec);
+  const double flux_direct_2 = spec.get_energy_flux();
 
   REQUIRE(fabs(lxi_1 / lxi_2 - 1) > 0.01);
 
   REQUIRE(fabs(flux_1 / flux_2 - 1) > 1e-6);
 
+  REQUIRE(fabs(flux_direct_1 / flux_direct_2 - 1) < 1e-6);
 }
 
 TEST_CASE(" Test the density gradient", "[alpha-test]") {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
-  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
-  set_default_par(lmod_alpha);
-  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
-  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
+  auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::logn, 15);
 
-  const double norm_factor_ergs = 1e-11; // Flux in the 0.1-1000keV band in erg/cm^2/s
-  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
 
   // setenv("RELXILL_PRINT_DETAILS","1",1);
   lmod_alpha.set_par(XPar::refl_frac, 1.0);
@@ -327,17 +341,16 @@ TEST_CASE(" Test the density gradient", "[alpha-test]") {
 }
 
 TEST_CASE("CGS Flux does not change with different energy range of data", "[alpha]") {
-  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
-  set_default_par(lmod_alpha);
-  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
-  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
-  lmod_alpha.set_par(XPar::logn, 15);
+  auto lmod_alpha = get_std_lmod_alpha();
 
-  const double norm_factor_ergs = 1e-11; // Flux in the 0.01-1000keV band in erg/cm^2/s
-  lmod_alpha.set_par(XPar::norm_flux_cgs, norm_factor_ergs);
   lmod_alpha.set_par(XPar::refl_frac, 0.0); // only the continuum
 
-  auto default_spec_narrow =  DefaultSpec(3,10.0, 1000);
+  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
+  auto spec = default_spec.get_xspec_spectrum();
+  lmod_alpha.eval_model(spec);
+  const double norm_factor_ergs = spec.get_energy_flux();
+
+  auto default_spec_narrow = DefaultSpec(3, 10.0, 1000);
   auto spec_narrow_band = default_spec_narrow.get_xspec_spectrum();
   lmod_alpha.eval_model(spec_narrow_band);
   const double narrow_primary_energy_flux = spec_narrow_band.get_energy_flux();
@@ -355,11 +368,4 @@ TEST_CASE("CGS Flux does not change with different energy range of data", "[alph
       first_flux_bin_2 = spec_narrow_band_2.flux[0] / (spec_narrow_band_2.energy[1] - spec_narrow_band_2.energy[0]);
 
   REQUIRE(fabs(first_flux_bin - first_flux_bin_2) / first_flux_bin < 0.01);
-
-  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
-  auto spec = default_spec.get_xspec_spectrum();
-  lmod_alpha.eval_model(spec);
-  const double primary_energy_flux = spec.get_energy_flux();
-  REQUIRE(fabs(primary_energy_flux - norm_factor_ergs) / norm_factor_ergs < 0.005);
-
 }

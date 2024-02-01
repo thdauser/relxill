@@ -354,7 +354,7 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
   // parameters for the relxilllpAlpha model (it has to be in xillParams, as a change there means the ionization gradient changes)
   param->distance = inp_param.get_otherwise_default(XPar::distance, 0.0);
   param->mass_msolar = inp_param.get_otherwise_default(XPar::mass, 0.0);
-  param->norm_flux_cgs = inp_param.get_otherwise_default(XPar::norm_flux_cgs, 1.0);
+  param->luminosity_primary_source = 1e38 * inp_param.get_otherwise_default(XPar::luminosity_source_1e38, 0.0);
 
   // those values should never be used, unless it is set by the model
   param->gam = inp_param.get_otherwise_default(XPar::gamma, 0);

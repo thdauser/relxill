@@ -55,7 +55,7 @@ void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, co
 
   if (is_alpha_model(rel_param->model_type)) {
     printf("Primary source luminosity is %.4e erg/cm2/s (in the energy band %.2f-%.2f keV) \n",
-           source_parameters.luminosity_source_cgs(*m_lp_refl_frac), m_emin_norm, m_emax_norm);
+           source_parameters.luminosity_source_cgs(), m_emin_norm, m_emax_norm);
   }
 }
 
@@ -87,9 +87,13 @@ void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectru
     double const norm_fac_refl = (fabs(refl_frac_input)) / m_lp_refl_frac->refl_frac;
 
     if (is_alpha_model(source_parameters.model_type())) {
+
+      // from source luminosity, calculate "norm_flux_cgs"
+
+
       //  for the alpha model, which includes the distance, the normalization is defined over "norm_flux_cgs"
-      double const
-          prime_norm_factor = source_parameters.norm_flux_cgs() / get_normalized_primary_spectrum_flux_in_ergs();
+      double const prime_norm_factor =
+          source_parameters.flux_observed_cgs(*m_lp_refl_frac) / get_normalized_primary_spectrum_flux_in_ergs();
 
       primary_spectrum.multiply_flux_by(prime_norm_factor);
 

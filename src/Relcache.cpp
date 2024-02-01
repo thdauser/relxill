@@ -205,7 +205,7 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
 
   (*ca_xill_param)->distance = par->distance;
   (*ca_xill_param)->mass_msolar = par->mass_msolar;
-  (*ca_xill_param)->norm_flux_cgs = par->norm_flux_cgs;
+  (*ca_xill_param)->luminosity_primary_source = par->luminosity_primary_source;
 
   (*ca_xill_param)->prim_type = par->prim_type;
   (*ca_xill_param)->model_type = par->model_type;

@@ -407,7 +407,7 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
   if (are_values_different(par->mass_msolar, cpar->mass_msolar)) {
     return 1;
   }
-  if (are_values_different(par->norm_flux_cgs, cpar->norm_flux_cgs)) {
+  if (are_values_different(par->luminosity_primary_source, cpar->luminosity_primary_source)) {
     return 1;
   }
 

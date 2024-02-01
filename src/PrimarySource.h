@@ -48,19 +48,21 @@ class PrimarySourceParameters {
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
       m_interpret_reflfrac_as_boost{
-          static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))}
-  {
-    m_energy_shift_source_observer = (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
-                                     energy_shift_source_obs(m_rel_param) : 1.0;
+          static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))},
+      m_energy_shift_source_observer{(m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
+                                     energy_shift_source_obs(m_rel_param) : 1.0},
+      m_xilltab_param{m_get_xilltab_params_primary_source(m_rel_param, m_energy_shift_source_observer)} {
+    //m_energy_shift_source_observer = (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
+    //                                 energy_shift_source_obs(m_rel_param) : 1.0;
 
     auto xill_param = get_xill_params(m_inp_param);
     m_refl_frac = xill_param->refl_frac;
-    m_norm_flux_cgs = xill_param->norm_flux_cgs;
     m_distance_kpc = xill_param->distance;
     m_mass_msolar = xill_param->mass_msolar;
+    m_luminosity_primary_source = xill_param->luminosity_primary_source;
     delete xill_param;
 
-    m_xilltab_param = m_get_xilltab_params_primary_source(m_rel_param, m_energy_shift_source_observer);
+    // m_xilltab_param = m_get_xilltab_params_primary_source(m_rel_param, m_energy_shift_source_observer);
   }
 
   ~PrimarySourceParameters() {
@@ -90,19 +92,28 @@ class PrimarySourceParameters {
   }
 
   /**
-   * @brief: calculate the flux boost from the source spectrum to the observed spectrum
-   * @param f_inf
+   * @brief: return the intrinsic source luminosity
    * @return luminosity source [ergs/s]
    */
-  double luminosity_source_cgs(const lpReflFrac &lp_refl_frac) const {
+  double luminosity_source_cgs() const {
+    return m_luminosity_primary_source;
+  }
+
+  /**
+ * @brief: calculate the flux boost from the source spectrum to the observed spectrum
+ * @param f_inf
+ * @return luminosity source [ergs/s]
+ */
+  double flux_observed_cgs(const lpReflFrac &lp_refl_frac) const {
 
     const double CONST_cm2kpc = 3.2407792700054E-22;
 
     const double distance_cm = m_distance_kpc / CONST_cm2kpc;
-    const double lum_observed = 4 * M_PI * distance_cm * distance_cm * m_norm_flux_cgs;
+    const double flux_observed_cgs = m_luminosity_primary_source / (4 * M_PI * distance_cm * distance_cm)
+        * flux_boost_source_to_observer(lp_refl_frac);
 
     // add energy shift and flux boost
-    return lum_observed / flux_boost_source_to_observer(lp_refl_frac);
+    return flux_observed_cgs;
   }
 
   [[nodiscard]] const xillTableParam *xilltab_param() const {
@@ -126,9 +137,6 @@ class PrimarySourceParameters {
     return m_get_xilltab_params_primary_source(m_rel_param, m_energy_shift_source_observer);
   }
 
-  double norm_flux_cgs() const {
-    return m_norm_flux_cgs;
-  }
   double distance() const {
     return m_distance_kpc;
   }
@@ -185,7 +193,7 @@ class PrimarySourceParameters {
 
   double m_energy_shift_source_observer;
 
-  double m_norm_flux_cgs;
+  double m_luminosity_primary_source;
   double m_distance_kpc;
   double m_refl_frac;
   double m_mass_msolar;
@@ -216,7 +224,7 @@ class PrimarySource {
  public:
   PrimarySource(const ModelParams &_model_params, RelSysPar *sys_par) :
       source_parameters{_model_params},
-      m_lp_refl_frac((sys_par == nullptr) ? nullptr : sys_par->emis->photon_fate_fractions)
+      m_lp_refl_frac{sys_par->emis->photon_fate_fractions}
       {  }
 
   /**

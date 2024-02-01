@@ -237,7 +237,7 @@ double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
 
   // calculate the source luminosity for boost to get a higher/lower source luminosity
   // note: at add_primary_component this still needs to be added to the normalization of the reflection spectrum
-  double l_source_cgs = primary_source.luminosity_source_cgs((*photon_fate_fractions));
+  double l_source_cgs = primary_source.luminosity_source_cgs();
   const double boost = primary_source.get_boost_parameter(photon_fate_fractions);
   l_source_cgs *= boost;
 

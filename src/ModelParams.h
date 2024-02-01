@@ -62,7 +62,7 @@ enum class XPar {
   switch_switch_returnrad,
   switch_iongrad_type,
   shifttmaxrrad,  // only for testing relxillBB
-  norm_flux_cgs,
+  luminosity_source_1e38,
   distance,
   mass
 };
