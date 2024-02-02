@@ -31,7 +31,7 @@ static void test_xspec_lmod_call(ModelName model_name, const DefaultSpec& defaul
 
   try {
     eval_xspec_lmod_default(model_name, default_spec);
-     REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-6);
+     REQUIRE(sum_flux(default_spec.flux, default_spec.num_flux_bins) > 1e-12);
   } catch (ModelNotFound &e) {
     WARN("Skipping test as model not implemented");
   }

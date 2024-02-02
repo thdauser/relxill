@@ -36,6 +36,20 @@ TEST_CASE(" Execute relxillpAlpha", "[alpha]") {
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 }
 
+
+TEST_CASE(" Execute relxillpAlpha printing the output", "[alpha]") {
+
+  DefaultSpec default_spec{};
+
+  const char* env_outfiles = "RELXILL_PRINT_DETAILS";
+  setenv(env_outfiles, "1", 1);
+
+  eval_xspec_lmod_default(ModelName::relxilllpAlpha, default_spec);
+
+  unsetenv(env_outfiles);
+}
+
+
 void set_default_par(LocalModel &lmod) {
   lmod.set_par(XPar::a, 0.998);
   lmod.set_par(XPar::h, 60.0);

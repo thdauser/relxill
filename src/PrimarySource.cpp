@@ -54,8 +54,11 @@ void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, co
   printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
 
   if (is_alpha_model(rel_param->model_type)) {
-    printf("Primary source luminosity is %.4e erg/cm2/s (in the energy band %.2f-%.2f keV) \n",
-           source_parameters.luminosity_source_cgs(), m_emin_norm, m_emax_norm);
+    const double l_source = source_parameters.luminosity_source_cgs();
+    const double l_edd = l_source  * source_parameters.mass_msolar();
+    printf("Primary source luminosity is %.2e erg/cm2/s (in the energy band %.2f-%.2f keV), \n",
+           l_source, m_emin_norm, m_emax_norm);
+    printf("corresponding to L_source/L_Edd = %.2e with L_Edd = %.2e. \n", l_source / l_edd, l_edd );
   }
 }
 
