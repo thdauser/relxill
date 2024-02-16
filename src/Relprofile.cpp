@@ -473,7 +473,7 @@ static void zero_rel_spec_flux(relline_spec_multizone *spec) {
   }
 }
 
-/** relat. transfer function, which we will need to integrate over the energy bin then **/
+/** m_cache_relat. transfer function, which we will need to integrate over the energy bin then **/
 static str_relb_func *new_str_relb_func(RelSysPar *sysPar, int *status) {
   str_relb_func *str = (str_relb_func *) malloc(sizeof(str_relb_func));
   CHECK_MALLOC_RET_STATUS(str, status, nullptr)
@@ -485,7 +485,7 @@ static str_relb_func *new_str_relb_func(RelSysPar *sysPar, int *status) {
   return str;
 }
 
-/** relat. function which we want to integrate **/
+/** m_cache_relat. function which we want to integrate **/
 static double relb_func(double eg, int k, str_relb_func *str) {
 
   // get the redshift from the energy

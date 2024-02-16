@@ -52,14 +52,16 @@ void relxill_convolution_multizone(const XspecSpectrum &spectrum,
                                    const relParam *rel_param,
                                    const CachingStatus &caching_status,
                                    int *status);
+
+
 /**
  * check if the complete spectrum is cached and if the energy grid did not change
  *  -> additionally we adapt the energy grid to the new dimensions and energy values
  *     if it's not the case yet
  */
-static void check_caching_energy_grid(CachingStatus &caching_status, specCache *cache, const XspecSpectrum &spectrum) {
+void CachingStatus::check_caching_energy_grid(specCache *cache, const XspecSpectrum &spectrum) {
 
-  caching_status.energy_grid = cached::no;
+  m_cache_energy_grid = cached::no;
 
   if (cache->out_spec == nullptr) {
     return;
@@ -79,53 +81,52 @@ static void check_caching_energy_grid(CachingStatus &caching_status, specCache *
     }
   }
   // no nullptr, same number of bins and energies are the same
-  caching_status.energy_grid = cached::yes;
+  m_cache_energy_grid = cached::yes;
 
 }
+
 
 /**
  * @brief test if the m_rel_param number of zones is different from the global cache
  * @param rel_param
  * @return bool
  */
-static auto did_number_of_zones_change(const relParam *rel_param) -> int {
+auto CachingStatus::did_number_of_zones_change(const relParam *rel_param) -> int {
 
   if (cached_rel_param == nullptr) {
     return 1;
   }
 
   if (rel_param->num_zones != cached_rel_param->num_zones) {
-    if (is_debug_run()) {
+    if (is_debug_run() != 0) {
       printf("  *** warning :  the number of radial zones was changed from %i to %i \n",
              rel_param->num_zones, cached_rel_param->num_zones);
     }
     return 1;
-  } else {
-    return 0;
   }
+
+  return 0;
 }
 
-static void check_caching_parameters(CachingStatus &caching_status,
-                                     const relParam *rel_param,
-                                     const xillParam *xill_param) {
 
+void CachingStatus::check_caching_parameters(const relParam *rel_param, const xillParam *xill_param) {
   // special case: no caching if output files are to be written
-  if (shouldOutfilesBeWritten() || did_number_of_zones_change(rel_param)) {
-    caching_status.relat = cached::no;
-    caching_status.xill = cached::no;
+  if ((shouldOutfilesBeWritten() != 0) || (did_number_of_zones_change(rel_param) != 0)) {
+    m_cache_relat = cached::no;
+    m_cache_xill = cached::no;
   } else {
 
     /** did any of the parameters change?  **/
     if (redo_relbase_calc(rel_param, cached_rel_param) == 0) {
-      caching_status.relat = cached::yes;
+      m_cache_relat = cached::yes;
     }
     if (redo_xillver_calc(rel_param, xill_param, cached_rel_param, cached_xill_param) == 0) {
-      caching_status.xill = cached::yes;
+      m_cache_xill = cached::yes;
     }
 
     // special case: as return_rad emissivity depends on xillver, if xill_param as well as rel_paramare not cached
-    if (rel_param->return_rad && caching_status.xill == cached::no){
-      caching_status.relat = cached::no;
+    if ((rel_param->return_rad != 0) && m_cache_xill == cached::no) {
+      m_cache_relat = cached::no;
     }
 
   }
@@ -260,8 +261,6 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   relParam *rel_param = nullptr;
   xillParam *xill_param = nullptr;
   get_relxill_params(params, rel_param, xill_param);
-  //  auto rel_param = get_rel_params(params);
-  //  auto xill_param = get_xill_params(params);
 
   // in case of an ionization gradient, we need to update the number of zones, make sure they are set correctly
   assert(rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, rel_param->ion_grad_type));
@@ -269,14 +268,12 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   specCache *spec_cache = init_global_specCache(status);
   assert(spec_cache != nullptr);
 
-  auto caching_status = CachingStatus();
-  check_caching_parameters(caching_status, rel_param, xill_param);
-  check_caching_energy_grid(caching_status, spec_cache, spectrum);
+  auto caching_status = CachingStatus(rel_param, xill_param, spec_cache, spectrum);
 
   RelSysPar *sys_par = get_system_parameters(rel_param, status);
   auto primary_source = PrimarySource(params, sys_par);
 
-  if (caching_status.is_all_cached()) { // if already cached, simply use the cached output flux value
+  if (caching_status.is_all_cached() == 1) { // if already cached, simply use the cached output flux value
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
       spectrum.flux[ii] = spec_cache->out_spec->flux[ii];
     }
@@ -296,9 +293,9 @@ void relxill_kernel(const XspecSpectrum &spectrum,
         ion_gradient.get_xill_param_zone(primary_source.source_parameters.xilltab_param());
 
     // --- 2 --- get xillver reflection spectra (are internally stored in a general, cached structure "SpecCache")
-    //           such that they are re-used of the caching_status.xill==yes
+    //           such that they are re-used of the caching_status.m_cache_xill==yes
     auto xill_refl_spectra_zone =
-        get_xillver_reflection_spectra(spec_cache, xill_param_zone, ion_gradient.nzones(), caching_status.xill);
+        get_xillver_reflection_spectra(spec_cache, xill_param_zone, ion_gradient.nzones(), caching_status.xill());
 
     // -- 3 -- returning radiation correction factors (only calculated if above a given threshold)
     rel_param->rrad_corr_factors =
@@ -410,7 +407,7 @@ void relxill_convolution_multizone(const XspecSpectrum &spectrum,
                    xill_spec_zones.energy() , xill_spec_zones.flux[ii], xill_spec_zones.num_flux_bins);
 
     // --2-- convolve the spectrum on the energy grid "ener_conv" **
-    int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
+    int recompute_xill = 1; // always recompute fft for xillver, as m_cache_relat changes the angular distribution
     convolveSpectrumFFTNormalized(ener_conv, xill_rebinned_spec, rel_profile->flux[ii], conv_out, n_ener_conv,
                                   caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
     CHECK_STATUS_VOID(*status);

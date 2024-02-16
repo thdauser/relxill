@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
 
   if (argc < 2)  {
     printf(" Missing argument: ");
-    printf("./speed_test <model> [<rel|xill>]");
+    printf("./speed_test <model> [<rel|m_cache_xill>]");
   } else {
 
     const int num_evaluations = 100;
@@ -82,7 +82,7 @@ int main(int argc, char *argv[]) {
 
       if  (std::string(argv[2]) == "rel"){
         eval_model_relat_param_changes(model_name, num_evaluations);
-      } else if (std::string(argv[2]) == "xill") {
+      } else if (std::string(argv[2]) == "m_cache_xill") {
         eval_model_xillver_param_changes(model_name, num_evaluations);
       } else {
         std::cout<< " speed test error: given argument " << std::string(argv[2]) << " not known" << std::endl;

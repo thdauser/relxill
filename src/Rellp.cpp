@@ -52,7 +52,7 @@ static lpReflFrac *calc_refl_frac(emisProfile *emis_profile,
     del_emit_ad_max = M_PI / 2.0;
   }
 
-  /** calculate the coordinate transformation / relat abberation
+  /** calculate the coordinate transformation / m_cache_relat abberation
    *   - an observer on the accretion disk sees the rays from
    *     del_bh up to del_ad
    *   - for the reflection fraction we therefore need to convert from

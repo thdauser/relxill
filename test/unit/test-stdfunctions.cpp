@@ -239,7 +239,7 @@ TEST_CASE("Relline Normalization Convergence", "[basic]"){
   }
 
   double referenceRatio = 0.5*cos(rel_param->incl);
-  /* As we still expect some relat. effects testing for a high precision will lead to
+  /* As we still expect some m_cache_relat. effects testing for a high precision will lead to
  * errors, while the normalization is correct. Therefore we choose simply a weaker
  * criterion, which can be fulfilled considering GR.
  */

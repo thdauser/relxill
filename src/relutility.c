@@ -513,7 +513,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
   }
 
 
-  // set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
+  // set the number of zones in radial direction (1 for relline/conv model, N_ZONES for m_cache_xill models)
   if (is_iongrad_model(ion_grad_type)) {
     if (env != NULL) {
       if ((env_n_zones > 9) && (env_n_zones <= N_ZONES_MAX)) {

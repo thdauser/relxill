@@ -143,7 +143,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   int irot;
 
   /**********************************************************************/
-  /** cache either the relat. or the xillver part, as only one of the
+  /** cache either the m_cache_relat. or the xillver part, as only one of the
    * two changes most of the time (reduce time by 1/3 for convolution) **/
   /**********************************************************************/
 
@@ -158,7 +158,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
     fftw_destroy_plan(plan_xill);
   }
 
-  /** #2: for the relat. part **/
+  /** #2: for the m_cache_relat. part **/
   if (re_rel){
     for (ii = 0; ii < n; ii++) {
       irot = (ii - save_1eV_pos + n) % n;
@@ -196,7 +196,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
 /**
  * @Function: calcFFTNormFactor
  * @Synopsis: calculate the normalization of the FFT, which is defined to keep the normalization of the
- *           input spectrum and the relat. smearing
+ *           input spectrum and the m_cache_relat. smearing
  * Take the sum in the given energy band of interested, to avoid problems at the border of the FFT
  * convolution.
  */
@@ -526,8 +526,7 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
 }
 
 
-
-/** @brief relbase wrapper function, calculating the relat system params plus the relbase profile
+/** @brief relbase wrapper function, calculating the m_cache_relat system params plus the relbase profile
  *  @details
  *    - for more details see relbase_profile function
  *    - uses only a single zone on the disk
