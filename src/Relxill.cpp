@@ -63,24 +63,23 @@ static void check_caching_energy_grid(CachingStatus &caching_status, specCache *
 
   if (cache->out_spec == nullptr) {
     return;
-  } else {
-    // first need to check if the energy grid has a different number of bins
-    if (cache->out_spec->n_ener != spectrum.num_flux_bins()) {
-      return;
-    }
-
-    for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) { // now check if the energies themselves changes
-      if (fabs(cache->out_spec->ener[ii] - spectrum.energy[ii]) > 1e-4) {
-        //        for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
-        //          cache->out_spec->ener[jj] = spectrum.energy[jj];
-        //        }
-        return;
-      }
-    }
-    // no nullptr, same number of bins and energies are the same
-    caching_status.energy_grid = cached::yes;
   }
 
+  // first need to check if the energy grid has a different number of bins
+  if (cache->out_spec->n_ener != spectrum.num_flux_bins()) {
+    return;
+  }
+
+  for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) { // now check if the energies themselves changes
+    if (fabs(cache->out_spec->ener[ii] - spectrum.energy[ii]) > 1e-4) {
+      //        for (int jj = 0; jj < spectrum.num_flux_bins(); jj++) {
+      //          cache->out_spec->ener[jj] = spectrum.energy[jj];
+      //        }
+      return;
+    }
+  }
+  // no nullptr, same number of bins and energies are the same
+  caching_status.energy_grid = cached::yes;
 
 }
 
@@ -89,7 +88,7 @@ static void check_caching_energy_grid(CachingStatus &caching_status, specCache *
  * @param rel_param
  * @return bool
  */
-static int did_number_of_zones_change(const relParam *rel_param) {
+static auto did_number_of_zones_change(const relParam *rel_param) -> int {
 
   if (cached_rel_param == nullptr) {
     return 1;
@@ -391,9 +390,9 @@ void relxill_convolution_multizone(const XspecSpectrum &spectrum,
   const int n_ener_conv = rel_profile->n_ener;
   double* ener_conv = rel_profile->ener;
 
-  auto conv_out = new double[n_ener_conv];
+  auto *conv_out = new double[n_ener_conv];
+  auto *xill_rebinned_spec = new double[n_ener_conv];
   auto single_spec_inp = new double[spectrum.num_flux_bins()];
-  auto xill_rebinned_spec = new double *[rel_param->num_zones];
 
   // make sure the output array is set to 0
   for (int ie = 0; ie < spectrum.num_flux_bins(); ie++) {
@@ -407,13 +406,12 @@ void relxill_convolution_multizone(const XspecSpectrum &spectrum,
       continue;
     }
 
-    xill_rebinned_spec[ii] = new double[n_ener_conv];
-    rebin_spectrum(ener_conv, xill_rebinned_spec[ii], n_ener_conv,
+    rebin_spectrum(ener_conv, xill_rebinned_spec, n_ener_conv,
                    xill_spec_zones.energy() , xill_spec_zones.flux[ii], xill_spec_zones.num_flux_bins);
 
     // --2-- convolve the spectrum on the energy grid "ener_conv" **
     int recompute_xill = 1; // always recompute fft for xillver, as relat changes the angular distribution
-    convolveSpectrumFFTNormalized(ener_conv, xill_rebinned_spec[ii], rel_profile->flux[ii], conv_out, n_ener_conv,
+    convolveSpectrumFFTNormalized(ener_conv, xill_rebinned_spec, rel_profile->flux[ii], conv_out, n_ener_conv,
                                   caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
     CHECK_STATUS_VOID(*status);
     rebin_spectrum(spectrum.energy, single_spec_inp, spectrum.num_flux_bins(), ener_conv, conv_out, n_ener_conv);
@@ -429,25 +427,8 @@ void relxill_convolution_multizone(const XspecSpectrum &spectrum,
 
   } /**** END OF LOOP OVER RADIAL ZONES *****/
 
-  free_arrays_relxill_kernel(rel_profile->n_zones, conv_out, single_spec_inp, xill_rebinned_spec);
-}
-
-/**
- * @brief free arrays allocated and needed by relxill_kernel
- * @param n_zones
- * @param conv_out
- * @param single_spec_inp
- * @param xill_angledep_spec
- */
-void free_arrays_relxill_kernel(int n_zones,
-                                const double *conv_out,
-                                const double *single_spec_inp,
-                                double *const *xill_angledep_spec) {
+  // free arrays allocated and needed by relxill_kernel
   delete[] single_spec_inp;
   delete[] conv_out;
-  for (int ii = 0; ii < n_zones; ii++) {
-    delete[] xill_angledep_spec[ii];
-  }
-  delete[] xill_angledep_spec;
+  delete[] xill_rebinned_spec;
 }
-

@@ -138,8 +138,7 @@ TEST_CASE(" Exec single model with LocalModel Structure","[model-change]") {
 }
 
 
-
-static void require_file_exists(const string& fname){
+void require_file_exists(const string &fname) {
   std::filesystem::path f{ fname };
   INFO("trying to find file: " +  fname );
   REQUIRE(std::filesystem::exists(f));
