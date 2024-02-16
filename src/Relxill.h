@@ -110,9 +110,9 @@ class CachingStatus {
 
   [[nodiscard]] auto relat() const -> cached { return m_cache_relat; }
 
-  [[nodiscard]] auto xill() const -> cached { return m_cache_relat; }
+  [[nodiscard]] auto xill() const -> cached { return m_cache_xill; }
 
-  [[nodiscard]] auto energy_grid() const -> cached { return m_cache_relat; }
+  [[nodiscard]] auto energy_grid() const -> cached { return m_cache_energy_grid; }
 
 
  private:

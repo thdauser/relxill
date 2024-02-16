@@ -148,7 +148,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   /**********************************************************************/
 
   /** #1: for the xillver part **/
-  if (re_xill) {
+  if (re_xill != 0) {
     for (ii = 0; ii < n; ii++) {
       cache->fft_xill[izone][0][ii] = fxill[ii] * cache->conversion_factor_energyflux[ii] ;
     }
@@ -159,7 +159,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   }
 
   /** #2: for the m_cache_relat. part **/
-  if (re_rel){
+  if (re_rel != 0) {
     for (ii = 0; ii < n; ii++) {
       irot = (ii - save_1eV_pos + n) % n;
       cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii];
@@ -170,9 +170,8 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
     fftw_destroy_plan(plan_rel);
   }
 
-  // complex multiplication (TODO: fix that complex multiplication is not by hand)
+  // complex multiplication
   for (ii = 0; ii < n; ii++) {
-//    cache->fftw_backwards_input[ii] = cache->fftw_xill[izone][ii] * cache->fftw_rel[izone][ii];
     cache->fftw_backwards_input[ii][0] =
         cache->fftw_xill[izone][ii][0] * cache->fftw_rel[izone][ii][0] -
         cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][1];

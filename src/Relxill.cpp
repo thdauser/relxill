@@ -30,16 +30,6 @@ extern "C" {
 relParam *cached_rel_param = nullptr;
 xillParam *cached_xill_param = nullptr;
 
-///////////////////////////////////////
-// Forward Definitions of Functions  //
-///////////////////////////////////////
-
-void free_arrays_relxill_kernel(int n_zones,
-                                const double *conv_out,
-                                const double *single_spec_inp,
-                                double *const *xill_angledep_spec);
-
-
 
 ///////////////////////////////////////
 // Function Definitions              //
@@ -230,8 +220,8 @@ xillSpec **get_xillver_reflection_spectra(specCache *spec_cache,
   int status = EXIT_SUCCESS;
   // --- 3 --- calculate xillver reflection spectra  (for every zone)
   for (int ii = 0; ii < nzones; ii++) {
-    if (caching_status_xill
-        == cached::no) { // (always need to re-compute for an ionization gradient, TODO: can we do better caching?)
+    if (caching_status_xill ==
+        cached::no) { // note, also means if alpha_model or height, spin, beta changes it will be re-computed
       if (xill_spec[ii]
           != nullptr) { // as the spectrum is not cached, free the memory to be able to load a new spectrum
         free_xill_spec(xill_spec[ii]);
