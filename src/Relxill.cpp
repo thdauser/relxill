@@ -397,7 +397,8 @@ void relxill_convolution_multizone(const XspecSpectrum &spectrum,
                    xill_spec_zones.energy() , xill_spec_zones.flux[ii], xill_spec_zones.num_flux_bins);
 
     // --2-- convolve the spectrum on the energy grid "ener_conv" **
-    int recompute_xill = 1; // always recompute fft for xillver, as m_cache_relat changes the angular distribution
+    // always recompute fft for xillver if any parameter changedrelat changed, as m_cache_relat changes the angular distribution
+    int recompute_xill = caching_status.any_parameter_changed();
     convolveSpectrumFFTNormalized(ener_conv, xill_rebinned_spec, rel_profile->flux[ii], conv_out, n_ener_conv,
                                   caching_status.recomput_relat(), recompute_xill, ii, spec_cache, status);
     CHECK_STATUS_VOID(*status);

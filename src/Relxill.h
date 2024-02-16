@@ -90,6 +90,14 @@ class CachingStatus {
     check_caching_energy_grid(spec_cache, spectrum);
   }
 
+  [[nodiscard]] auto any_parameter_changed() const -> int {
+    if (m_cache_relat == cached::no || m_cache_xill == cached::no) {
+      return 1;
+    }
+    return 0;
+  }
+
+
   [[nodiscard]] auto is_all_cached() const -> int {
     if (m_cache_energy_grid == cached::yes && m_cache_relat == cached::yes && m_cache_xill == cached::yes) {
       return 1;
@@ -103,6 +111,7 @@ class CachingStatus {
     }
     return 0;
   }
+
 
   void check_caching_parameters(const relParam *rel_param, const xillParam *xill_param);
 
