@@ -87,7 +87,7 @@ static void init_specCache(specCache **spec, const int n_zones, int *status) {
 
 specCache *init_global_specCache(int *status) {
   init_specCache(&global_spec_cache, N_ZONES_MAX, status);
-  CHECK_RELXILL_ERROR("failed initializing Relconv Spec RelxillCacheElement", status);
+  CHECK_RELXILL_ERROR("failed initializing Relconv Spec Cache", status);
   return global_spec_cache;
 }
 
@@ -261,7 +261,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   // -> as we do a simple FFT, we can now take into account that we
   // need it to be number = 2^N */
   EnerGrid *ener_grid = get_relxill_conv_energy_grid();
-  // const int n_ener = ener_grid->nbins;
+  // const int n_ener = ener_grid->num_flux_bins;
   // const double *ener = ener_grid->ener;
 
   relline_spec_multizone *rel_profile = relbase(ener_grid->ener, ener_grid->nbins, rel_param, status);
@@ -496,7 +496,7 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
     }
   } else {
     if (is_debug_run()) {
-      printf(" DEBUG:  RELBASE-RelxillCacheElement: re-using calculated values\n");
+      printf(" DEBUG:  RELBASE-RelxillCache: re-using calculated values\n");
     }
     spec = ca_info->store->data->relbase_spec;
   }

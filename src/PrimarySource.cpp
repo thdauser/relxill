@@ -22,19 +22,19 @@
   * @brief: print the reflection strength on the screen (requires struct_refl_frac to be set)
   * note, the energy grids of both spectra need to be the same
   */
-void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, const Spectrum &primary_spec) const {
+void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const Spectrum &primary_spec) const {
 
   if (m_lp_refl_frac == nullptr) {
     return;
   } // will do nothing if the refl_frac structure is not set
 
   // energy grids need to be the same
-  assert(refl_spec.num_flux_bins() == static_cast<int>(primary_spec.num_flux_bins));
+  assert(refl_spec.num_flux_bins == static_cast<int>(primary_spec.num_flux_bins));
 
   const relParam *rel_param = source_parameters.rel_param();
 
-  int const imin = binary_search(refl_spec.energy, refl_spec.num_flux_bins() + 1, RSTRENGTH_EMIN);
-  int const imax = binary_search(refl_spec.energy, refl_spec.num_flux_bins() + 1, RSTRENGTH_EMAX);
+  int const imin = binary_search(refl_spec.energy(), refl_spec.num_flux_bins + 1, RSTRENGTH_EMIN);
+  int const imax = binary_search(refl_spec.energy(), refl_spec.num_flux_bins + 1, RSTRENGTH_EMAX);
 
   double sum_pl = 0.0;
   double sum = 0.0;
@@ -62,15 +62,15 @@ void PrimarySource::print_reflection_strength(const XspecSpectrum &refl_spec, co
   }
 }
 
-// @brief: adds primary reflection_spectrum to the input reflection_spectrum
-void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectrum) {
+// @brief: adds primary relxill_spec to the input relxill_spec
+void PrimarySource::add_primary_spectrum(const RelxillSpec &relxill_spec) {
 
   // get the primary spectrum on the energy grid of the reflection spectrum
-  auto primary_spectrum = get_observed_primary_spectrum(reflection_spectrum);
+  auto primary_spectrum = get_observed_primary_spectrum(relxill_spec);
 
   // For the non-relativistic model and if not the LP geometry, we simply multiply by the reflection fraction
   if (is_xill_model(source_parameters.model_type()) || source_parameters.emis_type() != EMIS_TYPE_LP) {
-    reflection_spectrum.multiply_flux_by(fabs(source_parameters.refl_frac()));
+    relxill_spec.multiply_flux_by(fabs(source_parameters.refl_frac()));
 
   } else { // we are in the LP geometry
 
@@ -100,25 +100,25 @@ void PrimarySource::add_primary_spectrum(const XspecSpectrum &reflection_spectru
 
       primary_spectrum.multiply_flux_by(prime_norm_factor);
 
-      // multiply the reflection reflection_spectrum also with the normalization factor and the inverse of primary source
-      // factors to take those into account in the reflection reflection_spectrum
-      reflection_spectrum.multiply_flux_by(prime_norm_factor * norm_fac_refl / prime_spec_factors_source_to_observer);
+      // multiply the reflection relxill_spec also with the normalization factor and the inverse of primary source
+      // factors to take those into account in the reflection relxill_spec
+      relxill_spec.multiply_flux_by(prime_norm_factor * norm_fac_refl / prime_spec_factors_source_to_observer);
 
     } else { // not the ALPHA model
-      reflection_spectrum.multiply_flux_by(norm_fac_refl);
+      relxill_spec.multiply_flux_by(norm_fac_refl);
       primary_spectrum.multiply_flux_by(prime_spec_factors_source_to_observer);
     }
 
     // if desired, we output the reflection fraction and strength (as defined in Dauser+2016)
     if (shouldAuxInfoGetPrinted()) {
-      print_reflection_strength(reflection_spectrum, primary_spectrum);
+      print_reflection_strength(relxill_spec, primary_spectrum);
     }
   }
 
   // Finally, add the power law component if refl_frac >= 0
   if (source_parameters.refl_frac() >= 0) {
-    for (int ii = 0; ii < reflection_spectrum.num_flux_bins(); ii++) {
-      reflection_spectrum.flux[ii] += primary_spectrum.flux[ii];
+    for (int ii = 0; ii < relxill_spec.num_flux_bins; ii++) {
+      relxill_spec.flux[ii] += primary_spectrum.flux[ii];
     }
   }
 

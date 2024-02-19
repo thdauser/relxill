@@ -544,7 +544,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 }
 
 /** rebin spectrum to a given energy grid
- *  length of ener is nbins+1       **/
+ *  length of ener is num_flux_bins+1       **/
 
 void rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
 

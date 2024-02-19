@@ -33,8 +33,8 @@ extern "C" {
 
 /****** TYPEDEF******/
 
-#define CLI_NMAX 50
-#define RELXILL_CACHE_SIZE 50
+#define CLI_NMAX 1
+#define RELXILL_CACHE_SIZE 1
 
 typedef struct cdata {
 
@@ -110,48 +110,31 @@ int is_cached(cache_info *self);
 void free_cnode(cnode **node);
 
 
-class RelxillSpec {
+class RelxillSpec : public Spectrum {
 
-  RelxillSpec() {
-    m_ener_grid = get_relxill_conv_energy_grid();
-  }
+ public:
+  RelxillSpec() : Spectrum(get_relxill_conv_energy_grid()->ener, get_relxill_conv_energy_grid()->nbins) {}
 
-  RelxillSpec(double *_flux) {
+  explicit RelxillSpec(double *_flux) : RelxillSpec() {
     copy_flux(_flux);
   }
 
- public:
-  void copy_flux(const double *_flux) {
-    if (m_ener_grid != nullptr) {
-      m_flux = new double[m_ener_grid->nbins];
-
-      for (int ii = 0; ii < m_ener_grid->nbins; ii++) {
-        m_flux[ii] = _flux[ii];
-      }
-    } else {
-      std::cerr << " Global energy grid not set " << '\n';
-      throw std::exception();
-    }
-  }
-
-  auto flux() -> const double * { return m_flux; };
-
   // delete copy and move assignment constructor
-  RelxillSpec(const DefaultSpec &other) = delete;
+  RelxillSpec &operator=(const RelxillSpec &other) = delete;
 
-  RelxillSpec &operator=(const DefaultSpec &other) = delete;
+  RelxillSpec &operator=(const RelxillSpec &&other) = delete;
 
+  // derived from the base class
+  RelxillSpec(const RelxillSpec &inst) = default;
 
- private:
-  EnerGrid *m_ener_grid = nullptr;
-  double *m_flux = nullptr;
+  RelxillSpec(RelxillSpec &&inst) = delete;
 };
 
 
 class RelxillCacheElement {
 
   explicit RelxillCacheElement(ModelParams model_params, RelxillSpec spec)
-      : m_model_params{std::move(model_params)}, m_spec{(spec)} {};
+      : m_model_params{model_params}, m_spec{(spec)} {};
 
 
  public:
@@ -215,7 +198,7 @@ class RelxillCache {
 
     for (auto elem: m_cache) {
       if (elem.model_params_identical(_params)) {
-        return elem.spec().flux();
+        return elem.spec().flux;
       }
     }
     return nullptr;

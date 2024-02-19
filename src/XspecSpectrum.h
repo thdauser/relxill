@@ -165,6 +165,7 @@ class DefaultSpec {
 
 class Spectrum {
  public:
+
   Spectrum(const double *_energy, size_t n_bins) : num_flux_bins{n_bins} {
     size_t const n_energy = n_bins + 1;
     m_energy = new double[n_energy];
@@ -183,8 +184,29 @@ class Spectrum {
   }
 
   // delete copy and move assignment constructor
-  Spectrum(const DefaultSpec &other) = delete;
-  Spectrum &operator=(const DefaultSpec &other) = delete;
+  Spectrum &operator=(const Spectrum &other) = delete;
+
+  Spectrum &operator=(const Spectrum &&other) = delete;
+
+  // Copy constructor
+  Spectrum(const Spectrum &inst) : num_flux_bins{inst.num_flux_bins} {
+    m_energy = new double[num_flux_bins];
+    for (size_t ii = 0; ii < num_flux_bins + 1; ii++) {
+      m_energy[ii] = inst.m_energy[ii];
+    }
+
+    flux = new double[num_flux_bins];
+    for (size_t ii = 0; ii < num_flux_bins; ii++) {
+      flux[ii] = inst.flux[ii];
+    }
+  }
+
+
+  // Move constructor
+  Spectrum(Spectrum &&inst) noexcept: m_energy(inst.m_energy), num_flux_bins(inst.num_flux_bins), flux(inst.flux) {
+    inst.m_energy = nullptr;
+    inst.flux = nullptr;
+  }
 
   /**
    * return the energy and flux as an XspecSpectrum
@@ -204,7 +226,14 @@ class Spectrum {
     }
   }
 
- public:
+
+  void copy_flux(const double *_flux) {
+    for (int ii = 0; ii < num_flux_bins; ii++) {
+      flux[ii] = _flux[ii];
+    }
+  }
+
+
   const size_t num_flux_bins;
   double *flux{nullptr};
 

@@ -28,6 +28,7 @@
 #include "ModelParams.h"
 #include "Relphysics.h"
 #include "Xillspec.h"
+#include "Relcache.h"
 
 extern "C" {
 #include "common.h"
@@ -232,29 +233,30 @@ class PrimarySource {
    * in the source frame
    * @details The normalization is always given in the source frame (for the parameters of
    * Ecut/kTe in this frame).
-   * @param _xspec_spec
+   * @param spec
    * @param _parameters
    * @return
    */
-  Spectrum get_observed_primary_spectrum(const XspecSpectrum &_xspec_spec) const {
+  Spectrum get_observed_primary_spectrum(const Spectrum &relxill_spec) const {
     int status = EXIT_SUCCESS;
-    auto spec = Spectrum(_xspec_spec.energy, _xspec_spec.num_flux_bins());
-    calc_primary_spectrum(spec.flux, spec.energy(), spec.num_flux_bins,
+    auto prim_spec = Spectrum(relxill_spec.energy(), relxill_spec.num_flux_bins);
+    calc_primary_spectrum(prim_spec.flux, prim_spec.energy(), prim_spec.num_flux_bins,
                           source_parameters.xilltab_param(), &status,
                           source_parameters.energy_shift_source_observer());
 
     // take the xillver normalization factor into account
-    spec.multiply_flux_by(calc_normalization_factor_source());
+    prim_spec.multiply_flux_by(calc_normalization_factor_source());
 
-    return spec;
+    return prim_spec;
   }
 
   double get_boost_parameter() const {
     return source_parameters.get_boost_parameter(m_lp_refl_frac);
   }
 
-  void print_reflection_strength(const XspecSpectrum &refl_spec, const Spectrum &primary_spec) const;
-  void add_primary_spectrum(const XspecSpectrum &reflection_spectrum);
+  void print_reflection_strength(const Spectrum &refl_spec, const Spectrum &primary_spec) const;
+
+  void add_primary_spectrum(const RelxillSpec &relxill_spec);
 
   PrimarySourceParameters source_parameters;
 
@@ -300,10 +302,10 @@ class PrimarySource {
   double get_normalized_primary_spectrum_flux_in_ergs() const {
 
     EnerGrid *egrid = get_coarse_xillver_energrid();
-    const auto spec = Spectrum(egrid->ener, egrid->nbins); // egrid has nbins+1 energy bins
-    const auto xspec_spec = spec.get_xspec_spectrum();
+    const auto spec = Spectrum(egrid->ener, egrid->nbins); // egrid has num_flux_bins+1 energy bins
+    //  const auto xspec_spec = spec.get_xspec_spectrum();
 
-    const auto prime_spec = PrimarySource::get_observed_primary_spectrum(xspec_spec);
+    const auto prime_spec = PrimarySource::get_observed_primary_spectrum(spec);
     const auto ener = prime_spec.energy();
 
     //    const double emin_norm = get_env_otherwise_default("RELXILL_ALPHA_CGSNORM_EMIN", EMIN_XILLVER_NORMALIZATION);
