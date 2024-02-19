@@ -20,6 +20,7 @@
 
 #include "ModelParams.h"
 #include <deque>
+#include <utility>
 
 extern "C" {
 #include "common.h"
@@ -106,14 +107,20 @@ int is_cached(cache_info *self);
 void free_cnode(cnode **node);
 
 
-/*
+/*class RelxillSpec{
+
+  RelxillSpec()
+
+};*/
+
 class Cache{
 
-  explicit Cache(ModelParams model_params) : m_model_params{model_params}
+  explicit Cache(ModelParams model_params, XspecSpectrum spec)
+      : m_model_params{std::move(model_params)}, m_spec{(spec)}
   {};
 
 
-  bool operator==(const Cache& _comp_cache){
+  auto operator==(const Cache &_comp_cache) -> bool {
     auto parnames = m_model_params.get_parnames();
 
      for(auto par=parnames.begin(); par!=parnames.cend(); ++par ) {
@@ -126,14 +133,10 @@ class Cache{
 
  private:
   ModelParams m_model_params;
+  XspecSpectrum m_spec;
 
 };
 
-class PrimarySourceCache: Cache{
-
-
-
-};
 
 class CacheStorage{
 
@@ -149,12 +152,11 @@ class CacheStorage{
     m_cache.push_back(_cache);
   }
 
+
  private:
   std::deque<Cache> m_cache;
   size_t max_size;
 };
-
- */
 
 
 #endif /* RELCACHE_H_ */
