@@ -31,8 +31,6 @@ cnode *cache_relbase = nullptr;
 int save_1eV_pos = 0;
 
 
-EnerGrid *global_energy_grid_relxill = nullptr;
-
 specCache *global_spec_cache = nullptr;
 
 
@@ -230,18 +228,6 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
 
   normalizeFFTOutput(ener, fxill, frel, fout, n);
 
-}
-
-EnerGrid *get_relxill_conv_energy_grid() {
-  if (global_energy_grid_relxill == nullptr) {
-    global_energy_grid_relxill = new EnerGrid;
-    global_energy_grid_relxill->nbins = N_ENER_CONV;
-    global_energy_grid_relxill->ener = new double[global_energy_grid_relxill->nbins + 1];
-    get_log_grid(global_energy_grid_relxill->ener, global_energy_grid_relxill->nbins + 1,
-                 EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
-  }
-
-  return global_energy_grid_relxill;
 }
 
 
@@ -602,8 +588,9 @@ void free_cached_tables() {
 
   free_specCache(global_spec_cache);
 
-  free(global_energy_grid_relxill);
-  // free(global_ener_xill); // TODO, implement free of this global energy grid
+  // TODO, implement free of this global energy grid
+  //free(global_energy_grid_relxill);
+  // free(global_ener_xill);
 
 }
 

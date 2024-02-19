@@ -26,6 +26,8 @@ extern "C" {
 }
 
 EnerGrid *global_xill_egrid_coarse = nullptr;
+EnerGrid *global_energy_grid_relxill = nullptr;
+
 
 /** @brief main routine for the xillver table: returns a spectrum for the given parameters
  *  @details
@@ -36,6 +38,23 @@ EnerGrid *global_xill_egrid_coarse = nullptr;
  * @param status
  * @return xillSpec
  */
+
+
+
+EnerGrid *get_relxill_conv_energy_grid() {
+  if (global_energy_grid_relxill == nullptr) {
+    global_energy_grid_relxill = new EnerGrid;
+    global_energy_grid_relxill->nbins = N_ENER_CONV;
+    global_energy_grid_relxill->ener = new double[global_energy_grid_relxill->nbins + 1];
+    get_log_grid(global_energy_grid_relxill->ener, global_energy_grid_relxill->nbins + 1,
+                 EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
+  }
+
+  return global_energy_grid_relxill;
+}
+
+
+
 xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);

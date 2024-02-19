@@ -19,6 +19,7 @@
 #define RELCACHE_H_
 
 #include "ModelParams.h"
+#include "Xillspec.h"
 #include <deque>
 #include <utility>
 #include "Xillspec.h"
@@ -108,18 +109,42 @@ int is_cached(cache_info *self);
 void free_cnode(cnode **node);
 
 
-/*class RelxillSpec{
+class RelxillSpec {
 
-  RelxillSpec(double* _flux) : m_n_flux{N_ENER_CONV}
-  {
-    for (size_t ii = 0; ii < m_n_flux; ii++) {
-      m_energy[ii] = _flux[ii];
-    }
-
-
+  RelxillSpec() {
+    m_ener_grid = get_relxill_conv_energy_grid();
   }
 
-}; */
+  RelxillSpec(double *_flux) {
+    copy_flux(_flux);
+  }
+
+ public:
+  void copy_flux(const double *_flux) {
+    if (m_ener_grid != nullptr) {
+      m_flux = new double[m_ener_grid->nbins];
+
+      for (int ii = 0; ii < m_ener_grid->nbins; ii++) {
+        m_flux[ii] = _flux[ii];
+      }
+    } else {
+      std::cerr << " Global energy grid not set " << '\n';
+      throw std::exception();
+    }
+  }
+
+  auto flux() -> const double * { return m_flux; };
+
+  // delete copy and move assignment constructor
+  RelxillSpec(const DefaultSpec &other) = delete;
+
+  RelxillSpec &operator=(const DefaultSpec &other) = delete;
+
+
+ private:
+  EnerGrid *m_ener_grid = nullptr;
+  double *m_flux = nullptr;
+};
 
 class Cache {
 

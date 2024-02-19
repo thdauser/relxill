@@ -37,6 +37,7 @@ extern "C" {
 #define EMIN_RELXILL_CONV 0.00035  // minimal energy of the convolution (in keV)
 #define EMAX_RELXILL_CONV 2000.0 // maximal energy of the convolution (in keV)
 
+EnerGrid *get_relxill_conv_energy_grid();
 
 
 double norm_factor_semi_infinite_slab(double incl_deg);

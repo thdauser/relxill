@@ -137,7 +137,6 @@ void free_cache(void);
 void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
                                    int re_rel, int re_xill, int izone, specCache *local_spec_cache, int *status);
 
-EnerGrid *get_relxill_conv_energy_grid();
 
 double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status);
 

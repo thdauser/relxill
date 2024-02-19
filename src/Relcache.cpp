@@ -529,3 +529,4 @@ int is_relbase_cached(cache_info *self) {
 int is_cached(cache_info *self) {
   return self->relcache + self->xilcache;
 }
+
