@@ -303,7 +303,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // calculate the relline profile
     int n_ener_conv; // energy grid for the convolution, only created
     double *ener_conv = nullptr;
-    get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv, status);
+    get_relxill_conv_energy_grid(&n_ener_conv, &ener_conv);
     relline_spec_multizone *rel_profile =
         relbase_profile(ener_conv, n_ener_conv, rel_param, sys_par, xill_tab,
                         ion_gradient.radial_grid.radius.data(),

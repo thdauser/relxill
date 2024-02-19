@@ -232,10 +232,9 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
 
 }
 
-void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status) {
+void get_relxill_conv_energy_grid(int *n_ener, double **ener) {
   if (global_ener_std == nullptr) {
     global_ener_std = (double *) malloc((N_ENER_CONV + 1) * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
     get_log_grid(global_ener_std, (N_ENER_CONV + 1), EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
   }
   (*n_ener) = N_ENER_CONV;
@@ -274,7 +273,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   // -> as we do a simple FFT, we can now take into account that we
   // need it to be number = 2^N */
   int n_ener; double *ener;
-  get_relxill_conv_energy_grid(&n_ener, &ener, status);
+  get_relxill_conv_energy_grid(&n_ener, &ener);
 
   relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, status);
 

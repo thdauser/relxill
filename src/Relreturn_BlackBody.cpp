@@ -525,7 +525,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
   // get a standard grid for the convolution (is rebinned later to the input grid)
   int n_ener;
   double *ener;
-  get_relxill_conv_energy_grid(&n_ener, &ener, status);
+  get_relxill_conv_energy_grid(&n_ener, &ener);
 
   xillTable *xill_tab = nullptr;
   get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
