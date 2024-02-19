@@ -322,7 +322,7 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
     // system parameter values are cached, so we can take it from there
     sysPar = ca_info->store->data->relSysPar;
     if (is_debug_run()) {
-      printf(" DEBUG:  SYSPAR-Cache: re-using calculated values\n");
+      printf(" DEBUG:  SYSPAR-RelxillCacheElement: re-using calculated values\n");
     }
   } else {
     // NOT CACHED, so we need to calculate the system parameters

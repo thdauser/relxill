@@ -33,7 +33,8 @@ extern "C" {
 
 /****** TYPEDEF******/
 
-#define CLI_NMAX 10
+#define CLI_NMAX 50
+#define RELXILL_CACHE_SIZE 50
 
 typedef struct cdata {
 
@@ -146,13 +147,15 @@ class RelxillSpec {
   double *m_flux = nullptr;
 };
 
-class Cache {
 
-  explicit Cache(ModelParams model_params, XspecSpectrum spec)
+class RelxillCacheElement {
+
+  explicit RelxillCacheElement(ModelParams model_params, RelxillSpec spec)
       : m_model_params{std::move(model_params)}, m_spec{(spec)} {};
 
 
-  auto operator==(const Cache &_comp_cache) -> bool {
+ public:
+  auto operator==(const RelxillCacheElement &_comp_cache) -> bool {
     auto parnames = m_model_params.get_parnames();
 
      for(auto par=parnames.begin(); par!=parnames.cend(); ++par ) {
@@ -163,30 +166,65 @@ class Cache {
      return true;
   }
 
+  bool model_params_identical(const ModelParams &_model_params) {
+    auto parnames = m_model_params.get_parnames();
+
+    for (auto par = parnames.begin(); par != parnames.cend(); ++par) {
+      if (are_values_different(m_model_params.get_par(*par), _model_params.get_par(*par)) == 0) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  RelxillSpec spec() {
+    return m_spec;
+  }
+
  private:
   ModelParams m_model_params;
-  XspecSpectrum m_spec;
+  RelxillSpec m_spec;
 
 };
 
 
-class CacheStorage{
+class RelxillCache {
 
  public:
 
-  CacheStorage(size_t _max_size) : max_size{_max_size}
-  {};
 
-  void add(Cache _cache){
-    if (m_cache.size() > max_size){
-      m_cache.pop_front();
-    }
-    m_cache.push_back(_cache);
+  /**
+ * use this instance to always and securely access the database, without
+ * needing to initialize it anywhere else
+ * @return ModelDatabase
+ */
+  static RelxillCache &instance() {
+    static auto *instance = new RelxillCache(RELXILL_CACHE_SIZE);
+    return *instance;
   }
 
 
+  void add(RelxillCacheElement _cache) {
+    if (m_cache.size() > max_size){
+      m_cache.pop_front();
+    }
+    m_cache.push_back(std::move(_cache));
+  }
+
+  const double *find(const ModelParams &_params) {
+
+    for (auto elem: m_cache) {
+      if (elem.model_params_identical(_params)) {
+        return elem.spec().flux();
+      }
+    }
+    return nullptr;
+  }
+
  private:
-  std::deque<Cache> m_cache;
+  explicit RelxillCache(size_t _max_size) : max_size{_max_size} {};
+
+  std::deque<RelxillCacheElement> m_cache;
   size_t max_size;
 };
 

@@ -98,12 +98,14 @@ class CachingStatus {
   }
 
 
-  [[nodiscard]] auto is_all_cached() const -> int {
-    if (m_cache_energy_grid == cached::yes && m_cache_relat == cached::yes && m_cache_xill == cached::yes) {
-      return 1;
-    }
-    return 0;
+  [[nodiscard]] auto is_all_cached() const -> bool {
+    return m_cache_energy_grid == cached::yes && m_cache_relat == cached::yes && m_cache_xill == cached::yes;
   }
+
+  [[nodiscard]] auto only_energy_grid_changed() const -> bool {
+    return m_cache_energy_grid == cached::no && m_cache_relat == cached::yes && m_cache_xill == cached::yes;
+  }
+
 
   [[nodiscard]] auto recomput_relat() const -> int {
     if (m_cache_relat == cached::no) {

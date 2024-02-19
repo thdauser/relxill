@@ -263,12 +263,23 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   RelSysPar *sys_par = get_system_parameters(rel_param, status);
   auto primary_source = PrimarySource(params, sys_par);
 
-  if (caching_status.is_all_cached() == 1) { // if already cached, simply use the cached output flux value
+  if (caching_status.is_all_cached()) { // if already cached, simply use the cached output flux value
     for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
       spectrum.flux[ii] = spec_cache->out_spec->flux[ii];
     }
 
+    // } else if (caching_status.only_energy_grid_changed()){
+
+    // printf(" WARNING: only energy grid changed, not yet implemented!! \n");
+
   } else {
+
+    /*  const double* cached_flux = RelxillCache::instance().find(params);
+      for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
+        spectrum.flux[ii] = cached_flux[ii];
+      }
+    printf(" WTF, only energy grid changed?!?! we should not be here! \n");
+  */
     // store the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
     set_cached_rel_param(rel_param, &cached_rel_param, status);

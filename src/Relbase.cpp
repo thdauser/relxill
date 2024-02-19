@@ -87,7 +87,7 @@ static void init_specCache(specCache **spec, const int n_zones, int *status) {
 
 specCache *init_global_specCache(int *status) {
   init_specCache(&global_spec_cache, N_ZONES_MAX, status);
-  CHECK_RELXILL_ERROR("failed initializing Relconv Spec Cache", status);
+  CHECK_RELXILL_ERROR("failed initializing Relconv Spec RelxillCacheElement", status);
   return global_spec_cache;
 }
 
@@ -496,7 +496,7 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
     }
   } else {
     if (is_debug_run()) {
-      printf(" DEBUG:  RELBASE-Cache: re-using calculated values\n");
+      printf(" DEBUG:  RELBASE-RelxillCacheElement: re-using calculated values\n");
     }
     spec = ca_info->store->data->relbase_spec;
   }
