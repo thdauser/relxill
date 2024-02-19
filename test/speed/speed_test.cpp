@@ -43,6 +43,23 @@ void eval_local_model_param_range(ModelName model_name, XPar param, double pmin,
 
 }
 
+void eval_model_energy_grid_change(ModelName model_name, double eup_min, double eup_max, int npar) {
+
+
+  const double elo = 0.1;
+  const size_t nbins = 2000;
+
+  LocalModel local_model(model_name);
+
+  for (int ii = 0; ii < npar; ii++) {
+    double eup = (eup_max - eup_min) * (static_cast<double>(ii) / static_cast<double>(npar));
+    DefaultSpec default_spec{elo, eup, nbins};
+    XspecSpectrum spec = default_spec.get_xspec_spectrum();
+    local_model.eval_model(spec);
+  }
+
+}
+
 
 void eval_model_relat_param_changes(ModelName model_name, const int num_evaluations){
   XPar rel_param = XPar::a;
@@ -50,7 +67,7 @@ void eval_model_relat_param_changes(ModelName model_name, const int num_evaluati
 }
 
 void eval_model_xillver_param_changes(ModelName model_name, const int num_evaluations){
-  XPar rel_param = XPar::logxi;
+  XPar rel_param = XPar::afe;
   // only choose a small difference here such that the table does not need to be re-loaded
   eval_local_model_param_range(model_name, rel_param, 3.1, 3.2, num_evaluations);
 }
@@ -75,17 +92,19 @@ int main(int argc, char *argv[]) {
     auto tstart = std::chrono::steady_clock::now();
 
     if (argc==2){
-      assert(num_evaluations>1);
+      static_assert(num_evaluations > 1);
       eval_model_relat_param_changes(model_name, num_evaluations/2);
       eval_model_xillver_param_changes(model_name, num_evaluations/2);
     } else {
 
-      if  (std::string(argv[2]) == "rel"){
+      if (std::string(argv[2]) == "rel") {
         eval_model_relat_param_changes(model_name, num_evaluations);
-      } else if (std::string(argv[2]) == "m_cache_xill") {
+      } else if (std::string(argv[2]) == "xill") {
         eval_model_xillver_param_changes(model_name, num_evaluations);
+      } else if (std::string(argv[2]) == "ener") {
+        eval_model_energy_grid_change(model_name, 200.0, 300.0, num_evaluations);
       } else {
-        std::cout<< " speed test error: given argument " << std::string(argv[2]) << " not known" << std::endl;
+        std::cout << " speed test error: given argument " << std::string(argv[2]) << " not known" << '\n';
       }
     }
 
