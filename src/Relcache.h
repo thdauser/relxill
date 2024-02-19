@@ -21,6 +21,7 @@
 #include "ModelParams.h"
 #include <deque>
 #include <utility>
+#include "Xillspec.h"
 
 extern "C" {
 #include "common.h"
@@ -109,15 +110,21 @@ void free_cnode(cnode **node);
 
 /*class RelxillSpec{
 
-  RelxillSpec()
+  RelxillSpec(double* _flux) : m_n_flux{N_ENER_CONV}
+  {
+    for (size_t ii = 0; ii < m_n_flux; ii++) {
+      m_energy[ii] = _flux[ii];
+    }
 
-};*/
 
-class Cache{
+  }
+
+}; */
+
+class Cache {
 
   explicit Cache(ModelParams model_params, XspecSpectrum spec)
-      : m_model_params{std::move(model_params)}, m_spec{(spec)}
-  {};
+      : m_model_params{std::move(model_params)}, m_spec{(spec)} {};
 
 
   auto operator==(const Cache &_comp_cache) -> bool {

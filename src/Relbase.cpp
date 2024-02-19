@@ -31,7 +31,7 @@ cnode *cache_relbase = nullptr;
 int save_1eV_pos = 0;
 
 
-double *global_ener_std = nullptr;
+EnerGrid *global_energy_grid_relxill = nullptr;
 
 specCache *global_spec_cache = nullptr;
 
@@ -232,14 +232,16 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
 
 }
 
-void get_relxill_conv_energy_grid(int *n_ener, double **ener) {
-  if (global_ener_std == nullptr) {
-    global_ener_std = (double *) malloc((N_ENER_CONV + 1) * sizeof(double));
-    get_log_grid(global_ener_std, (N_ENER_CONV + 1), EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
+EnerGrid *get_relxill_conv_energy_grid() {
+  if (global_energy_grid_relxill == nullptr) {
+    global_energy_grid_relxill = new EnerGrid;
+    global_energy_grid_relxill->nbins = N_ENER_CONV;
+    global_energy_grid_relxill->ener = new double[global_energy_grid_relxill->nbins + 1];
+    get_log_grid(global_energy_grid_relxill->ener, global_energy_grid_relxill->nbins + 1,
+                 EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
   }
-  (*n_ener) = N_ENER_CONV;
-  (*ener) = global_ener_std;
 
+  return global_energy_grid_relxill;
 }
 
 
@@ -272,26 +274,27 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   // get the (fixed!) energy grid for a RELLINE for a convolution
   // -> as we do a simple FFT, we can now take into account that we
   // need it to be number = 2^N */
-  int n_ener; double *ener;
-  get_relxill_conv_energy_grid(&n_ener, &ener);
+  EnerGrid *ener_grid = get_relxill_conv_energy_grid();
+  // const int n_ener = ener_grid->nbins;
+  // const double *ener = ener_grid->ener;
 
-  relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, status);
+  relline_spec_multizone *rel_profile = relbase(ener_grid->ener, ener_grid->nbins, rel_param, status);
 
   // simple convolution only makes sense for 1 zone !
   assert(rel_profile->n_zones == 1);
 
-  auto rebin_flux =  new double[n_ener];
-  rebin_spectrum(ener, rebin_flux, n_ener, ener_inp, spec_inp, n_ener_inp);
+  auto rebin_flux = new double[ener_grid->nbins];
+  rebin_spectrum(ener_grid->ener, rebin_flux, ener_grid->nbins, ener_inp, spec_inp, n_ener_inp);
 
   specCache* spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
-  auto conv_out = new double[n_ener];
-  convolveSpectrumFFTNormalized(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
+  auto conv_out = new double[ener_grid->nbins];
+  convolveSpectrumFFTNormalized(ener_grid->ener, rebin_flux, rel_profile->flux[0], conv_out, ener_grid->nbins,
                     1, 1, 0, spec_cache, status);
   CHECK_STATUS_VOID(*status);
 
   // rebin to the output grid
-  rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener, conv_out, n_ener);
+  rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener_grid->ener, conv_out, ener_grid->nbins);
 
   set_flux_outside_defined_range_to_zero(ener_inp, spec_inp, n_ener_inp, RELCONV_EMIN, RELCONV_EMAX);
 
@@ -599,7 +602,7 @@ void free_cached_tables() {
 
   free_specCache(global_spec_cache);
 
-  free(global_ener_std);
+  free(global_energy_grid_relxill);
   // free(global_ener_xill); // TODO, implement free of this global energy grid
 
 }

@@ -162,6 +162,7 @@ class DefaultSpec {
   }
 };
 
+
 class Spectrum {
  public:
   Spectrum(const double *_energy, size_t n_bins) : num_flux_bins{n_bins} {

@@ -19,7 +19,6 @@
 #ifndef XILLSPEC_H_
 #define XILLSPEC_H_
 
-
 extern "C" {
 #include "xilltable.h"
 #include "relutility.h"
@@ -31,6 +30,13 @@ extern "C" {
 #define EMIN_XILLVER 0.01
 #define EMAX_XILLVER EMAX_XILLVER_NORMALIZATION
 #define N_ENER_COARSE 500
+
+
+/** parameters for the convolution **/
+#define N_ENER_CONV  4096  // number of bins for the convolution, not that it needs to follow 2^N because of the FFT
+#define EMIN_RELXILL_CONV 0.00035  // minimal energy of the convolution (in keV)
+#define EMAX_RELXILL_CONV 2000.0 // maximal energy of the convolution (in keV)
+
 
 
 double norm_factor_semi_infinite_slab(double incl_deg);
