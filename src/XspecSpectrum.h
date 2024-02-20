@@ -203,7 +203,7 @@ class Spectrum {
 
 
   // Move constructor
-  Spectrum(Spectrum &&inst) noexcept: m_energy(inst.m_energy), num_flux_bins(inst.num_flux_bins), flux(inst.flux) {
+  Spectrum(Spectrum &&inst) noexcept: num_flux_bins(inst.num_flux_bins), flux(inst.flux), m_energy(inst.m_energy) {
     inst.m_energy = nullptr;
     inst.flux = nullptr;
   }
@@ -228,7 +228,7 @@ class Spectrum {
 
 
   void copy_flux(const double *_flux) {
-    for (int ii = 0; ii < num_flux_bins; ii++) {
+    for (size_t ii = 0; ii < num_flux_bins; ii++) {
       flux[ii] = _flux[ii];
     }
   }

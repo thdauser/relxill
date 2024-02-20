@@ -127,11 +127,11 @@ class RelxillSpec : public Spectrum {
   // derived from the base class
   RelxillSpec(const RelxillSpec &inst) = default;
 
-  RelxillSpec(RelxillSpec &&inst) = delete;
+  RelxillSpec(RelxillSpec &&inst) = default;
 };
 
 
-class RelxillCacheElement { ;
+class RelxillCacheElement {
 
 
  public:
@@ -157,17 +157,15 @@ class RelxillCacheElement { ;
     return true;
   }
 
-  /*RelxillSpec spec() {
-    return spec;
-  }*/
-
   explicit RelxillCacheElement(ModelParams _model_params, RelxillSpec _spec)
       : m_model_params{_model_params}, spec{(_spec)} {}
 
-  const RelxillSpec spec;
 
  private:
   ModelParams m_model_params;
+ public:
+  const RelxillSpec spec;
+
 
 };
 
