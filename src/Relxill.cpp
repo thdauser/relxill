@@ -351,7 +351,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // add the primary source spectrum
     primary_source.add_primary_spectrum(relxill_spec);
 
-    RelxillCache::instance().add(RelxillCacheElement(params, relxill_spec));
+    relxill_cache.add(params, relxill_spec);
 
   }
 

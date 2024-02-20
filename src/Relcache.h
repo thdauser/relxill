@@ -188,22 +188,18 @@ class RelxillCache {
   }
 
 
-  void add(RelxillCacheElement _cache) {
+  void add(ModelParams _params, RelxillSpec _spec) {
+    auto cache = RelxillCacheElement(_params, _spec);
+
     if (m_cache.size() > max_size){
       m_cache.pop_front();
     }
-    m_cache.push_back(std::move(_cache));
+    m_cache.push_back(std::move(cache));
   }
 
-  const RelxillSpec &find_spec(const ModelParams &_params) {
-    for (auto elem: m_cache) {
-      if (elem.model_params_identical(_params)) {
-        return elem.spec;
-      }
-    }
-  }
 
   std::pair<bool, RelxillSpec> find_spec_pair(const ModelParams &_params) {
+    // currently switched off
     for (auto elem: m_cache) {
       if (elem.model_params_identical(_params)) {
         auto pair = std::make_pair(true, elem.spec);
@@ -212,16 +208,6 @@ class RelxillCache {
     }
     auto pair = std::make_pair(false, RelxillSpec());
     return pair;
-  }
-
-
-  std::pair<bool, RelxillSpec> &find_spec_pair(const ModelParams &_params) {
-    for (auto elem: m_cache) {
-      if (elem.model_params_identical(_params)) {
-        return std::make_pair(true, elem.spec());
-      }
-    }
-    return std::make_pair(false, RelxillSpec());
   }
 
 
