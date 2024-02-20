@@ -33,8 +33,8 @@ extern "C" {
 
 /****** TYPEDEF******/
 
-#define CLI_NMAX 1
-#define RELXILL_CACHE_SIZE 1
+#define CLI_NMAX 50
+#define RELXILL_CACHE_SIZE 50
 
 typedef struct cdata {
 
@@ -131,10 +131,7 @@ class RelxillSpec : public Spectrum {
 };
 
 
-class RelxillCacheElement {
-
-  explicit RelxillCacheElement(ModelParams model_params, RelxillSpec spec)
-      : m_model_params{model_params}, m_spec{(spec)} {};
+class RelxillCacheElement { ;
 
 
  public:
@@ -160,13 +157,17 @@ class RelxillCacheElement {
     return true;
   }
 
-  RelxillSpec spec() {
-    return m_spec;
-  }
+  /*RelxillSpec spec() {
+    return spec;
+  }*/
+
+  explicit RelxillCacheElement(ModelParams _model_params, RelxillSpec _spec)
+      : m_model_params{_model_params}, spec{(_spec)} {}
+
+  const RelxillSpec spec;
 
  private:
   ModelParams m_model_params;
-  RelxillSpec m_spec;
 
 };
 
@@ -194,15 +195,35 @@ class RelxillCache {
     m_cache.push_back(std::move(_cache));
   }
 
-  const double *find(const ModelParams &_params) {
-
+  const RelxillSpec &find_spec(const ModelParams &_params) {
     for (auto elem: m_cache) {
       if (elem.model_params_identical(_params)) {
-        return elem.spec().flux;
+        return elem.spec;
       }
     }
-    return nullptr;
   }
+
+  std::pair<bool, RelxillSpec> find_spec_pair(const ModelParams &_params) {
+    for (auto elem: m_cache) {
+      if (elem.model_params_identical(_params)) {
+        auto pair = std::make_pair(true, elem.spec);
+        return pair;
+      }
+    }
+    auto pair = std::make_pair(false, RelxillSpec());
+    return pair;
+  }
+
+
+  std::pair<bool, RelxillSpec> &find_spec_pair(const ModelParams &_params) {
+    for (auto elem: m_cache) {
+      if (elem.model_params_identical(_params)) {
+        return std::make_pair(true, elem.spec());
+      }
+    }
+    return std::make_pair(false, RelxillSpec());
+  }
+
 
  private:
   explicit RelxillCache(size_t _max_size) : max_size{_max_size} {};
