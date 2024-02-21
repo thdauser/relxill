@@ -241,27 +241,30 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                     const ModelDefinition &params,
                     int *status) {
 
-  relParam *rel_param = nullptr;
-  xillParam *xill_param = nullptr;
-  get_relxill_params(params, rel_param, xill_param);
 
-  // in case of an ionization gradient, we need to update the number of zones, make sure they are set correctly
-  assert(rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, rel_param->ion_grad_type));
-
-  specCache *spec_cache = init_global_specCache(status);
-  assert(spec_cache != nullptr);
-
-  auto caching_status = CachingStatus(rel_param, xill_param, spec_cache, spectrum);
-
-  RelSysPar *sys_par = get_system_parameters(rel_param, status);
-  auto primary_source = PrimarySource(params, sys_par);
-
-  // get the link to the relxill cache
+  // check if we find the evaluation in the cache
   auto cached_elem = RelxillCache::instance().find_spec_pair(params);
   auto relxill_spec = RelxillCache::get_spec(cached_elem);
 
-  // check if we can find the spectrum in the cache
+  // calculated, if it is not cached
   if (!RelxillCache::is_cached(cached_elem)) {
+
+    relParam *rel_param = nullptr;
+    xillParam *xill_param = nullptr;
+    get_relxill_params(params, rel_param, xill_param);
+
+    // in case of an ionization gradient, we need to update the number of zones, make sure they are set correctly
+    assert(
+        rel_param->num_zones == get_num_zones(rel_param->model_type, rel_param->emis_type, rel_param->ion_grad_type));
+
+    specCache *spec_cache = init_global_specCache(status);
+    assert(spec_cache != nullptr);
+
+    auto caching_status = CachingStatus(rel_param, xill_param, spec_cache, spectrum);
+
+    RelSysPar *sys_par = get_system_parameters(rel_param, status);
+    auto primary_source = PrimarySource(params, sys_par);
+
 
     // store the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
@@ -345,15 +348,14 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     primary_source.add_primary_spectrum(relxill_spec);
 
     RelxillCache::instance().add(params, relxill_spec);
-
+    delete rel_param;
+    delete xill_param;
   }
 
   // rebin to input energy grid (as given by Xspec)
   rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
                  relxill_spec.energy(), relxill_spec.flux, relxill_spec.num_flux_bins);
 
-  delete rel_param;
-  delete xill_param;
 
 }
 
