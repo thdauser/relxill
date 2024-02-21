@@ -22,6 +22,8 @@
 #include "Relreturn_Corona.h"
 #include "PrimarySource.h"
 
+#include <chrono>
+
 extern "C" {
 #include "xilltable.h"
 }
@@ -241,6 +243,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
                     const ModelDefinition &params,
                     int *status) {
 
+  auto tstart = std::chrono::steady_clock::now();
 
   // check if we find the evaluation in the cache
   auto cached_elem = RelxillCache::instance().find_spec_pair(params);
@@ -356,6 +359,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
                  relxill_spec.energy(), relxill_spec.flux, relxill_spec.num_flux_bins);
 
+  if (is_debug_run()) {
+    auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
+        (std::chrono::steady_clock::now() - tstart).count();
+    printf("Time elapsed for model evaluation:      %.3fmsec\n", static_cast<double>(time_elapsed_msec));
+  }
 
 }
 
