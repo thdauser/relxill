@@ -198,15 +198,26 @@ class RelxillCache {
   void add(ModelDefinition _model_definition, RelxillSpec _spec) {
 
     if (m_cache.size() > max_size){
-      m_cache.pop_front();
+      m_cache.pop_back();
     }
-    m_cache.emplace_back(_model_definition, _spec);
+    m_cache.emplace_front(_model_definition, _spec);
 
     if (is_debug_run() != 0) {
       printf(" Relxill Cache: added element, current size is %zu \n", m_cache.size());
     }
   }
 
+  // empty the cache
+  void empty() {
+    while (!m_cache.empty()) {
+      m_cache.pop_front();
+    }
+  }
+
+  // get the size of the cache
+  size_t size() {
+    return m_cache.size();
+  }
 
   [[nodiscard]] std::pair<bool, RelxillSpec> find_spec_pair(const ModelDefinition &_params) const {
 

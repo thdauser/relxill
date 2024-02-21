@@ -19,6 +19,7 @@
 #include "catch2/catch_amalgamated.hpp"
 #include "LocalModel.h"
 #include "XspecSpectrum.h"
+#include "Relcache.h"
 
 #include <chrono>
 
@@ -48,7 +49,9 @@ void simple_relxill_cache_test(ModelName _model_name) {
   auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
       (std::chrono::steady_clock::now() - tstart).count();
 
-  printf("Time elapsed for model evaluation:      %.3fmsec\n", static_cast<double>(time_elapsed_msec));
+  if (is_debug_run()) {
+    printf("Time elapsed for model evaluation:      %.3fmsec\n", static_cast<double>(time_elapsed_msec));
+  }
 
   // should be cached (10 evaluations)
   const int n_eval_cache = 10;
@@ -58,8 +61,11 @@ void simple_relxill_cache_test(ModelName _model_name) {
   }
   auto time_elapsed_msec_cache = std::chrono::duration_cast<std::chrono::milliseconds>
       (std::chrono::steady_clock::now() - tstart).count();
-  printf("Time elapsed for energy grid change (per eval):    %.3fmsec\n",
-         static_cast<double>(time_elapsed_msec_cache) / n_eval_cache);
+
+  if (is_debug_run()) {
+    printf("Time elapsed for energy grid change (per eval):    %.3fmsec\n",
+           static_cast<double>(time_elapsed_msec_cache) / n_eval_cache);
+  }
 
   // require that model evaluation takes longer than n_eval_cache*cached
   REQUIRE(time_elapsed_msec > time_elapsed_msec_cache);
