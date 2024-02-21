@@ -167,7 +167,7 @@ rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &
     return rrad_corr_factors;
   }
 
-  for (int ii = 0; ii < rgrid.num_zones(); ii++) {
+  for (size_t ii = 0; ii < rgrid.num_zones(); ii++) {
     get_xillver_fluxcorrection_factors(xill_spec[ii],
                                        &(rrad_corr_factors->corrfac_flux[ii]),
                                        &(rrad_corr_factors->corrfac_gshift[ii]),
@@ -359,7 +359,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
 
 void assert_energy_grids_identical(const RelxillSpec &spectrum, const relline_spec_multizone *rel_profile) {
-  assert(rel_profile->n_ener == spectrum.num_flux_bins);
+  assert(rel_profile->n_ener == static_cast<int>(spectrum.num_flux_bins));
   assert(rel_profile->ener[0] == spectrum.energy()[0]);
   assert(rel_profile->ener[1] == spectrum.energy()[1]);
 }
@@ -390,7 +390,7 @@ void relxill_convolution_multizone(const RelxillSpec &relxill_spec,
   auto conv_out_spec = RelxillSpec();
 
   // make sure the output array is set to 0
-  for (int ie = 0; ie < relxill_spec.num_flux_bins; ie++) {
+  for (size_t ie = 0; ie < relxill_spec.num_flux_bins; ie++) {
     relxill_spec.flux[ie] = 0.0;
   }
 

@@ -29,7 +29,7 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   } // will do nothing if the refl_frac structure is not set
 
   // energy grids need to be the same
-  assert(refl_spec.num_flux_bins == static_cast<int>(primary_spec.num_flux_bins));
+  assert(refl_spec.num_flux_bins == primary_spec.num_flux_bins);
 
   const relParam *rel_param = source_parameters.rel_param();
 
@@ -117,7 +117,7 @@ void PrimarySource::add_primary_spectrum(const RelxillSpec &relxill_spec) {
 
   // Finally, add the power law component if refl_frac >= 0
   if (source_parameters.refl_frac() >= 0) {
-    for (int ii = 0; ii < relxill_spec.num_flux_bins; ii++) {
+    for (size_t ii = 0; ii < relxill_spec.num_flux_bins; ii++) {
       relxill_spec.flux[ii] += primary_spectrum.flux[ii];
     }
   }

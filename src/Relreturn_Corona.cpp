@@ -210,7 +210,7 @@ rradCorrFactors *init_rrad_corr_factors(const RadialGrid &rgrid) {
   const auto n_zones = rgrid.num_zones();
   const auto n_radial_bins = rgrid.radius.size();
   corr_factors->rgrid = new double[rgrid.radius.size()];
-  for (int ii = 0; ii < n_radial_bins; ii++) {
+  for (size_t ii = 0; ii < n_radial_bins; ii++) {
     corr_factors->rgrid[ii] = rgrid.radius[ii];
   }
 
