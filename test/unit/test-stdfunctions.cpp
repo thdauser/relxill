@@ -220,14 +220,14 @@ TEST_CASE("Relline Normalization Convergence", "[basic]"){
 
   int status = EXIT_SUCCESS;
 
-  int nzones = 100;
+  const int nzones = 100;
   const int min_number_zones = 10;
 
   relline_spec_multizone *rel_profile = nullptr;
   relParam *rel_param = nullptr;
   get_RelProfileConstEmisZones(&rel_profile, &rel_param, nzones, &status);
 
-  double beginOuterRadii = 50.;
+  const double beginOuterRadii = 50.;
   int indexBeginOuterRadii = binary_search(rel_profile->rgrid, rel_profile->n_zones, beginOuterRadii);
 
   REQUIRE(rel_profile->n_zones - indexBeginOuterRadii > min_number_zones);
@@ -243,7 +243,7 @@ TEST_CASE("Relline Normalization Convergence", "[basic]"){
  * errors, while the normalization is correct. Therefore we choose simply a weaker
  * criterion, which can be fulfilled considering GR.
  */
-  double PREC = 0.1;
+  const double PREC = 0.1;
   REQUIRE(fabs(averageRatio - referenceRatio) < PREC);
   INFO("failed comparing the calculated ratio of the relline flux to the expectation");
 
@@ -296,4 +296,3 @@ TEST_CASE(" Normlization of the FFT Convolution", "[bbasic]") {
   INFO(" but still the convoluation is normalized, which should not be the case\n ");
 
 }
-

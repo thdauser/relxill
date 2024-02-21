@@ -73,7 +73,7 @@ typedef struct inpar {
 inpar *get_inputvals_struct(double *ener, int n_ener, const relParam *rel_par, int *status);
 inpar *set_input_syspar(const relParam *rel_par, int *status);
 
-int are_values_different(double val1, double val2);
+bool are_values_different(double val1, double val2);
 
 /** create a caching node **/
 cnode *cli_create(cdata *data, cnode *next, int *status);
@@ -139,7 +139,7 @@ class RelxillCacheElement {
     auto parnames = m_model_params.get_parnames();
 
      for(auto par=parnames.begin(); par!=parnames.cend(); ++par ) {
-       if (are_values_different( m_model_params.get_par(*par), _comp_cache.m_model_params.get_par(*par) ) == 0){
+       if (are_values_different(m_model_params.get_par(*par), _comp_cache.m_model_params.get_par(*par))) {
          return false;
        }
      }
@@ -150,7 +150,7 @@ class RelxillCacheElement {
     auto parnames = m_model_params.get_parnames();
 
     for (auto par = parnames.begin(); par != parnames.cend(); ++par) {
-      if (are_values_different(m_model_params.get_par(*par), _model_params.get_par(*par)) == 0) {
+      if (are_values_different(m_model_params.get_par(*par), _model_params.get_par(*par))) {
         return false;
       }
     }
@@ -187,17 +187,20 @@ class RelxillCache {
 
 
   void add(ModelParams _params, RelxillSpec _spec) {
-    auto cache = RelxillCacheElement(_params, _spec);
 
     if (m_cache.size() > max_size){
       m_cache.pop_front();
     }
-    m_cache.push_back(std::move(cache));
+    m_cache.emplace_back(_params, _spec);
+
+    if (is_debug_run() != 0) {
+      printf(" Relxill Cache: added element, current size is %zu \n", m_cache.size());
+    }
   }
 
 
-  std::pair<bool, RelxillSpec> find_spec_pair(const ModelParams &_params) {
-    // currently switched off
+  [[nodiscard]] std::pair<bool, RelxillSpec> find_spec_pair(const ModelParams &_params) const {
+
     for (auto elem: m_cache) {
       if (elem.model_params_identical(_params)) {
         auto pair = std::make_pair(true, elem.spec);
@@ -206,6 +209,14 @@ class RelxillCache {
     }
     auto pair = std::make_pair(false, RelxillSpec());
     return pair;
+  }
+
+  [[nodiscard]] static RelxillSpec get_spec(const std::pair<bool, RelxillSpec> &cache_elem_pair) {
+    return cache_elem_pair.second;
+  }
+
+  static bool is_cached(const std::pair<bool, RelxillSpec> &cache_elem_pair) {
+    return cache_elem_pair.first;
   }
 
 

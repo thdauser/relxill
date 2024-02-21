@@ -45,7 +45,6 @@ void eval_local_model_param_range(ModelName model_name, XPar param, double pmin,
 
 void eval_model_energy_grid_change(ModelName model_name, double eup_min, double eup_max, int npar) {
 
-
   const double elo = 0.1;
   const size_t nbins = 2000;
 
@@ -57,7 +56,6 @@ void eval_model_energy_grid_change(ModelName model_name, double eup_min, double 
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
     local_model.eval_model(spec);
   }
-
 }
 
 
@@ -81,7 +79,7 @@ int main(int argc, char *argv[]) {
     printf("./speed_test <model> [<rel|m_cache_xill>]");
   } else {
 
-    const int num_evaluations = 1000;
+    const int num_evaluations = 100;
 
     const int num_zones = 25;
     setenv("RELXILL_NUM_RZONES", std::to_string(num_zones).c_str(), 1);

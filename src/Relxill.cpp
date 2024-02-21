@@ -130,25 +130,19 @@ static void write_output_spec_zones(const RelxillSpec &spectrum, int ii, int *st
   save_xillver_spectrum(spectrum.energy(), spectrum.flux, spectrum.num_flux_bins, vstr);
 }
 
-/** initialize the cached output spec array **/
+/*
+/** initialize the cached output spec array
+ *  DEPRECATED: need to remove this part of the cache
+ **/
 void copy_spectrum_to_cache(const Spectrum &spectrum,
                             specCache *spec_cache,
                             int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  if ((spec_cache->out_spec != nullptr)) {
-    if (spec_cache->out_spec->n_ener != spectrum.num_flux_bins) {
-      free_spectrum(spec_cache->out_spec);
-      spec_cache->out_spec = new_spectrum(spectrum.num_flux_bins, spectrum.energy(), status);
-    }
-  } else {
-    spec_cache->out_spec = new_spectrum(spectrum.num_flux_bins, spectrum.energy(), status);
-  }
+  spec_cache->out_spec = nullptr;
 
-  for (int ii = 0; ii < spectrum.num_flux_bins; ii++) {
-    spec_cache->out_spec->flux[ii] = spectrum.flux[ii];
-  }
+
 }
 
 
@@ -263,12 +257,11 @@ void relxill_kernel(const XspecSpectrum &spectrum,
   auto primary_source = PrimarySource(params, sys_par);
 
   // get the link to the relxill cache
-  auto relxill_cache = RelxillCache::instance();
-  auto cached_elem = relxill_cache.find_spec_pair(params);
-  auto relxill_spec = cached_elem.second;
+  auto cached_elem = RelxillCache::instance().find_spec_pair(params);
+  auto relxill_spec = RelxillCache::get_spec(cached_elem);
 
   // check if we can find the spectrum in the cache
-  if (!cached_elem.first) {
+  if (!RelxillCache::is_cached(cached_elem)) {
 
     // store the parameters for which we are calculating
     set_cached_xill_param(xill_param, &cached_xill_param, status);
@@ -351,7 +344,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     // add the primary source spectrum
     primary_source.add_primary_spectrum(relxill_spec);
 
-    relxill_cache.add(params, relxill_spec);
+    RelxillCache::instance().add(params, relxill_spec);
 
   }
 
@@ -420,7 +413,7 @@ void relxill_convolution_multizone(const RelxillSpec &relxill_spec,
     CHECK_STATUS_VOID(*status);
 
     // --3-- add it to the final output relxill_spec
-    for (int ie = 0; ie < relxill_spec.num_flux_bins; ie++) {
+    for (size_t ie = 0; ie < relxill_spec.num_flux_bins; ie++) {
       relxill_spec.flux[ie] += conv_out_spec.flux[ie];
     }
 
