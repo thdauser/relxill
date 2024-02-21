@@ -185,7 +185,7 @@ static void free_xill_table_param_array(const relParam *rel_param, xillTablePara
 }
 
 
-void get_relxill_params(const ModelParams &params, relParam *&rel_param, xillParam *&xill_param) {
+void get_relxill_params(const ModelDefinition &params, relParam *&rel_param, xillParam *&xill_param) {
   rel_param = get_rel_params(params);
   xill_param = get_xill_params(params);
 
@@ -238,7 +238,7 @@ xillSpec **get_xillver_reflection_spectra(specCache *spec_cache,
 /** @brief convolve a xillver spectrum with the relbase kernel
  */
 void relxill_kernel(const XspecSpectrum &spectrum,
-                    const ModelParams &params,
+                    const ModelDefinition &params,
                     int *status) {
 
   relParam *rel_param = nullptr;

@@ -22,7 +22,7 @@
 #include "Relbase.h"
 #include "Xillspec.h"
 #include "IonGradient.h"
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 
 extern "C" {
 #include "writeOutfiles.h"
@@ -135,7 +135,7 @@ class CachingStatus {
 };
 
 void relxill_kernel(const XspecSpectrum &spectrum,
-                    const ModelParams &params,
+                    const ModelDefinition &params,
                     int *status);
 
 rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,

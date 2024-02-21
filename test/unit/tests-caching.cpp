@@ -22,9 +22,9 @@
 
 #include <chrono>
 
-TEST_CASE(" caching of energy grid", "[cache]") {
+void simple_relxill_cache_test(ModelName _model_name) {
 
-  DefaultSpec default_spec{};
+  LocalModel lmod(_model_name);
 
   const double elo = 0.1;
   const double eup1 = 100.0;
@@ -37,7 +37,6 @@ TEST_CASE(" caching of energy grid", "[cache]") {
   DefaultSpec def_spec2{elo, eup2, nbins};
   auto spec2 = def_spec2.get_xspec_spectrum();
 
-  LocalModel lmod(ModelName::relxilllpCp);
 
   // first evaluation
   lmod.eval_model(spec1);
@@ -51,8 +50,8 @@ TEST_CASE(" caching of energy grid", "[cache]") {
 
   printf("Time elapsed for model evaluation:      %.3fmsec\n", static_cast<double>(time_elapsed_msec));
 
-  // should be cached (100 evaluations)
-  const int n_eval_cache = 100;
+  // should be cached (10 evaluations)
+  const int n_eval_cache = 10;
   tstart = std::chrono::steady_clock::now();
   for (int ii = 0; ii < n_eval_cache; ii++) {
     lmod.eval_model(spec2);
@@ -69,6 +68,23 @@ TEST_CASE(" caching of energy grid", "[cache]") {
   double flu2 = spec2.get_energy_flux();
 
   REQUIRE(fabs(flu1 / flu2 - 1) > 1e-6);
+}
 
+
+TEST_CASE(" caching of energy grid", "[cache]") {
+
+  const int nmodel = 6;
+  std::array<ModelName, nmodel> model_names =
+      {ModelName::relxillCp,
+       ModelName::relxilllp,
+       ModelName::relxilllpCp,
+       ModelName::relxilllpAlpha,
+       ModelName::relxillNS,
+       ModelName::relxillCO
+      };
+
+  for (const auto &elem: model_names) {
+    simple_relxill_cache_test(elem);
+  }
 }
 

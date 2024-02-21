@@ -14,7 +14,7 @@ set(SOURCE_FILES
         Relxill.cpp Relxill.h
         ModelDatabase.h
         LocalModel.cpp LocalModel.h
-        ModelParams.cpp ModelParams.h
+        ModelDefinition.cpp ModelDefinition.h
         XspecSpectrum.h
         ModelInfo.h
         Relreturn_BlackBody.cpp Relreturn_BlackBody.h

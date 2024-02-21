@@ -18,7 +18,7 @@
 #ifndef RELCACHE_H_
 #define RELCACHE_H_
 
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 #include "Xillspec.h"
 #include <deque>
 #include <utility>
@@ -136,33 +136,42 @@ class RelxillCacheElement {
 
  public:
   auto operator==(const RelxillCacheElement &_comp_cache) -> bool {
-    auto parnames = m_model_params.get_parnames();
+    auto parnames = m_model_definition.get_parnames();
+
+    if (m_model_definition.get_model_name() != _comp_cache.m_model_definition.get_model_name()) {
+      return false;
+    }
 
      for(auto par=parnames.begin(); par!=parnames.cend(); ++par ) {
-       if (are_values_different(m_model_params.get_par(*par), _comp_cache.m_model_params.get_par(*par))) {
+       if (are_values_different(m_model_definition.get_par(*par), _comp_cache.m_model_definition.get_par(*par))) {
          return false;
        }
      }
      return true;
   }
 
-  bool model_params_identical(const ModelParams &_model_params) {
-    auto parnames = m_model_params.get_parnames();
+  bool model_params_identical(const ModelDefinition &_model_definition) {
 
+    if (m_model_definition.get_model_name() != _model_definition.get_model_name()) {
+      return false;
+    }
+
+    auto parnames = m_model_definition.get_parnames();
     for (auto par = parnames.begin(); par != parnames.cend(); ++par) {
-      if (are_values_different(m_model_params.get_par(*par), _model_params.get_par(*par))) {
+      if (are_values_different(m_model_definition.get_par(*par), _model_definition.get_par(*par))) {
         return false;
       }
     }
+
     return true;
   }
 
-  explicit RelxillCacheElement(ModelParams _model_params, RelxillSpec _spec)
-      : m_model_params{_model_params}, spec{(_spec)} {}
+  explicit RelxillCacheElement(ModelDefinition _model_definition, RelxillSpec _spec)
+      : m_model_definition{_model_definition}, spec{(_spec)} {}
 
 
  private:
-  ModelParams m_model_params;
+  ModelDefinition m_model_definition;
  public:
   const RelxillSpec spec;
 
@@ -186,12 +195,12 @@ class RelxillCache {
   }
 
 
-  void add(ModelParams _params, RelxillSpec _spec) {
+  void add(ModelDefinition _model_definition, RelxillSpec _spec) {
 
     if (m_cache.size() > max_size){
       m_cache.pop_front();
     }
-    m_cache.emplace_back(_params, _spec);
+    m_cache.emplace_back(_model_definition, _spec);
 
     if (is_debug_run() != 0) {
       printf(" Relxill Cache: added element, current size is %zu \n", m_cache.size());
@@ -199,7 +208,7 @@ class RelxillCache {
   }
 
 
-  [[nodiscard]] std::pair<bool, RelxillSpec> find_spec_pair(const ModelParams &_params) const {
+  [[nodiscard]] std::pair<bool, RelxillSpec> find_spec_pair(const ModelDefinition &_params) const {
 
     for (auto elem: m_cache) {
       if (elem.model_params_identical(_params)) {

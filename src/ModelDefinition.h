@@ -16,8 +16,8 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#ifndef RELXILL_SRC_MODELPARAMS_H_
-#define RELXILL_SRC_MODELPARAMS_H_
+#ifndef RELXILL_SRC_MODELDEFINITION_H_
+#define RELXILL_SRC_MODELDEFINITION_H_
 
 #include <string>
 #include <cassert>
@@ -174,10 +174,10 @@ class ParamList {
 };
 
 
-class ModelParams: public ParamList{
+class ModelDefinition : public ParamList {
 
  public:
-  ModelParams( const ParamList &param_list, ModelName model_name, const ModelInfo &model_info ) :
+  ModelDefinition(const ParamList &param_list, ModelName model_name, const ModelInfo &model_info) :
       ParamList(param_list), m_model_name{model_name}, m_model_info{model_info}
   {
   };
@@ -220,7 +220,8 @@ class ModelParams: public ParamList{
 
 };
 
-relParam* get_rel_params(const ModelParams& inp_param);
-xillParam* get_xill_params(const ModelParams& inp_param);
+relParam *get_rel_params(const ModelDefinition &inp_param);
 
-#endif //RELXILL_SRC_MODELPARAMS_H_
+xillParam *get_xill_params(const ModelDefinition &inp_param);
+
+#endif //RELXILL_SRC_MODELDEFINITION_H_

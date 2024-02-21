@@ -25,7 +25,7 @@
 #include <unordered_map>
 #include <utility>
 
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 #include "Relphysics.h"
 #include "Xillspec.h"
 #include "Relcache.h"
@@ -45,7 +45,7 @@ class PrimarySourceParameters {
 
  public:
 
-  explicit PrimarySourceParameters(const ModelParams &inp_param) :
+  explicit PrimarySourceParameters(const ModelDefinition &inp_param) :
       m_inp_param{inp_param},
       m_rel_param{get_rel_params(m_inp_param)},
       m_interpret_reflfrac_as_boost{
@@ -188,7 +188,7 @@ class PrimarySourceParameters {
 
  private:
 
-  ModelParams m_inp_param;
+  ModelDefinition m_inp_param;
   relParam *m_rel_param = nullptr;
   int m_interpret_reflfrac_as_boost;
 
@@ -223,7 +223,7 @@ class PrimarySource {
   ////////////////////////////////////////////
 
  public:
-  PrimarySource(const ModelParams &_model_params, RelSysPar *sys_par) :
+  PrimarySource(const ModelDefinition &_model_params, RelSysPar *sys_par) :
       source_parameters{_model_params},
       m_lp_refl_frac{sys_par->emis->photon_fate_fractions}
       {  }
