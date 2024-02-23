@@ -298,23 +298,104 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   }
   printf("sum flux ext = %e \n", sumSpec_ext);
 
-/*
+
   double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
   double fraction_inf = sys_par_ext->emis->photon_fate_fractions->f_inf;
   double fraction_disk = sys_par_ext->emis->photon_fate_fractions->f_ad;
   double fraction_bhole = sys_par_ext->emis->photon_fate_fractions->f_bh;
   printf("%e \n", rel_param_ext->rout);
   printf("ext test reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl_ext, fraction_disk, fraction_inf, fraction_bhole, fraction_inf + fraction_disk + fraction_bhole, fraction_disk / fraction_inf);
+  /*
+    string strname = "/home/nekrasov/analysis/compare_fractions/fractions_upd.dat";
+    char *foutName = new char[999];
+    strcpy(foutName, strname.c_str());
+    FILE *fp = fopen(foutName, "a");
+    if (fp != nullptr) {
+      fprintf(fp, " %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \n", rel_param_ext->a, rel_param_ext->height, rel_param_ext->d_ring, frac_inf, frac_disk, refl, fraction_inf, fraction_disk, refl_ext);
+    }
 
-  string strname = "/home/nekrasov/analysis/compare_fractions/fractions_upd.dat";
-  char *foutName = new char[999];
-  strcpy(foutName, strname.c_str());
-  FILE *fp = fopen(foutName, "a");
-  if (fp != nullptr) {
-    fprintf(fp, " %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \t %e \n", rel_param_ext->a, rel_param_ext->height, rel_param_ext->d_ring, frac_inf, frac_disk, refl, fraction_inf, fraction_disk, refl_ext);
+    fclose(fp);
+
+  */
+}
+
+
+
+TEST_CASE("Test to compare emissivities", "[extended]") {
+
+  int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
+  LocalModel local_model{ModelName::relxilllp}; // defines a local model object (afaiu)
+  relParam* rel_param = local_model.get_rel_params(); // getting parameters for the given model...
+  auto sys_par = get_system_parameters(rel_param, &status); // also some parameters
+
+  // (rel_param).distance = 2.0;
+  rel_param->a = 0.998;
+  rel_param->height = 30.0;
+  rel_param->rout = 1000.0;
+  rel_param->emis1 = 3.0;
+  rel_param->emis2 = 3.0;
+  rel_param->rbr = 30.0;
+  rel_param->lineE = 1.0;
+  rel_param->return_rad = 0.0;
+  get_emis_jet(sys_par->emis, rel_param, &status);
+  // with a given table and parameters it should give an emissivity for the extended source (with dist)
+  local_model.eval_model(spec);
+
+
+  LocalModel local_model_ext{ModelName::relxilllp_ext}; // defines a local model object (afaiu)
+  relParam* rel_param_ext = local_model_ext.get_rel_params(); // getting parameters for the given model...
+  auto sys_par_ext = get_system_parameters(rel_param_ext, &status); // also some parameters
+
+  // (rel_param).distance = 2.0;
+  rel_param_ext->a = 0.99;
+  rel_param_ext->height = 30.0;
+  rel_param_ext->d_ring = 0.0; // setting some manual distance
+  rel_param_ext->rin = kerr_rms(rel_param_ext->a);
+  rel_param_ext->rout = 1000.0;
+  //rel_param_ext->emis1 = 3.0;
+  //rel_param_ext->emis2 = 3.0;
+  //rel_param_ext->rbr = 30.0;
+  //rel_param_ext->lineE = 1.0;
+  rel_param_ext->return_rad = 0.0;
+
+  get_emis_jet(sys_par_ext->emis, rel_param_ext, &status);
+  local_model_ext.eval_model(spec);
+  sys_par = get_system_parameters(rel_param, &status);
+  sys_par_ext = get_system_parameters(rel_param_ext, &status);
+  int n_rad = sys_par->nr;
+  double *rad = sys_par->re;
+  double *intens = sys_par->emis->emis;
+  int n_rad_ext = sys_par_ext->nr;
+  double *rad_ext = sys_par_ext->re;
+  double *intens_ext = sys_par_ext->emis->emis;
+
+  double sum = 0.0;
+  for (int i = 0; i <= n_rad; i++) {
+    sum += intens[i];
   }
+  printf("sum_emis = %e \t %e \n", sum, rad[1]);
 
-  fclose(fp);
+  double sum_ext = 0.0;
+  for (int i = 0; i <= n_rad_ext; i++) {
+    sum_ext += intens_ext[i];
+  }
+  printf("sum_emis_ext = %e \n", sum_ext);
 
-*/
+  double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
+
+    string strname = "/home/nekrasov/analysis/emissivity_comparisons/test-ext-emis-h" +
+        std::to_string(rel_param_ext->height) + "-d" + std::to_string(rel_param_ext->d_ring) + "_fixingnorm7.dat";
+    char *foutName = new char[999];
+    strcpy(foutName, strname.c_str());
+    FILE *fp = fopen(foutName, "w+");
+    if (fp != nullptr) {
+      for (int ii = 0; ii < n_rad; ii++) {
+        fprintf(fp, " %e \t %e \n", rad_ext[ii], intens_ext[ii]);
+      }
+    }
+    fclose(fp);
+
 }

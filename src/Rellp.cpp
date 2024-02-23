@@ -523,14 +523,14 @@ void normalize_emissivity(double *emis, double *re, double a, double height, dou
   */
   printf("sum norm=%e \n", sum);
   // sum *= 10.0;
-  double r_out = re[1];
-  double x = height; //sqrt(height * height + d * d);
-  double bracket = 1.0 / (1.0 + pow(r_out / x, 2.0));
-  double emis_newton = pow(bracket, 1.5) / (2 * M_PI * x * x);
-  double emis_out = emis[1];
+
+  double r_out = re[0];
+  double bracket = 1.0 / (1.0 + pow((r_out - d) / height, 2.0));
+  double emis_newton = pow(bracket, 1.5) / (2.0 * M_PI * height * height) / (sqrt(1.0 + d * d / height / height) + d / height);
+  double emis_out = emis[0];
   printf("emis newton out=%e at %e but emis=%e\n", emis_newton, r_out, emis_out);
   for (int ii = 0; ii <= nr; ii++) {
-    emis[ii] = emis[ii] * emis_newton / emis_out / 10.0; // why so differences??????
+    emis[ii] = emis[ii] * emis_newton / emis_out;
     // printf("emis ext=%e \n", emis_profile->emis[ii]);
   }
 
@@ -547,8 +547,8 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   // lpTable* lp_table = get_lp_table(status);
 
   if (modelLampPostPointSource(param)) {
-    lpTable* lp_table = get_lp_table(status);
-    calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
+    //lpTable* lp_table = get_lp_table(status);
+    //calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
     /*
     double sum = 0.0;
     for (int ii = 0; ii < emis_profile->nr; ii++) {
@@ -557,10 +557,13 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
     }
     printf("sum lp= %e \n", sum);
      */
+    get_emis_extendedSource(emis_profile, param, status);
+
+    //normalize_emissivity(emis_profile->emis, emis_profile->re, param->a, param->height, param->d_ring, emis_profile->nr);
   } else if (modelLampPostRingSource(param)){
     get_emis_extendedSource(emis_profile, param, status);
 
-    normalize_emissivity(emis_profile->emis, emis_profile->re, param->a, param->height, param->d_ring, emis_profile->nr);
+    //normalize_emissivity(emis_profile->emis, emis_profile->re, param->a, param->height, param->d_ring, emis_profile->nr);
 
   } else if (modelVertExtendSource(param)) {
     lpTable* lp_table = get_lp_table(status);
