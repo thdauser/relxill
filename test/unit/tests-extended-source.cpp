@@ -399,3 +399,23 @@ TEST_CASE("Test to compare emissivities", "[extended]") {
     fclose(fp);
 
 }
+
+
+TEST_CASE(" Test setting input parameters for extended source outside the allowed range","[text]") {
+  DefaultSpec default_spec{};
+
+  LocalModel lmod(ModelName::relxilllp_ext);
+
+  auto spec = default_spec.get_xspec_spectrum();
+
+  double height_below_horizon = 0.9;
+  lmod.set_par(XPar::h, height_below_horizon);
+  lmod.set_par(XPar::d_ring, 0.01);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+
+  // require a real
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
+
+}
+

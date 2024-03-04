@@ -543,7 +543,7 @@ void normalize_emissivity(double *emis, double *re, double a, double height, dou
 void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
-  
+
   if (modelLampPostPointSource(param)) {
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
