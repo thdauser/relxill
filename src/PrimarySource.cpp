@@ -117,15 +117,8 @@ void PrimarySource::add_primary_spectrum(const RelxillSpec &relxill_spec) {
 
   // Finally, add the power law component if refl_frac >= 0
   if (source_parameters.refl_frac() >= 0) {
-<<<<<<< HEAD
-    for (int ii = 0; ii < reflection_spectrum.num_flux_bins(); ii++) {
-      reflection_spectrum.flux[ii] += primary_spectrum.flux[ii];
-
-      // printf("adding prim spec, reflprim=%e \t prim=%e \n", reflection_spectrum.flux[ii], primary_spectrum.flux[ii]);
-=======
     for (size_t ii = 0; ii < relxill_spec.num_flux_bins; ii++) {
       relxill_spec.flux[ii] += primary_spectrum.flux[ii];
->>>>>>> master
     }
   }
 
