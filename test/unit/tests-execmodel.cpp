@@ -148,13 +148,23 @@ TEST_CASE(" Execute single model with output writing ", "[output]") {
   DefaultSpec default_spec{};
   const char* env_outfiles = "RELXILL_WRITE_FILES";
 
+  eval_xspec_lmod_default(ModelName::relxilllp, default_spec);
+
   setenv(env_outfiles, "1", 1);
+
+  std::array<std::string, 2> fnames =
+      {"__relxillOutput_rellineProfile.dat",
+       "__relxillOutput_emisProfile.dat"};
+
+  std::filesystem::remove(fnames[0]);
+  std::filesystem::remove(fnames[1]);
 
   eval_xspec_lmod_default(ModelName::relxilllp, default_spec);
   unsetenv(env_outfiles);
 
-  require_file_exists("__relxillOutput_rellineProfile.dat");
-  require_file_exists("__relxillOutput_emisProfile.dat");
+  require_file_exists(fnames[0]);
+  require_file_exists(fnames[1]);
+
 }
 
 
@@ -162,12 +172,13 @@ TEST_CASE(" Execute iongrad model with output writing ", "[output]") {
   DefaultSpec default_spec{};
   const char* env_outfiles = "RELXILL_WRITE_FILES";
 
-  setenv(env_outfiles, "1", 1);
-
   LocalModel lmod(ModelName::relxilllpCp);
   auto spec = default_spec.get_xspec_spectrum();
 
   lmod.set_par(XPar::switch_iongrad_type, 2);
+
+  std::filesystem::remove("__relxillOutput_iongrad.dat");
+  setenv(env_outfiles, "1", 1);
   lmod.eval_model(spec);
 
   unsetenv(env_outfiles);

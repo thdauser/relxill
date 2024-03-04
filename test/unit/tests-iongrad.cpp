@@ -54,7 +54,7 @@ TEST_CASE(" Ion Grad PL Index ", "[iongrad]") {
 }
 
 
-TEST_CASE(" Test Alpha Model (writing output) ", "[iongrad-write]") {
+TEST_CASE(" Test Alpha Model (writing output) ", "[output]") {
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
