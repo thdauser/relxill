@@ -9,7 +9,7 @@ define runtest(ffs){
    foreach ff(ffs){
       
       %% does not make sense for xillver models
-      if (string_match(ff,"rel")==0){
+      if (string_match(ff,"line")==0){
 	 continue;
       }
       
@@ -32,7 +32,7 @@ define runtest(ffs){
       set_par("*.a",stdpar);
       variable val_set1 = eval_fun_keV(0.05,2);
 
-      msg_log += sprintf(" *** %s (integ flux):  not set (%.5e) - ENV=0 (%.5e) - ENV=1 (%.5e)",
+      msg_log += sprintf(" testing %s (integ flux):  not set (%.5e) - ENV=0 (%.5e) - ENV=1 (%.5e)",
 	       ff,sum(val_notset),sum(val_set0),sum(val_set1)) + "\n";
       
       variable prec = 1e-5;
@@ -47,7 +47,6 @@ define runtest(ffs){
 	 %% should always have physical normalization, does not depend
 	 %% on ENV
 	 if (not ( env0_changes_default==0 && env1_changes_default==0 )) {
-	    vmessage( "normalization of %s does not behave as expected", ff);
 	    status = EXIT_FAILURE;
 	 }
 	 
@@ -69,6 +68,7 @@ define runtest(ffs){
       
       
       if (status==EXIT_FAILURE) {
+	 vmessage( " *** error: normalization of %s does not behave as expected", ff);
 	 vmessage(" *** error: normalization test failed!");
 	 return EXIT_FAILURE;
       }
