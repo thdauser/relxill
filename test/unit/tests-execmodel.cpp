@@ -188,7 +188,7 @@ TEST_CASE(" Execute iongrad model with output writing ", "[output]") {
 
 
 
-TEST_CASE(" Test setting input parameters outside the allowed range","[test]") {
+TEST_CASE(" Test setting input parameters outside the allowed range","[text]") {
   DefaultSpec default_spec{};
 
   LocalModel lmod(ModelName::relxilllp);

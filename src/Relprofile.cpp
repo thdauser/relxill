@@ -923,8 +923,7 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
             // this catches if "tmp" is NaN
             if (tmp != tmp) {
               printf(" *** error in function calc_relline_profile (NaN) *** \n");
-              printf(" *** backtrace %e %e %e %e %e\n",
-                     da->re, g, da->gstar[jj], da->trff[jj][kk], weight);
+              printf(" *** backtrace %e %e %e %e %e %e\n",da->re, g, da->gstar[jj], da->trff[jj][kk], weight, da->emis);
               *status = EXIT_FAILURE;
             }
 

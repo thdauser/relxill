@@ -24,8 +24,8 @@
 
 /** dimensions of the ES table */
 #define ESTABLE_NA 10 // number of spin values
-#define ESTABLE_NHEIGHT 10 // number of height values
-#define ESTABLE_NDISTANCE 10 // number of distance values
+#define ESTABLE_NHEIGHT 20 // number of height values
+#define ESTABLE_NDISTANCE 20 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
 #define ESTABLE_FILENAME "rel_extended_source_test.fits"

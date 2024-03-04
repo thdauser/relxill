@@ -543,27 +543,13 @@ void normalize_emissivity(double *emis, double *re, double a, double height, dou
 void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
-
-  // lpTable* lp_table = get_lp_table(status);
-
+  
   if (modelLampPostPointSource(param)) {
-    //lpTable* lp_table = get_lp_table(status);
-    //calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
-    /*
-    double sum = 0.0;
-    for (int ii = 0; ii < emis_profile->nr; ii++) {
-      // printf("emis lp=%e \n", emis_profile->emis[ii]);
-      sum += emis_profile->emis[ii];
-    }
-    printf("sum lp= %e \n", sum);
-     */
-    get_emis_extendedSource(emis_profile, param, status);
+    lpTable* lp_table = get_lp_table(status);
+    calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
 
-    //normalize_emissivity(emis_profile->emis, emis_profile->re, param->a, param->height, param->d_ring, emis_profile->nr);
-  } else if (modelLampPostRingSource(param)){
+   } else if (modelLampPostRingSource(param)){
     get_emis_extendedSource(emis_profile, param, status);
-
-    //normalize_emissivity(emis_profile->emis, emis_profile->re, param->a, param->height, param->d_ring, emis_profile->nr);
 
   } else if (modelVertExtendSource(param)) {
     lpTable* lp_table = get_lp_table(status);
@@ -571,8 +557,6 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   } else {
       RELXILL_ERROR("None of lamppost, radially or vertically extended sources are obtained from input parameters", status);
   }
-
-  //get_emis_extendedSource(emis_profile, param, status);
 
 }
 
