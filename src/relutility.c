@@ -307,6 +307,15 @@ double *get_rzone_grid(double rmin, double rmax, int nzones, double h, int *stat
   return rgrid;
 }
 
+double get_env_otherwise_default(const char *env, double def_value) {
+  char *value_string = getenv(env);
+  if (value_string != NULL) {
+    return strtod(value_string, NULL);
+  } else {
+    return def_value;
+  }
+}
+
 /** get the relxill table path (dynamically from env variable)  **/
 char *get_relxill_table_path(void) {
   char *path;
@@ -378,7 +387,7 @@ int do_not_normalize_relline(void) {
   char *env;
   env = getenv("RELLINE_PHYSICAL_NORM");
   if (env != NULL) {
-    int phys_norm = atof(env);
+    int phys_norm = (int) strtod(env, NULL);
     if (phys_norm == 1) {
       return 1;
     }
@@ -394,16 +403,6 @@ void get_log_grid(double *ener, int n_ener, double emin, double emax) {
     ener[ii] = exp(ener[ii]);
   }
 }
-
-
-/* get a logarithmic grid from emin to emax with n_ener bins  */
-void get_lin_grid(double *ener, int n_ener, double emin, double emax) {
-  int ii;
-  for (ii = 0; ii < n_ener; ii++) {
-    ener[ii] = 1.0 * ii / (n_ener - 1) * (emax - emin) + emin;
-  }
-}
-
 
 double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius) {
   double inter_r;
@@ -519,7 +518,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
   }
 
 
-  // set the number of zones in radial direction (1 for relline/conv model, N_ZONES for xill models)
+  // set the number of zones in radial direction (1 for relline/conv model, N_ZONES for m_cache_xill models)
   if (is_iongrad_model(ion_grad_type)) {
     if (env != NULL) {
       if ((env_n_zones > 9) && (env_n_zones <= N_ZONES_MAX)) {
@@ -550,7 +549,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 }
 
 /** rebin spectrum to a given energy grid
- *  length of ener is nbins+1       **/
+ *  length of ener is num_flux_bins+1       **/
 
 void rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
 
@@ -767,14 +766,6 @@ void normSpec(double *spec, int n_ener) {
   }
 }
 
-
-
-EnerGrid *new_EnerGrid(int *status) {
-
-  EnerGrid *egrid = malloc(sizeof(EnerGrid));
-  CHECK_MALLOC_RET_STATUS(egrid, status, egrid)
-  return egrid;
-}
 
 TestSpectrum *new_Spectrum(int *status) {
 

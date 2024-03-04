@@ -22,7 +22,7 @@
 #include "Relbase.h"
 #include "Xillspec.h"
 #include "IonGradient.h"
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 
 extern "C" {
 #include "writeOutfiles.h"
@@ -85,29 +85,57 @@ class CachingStatus {
  public:
   CachingStatus() = default;
 
-  [[nodiscard]] int is_all_cached() const {
-    if (energy_grid == cached::yes && relat == cached::yes && xill == cached::yes) {
-      return 1;
-    } else {
-      return 0;
-    }
+  CachingStatus(relParam *rel_param, xillParam *xill_param, specCache *spec_cache, const XspecSpectrum &spectrum) {
+    check_caching_parameters(rel_param, xill_param);
+    check_caching_energy_grid(spec_cache, spectrum);
   }
 
-  [[nodiscard]] int recomput_relat() const {
-    if (relat == cached::no) {
+  [[nodiscard]] auto any_parameter_changed() const -> int {
+    if (m_cache_relat == cached::no || m_cache_xill == cached::no) {
       return 1;
-    } else {
-      return 0;
     }
+    return 0;
   }
 
-  cached energy_grid = cached::no;
-  cached relat = cached::no;
-  cached xill = cached::no;
+
+  [[nodiscard]] auto is_all_cached() const -> bool {
+    return m_cache_energy_grid == cached::yes && m_cache_relat == cached::yes && m_cache_xill == cached::yes;
+  }
+
+  [[nodiscard]] auto only_energy_grid_changed() const -> bool {
+    return m_cache_energy_grid == cached::no && m_cache_relat == cached::yes && m_cache_xill == cached::yes;
+  }
+
+
+  [[nodiscard]] auto recomput_relat() const -> int {
+    if (m_cache_relat == cached::no) {
+      return 1;
+    }
+    return 0;
+  }
+
+
+  void check_caching_parameters(const relParam *rel_param, const xillParam *xill_param);
+
+  void check_caching_energy_grid(specCache *cache, const XspecSpectrum &spectrum);
+
+  [[nodiscard]] auto relat() const -> cached { return m_cache_relat; }
+
+  [[nodiscard]] auto xill() const -> cached { return m_cache_xill; }
+
+  [[nodiscard]] auto energy_grid() const -> cached { return m_cache_energy_grid; }
+
+
+ private:
+  static auto did_number_of_zones_change(const relParam *rel_param) -> int;
+
+  cached m_cache_energy_grid = cached::no;
+  cached m_cache_relat = cached::no;
+  cached m_cache_xill = cached::no;
 };
 
 void relxill_kernel(const XspecSpectrum &spectrum,
-                    const ModelParams &params,
+                    const ModelDefinition &params,
                     int *status);
 
 rradCorrFactors* calc_rrad_corr_factors(xillSpec **xill_spec, const RadialGrid &rgrid,

@@ -242,7 +242,7 @@ typedef struct {
   double shiftTmaxRRet; // temperature shift of Tmax, this should not be a free parameter in the end
   double mass_msolar;
   double distance;
-  double norm_flux_cgs;
+  double luminosity_primary_source;
 } xillParam;
 
 
@@ -378,7 +378,7 @@ typedef struct {
 typedef struct {
 
   int nbins;
-  double *ener;  // has nbins+1
+  double *ener;  // has num_flux_bins+1
   double *flux; // has length
 
 } TestSpectrum;

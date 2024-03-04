@@ -33,7 +33,7 @@ extern "C" {
 #include "Relreturn_BlackBody.h"
 #include "Relxill.h"
 #include "ModelDatabase.h"
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 
 /**
  * exception if the model evaluation failed
@@ -74,7 +74,7 @@ class LocalModel {
 
  public:
   LocalModel(const ParamList& par, ModelName model_name):
-      m_model_params{ ModelParams(par, model_name, ModelDatabase::instance().model_info(model_name)) }
+      m_model_params{ModelDefinition(par, model_name, ModelDatabase::instance().model_info(model_name))}
           {  };
 
     LocalModel(const double* inp_param, ModelName model_name)
@@ -134,12 +134,12 @@ class LocalModel {
     return ::get_xill_params(m_model_params);
   }
 
-  const ModelParams &get_model_params() const {
+  const ModelDefinition &get_model_params() const {
     return m_model_params;
   }
 
  private:
-  ModelParams m_model_params;
+  ModelDefinition m_model_params;
 
   void line_model(const XspecSpectrum &spectrum);
   void relxill_model(const XspecSpectrum &spectrum);

@@ -31,8 +31,6 @@ cnode *cache_relbase = nullptr;
 int save_1eV_pos = 0;
 
 
-double *global_ener_std = nullptr;
-
 specCache *global_spec_cache = nullptr;
 
 
@@ -143,12 +141,12 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   int irot;
 
   /**********************************************************************/
-  /** cache either the relat. or the xillver part, as only one of the
+  /** cache either the m_cache_relat. or the xillver part, as only one of the
    * two changes most of the time (reduce time by 1/3 for convolution) **/
   /**********************************************************************/
 
   /** #1: for the xillver part **/
-  if (re_xill) {
+  if (re_xill != 0) {
     for (ii = 0; ii < n; ii++) {
       cache->fft_xill[izone][0][ii] = fxill[ii] * cache->conversion_factor_energyflux[ii] ;
     }
@@ -158,8 +156,8 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
     fftw_destroy_plan(plan_xill);
   }
 
-  /** #2: for the relat. part **/
-  if (re_rel){
+  /** #2: for the m_cache_relat. part **/
+  if (re_rel != 0) {
     for (ii = 0; ii < n; ii++) {
       irot = (ii - save_1eV_pos + n) % n;
       cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii];
@@ -170,9 +168,8 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
     fftw_destroy_plan(plan_rel);
   }
 
-  // complex multiplication (TODO: fix that complex multiplication is not by hand)
+  // complex multiplication
   for (ii = 0; ii < n; ii++) {
-//    cache->fftw_backwards_input[ii] = cache->fftw_xill[izone][ii] * cache->fftw_rel[izone][ii];
     cache->fftw_backwards_input[ii][0] =
         cache->fftw_xill[izone][ii][0] * cache->fftw_rel[izone][ii][0] -
         cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][1];
@@ -196,7 +193,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
 /**
  * @Function: calcFFTNormFactor
  * @Synopsis: calculate the normalization of the FFT, which is defined to keep the normalization of the
- *           input spectrum and the relat. smearing
+ *           input spectrum and the m_cache_relat. smearing
  * Take the sum in the given energy band of interested, to avoid problems at the border of the FFT
  * convolution.
  */
@@ -233,17 +230,6 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
 
 }
 
-void get_relxill_conv_energy_grid(int *n_ener, double **ener, int *status) {
-  if (global_ener_std == nullptr) {
-    global_ener_std = (double *) malloc((N_ENER_CONV + 1) * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(global_ener_std, status)
-    get_log_grid(global_ener_std, (N_ENER_CONV + 1), EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
-  }
-  (*n_ener) = N_ENER_CONV;
-  (*ener) = global_ener_std;
-
-}
-
 
 void set_flux_outside_defined_range_to_zero(const double* ener, double* spec, int n_ener, double emin, double emax){
   int warned = 0;
@@ -274,26 +260,27 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   // get the (fixed!) energy grid for a RELLINE for a convolution
   // -> as we do a simple FFT, we can now take into account that we
   // need it to be number = 2^N */
-  int n_ener; double *ener;
-  get_relxill_conv_energy_grid(&n_ener, &ener, status);
+  EnerGrid *ener_grid = get_relxill_conv_energy_grid();
+  // const int n_ener = ener_grid->num_flux_bins;
+  // const double *ener = ener_grid->ener;
 
-  relline_spec_multizone *rel_profile = relbase(ener, n_ener, rel_param, status);
+  relline_spec_multizone *rel_profile = relbase(ener_grid->ener, ener_grid->nbins, rel_param, status);
 
   // simple convolution only makes sense for 1 zone !
   assert(rel_profile->n_zones == 1);
 
-  auto rebin_flux =  new double[n_ener];
-  rebin_spectrum(ener, rebin_flux, n_ener, ener_inp, spec_inp, n_ener_inp);
+  auto rebin_flux = new double[ener_grid->nbins];
+  rebin_spectrum(ener_grid->ener, rebin_flux, ener_grid->nbins, ener_inp, spec_inp, n_ener_inp);
 
   specCache* spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
-  auto conv_out = new double[n_ener];
-  convolveSpectrumFFTNormalized(ener, rebin_flux, rel_profile->flux[0], conv_out, n_ener,
+  auto conv_out = new double[ener_grid->nbins];
+  convolveSpectrumFFTNormalized(ener_grid->ener, rebin_flux, rel_profile->flux[0], conv_out, ener_grid->nbins,
                     1, 1, 0, spec_cache, status);
   CHECK_STATUS_VOID(*status);
 
   // rebin to the output grid
-  rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener, conv_out, n_ener);
+  rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener_grid->ener, conv_out, ener_grid->nbins);
 
   set_flux_outside_defined_range_to_zero(ener_inp, spec_inp, n_ener_inp, RELCONV_EMIN, RELCONV_EMAX);
 
@@ -407,7 +394,7 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
   if (are_values_different(par->mass_msolar, cpar->mass_msolar)) {
     return 1;
   }
-  if (are_values_different(par->norm_flux_cgs, cpar->norm_flux_cgs)) {
+  if (are_values_different(par->luminosity_primary_source, cpar->luminosity_primary_source)) {
     return 1;
   }
 
@@ -509,7 +496,7 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
     }
   } else {
     if (is_debug_run()) {
-      printf(" DEBUG:  RELBASE-Cache: re-using calculated values\n");
+      printf(" DEBUG:  RELBASE-RelxillCache: re-using calculated values\n");
     }
     spec = ca_info->store->data->relbase_spec;
   }
@@ -526,8 +513,7 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
 }
 
 
-
-/** @brief relbase wrapper function, calculating the relat system params plus the relbase profile
+/** @brief relbase wrapper function, calculating the m_cache_relat system params plus the relbase profile
  *  @details
  *    - for more details see relbase_profile function
  *    - uses only a single zone on the disk
@@ -602,8 +588,9 @@ void free_cached_tables() {
 
   free_specCache(global_spec_cache);
 
-  free(global_ener_std);
-  // free(global_ener_xill); // TODO, implement free of this global energy grid
+  // TODO, implement free of this global energy grid
+  //free(global_energy_grid_relxill);
+  // free(global_ener_xill);
 
 }
 

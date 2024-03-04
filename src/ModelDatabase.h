@@ -21,7 +21,7 @@
 
 #include <typeinfo>
 #include <utility>
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 #include "ModelInfo.h"
 
 #include "xspec_wrapper_lmodels.h"

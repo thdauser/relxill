@@ -20,6 +20,7 @@
 #define RELXILL_RELRETURN_C_RELRETURN_CORONA_H_
 
 #include "Relreturn_Datastruct.h"
+#include "IonGradient.h"
 
 extern "C" {
 #include "common.h"
@@ -31,7 +32,7 @@ emisProfile *calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
 double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, double gamma);
 
 rradCorrFactors *init_rrad_corr_factors(const double *rlo, const double *rhi, int n_zones);
-rradCorrFactors *init_rrad_corr_factors(const double *rgrid, int n_zones);
+rradCorrFactors *init_rrad_corr_factors(const RadialGrid &rgrid);
 
 rradCorrFactors* rebin_corrfactors_to_rradtable_grid
     (rradCorrFactors* input_corr_factors, returningFractions* ret_fractions, int* status);

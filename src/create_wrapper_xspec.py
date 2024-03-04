@@ -208,7 +208,7 @@ def get_implemented_lmod(local_model_name, param_list):
 def write_class_definition(file):
     class_definition_cpp = """
 
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 
 class XspecParamList: public ParamList {
 

@@ -116,7 +116,7 @@ void getLogGrid(double *ener, int n_ener, double emin, double emax);
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener);
 
-/** rebin spectrum to a given energy grid length of ener is nbins+1       **/
+/** rebin spectrum to a given energy grid length of ener is num_flux_bins+1       **/
 void rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
 
 /** get the relxill table path (dynamically from env variable)  **/
@@ -154,6 +154,8 @@ EnerGrid *new_EnerGrid(int *status);
 TestSpectrum *new_Spectrum(int *status);
 void free_Spectrum(TestSpectrum **spec);
 TestSpectrum *getNewSpec(double emin, double emax, int nbins, int *status);
+
+double get_env_otherwise_default(const char *env, double def_value);
 
 int shouldOutfilesBeWritten(void);
 

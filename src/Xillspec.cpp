@@ -26,6 +26,8 @@ extern "C" {
 }
 
 EnerGrid *global_xill_egrid_coarse = nullptr;
+EnerGrid *global_energy_grid_relxill = nullptr;
+
 
 /** @brief main routine for the xillver table: returns a spectrum for the given parameters
  *  @details
@@ -36,6 +38,23 @@ EnerGrid *global_xill_egrid_coarse = nullptr;
  * @param status
  * @return xillSpec
  */
+
+
+
+EnerGrid *get_relxill_conv_energy_grid() {
+  if (global_energy_grid_relxill == nullptr) {
+    global_energy_grid_relxill = new EnerGrid;
+    global_energy_grid_relxill->nbins = N_ENER_CONV;
+    global_energy_grid_relxill->ener = new double[global_energy_grid_relxill->nbins + 1];
+    get_log_grid(global_energy_grid_relxill->ener, global_energy_grid_relxill->nbins + 1,
+                 EMIN_RELXILL_CONV, EMAX_RELXILL_CONV);
+  }
+
+  return global_energy_grid_relxill;
+}
+
+
+
 xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);
@@ -142,17 +161,17 @@ static double get_photon_flux_band(const double *ener,
   return sum;
 }
 
-EnerGrid *get_coarse_xillver_energrid(int *status) {
-  CHECK_STATUS_RET(*status, nullptr);
+
+
+EnerGrid *get_coarse_xillver_energrid() {
 
   if (global_xill_egrid_coarse == nullptr) {
-    global_xill_egrid_coarse = new_EnerGrid(status);
+    global_xill_egrid_coarse = new EnerGrid ; // new_EnerGrid(status);
     global_xill_egrid_coarse->nbins = N_ENER_COARSE;
     global_xill_egrid_coarse->ener = new double[global_xill_egrid_coarse->nbins + 1];
     get_log_grid(global_xill_egrid_coarse->ener, global_xill_egrid_coarse->nbins + 1,
                  EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION);
   }
-  CHECK_STATUS_RET(*status, nullptr);
 
   return global_xill_egrid_coarse;
 }
@@ -285,7 +304,7 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
 
   // need to create a specific energy grid for the primary component normalization to
   // fulfill the XILLVER NORM condition (Dauser+2016)
-  EnerGrid *egrid = get_coarse_xillver_energrid(status);
+  EnerGrid *egrid = get_coarse_xillver_energrid();
   auto prim_spec_source = new double[egrid->nbins];
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, status);
 
@@ -327,7 +346,7 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
 
   // use a coarser energy grid to evaluate the direct spectrum, as we are only interested
   // in the total flux in the band
-  auto egrid_coarse = get_coarse_xillver_energrid(status);
+  auto egrid_coarse = get_coarse_xillver_energrid();
   auto direct_spec =
       calc_normalized_primary_spectrum(egrid_coarse->ener, egrid_coarse->nbins,
                                        nullptr, xill_table_param, status);
@@ -354,7 +373,7 @@ double get_xillver_fluxcorr(double *flu, const double *ener, int n_ener,
 double calc_xillver_normalization_change(double energy_shift, const xillTableParam *xill_param_0) {
 
   int status = EXIT_SUCCESS;
-  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid();
   auto prime_spec = new double[egrid->nbins];
 
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
@@ -391,7 +410,7 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
                                                          const xillTableParam *xill_param_0) {
 
   int status = EXIT_SUCCESS;
-  EnerGrid *egrid = get_coarse_xillver_energrid(&status);
+  EnerGrid *egrid = get_coarse_xillver_energrid();
   auto prime_spec = new double[egrid->nbins];
 
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);

@@ -43,12 +43,8 @@ inpar *set_input_syspar(const relParam *rel_par, int *status) {
   return inp;
 }
 
-int are_values_different(double val1, double val2) {
-  if (fabs(val1 - val2) <= CACHE_LIMIT) {
-    return 0;
-  } else {
-    return 1;
-  }
+bool are_values_different(double val1, double val2) {
+  return fabs(val1 - val2) > CACHE_LIMIT;
 }
 
 static int comp_sys_param(const relParam *cpar, const relParam *par) {
@@ -209,7 +205,7 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
 
   (*ca_xill_param)->distance = par->distance;
   (*ca_xill_param)->mass_msolar = par->mass_msolar;
-  (*ca_xill_param)->norm_flux_cgs = par->norm_flux_cgs;
+  (*ca_xill_param)->luminosity_primary_source = par->luminosity_primary_source;
 
   (*ca_xill_param)->prim_type = par->prim_type;
   (*ca_xill_param)->model_type = par->model_type;
@@ -533,3 +529,4 @@ int is_relbase_cached(cache_info *self) {
 int is_cached(cache_info *self) {
   return self->relcache + self->xilcache;
 }
+

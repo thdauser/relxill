@@ -18,8 +18,11 @@
 #ifndef RELCACHE_H_
 #define RELCACHE_H_
 
-#include "ModelParams.h"
+#include "ModelDefinition.h"
+#include "Xillspec.h"
 #include <deque>
+#include <utility>
+#include "Xillspec.h"
 
 extern "C" {
 #include "common.h"
@@ -30,7 +33,8 @@ extern "C" {
 
 /****** TYPEDEF******/
 
-#define CLI_NMAX 10
+#define CLI_NMAX 50
+#define RELXILL_CACHE_SIZE 50
 
 typedef struct cdata {
 
@@ -69,7 +73,7 @@ typedef struct inpar {
 inpar *get_inputvals_struct(double *ener, int n_ener, const relParam *rel_par, int *status);
 inpar *set_input_syspar(const relParam *rel_par, int *status);
 
-int are_values_different(double val1, double val2);
+bool are_values_different(double val1, double val2);
 
 /** create a caching node **/
 cnode *cli_create(cdata *data, cnode *next, int *status);
@@ -106,55 +110,145 @@ int is_cached(cache_info *self);
 void free_cnode(cnode **node);
 
 
-/*
-class Cache{
+class RelxillSpec : public Spectrum {
 
-  explicit Cache(ModelParams model_params) : m_model_params{model_params}
-  {};
+ public:
+  RelxillSpec() : Spectrum(get_relxill_conv_energy_grid()->ener, get_relxill_conv_energy_grid()->nbins) {}
+
+  explicit RelxillSpec(double *_flux) : RelxillSpec() {
+    copy_flux(_flux);
+  }
+
+  // delete copy and move assignment constructor
+  RelxillSpec &operator=(const RelxillSpec &other) = delete;
+
+  RelxillSpec &operator=(const RelxillSpec &&other) = delete;
+
+  // derived from the base class
+  RelxillSpec(const RelxillSpec &inst) = default;
+
+  RelxillSpec(RelxillSpec &&inst) = default;
+};
 
 
-  bool operator==(const Cache& _comp_cache){
-    auto parnames = m_model_params.get_parnames();
+class RelxillCacheElement {
+
+
+ public:
+  auto operator==(const RelxillCacheElement &_comp_cache) -> bool {
+    auto parnames = m_model_definition.get_parnames();
+
+    if (m_model_definition.get_model_name() != _comp_cache.m_model_definition.get_model_name()) {
+      return false;
+    }
 
      for(auto par=parnames.begin(); par!=parnames.cend(); ++par ) {
-       if (are_values_different( m_model_params.get_par(*par), _comp_cache.m_model_params.get_par(*par) ) == 0){
+       if (are_values_different(m_model_definition.get_par(*par), _comp_cache.m_model_definition.get_par(*par))) {
          return false;
        }
      }
      return true;
   }
 
+  bool model_params_identical(const ModelDefinition &_model_definition) {
+
+    if (m_model_definition.get_model_name() != _model_definition.get_model_name()) {
+      return false;
+    }
+
+    auto parnames = m_model_definition.get_parnames();
+    for (auto par = parnames.begin(); par != parnames.cend(); ++par) {
+      if (are_values_different(m_model_definition.get_par(*par), _model_definition.get_par(*par))) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  explicit RelxillCacheElement(ModelDefinition _model_definition, RelxillSpec _spec)
+      : m_model_definition{_model_definition}, spec{(_spec)} {}
+
+
  private:
-  ModelParams m_model_params;
-
-};
-
-class PrimarySourceCache: Cache{
-
+  ModelDefinition m_model_definition;
+ public:
+  const RelxillSpec spec;
 
 
 };
 
-class CacheStorage{
+
+class RelxillCache {
 
  public:
 
-  CacheStorage(size_t _max_size) : max_size{_max_size}
-  {};
 
-  void add(Cache _cache){
-    if (m_cache.size() > max_size){
-      m_cache.pop_front();
-    }
-    m_cache.push_back(_cache);
+  /**
+ * use this instance to always and securely access the database, without
+ * needing to initialize it anywhere else
+ * @return ModelDatabase
+ */
+  static RelxillCache &instance() {
+    static auto *instance = new RelxillCache(RELXILL_CACHE_SIZE);
+    return *instance;
   }
 
+
+  void add(ModelDefinition _model_definition, RelxillSpec _spec) {
+
+    if (m_cache.size() > max_size){
+      m_cache.pop_back();
+    }
+    m_cache.emplace_front(_model_definition, _spec);
+
+    if (is_debug_run() != 0) {
+      printf(" Relxill Cache: added element, current size is %zu \n", m_cache.size());
+    }
+  }
+
+  // empty the cache
+  void empty() {
+    while (!m_cache.empty()) {
+      m_cache.pop_front();
+    }
+  }
+
+  // get the size of the cache
+  size_t size() {
+    return m_cache.size();
+  }
+
+  [[nodiscard]] std::pair<bool, RelxillSpec> find_spec_pair(const ModelDefinition &_params) const {
+
+    for (auto elem: m_cache) {
+      if (elem.model_params_identical(_params)) {
+        auto pair = std::make_pair(true, elem.spec);
+        return pair;
+      }
+    }
+    auto pair = std::make_pair(false, RelxillSpec());
+    return pair;
+  }
+
+  [[nodiscard]] static RelxillSpec get_spec(const std::pair<bool, RelxillSpec> &cache_elem_pair) {
+    return cache_elem_pair.second;
+  }
+
+  static bool is_cached(const std::pair<bool, RelxillSpec> &cache_elem_pair) {
+    if ((shouldOutfilesBeWritten() != 0) || (shouldAuxInfoGetPrinted() != 0) ) {
+      return false;
+    }
+    return cache_elem_pair.first;
+  }
+
+
  private:
-  std::deque<Cache> m_cache;
+  explicit RelxillCache(size_t _max_size) : max_size{_max_size} {};
+
+  std::deque<RelxillCacheElement> m_cache;
   size_t max_size;
 };
-
- */
 
 
 #endif /* RELCACHE_H_ */

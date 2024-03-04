@@ -16,10 +16,11 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "ModelParams.h"
+#include "ModelDefinition.h"
 #include "ModelDatabase.h"
 #include "Relphysics.h"
-int get_iongrad_type(const ModelParams &params);
+
+int get_iongrad_type(const ModelDefinition &params);
 extern "C" {
 #include "relutility.h"
 }
@@ -118,8 +119,7 @@ const double *get_xspec_default_parameter_array(ModelName model_name) {
 }
 
 
-
-static int get_returnrad_switch(const ModelParams& model_params){
+static int get_returnrad_switch(const ModelDefinition &model_params) {
 
   // by default activated for Lamp Post, otherwise noe
   int default_switch = ( model_params.irradiation()==T_Irrad::LampPost) ? 1 : 0;
@@ -264,7 +264,7 @@ void check_parameter_bounds(relParam *param, int *status) {
 /**
  * @brief get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
-relParam *get_rel_params(const ModelParams &inp_param) {
+relParam *get_rel_params(const ModelDefinition &inp_param) {
 
   // if we have a xillver model, there are no "relativistic parameters"
   if (is_xill_model(convertModelType(inp_param.get_model_name()))) {
@@ -325,7 +325,7 @@ relParam *get_rel_params(const ModelParams &inp_param) {
 /**
  * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
-xillParam* get_xill_params(const ModelParams& inp_param) {
+xillParam *get_xill_params(const ModelDefinition &inp_param) {
   auto *param = new xillParam;
 
   param->model_type = convertModelType(inp_param.get_model_name());
@@ -356,7 +356,7 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
   // parameters for the relxilllpAlpha model (it has to be in xillParams, as a change there means the ionization gradient changes)
   param->distance = inp_param.get_otherwise_default(XPar::distance, 0.0);
   param->mass_msolar = inp_param.get_otherwise_default(XPar::mass, 0.0);
-  param->norm_flux_cgs = inp_param.get_otherwise_default(XPar::norm_flux_cgs, 0.0);
+  param->luminosity_primary_source = 1e38 * inp_param.get_otherwise_default(XPar::luminosity_source_1e38, 0.0);
 
   // those values should never be used, unless it is set by the model
   param->gam = inp_param.get_otherwise_default(XPar::gamma, 0);
@@ -374,8 +374,7 @@ xillParam* get_xill_params(const ModelParams& inp_param) {
 }
 
 
-
-int get_iongrad_type(const ModelParams &params) {
+int get_iongrad_type(const ModelDefinition &params) {
   if (params.get_model_name() == ModelName::relxilllpAlpha) {
     return ION_GRAD_TYPE_ALPHA;
   } else {

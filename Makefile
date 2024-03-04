@@ -57,7 +57,7 @@ model-compile:
 
 
 # using CMakeLists.txt Definitions to build and install the model files
-.PHONY: install, install-stable, install-source-files, build
+.PHONY: install,install-stable,install-source-files,clean-test,create-cmake-build
 
 install-stable: export RELXILL_STABLE=
 install-stable:
@@ -66,14 +66,14 @@ install-stable:
 install:
 	make install-source-files
 
-build:
+create-cmake-build:
 	mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR) && cmake ../
 	cd $(BUILD_DIR) && cmake --build .
 
 
 install-source-files:
-	make build
+	make create-cmake-build
 	cd $(BUILD_DIR) && cmake --install .
 
 
@@ -85,7 +85,9 @@ test:
 
 test-unit:
 	make install
+	make clean-test
 	bin/tests
+	make clean-test
 
 test-e2e:
 	cd test && make test
@@ -94,6 +96,8 @@ test-stable:
 	make model-stable
 	cd test && make test-stable
 
+clean-test:
+	rm -f __*dat test*dat
 
 clean:
 	rm -f *~ gmon.out test*.dat *.log
