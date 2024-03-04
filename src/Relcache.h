@@ -236,6 +236,9 @@ class RelxillCache {
   }
 
   static bool is_cached(const std::pair<bool, RelxillSpec> &cache_elem_pair) {
+    if ((shouldOutfilesBeWritten() != 0) || (shouldAuxInfoGetPrinted() != 0) ) {
+      return false;
+    }
     return cache_elem_pair.first;
   }
 
