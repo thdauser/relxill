@@ -57,7 +57,7 @@ model-compile:
 
 
 # using CMakeLists.txt Definitions to build and install the model files
-.PHONY: install,install-stable,install-source-files,build,clean-test
+.PHONY: install,install-stable,install-source-files,clean-test,create-cmake-build
 
 install-stable: export RELXILL_STABLE=
 install-stable:
@@ -66,14 +66,14 @@ install-stable:
 install:
 	make install-source-files
 
-build:
+create-cmake-build:
 	mkdir -p $(BUILD_DIR)
 	cd $(BUILD_DIR) && cmake ../
 	cd $(BUILD_DIR) && cmake --build .
 
 
 install-source-files:
-	make build
+	make create-cmake-build
 	cd $(BUILD_DIR) && cmake --install .
 
 
