@@ -86,10 +86,8 @@ define check_caching_single(ff,par){ %{{{
    
    %% make sure values of the table are loaded before such that we do
    %% not count the loading of the table as well here
-   foreach v(vals){
-      set_par(p.name,v);
-      () = eval_fun_keV(lo0,hi0);
-   }
+   set_par(p.name,vals[-1]);
+   () = eval_fun_keV(lo0,hi0);
    
    variable val_ncache = Array_Type[N];				      
    variable val0_cache = Array_Type[N];				      
