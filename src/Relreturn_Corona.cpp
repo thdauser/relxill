@@ -296,11 +296,9 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   determine_rlo_rhi(emis_input, &rlo_emis, &rhi_emis);
 
   returningFractions *ret_fractions = get_rrad_fractions(param->a, rlo_emis, rhi_emis, status);
-
   emisProfile* emis_input_rebinned = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emis_return
   inv_rebin_mean(emis_input->re, emis_input->emis, emis_input->nr,
                  emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
-
 
   rradCorrFactors* rrad_corr_factors =
       rebin_corrfactors_to_rradtable_grid(param->rrad_corr_factors, ret_fractions, status);

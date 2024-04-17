@@ -92,8 +92,8 @@ double emissivity_newton(double r, double height, double d) {
  * @param fptr pointer, to the fits file location
  * @param n_h integer, number of heights simulated
  * @param n_distance integer, number of distances simulated
- * @param n_rad integer, number of (radial bins??)
- * @param n_storage integer, number of (what a storage??). Used only to read the fifth column
+ * @param n_rad integer, number of radial bins
+ * @param n_storage integer, number of energyshift storage bins. Used only to read the fifth column with shift
  * @param spin double, spin value of the source
  * @return extendedSourceData, data from the table
  */
@@ -129,6 +129,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
                     &anynullptr, status);
 
       for (int kk = 0; kk < n_rad; kk++){
+        assert(dat->flux[ii][jj][kk] >= 0.0);
         fits_read_col(fptr, TDOUBLE, 5, irow, kk*n_storage+1, n_storage, &doublenullptr, dat->energy_data_storage[ii][jj][kk],
                       &anynullptr, status);
       }
@@ -146,28 +147,24 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
       // checked - loaded correctly (at least for n_h == n_distance)
     }
   }
+  /*
+   double *r = dat->radius;
+   ////  add correction to flux - important that it is done here and not in the post-proc script before the extended table is stored
+   /// note however that the energy shift g^Gamma is not added here - its added below in interpol_estable function
 
-  double *r = dat->radius;
+   double result;
+   for (int i=0; i<n_h; i++) {
+     for (int j=0; j<n_distance; j++) {
+       //normalize_emissivity(dat->flux[i][j], r, (dat->height[i]), (dat->d_ring[i][j]), n_rad);
 
+       for (int k=0; k<n_rad; k++){
+         result = area_kerr(r[k],spin)*gamma_correction(r[k],spin);
+         dat->flux[i][j][k] *= area_flat(r[k])/result;
+       }
 
-
-
-  ////  add correction to flux - important that it is done here and not in the post-proc script before the extended table is stored
-  /// note however that the energy shift g^Gamma is not added here - its added below in interpol_estable function
- /*
-  double result;
-  for (int i=0; i<n_h; i++) {
-    for (int j=0; j<n_distance; j++) {
-      //normalize_emissivity(dat->flux[i][j], r, (dat->height[i]), (dat->d_ring[i][j]), n_rad);
-
-      for (int k=0; k<n_rad; k++){
-        result = area_kerr(r[k],spin)*gamma_correction(r[k],spin);
-        dat->flux[i][j][k] *= area_flat(r[k])/result;
-      }
-
-    }
-  }
- */
+     }
+   }
+  */
   return dat;
 }
 
@@ -291,7 +288,6 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
   // printf("call get emis\n");
   extendedSourceTable* estable = get_es_table(status);
   calc_extended_emis(emis, param, estable, status);
-
 }
 
 
@@ -338,7 +334,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
     // first read the spin axes of the table AND move to the correct extension
     printf("************************\n");
-    printf("filename : %s\n", fullfilename);
+    // printf("filename : %s\n", fullfilename);
 
 
     get_extendedsourcetable_spin(tab->n_a, &(tab->a) , fptr, status);
@@ -394,8 +390,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 
   emisProfile *emis_profile_table = interpol_estable(
       param->a, param->height, param->d_ring, param->gamma, ESTABLE_NENERGYBINS, tab, status);
-
-  rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
+   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile
   free_emisProfile(emis_profile_table);
@@ -410,18 +405,16 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 //    }
 //  }
  // AN: not used as far as I see from other routines?
-  emisProf->normFactorPrimSpec = 0.0;
-      //=calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
+  // emisProf->normFactorPrimSpec = calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
 }
 
 
 /**
- * @brief Interpolation of the table (not clear yet)
+ * @brief Interpolation of the table between spins
  * @details
  * @param a; double, spin
  * @param height; double, height
- * @param distance; double, distance - is it a distance to the observer or to the source (d_ring)? Very important, because there are two different parameters
- * I think that here should be d_ring, not distance.
+ * @param distance; double, distance - d_ring
  * @param gamma; double, photon index
  * @param n_gshift_storage; int, number of energy shift bins
  * @param tab; extendedSourceTable, pointer to the table as declared above
@@ -435,6 +428,11 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
   int ind_a;
   double ifac_a;
   get_ipol_factor((float) a, tab->a, tab->n_a, &ind_a, &ifac_a);
+
+  // assert(ifac_a >= 0.0 && ifac_a <= 1.0);
+  if (ifac_a < 0.0 or ifac_a > 1.0){
+    printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ifac_a);
+  }
 
   extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
@@ -451,6 +449,11 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
 
   for (int ii = 0; ii < 2; ii++) {
     get_ipol_factor_double(height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]), &(ifac_h[ii]));
+
+    //assert(ifac_h[ii] >= 0.0 && ifac_h[ii] <= 1.0);
+    if (ifac_h[ii] < 0.0 or ifac_h[ii] > 1.0){
+      printf(" *** Warning : height interpolation becomes extrapolation: ifac_h = %.1f \n", ifac_h[ii]);
+    }
   }
 
   int ind_d[2];
@@ -459,11 +462,18 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
     int index;
     // ad hoc solution to solve issue with false choosing of distance value
     if (ifac_h[ii] > 0.999999) {
+      printf(" *** Height interpolation close to table value: ifac_h = %.1f \n", ifac_h[ii]);
       index = ind_h[ii] + 1;
     } else {
       index = ind_h[ii];
     }
     get_ipol_factor_double(d_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
+    //printf("interpolation factor distance, index distance: %e %d\n", ifac_d[ii], ind_d[ii]);
+    //printf("distance values interp and table: %e %e \n", d_ring, dat_ind_a[ii]->d_ring[index][ind_d[ii]]);
+    //assert(ifac_d[ii] >= -1.0 && ifac_d[ii] <= 1.0);
+    if (ifac_d[ii] < 0.0 or ifac_d[ii] > 1.0){
+      printf(" *** Warning : dist interpolation becomes extrapolation: ifac_d = %.1f \n", ifac_d[ii]);
+    }
   }
 
   // determines the gshift for the two spin values required for
@@ -499,8 +509,8 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
 
 /**
  *
- * @brief Interpolates values in height-distance plane
- * @details (if I understand correctly)
+ * @brief Interpolates values in height-distance space for a given spin (already interpolated)
+ * @details
  * @param emis_profile_table; emisProfile, pointer to the structure containing emissivity profile table
  * @param ifac_a; double, interpolated? factor? for spin
  * @param ifac_h; const double, pointer to interpolated? factor? for height
@@ -534,6 +544,7 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                dat_a[1]->flux[ind_h[1]+1][ind_d[1]][ii],
                                dat_a[1]->flux[ind_h[1]+1][ind_d[1]+1][ii]);
     emis_profile_table->emis[ii] = interp_lin_1d(ifac_a, rlo, rhi);
+    /*
     // Interpolation for the energy shift which is then immediately added to flux
     double flo = interp_lin_2d(ifac_d[0], // does h-d interpolation for spin[ind_a]
                                ifac_h[0],
@@ -547,7 +558,7 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                dat_a[1]->gshift[ind_h[1]][ind_d[1]+1][ii],
                                dat_a[1]->gshift[ind_h[1]+1][ind_d[1]][ii],
                                dat_a[1]->gshift[ind_h[1]+1][ind_d[1]+1][ii]);
-
+    */
     // HOWEVER THE ENERGY SHIFT IS ALREADY TAKEN TO THE POWER OF GAMMA
     // NO NEED TO RAISE TO THE POWER HERE
     // emis_profile_table->emis[ii] *= interp_lin_1d(ifac_a, flo, fhi); // this line accounts for g^Gamma actually

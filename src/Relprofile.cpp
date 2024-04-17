@@ -334,7 +334,6 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
     // get emissivity profile
     sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
     CHECK_STATUS_RET(*status, nullptr);
-
     // now add (i.e., prepend) the current calculation to the cache
     set_cache_syspar(&cache_syspar, param, sysPar, status);
 
@@ -919,7 +918,6 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
                     sqrt(da->gstar[jj] - da->gstar[jj] * da->gstar[jj]) *
                     da->trff[jj][kk] * da->emis
                     * weight * sysPar->d_gstar[jj];
-
             // this catches if "tmp" is NaN
             if (tmp != tmp) {
               printf(" *** error in function calc_relline_profile (NaN) *** \n");
