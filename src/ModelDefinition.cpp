@@ -239,50 +239,31 @@ void check_parameter_bounds(relParam *param, int *status) {
       param->beta = 0.99;
     }
   }
-
-  /** check height and ring size values (only applies to EXT emissivity) **/
+  /** check height values (only applies to LP emissivity **/
   if (param->emis_type == EMIS_TYPE_LP) {
+    setNegativeHeightToRplus(&(param->height), param->a);
+    setNegativeHeightToRplus(&(param->htop), param->a);
+    double r_event = kerr_rplus(param->a);
+    double h_fac = 1.1;
+    /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->model_type == MOD_TYPE_RELXILLLPEXT) {
-      setNegativeHeightToRplus(&(param->height), param->a);
-      setNegativeHeightToRplus(&(param->htop), param->a);
-
-      double h_fac = 1.6; // current table version extends down to 1.2 r_EH, but extends without messed up values only to 1.5 EH
-      double r_event = kerr_rplus(param->a);
-      if ((h_fac * r_event - param->height) > 1e-4) {
-        if (!warned_height) {
-          printf(" *** Warning : Ring source too close to the black hole (h < %.1f r_event) \n", h_fac);
-          printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
-                 h_fac);
-          printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
-          printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
-          warned_height = 1;
-        }
-        param->height = r_event * h_fac;
-      }
+      h_fac = 1.6; // current table_v4.fits version for extended emissivity extends down to 1.1 r_EH, but extends without messed up values only to 1.5-1.6 EH
       if (param->r_ring < 0.0) {
           printf(" *** Warning : Ring source cannot have negative size (d < %.1f r_event) \n", 0.0);
           printf("      Setting    r_ring = 0.0 \n");
         param->r_ring = 0.0;
       }
     }
-    /** check height values (only applies to LP emissivity **/
-    else {
-      setNegativeHeightToRplus(&(param->height), param->a);
-      setNegativeHeightToRplus(&(param->htop), param->a);
-
-      double h_fac = 1.1;
-      double r_event = kerr_rplus(param->a);
-      if ((h_fac * r_event - param->height) > 1e-4) {
-        if (!warned_height) {
-          printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
-          printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
-                 h_fac);
-          printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
-          printf("      Setting    h =  1.1*r_event  = %.3f \n", r_event * h_fac);
-          warned_height = 1;
-        }
-        param->height = r_event * h_fac;
+    if ((h_fac * r_event - param->height) > 1e-4) {
+      if (!warned_height) {
+        printf(" *** Warning : Lamp post/ring source too close to the black hole (h < %.1f r_event) \n", h_fac);
+        printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
+               h_fac);
+        printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
+        printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
+        warned_height = 1;
       }
+      param->height = r_event * h_fac;
     }
   }
 }
