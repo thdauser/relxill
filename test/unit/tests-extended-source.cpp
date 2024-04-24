@@ -44,10 +44,12 @@ DefaultSpec default_spec{};
   double height = 2.0;
   double dist = 20.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::d_ring, dist);
+  local_model.set_par(XPar::r_ring, dist);
 
   local_model.eval_model(spec);
 /*
+ *  ONLY FOR LOCAL USAGE
+ *
   int n_bins = spec.num_flux_bins();
   double *flux = spec.flux;
   double *energy = spec.energy;
@@ -72,7 +74,7 @@ TEST_CASE("Xspec line model call Test", "[extended]") {
   // int status = EXIT_SUCCESS;
 
   LocalModel local_model{ModelName::relline_lp_ext};
-  local_model.set_par(XPar::d_ring, 5.0);
+  local_model.set_par(XPar::r_ring, 5.0);
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
@@ -81,7 +83,7 @@ TEST_CASE("Xspec line model call Test", "[extended]") {
 }
 
 
-TEST_CASE("Default relxill model call  Test", "[extended]") {
+TEST_CASE("Default relxill model call Test", "[extended]") {
 
   // int status = EXIT_SUCCESS;
 
@@ -92,27 +94,27 @@ TEST_CASE("Default relxill model call  Test", "[extended]") {
   double height = 2.0;
   double dist = 20.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::d_ring, dist);
+  local_model.set_par(XPar::r_ring, dist);
 
   local_model.eval_model(spec);
-  /*
-  int n_bins = spec.num_flux_bins();
-  double *flux = spec.flux;
-  double *energy = spec.energy;
-
-    string strname = "/home/nekrasov/git/tables/test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
-    char *foutName = new char[999];
-    strcpy(foutName, strname.c_str());
-    FILE *fp = fopen(foutName, "w+");
-    if (fp != nullptr) {
-      for (int ii = 0; ii < n_bins; ii++) {
-        fprintf(fp, " %e \t %e \n", energy[ii], flux[ii]);
-      }
-    }
-  fclose(fp);
-  */
 }
 
+
+TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
+
+  // int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  LocalModel local_model{ModelName::relxilllpCp_ext};
+  double height = 2.0;
+  double dist = 20.0;
+  local_model.set_par(XPar::h, height);
+  local_model.set_par(XPar::r_ring, dist);
+
+  local_model.eval_model(spec);
+}
 
 
 TEST_CASE("Test to compare lp and ext", "[extended]") {
@@ -144,7 +146,7 @@ TEST_CASE("Test to compare lp and ext", "[extended]") {
   // (rel_param).distance = 2.0;
   rel_param_ext->a = 0.998;
   rel_param_ext->height = 3.0;
-  rel_param_ext->d_ring = 0.1;
+  rel_param_ext->r_ring = 0.1;
   rel_param_ext->emis1 = 3.0;
   rel_param_ext->emis2 = 3.0;
   rel_param_ext->rbr = 30.0;
@@ -153,27 +155,6 @@ TEST_CASE("Test to compare lp and ext", "[extended]") {
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
   local_model_ext.eval_model(spec);
 
-  /*
-  int n_rad = sys_par->nr;
-  double *rad = sys_par->re;
-  double *intens = sys_par->emis->emis;
-  int n_rad_ext = sys_par_ext->nr;
-  double *rad_ext = sys_par_ext->re;
-  double *intens_ext = sys_par_ext->emis->emis;
-
-  double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
-
-  string strname = "/home/nekrasov/analysis/test-ext-emis-d" + std::to_string(rel_param_ext->d_ring) + ".dat";
-  char *foutName = new char[999];
-  strcpy(foutName, strname.c_str());
-  FILE *fp = fopen(foutName, "w+");
-  if (fp != nullptr) {
-    for (int ii = 0; ii < n_rad; ii++) {
-      fprintf(fp, " %e \t %e \t %e \t %e \t %e \n", rad[ii], intens[ii], rad_ext[ii], intens_ext[ii], intens[ii] / intens_ext[ii] / intens[200] * intens_ext[200]);
-    }
-  }
-  fclose(fp);
-  */
 }
 
 
@@ -212,7 +193,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
 
   rel_param_ext->a = 0.998;
   rel_param_ext->height = 2.0;
-  rel_param_ext->d_ring = 1.01; // setting some manual distance
+  rel_param_ext->r_ring = 1.01; // setting some manual distance
  // rel_param_ext->rout= 1000.0;
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
 
@@ -230,7 +211,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
 
 
 TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
-
+  // not functional yet. Working, but not doing what desired
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
@@ -257,7 +238,7 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
 
   rel_param_ext->a = 0.998;
   rel_param_ext->height = 30.0;
-  rel_param_ext->d_ring = 0.0;
+  rel_param_ext->r_ring = 0.0;
   //rel_param_ext->rin = kerr_rms(rel_param_ext->a);
   //rel_param_ext->rout = 1000.0;
   //rel_param_ext->emis1 = 3.0;
@@ -302,7 +283,7 @@ TEST_CASE("Test to compare lp and ext emissivities for several heights ", "[exte
   LocalModel local_model_ext{ModelName::relxilllp_ext};
   auto spec_ext = default_spec.get_xspec_spectrum();
   local_model_ext.set_par(XPar::h, 2.0);
-  local_model_ext.set_par(XPar::d_ring, 10.0);
+  local_model_ext.set_par(XPar::r_ring, 10.0);
   REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 
 
@@ -314,7 +295,7 @@ TEST_CASE("Test to compare lp and ext emissivities for several heights ", "[exte
 }
 
 
-TEST_CASE(" Test setting input parameters for extended source outside the allowed range","[text]") {
+TEST_CASE(" Test setting input parameters for extended source outside the allowed range","[extended]") {
 
   DefaultSpec default_spec{};
 
@@ -324,7 +305,7 @@ TEST_CASE(" Test setting input parameters for extended source outside the allowe
 
   double height_below_horizon = 0.9;
   lmod.set_par(XPar::h, height_below_horizon);
-  lmod.set_par(XPar::d_ring, 0.01);
+  lmod.set_par(XPar::r_ring, 0.01);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 

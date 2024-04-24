@@ -197,7 +197,7 @@ typedef struct {
   double lineE;
   double z;
   double height;
-  double d_ring;
+  double r_ring;
   double htop;
   double gamma;
   double beta;

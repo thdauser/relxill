@@ -141,8 +141,8 @@ double calc_g_inf_ext(double height, double theta, double d, double a) {
   double Delta = r * r - 2.0 * r + a * a;
   double rho_squared = (r * r + a * a) * (r * r + a * a) - a * a * Delta * sin(theta) * sin(theta);
   double omega = 2.0 * a * r / rho_squared;
-  double corr_factor = 1.0 - (1.0 / (pow(d, 1.5) + a) - omega) * rho_squared * 2.0 * a * r * sin(theta) * sin(theta) / Sigma / Sigma / Delta;
-  //printf("corr_factor = %e \n", corr_factor);
+  // double corr_factor = 1.0 - (1.0 / (pow(d, 1.5) + a) - omega) * rho_squared * 2.0 * a * r * sin(theta) * sin(theta) / Sigma / Sigma / Delta;
+  // printf("corr_factor = %e \n", corr_factor);
 
   return sqrt(1.0 - (2 * height / (height * height + a * a))); //corr_factor *
 }
@@ -258,7 +258,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
   }
 
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
-    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->d_ring, rel_param->a);
+    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->r_ring, rel_param->a);
   }
   else {
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);

@@ -286,7 +286,7 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
 
 int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) && (fabs(param->d_ring) <= htopPrecLimit)) {
+  if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) && (fabs(param->r_ring) <= htopPrecLimit)) {
     return 1;
   } else {
     return 0;
@@ -295,7 +295,7 @@ int modelLampPostPointSource(const relParam *param) {
 
 int modelLampPostRingSource(const relParam *param) {
   const double radiusPrecLimit = 1e-3;
-  if ((fabs(param->d_ring) >= radiusPrecLimit)) {
+  if ((fabs(param->r_ring) >= radiusPrecLimit)) {
     return 1;
   } else {
     return 0;

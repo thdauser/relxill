@@ -44,6 +44,7 @@ int convertModelType(ModelName name) {
     case ModelName::relxilllp: return MOD_TYPE_RELXILLLP;
     case ModelName::relxilllp_ext: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpCp: return MOD_TYPE_RELXILLLP;
+    case ModelName::relxilllpCp_ext: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
     case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
     case ModelName::relxilllpionCp: return MOD_TYPE_RELXILLLPION;
@@ -258,10 +259,10 @@ void check_parameter_bounds(relParam *param, int *status) {
         }
         param->height = r_event * h_fac;
       }
-      if (param->d_ring < 0.0) {
+      if (param->r_ring < 0.0) {
           printf(" *** Warning : Ring source cannot have negative size (d < %.1f r_event) \n", 0.0);
-          printf("      Setting    d_ring = 0.0 \n");
-        param->d_ring = 0.0;
+          printf("      Setting    r_ring = 0.0 \n");
+        param->r_ring = 0.0;
       }
     }
     /** check height values (only applies to LP emissivity **/
@@ -319,7 +320,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  param->d_ring = inp_param.get_otherwise_default(XPar::d_ring, 0);
+  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 0);
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);

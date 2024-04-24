@@ -143,7 +143,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
 
       dat->refl_frac[ii][jj] = dat->f_ad[ii][jj]/dat->f_inf[ii][jj];
 
-      //printf("load single source function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e \t spin=%e \t height=%e \t dist=%e \n", dat->f_ad[ii][jj], dat->f_inf[ii][jj], dat->f_ad[ii][jj] / dat->f_inf[ii][jj], dat->refl_frac[ii][jj], spin, dat->height[ii], dat->d_ring[ii][jj]);
+      //printf("load single source function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e \t spin=%e \t height=%e \t dist=%e \n", dat->f_ad[ii][jj], dat->f_inf[ii][jj], dat->f_ad[ii][jj] / dat->f_inf[ii][jj], dat->refl_frac[ii][jj], spin, dat->height[ii], dat->r_ring[ii][jj]);
       // checked - loaded correctly (at least for n_h == n_distance)
     }
   }
@@ -155,7 +155,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
    double result;
    for (int i=0; i<n_h; i++) {
      for (int j=0; j<n_distance; j++) {
-       //normalize_emissivity(dat->flux[i][j], r, (dat->height[i]), (dat->d_ring[i][j]), n_rad);
+       //normalize_emissivity(dat->flux[i][j], r, (dat->height[i]), (dat->r_ring[i][j]), n_rad);
 
        for (int k=0; k<n_rad; k++){
          result = area_kerr(r[k],spin)*gamma_correction(r[k],spin);
@@ -210,7 +210,7 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
     } else {
       index = ind_h[ii];
     }
-    get_ipol_factor_double(param->d_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
+    get_ipol_factor_double(param->r_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
   }
 
 
@@ -389,7 +389,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   CHECK_STATUS_VOID(*status);
 
   emisProfile *emis_profile_table = interpol_estable(
-      param->a, param->height, param->d_ring, param->gamma, ESTABLE_NENERGYBINS, tab, status);
+      param->a, param->height, param->r_ring, param->gamma, ESTABLE_NENERGYBINS, tab, status);
    rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile
@@ -414,7 +414,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
  * @details
  * @param a; double, spin
  * @param height; double, height
- * @param distance; double, distance - d_ring
+ * @param distance; double, distance - r_ring
  * @param gamma; double, photon index
  * @param n_gshift_storage; int, number of energy shift bins
  * @param tab; extendedSourceTable, pointer to the table as declared above
@@ -469,7 +469,7 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
     }
     get_ipol_factor_double(d_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
     //printf("interpolation factor distance, index distance: %e %d\n", ifac_d[ii], ind_d[ii]);
-    //printf("distance values interp and table: %e %e \n", d_ring, dat_ind_a[ii]->d_ring[index][ind_d[ii]]);
+    //printf("distance values interp and table: %e %e \n", r_ring, dat_ind_a[ii]->r_ring[index][ind_d[ii]]);
     //assert(ifac_d[ii] >= -1.0 && ifac_d[ii] <= 1.0);
     if (ifac_d[ii] < 0.0 or ifac_d[ii] > 1.0){
       printf(" *** Warning : dist interpolation becomes extrapolation: ifac_d = %.1f \n", ifac_d[ii]);
