@@ -52,24 +52,24 @@ file endings are `.c .cpp .h`.
 
 ## Adding a new Model
 
-A new model is first and foremost defined by the `lmodel.dat` file. How such an entry 
+A new model is first and foremost defined by the `lmodel_*.dat` file. How such an entry 
 has to be structured is defined 
 in Xspec: https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 
-1)  First add the model to the `lmodel.dat` file. There are two version of the file contained in 
+1)  First add the model to the `lmodel_*.dat` file. There are two versions of the file contained in 
 `src/modelfiles`, a public (`lmodel_relxill_public.dat`) and a development (`lmodel_relxill_devel.dat`) one. 
 The difference is that only the public models are included in the official release of the relxill model and 
 therefore should only contain stable models with a stable interface.
 
-2) Any new parameters have to be added in `class XPar` and a default value defined  in 
-   `class XspecSingleLmodelDefinition` (ModelParams.h)
+2) Any new parameters have to be added in `class XPar` (ModelDefinition.h), structure `relParam` (common.h) and a default value defined  in 
+   `relParam *get_rel_params` (ModelDefinition.cpp)
 
-3) The new model name as to be added as to be added in the `class ModelName` (ModelInfo.h). 
+3) The new model name has to be added in the `class ModelName` (ModelInfo.h). 
    It is used to uniquely identify the model.
    
 4) Additionally, a unique model integer 
    value has to be defined in common.h (for example `#define MOD_TYPE_RELXILL 123`)  and 
-   linked to the model, by adding it to the function `int convertModelType(ModelName name)` in ModelParams.h
+   linked to the model, by adding it to the function `int convertModelType(ModelName name)` in ModelDefinition.cpp
    (*this part will soon be removed*).
 
 5) The final model is defined in `class ModelDatabase` (ModelDatabase.h), where the 
