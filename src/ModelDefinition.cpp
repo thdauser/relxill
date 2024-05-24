@@ -247,9 +247,9 @@ void check_parameter_bounds(relParam *param, int *status) {
     double h_fac = 1.1;
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->model_type == MOD_TYPE_RELXILLLPEXT) {
-      h_fac = 1.6; // current table_v4.fits version for extended emissivity extends down to 1.1 r_EH, but extends without messed up values only to 1.5-1.6 EH
+      h_fac = 1.2; // current table_v5.fits for extended emissivity extends down to 1.1 r_EH, but interpolation works without extrapolation only down to 1.2 EH
       if (param->r_ring < 0.0) {
-          printf(" *** Warning : Ring source cannot have negative size (d < %.1f r_event) \n", 0.0);
+          printf(" *** Warning : Ring source cannot have negative size (r < %.1f r_event) \n", 0.0);
           printf("      Setting    r_ring = 0.0 \n");
         param->r_ring = 0.0;
       }
