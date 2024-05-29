@@ -21,6 +21,7 @@
 #include "XspecSpectrum.h"
 #include "Relreturn_Corona.h"
 #include "PrimarySource.h"
+#include "ModelDefinition.h"
 
 #include <chrono>
 
@@ -43,6 +44,7 @@ void relxill_convolution_multizone(const RelxillSpec &relxill_spec,
                                    specCache *spec_cache,
                                    const CachingStatus &caching_status,
                                    int *status);
+
 
 
 /**
@@ -233,13 +235,58 @@ xillSpec **get_xillver_reflection_spectra(specCache *spec_cache,
 }
 
 
+
+
+
+bool do_renorm_relxill() {
+  if (is_env_set("RELXILL_RENORMALIZE", 0) == 1){
+    return true;
+  } else {
+    return false;
+  }
+}
+
+void renorm_relxill_spectrum_1keV(const Spectrum &spectrum) {
+
+  // normalize it to have 1 cts/sec/keV/cm2 at ref_value
+  double ref_value = 3.0;
+  int ind = binary_search(spectrum.energy(), spectrum.num_flux_bins, ref_value);
+
+  double dE = spectrum.energy()[ind+1] - spectrum.energy()[ind];
+  double norm_factor = 1.0 / (spectrum.flux[ind] / dE) ;  // flux is in cts/bin, need to convert it to cts/keV
+
+  spectrum.multiply_flux_by(norm_factor);
+}
+
+void rebin_spectrum(const XspecSpectrum &spectrum, const RelxillSpec &relxill_spec) {
+  _rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
+                  relxill_spec.energy(), relxill_spec.flux, relxill_spec.num_flux_bins);
+}
+
+// rebin to input energy grid (as given by Xspec)
+void rebin_and_normalize_relxill_for_xspec(const XspecSpectrum &spectrum, const RelxillSpec &relxill_spec) {
+
+  if (do_renorm_relxill()){
+    auto relxill_renorm_spec = RelxillSpec(relxill_spec.flux);
+    renorm_relxill_spectrum_1keV(relxill_renorm_spec);
+
+    rebin_spectrum(spectrum, relxill_renorm_spec);
+
+  } else {
+    rebin_spectrum(spectrum, relxill_spec);
+  }
+}
+
+
+
 ///////////////////////////////////////
 // MAIN: Relxill Kernel Function     //
 ///////////////////////////////////////
 
-/** @brief convolve a xillver spectrum with the relbase kernel
+
+/** @brief convolve a xillver xspec_spectrum with the relbase kernel
  */
-void relxill_kernel(const XspecSpectrum &spectrum,
+void relxill_kernel(const XspecSpectrum &xspec_spectrum,
                     const ModelDefinition &params,
                     int *status) {
 
@@ -263,7 +310,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     specCache *spec_cache = init_global_specCache(status);
     assert(spec_cache != nullptr);
 
-    auto caching_status = CachingStatus(rel_param, xill_param, spec_cache, spectrum);
+    auto caching_status = CachingStatus(rel_param, xill_param, spec_cache, xspec_spectrum);
 
     RelSysPar *sys_par = get_system_parameters(rel_param, status);
     auto primary_source = PrimarySource(params, sys_par);
@@ -320,10 +367,10 @@ void relxill_kernel(const XspecSpectrum &spectrum,
 
     // need to re-normalize the spectra due to the energy shift from the source to the disk
     // reason: xillver is defined on a fixed energy flux integrated from 0.1-1000keV (see Dauser+16, A1), therefore
-    // shifting ecut/kTe in energy will change the normalization of the primary spectrum, which was used to calculate
-    // the reflected spectrum. As the normalization of reflection is calculated for the normalized incident spectrum
-    // on the disk, we need to correct for the change in normalization, in order for the incident spectrum matching
-    // the normalization of the primary source spectrum
+    // shifting ecut/kTe in energy will change the normalization of the primary xspec_spectrum, which was used to calculate
+    // the reflected xspec_spectrum. As the normalization of reflection is calculated for the normalized incident xspec_spectrum
+    // on the disk, we need to correct for the change in normalization, in order for the incident xspec_spectrum matching
+    // the normalization of the primary source xspec_spectrum
 
     // we need to calculate the normalization change from disk to source, therefore calculate from source to disk and take
     // the inverse
@@ -347,7 +394,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
 
 
-    // add the primary source spectrum
+    // add the primary source xspec_spectrum
     primary_source.add_primary_spectrum(relxill_spec);
 
     RelxillCache::instance().add(params, relxill_spec);
@@ -355,9 +402,7 @@ void relxill_kernel(const XspecSpectrum &spectrum,
     delete xill_param;
   }
 
-  // rebin to input energy grid (as given by Xspec)
-  rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
-                 relxill_spec.energy(), relxill_spec.flux, relxill_spec.num_flux_bins);
+  rebin_and_normalize_relxill_for_xspec(xspec_spectrum, relxill_spec);
 
   if (is_debug_run()) {
     auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
@@ -411,8 +456,8 @@ void relxill_convolution_multizone(const RelxillSpec &relxill_spec,
       continue;
     }
 
-    rebin_spectrum(xill_rebinned_spec.energy(), xill_rebinned_spec.flux, xill_rebinned_spec.num_flux_bins,
-                   xill_spec_zones.energy(), xill_spec_zones.flux[izone], xill_spec_zones.num_flux_bins);
+    _rebin_spectrum(xill_rebinned_spec.energy(), xill_rebinned_spec.flux, xill_rebinned_spec.num_flux_bins,
+                    xill_spec_zones.energy(), xill_spec_zones.flux[izone], xill_spec_zones.num_flux_bins);
 
     // --2-- convolve the relxill_spec on the energy grid "ener_conv" **
     //       note, always recompute fft for xillver if any parameter changed, as m_cache_relat changes the angular distribution

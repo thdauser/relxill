@@ -465,7 +465,7 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
 
   auto flu_z = new double[n_ener];
 
-  rebin_spectrum(ener_z, flu_z, n_ener, ener, flu, n_ener);
+  _rebin_spectrum(ener_z, flu_z, n_ener, ener, flu, n_ener);
   for (int ii = 0; ii < n_ener; ii++) {
     flu_z[ii] *= gshift_refvalue;  // take time dilation into account (dE already taken into account as bin-integ)
   }
@@ -594,8 +594,8 @@ void get_xillver_angdep_spec(double *o_xill_flux,
 
   calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
 
-  rebin_spectrum(ener, o_xill_flux, n_ener,
-                 xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
+  _rebin_spectrum(ener, o_xill_flux, n_ener,
+                  xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
 
   delete[] xill_angdist_inp;
 

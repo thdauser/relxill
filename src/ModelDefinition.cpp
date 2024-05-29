@@ -21,6 +21,7 @@
 #include "Relphysics.h"
 
 int get_iongrad_type(const ModelDefinition &params);
+
 extern "C" {
 #include "relutility.h"
 }
@@ -116,6 +117,24 @@ const double *get_xspec_default_parameter_array(ModelName model_name) {
   return output_param_array;
 }
 
+/*
+ * returns 1 if the env is set to 1, otherwise return 0
+ */
+int is_env_set(const char* envname, int default_switch = 0) {
+
+  int value = default_switch;
+
+  char *env = getenv(envname);
+  if (env != nullptr) {
+    int value_switch = atof(env);
+    if (value_switch == 1 ) {
+      value = value_switch;
+    } else {
+      value = default_switch;
+    }
+  }
+  return value;
+}
 
 static int get_returnrad_switch(const ModelDefinition &model_params) {
 
@@ -123,19 +142,13 @@ static int get_returnrad_switch(const ModelDefinition &model_params) {
   int default_switch = ( model_params.irradiation()==T_Irrad::LampPost) ? 1 : 0;
 
   // if env is set, we use the value given there, it takes precedence over default values
-  char *env = getenv("RELXILL_RETURNRAD_SWITCH");
-  if (env != nullptr) {
-    int value_switch = atof(env);
-    if (value_switch == 1 ) {
-      default_switch = value_switch;
-    } else {
-      default_switch = 0; // set to zero for any other value
-    }
-  }
+  default_switch = is_env_set("RELXILL_RETURNRAD_SWITCH");
 
   // model parameter values take precedence over env variable
   return static_cast<int>(lround(model_params.get_otherwise_default(XPar::switch_switch_returnrad, default_switch)));
 }
+
+
 
 static void setNegativeRadiiToRisco(double *r, double a) {
   if (*r < 0) {

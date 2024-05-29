@@ -100,12 +100,12 @@ void init_std_relXill_spec(relline_spec_multizone **rel_profile, double **xill_s
   CHECK_MALLOC_VOID_STATUS(xill_flux, status)
 
   xillSpec *xill_spec_table = get_std_xill_spec(status);
-  rebin_spectrum((*rel_profile)->ener,
-                 xill_flux,
-                 (*rel_profile)->n_ener,
-                 xill_spec_table->ener,
-                 xill_spec_table->flu[0],
-                 xill_spec_table->n_ener);
+  _rebin_spectrum((*rel_profile)->ener,
+                  xill_flux,
+                  (*rel_profile)->n_ener,
+                  xill_spec_table->ener,
+                  xill_spec_table->flu[0],
+                  xill_spec_table->n_ener);
   *xill_spec_output = xill_flux;
 
 }
