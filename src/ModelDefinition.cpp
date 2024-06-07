@@ -138,14 +138,14 @@ int is_env_set(const char* envname, int default_switch = 0) {
 
 static int get_returnrad_switch(const ModelDefinition &model_params) {
 
-  // by default activated for Lamp Post, otherwise noe
+  // (1) by default activated for Lamp Post, otherwise noe
   int default_switch = ( model_params.irradiation()==T_Irrad::LampPost) ? 1 : 0;
 
-  // if env is set, we use the value given there, it takes precedence over default values
-  default_switch = is_env_set("RELXILL_RETURNRAD_SWITCH");
+  // (2) if env is set, we use the value given there, it takes precedence over default values
+  int value_switch = is_env_set("RELXILL_RETURNRAD_SWITCH", default_switch);
 
-  // model parameter values take precedence over env variable
-  return static_cast<int>(lround(model_params.get_otherwise_default(XPar::switch_switch_returnrad, default_switch)));
+  // (3) model parameter values take precedence over env variable
+  return static_cast<int>(lround(model_params.get_otherwise_default(XPar::switch_switch_returnrad, value_switch)));
 }
 
 
