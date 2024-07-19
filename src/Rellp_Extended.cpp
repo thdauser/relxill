@@ -149,7 +149,9 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
   }
   /*
    double *r = dat->radius;
-   ////  add correction to flux - important that it is done here and not in the post-proc script before the extended table is stored
+
+   ////  add correction to flux - important that it is done here and not in the post-proc script before the extended table is stored...
+   ///UPD later: Looks like someone outwitted himself - right now the extended table already takes into account the area and gamma corrections, but not energy shift.
    /// note however that the energy shift g^Gamma is not added here - its added below in interpol_estable function
 
    double result;
@@ -544,7 +546,7 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                dat_a[1]->flux[ind_h[1]+1][ind_d[1]][ii],
                                dat_a[1]->flux[ind_h[1]+1][ind_d[1]+1][ii]);
     emis_profile_table->emis[ii] = interp_lin_1d(ifac_a, rlo, rhi);
-    /*
+
     // Interpolation for the energy shift which is then immediately added to flux
     double flo = interp_lin_2d(ifac_d[0], // does h-d interpolation for spin[ind_a]
                                ifac_h[0],
@@ -558,13 +560,13 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                dat_a[1]->gshift[ind_h[1]][ind_d[1]+1][ii],
                                dat_a[1]->gshift[ind_h[1]+1][ind_d[1]][ii],
                                dat_a[1]->gshift[ind_h[1]+1][ind_d[1]+1][ii]);
-    */
-    // HOWEVER THE ENERGY SHIFT IS ALREADY TAKEN TO THE POWER OF GAMMA
-    // NO NEED TO RAISE TO THE POWER HERE
-    // emis_profile_table->emis[ii] *= interp_lin_1d(ifac_a, flo, fhi); // this line accounts for g^Gamma actually
 
-    emis_profile_table->del_emit[ii] = 0; // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
-    emis_profile_table->del_inc[ii] = 30 ; // AN: currently these values are not used for extended sources. They are supposed to be used only for refl_frac calculations,
+    // HOWEVER THE ENERGY SHIFT IS ALREADY TAKEN TO THE POWER OF GAMMA:
+    // NO NEED TO RAISE TO THE POWER HERE... UPD later: wrong! Strikethrough these two lines of comment!!!
+    emis_profile_table->emis[ii] *= interp_lin_1d(ifac_a, flo, fhi); // this line accounts for g^Gamma actually
+
+    //emis_profile_table->del_emit[ii] = 0; // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
+    //emis_profile_table->del_inc[ii] = 30 ; // AN: currently these values are not used for extended sources. They are supposed to be used only for refl_frac calculations,
     // which are calculated already in the input table for extended model
   }
 }
