@@ -263,6 +263,7 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
   // photons are not allowed to cross the disk plane
   if (str->f_inf > 0.5) {
     str->f_inf = 0.5;
+    printf("Rellp_Extended: inf fraction more than 0.5");
   }
   /// these are equal for now. f_inf_rest is used to calculate primary spectrum (function flux_boost_source_to_observer in PrimarySource.h)
   /// later maybe would be good to distinguish them correctly - AN
@@ -407,7 +408,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 //    }
 //  }
  // AN: not used as far as I see from other routines?
-  // emisProf->normFactorPrimSpec = calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
+ // emisProf->normFactorPrimSpec = calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
 }
 
 
@@ -486,11 +487,13 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
         double sum1 = 0.0;
         double sum2 = 0.0;
         for(int l=0; l < tab->n_storage ; l++){
-          sum1 += pow(tab->dat[ind_a]->energy_data_storage[i][j][k][l] / n_gshift_storage, gamma);
-          sum2 += pow(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l] / n_gshift_storage, gamma);
+          //sum1 += pow(tab->dat[ind_a]->energy_data_storage[i][j][k][l] / n_gshift_storage, gamma); - how it was
+          // why division by K = n_gshift_storage is here?? Shouldn't the whole sum be divided by it?
+          sum1 += pow(tab->dat[ind_a]->energy_data_storage[i][j][k][l], gamma);
+          sum2 += pow(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l], gamma);
         }
-        tab->dat[ind_a]->gshift[i][j][k] = sum1;
-        tab->dat[ind_a+1]->gshift[i][j][k] = sum2;
+        tab->dat[ind_a]->gshift[i][j][k] = sum1 / n_gshift_storage;
+        tab->dat[ind_a+1]->gshift[i][j][k] = sum2 / n_gshift_storage;
       }
     }
   }
@@ -563,10 +566,12 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
 
     // HOWEVER THE ENERGY SHIFT IS ALREADY TAKEN TO THE POWER OF GAMMA:
     // NO NEED TO RAISE TO THE POWER HERE... UPD later: wrong! Strikethrough these two lines of comment!!!
-    emis_profile_table->emis[ii] *= interp_lin_1d(ifac_a, flo, fhi); // this line accounts for g^Gamma actually
+    double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
+    printf("calculating g^gamma (g^gamma, flo, fhi, ifac): %.6f, %.6f, %.6f, %.6f \n", g_gamma, flo, fhi, ifac_a);
+    emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma actually
 
     //emis_profile_table->del_emit[ii] = 0; // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
-    //emis_profile_table->del_inc[ii] = 30 ; // AN: currently these values are not used for extended sources. They are supposed to be used only for refl_frac calculations,
+    //emis_profile_table->del_inc[ii] = 30; // AN: currently these values are not used for extended sources. They are supposed to be used only for refl_frac calculations,
     // which are calculated already in the input table for extended model
   }
 }
