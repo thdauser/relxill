@@ -78,13 +78,6 @@ static void get_extendedsourcetable_spin(int nrows, float **val, fitsfile *fptr,
 
 }
 
-double emissivity_newton(double r, double height, double d) {
-  double bracket = 1.0 / (1.0 + pow((r - d) / height, 2.0));
-  double emis_newton =
-      pow(bracket, 1.5) / (2.0 * M_PI * height * height) / (sqrt(1.0 + d * d / height / height) + d / height);
-  return emis_newton;
-}
-
 /**
  * @brief Gets data for a single source from the table and then makes a relativistic correction of the flux
  * @details Need to set the variables for fits_read_col instead of using numbers with unclear origin
@@ -147,26 +140,18 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
       // checked - loaded correctly (at least for n_h == n_distance)
     }
   }
-  /*
+
+   ////  add relativistic corrections to the flux
+   /// note however that the energy shift g^Gamma is not added here - it is added below in interpol_estable function
    double *r = dat->radius;
-
-   ////  add correction to flux - important that it is done here and not in the post-proc script before the extended table is stored...
-   ///UPD later: Looks like someone outwitted himself - right now the extended table already takes into account the area and gamma corrections, but not energy shift.
-   /// note however that the energy shift g^Gamma is not added here - its added below in interpol_estable function
-
-   double result;
    for (int i=0; i<n_h; i++) {
      for (int j=0; j<n_distance; j++) {
-       //normalize_emissivity(dat->flux[i][j], r, (dat->height[i]), (dat->r_ring[i][j]), n_rad);
-
        for (int k=0; k<n_rad; k++){
-         result = area_kerr(r[k],spin)*gamma_correction(r[k],spin);
-         dat->flux[i][j][k] *= area_flat(r[k])/result;
+         //dat->flux[i][j][k] *= area_flat(r[k]) / area_kerr(r[k],spin) / gamma_correction(r[k],spin);
+         dat->flux[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
        }
-
      }
    }
-  */
   return dat;
 }
 
@@ -506,8 +491,6 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
                                             ind_d,
                                             dat_ind_a,
                                             tab->n_rad);
-
-
   return emis_profile_table;
 }
 
@@ -564,10 +547,8 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                dat_a[1]->gshift[ind_h[1]+1][ind_d[1]][ii],
                                dat_a[1]->gshift[ind_h[1]+1][ind_d[1]+1][ii]);
 
-    // HOWEVER THE ENERGY SHIFT IS ALREADY TAKEN TO THE POWER OF GAMMA:
-    // NO NEED TO RAISE TO THE POWER HERE... UPD later: wrong! Strikethrough these two lines of comment!!!
     double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
-    printf("calculating g^gamma (g^gamma, flo, fhi, ifac): %.6f, %.6f, %.6f, %.6f \n", g_gamma, flo, fhi, ifac_a);
+    // printf("calculating g^gamma (g^gamma, flo, fhi, ifac): %.6f, %.6f, %.6f, %.6f \n", g_gamma, flo, fhi, ifac_a);
     emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma actually
 
     //emis_profile_table->del_emit[ii] = 0; // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
@@ -779,8 +760,6 @@ double calc_norm_factor_primary_spectrum_ext(double height, double a, double gam
 void printerror(int status) {
   printf("Error Code: %d\n",status);
 }
-
-
 
 
 

@@ -23,7 +23,7 @@
 #include "common.h"
 
 /** dimensions of the ES table */
-#define ESTABLE_NA 20 // number of spin values
+#define ESTABLE_NA 2 // number of spin values
 #define ESTABLE_NHEIGHT 50 // number of height values
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
@@ -47,9 +47,8 @@ typedef struct {
   /* This will store the necessary table data (EnergyShift)
    * in order to sum over the 20 bins for a given Gamma exponent
    * which will then determine the gshift array
-   * this array is a 50 x 50 x 199 x 20
-   * 50 x 50 for height and distance 99 for each radial bin
-   * and 20 values corresponding to each radial bin
+   * this array has dimensions NHEIGHT x NDISTANCE x NA x NRAD
+   * x NENERGYBINS values corresponding to each radial bin
    */
   double ****energy_data_storage; // probably need to rename
 
