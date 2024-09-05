@@ -23,7 +23,7 @@
 #include "common.h"
 
 /** dimensions of the ES table */
-#define ESTABLE_NA 2 // number of spin values
+#define ESTABLE_NA 20 // number of spin values
 #define ESTABLE_NHEIGHT 50 // number of height values
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
