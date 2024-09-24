@@ -270,7 +270,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   assert(rel_profile->n_zones == 1);
 
   auto rebin_flux = new double[ener_grid->nbins];
-  rebin_spectrum(ener_grid->ener, rebin_flux, ener_grid->nbins, ener_inp, spec_inp, n_ener_inp);
+  _rebin_spectrum(ener_grid->ener, rebin_flux, ener_grid->nbins, ener_inp, spec_inp, n_ener_inp);
 
   specCache* spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
@@ -280,7 +280,7 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   CHECK_STATUS_VOID(*status);
 
   // rebin to the output grid
-  rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener_grid->ener, conv_out, ener_grid->nbins);
+  _rebin_spectrum(ener_inp, spec_inp, n_ener_inp, ener_grid->ener, conv_out, ener_grid->nbins);
 
   set_flux_outside_defined_range_to_zero(ener_inp, spec_inp, n_ener_inp, RELCONV_EMIN, RELCONV_EMAX);
 

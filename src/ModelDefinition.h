@@ -224,4 +224,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param);
 
 xillParam *get_xill_params(const ModelDefinition &inp_param);
 
+int is_env_set(const char* envname, int default_value);
+
+
 #endif //RELXILL_SRC_MODELDEFINITION_H_

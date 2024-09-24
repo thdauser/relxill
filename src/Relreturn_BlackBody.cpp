@@ -360,7 +360,7 @@ static double getXillverNormFactorFromPrimarySpectrum(double* spec, double* ener
   auto xillverInputSpec = new double[egrid->nbins];
   CHECK_MALLOC_RET_STATUS(xillverInputSpec, status, 0.0)
 
-  rebin_spectrum(egrid->ener, xillverInputSpec, egrid->nbins, ener, spec, n_ener);
+  _rebin_spectrum(egrid->ener, xillverInputSpec, egrid->nbins, ener, spec, n_ener);
 
   // divide by the primary normalization factor, to get the scaling of the xillver reflection spectrum
   double normFactorXill = calcNormWrtXillverTableSpec(xillverInputSpec, egrid->ener, egrid->nbins, status);
@@ -573,7 +573,7 @@ void relxill_bb_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, xillP
         1, 1, ii, spec_cache, status);
 
 
-    rebin_spectrum(ener_inp, single_spec_inp, n_ener_inp, ener, spec_conv_out[ii], n_ener);
+    _rebin_spectrum(ener_inp, single_spec_inp, n_ener_inp, ener, spec_conv_out[ii], n_ener);
 
     for (int jj = 0; jj < n_ener_inp; jj++) {
       spec_inp[jj] += single_spec_inp[jj];

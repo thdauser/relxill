@@ -39,20 +39,35 @@ TEST_CASE(" compare standard relline profile with reference flux "){
 
 }
 
+TEST_CASE(" test the relxill normalization", "[relxill-norm]") {
 
-/*
-TEST_CASE(" compare standard xillver evaluation with reference flux") {
+  auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
+  auto spec = default_spec.get_xspec_spectrum();
 
-  int status = EXIT_SUCCESS;
 
-  relline_spec_multizone *rel_profile = nullptr;
-  double *xill_spec = nullptr;
-  init_std_relXill_spec(&rel_profile, &xill_spec, &status);
+  double ref_value = 3.0; // normalized at 1keV to have 1 cts/sec/keV/cm2 at 1keV
+  int ind = binary_search(spec.energy, spec.num_flux_bins(), ref_value);
+  double dE_ref = spec.energy[ind+1] - spec.energy[ind];
 
-  const double ReferenceXillverStdFlux = 1.802954e+01;
-  double xillFlux = calc_XillverFluxInStdBand(xill_spec, rel_profile->ener, rel_profile->n_ener);
-  compareReferenceFlux(xillFlux, ReferenceXillverStdFlux, &status);
-  REQUIRE( status == EXIT_SUCCESS );
 
-}*/
+  LocalModel lmod(ModelName::relxilllp);
+  lmod.set_par(XPar::h, 30);
+  lmod.eval_model(spec);
+
+  // by default relxill should not be normalized
+  REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1 ) > 1e-2);
+
+  // now it is normalized
+  setenv("RELXILL_RENORMALIZE","1",1);
+  lmod.eval_model(spec);
+  REQUIRE(  fabs(spec.flux[ind]/dE_ref -1 ) < 1e-2);
+
+  // should stay the same even if we change a parameter like the height
+  lmod.set_par(XPar::h, 20);
+  lmod.eval_model(spec);
+  REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1) < 1e-2);
+
+
+  setenv("RELXILL_RENORMALIZE","0",1);
+}
 

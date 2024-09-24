@@ -136,7 +136,7 @@ TEST_CASE("rebin spectrum", "[basic]") {
   double ener[] = {0.5, 2, 4, 5.5, 7.5, 8};
   double val[n];
 
-  rebin_spectrum(ener, val, n, ener0, val0, n0);
+  _rebin_spectrum(ener, val, n, ener0, val0, n0);
 
   double val_ref[5];
   val_ref[0] = 0.5;

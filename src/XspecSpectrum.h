@@ -190,8 +190,9 @@ class Spectrum {
 
   // Copy constructor
   Spectrum(const Spectrum &inst) : num_flux_bins{inst.num_flux_bins} {
-    m_energy = new double[num_flux_bins];
-    for (size_t ii = 0; ii < num_flux_bins + 1; ii++) {
+    size_t const n_energy = num_flux_bins + 1;
+    m_energy = new double[n_energy + 1];
+    for (size_t ii = 0; ii < n_energy; ii++) {
       m_energy[ii] = inst.m_energy[ii];
     }
 

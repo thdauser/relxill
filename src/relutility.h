@@ -117,7 +117,7 @@ void getLogGrid(double *ener, int n_ener, double emin, double emax);
 double gstar2ener(double g, double gmin, double gmax, double ener);
 
 /** rebin spectrum to a given energy grid length of ener is num_flux_bins+1       **/
-void rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
+void _rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0);
 
 /** get the relxill table path (dynamically from env variable)  **/
 char *get_relxill_table_path(void);

@@ -111,7 +111,7 @@ void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
   // add the dependence on incl, assuming a semi-infinite slab
   norm_xillver_spec(spec, xill_param->incl);
 
-  rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), spec->ener, spec->flu[0], spec->n_ener);
+  _rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), spec->ener, spec->flu[0], spec->n_ener);
   free_xill_spec(spec);
 
   add_primary_component(spectrum.energy,

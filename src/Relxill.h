@@ -134,7 +134,7 @@ class CachingStatus {
   cached m_cache_xill = cached::no;
 };
 
-void relxill_kernel(const XspecSpectrum &spectrum,
+void relxill_kernel(const XspecSpectrum &xspec_spectrum,
                     const ModelDefinition &params,
                     int *status);
 
