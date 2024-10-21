@@ -135,16 +135,38 @@ double calc_g_inf(double height, double a) {
   return sqrt(1.0 - (2 * height / (height * height + a * a)));
 }
 
-double calc_g_inf_ext(double height, double theta, double d, double a) {
-  double r = sqrt(d * d + height * height);
-  double Sigma = r * r + a * a * cos(theta) * cos(theta);
-  double Delta = r * r - 2.0 * r + a * a;
-  double rho_squared = (r * r + a * a) * (r * r + a * a) - a * a * Delta * sin(theta) * sin(theta);
-  double omega = 2.0 * a * r / rho_squared;
-  // double corr_factor = 1.0 - (1.0 / (pow(d, 1.5) + a) - omega) * rho_squared * 2.0 * a * r * sin(theta) * sin(theta) / Sigma / Sigma / Delta;
-  // printf("corr_factor = %e \n", corr_factor);
-
-  return sqrt(1.0 - (2 * height / (height * height + a * a))); //corr_factor *
+/**
+ * calculates the energy shift from a ring source to infinity (NOT YET FULLY IMPLEMENTED)
+ * @param height height of the ring source
+ * @param r_ring radius of the ring
+ * @param a spin of the black hole
+ * @return energy shift (only e^nu component for now)
+ * TODO: add the source rotation, add the lensing factor (raytracing required)
+ */
+double calc_g_inf_ext(double height, double r_ring, double a) {
+  double g_inf;
+  if (r_ring <= 0.001){ // lamp-post source
+    g_inf = calc_g_inf(height, a);
+  }
+  else{
+    // cosinetheta is the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
+    // Theta is polar angle of the ring, between 0 and pi/2 (r_ring^2 + height^2 are always > a^2)
+    double cosine_theta = sqrt( ( sqrt(4.0 * a * a * height * height + (height * height +
+        r_ring * r_ring - a * a) * (height * height + r_ring * r_ring - a * a)) +
+            a * a - height * height - r_ring * r_ring ) / (2.0 * a * a) );
+    double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
+    double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
+    // careful about costheta = 0, when lp source
+    double Sigma = r * r + a * a * cosine_theta * cosine_theta;
+    double Delta = r * r - 2.0 * r + a * a;
+    double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a * sine_theta * sine_theta;
+    //double omega = 2.0 * a * r / rho_squared;
+    // previous version returned just the lamp-post shift, which led to stronger redshift of the ring primary source
+    //return sqrt(1.0 - (2 * height / (height * height + a * a)));
+    g_inf = sqrt(Sigma * Delta / rho_squared);
+  }
+  printf("energy shift ring source - observer (ONLY e^-nu NOW): %e, h, r = %e, %e\n", g_inf, height, r_ring);
+  return g_inf;
 }
 
 /* get RMS (ISCO) for the Kerr Case */
@@ -258,7 +280,8 @@ double energy_shift_source_obs(const relParam *rel_param) {
   }
 
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
-    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->r_ring, rel_param->a);
+    // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->r_ring, rel_param->a);
+    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);
   }
   else {
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
@@ -332,21 +355,26 @@ double calc_fluxboost_source_disk(double rad, double del_emit, double a, double 
 
 double area_kerr(double r, double a) {
   // NOTE: FACTOR OF R IN FRONT OF SQUARE ROOT IN THOMAS'S PAPER IS WRONG
-  // assume that we use it only for ratio of areas, so dr is cancelled here
-  return 2.0 * M_PI * sqrt((pow(r,4) + pow(a * r, 2) + 2.0 * pow(a,2) * r)) / sqrt(pow(r, 2) - 2.0 * r + pow(a,2));
+  // We assume that we use it only for ratio of areas, so dr is cancelled here
+  // not used now
+  return 2.0 * M_PI * sqrt((pow(r,4) + pow(a * r, 2) + 2.0 * pow(a,2) * r) /
+        pow(r, 2) - 2.0 * r + pow(a,2));
 }
 
 double area_flat(double r){
-  // assume that we use it only for ratio of areas, so dr is cancelled here
+  // We assume that we use it only for ratio of areas, so dr is cancelled here
+  // not used now - replaced with kerr_to_flat_area_ratio
   return (2.0 * M_PI * r);
 }
 
 double kerr_to_flat_area_ratio(double r, double a) {
-  return sqrt(pow(r,4) + pow(a * r, 2) + 2.0 * pow(a,2) * r) / sqrt(pow(r, 2) - 2.0 * r + pow(a,2)) / r;
+  return sqrt( (pow(r,4) + pow(a * r, 2) + 2.0 * pow(a,2) * r) /
+                  (pow(r, 2) - 2.0 * r + pow(a,2)) ) / r;
 }
 
 double gamma_correction(double r, double a){
   double top = sqrt(pow(r,2) - 2.0 * r + pow(a,2)) * (pow(r,1.5) + abs(a));
-  double bottom = pow(r,0.25) * sqrt(pow(r,1.5) + 2.0 * a - 3 * pow(r, 0.5)) * sqrt(pow(r,3) + pow(a,2) * r + 2.0 * pow(a,2));
+  double bottom = pow(r,0.25) * sqrt(pow(r,1.5) + 2.0 * a - 3 * pow(r, 0.5)) * sqrt(
+      pow(r,3) + pow(a,2) * r + 2.0 * pow(a,2));
   return top / bottom;
 }
