@@ -313,7 +313,7 @@ int modelVertExtendSource(const relParam *param) {
 
 /*
  * Calculate the velocity (in units of c) for a given height, hbase and a given
- * velocity (beta) at 100Rg. Specfici definitions are:
+ * velocity (beta) at 100Rg. Specific definitions are:
  *  - beta is defined as the velocity at 100r_g above the jet base at hbase
  *  - we assume constant acceleration such that currentBeta=bet100
  */

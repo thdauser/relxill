@@ -58,7 +58,7 @@ extendedSourceTable* get_es_table(int* status){
  * @brief Gets spin values from the table for each row
  * @details Uses cfitsio to read preloaded fits file
  * @param nrows integer, number of rows in the table
- * @param val two-fold pointer, to the value to be read (or what?)
+ * @param val two-fold pointer, to the value to be read (better rename)
  * @param fptr pointer, to the file
  * @param status pointer, status of the code for debugging
  */
@@ -103,14 +103,14 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
   double doublenullptr = 0.0;
 
   /*  read the columns */
-  fits_read_col(fptr, TDOUBLE, 1, 1, 1, n_rad, &doublenullptr, dat->radius,
-                &anynullptr, status);
+  fits_read_col(fptr, TDOUBLE, 1, 1, 1, n_rad, &doublenullptr,
+                dat->radius,&anynullptr, status);
 
   for (int ii = 0; ii < n_h; ii++) {
-    fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_h, 1, 1, &doublenullptr, &(dat->height[ii]),
-                  &anynullptr, status);
-    fits_read_col(fptr, TDOUBLE, 3, 1 + ii * n_h, 1, n_distance, &doublenullptr, dat->d_ring[ii],
-                  &anynullptr, status);
+    fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_h, 1, 1, &doublenullptr,
+                  &(dat->height[ii]),&anynullptr, status);
+    fits_read_col(fptr, TDOUBLE, 3, 1 + ii * n_h, 1, n_distance,
+                  &doublenullptr, dat->d_ring[ii],&anynullptr, status);
   }
 
   for (int ii = 0; ii < n_h; ii++) {
@@ -118,25 +118,27 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
 
       int irow = (ii * n_distance) + jj + 1;
 
-      fits_read_col(fptr, TDOUBLE, 4, irow, 1, n_rad, &doublenullptr, dat->flux[ii][jj],
-                    &anynullptr, status);
+      fits_read_col(fptr, TDOUBLE, 4, irow, 1, n_rad, &doublenullptr,
+                    dat->flux[ii][jj],&anynullptr, status);
 
       for (int kk = 0; kk < n_rad; kk++){
         assert(dat->flux[ii][jj][kk] >= 0.0);
-        fits_read_col(fptr, TDOUBLE, 5, irow, kk*n_storage+1, n_storage, &doublenullptr, dat->energy_data_storage[ii][jj][kk],
-                      &anynullptr, status);
+        fits_read_col(fptr, TDOUBLE, 5, irow, kk*n_storage+1, n_storage,
+                      &doublenullptr, dat->energy_data_storage[ii][jj][kk],&anynullptr, status);
       }
 
       // n_rad to 1 because it is not an array just a single value
-      fits_read_col(fptr, TDOUBLE, 6, irow, 1, 1, &doublenullptr, &dat->f_ad[ii][jj],
-                    &anynullptr, status);
+      fits_read_col(fptr, TDOUBLE, 6, irow, 1, 1, &doublenullptr,
+                    &dat->f_ad[ii][jj],&anynullptr, status);
 
-      fits_read_col(fptr, TDOUBLE, 7, irow, 1, 1, &doublenullptr, &dat->f_inf[ii][jj],
-                    &anynullptr, status);
+      fits_read_col(fptr, TDOUBLE, 7, irow, 1, 1, &doublenullptr,
+                    &dat->f_inf[ii][jj],&anynullptr, status);
 
       dat->refl_frac[ii][jj] = dat->f_ad[ii][jj]/dat->f_inf[ii][jj];
 
-      //printf("load single source function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e \t spin=%e \t height=%e \t dist=%e \n", dat->f_ad[ii][jj], dat->f_inf[ii][jj], dat->f_ad[ii][jj] / dat->f_inf[ii][jj], dat->refl_frac[ii][jj], spin, dat->height[ii], dat->r_ring[ii][jj]);
+      //printf("load single source function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e
+      // \t spin=%e \t height=%e \t dist=%e \n", dat->f_ad[ii][jj], dat->f_inf[ii][jj], dat->f_ad[ii][jj] /
+      // dat->f_inf[ii][jj], dat->refl_frac[ii][jj], spin, dat->height[ii], dat->r_ring[ii][jj]);
       // checked - loaded correctly (at least for n_h == n_distance)
     }
   }
@@ -157,13 +159,12 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_distance,
 
 
 /**
- * @brief Modifies (?) a table tab making an interpolation of its content to the grid used in further calculations
- * @details Might be wrong for now, need to check this function.
+ * @brief Calculates reflection fraction from interpolated table values, and photon fractions
+ * @details
  * @param param, const relParam, a pointer to the structure of parameters used, the parameters include:
- * a - spin, height - height, distance - distance
+ * a - spin, height - height, distance - distance (i.e. r_ring)
  * @param tab, extendedSourceTable, a pointer to the structure containing a table
- * @return lpReflFrac, a pointer to the structure containing some doubles with parameters of bh and system (?)
- * probably the interpolated ones
+ * @return lpReflFrac, a pointer to the structure containing interpolated reflection fraction and photon fractions
  */
 static lpReflFrac *calc_refl_frac_ext(const relParam *param,
                                       extendedSourceTable *tab, int *status) {
@@ -184,7 +185,8 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
   double ifac_h[2];
 
   for (int ii = 0; ii < 2; ii++) {
-    get_ipol_factor_double(param->height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]), &(ifac_h[ii]));
+    get_ipol_factor_double(param->height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]),
+                           &(ifac_h[ii]));
   }
 
   int ind_d[2];
@@ -197,7 +199,8 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
     } else {
       index = ind_h[ii];
     }
-    get_ipol_factor_double(param->r_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
+    get_ipol_factor_double(param->r_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis,
+                           &(ind_d[ii]), &(ifac_d[ii]));
   }
 
 
@@ -246,17 +249,19 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
         dat_ind_a[1]->refl_frac[ind_h[1] + 1][ind_d[1] + 1]);
   str->refl_frac = interp_lin_1d(ifac_a, rlo_2, rhi_2);
   // photons are not allowed to cross the disk plane
-  if (str->f_inf > 0.5) {
+  if (str->f_inf > 0.5) { // should never be the case - indicates wrong table
     str->f_inf = 0.5;
     printf("Rellp_Extended: inf fraction more than 0.5");
   }
-  /// these are equal for now. f_inf_rest is used to calculate primary spectrum (function flux_boost_source_to_observer in PrimarySource.h)
+  /// these are equal for now. f_inf_rest is used to calculate primary spectrum
+  /// (function flux_boost_source_to_observer in PrimarySource.h)
   /// later maybe would be good to distinguish them correctly - AN
   str->f_inf_rest = str->f_inf; /// anyway this is true for non-moving sources (beta=0)
   // str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
 
   str->f_bh = 1.0 - (str->f_ad + str->f_inf);
-  // printf("calc refl frac function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e \n", str->f_ad, str->f_inf, str->f_ad / str->f_inf, str->refl_frac);
+  // printf("calc refl frac function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e \n",
+  // str->f_ad, str->f_inf, str->f_ad / str->f_inf, str->refl_frac);
 
   return str;
 }
@@ -321,7 +326,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     }
 
     // first read the spin axes of the table AND move to the correct extension
-    printf("************************\n");
+    // printf("************************\n");
     // printf("filename : %s\n", fullfilename);
 
 
@@ -402,7 +407,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
  * @details
  * @param a; double, spin
  * @param height; double, height
- * @param distance; double, distance - r_ring
+ * @param distance; double, distance (i.e., r_ring)
  * @param gamma; double, photon index
  * @param n_gshift_storage; int, number of energy shift bins
  * @param tab; extendedSourceTable, pointer to the table as declared above
@@ -436,7 +441,8 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
   double ifac_h[2];
 
   for (int ii = 0; ii < 2; ii++) {
-    get_ipol_factor_double(height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]), &(ifac_h[ii]));
+    get_ipol_factor_double(height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]),
+                           &(ifac_h[ii]));
 
     //assert(ifac_h[ii] >= 0.0 && ifac_h[ii] <= 1.0);
     if (ifac_h[ii] < 0.0 or ifac_h[ii] > 1.0){
@@ -455,7 +461,8 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
     } else {
       index = ind_h[ii];
     }
-    get_ipol_factor_double(d_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]), &(ifac_d[ii]));
+    get_ipol_factor_double(d_ring, dat_ind_a[ii]->d_ring[index], tab->n_offaxis, &(ind_d[ii]),
+                           &(ifac_d[ii]));
     //printf("interpolation factor distance, index distance: %e %d\n", ifac_d[ii], ind_d[ii]);
     //printf("distance values interp and table: %e %e \n", r_ring, dat_ind_a[ii]->r_ring[index][ind_d[ii]]);
     //assert(ifac_d[ii] >= -1.0 && ifac_d[ii] <= 1.0);
@@ -500,13 +507,13 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
  * @brief Interpolates values in height-distance space for a given spin (already interpolated)
  * @details
  * @param emis_profile_table; emisProfile, pointer to the structure containing emissivity profile table
- * @param ifac_a; double, interpolated? factor? for spin
- * @param ifac_h; const double, pointer to interpolated? factor? for height
- * @param ifac_d; const double, pointer to interpolated? factor? for distance
- * @param ind_h; const int, pointer to interpolated? index? for height
- * @param ind_d; const int, pointer to interpolated? index? for distance
- * @param dat_a; *const extendedSourceData (?), pointer to the structure with data
- * @param nr; const int, number of ?radial bins?
+ * @param ifac_a; double, interpolated factor of spin, factor i.e. ratio between two closest base points
+ * @param ifac_h; const double, pointer to interpolated factor of height
+ * @param ifac_d; const double, pointer to interpolated factor of distance (r_ring)
+ * @param ind_h; const int, pointer to index of height
+ * @param ind_d; const int, pointer to index of distance (r_ring)
+ * @param dat_a; *const extendedSourceData, pointer to the structure with data of spin
+ * @param nr; const int, number of radial bins
  */
 void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                                double ifac_a,
@@ -551,9 +558,12 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
     // printf("calculating g^gamma (g^gamma, flo, fhi, ifac): %.6f, %.6f, %.6f, %.6f \n", g_gamma, flo, fhi, ifac_a);
     emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma actually
 
-    //emis_profile_table->del_emit[ii] = 0; // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
-    //emis_profile_table->del_inc[ii] = 30; // AN: currently these values are not used for extended sources. They are supposed to be used only for refl_frac calculations,
-    // which are calculated already in the input table for extended model
+    //emis_profile_table->del_emit[ii] = 0;
+    // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
+    //emis_profile_table->del_inc[ii] = 30;
+    // AN: currently these values are not used for extended sources.
+    // They are supposed to be used only for refl_frac calculations,
+    // which are calculated already in the input table for extended model, so no need to do anything here
   }
 }
 
@@ -564,9 +574,9 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
  * @details
  * @param n_h; int, number of heights in the table
  * @param n_rad; int, number of bins in the table
- * @param n_offaxis; int, number of off-axis sources (??) in the table
+ * @param n_offaxis; int, number of off-axis sources in the table
  * @param n_a; int, number of spins in the table
- * @param n_storage; int, number of storage (??) in the table. Probably the energy shift storage
+ * @param n_storage; int, number of the energy shift storage in the table
  * @return new_extendedSourceTable, new extended source table
  */
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_offaxis,
@@ -700,7 +710,7 @@ void free_extendedSourceTable(extendedSourceTable *tab) {
 /**
  *
  * @brief Frees the memory stored before for the data
- * @details Dobby is free! (crossed out)
+ * @details
  * @param dat; extendedSourceData, data to be freed
  */
 void free_extendedSourceData(extendedSourceData *dat) {
@@ -739,17 +749,17 @@ void free_extendedSourceData(extendedSourceData *dat) {
 
 /**
  *
- * @brief Calculates norm factor of the primary spectrum
+ * @brief Calculates norm factor of the primary spectrum -- not used anymore, table contains normalized emissivity
  * @details Calculates normalisation factor of the primary spectrum to the number of photons reaching infinity
  * Need to add velocity of the source here. AN: Not used anywhere.
  * @param height; double, height
  * @param a; double, spin
  * @param gamma; double, photon index
  * @param f_inf; double, fraction of photons reaching infinity
- * @return double, normalisation factor
+ * @return double, normalization factor
  */
 double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf) {
-  double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!)
+  double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!) // should be done not here
   return f_inf / 0.5 * pow(g_inf, gamma);
 }
 

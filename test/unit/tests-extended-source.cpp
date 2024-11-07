@@ -34,17 +34,15 @@ extern "C" {
 
 TEST_CASE("Default line model call  Test", "[extended]") {
 
- // int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
-
-DefaultSpec default_spec{};
+  DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relline_lp_ext};
 
-  double height = 2.0;
-  double dist = 20.0;
+  double height = 3.0;
+  double r_ring = 5.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::r_ring, dist);
+  local_model.set_par(XPar::r_ring, r_ring);
 
   local_model.eval_model(spec);
 /*
@@ -68,10 +66,9 @@ DefaultSpec default_spec{};
 }
 
 
-
 TEST_CASE("Xspec line model call Test", "[extended]") {
 
-  // int status = EXIT_SUCCESS;
+  int status = EXIT_SUCCESS;
 
   LocalModel local_model{ModelName::relline_lp_ext};
   local_model.set_par(XPar::r_ring, 5.0);
@@ -80,101 +77,65 @@ TEST_CASE("Xspec line model call Test", "[extended]") {
 
   local_model.eval_model(spec);
 
+  REQUIRE(status == EXIT_SUCCESS);
 }
 
 
 TEST_CASE("Default relxill model call Test", "[extended]") {
 
-  // int status = EXIT_SUCCESS;
+  int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllp_ext};
-  double height = 2.0;
-  double dist = 20.0;
+  double height = 3.0;
+  double r_ring = 5.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::r_ring, dist);
+  local_model.set_par(XPar::r_ring, r_ring);
 
   local_model.eval_model(spec);
+
+  REQUIRE(status == EXIT_SUCCESS);
 }
 
 
 TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
 
-  // int status = EXIT_SUCCESS;
+  int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllpCp_ext};
-  double height = 2.0;
-  double dist = 20.0;
+  double height = 3.0;
+  double r_ring = 5.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::r_ring, dist);
+  local_model.set_par(XPar::r_ring, r_ring);
 
   local_model.eval_model(spec);
+
+  REQUIRE(status == EXIT_SUCCESS);
 }
 
 
-TEST_CASE("Test to compare lp and ext", "[extended]") {
+TEST_CASE("Checking the reflection fraction", "[extended]") {
 
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
   LocalModel local_model{ModelName::relxilllp};
   relParam* rel_param = local_model.get_rel_params();
   auto sys_par = get_system_parameters(rel_param, &status);
 
-  // (rel_param).distance = 2.0;
   rel_param->a = 0.998;
   rel_param->height = 3.0;
-  rel_param->emis1 = 3.0;
-  rel_param->emis2 = 3.0;
-  rel_param->rbr = 30.0;
-  rel_param->lineE = 1.0;
-  rel_param->return_rad = 0.0;
+  //rel_param->rout= 1000.0;
   lpTable *cached_lp_table = get_lp_table(&status);
-  calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta, cached_lp_table, &status);
-  local_model.eval_model(spec);
-
-  LocalModel local_model_ext{ModelName::relxilllp_ext};
-  relParam* rel_param_ext = local_model_ext.get_rel_params();
-  auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
-
-  // (rel_param).distance = 2.0;
-  rel_param_ext->a = 0.998;
-  rel_param_ext->height = 3.0;
-  rel_param_ext->r_ring = 0.1;
-  rel_param_ext->emis1 = 3.0;
-  rel_param_ext->emis2 = 3.0;
-  rel_param_ext->rbr = 30.0;
-  rel_param_ext->lineE = 1.0;
-  rel_param_ext->return_rad = 0.0;
-  get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
-  local_model_ext.eval_model(spec);
-
-}
-
-
-
-TEST_CASE("Checking the reflection fraction", "[extended]") {
-
-  int status = EXIT_SUCCESS; // in fact this is a bool variable to check the program status
-
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum(); // afaiu it gives here a default energy, flux values and number of bins used
-
-  LocalModel local_model{ModelName::relxilllp};
-  relParam* rel_param = local_model.get_rel_params(); // getting parameters for the given model...
-  auto sys_par = get_system_parameters(rel_param, &status); // also some parameters
-
-  rel_param->a = 0.998;
-  rel_param->height = 2.0;
- // rel_param->rout= 1000.0;
-  lpTable *cached_lp_table = get_lp_table(&status);
-  calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta, cached_lp_table, &status);
+  calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta,
+                             cached_lp_table, &status);
 
   local_model.eval_model(spec);
 
@@ -182,8 +143,9 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   double frac_inf = sys_par->emis->photon_fate_fractions->f_inf;
   double frac_disk = sys_par->emis->photon_fate_fractions->f_ad;
   double frac_bhole = sys_par->emis->photon_fate_fractions->f_bh;
-  printf("%e \n", rel_param->rout);
-  printf("test reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl, frac_disk, frac_inf, frac_bhole, frac_inf + frac_disk + frac_bhole, frac_disk / frac_inf);
+  //printf("%e \n", rel_param->rout);
+  printf("test lp reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl,
+         frac_disk, frac_inf, frac_bhole, frac_inf + frac_disk + frac_bhole, frac_disk / frac_inf);
 
   DefaultSpec default_spec_ext{};
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
@@ -192,9 +154,9 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
   rel_param_ext->a = 0.998;
-  rel_param_ext->height = 2.0;
-  rel_param_ext->r_ring = 1.01; // setting some manual distance
- // rel_param_ext->rout= 1000.0;
+  rel_param_ext->height = 2.8962; // weird that rfrac coincides with lp only when I set slightly lower height than lp
+  rel_param_ext->r_ring = 0.0;
+  //rel_param_ext->rout= 1000.0;
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
 
   local_model_ext.eval_model(spec_ext);
@@ -203,99 +165,96 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   double fraction_inf = sys_par_ext->emis->photon_fate_fractions->f_inf;
   double fraction_disk = sys_par_ext->emis->photon_fate_fractions->f_ad;
   double fraction_bhole = sys_par_ext->emis->photon_fate_fractions->f_bh;
-  printf("%e \n", rel_param_ext->rout);
-  printf("ext test reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl_ext, fraction_disk, fraction_inf, fraction_bhole, fraction_inf + fraction_disk + fraction_bhole, fraction_disk / fraction_inf);
+  //printf("%e \n", rel_param_ext->rout);
+  printf("test ext reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n",
+         refl_ext, fraction_disk, fraction_inf, fraction_bhole, fraction_inf + fraction_disk + fraction_bhole,
+         fraction_disk / fraction_inf);
 
+  REQUIRE(status == EXIT_SUCCESS);
 }
 
 
-
 TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
-  // not functional yet. Working, but not doing what desired
+
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
   LocalModel local_model{ModelName::relxilllp};
   relParam* rel_param = local_model.get_rel_params();
-  auto sys_par = get_system_parameters(rel_param, &status);
-
-  rel_param->a = 0.998;
-  rel_param->height = 30.0;
-  //rel_param->rout = 1000.0;
-  //rel_param->emis1 = 3.0;
-  //rel_param->emis2 = 3.0;
-  //rel_param->rbr = 30.0;
-  //rel_param->lineE = 1.0;
-  //rel_param->return_rad = 0.0;
-  //get_emis_jet(sys_par->emis, rel_param, &status);
-  local_model.eval_model(spec);
-
 
   LocalModel local_model_ext{ModelName::relxilllp_ext};
   relParam* rel_param_ext = local_model_ext.get_rel_params();
-  auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
+  rel_param_ext->r_ring = 0.0; // for this test we compare the lp emissivity and ext for ring=0
 
-  rel_param_ext->a = 0.998;
-  rel_param_ext->height = 30.0;
-  rel_param_ext->r_ring = 0.0;
-  //rel_param_ext->rin = kerr_rms(rel_param_ext->a);
-  //rel_param_ext->rout = 1000.0;
-  //rel_param_ext->emis1 = 3.0;
-  //rel_param_ext->emis2 = 3.0;
-  //rel_param_ext->rbr = 30.0;
-  //rel_param_ext->lineE = 1.0;
-  //rel_param_ext->return_rad = 0.0;
+  double spins[3] = {-0.998, 0.0, 0.998};
+  double heights[3] = {3.0, 5.0, 10.0};
 
-  //get_emis_jet(sys_par_ext->emis, rel_param_ext, &status);
-  local_model_ext.eval_model(spec);
-  sys_par = get_system_parameters(rel_param, &status);
-  sys_par_ext = get_system_parameters(rel_param_ext, &status);
-  int n_rad = sys_par->nr;
-  double *rad = sys_par->re;
-  double *intens = sys_par->emis->emis;
-  int n_rad_ext = sys_par_ext->nr;
-  //double *rad_ext = sys_par_ext->re;
-  double *intens_ext = sys_par_ext->emis->emis;
+  for (double spin : spins){
+    for(double height : heights){
+      rel_param->a = spin;
+      rel_param->height = height;
+      rel_param->rin = kerr_rms(spin);
+      local_model.eval_model(spec);
 
-  double sum = 0.0;
-  for (int i = 0; i <= n_rad; i++) {
-    sum += intens[i];
+      rel_param_ext->a = spin;
+      rel_param_ext->height = height;
+      rel_param_ext->rin = kerr_rms(spin);
+      local_model_ext.eval_model(spec);
+      auto sys_par = get_system_parameters(rel_param, &status);
+      auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
+      int n_rad = sys_par->nr;
+      double *rad = sys_par->re;
+      double *intens = sys_par->emis->emis;
+      int n_rad_ext = sys_par_ext->nr;
+      double *rad_ext = sys_par_ext->re;
+      double *intens_ext = sys_par_ext->emis->emis;
+
+      assert(n_rad_ext == n_rad);
+      assert(rad_ext == rad);
+      for (int i = 0; i <= n_rad; i++) {
+        assert(rad_ext[i] == rad[i]); // check if the grids are the same
+        assert(intens[i] == intens_ext[i]); // check if the emissivities are the same
+      }
+    }
   }
-  printf("sum_emis = %e \n", sum);
-
-  double sum_ext = 0.0;
-  for (int i = 0; i <= n_rad_ext; i++) {
-    sum_ext += intens_ext[i];
-  }
-  printf("sum_emis_ext = %e \n", sum_ext);
+  REQUIRE(status == EXIT_SUCCESS);
 }
 
-TEST_CASE("Test to compare lp and ext emissivities for several heights ", "[extended]") {
+
+TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[extended]") {
+
   int status = EXIT_SUCCESS;
+
   DefaultSpec default_spec{};
 
   LocalModel local_model{ModelName::relxilllp};
   auto spec = default_spec.get_xspec_spectrum();
-  local_model.set_par(XPar::h, 3.0);
-  REQUIRE_NOTHROW(local_model.eval_model(spec));
-
   LocalModel local_model_ext{ModelName::relxilllp_ext};
   auto spec_ext = default_spec.get_xspec_spectrum();
-  local_model_ext.set_par(XPar::h, 2.0);
-  local_model_ext.set_par(XPar::r_ring, 10.0);
-  REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+  local_model_ext.set_par(XPar::r_ring, 0.0);
 
+  double spins[3] = {-0.998, 0.0, 0.998};
+  double heights[3] = {3.0, 5.0, 10.0};
 
-  for (int i = 0; i < spec.num_flux_bins(); i++){
-    if (spec.flux[i] - spec_ext.flux[i] > PREC){
-      printf("fluxes are different: %e, %e", spec.flux[i], spec_ext.flux[i]);
+  for (double spin : spins){
+    for(double height : heights){
+      local_model.set_par(XPar::a, spin);
+      local_model.set_par(XPar::h, height);
+      REQUIRE_NOTHROW(local_model.eval_model(spec));
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::h, height);
+      REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+      for (int i = 0; i < spec.num_flux_bins(); i++) {
+        REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) < PREC);
+      }
     }
   }
+  REQUIRE(status == EXIT_SUCCESS);
 }
 
 
-TEST_CASE(" Test setting input parameters for extended source outside the allowed range","[extended]") {
+TEST_CASE("Test setting input parameters for extended source outside the allowed range","[extended]") {
 
   DefaultSpec default_spec{};
 

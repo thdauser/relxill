@@ -320,7 +320,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     double g_inf = energy_shift_source_obs(rel_param);
     double prim_fac = struct_refl_frac->f_inf_rest / 0.5 * pow(g_inf, xill_input_param->gam);
     if (rel_param->beta
-        > 1e-4) { // flux boost of primary radiation taking into account here (therfore we need f_inf_rest above)
+        > 1e-4) { // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
       prim_fac *= pow(doppler_factor_source_obs(rel_param), 2);
     }
 

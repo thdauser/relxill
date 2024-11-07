@@ -165,7 +165,7 @@ double calc_g_inf_ext(double height, double r_ring, double a) {
     //return sqrt(1.0 - (2 * height / (height * height + a * a)));
     g_inf = sqrt(Sigma * Delta / rho_squared);
   }
-  printf("energy shift ring source - observer (ONLY e^-nu NOW): %e, h, r = %e, %e\n", g_inf, height, r_ring);
+  //printf("energy shift ring source - observer (ONLY e^-nu NOW): %e, h, r = %e, %e\n", g_inf, height, r_ring);
   return g_inf;
 }
 
@@ -268,7 +268,7 @@ double doppler_factor_source_obs(const relParam *rel_param) {
  * a potential velocity of the source into account
  *
  * note that this routine uses  the function "doppler_factor_source_obs", which
- * sets δ_obs = incl, which is not fully true in GR, however, within 1% accurancy
+ * sets δ_obs = incl, which is not fully true in GR, however, within 1% accuracy
  */
 double energy_shift_source_obs(const relParam *rel_param) {
 

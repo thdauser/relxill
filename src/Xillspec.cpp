@@ -488,7 +488,7 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
 
 /**
  * @brief calculate the (energy) flux correction factors for a xillver spectrum.
- * @detail Two correction factors are calculate, which are both the ratio of the energy flux of two spectra:
+ * @detail Two correction factors are calculated, which are both the ratio of the energy flux of two spectra:
  * (1) fac_fluxcorr: ratio of reflected xillver spectrum to its input spectrum (below 1 for low ionization and above 1
  * for high ionization)
  * (2) fac_gshift_fluxcorr: ratio of xillver spectrum shifted to lower energy by a factor 1.5 (g=2/3) to a
