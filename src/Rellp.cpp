@@ -286,7 +286,9 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
 
 int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) && (fabs(param->r_ring) <= htopPrecLimit)) {
+  // "if" now accounts also for EXT type models. Eventually this needs to be restructured
+  if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) &&
+        (param->model_type != MOD_TYPE_RELXILLLPEXT && param->model_type != MOD_TYPE_RELLINELPEXT)) {
     return 1;
   } else {
     return 0;
@@ -294,8 +296,8 @@ int modelLampPostPointSource(const relParam *param) {
 }
 
 int modelLampPostRingSource(const relParam *param) {
-  const double radiusPrecLimit = 1e-3;
-  if ((fabs(param->r_ring) >= radiusPrecLimit)) {
+  // simple explicit check for the model type, no replacement with other models. EXT models work fine with zero ring size
+  if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
     return 1;
   } else {
     return 0;
