@@ -489,7 +489,7 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   if (modelLampPostPointSource(param)) {
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
-  param->emis_type
+  // param->emis_type
    } else if (modelLampPostRingSource(param)){
     get_emis_extendedSource(emis_profile, param, status);
 
