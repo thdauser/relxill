@@ -207,7 +207,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
   int kk;
   for (ii = 0; ii < tab->n_r; ii++) {
     // TODO: SHOULD WE ONLY INTERPOLATE ONLY THE VALUES WE NEED??? //
-    // only interpolate values where we need them (radius is defined invers!)
+    // only interpolate values where we need them (radius is defined inverse!)
     if (ii <= ind_rmin || ii >= ind_rmax + 1) {
       interpol_a_mu0(ii, ifac_a, ifac_mu0, ind_a, ind_mu0, cached_tab_sysPar, tab);
     } else {  // set everything we won't need to 0 (just to be sure)
@@ -237,7 +237,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
     cached_tab_sysPar->re[ind_rmax] = rmax;
   }
 
-  // let's try to be as efficient as possible here (note that "r" DEcreases)
+  // let's try to be as efficient as possible here (note that "r" Decreases)
   assert(ind_rmin > 0); // as defined inverse, re[ind_rmin+1] is the lowest value
   assert((cached_tab_sysPar->re[ind_rmin + 1] <= rin));
   assert((cached_tab_sysPar->re[ind_rmin] >= rin));

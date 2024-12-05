@@ -94,7 +94,7 @@ static void norm_emis_profile(const double *re, const int nr, double *emis) {
   auto delta_area = new double[nr];
 
   for (int ii = 0; ii < nr; ii++) {
-    if (re[1] < re[0]) {  // desencing grid
+    if (re[1] < re[0]) {  // descending grid
       delta_area[ii] = trapez_integ_single(re, ii, nr) * 2;
     } else {
       delta_area[ii] = trapez_integ_single_rad_ascending(re, ii, nr) * 2;
@@ -489,7 +489,7 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   if (modelLampPostPointSource(param)) {
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
-
+  param->emis_type
    } else if (modelLampPostRingSource(param)){
     get_emis_extendedSource(emis_profile, param, status);
 

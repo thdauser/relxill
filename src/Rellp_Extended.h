@@ -28,16 +28,14 @@
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source_test.fits"
+#define ESTABLE_FILENAME "rel_extended_source_test.fits" // time to rename - this table is already final
 
 
 typedef struct {
 
   double *height;
-  double **d_ring;
-
+  double **r_ring;
   double *radius;
-
   double ***flux;
   double ***gshift;
   double **refl_frac;
@@ -56,12 +54,12 @@ typedef struct {
 
 /** the extended source table structure */
 typedef struct {
-  float *a; // spin
+  float *a;
   int n_a;
   int n_h;
   int n_rad;
   int n_storage;
-  int n_offaxis;
+  int n_r;
   extendedSourceData **dat;
 } extendedSourceTable;
 
@@ -78,22 +76,22 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 
 double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf);
 
-emisProfile *interpol_estable(double a, double height, double d_ring,
+emisProfile *interpol_estable(double a, double height, double r_ring,
                               double gamma, int n_gshift_storage,
                               extendedSourceTable *tab, int *status);
 
 void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                                double ifac_a,
                                                const double *ifac_h,
-                                               const double *ifac_d,
+                                               const double *ifac_r,
                                                const int *ind_h,
-                                               const int *ind_d,
+                                               const int *ind_r,
                                                extendedSourceData *const *dat,
                                                int nr);
 
 
 // extendedSourceData functions
-extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_offaxis,
+extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
                                              int n_a, int n_storage,
                                              int *status);
 
