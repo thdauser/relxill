@@ -145,27 +145,34 @@ double calc_g_inf(double height, double a) {
  */
 double calc_g_inf_ext(double height, double r_ring, double a) {
   double g_inf;
-  if (r_ring <= 0.001){ // lamp-post source
+  if (r_ring <= 1.0e-6){ // lamp-post source
     g_inf = calc_g_inf(height, a);
   }
   else{
     // cosinetheta is the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
     // Theta is polar angle of the ring, between 0 and pi/2 (r_ring^2 + height^2 are always > a^2)
-    double cosine_theta = sqrt( ( sqrt(4.0 * a * a * height * height + (height * height +
-        r_ring * r_ring - a * a) * (height * height + r_ring * r_ring - a * a)) +
-            a * a - height * height - r_ring * r_ring ) / (2.0 * a * a) );
-    double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
-    double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
-    // careful about costheta = 0, when lp source
-    double Sigma = r * r + a * a * cosine_theta * cosine_theta;
-    double Delta = r * r - 2.0 * r + a * a;
-    double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a * sine_theta * sine_theta;
-    //double omega = 2.0 * a * r / rho_squared;
-    // previous version returned just the lamp-post shift, which led to stronger redshift of the ring primary source
-    //return sqrt(1.0 - (2 * height / (height * height + a * a)));
-    g_inf = sqrt(Sigma * Delta / rho_squared);
+    if (a == 0.0){ // special case of zero spin. The block below would give inf
+      double cosine_theta = height / sqrt(height * height + r_ring * r_ring);
+      double r = height / cosine_theta;
+      g_inf = sqrt(1 - 2.0 / r);
+    } else{
+      double cosine_theta = sqrt( ( sqrt(4.0 * a * a * height * height + (height * height +
+            r_ring * r_ring - a * a) * (height * height + r_ring * r_ring - a * a)) +
+                                    a * a - height * height - r_ring * r_ring ) / (2.0 * a * a) );
+      double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
+      double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
+      // careful about costheta = 0, when lp source
+      double Sigma = r * r + a * a * cosine_theta * cosine_theta;
+      double Delta = r * r - 2.0 * r + a * a;
+      double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a * sine_theta * sine_theta;
+      //double omega = 2.0 * a * r / rho_squared;
+      // previous version returned just the lamp-post shift, which led to stronger redshift of the ring primary source
+      //return sqrt(1.0 - (2 * height / (height * height + a * a)));
+      g_inf = sqrt(Sigma * Delta / rho_squared);
+    }
+
   }
-  //printf("energy shift ring source - observer (ONLY e^-nu NOW): %e, h, r = %e, %e\n", g_inf, height, r_ring);
+  // printf("energy shift ring source - observer (ONLY e^-nu NOW): %e, h, r, a = %e, %e, %e\n", g_inf, height, r_ring, a);
   return g_inf;
 }
 

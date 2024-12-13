@@ -18,9 +18,9 @@
 
 
 /**
- * @brief This module creates emissivity profile ready for usage in relxill taking it from the input table
- * @details This module reads values from the table produced with corona-lean by Stefan Licklederer.
- * The table is read by the columns, the columns are interpolated for further usage.
+ * @brief This module creates emissivity profile from the radially extended source ready for usage in relxill
+ * @details This module reads values from the extended table produced with ray-tracing calculations
+ * originally "corona-lean" by Stefan Licklederer, now significantly reworked by Alexey Nekrasov
  */
 
 
@@ -359,7 +359,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
   } while (0);
 
   if (*status == EXIT_SUCCESS) {
-    // assigne the value
+    // assign the value
     (*inp_tab) = tab;
   } else {
     free_extendedSourceTable(tab);
