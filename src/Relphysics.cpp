@@ -358,30 +358,19 @@ double calc_fluxboost_source_disk(double rad, double del_emit, double a, double 
   return boost;
 }
 
-
-
-double area_kerr(double r, double a) {
-  // NOTE: FACTOR OF R IN FRONT OF SQUARE ROOT IN THOMAS'S PAPER IS WRONG
-  // We assume that we use it only for ratio of areas, so dr is cancelled here
-  // not used now
-  return 2.0 * M_PI * sqrt((pow(r,4) + pow(a * r, 2) + 2.0 * pow(a,2) * r) /
-        pow(r, 2) - 2.0 * r + pow(a,2));
-}
-
-double area_flat(double r){
-  // We assume that we use it only for ratio of areas, so dr is cancelled here
-  // not used now - replaced with kerr_to_flat_area_ratio
-  return (2.0 * M_PI * r);
-}
-
 double kerr_to_flat_area_ratio(double r, double a) {
-  return sqrt( (pow(r,4) + pow(a * r, 2) + 2.0 * pow(a,2) * r) /
-                  (pow(r, 2) - 2.0 * r + pow(a,2)) ) / r;
+  return sqrt( (r * r * r + a * a * r + 2.0 * a * a) /
+                  (r * r * r + a * a * r - 2.0 * r * r) );
 }
 
 double gamma_correction(double r, double a){
-  double top = sqrt(pow(r,2) - 2.0 * r + pow(a,2)) * (pow(r,1.5) + abs(a));
-  double bottom = pow(r,0.25) * sqrt(pow(r,1.5) + 2.0 * a - 3 * pow(r, 0.5)) * sqrt(
-      pow(r,3) + pow(a,2) * r + 2.0 * pow(a,2));
-  return top / bottom;
+  // double top = sqrt(pow(r,2) - 2.0 * r + pow(a,2)) * (pow(r,1.5) + abs(a));
+  //double top = sqrt(r * r - 2.0 * r + a * a) * (r * sqrt(r) + abs(a));
+  //double bottom = pow(r,0.25) * sqrt(pow(r,1.5) + 2.0 * a - 3 * pow(r, 0.5)) * sqrt(
+      //pow(r,3) + pow(a,2) * r + 2.0 * pow(a,2));
+  //double bottom = sqrt(sqrt(r)) * sqrt(r * sqrt(r) + 2.0 * a - 3 * sqrt(r)) * sqrt(
+      //r * r * r + a * a * r + 2.0 * a * a);
+  //double bottom = sqrt((r * r + 2.0 * a * sqrt(r) - 3 * r) * (r * r * r + a * a * r + 2.0 * a * a));
+  return sqrt(r * r - 2.0 * r + a * a) * (r * sqrt(r) + abs(a)) / sqrt((r * r +
+              2.0 * a * sqrt(r) - 3 * r) * (r * r * r + a * a * r + 2.0 * a * a));
 }

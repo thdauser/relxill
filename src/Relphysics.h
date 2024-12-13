@@ -61,8 +61,6 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
 double calc_lp_emissivity_newton(double h, double r);
 double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta);
 
-double area_kerr(double r, double a);
-double area_flat(double r);
 double kerr_to_flat_area_ratio(double r, double a);
 double gamma_correction(double r, double a);
 
