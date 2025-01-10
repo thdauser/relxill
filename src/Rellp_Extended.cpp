@@ -415,7 +415,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
  * @param tab; extendedSourceTable, pointer to the table as declared above
  * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
  */
-emisProfile *interpol_estable(double a, double height, double d_ring,
+emisProfile *interpol_estable(double a, double height, double r_ring,
                               double gamma, int n_gshift_storage,
                               extendedSourceTable *tab, int *status) {
   CHECK_STATUS_RET(*status, nullptr);
@@ -463,7 +463,7 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
     } else {
       index = ind_h[ii];
     }
-    get_ipol_factor_double(d_ring, dat_ind_a[ii]->r_ring[index], tab->n_r, &(ind_r[ii]),
+    get_ipol_factor_double(r_ring, dat_ind_a[ii]->r_ring[index], tab->n_r, &(ind_r[ii]),
                            &(ifac_r[ii]));
     //printf("interpolation factor distance, index distance: %e %d\n", ifac_d[ii], ind_d[ii]);
     //printf("distance values interp and table: %e %e \n", r_ring, dat_ind_a[ii]->r_ring[index][ind_d[ii]]);
@@ -475,16 +475,20 @@ emisProfile *interpol_estable(double a, double height, double d_ring,
 
   // determines the gshift for the two spin values required for
   // interpolation in the next function
-  for(int i=0; i < tab->n_h; i++){
-    for (int j=0; j< tab->n_r; j++){
-      for(int k=0; k < tab->n_rad; k++){
+  //// Do I really need to iterate the whole table???
+  for (int i=0; i < tab->n_h; i++){
+    for (int j=0; j < tab->n_r; j++){
+      for (int k=0; k < tab->n_rad; k++){
         double sum1 = 0.0;
         double sum2 = 0.0;
-        for(int l=0; l < tab->n_storage ; l++){
-          //sum1 += pow(tab->dat[ind_a]->energy_data_storage[i][j][k][l] / n_gshift_storage, gamma); - how it was
-          // why division by K = n_gshift_storage is here?? Shouldn't the whole sum be divided by it?
+        for (int l=0; l < tab->n_storage; l++){
           sum1 += pow(tab->dat[ind_a]->energy_data_storage[i][j][k][l], gamma);
           sum2 += pow(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l], gamma);
+          // sum1 += powf(float(tab->dat[ind_a]->energy_data_storage[i][j][k][l]), float(gamma));
+          //sum2 += powf(float(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l]), float(gamma));
+          // using the fact that gamma is in range (1, 4) and g is usually close to 1, we can cut some costly function calls
+          //sum1 += exp(log(tab->dat[ind_a]->energy_data_storage[i][j][k][l]) * gamma);
+          //sum2 += exp(log(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l]) * gamma);
         }
         tab->dat[ind_a]->gshift[i][j][k] = sum1 / n_gshift_storage;
         tab->dat[ind_a+1]->gshift[i][j][k] = sum2 / n_gshift_storage;

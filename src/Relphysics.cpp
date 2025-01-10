@@ -359,18 +359,13 @@ double calc_fluxboost_source_disk(double rad, double del_emit, double a, double 
 }
 
 double kerr_to_flat_area_ratio(double r, double a) {
+  // the value below is obtained directly from ratio A_flat / A_Kerr by all possible simplifications
   return sqrt( (r * r * r + a * a * r + 2.0 * a * a) /
                   (r * r * r + a * a * r - 2.0 * r * r) );
 }
 
 double gamma_correction(double r, double a){
-  // double top = sqrt(pow(r,2) - 2.0 * r + pow(a,2)) * (pow(r,1.5) + abs(a));
-  //double top = sqrt(r * r - 2.0 * r + a * a) * (r * sqrt(r) + abs(a));
-  //double bottom = pow(r,0.25) * sqrt(pow(r,1.5) + 2.0 * a - 3 * pow(r, 0.5)) * sqrt(
-      //pow(r,3) + pow(a,2) * r + 2.0 * pow(a,2));
-  //double bottom = sqrt(sqrt(r)) * sqrt(r * sqrt(r) + 2.0 * a - 3 * sqrt(r)) * sqrt(
-      //r * r * r + a * a * r + 2.0 * a * a);
-  //double bottom = sqrt((r * r + 2.0 * a * sqrt(r) - 3 * r) * (r * r * r + a * a * r + 2.0 * a * a));
-  return sqrt(r * r - 2.0 * r + a * a) * (r * sqrt(r) + abs(a)) / sqrt((r * r +
-              2.0 * a * sqrt(r) - 3 * r) * (r * r * r + a * a * r + 2.0 * a * a));
+  // the value is obtained from the "Bardeen"-like form of the Lorentz factor by a few simplifications
+  return (r * sqrt(r) + abs(a)) * sqrt( (r * r - 2.0 * r + a * a) / (r * r +
+              2.0 * a * sqrt(r) - 3.0 * r) / (r * r * r + a * a * r + 2.0 * a * a) );
 }
