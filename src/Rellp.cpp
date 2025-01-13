@@ -255,7 +255,7 @@ void apply_emis_fluxboost_source_disk(emisProfile *emisProf, double a, double he
 /**
  * @brief calculate the emissivity profile of a lamp post point source
  * Important: from the relParam input values, height and beta will be ignored (as this allows
- * the routine to be called for different values if height and beta for an extended source)
+ * the routine to be called for different values of height and beta for an extended source)
  * @param emis_profile
  * @param param
  * @param height

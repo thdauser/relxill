@@ -145,11 +145,11 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
    ////  add relativistic corrections to the flux
    /// note however that the energy shift g^Gamma is not added here - it is added below in interpol_estable function
+   /// because Gamma is a variable
    double *r = dat->radius;
    for (int i=0; i<n_h; i++) {
      for (int j=0; j<n_r; j++) {
        for (int k=0; k<n_rad; k++){
-         //dat->flux[i][j][k] *= area_flat(r[k]) / area_kerr(r[k],spin) / gamma_correction(r[k],spin);
          dat->flux[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
        }
      }
@@ -281,7 +281,7 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
 
   CHECK_STATUS_VOID(*status);
   // printf("call get emis\n");
-  extendedSourceTable* estable = get_es_table(status);
+  extendedSourceTable* estable = get_es_table(status); // reading table everytime? No, caching
   calc_extended_emis(emis, param, estable, status);
 }
 
@@ -356,7 +356,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       }
     }
 
-  } while (0);
+  } while (false);
 
   if (*status == EXIT_SUCCESS) {
     // assign the value
@@ -393,14 +393,15 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   emisProf->photon_fate_fractions = calc_refl_frac_ext(param, tab, status);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
-  // Maybe not necessary for extended source
+  // Not checked for extended source, todo later?
 //  for (int ii=0; ii<tab->n_rad; ii++){
 //    if (param->beta > 1e-6) {
 //      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
 //    }
 //  }
  // AN: not used as far as I see from other routines?
- // emisProf->normFactorPrimSpec = calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma, emisProf->photon_fate_fractions->f_inf);
+ // emisProf->normFactorPrimSpec = calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma,
+ //         emisProf->photon_fate_fractions->f_inf);
 }
 
 
@@ -426,12 +427,12 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
 
   // assert(ifac_a >= 0.0 && ifac_a <= 1.0);
   if (ifac_a < 0.0 or ifac_a > 1.0){
+    // should not happen in the current table
     printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ifac_a);
   }
-
   extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
-  double* jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
+  double* jet_rad = (double*) malloc(sizeof(double)*tab->n_rad); // bad naming - it is just radial grid
   CHECK_MALLOC_RET_STATUS(jet_rad,status,nullptr)
   for (int ii = 0; ii < tab->n_rad; ii++) {
     jet_rad[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->radius[ii], dat_ind_a[1]->radius[ii]);
@@ -455,15 +456,15 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
   int ind_r[2];
   double ifac_r[2];
   for (int ii = 0; ii < 2; ii++) {
-    int index;
-    // ad hoc solution to solve issue with false choosing of distance value - works OK, but not sure if we need it at all
+    int radial_index;
+    // ad hoc solution to solve issue with false choosing of distance value - works OK, but not sure if we need it
     if (ifac_h[ii] > 0.999999) {
-      printf(" *** Height interpolation close to table value: ifac_h = %.1f \n", ifac_h[ii]);
-      index = ind_h[ii] + 1;
+      // printf(" *** Height interpolation close to table value: ifac_h = %.1f \n", ifac_h[ii]);
+      radial_index = ind_h[ii] + 1;
     } else {
-      index = ind_h[ii];
+      radial_index = ind_h[ii];
     }
-    get_ipol_factor_double(r_ring, dat_ind_a[ii]->r_ring[index], tab->n_r, &(ind_r[ii]),
+    get_ipol_factor_double(r_ring, dat_ind_a[ii]->r_ring[radial_index], tab->n_r, &(ind_r[ii]),
                            &(ifac_r[ii]));
     //printf("interpolation factor distance, index distance: %e %d\n", ifac_d[ii], ind_d[ii]);
     //printf("distance values interp and table: %e %e \n", r_ring, dat_ind_a[ii]->r_ring[index][ind_d[ii]]);
@@ -473,9 +474,9 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
     }
   }
 
-  // determines the gshift for the two spin values required for
-  // interpolation in the next function
-  //// Do I really need to iterate the whole table???
+  // determines the gshift for the two spin values required for interpolation in the next function
+  /*
+  //// Do I really need to iterate the whole table??? Updated. Leaving here for a few more commits.
   for (int i=0; i < tab->n_h; i++){
     for (int j=0; j < tab->n_r; j++){
       for (int k=0; k < tab->n_rad; k++){
@@ -484,14 +485,26 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
         for (int l=0; l < tab->n_storage; l++){
           sum1 += pow(tab->dat[ind_a]->energy_data_storage[i][j][k][l], gamma);
           sum2 += pow(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l], gamma);
-          // sum1 += powf(float(tab->dat[ind_a]->energy_data_storage[i][j][k][l]), float(gamma));
-          //sum2 += powf(float(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l]), float(gamma));
-          // using the fact that gamma is in range (1, 4) and g is usually close to 1, we can cut some costly function calls
-          //sum1 += exp(log(tab->dat[ind_a]->energy_data_storage[i][j][k][l]) * gamma);
-          //sum2 += exp(log(tab->dat[ind_a+1]->energy_data_storage[i][j][k][l]) * gamma);
         }
-        tab->dat[ind_a]->gshift[i][j][k] = sum1 / n_gshift_storage;
-        tab->dat[ind_a+1]->gshift[i][j][k] = sum2 / n_gshift_storage;
+        tab->dat[ind_a]->gshift[i][j][k] = sum1 / n_gshift_storage; // why is it added to table data?
+        tab->dat[ind_a+1]->gshift[i][j][k] = sum2 / n_gshift_storage; // seems completely wrong
+      }
+    }
+  }
+  */
+  // energy shifts in a rectangle of base points need to be taken from table. We take only those values which are
+  // the closest below and above input h and x. It was done much less optimal before
+  for (int i=0; i < 2; i++) { // vertical bins, ind_h
+    for (int j = 0; j < 2; j++) { // radial offset bins, ind_r
+      for (int k = 0; k < tab->n_rad; k++) { // radial bins
+        double sum1 = 0.0; // sums are zeroed every time
+        double sum2 = 0.0; // two sums are defined for two spins
+        for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
+          sum1 += pow(tab->dat[ind_a]->energy_data_storage[ind_h[0] + i][ind_r[0] + j][k][l], gamma);
+          sum2 += pow(tab->dat[ind_a + 1]->energy_data_storage[ind_h[0] + i][ind_r[0] + j][k][l], gamma);
+        }
+        dat_ind_a[0]->gshift[ind_h[0] + i][ind_r[0] + j][k] = sum1 / n_gshift_storage;
+        dat_ind_a[1]->gshift[ind_h[0] + i][ind_r[0] + j][k] = sum2 / n_gshift_storage;
       }
     }
   }
@@ -532,13 +545,13 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
 
   for (int ii = 0; ii < nr; ii++) {
     // Interpolation for the flux
-    double rlo = interp_lin_2d(ifac_r[0], // does h-d interpolation for spin[ind_a]
+    double rlo = interp_lin_2d(ifac_r[0], // does h-r interpolation of flux for spin[ind_a]
                                ifac_h[0],
                                dat_a[0]->flux[ind_h[0]][ind_r[0]][ii],
                                dat_a[0]->flux[ind_h[0]][ind_r[0]+1][ii],
                                dat_a[0]->flux[ind_h[0]+1][ind_r[0]][ii],
                                dat_a[0]->flux[ind_h[0]+1][ind_r[0]+1][ii]);
-    double rhi = interp_lin_2d(ifac_r[1], // does height-distance interpolation for spin[ind_a+1]
+    double rhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of flux for spin[ind_a+1]
                                ifac_h[1],
                                dat_a[1]->flux[ind_h[1]][ind_r[1]][ii],
                                dat_a[1]->flux[ind_h[1]][ind_r[1]+1][ii],
@@ -547,13 +560,13 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
     emis_profile_table->emis[ii] = interp_lin_1d(ifac_a, rlo, rhi);
 
     // Interpolation for the energy shift which is then immediately added to flux
-    double flo = interp_lin_2d(ifac_r[0], // does h-r interpolation for spin[ind_a]
+    double flo = interp_lin_2d(ifac_r[0], // does h-r interpolation of gshift for spin[ind_a]
                                ifac_h[0],
                                dat_a[0]->gshift[ind_h[0]][ind_r[0]][ii],
                                dat_a[0]->gshift[ind_h[0]][ind_r[0]+1][ii],
                                dat_a[0]->gshift[ind_h[0]+1][ind_r[0]][ii],
                                dat_a[0]->gshift[ind_h[0]+1][ind_r[0]+1][ii]);
-    double fhi = interp_lin_2d(ifac_r[1], // does height-ring interpolation for spin[ind_a+1]
+    double fhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of gshift for spin[ind_a+1]
                                ifac_h[1],
                                dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii],
                                dat_a[1]->gshift[ind_h[1]][ind_r[1]+1][ii],
@@ -562,7 +575,7 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
 
     double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
     // printf("calculating g^gamma (g^gamma, flo, fhi, ifac): %.6f, %.6f, %.6f, %.6f \n", g_gamma, flo, fhi, ifac_a);
-    emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma actually
+    emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
 
     //emis_profile_table->del_emit[ii] = 0;
     // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
