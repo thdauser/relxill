@@ -143,7 +143,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
     }
   }
 
-   ////  add relativistic corrections to the flux
+   ////  add relativistic corrections to the flux. TODO: cache these corrections in new table
    /// note however that the energy shift g^Gamma is not added here - it is added below in interpol_estable function
    /// because Gamma is a variable
    double *r = dat->radius;
@@ -169,7 +169,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 static lpReflFrac *calc_refl_frac_ext(const relParam *param,
                                       extendedSourceTable *tab, int *status) {
 
-  // in case there is no relativity information, the refl_frac is 1
+  // Note that this function partially repeats the interpol_estable function. Maybe combine them?
 
   lpReflFrac *str = new_lpReflFrac(status);
   CHECK_STATUS_RET(*status, str);
@@ -189,67 +189,62 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
                            &(ifac_h[ii]));
   }
 
-  int ind_d[2];
-  double ifac_d[2];
+  int ind_r[2];
+  double ifac_r[2];
   for (int ii = 0; ii < 2; ii++) {
     int index;
-    // ad hoc solution to solve issue with false choosing of distance value
+    // doesn't matter for the currently used table (but if r_ring are different for different heights - it will matter)
     if (ifac_h[ii] > 0.999999) {
       index = ind_h[ii] + 1;
     } else {
       index = ind_h[ii];
     }
     get_ipol_factor_double(param->r_ring, dat_ind_a[ii]->r_ring[index], tab->n_r,
-                           &(ind_d[ii]), &(ifac_d[ii]));
+                           &(ind_r[ii]), &(ifac_r[ii]));
   }
 
 
-  // interpolate f_ad value
-  double rlo =
-      interp_lin_2d(ifac_d[0], // does h-d interpolation for spin[ind_a]
-                    ifac_h[0], dat_ind_a[0]->f_ad[ind_h[0]][ind_d[0]],
-                    dat_ind_a[0]->f_ad[ind_h[0]][ind_d[0] + 1],
-                    dat_ind_a[0]->f_ad[ind_h[0] + 1][ind_d[0]],
-                    dat_ind_a[0]->f_ad[ind_h[0] + 1][ind_d[0] + 1]);
-  double rhi = interp_lin_2d(
-      ifac_d[1], // does height-distance interpolation for spin[ind_a+1]
-      ifac_h[1], dat_ind_a[1]->f_ad[ind_h[1]][ind_d[1]],
-      dat_ind_a[1]->f_ad[ind_h[1]][ind_d[1] + 1],
-      dat_ind_a[1]->f_ad[ind_h[1] + 1][ind_d[1]],
-      dat_ind_a[1]->f_ad[ind_h[1] + 1][ind_d[1] + 1]);
-  str->f_ad = interp_lin_1d(ifac_a, rlo, rhi);
+  // interpolate f_ad value in h-r plane
+  double f_ad_low = interp_lin_2d(ifac_r[0], ifac_h[0],
+                             dat_ind_a[0]->f_ad[ind_h[0]][ind_r[0]],
+                             dat_ind_a[0]->f_ad[ind_h[0]][ind_r[1]],
+                             dat_ind_a[0]->f_ad[ind_h[1]][ind_r[0]],
+                             dat_ind_a[0]->f_ad[ind_h[1]][ind_r[1]]);
+  double f_ad_high = interp_lin_2d(ifac_r[1], ifac_h[1],
+                             dat_ind_a[1]->f_ad[ind_h[0]][ind_r[0]],
+                             dat_ind_a[1]->f_ad[ind_h[0]][ind_r[1]],
+                             dat_ind_a[1]->f_ad[ind_h[1]][ind_r[0]],
+                             dat_ind_a[1]->f_ad[ind_h[1]][ind_r[1]]);
+  // interpolating between spins
+  str->f_ad = interp_lin_1d(ifac_a, f_ad_low, f_ad_high);
 
-  // interpolate f_inf value
-  double rlo_1 =
-      interp_lin_2d(ifac_d[0], // does h-d interpolation for spin[ind_a]
-                    ifac_h[0], dat_ind_a[0]->f_inf[ind_h[0]][ind_d[0]],
-                    dat_ind_a[0]->f_inf[ind_h[0]][ind_d[0] + 1],
-                    dat_ind_a[0]->f_inf[ind_h[0] + 1][ind_d[0]],
-                    dat_ind_a[0]->f_inf[ind_h[0] + 1][ind_d[0] + 1]);
-  double rhi_1 = interp_lin_2d(
-      ifac_d[1], // does height-distance interpolation for spin[ind_a+1]
-      ifac_h[1], dat_ind_a[1]->f_inf[ind_h[1]][ind_d[1]],
-      dat_ind_a[1]->f_inf[ind_h[1]][ind_d[1] + 1],
-      dat_ind_a[1]->f_inf[ind_h[1] + 1][ind_d[1]],
-      dat_ind_a[1]->f_inf[ind_h[1] + 1][ind_d[1] + 1]);
-  str->f_inf = interp_lin_1d(ifac_a, rlo_1, rhi_1);
+  // interpolate f_inf value in h-r plane
+  double f_inf_low = interp_lin_2d(ifac_r[0], ifac_h[0],
+                               dat_ind_a[0]->f_inf[ind_h[0]][ind_r[0]],
+                               dat_ind_a[0]->f_inf[ind_h[0]][ind_r[1]],
+                               dat_ind_a[0]->f_inf[ind_h[1]][ind_r[0]],
+                               dat_ind_a[0]->f_inf[ind_h[1]][ind_r[1]]);
+  double f_inf_high = interp_lin_2d(ifac_r[1], ifac_h[1],
+                               dat_ind_a[1]->f_inf[ind_h[0]][ind_r[0]],
+                               dat_ind_a[1]->f_inf[ind_h[0]][ind_r[1]],
+                               dat_ind_a[1]->f_inf[ind_h[1]][ind_r[0]],
+                               dat_ind_a[1]->f_inf[ind_h[1]][ind_r[1]]);
+  str->f_inf = interp_lin_1d(ifac_a, f_inf_low, f_inf_high);
 
-  // interpolate refl_frac value
-  double rlo_2 =
-        interp_lin_2d(ifac_d[0], // does h-d interpolation for spin[ind_a]
-                      ifac_h[0], dat_ind_a[0]->refl_frac[ind_h[0]][ind_d[0]],
-                      dat_ind_a[0]->refl_frac[ind_h[0]][ind_d[0] + 1],
-                      dat_ind_a[0]->refl_frac[ind_h[0] + 1][ind_d[0]],
-                      dat_ind_a[0]->refl_frac[ind_h[0] + 1][ind_d[0] + 1]);
-  double rhi_2 = interp_lin_2d(
-        ifac_d[1], // does height-distance interpolation for spin[ind_a+1]
-        ifac_h[1], dat_ind_a[1]->refl_frac[ind_h[1]][ind_d[1]],
-        dat_ind_a[1]->refl_frac[ind_h[1]][ind_d[1] + 1],
-        dat_ind_a[1]->refl_frac[ind_h[1] + 1][ind_d[1]],
-        dat_ind_a[1]->refl_frac[ind_h[1] + 1][ind_d[1] + 1]);
-  str->refl_frac = interp_lin_1d(ifac_a, rlo_2, rhi_2);
+  // interpolate refl_frac value in h-r plane
+  double refl_frac_low = interp_lin_2d(ifac_r[0], ifac_h[0],
+                               dat_ind_a[0]->refl_frac[ind_h[0]][ind_r[0]],
+                               dat_ind_a[0]->refl_frac[ind_h[0]][ind_r[1]],
+                               dat_ind_a[0]->refl_frac[ind_h[1]][ind_r[0]],
+                               dat_ind_a[0]->refl_frac[ind_h[1]][ind_r[1]]);
+  double refl_frac_high = interp_lin_2d(ifac_r[1],ifac_h[1],
+                               dat_ind_a[1]->refl_frac[ind_h[0]][ind_r[0]],
+                               dat_ind_a[1]->refl_frac[ind_h[0]][ind_r[1]],
+                               dat_ind_a[1]->refl_frac[ind_h[1]][ind_r[0]],
+                               dat_ind_a[1]->refl_frac[ind_h[1]][ind_r[1]]);
+  str->refl_frac = interp_lin_1d(ifac_a, refl_frac_low, refl_frac_high);
   // photons are not allowed to cross the disk plane
-  if (str->f_inf > 0.5) { // should never be the case - indicates wrong table
+  if (str->f_inf > 0.5) { // should never be the case - TODO in new table
     str->f_inf = 0.5;
     printf("Rellp_Extended: inf fraction more than 0.5. \n");
     printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
