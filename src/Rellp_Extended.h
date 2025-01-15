@@ -77,8 +77,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf);
 
 emisProfile *interpol_estable(double a, double height, double r_ring,
-                              double gamma, int n_gshift_storage,
-                              extendedSourceTable *tab, int *status);
+                              double gamma, extendedSourceTable *tab, int *status);
 
 void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                                double ifac_a,

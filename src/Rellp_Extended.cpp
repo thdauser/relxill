@@ -251,7 +251,8 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
   // photons are not allowed to cross the disk plane
   if (str->f_inf > 0.5) { // should never be the case - indicates wrong table
     str->f_inf = 0.5;
-    printf("Rellp_Extended: inf fraction more than 0.5");
+    printf("Rellp_Extended: inf fraction more than 0.5. \n");
+    printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
   }
   /// these are equal for now. f_inf_rest is used to calculate primary spectrum
   /// (function flux_boost_source_to_observer in PrimarySource.h)
@@ -384,7 +385,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   CHECK_STATUS_VOID(*status);
 
   emisProfile *emis_profile_table = interpol_estable(
-      param->a, param->height, param->r_ring, param->gamma, ESTABLE_NENERGYBINS, tab, status);
+      param->a, param->height, param->r_ring, param->gamma, tab, status);
    rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile
@@ -412,13 +413,11 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
  * @param height; double, height
  * @param r_ring; double, ring radius
  * @param gamma; double, photon index
- * @param n_gshift_storage; int, number of energy shift bins
  * @param tab; extendedSourceTable, pointer to the table as declared above
  * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
  */
 emisProfile *interpol_estable(double a, double height, double r_ring,
-                              double gamma, int n_gshift_storage,
-                              extendedSourceTable *tab, int *status) {
+                              double gamma, extendedSourceTable *tab, int *status) {
   CHECK_STATUS_RET(*status, nullptr);
 
   int ind_a;
@@ -429,6 +428,7 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
   if (ifac_a < 0.0 or ifac_a > 1.0){
     // should not happen in the current table
     printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ifac_a);
+    printf("Better limit a range of values within table limits \n");
   }
   extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
@@ -450,16 +450,17 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
     //assert(ifac_h[ii] >= 0.0 && ifac_h[ii] <= 1.0);
     if (ifac_h[ii] < 0.0 or ifac_h[ii] > 1.0){
       printf(" *** Warning : height interpolation becomes extrapolation: ifac_h = %.1f \n", ifac_h[ii]);
+      printf("Better limit a range of values within table limits \n");
     }
   }
 
   int ind_r[2];
   double ifac_r[2];
   for (int ii = 0; ii < 2; ii++) {
-    int radial_index;
-    // ad hoc solution to solve issue with false choosing of distance value - works OK, but not sure if we need it
+    int radial_index; // index of the range of ring values corresponding to a given height
+    // (in the currently used table it does not matter, as ring values in table are equal for all heights)
+    // if h almost equals the upper height, we also shift the index of the ring value
     if (ifac_h[ii] > 0.999999) {
-      // printf(" *** Height interpolation close to table value: ifac_h = %.1f \n", ifac_h[ii]);
       radial_index = ind_h[ii] + 1;
     } else {
       radial_index = ind_h[ii];
@@ -470,7 +471,8 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
     //printf("distance values interp and table: %e %e \n", r_ring, dat_ind_a[ii]->r_ring[index][ind_d[ii]]);
     //assert(ifac_d[ii] >= -1.0 && ifac_d[ii] <= 1.0);
     if (ifac_r[ii] < 0.0 or ifac_r[ii] > 1.0){
-      printf(" *** Warning : dist interpolation becomes extrapolation: ifac_d = %.1f \n", ifac_r[ii]);
+      printf(" *** Warning : dist interpolation becomes extrapolation: ifac_r = %.1f \n", ifac_r[ii]);
+      printf("Better limit a range of values within table limits \n");
     }
   }
 
@@ -500,11 +502,12 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
         double sum1 = 0.0; // sums are zeroed every time
         double sum2 = 0.0; // two sums are defined for two spins
         for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
-          sum1 += pow(tab->dat[ind_a]->energy_data_storage[ind_h[0] + i][ind_r[0] + j][k][l], gamma);
-          sum2 += pow(tab->dat[ind_a + 1]->energy_data_storage[ind_h[0] + i][ind_r[0] + j][k][l], gamma);
+          sum1 += pow(tab->dat[ind_a]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
+          sum2 += pow(tab->dat[ind_a + 1]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
         }
-        dat_ind_a[0]->gshift[ind_h[0] + i][ind_r[0] + j][k] = sum1 / n_gshift_storage;
-        dat_ind_a[1]->gshift[ind_h[0] + i][ind_r[0] + j][k] = sum2 / n_gshift_storage;
+        dat_ind_a[0]->gshift[ind_h[i]][ind_r[j]][k] = sum1 / tab->n_storage;
+        dat_ind_a[1]->gshift[ind_h[i]][ind_r[j]][k] = sum2 / tab->n_storage;
+        /// printf(" Gshift = %.6f, %.6f, %i, %i \n", dat_ind_a[0]->gshift[ind_h[0] + i][ind_r[0] + j][k], dat_ind_a[1]->gshift[ind_h[0] + i][ind_r[0] + j][k], ind_h[0] + i, ind_r[0] + j);
       }
     }
   }
@@ -544,41 +547,45 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                                const int nr) {
 
   for (int ii = 0; ii < nr; ii++) {
-    // Interpolation for the flux
+    // Interpolation of the flux
     double rlo = interp_lin_2d(ifac_r[0], // does h-r interpolation of flux for spin[ind_a]
                                ifac_h[0],
                                dat_a[0]->flux[ind_h[0]][ind_r[0]][ii],
-                               dat_a[0]->flux[ind_h[0]][ind_r[0]+1][ii],
-                               dat_a[0]->flux[ind_h[0]+1][ind_r[0]][ii],
-                               dat_a[0]->flux[ind_h[0]+1][ind_r[0]+1][ii]);
+                               dat_a[0]->flux[ind_h[0]][ind_r[1]][ii],
+                               dat_a[0]->flux[ind_h[1]][ind_r[0]][ii],
+                               dat_a[0]->flux[ind_h[1]][ind_r[1]][ii]);
     double rhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of flux for spin[ind_a+1]
                                ifac_h[1],
-                               dat_a[1]->flux[ind_h[1]][ind_r[1]][ii],
-                               dat_a[1]->flux[ind_h[1]][ind_r[1]+1][ii],
-                               dat_a[1]->flux[ind_h[1]+1][ind_r[1]][ii],
-                               dat_a[1]->flux[ind_h[1]+1][ind_r[1]+1][ii]);
+                               dat_a[1]->flux[ind_h[0]][ind_r[0]][ii],
+                               dat_a[1]->flux[ind_h[0]][ind_r[1]][ii],
+                               dat_a[1]->flux[ind_h[1]][ind_r[0]][ii],
+                               dat_a[1]->flux[ind_h[1]][ind_r[1]][ii]);
     emis_profile_table->emis[ii] = interp_lin_1d(ifac_a, rlo, rhi);
+    //printf("calculating flux (flux, idx_h_low, idx_h_high, idx_r_low, idx_r_high): %.6f, %i, %i, %i, %i \n", emis_profile_table->emis[ii], ind_h[0], ind_h[1], ind_r[0], ind_r[1]);
+    //printf("calculating flux a0 (f_low_0, f_high_0, f_low_1, f_high_1): %.6f, %.6f, %.6f, %.6f \n", dat_a[0]->flux[ind_h[0]][ind_r[0]][ii], dat_a[0]->flux[ind_h[0]][ind_r[0]+1][ii], dat_a[0]->flux[ind_h[0]+1][ind_r[0]][ii], dat_a[0]->flux[ind_h[0]+1][ind_r[0]+1][ii]);
+    //printf("calculating flux a1 (f_low_0, f_high_0, f_low_1, f_high_1): %.6f, %.6f, %.6f, %.6f \n", dat_a[1]->flux[ind_h[1]][ind_r[1]][ii], dat_a[1]->flux[ind_h[1]][ind_r[1]+1][ii], dat_a[1]->flux[ind_h[1]+1][ind_r[1]][ii], dat_a[1]->flux[ind_h[1]+1][ind_r[1]+1][ii]);
 
-    // Interpolation for the energy shift which is then immediately added to flux
+    // Interpolation of the energy shift which is then immediately added to flux
     double flo = interp_lin_2d(ifac_r[0], // does h-r interpolation of gshift for spin[ind_a]
                                ifac_h[0],
                                dat_a[0]->gshift[ind_h[0]][ind_r[0]][ii],
-                               dat_a[0]->gshift[ind_h[0]][ind_r[0]+1][ii],
-                               dat_a[0]->gshift[ind_h[0]+1][ind_r[0]][ii],
-                               dat_a[0]->gshift[ind_h[0]+1][ind_r[0]+1][ii]);
+                               dat_a[0]->gshift[ind_h[0]][ind_r[1]][ii],
+                               dat_a[0]->gshift[ind_h[1]][ind_r[0]][ii],
+                               dat_a[0]->gshift[ind_h[1]][ind_r[1]][ii]);
     double fhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of gshift for spin[ind_a+1]
                                ifac_h[1],
-                               dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii],
-                               dat_a[1]->gshift[ind_h[1]][ind_r[1]+1][ii],
-                               dat_a[1]->gshift[ind_h[1]+1][ind_r[1]][ii],
-                               dat_a[1]->gshift[ind_h[1]+1][ind_r[1]+1][ii]);
+                               dat_a[1]->gshift[ind_h[0]][ind_r[0]][ii],
+                               dat_a[1]->gshift[ind_h[0]][ind_r[1]][ii],
+                               dat_a[1]->gshift[ind_h[1]][ind_r[0]][ii],
+                               dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii]);
 
     double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
-    // printf("calculating g^gamma (g^gamma, flo, fhi, ifac): %.6f, %.6f, %.6f, %.6f \n", g_gamma, flo, fhi, ifac_a);
+    //printf("calculating g^gamma (g^gamma, idx_h_low, idx_h_high, idx_r_low, idx_r_high): %.6f, %i, %i, %i, %i \n", g_gamma, ind_h[0], ind_h[1], ind_r[0], ind_r[1]);
+    //printf("calculating g^gamma a0 (g_low_0, g_high_0, g_low_1, g_high_1): %.6f, %.6f, %.6f, %.6f \n", dat_a[0]->gshift[ind_h[0]][ind_r[0]][ii], dat_a[0]->gshift[ind_h[0]][ind_r[1]][ii], dat_a[0]->gshift[ind_h[1]][ind_r[0]][ii], dat_a[0]->gshift[ind_h[1]][ind_r[1]][ii]);
+    //printf("calculating g^gamma a1 (g_low_0, g_high_0, g_low_1, g_high_1): %.6f, %.6f, %.6f, %.6f \n", dat_a[1]->gshift[ind_h[0]][ind_r[0]][ii], dat_a[1]->gshift[ind_h[0]][ind_r[1]][ii], dat_a[1]->gshift[ind_h[1]][ind_r[0]][ii], dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii]);
     emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
 
     //emis_profile_table->del_emit[ii] = 0;
-    // TODO: Just as a placeholder to initialize value. Will remove once calculation is implemented.
     //emis_profile_table->del_inc[ii] = 30;
     // AN: currently these values are not used for extended sources.
     // They are supposed to be used only for refl_frac calculations,
