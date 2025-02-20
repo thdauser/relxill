@@ -161,7 +161,7 @@ double calc_g_inf_ext(double height, double r_ring, double a) {
                                     a * a - height * height - r_ring * r_ring ) / (2.0 * a * a) );
       double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
       double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
-      // careful about costheta = 0, when lp source
+      // careful about costheta = 0, when h -> 0 (we do not have it in the current table)
       double Sigma = r * r + a * a * cosine_theta * cosine_theta;
       double Delta = r * r - 2.0 * r + a * a;
       double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a * sine_theta * sine_theta;
