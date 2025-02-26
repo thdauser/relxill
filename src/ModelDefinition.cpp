@@ -165,8 +165,9 @@ static void setNegativeHeightToRplus(double *h, double a) {
   }
 }
 
-int warned_rms = 0;
+int warned_rms = 0; // why not bool btw?
 int warned_height = 0;
+int warned_extent = 0;
 
 void check_parameter_bounds(relParam *param, int *status) {
 
@@ -260,24 +261,49 @@ void check_parameter_bounds(relParam *param, int *status) {
     double h_fac = 1.1;
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->model_type == MOD_TYPE_RELXILLLPEXT) {
-      h_fac = 1.2; // current table_v5.fits for extended emissivity extends down to 1.1 r_EH, but interpolation works without extrapolation only down to 1.2 EH
       if (param->r_ring < 0.0) {
-          printf(" *** Warning : Ring source cannot have negative size (r < %.1f r_event) \n", 0.0);
-          printf("      Setting    r_ring = 0.0 \n");
+        printf(" *** Warning : Ring source cannot have negative size (r < %.1f r_event) \n", 0.0);
+        printf("      Setting    r_ring = 0.0 \n");
         param->r_ring = 0.0;
       }
-    }
-    if ((h_fac * r_event - param->height) > 1e-4) {
-      if (!warned_height) {
-        printf(" *** Warning : Lamp post/ring source too close to the black hole (h < %.1f r_event) \n", h_fac);
-        printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
-               h_fac);
-        printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
-        printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
-        warned_height = 1;
+      h_fac = 0.2; // the lowest possible height in rg
+      if ((h_fac - param->height) > 1e-4) { // double check the conversion to rg/reh
+        if (!warned_height) {
+          printf(" *** Warning : Ring source too close to the disk (h < %.1f r_g) \n", h_fac);
+          printf("      Height, Extent = %.3f r_g, %.3f r_g \n", param->height, param->r_ring);
+          printf("      Setting    h =  %.1f*r_g \n", h_fac);
+          warned_height = 1;
+        }
+        param->height = h_fac; //double check, test
       }
-      param->height = r_event * h_fac;
+      double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a);
+      double r_fac = 1.5;
+      if ((r_spherical - r_fac * r_event) < 1e-4) {
+        if (!warned_extent) {
+          printf(" *** Warning : Ring source too close to the BH (h < %.1f r_event) \n", r_fac);
+          printf("      Height, eXtent = %.3f r_g, %.3f r_g \n", param->height, param->r_ring);
+          printf("      Spherical radius = %.3f r_g \n", r_spherical);
+          warned_extent = 1;
+        }
+        param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, r_spherical, param->a);
+        printf("      Setting eXtent (too close to BH) =  %.1f*r_g \n", param->r_ring);
+        }
+      }
+
+    else { // lp is lp, so not mix it with ext
+      if ((h_fac * r_event - param->height) > 1e-4) {
+        if (!warned_height) {
+          printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
+          printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
+                 h_fac);
+          printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
+          printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
+          warned_height = 1;
+        }
+        param->height = r_event * h_fac;
+      }
     }
+
   }
 }
 
@@ -314,8 +340,10 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
+  // on this branch r_ring works as a spherical radius in xspec definition
   param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 0);
-
+  // then we internally convert it to extent
+  // param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, param->r_ring, param->a);
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);

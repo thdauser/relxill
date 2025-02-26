@@ -24,11 +24,11 @@
 
 /** dimensions of the ES table */
 #define ESTABLE_NA 20 // number of spin values
-#define ESTABLE_NHEIGHT 50 // number of height values
+#define ESTABLE_NHEIGHT 54 // number of height values
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source_test.fits" // time to rename - this table is already final
+#define ESTABLE_FILENAME "rel_extended_source_lowheight.fits" // time to rename - this table is already final
 
 
 typedef struct {

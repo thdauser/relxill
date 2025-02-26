@@ -176,6 +176,31 @@ double calc_g_inf_ext(double height, double r_ring, double a) {
   return g_inf;
 }
 
+double calc_cos_theta_primary_source(double height, double r_ring, double a) {
+  double cosine_theta;
+  if (r_ring == 0.0) {
+    cosine_theta = 1.0; // on the rotational axis
+  }
+  else if (a == 0.0){ // special case of zero spin
+    cosine_theta = height / sqrt(height * height + r_ring * r_ring);
+  } else { // general case, the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
+    cosine_theta = sqrt((sqrt(4.0 * a * a * height * height + (height * height + r_ring * r_ring - a * a) *
+        (height * height + r_ring * r_ring - a * a)) + a * a - height * height - r_ring * r_ring) / (2.0 * a * a));
+  }
+  return cosine_theta;
+}
+
+double calc_spherical_radius_primary_source(double height, double r_ring, double a) {
+  double cosine_theta = calc_cos_theta_primary_source(height, r_ring, a);
+  double r = height / cosine_theta; // the spherical radius by definition
+  return r;
+}
+
+double calc_extent_from_sph_radius_primary_source(double height, double sph_radius, double a) {
+  return sqrt((sph_radius * sph_radius - height * height) * (1.0 + a * a / (sph_radius * sph_radius)));
+}
+
+
 /* get RMS (ISCO) for the Kerr Case */
 double kerr_rms(double a) {
   //	 accounts for negative spin
