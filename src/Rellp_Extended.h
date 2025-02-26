@@ -24,11 +24,12 @@
 
 /** dimensions of the ES table */
 #define ESTABLE_NA 20 // number of spin values
-#define ESTABLE_NHEIGHT 54 // number of height values
+#define ESTABLE_NHEIGHT 50 // number of height values
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source_lowheight.fits" // time to rename - this table is already final
+#define ESTABLE_FILENAME "rel_extended_source_lowheight.fits"
+// #define ESTABLE_FILENAME "rel_extended_source_test.fits" // time to rename - this table is already final
 
 
 typedef struct {
@@ -74,7 +75,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 
 
 
-double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf);
+// double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf);
 
 emisProfile *interpol_estable(double a, double height, double r_ring,
                               double gamma, extendedSourceTable *tab, int *status);

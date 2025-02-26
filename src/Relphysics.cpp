@@ -197,6 +197,10 @@ double calc_spherical_radius_primary_source(double height, double r_ring, double
 }
 
 double calc_extent_from_sph_radius_primary_source(double height, double sph_radius, double a) {
+  if (abs(height - sph_radius) < 1e-4){
+    return 0.0; // it is lamp post
+  }
+  assert(height <= sph_radius && ("Height cannot be more than spherical radius"));
   return sqrt((sph_radius * sph_radius - height * height) * (1.0 + a * a / (sph_radius * sph_radius)));
 }
 

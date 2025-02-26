@@ -122,6 +122,8 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
                     dat->flux[ii][jj],&anynullptr, status);
 
       for (int kk = 0; kk < n_rad; kk++){
+        // for some reason flux becomes uninitialized when n_h != n_r. Weird. I'll explore it later
+        // printf("Flux %.6e, bin %d, h %.3f, x %.3f \n", dat->flux[ii][jj][kk], kk, dat->height[ii], dat->r_ring[ii][jj]);
         assert(dat->flux[ii][jj][kk] >= 0.0);
         fits_read_col(fptr, TDOUBLE, 5, irow, kk*n_storage+1, n_storage,
                       &doublenullptr, dat->energy_data_storage[ii][jj][kk],&anynullptr, status);

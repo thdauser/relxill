@@ -261,12 +261,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     double h_fac = 1.1;
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->model_type == MOD_TYPE_RELXILLLPEXT) {
-      if (param->r_ring < 0.0) {
-        printf(" *** Warning : Ring source cannot have negative size (r < %.1f r_event) \n", 0.0);
-        printf("      Setting    r_ring = 0.0 \n");
-        param->r_ring = 0.0;
-      }
-      h_fac = 0.2; // the lowest possible height in rg
+      h_fac = 0.2; // the lowest possible height in rg for extended source
       if ((h_fac - param->height) > 1e-4) { // double check the conversion to rg/reh
         if (!warned_height) {
           printf(" *** Warning : Ring source too close to the disk (h < %.1f r_g) \n", h_fac);
@@ -277,7 +272,7 @@ void check_parameter_bounds(relParam *param, int *status) {
         param->height = h_fac; //double check, test
       }
       double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a);
-      double r_fac = 1.5;
+      double r_fac = 1.5; // not less than 1.5 EH (actually for h >= 0.5 rg it can be 1.2 EH)
       if ((r_spherical - r_fac * r_event) < 1e-4) {
         if (!warned_extent) {
           printf(" *** Warning : Ring source too close to the BH (h < %.1f r_event) \n", r_fac);
@@ -285,11 +280,11 @@ void check_parameter_bounds(relParam *param, int *status) {
           printf("      Spherical radius = %.3f r_g \n", r_spherical);
           warned_extent = 1;
         }
+        r_spherical = r_fac * r_event;
         param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, r_spherical, param->a);
         printf("      Setting eXtent (too close to BH) =  %.1f*r_g \n", param->r_ring);
         }
       }
-
     else { // lp is lp, so not mix it with ext
       if ((h_fac * r_event - param->height) > 1e-4) {
         if (!warned_height) {
@@ -340,10 +335,20 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  // on this branch r_ring works as a spherical radius in xspec definition
-  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 0);
+  // on this branch r_ring works as a spherical radius (units EH) in xspec definition
+  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 3);
   // then we internally convert it to extent
-  // param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, param->r_ring, param->a);
+  /// !!! don't mess up parameters and units
+  double height_EH = param->height;
+  // temporary solution to have height in EH for spherical radius calculation
+  if (height_EH < 0){
+    height_EH *= -1.0; // it is already EH
+  }
+  else {
+    height_EH /= kerr_rplus(param->a); // from rg to EH
+  }
+  printf("Model definition, h = %.6e, h(EH) = %.6e, r(EH) = %.6e \n", param->height, height_EH, param->r_ring);
+  param->r_ring = calc_extent_from_sph_radius_primary_source(height_EH, param->r_ring / kerr_rplus(param->a), param->a);
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
