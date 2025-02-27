@@ -269,9 +269,9 @@ void check_parameter_bounds(relParam *param, int *status) {
           printf("      Setting    h =  %.1f*r_g \n", h_fac);
           warned_height = 1;
         }
-        param->height = h_fac; //double check, test
+        param->height = h_fac;
       }
-      double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a);
+      double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a); // in rg
       double r_fac = 1.5; // not less than 1.5 EH (actually for h >= 0.5 rg it can be 1.2 EH)
       if ((r_spherical - r_fac * r_event) < 1e-4) {
         if (!warned_extent) {
@@ -280,7 +280,7 @@ void check_parameter_bounds(relParam *param, int *status) {
           printf("      Spherical radius = %.3f r_g \n", r_spherical);
           warned_extent = 1;
         }
-        r_spherical = r_fac * r_event;
+        r_spherical = r_fac * r_event; // in rg
         param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, r_spherical, param->a);
         printf("      Setting eXtent (too close to BH) =  %.1f*r_g \n", param->r_ring);
         }
@@ -336,19 +336,14 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
   // on this branch r_ring works as a spherical radius (units EH) in xspec definition
-  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 3);
+  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 6);
   // then we internally convert it to extent
   /// !!! don't mess up parameters and units
-  double height_EH = param->height;
+  double height_rg = param->height; // copy to not mess up with following conversions
   // temporary solution to have height in EH for spherical radius calculation
-  if (height_EH < 0){
-    height_EH *= -1.0; // it is already EH
-  }
-  else {
-    height_EH /= kerr_rplus(param->a); // from rg to EH
-  }
-  printf("Model definition, h = %.6e, h(EH) = %.6e, r(EH) = %.6e \n", param->height, height_EH, param->r_ring);
-  param->r_ring = calc_extent_from_sph_radius_primary_source(height_EH, param->r_ring / kerr_rplus(param->a), param->a);
+  setNegativeHeightToRplus(&height_rg, param->a); // convert to rg if not yet in rg
+  param->r_ring *= kerr_rplus(param->a); // to convert spherical radius in rg
+  param->r_ring = calc_extent_from_sph_radius_primary_source(height_rg, param->r_ring, param->a);
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
