@@ -274,17 +274,19 @@ void check_parameter_bounds(relParam *param, int *status) {
       double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a); // in rg
       double costheta = calc_cos_theta_primary_source(param->height, param->r_ring, param->a);
       double r_fac = 1.5; // not less than 1.5 EH (actually for h >= 0.5 rg it can be 1.2 EH)
-      if ((r_spherical - r_fac * r_event) < 1e-4) {
+      if ((r_spherical - r_fac * r_event) < 1e-3) {
         if (!warned_extent) {
-          printf(" *** Warning : Ring source too close to the BH (h < %.1f r_event) \n", r_fac);
-          printf("      Height, eXtent = %.3f r_g, %.3f r_g \n", param->height, param->r_ring);
-          printf("      Spherical radius = %.3f r_g \n", r_spherical);
-          warned_extent = 1;
-        }
-        r_spherical = r_fac * r_event; // in rg
-        // keeping costheta constant and re-define radius
-        param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
-        printf("Setting eXtent while costheta=const(too close to BH) =  %.3f*r_g \n", param->r_ring);
+          printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
+          printf("      Height, eXtent = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
+          printf("      Spherical radius = %.4f r_g, 1.5EH = %.4f r_g \n", r_spherical, 1.5 * r_event);
+
+          r_spherical = r_fac * r_event; // in rg
+          // keeping costheta constant and re-define radius
+          param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
+          printf("(too close to BH) Setting eXtent to = %.4f*r_g \n", param->r_ring);
+          // always print while debug it
+          //warned_extent = 1;
+          }
         }
       }
     else { // lp is lp, so not mix it with ext
@@ -347,7 +349,8 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   // i.e., r_ring = sqrt(r^2 + a^2)*sintheta
   param->r_ring = calc_extent_from_sph_radius_costheta(param->height / param->r_ring,
                                                        param->r_ring, param->a);
-  printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
+  // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
+  
   // older approach with h and r as fitting params
   //double height_rg = param->height; // copy to not mess up with following conversions
   // temporary solution to have height in EH for spherical radius calculation

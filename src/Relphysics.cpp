@@ -199,7 +199,7 @@ double calc_spherical_radius_primary_source(double height, double r_ring, double
 // double convert_sph_radius_costheta_to_h_rring()
 
 double calc_extent_from_sph_radius_costheta(double sph_radius, double costheta, double a) {
-  return sqrt(1.0 - costheta * costheta) * sqrt((sph_radius / costheta) * (sph_radius / costheta) + a * a);
+  return sqrt(1.0 - costheta * costheta) * sqrt(sph_radius * sph_radius + a * a);
 }
 
 double calc_extent_from_sph_radius_primary_source(double height, double sph_radius, double a) {
