@@ -262,7 +262,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->model_type == MOD_TYPE_RELXILLLPEXT) {
       h_fac = 0.2; // the lowest possible height in rg for extended source
-      if ((h_fac - param->height) > 1e-4) { // double check the conversion to rg/reh
+      if ((h_fac - param->height) > 1e-4) {
         if (!warned_height) {
           printf(" *** Warning : Ring source too close to the disk (h < %.1f r_g) \n", h_fac);
           printf("      Height, Extent = %.3f r_g, %.3f r_g \n", param->height, param->r_ring);
@@ -272,6 +272,7 @@ void check_parameter_bounds(relParam *param, int *status) {
         param->height = h_fac;
       }
       double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a); // in rg
+      double costheta = calc_cos_theta_primary_source(param->height, param->r_ring, param->a);
       double r_fac = 1.5; // not less than 1.5 EH (actually for h >= 0.5 rg it can be 1.2 EH)
       if ((r_spherical - r_fac * r_event) < 1e-4) {
         if (!warned_extent) {
@@ -281,8 +282,9 @@ void check_parameter_bounds(relParam *param, int *status) {
           warned_extent = 1;
         }
         r_spherical = r_fac * r_event; // in rg
-        param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, r_spherical, param->a);
-        printf("      Setting eXtent (too close to BH) =  %.1f*r_g \n", param->r_ring);
+        // keeping costheta constant and re-define radius
+        param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
+        printf("Setting eXtent while costheta=const(too close to BH) =  %.3f*r_g \n", param->r_ring);
         }
       }
     else { // lp is lp, so not mix it with ext
@@ -333,17 +335,25 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->rbr = inp_param.get_otherwise_default(XPar::rbr, 0);
   param->lineE = inp_param.get_otherwise_default(XPar::linee, 0);
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
+  // UPD now height acts as a spherical radius and r_ring is the cosine of polar angle
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  // on this branch r_ring works as a spherical radius (units EH) in xspec definition
-  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 6);
-  // then we internally convert it to extent
-  /// !!! don't mess up parameters and units
-  double height_rg = param->height; // copy to not mess up with following conversions
+  // UPD it cannot be zero. 1 = lp.
+  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 1);
+  // then we internally convert r_ring and height from r, costheta to their usual meanings
+  param->height *= kerr_rplus(param->a);
+  // i.e., h = r*costheta
+  param->height = param->height * param->r_ring;
+  // i.e., r_ring = sqrt(r^2 + a^2)*sintheta
+  param->r_ring = calc_extent_from_sph_radius_costheta(param->height / param->r_ring,
+                                                       param->r_ring, param->a);
+  printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
+  // older approach with h and r as fitting params
+  //double height_rg = param->height; // copy to not mess up with following conversions
   // temporary solution to have height in EH for spherical radius calculation
-  setNegativeHeightToRplus(&height_rg, param->a); // convert to rg if not yet in rg
-  param->r_ring *= kerr_rplus(param->a); // to convert spherical radius in rg
-  param->r_ring = calc_extent_from_sph_radius_primary_source(height_rg, param->r_ring, param->a);
+  //setNegativeHeightToRplus(&height_rg, param->a); // convert to rg if not yet in rg
+  //param->r_ring *= kerr_rplus(param->a); // to convert spherical radius in rg
+  //param->r_ring = calc_extent_from_sph_radius_primary_source(height_rg, param->r_ring, param->a);
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
