@@ -558,12 +558,6 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
 
     double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
     emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
-
-    //emis_profile_table->del_emit[ii] = 0;
-    //emis_profile_table->del_inc[ii] = 30;
-    // AN: currently these values are not used for extended sources.
-    // They are supposed to be used only for refl_frac calculations,
-    // which are calculated already in the input table for extended model, so no need to do anything here
   }
 }
 

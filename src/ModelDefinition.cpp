@@ -350,7 +350,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->r_ring = calc_extent_from_sph_radius_costheta(param->height / param->r_ring,
                                                        param->r_ring, param->a);
   // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
-  
+
   // older approach with h and r as fitting params
   //double height_rg = param->height; // copy to not mess up with following conversions
   // temporary solution to have height in EH for spherical radius calculation
