@@ -449,8 +449,16 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
       printf("       can not calculate Ecut/kTe on the disk \n\n");
       throw std::exception();
     }
+    if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT || rel_param->model_type == MOD_TYPE_RELLINELPEXT) {
+      // as a quick solution, I use only time-dilation e^-\nu component of energy shift,
+      // but ideally I need to get it from table and account for beta too
+      return ecut_primary * gi_potential_ext(rzone, rel_param->a, rel_param->height, rel_param->r_ring);
+    }
+    else {
+      // this does not work for extended source and gives NaN for h < 1EH:
+      return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit[izone]);
+    }
 
-    return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit[izone]);
   }
 }
 
