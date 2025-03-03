@@ -235,7 +235,7 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
   auto spec_ext = default_spec.get_xspec_spectrum();
   local_model_ext.set_par(XPar::r_ring, 0.0);
 
-  double spins[3] = {-0.998, 0.0, 0.998};
+  double spins[3] = {0.0, 0.5, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){

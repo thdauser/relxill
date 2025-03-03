@@ -136,7 +136,9 @@ double calc_g_inf(double height, double a) {
 }
 
 /**
- * calculates the energy shift from a ring source to infinity (NOT YET FULLY IMPLEMENTED)
+ * @brief calculates the energy shift from a ring source to infinity (NOT YET FULLY IMPLEMENTED)
+ * @details cosinetheta is the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
+ * Theta is polar angle of the ring, between 0 and pi/2 (r_ring^2 + height^2 are always > a^2)
  * @param height height of the ring source
  * @param r_ring radius of the ring
  * @param a spin of the black hole
@@ -147,30 +149,34 @@ double calc_g_inf_ext(double height, double r_ring, double a) {
   double g_inf;
   if (r_ring <= 1.0e-6){ // lamp-post source
     g_inf = calc_g_inf(height, a);
-  }
-  else{
-    // cosinetheta is the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
-    // Theta is polar angle of the ring, between 0 and pi/2 (r_ring^2 + height^2 are always > a^2)
-    if (a == 0.0){ // special case of zero spin. The block below would give inf
-      double cosine_theta = height / sqrt(height * height + r_ring * r_ring);
-      double r = height / cosine_theta;
-      g_inf = sqrt(1 - 2.0 / r);
-    } else{
-      double cosine_theta = sqrt( ( sqrt(4.0 * a * a * height * height + (height * height +
-            r_ring * r_ring - a * a) * (height * height + r_ring * r_ring - a * a)) +
-                                    a * a - height * height - r_ring * r_ring ) / (2.0 * a * a) );
-      double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
-      double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
-      // careful about costheta = 0, when h -> 0 (we do not have it in the current table)
-      double Sigma = r * r + a * a * cosine_theta * cosine_theta;
+  } else{
+    if (height == 0.0) { // the disk case, cosinetheta = 0
+      double r = sqrt(r_ring * r_ring + a * a);
+      double Sigma = r * r;
       double Delta = r * r - 2.0 * r + a * a;
-      double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a * sine_theta * sine_theta;
-      //double omega = 2.0 * a * r / rho_squared;
-      // previous version returned just the lamp-post shift, which led to stronger redshift of the ring primary source
-      //return sqrt(1.0 - (2 * height / (height * height + a * a)));
+      double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a;
       g_inf = sqrt(Sigma * Delta / rho_squared);
+    } else {
+      if (a == 0.0){ // special case of zero spin. The block below would give inf
+        double cosine_theta = height / sqrt(height * height + r_ring * r_ring);
+        double r = height / cosine_theta;
+        g_inf = sqrt(1 - 2.0 / r);
+      } else { // general case
+        /// can be replaced with a function
+        double cosine_theta = sqrt((sqrt(4.0 * a * a * height * height + (height * height +
+            r_ring * r_ring - a * a) * (height * height + r_ring * r_ring - a * a)) +
+                a * a - height * height - r_ring * r_ring) / (2.0 * a * a));
+        double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
+        double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
+        double Sigma = r * r + a * a * cosine_theta * cosine_theta;
+        double Delta = r * r - 2.0 * r + a * a;
+        double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a * sine_theta * sine_theta;
+        //double omega = 2.0 * a * r / rho_squared;
+        // previous version returned just the lamp-post shift, which led to stronger redshift of the ring primary source
+        //return sqrt(1.0 - (2 * height / (height * height + a * a)));
+        g_inf = sqrt(Sigma * Delta / rho_squared);
+      }
     }
-
   }
   // printf("energy shift ring source - observer (ONLY e^-nu NOW): %e, h, r, a = %e, %e, %e\n", g_inf, height, r_ring, a);
   return g_inf;
@@ -247,6 +253,17 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
   return gi / beta_fac;
 }
 
+/** similar to gi_potential_lp below, but for ring source **/
+/// note - only temporary. No doppler boost and no rotation yet (need to take it from table)
+/// also confusion with accounting/unaccounting for Lorentz factor of disk
+double gi_potential_ext(double r, double a, double h, double x) {
+  // as a temporary solution, exploit previously written function applicable to this case
+  // in general I need to take it from Rellp_Extended, as there we have proper g_sd source-disk
+  double g_inf_s = calc_g_inf_ext(h, x, a); // = E_inf / E_s
+  double g_inf_d = calc_g_inf_ext(0.0, r, a); // = E_inf / E_d
+  return g_inf_s / g_inf_d * gamma_correction(r, a); // = E_d / E_s
+}
+
 /**
  * @brief calculate the doppler factor from source to the observer
  * we currently assume that delta_obs and incl are the same (so no GR light-bending
@@ -315,8 +332,12 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
   if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
     return 1;
   }
-
-  return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
+  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+    return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
+  }
+  else{
+    return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
+  }
 }
 
 /**
@@ -349,6 +370,7 @@ double calc_lp_emissivity_newton(double h, double r) {
 double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta) {
 
   // then energy shift factor gi^gamma (see Dauser et al., 2013)
+  /// TODO update for ext source
   double boost = pow(gi_potential_lp(rad, a, height, beta, del_emit), gamma);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)

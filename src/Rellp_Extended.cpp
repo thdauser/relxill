@@ -471,7 +471,7 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
       printf("Better limit a range of values within table limits \n");
     }
   }
-
+///// should be a separate function
   // determine the gshift for the two spin values required for interpolation in the next function
   // energy shifts in a rectangle of base points need to be taken from table. We take only those values which are
   // the closest below and above input h and x. It was done much less optimal before
@@ -483,6 +483,8 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
         for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
           sum1 += pow(tab->dat[ind_a]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
           sum2 += pow(tab->dat[ind_a + 1]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
+          assert(sum1 >= 0.0);
+          assert(sum2 >= 0.0);
         }
         dat_ind_a[0]->gshift[ind_h[i]][ind_r[j]][k] = sum1 / tab->n_storage;
         dat_ind_a[1]->gshift[ind_h[i]][ind_r[j]][k] = sum2 / tab->n_storage;
@@ -557,11 +559,7 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
     double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
     emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
 
-    //emis_profile_table->del_emit[ii] = 0;
-    //emis_profile_table->del_inc[ii] = 30;
-    // AN: currently these values are not used for extended sources.
-    // They are supposed to be used only for refl_frac calculations,
-    // which are calculated already in the input table for extended model, so no need to do anything here
+    assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
   }
 }
 

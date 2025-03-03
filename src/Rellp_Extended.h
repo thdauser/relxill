@@ -72,8 +72,7 @@ void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, int *status);
 
-
-
+// tbd
 double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf);
 
 emisProfile *interpol_estable(double a, double height, double r_ring,
