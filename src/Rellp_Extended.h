@@ -28,7 +28,7 @@
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source.fits"
+#define ESTABLE_FILENAME "rel_extended_source_test.fits"
 
 /** dimensions of the primary table */
 #define PRIM_TABLE_NA 11 // number of spin values

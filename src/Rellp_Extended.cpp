@@ -91,6 +91,20 @@ static void get_extendedsourcetable_spin(int nrows, float **val, fitsfile *fptr,
 }
 
 /**
+ * @brief Simply divides flux by Kerr area (or kerr_flat ratio) and Lorentz correction
+ * When I do this in table - this function is gone TODO: cache these corrections in new table
+ */
+void apply_flux_correction(extendedSourceData *dat, double *r, double spin, int n_h, int n_r, int n_rad){
+  for (int i=0; i<n_h; i++) {
+    for (int j=0; j<n_r; j++) {
+      for (int k=0; k<n_rad; k++){
+        dat->flux[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
+      }
+    }
+  }
+}
+
+/**
  * @brief Gets data for a single source from the table and then makes a relativistic correction of the flux
  * @details Need to set the variables for fits_read_col instead of using numbers with unclear origin
  * Should the relativistic correction be made by a separate function better?
@@ -151,10 +165,8 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
     }
   }
 
-   ////  add relativistic corrections to the flux. TODO: cache these corrections in new table
-   /// note however that the energy shift g^Gamma is not added here - it is added below in interpol_estable function
-   /// because Gamma is a variable
-   /// to be separate function
+  apply_flux_correction(dat, dat->radius, spin, n_h, n_r, n_rad);
+/*
    double *r = dat->radius; // grid
    for (int i=0; i<n_h; i++) {
      for (int j=0; j<n_r; j++) {
@@ -163,23 +175,10 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
        }
      }
    }
+*/
   return dat;
 }
 
-/**
- * @brief Simply divides flux by kerr area (or kerr_flat ratio) and Lorentz correction
- * When I do this in table - this function is gone
-
-void apply_flux_correction(double *r, double spin, int n_h, int n_r, int n_rad){
-  for (int i=0; i<n_h; i++) {
-    for (int j=0; j<n_r; j++) {
-      for (int k=0; k<n_rad; k++){
-        dat->flux[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
-      }
-    }
-  }
-}
- */
 
 /**
  * @brief Calculates reflection fraction from interpolated table values, and photon fractions
