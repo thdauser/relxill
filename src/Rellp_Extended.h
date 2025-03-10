@@ -28,8 +28,15 @@
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source_test.fits" // time to rename - this table is already final
+#define ESTABLE_FILENAME "rel_extended_source.fits"
 
+/** dimensions of the primary table */
+#define PRIM_TABLE_NA 11 // number of spin values
+#define PRIM_TABLE_NHEIGHT 50 // number of height values
+#define PRIM_TABLE_NDISTANCE 50 // number of distance values
+#define PRIM_TABLE_NINCL 20  // number of inclination bins
+#define PRIM_TABLE_NENERGYBINS 20 // number of energy bin values
+#define PRIM_TABLE_FILENAME "prim_extended_source.fits"
 
 typedef struct {
 
@@ -41,14 +48,7 @@ typedef struct {
   double **refl_frac;
   double **f_ad;
   double **f_inf;
-
-  /* This will store the necessary table data (EnergyShift)
-   * in order to sum over the 20 bins for a given Gamma exponent
-   * which will then determine the gshift array
-   * this array has dimensions NHEIGHT x NDISTANCE x NA x NRAD
-   * x NENERGYBINS values corresponding to each radial bin
-   */
-  double ****energy_data_storage; // probably need to rename
+  double ****energy_data_storage;
 
 } extendedSourceData;
 
@@ -66,7 +66,6 @@ typedef struct {
 
 extendedSourceTable* get_es_table(int* status);
 
-void printerror(int status);
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status);
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,

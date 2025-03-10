@@ -131,7 +131,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   auto sys_par = get_system_parameters(rel_param, &status);
 
   rel_param->a = 0.998;
-  rel_param->height = 50.0;
+  rel_param->height = 5.0;
   //rel_param->rout= 1000.0;
   lpTable *cached_lp_table = get_lp_table(&status);
   calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta,
@@ -155,7 +155,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
 
   rel_param_ext->a = 0.998;
   //rel_param_ext->height = 2.8962; // weird that rfrac coincides with lp only when I set slightly lower height than lp
-  rel_param_ext->height = 50.0;
+  rel_param_ext->height = 5.0;
   rel_param_ext->r_ring = 0.0;
   //rel_param_ext->rout= 1000.0;
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
