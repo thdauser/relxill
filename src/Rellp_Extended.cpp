@@ -164,18 +164,8 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
     }
   }
-
+  /// to be removed with new table, which does these correction by default
   apply_flux_correction(dat, dat->radius, spin, n_h, n_r, n_rad);
-/*
-   double *r = dat->radius; // grid
-   for (int i=0; i<n_h; i++) {
-     for (int j=0; j<n_r; j++) {
-       for (int k=0; k<n_rad; k++){
-         dat->flux[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
-       }
-     }
-   }
-*/
   return dat;
 }
 
@@ -197,8 +187,6 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
   lpReflFrac *str = new_lpReflFrac(status);
   CHECK_STATUS_RET(*status, str);
 
-
-  // BEGINNING OF REFL_FRAC INTERPOLATION
   int ind_a;
   double ifac_a;
   get_ipol_factor((float) param->a, tab->a, tab->n_a, &ind_a, &ifac_a);
@@ -301,10 +289,12 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
 
   CHECK_STATUS_VOID(*status);
 
-  extendedSourceTable* estable = get_es_table(status); // reading table everytime? No, caching
+  extendedSourceTable* emissivity_table = get_es_table(status); // reading table everytime? No, caching
   // new part - loading primary normalization, i.e., lensing * g_{so}^Gamma, to primary normalization
-  // PRIM extendedSourceTable* prim_table = get_prim_table(status);
-  calc_extended_emis(emis, param, estable, status); // PRIM , prim_table
+  ///extendedSourceTable* prim_table = get_prim_table(status);
+  calc_extended_emis(emis, param, emissivity_table, status); // PRIM , prim_table
+
+
 
 }
 
@@ -435,7 +425,7 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 /**
  * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
  */
-void calc_energy_shift_gamma(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_r[2],
+void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_r[2],
                              double ****energy_shift_bins, int num_radial_bins, int num_shift_bins, double gamma){
   for (int i = 0; i < 2; i++) { // vertical bins, ind_h
     for (int j = 0; j < 2; j++) { // radial extent bins, ind_r
@@ -451,6 +441,25 @@ void calc_energy_shift_gamma(extendedSourceData &dat_ind_a, const int ind_h[2], 
     }
   }
 }
+
+/**
+ * @brief This function interpolates a given tabulated value (between 4 base points) between h and r,
+ * and then between spins. In fact, this is 3d interpolation in (a,h,x)
+ * @return The interpolated value, double
+ */
+double get_interpolated_value(const double ifac_a, const double ifac_h[2], const double ifac_r[2],
+                              double vals_lo00, double vals_lo01, double vals_lo10, double vals_lo11,
+                              double vals_hi00, double vals_hi01, double vals_hi10, double vals_hi11){
+  // does h-r interpolation for spin[ind_a]
+  double val_at_spin_lo = interp_lin_2d(ifac_r[0],ifac_h[0],
+                                        vals_lo00,vals_lo01,vals_lo10,vals_lo11);
+  // does h-r interpolation for spin[ind_a+1]
+  double val_at_spin_hi = interp_lin_2d(ifac_r[1],ifac_h[1],
+                                        vals_hi00,vals_hi01,vals_hi10,vals_hi11);
+  // return value interpolated between spins
+  return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
+}
+
 
 /**
  * @brief Interpolation of the table between spins
@@ -476,13 +485,13 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
     printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ifac_a);
     printf("Better limit a range of values within table limits \n");
   }
-  extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
+  extendedSourceData *dat_spin[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
   // Need to interpolate radial grid of table because it is different for different spins (risco(a))
   auto* radial_grid = (double*) malloc(sizeof(double)*tab->n_rad);
   CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
   for (int ii = 0; ii < tab->n_rad; ii++) {
-    radial_grid[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->radius[ii], dat_ind_a[1]->radius[ii]);
+    radial_grid[ii] = interp_lin_1d(ifac_a, dat_spin[0]->radius[ii], dat_spin[1]->radius[ii]);
   }
 
   emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_rad, status);
@@ -492,7 +501,7 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
 
   for (int ii = 0; ii < 2; ii++) {
     // interpolation factors for height
-    get_ipol_factor_double(height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]),
+    get_ipol_factor_double(height, dat_spin[ii]->height, tab->n_h, &(ind_h[ii]),
                            &(ifac_h[ii]));
 
     if (ifac_h[ii] < 0.0 or ifac_h[ii] > 1.0){
@@ -513,7 +522,7 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
       radial_index = ind_h[ii];
     }
     // interpolation factors for extent
-    get_ipol_factor_double(r_ring, dat_ind_a[ii]->r_ring[radial_index], tab->n_r, &(ind_r[ii]),
+    get_ipol_factor_double(r_ring, dat_spin[ii]->r_ring[radial_index], tab->n_r, &(ind_r[ii]),
                            &(ifac_r[ii]));
     if (ifac_r[ii] < 0.0 or ifac_r[ii] > 1.0){
       printf(" *** Warning : dist interpolation becomes extrapolation: ifac_r = %.1f \n", ifac_r[ii]);
@@ -521,43 +530,38 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
     }
   }
 
-  calc_energy_shift_gamma(*dat_ind_a[0], ind_h, ind_r, tab->dat[ind_a]->energy_data_storage,
+  calc_energy_shift_gamma_tabulated(*dat_spin[0], ind_h, ind_r, tab->dat[ind_a]->energy_data_storage,
                           tab->n_rad, tab->n_storage, gamma);
-  calc_energy_shift_gamma(*dat_ind_a[1], ind_h, ind_r, tab->dat[ind_a + 1]->energy_data_storage,
+  calc_energy_shift_gamma_tabulated(*dat_spin[1], ind_h, ind_r, tab->dat[ind_a + 1]->energy_data_storage,
                           tab->n_rad, tab->n_storage, gamma);
-/*
-///// now in a separate function
-  // determine the gshift for the two spin values required for interpolation in the next function
-  // energy shifts in a rectangle of base points need to be taken from table. We take only those values which are
-  // the closest below and above input h and x. It was done much less optimal before
-  for (int i = 0; i < 2; i++) { // vertical bins, ind_h
-    for (int j = 0; j < 2; j++) { // radial offset bins, ind_r
-      for (int k = 0; k < tab->n_rad; k++) { // radial bins
-        double sum1 = 0.0; // sums are zeroed every time
-        double sum2 = 0.0; // two sums are defined for two spins
-        for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
-          sum1 += pow(tab->dat[ind_a]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
-          sum2 += pow(tab->dat[ind_a + 1]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
-          assert(sum1 >= 0.0);
-          assert(sum2 >= 0.0);
-        }
-        dat_ind_a[0]->gshift[ind_h[i]][ind_r[j]][k] = sum1 / tab->n_storage;
-        dat_ind_a[1]->gshift[ind_h[i]][ind_r[j]][k] = sum2 / tab->n_storage;
-        printf("Enshift check, g1,2 = %.6f, %.6f\n", dat_ind_a[0]->gshift[ind_h[i]][ind_r[j]][k],
-               dat_ind_a[1]->gshift[ind_h[i]][ind_r[j]][k]);
-      }
-    }
+
+  //interpol_emisprofile_spin_height_distance(emis_profile_table, ifac_a, ifac_h,
+                                            //ifac_r, ind_h, ind_r, dat_spin, tab->n_rad);
+
+  for (int ii = 0; ii < tab->n_rad; ii++) {
+    // Interpolation of the flux
+    // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
+    emis_profile_table->emis[ii] = get_interpolated_value(ifac_a, ifac_h, ifac_r,
+        dat_spin[0]->flux[ind_h[0]][ind_r[0]][ii], dat_spin[0]->flux[ind_h[0]][ind_r[1]][ii],
+        dat_spin[0]->flux[ind_h[1]][ind_r[0]][ii], dat_spin[0]->flux[ind_h[1]][ind_r[1]][ii],
+            dat_spin[1]->flux[ind_h[0]][ind_r[0]][ii], dat_spin[1]->flux[ind_h[0]][ind_r[1]][ii],
+            dat_spin[1]->flux[ind_h[1]][ind_r[0]][ii], dat_spin[1]->flux[ind_h[1]][ind_r[1]][ii]);
+    double g_gamma = get_interpolated_value(ifac_a, ifac_h, ifac_r,
+        dat_spin[0]->gshift[ind_h[0]][ind_r[0]][ii], dat_spin[0]->gshift[ind_h[0]][ind_r[1]][ii],
+        dat_spin[0]->gshift[ind_h[1]][ind_r[0]][ii], dat_spin[0]->gshift[ind_h[1]][ind_r[1]][ii],
+            dat_spin[1]->gshift[ind_h[0]][ind_r[0]][ii], dat_spin[1]->gshift[ind_h[0]][ind_r[1]][ii],
+            dat_spin[1]->gshift[ind_h[1]][ind_r[0]][ii], dat_spin[1]->gshift[ind_h[1]][ind_r[1]][ii]);
+    // printf("check emis and gGamma, %.10f, %.10f\n", emis_profile_table->emis[ii], g_gamma);
+    emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
+
+    assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
   }
-*/
-  interpol_emisprofile_spin_height_distance(emis_profile_table, ifac_a, ifac_h,
-                                            ifac_r, ind_h, ind_r, dat_ind_a, tab->n_rad);
+
   return emis_profile_table;
 }
 
-
-
 /**
- *
+ * This function is obsolete
  * @brief Interpolates values in height-ring radius space for a given spin (already interpolated)
  * @details
  * @param emis_profile_table; emisProfile, pointer to the structure containing emissivity profile table
@@ -575,6 +579,13 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
 
   for (int ii = 0; ii < nr; ii++) {
     // Interpolation of the flux
+    // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
+    emis_profile_table->emis[ii] = get_interpolated_value(ifac_a, ifac_h, ifac_r,
+        dat_a[0]->flux[ind_h[0]][ind_r[0]][ii], dat_a[0]->flux[ind_h[0]][ind_r[1]][ii],
+        dat_a[0]->flux[ind_h[1]][ind_r[0]][ii], dat_a[0]->flux[ind_h[1]][ind_r[1]][ii],
+            dat_a[1]->flux[ind_h[0]][ind_r[0]][ii], dat_a[1]->flux[ind_h[0]][ind_r[1]][ii],
+            dat_a[1]->flux[ind_h[1]][ind_r[0]][ii], dat_a[1]->flux[ind_h[1]][ind_r[1]][ii]);
+    /*
     double rlo = interp_lin_2d(ifac_r[0], // does h-r interpolation of flux for spin[ind_a]
                                ifac_h[0],
                                dat_a[0]->flux[ind_h[0]][ind_r[0]][ii],
@@ -588,6 +599,8 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                dat_a[1]->flux[ind_h[1]][ind_r[0]][ii],
                                dat_a[1]->flux[ind_h[1]][ind_r[1]][ii]);
     emis_profile_table->emis[ii] = interp_lin_1d(ifac_a, rlo, rhi);
+     */
+    /*
 /// could be separate function to be reused
     // Interpolation of the energy shift which is then immediately added to flux
     double flo = interp_lin_2d(ifac_r[0], // does h-r interpolation of gshift for spin[ind_a]
@@ -604,13 +617,20 @@ void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
                                dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii]);
 
     double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
+    */
+    double g_gamma = get_interpolated_value(ifac_a, ifac_h, ifac_r,
+        dat_a[0]->gshift[ind_h[0]][ind_r[0]][ii], dat_a[0]->gshift[ind_h[0]][ind_r[1]][ii],
+        dat_a[0]->gshift[ind_h[1]][ind_r[0]][ii], dat_a[0]->gshift[ind_h[1]][ind_r[1]][ii],
+            dat_a[1]->gshift[ind_h[0]][ind_r[0]][ii], dat_a[1]->gshift[ind_h[0]][ind_r[1]][ii],
+            dat_a[1]->gshift[ind_h[1]][ind_r[0]][ii], dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii]);
+    printf("check emis and gGamma, %.10f, %.10f\n", emis_profile_table->emis[ii], g_gamma);
     emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
 
     assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
   }
 }
 
-// constructors and desctructors //
+// constructors and destructors //
 /**
  *
  * @brief Sets the memory for new extended source table
@@ -787,21 +807,4 @@ void free_extendedSourceData(extendedSourceData *dat) {
     free(dat->f_inf);
     free(dat->f_ad);
 
-}
-
-
-/**
- *
- * @brief Calculates norm factor of the primary spectrum -- not used anymore, table contains normalized emissivity
- * @details Calculates normalisation factor of the primary spectrum to the number of photons reaching infinity
- * Need to add velocity of the source here. AN: Not used anywhere.
- * @param height; double, height
- * @param a; double, spin
- * @param gamma; double, photon index
- * @param f_inf; double, fraction of photons reaching infinity
- * @return double, normalization factor
- */
-double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf) {
-  double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!) // should be done not here
-  return f_inf / 0.5 * pow(g_inf, gamma);
 }

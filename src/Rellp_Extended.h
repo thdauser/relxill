@@ -28,7 +28,7 @@
 #define ESTABLE_NDISTANCE 50 // number of distance values
 #define ESTABLE_NRAD 99  // number of radial bin values
 #define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source_test.fits"
+#define ESTABLE_FILENAME "rel_extended_source_test.fits" // to rename, tests are gone
 
 /** dimensions of the primary table */
 #define PRIM_TABLE_NA 11 // number of spin values
@@ -70,9 +70,6 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, int *status);
-
-// tbd
-double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf);
 
 emisProfile *interpol_estable(double a, double height, double r_ring,
                               double gamma, extendedSourceTable *tab, int *status);
