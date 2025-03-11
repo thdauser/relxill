@@ -74,16 +74,6 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 emisProfile *interpol_estable(double a, double height, double r_ring,
                               double gamma, extendedSourceTable *tab, int *status);
 
-void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
-                                               double ifac_a,
-                                               const double *ifac_h,
-                                               const double *ifac_r,
-                                               const int *ind_h,
-                                               const int *ind_r,
-                                               extendedSourceData *const *dat,
-                                               int nr);
-
-
 // extendedSourceData functions
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
                                              int n_a, int n_storage,

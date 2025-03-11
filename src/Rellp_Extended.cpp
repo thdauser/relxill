@@ -537,7 +537,6 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
 
   //interpol_emisprofile_spin_height_distance(emis_profile_table, ifac_a, ifac_h,
                                             //ifac_r, ind_h, ind_r, dat_spin, tab->n_rad);
-
   for (int ii = 0; ii < tab->n_rad; ii++) {
     // Interpolation of the flux
     // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
@@ -560,75 +559,6 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
   return emis_profile_table;
 }
 
-/**
- * This function is obsolete
- * @brief Interpolates values in height-ring radius space for a given spin (already interpolated)
- * @details
- * @param emis_profile_table; emisProfile, pointer to the structure containing emissivity profile table
- * @param ifac_a; double, interpolated factor of spin, factor i.e. ratio between two closest base points
- * @param ifac_h; const double, pointer to interpolated factor of height
- * @param ifac_r; const double, pointer to interpolated factor of distance (r_ring)
- * @param ind_h; const int, pointer to index of height
- * @param ind_r; const int, pointer to index of distance (r_ring)
- * @param dat_a; *const extendedSourceData, pointer to the structure with data of spin
- * @param nr; const int, number of radial bins
- */
-void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
-      double ifac_a, const double *ifac_h, const double *ifac_r, const int *ind_h, const int *ind_r,
-      extendedSourceData *const *dat_a, const int nr) {
-
-  for (int ii = 0; ii < nr; ii++) {
-    // Interpolation of the flux
-    // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
-    emis_profile_table->emis[ii] = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-        dat_a[0]->flux[ind_h[0]][ind_r[0]][ii], dat_a[0]->flux[ind_h[0]][ind_r[1]][ii],
-        dat_a[0]->flux[ind_h[1]][ind_r[0]][ii], dat_a[0]->flux[ind_h[1]][ind_r[1]][ii],
-            dat_a[1]->flux[ind_h[0]][ind_r[0]][ii], dat_a[1]->flux[ind_h[0]][ind_r[1]][ii],
-            dat_a[1]->flux[ind_h[1]][ind_r[0]][ii], dat_a[1]->flux[ind_h[1]][ind_r[1]][ii]);
-    /*
-    double rlo = interp_lin_2d(ifac_r[0], // does h-r interpolation of flux for spin[ind_a]
-                               ifac_h[0],
-                               dat_a[0]->flux[ind_h[0]][ind_r[0]][ii],
-                               dat_a[0]->flux[ind_h[0]][ind_r[1]][ii],
-                               dat_a[0]->flux[ind_h[1]][ind_r[0]][ii],
-                               dat_a[0]->flux[ind_h[1]][ind_r[1]][ii]);
-    double rhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of flux for spin[ind_a+1]
-                               ifac_h[1],
-                               dat_a[1]->flux[ind_h[0]][ind_r[0]][ii],
-                               dat_a[1]->flux[ind_h[0]][ind_r[1]][ii],
-                               dat_a[1]->flux[ind_h[1]][ind_r[0]][ii],
-                               dat_a[1]->flux[ind_h[1]][ind_r[1]][ii]);
-    emis_profile_table->emis[ii] = interp_lin_1d(ifac_a, rlo, rhi);
-     */
-    /*
-/// could be separate function to be reused
-    // Interpolation of the energy shift which is then immediately added to flux
-    double flo = interp_lin_2d(ifac_r[0], // does h-r interpolation of gshift for spin[ind_a]
-                               ifac_h[0],
-                               dat_a[0]->gshift[ind_h[0]][ind_r[0]][ii],
-                               dat_a[0]->gshift[ind_h[0]][ind_r[1]][ii],
-                               dat_a[0]->gshift[ind_h[1]][ind_r[0]][ii],
-                               dat_a[0]->gshift[ind_h[1]][ind_r[1]][ii]);
-    double fhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of gshift for spin[ind_a+1]
-                               ifac_h[1],
-                               dat_a[1]->gshift[ind_h[0]][ind_r[0]][ii],
-                               dat_a[1]->gshift[ind_h[0]][ind_r[1]][ii],
-                               dat_a[1]->gshift[ind_h[1]][ind_r[0]][ii],
-                               dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii]);
-
-    double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
-    */
-    double g_gamma = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-        dat_a[0]->gshift[ind_h[0]][ind_r[0]][ii], dat_a[0]->gshift[ind_h[0]][ind_r[1]][ii],
-        dat_a[0]->gshift[ind_h[1]][ind_r[0]][ii], dat_a[0]->gshift[ind_h[1]][ind_r[1]][ii],
-            dat_a[1]->gshift[ind_h[0]][ind_r[0]][ii], dat_a[1]->gshift[ind_h[0]][ind_r[1]][ii],
-            dat_a[1]->gshift[ind_h[1]][ind_r[0]][ii], dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii]);
-    printf("check emis and gGamma, %.10f, %.10f\n", emis_profile_table->emis[ii], g_gamma);
-    emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
-
-    assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
-  }
-}
 
 // constructors and destructors //
 /**
