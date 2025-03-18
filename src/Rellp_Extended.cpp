@@ -50,7 +50,7 @@ extendedSourceTable* get_es_table(int* status){
   CHECK_STATUS_RET(*status, nullptr);
 
   if (cached_extendedSource_table == nullptr) {
-    read_extendedSource_table(ESTABLE_FILENAME, &cached_extendedSource_table, status);
+    read_extendedSource_table(EXT_TABLE_FILENAME, &cached_extendedSource_table, status);
     CHECK_STATUS_RET(*status, nullptr);
   }
   return cached_extendedSource_table;
@@ -58,9 +58,12 @@ extendedSourceTable* get_es_table(int* status){
 
 extendedSourceTable* get_prim_table(int* status){
   CHECK_STATUS_RET(*status, nullptr);
-
+  // maybe not the best decision, but otherwise how do I do all if else statements for two similar but different tables
+  // without duplicating functions
+  bool lensing_table = true;
   if (cached_extendedSource_table_prim == nullptr) {
-    read_extendedSource_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status);
+    read_extendedSource_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
+                              lensing_table);
     CHECK_STATUS_RET(*status, nullptr);
   }
   return cached_extendedSource_table_prim;
@@ -98,7 +101,7 @@ void apply_flux_correction(extendedSourceData *dat, double *r, double spin, int 
   for (int i=0; i<n_h; i++) {
     for (int j=0; j<n_r; j++) {
       for (int k=0; k<n_rad; k++){
-        dat->flux[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
+        dat->val[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
       }
     }
   }
@@ -111,17 +114,17 @@ void apply_flux_correction(extendedSourceData *dat, double *r, double spin, int 
  * @param fptr pointer, to the fits file location
  * @param n_h integer, number of heights simulated
  * @param n_r integer, number of ring radii simulated
- * @param n_rad integer, number of radial bins
+ * @param n_bin integer, number of radial bins
  * @param n_storage integer, number of energyshift storage bins. Used only to read the fifth column with shift
  * @param spin double, spin value of the source
  * @return extendedSourceData, data from the table
  */
 static extendedSourceData *
 load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
-                               int n_rad, int n_storage, int *status,
-                               double spin) {
+                               int n_bin, int n_storage, int *status,
+                               double spin, bool lensing) {
 
-  extendedSourceData *dat = new_extendedSourceData(status);
+  extendedSourceData *dat = new_extendedSourceData(status, lensing);
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
 
@@ -129,8 +132,8 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
   double doublenullptr = 0.0;
 
   /*  read the columns */
-  fits_read_col(fptr, TDOUBLE, 1, 1, 1, n_rad, &doublenullptr,
-                dat->radius,&anynullptr, status);
+  fits_read_col(fptr, TDOUBLE, 1, 1, 1, n_bin, &doublenullptr,
+                dat->bin,&anynullptr, status);
 
   for (int ii = 0; ii < n_h; ii++) {
     fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_h, 1, 1, &doublenullptr,
@@ -144,11 +147,11 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
       int irow = (ii * n_r) + jj + 1;
 
-      fits_read_col(fptr, TDOUBLE, 4, irow, 1, n_rad, &doublenullptr,
-                    dat->flux[ii][jj],&anynullptr, status);
+      fits_read_col(fptr, TDOUBLE, 4, irow, 1, n_bin, &doublenullptr,
+                    dat->val[ii][jj],&anynullptr, status);
 
-      for (int kk = 0; kk < n_rad; kk++){
-        assert(dat->flux[ii][jj][kk] >= 0.0);
+      for (int kk = 0; kk < n_bin; kk++){
+        assert(dat->val[ii][jj][kk] >= 0.0);
         fits_read_col(fptr, TDOUBLE, 5, irow, kk*n_storage+1, n_storage,
                       &doublenullptr, dat->energy_data_storage[ii][jj][kk],&anynullptr, status);
       }
@@ -159,13 +162,18 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
       fits_read_col(fptr, TDOUBLE, 7, irow, 1, 1, &doublenullptr,
                     &dat->f_inf[ii][jj],&anynullptr, status);
-
+      if (lensing) { // extra column which is now only in the primary table
+        fits_read_col(fptr, TDOUBLE, 8, irow, 1, 1, &doublenullptr,
+                      &dat->f_bh[ii][jj],&anynullptr, status);
+      }
       dat->refl_frac[ii][jj] = dat->f_ad[ii][jj]/dat->f_inf[ii][jj];
 
     }
   }
-  /// to be removed with new table, which does these correction by default
-  apply_flux_correction(dat, dat->radius, spin, n_h, n_r, n_rad);
+  if (!lensing) { // only for flux, not for lensing
+    /// to be removed with new table, which does these correction by default
+    apply_flux_correction(dat, dat->bin, spin, n_h, n_r, n_bin);
+  }
   return dat;
 }
 
@@ -294,8 +302,6 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
   ///extendedSourceTable* prim_table = get_prim_table(status);
   calc_extended_emis(emis, param, emissivity_table, status); // PRIM , prim_table
 
-
-
 }
 
 
@@ -305,7 +311,7 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
  * @param filename; const char, pointer to the name of the file (now declared in Rellp_Extended.h)
  * @param inp_tab; extendedSourceTable, two-fold pointer to the input table data
  */
-void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status) {
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool lensing_table_flag) {
 
   extendedSourceTable *tab = (*inp_tab);
   fitsfile *fptr = nullptr;
@@ -317,9 +323,14 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       RELXILL_ERROR("extended source table already loaded\n", status);
       break;
     }
+    if (lensing_table_flag) {
+      tab = new_extendedSourceTable(PRIM_TABLE_NHEIGHT,PRIM_TABLE_NDISTANCE, PRIM_TABLE_NA,
+                                    PRIM_TABLE_NINCL, PRIM_TABLE_NENERGYBINS, status);
+    } else {
+      tab = new_extendedSourceTable(EXT_TABLE_NHEIGHT, EXT_TABLE_NDISTANCE, EXT_TABLE_NA,
+                                    EXT_TABLE_NRAD, EXT_TABLE_NENERGYBINS, status);
+    }
 
-    tab = new_extendedSourceTable(ESTABLE_NHEIGHT, ESTABLE_NRAD,
-                                  ESTABLE_NDISTANCE, ESTABLE_NA, ESTABLE_NENERGYBINS, status);
     CHECK_STATUS_BREAK(*status);
 
     // should be set by previous routine
@@ -348,7 +359,6 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     get_extendedsourcetable_spin(tab->n_a, &(tab->a) , fptr, status);
     CHECK_RELXILL_ERROR("reading of spin axis failed\n", status);
 
-
     // now load the full table (need to go through all extensions)
     int ii;
     int rownum;
@@ -360,8 +370,8 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       assert(tab->dat[ii] == nullptr);
 
       tab->dat[ii] = load_single_extendedSourceData(
-          fptr, tab->n_h, tab->n_r, tab->n_rad, tab->n_storage, status,
-          tab->a[ii]);
+          fptr, tab->n_h, tab->n_r, tab->n_bin, tab->n_storage, status,
+          tab->a[ii], lensing_table_flag);
       if (*status != EXIT_SUCCESS) {
         RELXILL_ERROR("failed to load data from the extended source table into memory\n", status);
 
@@ -375,7 +385,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     // assign the value
     (*inp_tab) = tab;
   } else {
-    free_extendedSourceTable(tab);
+    free_extendedSourceTable(tab, lensing_table_flag);
   }
 
   if(fptr != nullptr) {fits_close_file(fptr, status);}
@@ -395,12 +405,12 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, int *status) { // PRIM , extendedSourceTable *tab_prim
 
   CHECK_STATUS_VOID(*status);
-
+////////////////////////////////////////////////////////
   emisProfile *emis_profile_table = interpol_estable(
       param->a, param->height, param->r_ring, param->gamma, tab, status);
    rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
-  free(emis_profile_table->re); // is not freed by free_emisProfile
+  free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
   free_emisProfile(emis_profile_table);
 
   //PRIM emisProf->photon_fate_fractions = calc_refl_frac_ext(param, tab_prim, status);
@@ -488,13 +498,13 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
   extendedSourceData *dat_spin[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
   // Need to interpolate radial grid of table because it is different for different spins (risco(a))
-  auto* radial_grid = (double*) malloc(sizeof(double)*tab->n_rad);
+  auto* radial_grid = (double*) malloc(sizeof(double)*tab->n_bin);
   CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
-  for (int ii = 0; ii < tab->n_rad; ii++) {
-    radial_grid[ii] = interp_lin_1d(ifac_a, dat_spin[0]->radius[ii], dat_spin[1]->radius[ii]);
+  for (int ii = 0; ii < tab->n_bin; ii++) {
+    radial_grid[ii] = interp_lin_1d(ifac_a, dat_spin[0]->bin[ii], dat_spin[1]->bin[ii]);
   }
 
-  emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_rad, status);
+  emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
 
   int ind_h[2];
   double ifac_h[2];
@@ -531,20 +541,20 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
   }
 
   calc_energy_shift_gamma_tabulated(*dat_spin[0], ind_h, ind_r, tab->dat[ind_a]->energy_data_storage,
-                          tab->n_rad, tab->n_storage, gamma);
+                          tab->n_bin, tab->n_storage, gamma);
   calc_energy_shift_gamma_tabulated(*dat_spin[1], ind_h, ind_r, tab->dat[ind_a + 1]->energy_data_storage,
-                          tab->n_rad, tab->n_storage, gamma);
+                          tab->n_bin, tab->n_storage, gamma);
 
-  //interpol_emisprofile_spin_height_distance(emis_profile_table, ifac_a, ifac_h,
-                                            //ifac_r, ind_h, ind_r, dat_spin, tab->n_rad);
-  for (int ii = 0; ii < tab->n_rad; ii++) {
+  for (int ii = 0; ii < tab->n_bin; ii++) {
     // Interpolation of the flux
     // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
     emis_profile_table->emis[ii] = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-        dat_spin[0]->flux[ind_h[0]][ind_r[0]][ii], dat_spin[0]->flux[ind_h[0]][ind_r[1]][ii],
-        dat_spin[0]->flux[ind_h[1]][ind_r[0]][ii], dat_spin[0]->flux[ind_h[1]][ind_r[1]][ii],
-            dat_spin[1]->flux[ind_h[0]][ind_r[0]][ii], dat_spin[1]->flux[ind_h[0]][ind_r[1]][ii],
-            dat_spin[1]->flux[ind_h[1]][ind_r[0]][ii], dat_spin[1]->flux[ind_h[1]][ind_r[1]][ii]);
+        dat_spin[0]->val[ind_h[0]][ind_r[0]][ii], dat_spin[0]->val[ind_h[0]][ind_r[1]][ii],
+        dat_spin[0]->val[ind_h[1]][ind_r[0]][ii], dat_spin[0]->val[ind_h[1]][ind_r[1]][ii],
+            dat_spin[1]->val[ind_h[0]][ind_r[0]][ii], dat_spin[1]->val[ind_h[0]][ind_r[1]][ii],
+            dat_spin[1]->val[ind_h[1]][ind_r[0]][ii], dat_spin[1]->val[ind_h[1]][ind_r[1]][ii]);
+
+    /// would be better if it was a separate function taking current rel_params as input. Need it for normalization
     double g_gamma = get_interpolated_value(ifac_a, ifac_h, ifac_r,
         dat_spin[0]->gshift[ind_h[0]][ind_r[0]][ii], dat_spin[0]->gshift[ind_h[0]][ind_r[1]][ii],
         dat_spin[0]->gshift[ind_h[1]][ind_r[0]][ii], dat_spin[0]->gshift[ind_h[1]][ind_r[1]][ii],
@@ -566,14 +576,14 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
  * @brief Sets the memory for new extended source table
  * @details
  * @param n_h; int, number of heights in the table
- * @param n_rad; int, number of bins in the table
  * @param n_r; int, number of ring sources in the table
  * @param n_a; int, number of spins in the table
+ * @param n_bin; int, number of bins in the table (radius or inclination bins)
  * @param n_storage; int, number of the energy shift storage in the table
  * @return new_extendedSourceTable, new extended source table
  */
-extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
-                                             int n_a, int n_storage,
+extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
+                                             int n_a, int n_bin, int n_storage,
                                              int *status) {
   auto *tab = (extendedSourceTable *) malloc(sizeof(extendedSourceTable));
 
@@ -581,7 +591,7 @@ extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
 
   tab->n_a = n_a;
   tab->n_h = n_h;
-  tab->n_rad = n_rad;
+  tab->n_bin = n_bin;
   tab->n_storage = n_storage;
   tab->n_r = n_r;
 
@@ -607,68 +617,83 @@ extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
  * @details
  * @return extendedSourceData, new extended source data
  */
-extendedSourceData *new_extendedSourceData(int *status) {
-
+extendedSourceData *new_extendedSourceData(int *status, bool lensing) {
+  int n_h = EXT_TABLE_NHEIGHT;
+  int n_x = EXT_TABLE_NDISTANCE;
+  int n_bin = EXT_TABLE_NRAD;
+  int n_shift = EXT_TABLE_NENERGYBINS;
+  if (lensing) {
+    n_h = PRIM_TABLE_NHEIGHT;
+    n_x = PRIM_TABLE_NDISTANCE;
+    n_bin = PRIM_TABLE_NINCL;
+    n_shift = PRIM_TABLE_NENERGYBINS;
+  }
   auto *dat = (extendedSourceData *) malloc(sizeof(extendedSourceData));
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
-  dat->height = (double *) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->height = (double *) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->height, status, nullptr)
 
-  dat->r_ring = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->r_ring = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->r_ring, status, nullptr)
 
-  dat->radius = (double *) malloc(sizeof(double) * ESTABLE_NRAD);
-  CHECK_MALLOC_RET_STATUS(dat->radius, status, nullptr)
+  dat->bin = (double *) malloc(sizeof(double) * n_bin);
+  CHECK_MALLOC_RET_STATUS(dat->bin, status, nullptr)
 
-  dat->refl_frac = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->refl_frac = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-  dat->f_ad = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->f_ad = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
 
-  dat->f_inf = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->f_inf = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->f_inf, status, nullptr)
 
-  dat->flux = (double ***) malloc(sizeof(double) * ESTABLE_NHEIGHT);
-  CHECK_MALLOC_RET_STATUS(dat->flux, status, nullptr)
+  dat->f_bh = (double **) malloc(sizeof(double) * n_h);
+  CHECK_MALLOC_RET_STATUS(dat->f_bh, status, nullptr)
 
-  dat->gshift = (double ***) malloc(sizeof(double) * ESTABLE_NHEIGHT);
-  CHECK_MALLOC_RET_STATUS(dat->flux, status, nullptr)
+  dat->val = (double ***) malloc(sizeof(double) * n_h);
+  CHECK_MALLOC_RET_STATUS(dat->val, status, nullptr)
 
-  dat->energy_data_storage = (double ****) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->gshift = (double ***) malloc(sizeof(double) * n_h);
+  CHECK_MALLOC_RET_STATUS(dat->gshift, status, nullptr)
+
+  dat->energy_data_storage = (double ****) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
-  for (int i=0; i<ESTABLE_NHEIGHT; i++){
+  for (int i=0; i<EXT_TABLE_NHEIGHT; i++){
 
-    dat->refl_frac[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->refl_frac[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-    dat->r_ring[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->r_ring[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->r_ring, status, nullptr)
 
-    dat->f_ad[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->f_ad[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
 
-    dat->f_inf[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->f_inf[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->f_inf, status, nullptr)
 
-    dat->gshift[i] = (double **) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->f_bh[i] = (double *) malloc(sizeof(double) * n_x);
+    CHECK_MALLOC_RET_STATUS(dat->f_bh, status, nullptr)
+
+    dat->gshift[i] = (double **) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->gshift, status, nullptr)
 
-    dat->flux[i] = (double **) malloc(sizeof(double) * ESTABLE_NDISTANCE);
-    CHECK_MALLOC_RET_STATUS(dat->flux, status, nullptr)
+    dat->val[i] = (double **) malloc(sizeof(double) * n_x);
+    CHECK_MALLOC_RET_STATUS(dat->val, status, nullptr)
 
-    dat->energy_data_storage[i] = (double ***) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->energy_data_storage[i] = (double ***) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
-    for(int j=0; j<ESTABLE_NDISTANCE; j++){
-      dat->gshift[i][j] = (double *) malloc(sizeof(double) * ESTABLE_NRAD);
-      dat->flux[i][j] = (double *) malloc(sizeof(double) * ESTABLE_NRAD);
-      dat->energy_data_storage[i][j] = (double **) malloc(sizeof(double) * ESTABLE_NRAD);
+    for(int j=0; j<n_x; j++){
+      dat->gshift[i][j] = (double *) malloc(sizeof(double) * n_bin);
+      dat->val[i][j] = (double *) malloc(sizeof(double) * n_bin);
+      dat->energy_data_storage[i][j] = (double **) malloc(sizeof(double) * n_bin);
 
-      for(int k=0; k<ESTABLE_NRAD; k++){
-        dat->energy_data_storage[i][j][k] = (double *) malloc(sizeof(double) * ESTABLE_NENERGYBINS);
+      for(int k=0; k<n_bin; k++){
+        dat->energy_data_storage[i][j][k] = (double *) malloc(sizeof(double) * n_shift);
       }
     }
   }
@@ -683,12 +708,12 @@ extendedSourceData *new_extendedSourceData(int *status) {
  * @details
  * @param tab; extendedSourceTable, table to be freed from memory
  */
-void free_extendedSourceTable(extendedSourceTable *tab) {
+void free_extendedSourceTable(extendedSourceTable *tab, bool lensing) {
   if (tab != nullptr) {
     if (tab->dat != nullptr) {
       for (int ii = 0; ii < tab->n_a; ii++) {
         if (tab->dat[ii] != nullptr){
-          free_extendedSourceData(tab->dat[ii]);
+          free_extendedSourceData(tab->dat[ii], lensing);
           free(tab->dat[ii]);
         }
       }
@@ -706,31 +731,40 @@ void free_extendedSourceTable(extendedSourceTable *tab) {
  * @details
  * @param dat; extendedSourceData, data to be freed
  */
-void free_extendedSourceData(extendedSourceData *dat) {
+void free_extendedSourceData(extendedSourceData *dat, bool lensing) {
+  int n_h = EXT_TABLE_NHEIGHT;
+  int n_x = EXT_TABLE_NDISTANCE;
+  int n_r = EXT_TABLE_NRAD;
+  if (lensing) {
+    n_h = PRIM_TABLE_NHEIGHT; // re-define in case of lensing table, dimensions can be different
+    n_x = PRIM_TABLE_NDISTANCE;
+    n_r = PRIM_TABLE_NINCL;
+  }
   if (dat != nullptr) {
-    for (int ii =0; ii < ESTABLE_NHEIGHT; ii++) {
+    for (int ii =0; ii < n_h; ii++) {
       if (dat->r_ring != nullptr) free(dat->r_ring[ii]);
-      if (dat->flux != nullptr) free(dat->flux[ii]);
+      if (dat->val != nullptr) free(dat->val[ii]);
       if (dat->gshift != nullptr) free(dat->gshift[ii]);
       if (dat->refl_frac != nullptr) free(dat->refl_frac[ii]);
       if (dat->f_ad != nullptr) free(dat->f_ad[ii]);
       if (dat->f_inf != nullptr) free(dat->f_inf[ii]);
+      if (dat->f_bh != nullptr) free(dat->f_bh[ii]);
       if (dat->energy_data_storage != nullptr) free(dat->energy_data_storage[ii]);
 
-      for (int jj = 0; jj < ESTABLE_NDISTANCE; jj++) {
-        if (dat->flux[ii] != nullptr) free(dat->flux[ii][jj]);
+      for (int jj = 0; jj < n_x; jj++) {
+        if (dat->val[ii] != nullptr) free(dat->val[ii][jj]);
         if (dat->gshift[ii] != nullptr) free(dat->gshift[ii][jj]);
 
-        for (int kk = 0; kk < ESTABLE_NRAD; kk++){
+        for (int kk = 0; kk < n_r; kk++){
           if (dat->energy_data_storage[ii][jj] != nullptr) free(dat->energy_data_storage[ii][jj][kk]);
         }
       }
     }
   }
-    free(dat->radius);
+    free(dat->bin);
     free(dat->height);
     free(dat->r_ring);
-    free(dat->flux);
+    free(dat->val);
     free(dat->gshift);
     free(dat->energy_data_storage);
     free(dat->refl_frac);

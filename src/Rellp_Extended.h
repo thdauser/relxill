@@ -23,12 +23,12 @@
 #include "common.h"
 
 /** dimensions of the ES table */
-#define ESTABLE_NA 20 // number of spin values
-#define ESTABLE_NHEIGHT 50 // number of height values
-#define ESTABLE_NDISTANCE 50 // number of distance values
-#define ESTABLE_NRAD 99  // number of radial bin values
-#define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source_test.fits" // to rename, tests are gone
+#define EXT_TABLE_NA 20 // number of spin values
+#define EXT_TABLE_NHEIGHT 50 // number of height values
+#define EXT_TABLE_NDISTANCE 50 // number of distance values
+#define EXT_TABLE_NRAD 99  // number of radial bin values
+#define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
+#define EXT_TABLE_FILENAME "rel_extended_source_test.fits" // to rename, tests are gone
 
 /** dimensions of the primary table */
 #define PRIM_TABLE_NA 11 // number of spin values
@@ -42,12 +42,13 @@ typedef struct {
 
   double *height;
   double **r_ring;
-  double *radius;
-  double ***flux;
+  double *bin; // was radius. Now either radius or inclination
+  double ***val; // was flux. Now either flux or lensing
   double ***gshift;
   double **refl_frac;
   double **f_ad;
   double **f_inf;
+  double **f_bh; // now only primary table contains it
   double ****energy_data_storage;
 
 } extendedSourceData;
@@ -57,16 +58,16 @@ typedef struct {
   float *a;
   int n_a;
   int n_h;
-  int n_rad;
-  int n_storage;
   int n_r;
+  int n_bin;
+  int n_storage;
   extendedSourceData **dat;
 } extendedSourceTable;
 
 
 extendedSourceTable* get_es_table(int* status);
 
-void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status);
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool lensing=false);
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, int *status);
@@ -75,15 +76,15 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
                               double gamma, extendedSourceTable *tab, int *status);
 
 // extendedSourceData functions
-extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
-                                             int n_a, int n_storage,
+extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
+                                             int n_a, int n_bin, int n_storage,
                                              int *status);
 
-void free_extendedSourceData(extendedSourceData *dat);
+void free_extendedSourceData(extendedSourceData *dat, bool lensing);
 
-extendedSourceData *new_extendedSourceData(int *status);
+extendedSourceData *new_extendedSourceData(int *status, bool lensing);
 
-void free_extendedSourceTable(extendedSourceTable *tab);
+void free_extendedSourceTable(extendedSourceTable *tab, bool lensing);
 
 
 
