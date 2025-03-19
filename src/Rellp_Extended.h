@@ -70,7 +70,7 @@ extendedSourceTable* get_es_table(int* status);
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool lensing=false);
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
-                        extendedSourceTable *tab, int *status);
+                        extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status);
 
 emisProfile *interpol_estable(double a, double height, double r_ring,
                               double gamma, extendedSourceTable *tab, int *status);

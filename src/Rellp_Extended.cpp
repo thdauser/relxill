@@ -94,6 +94,24 @@ static void get_extendedsourcetable_spin(int nrows, float **val, fitsfile *fptr,
 }
 
 /**
+ * @brief This function interpolates a given tabulated value (between 4 base points) between h and r,
+ * and then between spins. In fact, this is 3d interpolation in (a,h,x)
+ * @return The interpolated value, double
+ */
+double get_interpolated_value(const double ifac_a, const double ifac_h[2], const double ifac_r[2],
+                              double vals_lo00, double vals_lo01, double vals_lo10, double vals_lo11,
+                              double vals_hi00, double vals_hi01, double vals_hi10, double vals_hi11){
+  // does h-r interpolation for spin[ind_a]
+  double val_at_spin_lo = interp_lin_2d(ifac_r[0],ifac_h[0],
+                                        vals_lo00,vals_lo01,vals_lo10,vals_lo11);
+  // does h-r interpolation for spin[ind_a+1]
+  double val_at_spin_hi = interp_lin_2d(ifac_r[1],ifac_h[1],
+                                        vals_hi00,vals_hi01,vals_hi10,vals_hi11);
+  // return value interpolated between spins
+  return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
+}
+
+/**
  * @brief Simply divides flux by Kerr area (or kerr_flat ratio) and Lorentz correction
  * When I do this in table - this function is gone TODO: cache these corrections in new table
  */
@@ -190,10 +208,12 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
                                       extendedSourceTable *tab, int *status) {
 
   // Note that this function partially repeats the interpol_estable function. Maybe combine them?
-  // the difference is mainly the return
+  // the difference is mainly the return.
 
-  lpReflFrac *str = new_lpReflFrac(status);
-  CHECK_STATUS_RET(*status, str);
+  //// I could make a function "get interpolation factors" and pass the ifac_a, h, r etc to the relevant functions
+
+  lpReflFrac *fractions = new_lpReflFrac(status);
+  CHECK_STATUS_RET(*status, fractions);
 
   int ind_a;
   double ifac_a;
@@ -222,66 +242,45 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
                            &(ind_r[ii]), &(ifac_r[ii]));
   }
 
+  fractions->f_ad = get_interpolated_value(ifac_a, ifac_h, ifac_r,
+      dat_ind_a[0]->f_ad[ind_h[0]][ind_r[0]],dat_ind_a[0]->f_ad[ind_h[0]][ind_r[1]],
+      dat_ind_a[0]->f_ad[ind_h[1]][ind_r[0]],dat_ind_a[0]->f_ad[ind_h[1]][ind_r[1]],
+      dat_ind_a[1]->f_ad[ind_h[0]][ind_r[0]],dat_ind_a[1]->f_ad[ind_h[0]][ind_r[1]],
+      dat_ind_a[1]->f_ad[ind_h[1]][ind_r[0]],dat_ind_a[1]->f_ad[ind_h[1]][ind_r[1]]);
 
-  // interpolate f_ad value in h-r plane
-  double f_ad_low = interp_lin_2d(ifac_r[0], ifac_h[0],
-                             dat_ind_a[0]->f_ad[ind_h[0]][ind_r[0]],
-                             dat_ind_a[0]->f_ad[ind_h[0]][ind_r[1]],
-                             dat_ind_a[0]->f_ad[ind_h[1]][ind_r[0]],
-                             dat_ind_a[0]->f_ad[ind_h[1]][ind_r[1]]);
-  double f_ad_high = interp_lin_2d(ifac_r[1], ifac_h[1],
-                             dat_ind_a[1]->f_ad[ind_h[0]][ind_r[0]],
-                             dat_ind_a[1]->f_ad[ind_h[0]][ind_r[1]],
-                             dat_ind_a[1]->f_ad[ind_h[1]][ind_r[0]],
-                             dat_ind_a[1]->f_ad[ind_h[1]][ind_r[1]]);
-  // interpolating between spins
-  str->f_ad = interp_lin_1d(ifac_a, f_ad_low, f_ad_high);
+  fractions->f_inf = get_interpolated_value(ifac_a, ifac_h, ifac_r,
+      dat_ind_a[0]->f_inf[ind_h[0]][ind_r[0]],dat_ind_a[0]->f_inf[ind_h[0]][ind_r[1]],
+      dat_ind_a[0]->f_inf[ind_h[1]][ind_r[0]],dat_ind_a[0]->f_inf[ind_h[1]][ind_r[1]],
+      dat_ind_a[1]->f_inf[ind_h[0]][ind_r[0]],dat_ind_a[1]->f_inf[ind_h[0]][ind_r[1]],
+      dat_ind_a[1]->f_inf[ind_h[1]][ind_r[0]],dat_ind_a[1]->f_inf[ind_h[1]][ind_r[1]]);
+  // new table contains this value too
+  fractions->f_bh = get_interpolated_value(ifac_a, ifac_h, ifac_r,
+      dat_ind_a[0]->f_bh[ind_h[0]][ind_r[0]],dat_ind_a[0]->f_bh[ind_h[0]][ind_r[1]],
+      dat_ind_a[0]->f_bh[ind_h[1]][ind_r[0]],dat_ind_a[0]->f_bh[ind_h[1]][ind_r[1]],
+      dat_ind_a[1]->f_bh[ind_h[0]][ind_r[0]],dat_ind_a[1]->f_bh[ind_h[0]][ind_r[1]],
+      dat_ind_a[1]->f_bh[ind_h[1]][ind_r[0]],dat_ind_a[1]->f_bh[ind_h[1]][ind_r[1]]);
 
-  // interpolate f_inf value in h-r plane
-  double f_inf_low = interp_lin_2d(ifac_r[0], ifac_h[0],
-                               dat_ind_a[0]->f_inf[ind_h[0]][ind_r[0]],
-                               dat_ind_a[0]->f_inf[ind_h[0]][ind_r[1]],
-                               dat_ind_a[0]->f_inf[ind_h[1]][ind_r[0]],
-                               dat_ind_a[0]->f_inf[ind_h[1]][ind_r[1]]);
-  double f_inf_high = interp_lin_2d(ifac_r[1], ifac_h[1],
-                               dat_ind_a[1]->f_inf[ind_h[0]][ind_r[0]],
-                               dat_ind_a[1]->f_inf[ind_h[0]][ind_r[1]],
-                               dat_ind_a[1]->f_inf[ind_h[1]][ind_r[0]],
-                               dat_ind_a[1]->f_inf[ind_h[1]][ind_r[1]]);
-  str->f_inf = interp_lin_1d(ifac_a, f_inf_low, f_inf_high);
-
-  // interpolate refl_frac value in h-r plane (the value itself is obtained in function loadSingle source ... above)
-  // however, why not just calculate it here exactly from f_inf/f_ad?
-  double refl_frac_low = interp_lin_2d(ifac_r[0], ifac_h[0],
-                               dat_ind_a[0]->refl_frac[ind_h[0]][ind_r[0]],
-                               dat_ind_a[0]->refl_frac[ind_h[0]][ind_r[1]],
-                               dat_ind_a[0]->refl_frac[ind_h[1]][ind_r[0]],
-                               dat_ind_a[0]->refl_frac[ind_h[1]][ind_r[1]]);
-  double refl_frac_high = interp_lin_2d(ifac_r[1],ifac_h[1],
-                               dat_ind_a[1]->refl_frac[ind_h[0]][ind_r[0]],
-                               dat_ind_a[1]->refl_frac[ind_h[0]][ind_r[1]],
-                               dat_ind_a[1]->refl_frac[ind_h[1]][ind_r[0]],
-                               dat_ind_a[1]->refl_frac[ind_h[1]][ind_r[1]]);
-  str->refl_frac = interp_lin_1d(ifac_a, refl_frac_low, refl_frac_high);
+  // before there was one more interpolation of refl_frac between values written in function loadSingle source ... above
+  // but I don't see any obstacles against just calculating it here. Need to check if it is calculated the same
+  fractions->refl_frac = fractions->f_ad / fractions->f_inf;
   // photons are not allowed to cross the disk plane
-  if (str->f_inf > 0.5) { // should never be the case - TODO in new table
-    str->f_inf = 0.5;
+  if (fractions->f_inf > 0.5) { // should never be the case - TODO in new table
+    fractions->f_inf = 0.5;
     printf("Rellp_Extended: inf fraction more than 0.5. \n");
     printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
   }
   /// these are equal for now. f_inf_rest is used to calculate primary spectrum
   /// (function flux_boost_source_to_observer in PrimarySource.h)
   /// later maybe would be good to distinguish them correctly - AN
-  str->f_inf_rest = str->f_inf; /// anyway this is true for non-moving sources (beta=0)
+  fractions->f_inf_rest = fractions->f_inf; /// anyway this is true for non-moving sources (beta=0)
   // str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
 
-  str->f_bh = 1.0 - (str->f_ad + str->f_inf); // this is not true if we re-define f_inf to be <= 0.5.
+  ////str->f_bh = 1.0 - (str->f_ad + str->f_inf); // this is not true if we re-define f_inf to be <= 0.5.
   // But it is important only for very large heights.
-  // TODO: If I will make one more extended table, I will include the f_bh there.
   // TODO: This definition does not take into account a possible variability of the disk edges. Is there any way to
   // overcome this limitation? Probably only approximate way, because with raytracing it is not easy to vary r_in/r_out
 
-  return str;
+  return fractions;
 }
 
 /*
@@ -299,8 +298,8 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
 
   extendedSourceTable* emissivity_table = get_es_table(status); // reading table everytime? No, caching
   // new part - loading primary normalization, i.e., lensing * g_{so}^Gamma, to primary normalization
-  ///extendedSourceTable* prim_table = get_prim_table(status);
-  calc_extended_emis(emis, param, emissivity_table, status); // PRIM , prim_table
+  extendedSourceTable* prim_table = get_prim_table(status);
+  calc_extended_emis(emis, param, emissivity_table, prim_table, status); // PRIM , prim_table
 
 }
 
@@ -398,30 +397,34 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
  * @brief Calculates emissivity
  * @details
  * @param emisProf; emisProfile, pointer to the structure with emissivity profile
- * @param param; relParam, pointer to the parameters structure, as declared above
- * @param tab; extendedSourceTable, pointer to the table structure, as declared above
+ * @param param; relParam, pointer to the parameters structure
+ * @param tab; extendedSourceTable, pointer to the table structure
+ * @param prim_tab; extendedSourceTable, pointer to the primary table
  */
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
-                        extendedSourceTable *tab, int *status) { // PRIM , extendedSourceTable *tab_prim
+                        extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
 ////////////////////////////////////////////////////////
+// check this func
   emisProfile *emis_profile_table = interpol_estable(
       param->a, param->height, param->r_ring, param->gamma, tab, status);
+  // what about rebining of lensing?
    rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
   free_emisProfile(emis_profile_table);
 
+// check this func
   //PRIM emisProf->photon_fate_fractions = calc_refl_frac_ext(param, tab_prim, status);
-  emisProf->photon_fate_fractions = calc_refl_frac_ext(param, tab, status);
+  emisProf->photon_fate_fractions = calc_refl_frac_ext(param, prim_tab, status);
 
-  /// emisProf->normFactorPrimSpec = calc_primary_lensing(param, tab_prim, status);
+  // emisProf->normFactorPrimSpec = calc_primary_lensing(param, tab_prim, status);
   //// emisProf->normFactorPrimSpec *= calc_energy_shift_gamma(param, tab_prim, status);
 
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
-  // Not checked for extended source, todo later?
+  // Not done for extended source, todo later?
 //  for (int ii=0; ii<tab->n_rad; ii++){
 //    if (param->beta > 1e-6) {
 //      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
@@ -450,24 +453,6 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int 
       }
     }
   }
-}
-
-/**
- * @brief This function interpolates a given tabulated value (between 4 base points) between h and r,
- * and then between spins. In fact, this is 3d interpolation in (a,h,x)
- * @return The interpolated value, double
- */
-double get_interpolated_value(const double ifac_a, const double ifac_h[2], const double ifac_r[2],
-                              double vals_lo00, double vals_lo01, double vals_lo10, double vals_lo11,
-                              double vals_hi00, double vals_hi01, double vals_hi10, double vals_hi11){
-  // does h-r interpolation for spin[ind_a]
-  double val_at_spin_lo = interp_lin_2d(ifac_r[0],ifac_h[0],
-                                        vals_lo00,vals_lo01,vals_lo10,vals_lo11);
-  // does h-r interpolation for spin[ind_a+1]
-  double val_at_spin_hi = interp_lin_2d(ifac_r[1],ifac_h[1],
-                                        vals_hi00,vals_hi01,vals_hi10,vals_hi11);
-  // return value interpolated between spins
-  return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
 }
 
 
