@@ -195,6 +195,39 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
   return dat;
 }
 
+/* Not sure yet. Discuss? A lot of referencing
+
+void get_ipol_factors_a_h_x(const relParam *param,
+                            extendedSourceTable *tab, int *ind_a, int *ind_h_lo) {
+  int ind_a;
+  double ifac_a;
+  get_ipol_factor((float) param->a, tab->a, tab->n_a, &ind_a, &ifac_a);
+  // this array is not really necessary, it just simplifies reading of the following code:
+  // extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
+
+  int ind_h[2];
+  double ifac_h[2];
+  for (int ii = 0; ii < 2; ii++) {
+    get_ipol_factor_double(param->height, tab->dat[ind_a + ii]->height, tab->n_h, &(ind_h[ii]),
+                           &(ifac_h[ii]));
+  }
+
+  int ind_r[2];
+  double ifac_r[2];
+  for (int ii = 0; ii < 2; ii++) {
+    int index;
+    // doesn't matter for the currently used table (but if r_ring are different for different heights - it will matter)
+    if (ifac_h[ii] > 0.999999) {
+      index = ind_h[ii] + 1;
+    } else {
+      index = ind_h[ii];
+    }
+    get_ipol_factor_double(param->r_ring, tab->dat[ind_a + ii]->r_ring[index], tab->n_r,
+                           &(ind_r[ii]), &(ifac_r[ii]));
+  }
+}
+*/
+
 
 /**
  * @brief Calculates reflection fraction from interpolated table values, and photon fractions
@@ -218,13 +251,13 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
   int ind_a;
   double ifac_a;
   get_ipol_factor((float) param->a, tab->a, tab->n_a, &ind_a, &ifac_a);
-  extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
+  // this array is not really necessary, it just simplifies reading of the following code:
+  // extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
   int ind_h[2];
   double ifac_h[2];
-
   for (int ii = 0; ii < 2; ii++) {
-    get_ipol_factor_double(param->height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]),
+    get_ipol_factor_double(param->height, tab->dat[ind_a + ii]->height, tab->n_h, &(ind_h[ii]),
                            &(ifac_h[ii]));
   }
 
@@ -238,47 +271,50 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
     } else {
       index = ind_h[ii];
     }
-    get_ipol_factor_double(param->r_ring, dat_ind_a[ii]->r_ring[index], tab->n_r,
+    get_ipol_factor_double(param->r_ring, tab->dat[ind_a + ii]->r_ring[index], tab->n_r,
                            &(ind_r[ii]), &(ifac_r[ii]));
   }
 
   fractions->f_ad = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-      dat_ind_a[0]->f_ad[ind_h[0]][ind_r[0]],dat_ind_a[0]->f_ad[ind_h[0]][ind_r[1]],
-      dat_ind_a[0]->f_ad[ind_h[1]][ind_r[0]],dat_ind_a[0]->f_ad[ind_h[1]][ind_r[1]],
-      dat_ind_a[1]->f_ad[ind_h[0]][ind_r[0]],dat_ind_a[1]->f_ad[ind_h[0]][ind_r[1]],
-      dat_ind_a[1]->f_ad[ind_h[1]][ind_r[0]],dat_ind_a[1]->f_ad[ind_h[1]][ind_r[1]]);
+                                           tab->dat[ind_a]->f_ad[ind_h[0]][ind_r[0]],tab->dat[ind_a]->f_ad[ind_h[0]][ind_r[1]],
+                                           tab->dat[ind_a]->f_ad[ind_h[1]][ind_r[0]],tab->dat[ind_a]->f_ad[ind_h[1]][ind_r[1]],
+                                           tab->dat[ind_a+1]->f_ad[ind_h[0]][ind_r[0]],tab->dat[ind_a+1]->f_ad[ind_h[0]][ind_r[1]],
+                                           tab->dat[ind_a+1]->f_ad[ind_h[1]][ind_r[0]],tab->dat[ind_a+1]->f_ad[ind_h[1]][ind_r[1]]);
 
   fractions->f_inf = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-      dat_ind_a[0]->f_inf[ind_h[0]][ind_r[0]],dat_ind_a[0]->f_inf[ind_h[0]][ind_r[1]],
-      dat_ind_a[0]->f_inf[ind_h[1]][ind_r[0]],dat_ind_a[0]->f_inf[ind_h[1]][ind_r[1]],
-      dat_ind_a[1]->f_inf[ind_h[0]][ind_r[0]],dat_ind_a[1]->f_inf[ind_h[0]][ind_r[1]],
-      dat_ind_a[1]->f_inf[ind_h[1]][ind_r[0]],dat_ind_a[1]->f_inf[ind_h[1]][ind_r[1]]);
+                                            tab->dat[ind_a]->f_inf[ind_h[0]][ind_r[0]],tab->dat[ind_a]->f_inf[ind_h[0]][ind_r[1]],
+                                            tab->dat[ind_a]->f_inf[ind_h[1]][ind_r[0]],tab->dat[ind_a]->f_inf[ind_h[1]][ind_r[1]],
+                                            tab->dat[ind_a+1]->f_inf[ind_h[0]][ind_r[0]],tab->dat[ind_a+1]->f_inf[ind_h[0]][ind_r[1]],
+                                            tab->dat[ind_a+1]->f_inf[ind_h[1]][ind_r[0]],tab->dat[ind_a+1]->f_inf[ind_h[1]][ind_r[1]]);
   // new table contains this value too
   fractions->f_bh = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-      dat_ind_a[0]->f_bh[ind_h[0]][ind_r[0]],dat_ind_a[0]->f_bh[ind_h[0]][ind_r[1]],
-      dat_ind_a[0]->f_bh[ind_h[1]][ind_r[0]],dat_ind_a[0]->f_bh[ind_h[1]][ind_r[1]],
-      dat_ind_a[1]->f_bh[ind_h[0]][ind_r[0]],dat_ind_a[1]->f_bh[ind_h[0]][ind_r[1]],
-      dat_ind_a[1]->f_bh[ind_h[1]][ind_r[0]],dat_ind_a[1]->f_bh[ind_h[1]][ind_r[1]]);
+                                           tab->dat[ind_a]->f_bh[ind_h[0]][ind_r[0]],tab->dat[ind_a]->f_bh[ind_h[0]][ind_r[1]],
+                                           tab->dat[ind_a]->f_bh[ind_h[1]][ind_r[0]],tab->dat[ind_a]->f_bh[ind_h[1]][ind_r[1]],
+                                           tab->dat[ind_a+1]->f_bh[ind_h[0]][ind_r[0]],tab->dat[ind_a+1]->f_bh[ind_h[0]][ind_r[1]],
+                                           tab->dat[ind_a+1]->f_bh[ind_h[1]][ind_r[0]],tab->dat[ind_a+1]->f_bh[ind_h[1]][ind_r[1]]);
 
   // before there was one more interpolation of refl_frac between values written in function loadSingle source ... above
   // but I don't see any obstacles against just calculating it here. Need to check if it is calculated the same
   fractions->refl_frac = fractions->f_ad / fractions->f_inf;
+
   // photons are not allowed to cross the disk plane
   if (fractions->f_inf > 0.5) { // should never be the case - TODO in new table
     fractions->f_inf = 0.5;
     printf("Rellp_Extended: inf fraction more than 0.5. \n");
     printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
   }
-  /// these are equal for now. f_inf_rest is used to calculate primary spectrum
-  /// (function flux_boost_source_to_observer in PrimarySource.h)
-  /// later maybe would be good to distinguish them correctly - AN
-  fractions->f_inf_rest = fractions->f_inf; /// anyway this is true for non-moving sources (beta=0)
-  // str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
 
   ////str->f_bh = 1.0 - (str->f_ad + str->f_inf); // this is not true if we re-define f_inf to be <= 0.5.
   // But it is important only for very large heights.
   // TODO: This definition does not take into account a possible variability of the disk edges. Is there any way to
   // overcome this limitation? Probably only approximate way, because with raytracing it is not easy to vary r_in/r_out
+
+
+  /// these are equal for now. f_inf_rest is used to calculate primary spectrum
+  /// (function flux_boost_source_to_observer in PrimarySource.h)
+  /// later maybe would be good to distinguish them correctly - AN
+  fractions->f_inf_rest = fractions->f_inf; /// anyway this is true for non-moving sources (beta=0)
+  // str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
 
   return fractions;
 }
@@ -480,23 +516,26 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
     printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ifac_a);
     printf("Better limit a range of values within table limits \n");
   }
-  extendedSourceData *dat_spin[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
+
+  // this additional structure is really not needed
+  //extendedSourceData *dat_spin[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
   // Need to interpolate radial grid of table because it is different for different spins (risco(a))
   auto* radial_grid = (double*) malloc(sizeof(double)*tab->n_bin);
   CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
   for (int ii = 0; ii < tab->n_bin; ii++) {
-    radial_grid[ii] = interp_lin_1d(ifac_a, dat_spin[0]->bin[ii], dat_spin[1]->bin[ii]);
+    radial_grid[ii] = interp_lin_1d(ifac_a, tab->dat[ind_a]->bin[ii], tab->dat[ind_a+1]->bin[ii]);
   }
 
   emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
 
+  // duplicates with calc_refl_frac_ext, but I'm not sure how to deal with it better
   int ind_h[2];
   double ifac_h[2];
 
   for (int ii = 0; ii < 2; ii++) {
     // interpolation factors for height
-    get_ipol_factor_double(height, dat_spin[ii]->height, tab->n_h, &(ind_h[ii]),
+    get_ipol_factor_double(height, tab->dat[ind_a + ii]->height, tab->n_h, &(ind_h[ii]),
                            &(ifac_h[ii]));
 
     if (ifac_h[ii] < 0.0 or ifac_h[ii] > 1.0){
@@ -517,7 +556,7 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
       radial_index = ind_h[ii];
     }
     // interpolation factors for extent
-    get_ipol_factor_double(r_ring, dat_spin[ii]->r_ring[radial_index], tab->n_r, &(ind_r[ii]),
+    get_ipol_factor_double(r_ring, tab->dat[ind_a+ii]->r_ring[radial_index], tab->n_r, &(ind_r[ii]),
                            &(ifac_r[ii]));
     if (ifac_r[ii] < 0.0 or ifac_r[ii] > 1.0){
       printf(" *** Warning : dist interpolation becomes extrapolation: ifac_r = %.1f \n", ifac_r[ii]);
@@ -525,26 +564,27 @@ emisProfile *interpol_estable(double a, double height, double r_ring,
     }
   }
 
-  calc_energy_shift_gamma_tabulated(*dat_spin[0], ind_h, ind_r, tab->dat[ind_a]->energy_data_storage,
+  calc_energy_shift_gamma_tabulated(*tab->dat[ind_a], ind_h, ind_r, tab->dat[ind_a]->energy_data_storage,
                           tab->n_bin, tab->n_storage, gamma);
-  calc_energy_shift_gamma_tabulated(*dat_spin[1], ind_h, ind_r, tab->dat[ind_a + 1]->energy_data_storage,
+  calc_energy_shift_gamma_tabulated(*tab->dat[ind_a + 1], ind_h, ind_r, tab->dat[ind_a + 1]->energy_data_storage,
                           tab->n_bin, tab->n_storage, gamma);
 
   for (int ii = 0; ii < tab->n_bin; ii++) {
     // Interpolation of the flux
     // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
     emis_profile_table->emis[ii] = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-        dat_spin[0]->val[ind_h[0]][ind_r[0]][ii], dat_spin[0]->val[ind_h[0]][ind_r[1]][ii],
-        dat_spin[0]->val[ind_h[1]][ind_r[0]][ii], dat_spin[0]->val[ind_h[1]][ind_r[1]][ii],
-            dat_spin[1]->val[ind_h[0]][ind_r[0]][ii], dat_spin[1]->val[ind_h[0]][ind_r[1]][ii],
-            dat_spin[1]->val[ind_h[1]][ind_r[0]][ii], dat_spin[1]->val[ind_h[1]][ind_r[1]][ii]);
+                                                          tab->dat[ind_a]->val[ind_h[0]][ind_r[0]][ii], tab->dat[ind_a]->val[ind_h[0]][ind_r[1]][ii],
+                                                          tab->dat[ind_a]->val[ind_h[1]][ind_r[0]][ii], tab->dat[ind_a]->val[ind_h[1]][ind_r[1]][ii],
+                                                          tab->dat[ind_a + 1]->val[ind_h[0]][ind_r[0]][ii], tab->dat[ind_a + 1]->val[ind_h[0]][ind_r[1]][ii],
+                                                          tab->dat[ind_a + 1]->val[ind_h[1]][ind_r[0]][ii], tab->dat[ind_a + 1]->val[ind_h[1]][ind_r[1]][ii]);
 
     /// would be better if it was a separate function taking current rel_params as input. Need it for normalization
     double g_gamma = get_interpolated_value(ifac_a, ifac_h, ifac_r,
-        dat_spin[0]->gshift[ind_h[0]][ind_r[0]][ii], dat_spin[0]->gshift[ind_h[0]][ind_r[1]][ii],
-        dat_spin[0]->gshift[ind_h[1]][ind_r[0]][ii], dat_spin[0]->gshift[ind_h[1]][ind_r[1]][ii],
-            dat_spin[1]->gshift[ind_h[0]][ind_r[0]][ii], dat_spin[1]->gshift[ind_h[0]][ind_r[1]][ii],
-            dat_spin[1]->gshift[ind_h[1]][ind_r[0]][ii], dat_spin[1]->gshift[ind_h[1]][ind_r[1]][ii]);
+                                            tab->dat[ind_a]->gshift[ind_h[0]][ind_r[0]][ii], tab->dat[ind_a]->gshift[ind_h[0]][ind_r[1]][ii],
+                                            tab->dat[ind_a]->gshift[ind_h[1]][ind_r[0]][ii], tab->dat[ind_a]->gshift[ind_h[1]][ind_r[1]][ii],
+                                            tab->dat[ind_a + 1]->gshift[ind_h[0]][ind_r[0]][ii], tab->dat[ind_a + 1]->gshift[ind_h[0]][ind_r[1]][ii],
+                                            tab->dat[ind_a + 1]->gshift[ind_h[1]][ind_r[0]][ii], tab->dat[ind_a + 1]->gshift[ind_h[1]][ind_r[1]][ii]);
+
     // printf("check emis and gGamma, %.10f, %.10f\n", emis_profile_table->emis[ii], g_gamma);
     emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
 
