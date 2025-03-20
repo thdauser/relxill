@@ -25,14 +25,15 @@ define get_parvalues(_vmin, _vmax, n){
 %%%
 
    variable lo, hi;
-
+   variable par_sign = sign(_vmax);
+   
    if (qualifier_exists("log") && qualifier("log",1)==1){
-      (lo,hi) = log_grid(_vmin, _vmax, n-1);
+      (lo,hi) = log_grid(abs(_vmin), abs(_vmax), n-1);
    } else {
-      (lo, hi) = linear_grid(_vmin, _vmax, n-1);
+      (lo, hi) = linear_grid(abs(_vmin), abs(_vmax), n-1);
    }
 
-   return [lo,hi[-1]];
+   return [lo,hi[-1]]*par_sign;
 }
 
 
@@ -130,7 +131,7 @@ define plot_model_evaluations(dat){
    variable ii;
    _for ii(0, n-1){
       pl.plot(dat.dat[ii].emean, dat.dat[ii].flux;
-      opacity=0.4, color=sprintf("#%06x", col_pal[ii]));
+      opacity=0.7, color=sprintf("#%06x", col_pal[ii]));
    }
 
    if (qualifier("noxtics",0)==1){
@@ -157,3 +158,45 @@ define plot_model_evaluations(dat){
    return tikz_new_hbox_compound(pl, p, 0.5; center);
 }
 
+
+define param_multi_plot(_ff, _params){
+   
+   variable d_arr = {};
+   variable p;
+   foreach p(_params)
+   {
+      list_append( d_arr, get_model_evaluations(_ff, p[0], p[1], p[2] ;
+      log=p[3], neval=qualifier("neval",20)));
+   }
+   
+
+   variable ii, nplots = length(d_arr);   
+   variable nsub = int(ceil(nplots/2.0));
+
+   if (qualifier_exists("single"))
+   {
+      variable pl_list = {};
+      _for ii(0, nplots-1){
+	 list_append(pl_list,plot_model_evaluations(d_arr[ii];noxtics=((ii==nplots-1)?0:1)));
+      }
+      return tikz_new_vbox_compound(__push_list(pl_list); interleave);
+   }
+   else
+   {
+      
+      variable pl_list1 = {};
+      _for ii(0, nsub-1){
+	 list_append(pl_list1, plot_model_evaluations(d_arr[ii]; noxtics=((ii==nsub-1)?0:1))   );
+      }
+      
+      variable pl_list2 = {};
+      _for ii(nsub, nplots-1){
+	 list_append(pl_list2,plot_model_evaluations(d_arr[ii];noxtics=((ii==nplots-1)?0:1)));
+      }
+      
+      return tikz_new_hbox_compound(
+      tikz_new_vbox_compound(__push_list(pl_list1); interleave),
+      tikz_new_vbox_compound(__push_list(pl_list2); interleave),
+      3; interleave );
+   }
+}
