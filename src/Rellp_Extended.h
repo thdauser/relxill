@@ -64,6 +64,15 @@ typedef struct {
   extendedSourceData **dat;
 } extendedSourceTable;
 
+typedef struct {
+  int ind_a;
+  double ifac_a;
+  int ind_h[2];
+  double ifac_h[2];
+  int ind_x[2];
+  double ifac_x[2];
+} InterpFactors;
+
 
 extendedSourceTable* get_es_table(int* status);
 
@@ -72,8 +81,7 @@ void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status);
 
-emisProfile *interpol_estable(double a, double height, double r_ring,
-                              double gamma, extendedSourceTable *tab, int *status);
+emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);
 
 // extendedSourceData functions
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,

@@ -130,8 +130,10 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   relParam* rel_param = local_model.get_rel_params();
   auto sys_par = get_system_parameters(rel_param, &status);
 
-  rel_param->a = 0.998;
-  rel_param->height = 5.0;
+  double spin = 0.9;
+  double h = 5.0;
+  rel_param->a = spin;
+  rel_param->height = h;
   //rel_param->rout= 1000.0;
   lpTable *cached_lp_table = get_lp_table(&status);
   calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta,
@@ -153,9 +155,9 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   relParam* rel_param_ext = local_model_ext.get_rel_params();
   auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
-  rel_param_ext->a = 0.998;
+  rel_param_ext->a = spin;
   //rel_param_ext->height = 2.8962; // weird that rfrac coincides with lp only when I set slightly lower height than lp
-  rel_param_ext->height = 5.0;
+  rel_param_ext->height = h;
   rel_param_ext->r_ring = 0.0;
   //rel_param_ext->rout= 1000.0;
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
