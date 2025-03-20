@@ -408,6 +408,35 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
 }
 
+double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFactors ipol, int *status) {
+  int ind_incl; // get indexes of interpolation
+  double ifac_incl;
+  get_ipol_factor_double(incl, prim_tab->dat[ipol.ind_a]->bin, prim_tab->n_bin,
+                         &ind_incl, &ifac_incl);
+
+  double lens_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl],
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[1]][ind_incl],
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[1]][ipol.ind_x[0]][ind_incl],
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[0]][ipol.ind_x[1]][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[0]][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl]);
+  double lens_high = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[1]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[1]][ipol.ind_x[0]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[0]][ipol.ind_x[1]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[0]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl + 1]);
+  double lensing = interp_lin_1d(ifac_incl, lens_low, lens_high);
+  printf("Lensing for incl %.6f is %.6f\n", incl, lensing);
+  return lensing;
+}
+
 
 /////////////////////////////////////////////////////////
 /**
@@ -425,10 +454,8 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 
   InterpFactors ipol; // new structure with interpolation factors instead of a ton of indexes and factors
   get_ipol_factors_a_h_x(param, tab, ipol);
-////////////////////////////////////////////////////////
-// check this func
+
   emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
-  // what about rebining of lensing?
    rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
@@ -437,11 +464,11 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   // can be different for different tables
   InterpFactors prim_ipol;
   get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
-// check this func
-  //PRIM emisProf->photon_fate_fractions = calc_refl_frac_ext(param, tab_prim, status);
   emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
 
-  // emisProf->normFactorPrimSpec = calc_primary_lensing(param, tab_prim, status);
+  emisProf->normFactorPrimSpec = calc_primary_lensing(param->incl, prim_tab, prim_ipol, status);
+ // Now the next step it to decide what we do with lensing. We can divide it by 2 q_esc or leave it "proper"
+ // and the last step is to add boost to observer:
   //// emisProf->normFactorPrimSpec *= calc_energy_shift_gamma(param, tab_prim, status);
 
 
@@ -477,6 +504,29 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int 
   }
 }
 
+/* Not sure what way is better
+double* calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double gamma) {
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
+                                    tab->dat[ipol.ind_a]->energy_data_storage,
+                                    tab->n_bin, tab->n_storage, gamma);
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h, ipol.ind_x,
+                                    tab->dat[ipol.ind_a + 1]->energy_data_storage,
+                                    tab->n_bin, tab->n_storage, gamma);
+  double* g_gamma =
+  for (int ii = 0; ii < tab->n_bin; ii++) {
+    g_gamma[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ii],
+                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ii],
+                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ii],
+                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ii],
+                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ii],
+                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ii],
+                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ii],
+                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ii]);
+  }
+  return g_gamma;
+}
+*/
 
 /**
  * @brief Interpolation of the table between spins
@@ -500,7 +550,6 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
 
   emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
 
-  // also goes to future function below
   calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
                                     tab->dat[ipol.ind_a]->energy_data_storage,
                           tab->n_bin, tab->n_storage, gamma);

@@ -108,8 +108,8 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllpCp_ext};
-  double height = 3.0;
-  double r_ring = 5.0;
+  double height = 50.0;
+  double r_ring = 50.0;
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::r_ring, r_ring);
 
@@ -130,8 +130,8 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   relParam* rel_param = local_model.get_rel_params();
   auto sys_par = get_system_parameters(rel_param, &status);
 
-  double spin = 0.9;
-  double h = 5.0;
+  double spin = 0.998;
+  double h = 10.0;
   rel_param->a = spin;
   rel_param->height = h;
   //rel_param->rout= 1000.0;
