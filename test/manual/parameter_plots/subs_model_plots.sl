@@ -26,7 +26,7 @@ define get_parvalues(_vmin, _vmax, n){
 
    variable lo, hi;
 
-   if (qualifier_exists("log")){
+   if (qualifier_exists("log") && qualifier("log",1)==1){
       (lo,hi) = log_grid(_vmin, _vmax, n-1);
    } else {
       (lo, hi) = linear_grid(_vmin, _vmax, n-1);
