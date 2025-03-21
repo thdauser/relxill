@@ -408,7 +408,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
 }
 
-double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFactors ipol, int *status) {
+double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFactors ipol) {
   int ind_incl; // get indexes of interpolation
   double ifac_incl;
   get_ipol_factor_double(incl, prim_tab->dat[ipol.ind_a]->bin, prim_tab->n_bin,
@@ -433,8 +433,52 @@ double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFa
                                            prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[0]][ind_incl + 1],
                                            prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl + 1]);
   double lensing = interp_lin_1d(ifac_incl, lens_low, lens_high);
-  printf("Lensing for incl %.6f is %.6f\n", incl, lensing);
   return lensing;
+}
+
+// a bit of duplicated functions for now. I am not sure what is a better way to avoid duplications
+double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double bin_val, double gamma) {
+  // get the index of the closest bin to bin_val (below)
+  int ind_bin;
+  double ifac_bin;
+  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin, &ifac_bin);
+
+  for (int a_i : {ipol.ind_a, ipol.ind_a + 1}) { // spin bins
+    for (int i : ipol.ind_h) { // vertical bins
+      for (int j : ipol.ind_x) { // radial extent bins
+        for (int k : {ind_bin, ind_bin + 1}) { // disk radial bins
+          double sum = 0.0; // sum is zeroed every time
+          for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
+            sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
+            assert(sum >= 0.0);
+          }
+          tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
+        }
+      }
+    }
+  }
+  double g_gamma_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin]);
+  double g_gamma_high = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1]);
+
+  double g_gamma = interp_lin_1d(ifac_bin, g_gamma_low, g_gamma_high);
+  printf("Shift to observer, interp: %.6f, %.6f, %.6f \n", g_gamma_low, g_gamma_high, g_gamma);
+  return g_gamma;
 }
 
 
@@ -466,11 +510,17 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
   emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
 
-  emisProf->normFactorPrimSpec = calc_primary_lensing(param->incl, prim_tab, prim_ipol, status);
- // Now the next step it to decide what we do with lensing. We can divide it by 2 q_esc or leave it "proper"
- // and the last step is to add boost to observer:
-  //// emisProf->normFactorPrimSpec *= calc_energy_shift_gamma(param, tab_prim, status);
+  // need to discuss if we use this value normFactorPrimSpec, or I should define my own
+  // btw input incl is in radian. The table has cos incl, so convert
+  emisProf->normFactorPrimSpec = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
+  // this way we replace lensing with deviation from classic lensing (as it is already done in code)
+ emisProf->normFactorPrimSpec /= (2.0 * emisProf->photon_fate_fractions->f_inf);
 
+  printf("Lensing / 2 / q_esc for incl(rad) %.6f is %.6f. a = %.3f, h = %.3f, x = %.3f\n", param->incl,
+         emisProf->normFactorPrimSpec, param->a, param->height, param->r_ring);
+ // and the last step is to add boost g^Gamma to observer:
+  emisProf->normFactorPrimSpec *= calc_energy_shift_gamma(prim_tab, prim_ipol, cos(param->incl), param->gamma);
+  printf("Boosted lensing for incl(rad) %.6f is %.6f\n", param->incl, emisProf->normFactorPrimSpec);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo later?
@@ -479,9 +529,6 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 //      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
 //    }
 //  }
- // AN: not used as far as I see from other routines?
- // emisProf->normFactorPrimSpec = calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma,
- //         emisProf->photon_fate_fractions->f_inf);
 }
 
 /**
@@ -503,30 +550,6 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int 
     }
   }
 }
-
-/* Not sure what way is better
-double* calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double gamma) {
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
-                                    tab->dat[ipol.ind_a]->energy_data_storage,
-                                    tab->n_bin, tab->n_storage, gamma);
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h, ipol.ind_x,
-                                    tab->dat[ipol.ind_a + 1]->energy_data_storage,
-                                    tab->n_bin, tab->n_storage, gamma);
-  double* g_gamma =
-  for (int ii = 0; ii < tab->n_bin; ii++) {
-    g_gamma[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ii],
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ii],
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ii],
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ii]);
-  }
-  return g_gamma;
-}
-*/
 
 /**
  * @brief Interpolation of the table between spins
@@ -571,6 +594,8 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
                                                           tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ii]);
 
     ///// would be better if it was a separate function taking current rel_params as input. Need it for normalization
+    /// I don't like the fact that we have different radial girds, but iterate simply over bins of different grids
+    /// (spin-dependent). So it works approximately, only when grids do not differ too much (i.e. spins are ~close~)
     double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                                             tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ii],
                                             tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ii],

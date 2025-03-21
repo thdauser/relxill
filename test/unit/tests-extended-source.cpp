@@ -108,10 +108,14 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllpCp_ext};
-  double height = 50.0;
-  double r_ring = 50.0;
+  double spin = 0.998;
+  double height = 3.0;
+  double r_ring = 3.0;
+  double incl = 60.0;
+  local_model.set_par(XPar::a, spin);
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::r_ring, r_ring);
+  local_model.set_par(XPar::incl, incl);
 
   local_model.eval_model(spec);
 
