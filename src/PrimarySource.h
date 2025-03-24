@@ -82,11 +82,22 @@ class PrimarySourceParameters {
    * @return
    */
   double flux_boost_source_to_observer(const lpReflFrac &lp_refl_frac) const {
-    double prime_spec_factors_source_to_observer =
-        lp_refl_frac.f_inf_rest / 0.5 * pow(m_energy_shift_source_observer, PrimarySourceParameters::gam());
+    double prime_spec_factors_source_to_observer;
+    if (m_rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+      // general lensing and energy shift to observer (now calculated in Rellp_Extended and has form lensing * g_{so}^Gamma)
+      prime_spec_factors_source_to_observer = lp_refl_frac.lensing;
+      assert(prime_spec_factors_source_to_observer > 0.0);
+    } else {
+      // as it is in LP RELXILL
+      prime_spec_factors_source_to_observer =
+          lp_refl_frac.f_inf_rest / 0.5 * pow(m_energy_shift_source_observer, PrimarySourceParameters::gam());
+      // todo: ideally, m_energy_shift_source_observer should be calculated from extended table for ext models
+      // then lp_refl_frac.lensing will be indeed lensing
+    }
 
     // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
     if (PrimarySourceParameters::beta() > 1e-4) {
+      // need to approve/modify for extended source
       prime_spec_factors_source_to_observer *= pow(doppler_factor_source_obs(m_rel_param), 2);
     }
     return prime_spec_factors_source_to_observer;

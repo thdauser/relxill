@@ -477,7 +477,6 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
                                                tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1]);
 
   double g_gamma = interp_lin_1d(ifac_bin, g_gamma_low, g_gamma_high);
-  printf("Shift to observer, interp: %.6f, %.6f, %.6f \n", g_gamma_low, g_gamma_high, g_gamma);
   return g_gamma;
 }
 
@@ -505,22 +504,21 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
   free_emisProfile(emis_profile_table);
 
-  // can be different for different tables
   InterpFactors prim_ipol;
   get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
   emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
 
-  // need to discuss if we use this value normFactorPrimSpec, or I should define my own
-  // btw input incl is in radian. The table has cos incl, so convert
-  emisProf->normFactorPrimSpec = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
-  // this way we replace lensing with deviation from classic lensing (as it is already done in code)
- emisProf->normFactorPrimSpec /= (2.0 * emisProf->photon_fate_fractions->f_inf);
+  // experimentally put this calculation to refl_frac structure
 
-  printf("Lensing / 2 / q_esc for incl(rad) %.6f is %.6f. a = %.3f, h = %.3f, x = %.3f\n", param->incl,
-         emisProf->normFactorPrimSpec, param->a, param->height, param->r_ring);
- // and the last step is to add boost g^Gamma to observer:
-  emisProf->normFactorPrimSpec *= calc_energy_shift_gamma(prim_tab, prim_ipol, cos(param->incl), param->gamma);
-  printf("Boosted lensing for incl(rad) %.6f is %.6f\n", param->incl, emisProf->normFactorPrimSpec);
+  // btw input incl is in radian. The table has cos incl, so convert
+  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
+
+  // this way we replace lensing with deviation from classic lensing (and do not use it, as we can readily define general lensing)
+  // emisProf->normFactorPrimSpec /= (2.0 * emisProf->photon_fate_fractions->f_inf);
+  
+  // and the last step is to add boost g^Gamma to observer:
+  emisProf->photon_fate_fractions->lensing *= calc_energy_shift_gamma(prim_tab, prim_ipol,
+                                                                      cos(param->incl), param->gamma);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo later?

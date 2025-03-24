@@ -279,6 +279,7 @@ typedef struct {
   double f_ad;
   double f_inf;
   double f_inf_rest;  // f_inf in the rest frame of the system (not taking beta of the LP into account)
+  double lensing; // add lensing here, as in extended models it is taken from input table
 } lpReflFrac;
 
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
