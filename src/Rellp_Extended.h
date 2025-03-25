@@ -28,7 +28,7 @@
 #define EXT_TABLE_NDISTANCE 50 // number of distance values
 #define EXT_TABLE_NRAD 99  // number of radial bin values
 #define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
-#define EXT_TABLE_FILENAME "rel_extended_source_test.fits" // to rename, tests are gone
+#define EXT_TABLE_FILENAME "rel_extended_source.fits" // to rename, tests are gone
 
 /** dimensions of the primary table */
 #define PRIM_TABLE_NA 11 // number of spin values
@@ -73,27 +73,33 @@ typedef struct {
   double ifac_x[2];
 } InterpFactors;
 
+// no need to declare it really
+// extendedSourceTable* get_es_table(int* status);
 
-extendedSourceTable* get_es_table(int* status);
-
-void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
+// these three I really need outside, all other - arguable
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
+double get_energyshift_gamma_ext_source_obs(const relParam *param);
+double get_energyshift_gamma_ext_source_disk(const relParam *param, double radius);
+
+
+// do I need to declare these two? I could just re-arrange code. Same applies to all below
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status);
 
+
 emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);
 
-// extendedSourceData functions
+// constructors and destructors
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
                                              int n_a, int n_bin, int n_storage,
                                              int *status);
-
-void free_extendedSourceData(extendedSourceData *dat, bool lensing);
 
 extendedSourceData *new_extendedSourceData(int *status, bool lensing);
 
 void free_extendedSourceTable(extendedSourceTable *tab, bool lensing);
 
+void free_extendedSourceData(extendedSourceData *dat, bool is_lensing_table);
 
 
 #endif /* RELLP_EXTENDED_H_ */

@@ -17,6 +17,7 @@
 */
 
 #include "Relphysics.h"
+#include "Rellp_Extended.h" // for tabulated energy shifts only
 
 extern "C" {
 #include "common.h"
@@ -305,7 +306,9 @@ double energy_shift_source_obs(const relParam *rel_param) {
 
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
     // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->r_ring, rel_param->a);
-    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);  // update
+     g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);  // update
+    //g_inf_0 = get_energyshift_gamma_ext_source_obs(rel_param);
+    //printf("We do calculate energy shift to observer, %.6f with gamma = %.3f\n", g_inf_0, rel_param->gamma);
   }
   else {
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
@@ -333,7 +336,11 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
     return 1;
   }
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+    // does it also take into account disk rotation and corresponding lorentz contraction?
+    //double gshift = get_energyshift_gamma_ext_source_disk(rel_param, radius_disk);
     return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring); //update
+    //printf("Control that we calculate gshift source-disk properly: %.6f, was %.6f", gshift, gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring));
+    //return gshift;
   }
   else{
     return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);

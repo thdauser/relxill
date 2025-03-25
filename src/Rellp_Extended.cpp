@@ -46,7 +46,7 @@ extendedSourceTable *cached_extendedSource_table_prim = nullptr; // lensing tabl
  * @param status pointer, status of the code for debugging
  * @return extendedSourceTable, cached extended source table
  */
-extendedSourceTable* get_es_table(int* status){
+extendedSourceTable* get_es_table(int* status=nullptr){
   CHECK_STATUS_RET(*status, nullptr);
 
   if (cached_extendedSource_table == nullptr) {
@@ -56,7 +56,7 @@ extendedSourceTable* get_es_table(int* status){
   return cached_extendedSource_table;
 }
 
-extendedSourceTable* get_prim_table(int* status){
+extendedSourceTable* get_prim_table(int* status=nullptr){
   CHECK_STATUS_RET(*status, nullptr);
   // maybe not the best decision, but otherwise how do I do all if else statements for two similar but different tables
   // without duplicating functions
@@ -227,6 +227,51 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
   }
 }
 
+// a bit of duplicated functions for now. I am not sure what is a better way to avoid duplications
+double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double bin_val, double gamma) {
+  // get the index of the closest bin to bin_val (below)
+  int ind_bin;
+  double ifac_bin;
+  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin, &ifac_bin);
+
+  for (int a_i : {ipol.ind_a, ipol.ind_a + 1}) { // spin bins
+    for (int i : ipol.ind_h) { // vertical bins
+      for (int j : ipol.ind_x) { // radial extent bins
+        for (int k : {ind_bin, ind_bin + 1}) { // disk radial bins
+          double sum = 0.0; // sum is zeroed every time
+          for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
+            sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
+            assert(sum >= 0.0);
+          }
+          tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
+        }
+      }
+    }
+  }
+  double g_gamma_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin]);
+  double g_gamma_high = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1]);
+
+  double g_gamma = interp_lin_1d(ifac_bin, g_gamma_low, g_gamma_high);
+  return g_gamma;
+}
+
+
 
 /**
  * @brief Calculates reflection fraction from interpolated table values, and photon fractions
@@ -318,6 +363,33 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
   extendedSourceTable* prim_table = get_prim_table(status);
   calc_extended_emis(emis, param, emissivity_table, prim_table, status); // PRIM , prim_table
 
+}
+
+/**
+ * @brief Secondary main routine which gets g^Gamma from source to observer from the table (at relxill inclination)
+ * @details for now it is almost duplicated with the function below, which does the same for the disk point
+ * @return The g^Gamma value
+ */
+double get_energyshift_gamma_ext_source_obs(const relParam *param) {
+  extendedSourceTable* prim_table = get_prim_table(); // important to load the correct table
+  InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
+  get_ipol_factors_a_h_x(param, prim_table, ipol);
+  double gshift = calc_energy_shift_gamma(prim_table, ipol, cos(param->incl), param->gamma);
+  return gshift;
+}
+
+/**
+ * @brief Secondary main routine which gets g^Gamma from source to disk for a given disk radius
+ * @param param relxill parameters and values
+ * @param radius Disk radius
+ * @return The g^Gamma value
+ */
+double get_energyshift_gamma_ext_source_disk(const relParam *param, double radius) {
+  extendedSourceTable* table = get_es_table(); // important to load the correct table
+  InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
+  get_ipol_factors_a_h_x(param, table, ipol);
+  double gshift = calc_energy_shift_gamma(table, ipol, radius, param->gamma);
+  return gshift;
 }
 
 
@@ -436,51 +508,6 @@ double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFa
   return lensing;
 }
 
-// a bit of duplicated functions for now. I am not sure what is a better way to avoid duplications
-double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double bin_val, double gamma) {
-  // get the index of the closest bin to bin_val (below)
-  int ind_bin;
-  double ifac_bin;
-  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin, &ifac_bin);
-
-  for (int a_i : {ipol.ind_a, ipol.ind_a + 1}) { // spin bins
-    for (int i : ipol.ind_h) { // vertical bins
-      for (int j : ipol.ind_x) { // radial extent bins
-        for (int k : {ind_bin, ind_bin + 1}) { // disk radial bins
-          double sum = 0.0; // sum is zeroed every time
-          for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
-            sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
-            assert(sum >= 0.0);
-          }
-          tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
-        }
-      }
-    }
-  }
-  double g_gamma_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
-                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin],
-                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin],
-                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin],
-                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
-                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin],
-                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin],
-                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin]);
-  double g_gamma_high = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin + 1],
-                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin + 1],
-                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin + 1],
-                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1],
-                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin + 1],
-                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[0]][ipol.ind_x[1]][ind_bin + 1],
-                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ind_bin + 1],
-                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1]);
-
-  double g_gamma = interp_lin_1d(ifac_bin, g_gamma_low, g_gamma_high);
-  return g_gamma;
-}
-
-
 /////////////////////////////////////////////////////////
 /**
  * @brief Calculates emissivity
@@ -542,7 +569,6 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int 
           sum += pow(energy_shift_bins[ind_h[i]][ind_r[j]][k][l], gamma);
           assert(sum >= 0.0);
         }
-        // replace with -> if will do dynamical allocation
         dat_ind_a.gshift[ind_h[i]][ind_r[j]][k] = sum / num_shift_bins;
       }
     }
@@ -571,6 +597,7 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
 
   emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
 
+  // It is duplicated and could be done inside of existing element-vise function for g_gamma
   calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
                                     tab->dat[ipol.ind_a]->energy_data_storage,
                           tab->n_bin, tab->n_storage, gamma);
@@ -773,17 +800,17 @@ void free_extendedSourceTable(extendedSourceTable *tab, bool lensing) {
  * @details
  * @param dat; extendedSourceData, data to be freed
  */
-void free_extendedSourceData(extendedSourceData *dat, bool lensing) {
+void free_extendedSourceData(extendedSourceData *dat, bool is_lensing_table) {
   int n_h = EXT_TABLE_NHEIGHT;
   int n_x = EXT_TABLE_NDISTANCE;
   int n_r = EXT_TABLE_NRAD;
-  if (lensing) {
+  if (is_lensing_table) {
     n_h = PRIM_TABLE_NHEIGHT; // re-define in case of lensing table, dimensions can be different
     n_x = PRIM_TABLE_NDISTANCE;
     n_r = PRIM_TABLE_NINCL;
   }
   if (dat != nullptr) {
-    for (int ii =0; ii < n_h; ii++) {
+    for (int ii=0; ii < n_h; ii++) {
       if (dat->r_ring != nullptr) free(dat->r_ring[ii]);
       if (dat->val != nullptr) free(dat->val[ii]);
       if (dat->gshift != nullptr) free(dat->gshift[ii]);
