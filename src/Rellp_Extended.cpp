@@ -60,10 +60,10 @@ extendedSourceTable* get_prim_table(int* status){
   CHECK_STATUS_RET(*status, nullptr);
   // maybe not the best decision, but otherwise how do I do all if else statements for two similar but different tables
   // without duplicating functions
-  bool lensing_table = true;
+  bool is_lensing_table = true;
   if (cached_extendedSource_table_prim == nullptr) {
     read_extendedSource_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
-                              lensing_table);
+                              is_lensing_table);
     CHECK_STATUS_RET(*status, nullptr);
   }
   return cached_extendedSource_table_prim;
@@ -140,9 +140,9 @@ void apply_flux_correction(extendedSourceData *dat, double *r, double spin, int 
 static extendedSourceData *
 load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
                                int n_bin, int n_storage, int *status,
-                               double spin, bool lensing) {
+                               double spin, bool is_lensing_table) {
 
-  extendedSourceData *dat = new_extendedSourceData(status, lensing);
+  extendedSourceData *dat = new_extendedSourceData(status, is_lensing_table);
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
 
@@ -180,7 +180,7 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
       fits_read_col(fptr, TDOUBLE, 7, irow, 1, 1, &doublenullptr,
                     &dat->f_inf[ii][jj],&anynullptr, status);
-      if (lensing) { // extra column which is now only in the primary table
+      if (is_lensing_table) { // extra column which is now only in the primary table
         fits_read_col(fptr, TDOUBLE, 8, irow, 1, 1, &doublenullptr,
                       &dat->f_bh[ii][jj],&anynullptr, status);
       }
@@ -188,8 +188,8 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
     }
   }
-  if (!lensing) { // only for flux, not for lensing
-    /// to be removed with new table, which does these correction by default
+  if (!is_lensing_table) { // only for flux, not for lensing_factor
+    /// TODO to be removed with new table, which does these corrections by default
     apply_flux_correction(dat, dat->bin, spin, n_h, n_r, n_bin);
   }
   return dat;
@@ -313,8 +313,8 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
 
   CHECK_STATUS_VOID(*status);
 
-  extendedSourceTable* emissivity_table = get_es_table(status); // reading table everytime? No, caching
-  // new part - loading primary normalization, i.e., lensing * g_{so}^Gamma, to primary normalization
+  extendedSourceTable* emissivity_table = get_es_table(status);
+  // new part - loading primary normalization, i.e., lensing_factor * g_{so}^Gamma, to primary normalization
   extendedSourceTable* prim_table = get_prim_table(status);
   calc_extended_emis(emis, param, emissivity_table, prim_table, status); // PRIM , prim_table
 
@@ -327,7 +327,7 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
  * @param filename; const char, pointer to the name of the file (now declared in Rellp_Extended.h)
  * @param inp_tab; extendedSourceTable, two-fold pointer to the input table data
  */
-void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool lensing_table_flag) {
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table) {
 
   extendedSourceTable *tab = (*inp_tab);
   fitsfile *fptr = nullptr;
@@ -339,7 +339,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       RELXILL_ERROR("extended source table already loaded\n", status);
       break;
     }
-    if (lensing_table_flag) {
+    if (is_lensing_table) {
       tab = new_extendedSourceTable(PRIM_TABLE_NHEIGHT,PRIM_TABLE_NDISTANCE, PRIM_TABLE_NA,
                                     PRIM_TABLE_NINCL, PRIM_TABLE_NENERGYBINS, status);
     } else {
@@ -387,7 +387,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
       tab->dat[ii] = load_single_extendedSourceData(
           fptr, tab->n_h, tab->n_r, tab->n_bin, tab->n_storage, status,
-          tab->a[ii], lensing_table_flag);
+          tab->a[ii], is_lensing_table);
       if (*status != EXIT_SUCCESS) {
         RELXILL_ERROR("failed to load data from the extended source table into memory\n", status);
 
@@ -401,7 +401,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     // assign the value
     (*inp_tab) = tab;
   } else {
-    free_extendedSourceTable(tab, lensing_table_flag);
+    free_extendedSourceTable(tab, is_lensing_table);
   }
 
   if(fptr != nullptr) {fits_close_file(fptr, status);}
@@ -511,14 +511,14 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   // experimentally put this calculation to refl_frac structure
 
   // btw input incl is in radian. The table has cos incl, so convert
-  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
+  emisProf->photon_fate_fractions->lensing_factor = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
 
-  // this way we replace lensing with deviation from classic lensing (and do not use it, as we can readily define general lensing)
+  // this way we replace lensing_factor with deviation from classic lensing_factor (and do not use it, as we can readily define general lensing_factor)
   // emisProf->normFactorPrimSpec /= (2.0 * emisProf->photon_fate_fractions->f_inf);
   
   // and the last step is to add boost g^Gamma to observer:
-  emisProf->photon_fate_fractions->lensing *= calc_energy_shift_gamma(prim_tab, prim_ipol,
-                                                                      cos(param->incl), param->gamma);
+  emisProf->photon_fate_fractions->lensing_factor *= calc_energy_shift_gamma(prim_tab, prim_ipol,
+                                                                             cos(param->incl), param->gamma);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo later?

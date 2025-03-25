@@ -320,7 +320,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     double prim_fac;
 
     if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT){
-      // normFactorPrimSpec is meaningful only for relxill extended. It defines lensing * g^Gamma to observer
+      // normFactorPrimSpec was meaningful only for relxill extended. It defined lensing * g^Gamma to observer
       // (the simplified "else" below takes classical lensing into account only)
       prim_fac = sys_par->emis->normFactorPrimSpec;
 

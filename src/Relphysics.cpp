@@ -143,7 +143,7 @@ double calc_g_inf(double height, double a) {
  * @param r_ring radius of the ring
  * @param a spin of the black hole
  * @return energy shift (only e^nu component for now)
- * TODO: add the source rotation, add the lensing factor (raytracing required)
+ * TODO: add the source rotation, add the lensing_factor factor (raytracing required)
  */
 double calc_g_inf_ext(double height, double r_ring, double a) {
   double g_inf;
@@ -272,7 +272,7 @@ double gi_potential_ext(double r, double a, double h, double x) {
  * @param beta [in v/c]
  * @return
  */
-double doppler_factor_source_obs(const relParam *rel_param) {
+double doppler_factor_source_obs(const relParam *rel_param) { //update?
   // note that the angles incl and delta_obs are defined the opposite way
   double delta_obs = M_PI - rel_param->incl;
   assert(delta_obs > M_PI / 2);
@@ -305,7 +305,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
 
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
     // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->r_ring, rel_param->a);
-    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);
+    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);  // update
   }
   else {
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
@@ -333,7 +333,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
     return 1;
   }
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
-    return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
+    return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring); //update
   }
   else{
     return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);

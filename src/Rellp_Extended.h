@@ -43,7 +43,7 @@ typedef struct {
   double *height;
   double **r_ring;
   double *bin; // was radius. Now either radius or inclination
-  double ***val; // was flux. Now either flux or lensing
+  double ***val; // was flux. Now either flux or lensing_factor
   double ***gshift;
   double **refl_frac;
   double **f_ad;
@@ -76,7 +76,7 @@ typedef struct {
 
 extendedSourceTable* get_es_table(int* status);
 
-void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool lensing=false);
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
                         extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status);
