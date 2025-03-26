@@ -544,11 +544,11 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   // experimentally put this calculation to refl_frac structure
 
   // btw input incl is in radian. The table has cos incl, so convert
-  emisProf->photon_fate_fractions->lensing_factor = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
+  emisProf->photon_fate_fractions->lensing_and_boost_factor = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
   
   // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
-  emisProf->photon_fate_fractions->lensing_factor *= calc_energy_shift_gamma(prim_tab, prim_ipol,
-                                                                             cos(param->incl), param->gamma);
+  emisProf->photon_fate_fractions->lensing_and_boost_factor *= calc_energy_shift_gamma(prim_tab, prim_ipol,
+                                                                                       cos(param->incl), param->gamma);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo

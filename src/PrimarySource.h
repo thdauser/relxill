@@ -86,7 +86,7 @@ class PrimarySourceParameters {
     double prime_spec_factors_source_to_observer;
     if (m_rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
       // general lensing_factor and energy shift to observer (now calculated in Rellp_Extended and has form lensing_factor * g_{so}^Gamma)
-      prime_spec_factors_source_to_observer = lp_refl_frac.lensing_factor;
+      prime_spec_factors_source_to_observer = lp_refl_frac.lensing_and_boost_factor;
   // For some reason I cannot import Rellp_Ext.h in here. Therefore cannot use this function and need to put boost into lensing:
       //prime_spec_factors_source_to_observer *= get_energyshift_gamma_ext_source_obs(m_rel_param);
       // todo: ideally, m_energy_shift_source_observer^Gamma should be calculated from extended table for ext models
