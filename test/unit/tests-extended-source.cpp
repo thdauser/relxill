@@ -89,7 +89,7 @@ TEST_CASE("Default relxill model call Test", "[extended]") {
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllp_ext};
-  double height = 3.0;
+  double height = 5.0;
   double r_ring = 5.0;
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::r_ring, r_ring);

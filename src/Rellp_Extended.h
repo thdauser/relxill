@@ -78,8 +78,8 @@ typedef struct {
 
 // these three I really need outside, all other - arguable
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
-double get_energyshift_gamma_ext_source_obs(const relParam *param);
-double get_energyshift_gamma_ext_source_disk(const relParam *param, double radius);
+double get_energyboost_ext_source_obs(const relParam *param, double gamma);
+double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma);
 
 
 // do I need to declare these two? I could just re-arrange code. Same applies to all below

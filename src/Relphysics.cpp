@@ -137,14 +137,13 @@ double calc_g_inf(double height, double a) {
 }
 
 /**
- * @brief calculates the energy shift from a ring source to infinity (NOT YET FULLY IMPLEMENTED)
+ * @brief calculates the time-dilation component of energy shift from a ring source to infinity
  * @details cosinetheta is the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
  * Theta is polar angle of the ring, between 0 and pi/2 (r_ring^2 + height^2 are always > a^2)
  * @param height height of the ring source
  * @param r_ring radius of the ring
  * @param a spin of the black hole
- * @return energy shift (only e^nu component for now)
- * TODO: add the source rotation, add the lensing_factor factor (raytracing required)
+ * @return energy shift (only e^nu component in this function)
  */
 double calc_g_inf_ext(double height, double r_ring, double a) {
   double g_inf;
@@ -255,14 +254,14 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
 }
 
 /** similar to gi_potential_lp below, but for ring source **/
-/// note - only temporary. No doppler boost and no rotation yet (need to take it from table)
-/// also confusion with accounting/unaccounting for Lorentz factor of disk
-double gi_potential_ext(double r, double a, double h, double x) {
-  // as a temporary solution, exploit previously written function applicable to this case
-  // in general I need to take it from Rellp_Extended, as there we have proper g_sd source-disk
-  double g_inf_s = calc_g_inf_ext(h, x, a); // = E_inf / E_s
-  double g_inf_d = calc_g_inf_ext(0.0, r, a); // = E_inf / E_d
-  return g_inf_s / g_inf_d * gamma_correction(r, a); // = E_d / E_s
+double gi_potential_ext(const relParam *param, double r) {
+  // temporary older solution
+  // double g_inf_s = calc_g_inf_ext(param->height, param->r_ring, param->a); // = E_inf / E_s
+  // double g_inf_d = calc_g_inf_ext(0.0, r, param->a); // = E_inf / E_d
+  //return g_inf_s / g_inf_d * gamma_correction(r, param->a); // = E_d / E_s
+  double g_sd = get_energyboost_ext_source_disk(param, r, 1.0); // it is just energy shift here, so no Gamma
+  // printf("Do we agree at LP? g old: %.6f, new %.6f \n", g_inf_s / g_inf_d * gamma_correction(r, param->a), g_sd);
+  return g_sd;
 }
 
 /**
@@ -305,12 +304,9 @@ double energy_shift_source_obs(const relParam *rel_param) {
   }
 
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
-    // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->r_ring, rel_param->a);
-     g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);  // update
-    //g_inf_0 = get_energyshift_gamma_ext_source_obs(rel_param);
-    //printf("We do calculate energy shift to observer, %.6f with gamma = %.3f\n", g_inf_0, rel_param->gamma);
-  }
-  else {
+    // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);
+    g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
+  } else {
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
   }
 
@@ -325,7 +321,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
 /**
  * @brief calculate the energy shift from the LP to the disk zone with mean radius radius_disk of photon trajectories
  * emitted under del_emit (in the frame of the non-moving source); del_emit is only important for beta>0
- *
+ * @details AN: currently used in IonGradient.cpp
  * The connection for which del_emit which radius radius_disk is hit, is stored in the LP table structure
  */
 double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit) {
@@ -336,11 +332,9 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
     return 1;
   }
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
-    // does it also take into account disk rotation and corresponding lorentz contraction?
-    //double gshift = get_energyshift_gamma_ext_source_disk(rel_param, radius_disk);
-    return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring); //update
-    //printf("Control that we calculate gshift source-disk properly: %.6f, was %.6f", gshift, gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring));
-    //return gshift;
+    double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
+    // return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
+    return gshift;
   }
   else{
     return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
@@ -366,6 +360,8 @@ double calc_lp_emissivity_newton(double h, double r) {
 /**
  * @brief calculate the fluxboost from the (moving) primary source to the accretion disk
  * at radius rad, following g^Gamma*Doppler_factor^2 (see Dauser et al., 2013)
+ * @details AN: used in Rellp to normalize flux of the LP model only. For ext models we do this during interpolation
+ * Which is a bit inconsistent, so TODO (maybe) unify boost calculation for lp and ext models
  * @param rad
  * @param del_emit
  * @param a
@@ -377,7 +373,6 @@ double calc_lp_emissivity_newton(double h, double r) {
 double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta) {
 
   // then energy shift factor gi^gamma (see Dauser et al., 2013)
-  /// TODO update for ext source
   double boost = pow(gi_potential_lp(rad, a, height, beta, del_emit), gamma);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)

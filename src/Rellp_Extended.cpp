@@ -46,7 +46,7 @@ extendedSourceTable *cached_extendedSource_table_prim = nullptr; // lensing tabl
  * @param status pointer, status of the code for debugging
  * @return extendedSourceTable, cached extended source table
  */
-extendedSourceTable* get_es_table(int* status=nullptr){
+extendedSourceTable* get_es_table(int* status){
   CHECK_STATUS_RET(*status, nullptr);
 
   if (cached_extendedSource_table == nullptr) {
@@ -56,7 +56,7 @@ extendedSourceTable* get_es_table(int* status=nullptr){
   return cached_extendedSource_table;
 }
 
-extendedSourceTable* get_prim_table(int* status=nullptr){
+extendedSourceTable* get_prim_table(int* status){
   CHECK_STATUS_RET(*status, nullptr);
   // maybe not the best decision, but otherwise how do I do all if else statements for two similar but different tables
   // without duplicating functions
@@ -368,13 +368,14 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
 /**
  * @brief Secondary main routine which gets g^Gamma from source to observer from the table (at relxill inclination)
  * @details for now it is almost duplicated with the function below, which does the same for the disk point
- * @return The g^Gamma value
+ * @return The g^Gamma value with Gamma not necessarily taken from relParam (e.g. can be 1 for just energyshift)
  */
-double get_energyshift_gamma_ext_source_obs(const relParam *param) {
-  extendedSourceTable* prim_table = get_prim_table(); // important to load the correct table
+double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
+  int status = EXIT_SUCCESS;
+  extendedSourceTable* prim_table = get_prim_table(&status); // important to load the correct table
   InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
   get_ipol_factors_a_h_x(param, prim_table, ipol);
-  double gshift = calc_energy_shift_gamma(prim_table, ipol, cos(param->incl), param->gamma);
+  double gshift = calc_energy_shift_gamma(prim_table, ipol, cos(param->incl), gamma);
   return gshift;
 }
 
@@ -382,13 +383,16 @@ double get_energyshift_gamma_ext_source_obs(const relParam *param) {
  * @brief Secondary main routine which gets g^Gamma from source to disk for a given disk radius
  * @param param relxill parameters and values
  * @param radius Disk radius
+ * @param gamma Optionally, gamma can be different from the gamma spectrum index (e.g., 1, when we need just energy shift)
  * @return The g^Gamma value
  */
-double get_energyshift_gamma_ext_source_disk(const relParam *param, double radius) {
-  extendedSourceTable* table = get_es_table(); // important to load the correct table
+double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma) {
+  int status = EXIT_SUCCESS; // dumb solution to re-define status here, but we don't have it in the Relphysics functions
+  // and we have it in getting table routines...
+  extendedSourceTable* table = get_es_table(&status); // important to load the correct table
   InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
   get_ipol_factors_a_h_x(param, table, ipol);
-  double gshift = calc_energy_shift_gamma(table, ipol, radius, param->gamma);
+  double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
   return gshift;
 }
 
@@ -525,6 +529,8 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   InterpFactors ipol; // new structure with interpolation factors instead of a ton of indexes and factors
   get_ipol_factors_a_h_x(param, tab, ipol);
 
+
+  // rename function
   emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
    rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
@@ -539,16 +545,13 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 
   // btw input incl is in radian. The table has cos incl, so convert
   emisProf->photon_fate_fractions->lensing_factor = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
-
-  // this way we replace lensing_factor with deviation from classic lensing_factor (and do not use it, as we can readily define general lensing_factor)
-  // emisProf->normFactorPrimSpec /= (2.0 * emisProf->photon_fate_fractions->f_inf);
   
-  // and the last step is to add boost g^Gamma to observer:
+  // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
   emisProf->photon_fate_fractions->lensing_factor *= calc_energy_shift_gamma(prim_tab, prim_ipol,
                                                                              cos(param->incl), param->gamma);
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
-  // Not done for extended source, todo later?
+  // Not done for extended source, todo
 //  for (int ii=0; ii<tab->n_rad; ii++){
 //    if (param->beta > 1e-6) {
 //      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
@@ -631,8 +634,10 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
                                             tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[0]][ii],
                                             tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ii]);
 
-    // printf("check emis and gGamma, %.10f, %.10f\n", emis_profile_table->emis[ii], g_gamma);
-    emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
+
+    // this line accounts for g^Gamma:
+    emis_profile_table->emis[ii] *= g_gamma; // in fact, this is "boost" of the flux, which for lp model is taken
+    // into account only in calc_fluxboost_source_disk
     assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
   }
   return emis_profile_table;
