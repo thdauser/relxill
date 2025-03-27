@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.15)
 
-project(relxill VERSION 2.3.8)
+project(relxill VERSION 2.3.9)
 
 set(PROJECT_ROOT_DIR "-DRELXILL_SOURCE_DIR='\"${CMAKE_SOURCE_DIR}\"'")
 

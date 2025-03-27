@@ -27,7 +27,12 @@
 #include <float.h>
 #include <fitsio.h>
 
-#include "fftw/fftw3.h"   // assumes installation in heasoft
+// assumes FFTW3 installation in heasoft
+#if __has_include("fftw3.h")  // quotes needed for GCC < 10
+#  include "fftw3.h"
+#else
+#  include "fftw/fftw3.h"
+#endif
 
 
 
