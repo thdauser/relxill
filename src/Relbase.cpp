@@ -20,7 +20,6 @@
 #include "Relphysics.h"
 
 extern "C" {
-#include "fftw/fftw3.h"   // assumes installation in heasoft
 #include "writeOutfiles.h"
 }
 
