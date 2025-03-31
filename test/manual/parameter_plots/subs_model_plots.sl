@@ -113,7 +113,7 @@ define is_logdist(val){
 
 
 %%%
-define plot_model_evaluations(dat){
+define plot_model_evaluations(dat, i){
 %%%
    variable n = length(dat.dat);
 
@@ -139,7 +139,7 @@ define plot_model_evaluations(dat){
    } else {
       pl.x1label(" Energy [keV]");
    }
-   pl.y1label("Flux \; $[E \cdot F_E]$"R);
+  % pl.y1label("Flux \; $[E \cdot F_E]$"R);
    
    variable p = tikz_plot_new(0.5, ywid*0.8);
    p.axis(; off);
@@ -153,9 +153,10 @@ define plot_model_evaluations(dat){
    p.y2axis(; ticlabel_size="\footnotesize"R);
    p.plot_png(_reshape([0:255], [256, 1]); cmap=cmap, depth=200);
    p.plot([0,0,1,1,0], [0,1,1,0,0]; width=2, color="black", world0);
-
-   
-   return tikz_new_hbox_compound(pl, p, 0.5; center);
+   variable plp;
+   plp = tikz_new_hbox_compound(pl, p, 0.5; center);
+   plp.render("plot_" + string(i) + ".pdf");
+   return plp;
 }
 
 
@@ -177,7 +178,7 @@ define param_multi_plot(_ff, _params){
    {
       variable pl_list = {};
       _for ii(0, nplots-1){
-	 list_append(pl_list,plot_model_evaluations(d_arr[ii];noxtics=((ii==nplots-1)?0:1)));
+	 list_append(pl_list,plot_model_evaluations(d_arr[ii], ii;noxtics=((ii==nplots-1)?0:1)));
       }
       return tikz_new_vbox_compound(__push_list(pl_list); interleave);
    }
@@ -186,12 +187,12 @@ define param_multi_plot(_ff, _params){
       
       variable pl_list1 = {};
       _for ii(0, nsub-1){
-	 list_append(pl_list1, plot_model_evaluations(d_arr[ii]; noxtics=((ii==nsub-1)?0:1))   );
+	 list_append(pl_list1, plot_model_evaluations(d_arr[ii], ii; noxtics=((ii==nsub-1)?0:1))   );
       }
       
       variable pl_list2 = {};
       _for ii(nsub, nplots-1){
-	 list_append(pl_list2,plot_model_evaluations(d_arr[ii];noxtics=((ii==nplots-1)?0:1)));
+	 list_append(pl_list2,plot_model_evaluations(d_arr[ii], nsub + ii;noxtics=((ii==nplots-1)?0:1)));
       }
       
       return tikz_new_hbox_compound(

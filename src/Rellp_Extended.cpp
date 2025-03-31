@@ -544,12 +544,17 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   // experimentally put this calculation to refl_frac structure
 
   // btw input incl is in radian. The table has cos incl, so convert
-  emisProf->photon_fate_fractions->lensing_and_boost_factor = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
-  
-  // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
-  emisProf->photon_fate_fractions->lensing_and_boost_factor *= calc_energy_shift_gamma(prim_tab, prim_ipol,
-                                                                                       cos(param->incl), param->gamma);
+  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
 
+  // Lensing is currently calculated with raytracing for disk size r_out = 10^3 rg.
+  // Therefore at large heights we loose some fraction of photons (they go "under the disk")
+  // That is why I add here this empirical correction, which plays some role at large h
+  emisProf->photon_fate_fractions->lensing /= (1.0 - sqrt(param->height * param->height + param->r_ring * param->r_ring + param->a * param->a) / 1000.0);
+
+  // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
+  emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
+      calc_energy_shift_gamma(prim_tab, prim_ipol, cos(param->incl), param->gamma));
+  printf("Lensing = %.6f, was = %.6f, ratio = %.6f\n", emisProf->photon_fate_fractions->lensing, 2.0 * emisProf->photon_fate_fractions->f_inf_rest, emisProf->photon_fate_fractions->lensing / emisProf->photon_fate_fractions->f_inf_rest / 2.0);
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo
 //  for (int ii=0; ii<tab->n_rad; ii++){

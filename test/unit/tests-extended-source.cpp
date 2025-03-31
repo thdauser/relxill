@@ -110,8 +110,8 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
   LocalModel local_model{ModelName::relxilllpCp_ext};
   double spin = 0.998;
   double height = 2.0;
-  double r_ring = 2.0;
-  double incl = 80.0;
+  double r_ring = 0.0;
+  double incl = 30.0;
   local_model.set_par(XPar::a, spin);
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::r_ring, r_ring);
