@@ -66,8 +66,8 @@ typedef struct {
 
 typedef struct {
   int ind_a;
-  double ifac_a;
-  int ind_h[2];
+  double ifac_a; // simply between two spins
+  int ind_h[2]; // two values - 0 is for low spin, 1 is for high spin
   double ifac_h[2];
   int ind_x[2];
   double ifac_x[2];
