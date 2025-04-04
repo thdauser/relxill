@@ -237,8 +237,8 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
   get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin, &ifac_bin);
 
   for (int a_i : {ipol.ind_a, ipol.ind_a + 1}) { // spin bins
-    for (int i : ipol.ind_h) { // vertical bins
-      for (int j : ipol.ind_x) { // radial extent bins
+    for (int i : {ipol.ind_h[0], ipol.ind_h[0] + 1, ipol.ind_h[1], ipol.ind_h[1] + 1}) { // vertical bins
+      for (int j : {ipol.ind_x[0], ipol.ind_x[0] + 1, ipol.ind_x[1], ipol.ind_x[1] + 1}) { // radial extent bins
         for (int k : {ind_bin, ind_bin + 1}) { // disk radial bins
           double sum = 0.0; // sum is zeroed every time
           for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
@@ -569,17 +569,17 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 /**
  * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
  */
-void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_r[2],
+void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_x[2],
                              double ****energy_shift_bins, int num_radial_bins, int num_shift_bins, double gamma){
-  for (int i = 0; i < 2; i++) { // vertical bins, ind_h
-    for (int j = 0; j < 2; j++) { // radial extent bins, ind_r
+  for (int i : {ind_h[0], ind_h[0] + 1, ind_h[1], ind_h[1] + 1}) { // vertical bins, ind_h
+    for (int j : {ind_x[0], ind_x[0] + 1, ind_x[1], ind_x[1] + 1}) { // radial extent bins, ind_r
       for (int k = 0; k < num_radial_bins; k++) { // disk radial bins
         double sum = 0.0; // sum is zeroed every time
         for (int l = 0; l < num_shift_bins; l++) { // energy shift bins
-          sum += pow(energy_shift_bins[ind_h[i]][ind_r[j]][k][l], gamma);
+          sum += pow(energy_shift_bins[i][j][k][l], gamma);
           assert(sum >= 0.0);
         }
-        dat_ind_a.gshift[ind_h[i]][ind_r[j]][k] = sum / num_shift_bins;
+        dat_ind_a.gshift[i][j][k] = sum / num_shift_bins;
       }
     }
   }

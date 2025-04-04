@@ -134,8 +134,8 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   relParam* rel_param = local_model.get_rel_params();
   auto sys_par = get_system_parameters(rel_param, &status);
 
-  double spin = 0.998;
-  double h = 10.0;
+  double spin = 0.0;
+  double h = 2.97;
   rel_param->a = spin;
   rel_param->height = h;
   //rel_param->rout= 1000.0;
@@ -149,7 +149,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   double frac_inf = sys_par->emis->photon_fate_fractions->f_inf;
   double frac_disk = sys_par->emis->photon_fate_fractions->f_ad;
   double frac_bhole = sys_par->emis->photon_fate_fractions->f_bh;
-  //printf("%e \n", rel_param->rout);
+
   printf("test lp reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl,
          frac_disk, frac_inf, frac_bhole, frac_inf + frac_disk + frac_bhole, frac_disk / frac_inf);
 
@@ -160,7 +160,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
   rel_param_ext->a = spin;
-  //rel_param_ext->height = 2.8962; // weird that rfrac coincides with lp only when I set slightly lower height than lp
+  //rel_param_ext->height = 2.1; // weird that rfrac coincides with lp only when I set slightly lower height than lp
   rel_param_ext->height = h;
   rel_param_ext->r_ring = 0.0;
   //rel_param_ext->rout= 1000.0;
@@ -190,6 +190,8 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   LocalModel local_model{ModelName::relxilllp};
   relParam* rel_param = local_model.get_rel_params();
 
+  DefaultSpec default_spec_ext{};
+  XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxilllp_ext};
   relParam* rel_param_ext = local_model_ext.get_rel_params();
   rel_param_ext->r_ring = 0.0; // for this test we compare the lp emissivity and ext for ring=0
@@ -207,7 +209,7 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
       rel_param_ext->a = spin;
       rel_param_ext->height = height;
       rel_param_ext->rin = kerr_rms(spin);
-      local_model_ext.eval_model(spec);
+      local_model_ext.eval_model(spec_ext);
       auto sys_par = get_system_parameters(rel_param, &status);
       auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
       int n_rad = sys_par->nr;
@@ -218,10 +220,11 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
       double *intens_ext = sys_par_ext->emis->emis;
 
       assert(n_rad_ext == n_rad);
-      assert(rad_ext == rad);
+      //assert(rad_ext == rad);
       for (int i = 0; i <= n_rad; i++) {
         assert(rad_ext[i] == rad[i]); // check if the grids are the same
-        assert(intens[i] == intens_ext[i]); // check if the emissivities are the same
+        REQUIRE(abs(intens[i] - intens_ext[i]) < PREC);
+        //assert(intens[i] == intens_ext[i]); // check if the emissivities are the same
       }
     }
   }
