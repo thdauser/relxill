@@ -234,13 +234,16 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
+  DefaultSpec default_spec_ext{};
 
   LocalModel local_model{ModelName::relxilllp};
   auto spec = default_spec.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxilllp_ext};
-  auto spec_ext = default_spec.get_xspec_spectrum();
+  auto spec_ext = default_spec_ext.get_xspec_spectrum();
   local_model_ext.set_par(XPar::r_ring, 0.0);
-
+  local_model_ext.set_par(XPar::refl_frac, -1);
+  // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
+  local_model.set_par(XPar::refl_frac, -1);
   double spins[3] = {0.0, 0.5, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
 
@@ -248,10 +251,12 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
     for(double height : heights){
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::h, height);
-      REQUIRE_NOTHROW(local_model.eval_model(spec));
       local_model_ext.set_par(XPar::a, spin);
       local_model_ext.set_par(XPar::h, height);
+
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+      REQUIRE_NOTHROW(local_model.eval_model(spec));
+
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) < PREC);
       }
