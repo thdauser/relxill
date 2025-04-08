@@ -231,6 +231,41 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   REQUIRE(status == EXIT_SUCCESS);
 }
 
+TEST_CASE("Test to compare lp and ext line profiles for several spins and heights ", "[extended]") {
+
+  int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  DefaultSpec default_spec_ext{};
+
+  LocalModel local_model{ModelName::relline_lp};
+  LocalModel local_model_ext{ModelName::relline_lp_ext};
+  local_model_ext.set_par(XPar::r_ring, 0.0);
+
+  double spins[3] = {0.0, 0.5, 0.998};
+  double heights[3] = {2.2, 5.0, 10.0};
+
+  for (double spin : spins){
+    for (double height : heights){
+
+      auto spec = default_spec.get_xspec_spectrum(); // when it is outside of "for" - energy shifts wrong
+      auto spec_ext = default_spec_ext.get_xspec_spectrum();
+      local_model.set_par(XPar::a, spin);
+      local_model.set_par(XPar::h, height);
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::h, height);
+
+      REQUIRE_NOTHROW(local_model.eval_model(spec));
+      REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+
+      for (int i = 0; i < spec.num_flux_bins(); i++) {
+        REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) < PREC);
+      }
+    }
+  }
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
 
 TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[extended]") {
 
@@ -251,7 +286,7 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
   double heights[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
-    for(double height : heights){
+    for (double height : heights){
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::h, height);
       local_model_ext.set_par(XPar::a, spin);
