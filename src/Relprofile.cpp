@@ -327,6 +327,7 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
   } else {
     // NOT CACHED, so we need to calculate the system parameters
     sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status);
+
     CHECK_STATUS_RET(*status, nullptr);
 
     sysPar->limb_law = param->limb;

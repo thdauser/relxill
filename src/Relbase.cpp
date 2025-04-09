@@ -592,6 +592,8 @@ void free_cached_tables() {
   free_cached_relTable();
   free_cached_lpTable();
   free_cached_xillTable();
+  // this function is not used, but just in case - here is the routine to free ext table(s)
+  //free_extendedSourceTable
 
   // TODO: implement cache in a general way
  // free(cached_rel_param);

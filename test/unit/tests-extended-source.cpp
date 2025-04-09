@@ -190,12 +190,10 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
   LocalModel local_model{ModelName::relxilllp};
   relParam* rel_param = local_model.get_rel_params();
 
   DefaultSpec default_spec_ext{};
-  XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxilllp_ext};
   relParam* rel_param_ext = local_model_ext.get_rel_params();
   rel_param_ext->r_ring = 0.0; // for this test we compare the lp emissivity and ext for ring=0
@@ -205,11 +203,15 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
 
   for (double spin : spins){
     for(double height : heights){
+
+      XspecSpectrum spec = default_spec.get_xspec_spectrum();
       rel_param->a = spin;
       rel_param->height = height;
       rel_param->rin = kerr_rms(spin);
       local_model.eval_model(spec);
 
+
+      XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
       rel_param_ext->a = spin;
       rel_param_ext->height = height;
       rel_param_ext->rin = kerr_rms(spin);
@@ -295,9 +297,9 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
       local_model.set_par(XPar::h, height);
       local_model_ext.set_par(XPar::a, spin);
       local_model_ext.set_par(XPar::h, height);
-
-      REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+      
       REQUIRE_NOTHROW(local_model.eval_model(spec));
+      REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) < PREC);
