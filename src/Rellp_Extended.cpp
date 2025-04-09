@@ -377,7 +377,11 @@ double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
   extendedSourceTable* prim_table = get_prim_table(&status); // important to load the correct table
   InterpFactors prim_ipol; // just get the factors to the closest table grid points in a, h, x dimensions
   get_ipol_factors_a_h_x(param, prim_table, prim_ipol);
-  double gshift = calc_energy_shift_gamma(prim_table, prim_ipol, cos(param->incl), gamma);
+  // input incl can be both in radian and in grads. The table has cos incl, so we (non-optimally) convert it here
+  // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
+  double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  // in the first case it is in radian, in the second it is in grad
+  double gshift = calc_energy_shift_gamma(prim_table, prim_ipol, cos_incl, gamma);
   return gshift;
 }
 
@@ -491,6 +495,11 @@ double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFa
   double ifac_incl;
   get_ipol_factor_double(incl, prim_tab->dat[ipol.ind_a]->bin, prim_tab->n_bin,
                          &ind_incl, &ifac_incl);
+  if (ifac_incl < 0.0 or ifac_incl > 1.0){
+    // should not happen in the current table
+    printf(" *** Warning : inclination interpolation becomes extrapolation: ifac_i = %.1f \n", ifac_incl);
+    printf("Better limit a range of values within table limits, 0.025 < cos(incl) < 0.975 \n");
+  }
 
   double lens_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                          prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl],
@@ -543,10 +552,14 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
   emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
 
-  // experimentally put this calculation to refl_frac structure
 
-  // btw input incl is in radian. The table has cos incl, so convert
-  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos(param->incl), prim_tab, prim_ipol);
+  // input incl can be both in radian and in grads. The table has cos incl, so we unoptimally convert it here
+  // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
+  double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  // in the first case it is in radian, in the second it is in grad
+
+    // experimentally put this calculation to refl_frac structure
+  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
 
   // Lensing is currently calculated with raytracing for disk size r_out = 10^3 rg.
   // Therefore at large heights we loose some fraction of photons (they go "under the disk")
@@ -556,7 +569,9 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 
   // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
   emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
-      calc_energy_shift_gamma(prim_tab, prim_ipol, cos(param->incl), param->gamma));
+      calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, param->gamma));
+
+
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo
 //  for (int ii=0; ii<tab->n_rad; ii++){
@@ -851,5 +866,6 @@ void free_extendedSourceData(extendedSourceData *dat, bool is_lensing_table) {
     free(dat->refl_frac);
     free(dat->f_inf);
     free(dat->f_ad);
+    free(dat->f_bh);
 
 }

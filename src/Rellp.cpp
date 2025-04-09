@@ -623,7 +623,8 @@ lpReflFrac *new_lpReflFrac(int *status) {
   str->f_inf_rest = 0.0;
   str->f_ad = 0.0;
   str->f_bh = 0.0;
-
+  str->lensing = 0.0;
+  str->lensing_and_boost_factor = 0.0;
   return str;
 }
 
