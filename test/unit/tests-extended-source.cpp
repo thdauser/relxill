@@ -314,7 +314,7 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
         assert(spec.energy[i] == spec_ext.energy[i]);
         if (spec_ext.flux[i] != 0.0){
           // as with emissivities and line profiles, we expect the difference up to 10% now
-          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < 0.096);
+          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < 0.1);
         }
       }
     }
