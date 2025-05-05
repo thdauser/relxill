@@ -200,7 +200,7 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   relParam* rel_param_ext = local_model_ext.get_rel_params();
   rel_param_ext->r_ring = 0.0; // for this test we compare the lp emissivity and ext for ring=0
 
-  double spins[3] = {0.0, 0.5, 0.998};
+  double spins[3] = {0.0, 0.7, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
@@ -221,17 +221,18 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
       auto sys_par = get_system_parameters(rel_param, &status);
       auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
       int n_rad = sys_par->nr;
-      double *rad = sys_par->re;
       double *intens = sys_par->emis->emis;
       int n_rad_ext = sys_par_ext->nr;
-      double *rad_ext = sys_par_ext->re;
       double *intens_ext = sys_par_ext->emis->emis;
 
       assert(n_rad_ext == n_rad);
       for (int i = 0; i < n_rad; i++) {
-        assert(rad_ext[i] == rad[i]); // check if the grids are the same
-        // check if the emissivities are the same. Deviations of an order of a few % expected. Up to 10% in some cases
-        REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < 0.0677);
+        assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids are the same
+        // check if the emissivities are the same. Deviations of an order of a few % expected. Up to 10% in the most extreme cases
+        // (h at EH)
+        REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < 0.033);
+        //printf("Intensities lp %.6e, ext %.6e, ratio %.6f at radius %.6f\n", intens[i], intens_ext[i], intens[i] / intens_ext[i], sys_par_ext->re[i]);
+
       }
     }
   }
@@ -269,10 +270,10 @@ TEST_CASE("Test to compare lp and ext line profiles for several spins and height
         // to remove zero division
         if (spec.flux[i] > 0.0) {
           // currently due to slightly different energy shifts we can only get down to ~8% difference for these a,h
-          REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < 0.08);
+          REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < 0.075);
           // although these few % diff are only for the red tail of the line, on average it is below 1%
           if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) {
-            REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < 0.004);
+            REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < 0.003);
           }
         }
       }
@@ -313,8 +314,8 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         assert(spec.energy[i] == spec_ext.energy[i]);
         if (spec_ext.flux[i] != 0.0){
-          // as with emissivities and line profiles, we expect the difference up to 10% now
-          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < 0.1);
+          // as with emissivities and line profiles, we expect the difference up to ~6% now
+          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < 0.051);
         }
       }
     }

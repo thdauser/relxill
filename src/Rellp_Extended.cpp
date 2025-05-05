@@ -109,7 +109,7 @@ double get_interpolated_value(const double ifac_a, const double ifac_h[2], const
   // does h-r interpolation for spin[ind_a+1]
   double val_at_spin_hi = interp_lin_2d(ifac_r[1],ifac_h[1],
                                         vals_hi00,vals_hi01,vals_hi10,vals_hi11);
-  // return value interpolated between spins
+  // grid points must be equal, no adjustment done here
   return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
 }
 
@@ -229,27 +229,80 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
   }
 }
 
+
+/**
+ * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
+ */
+void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_x[2],
+                                       double ****energy_shift_bins, int num_bins, int num_shift_bins, double gamma){
+  for (int i : {ind_h[0], ind_h[0] + 1, ind_h[1], ind_h[1] + 1}) { // vertical bins, ind_h
+    for (int j : {ind_x[0], ind_x[0] + 1, ind_x[1], ind_x[1] + 1}) { // radial extent bins, ind_r
+      for (int k = 0; k < num_bins; k++) { // disk radial bins or lensing inclination bins
+        double sum = 0.0; // sum is zeroed every time
+        for (int l = 0; l < num_shift_bins; l++) { // energy shift bins
+          sum += pow(energy_shift_bins[i][j][k][l], gamma);
+          assert(sum >= 0.0);
+        }
+        dat_ind_a.gshift[i][j][k] = sum / num_shift_bins;
+      }
+    }
+  }
+}
+
 // a bit of duplicated functions for now. I am not sure what is a better way to avoid duplications
+//TODO avoid duplications
 double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double bin_val, double gamma) {
-  // get the index of the closest bin to bin_val (below)
-  int ind_bin;
-  double ifac_bin;
-  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin, &ifac_bin);
+  // do interpolation between bin values due to the fact: if binning at different spins/whatever is different --
+  // we have a slight shift of obtained values. In perspective would be good to divide these cases
+  int ind_bin_lo, ind_bin_hi;
+  double ifac_bin_lo, ifac_bin_hi;
+  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin_lo, &ifac_bin_lo);
+  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_bin_hi, &ifac_bin_hi);
+
+  // some extra operations happen here, if we need only one bin in the end, not all
+  //calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
+                                    //tab->dat[ipol.ind_a]->energy_data_storage,
+                                    //tab->n_bin, tab->n_storage, gamma);
+  //calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h, ipol.ind_x,
+                                    //tab->dat[ipol.ind_a + 1]->energy_data_storage,
+                                    //->n_bin, tab->n_storage, gamma);
 
   for (int a_i : {ipol.ind_a, ipol.ind_a + 1}) { // spin bins
     for (int i : {ipol.ind_h[0], ipol.ind_h[0] + 1, ipol.ind_h[1], ipol.ind_h[1] + 1}) { // vertical bins
       for (int j : {ipol.ind_x[0], ipol.ind_x[0] + 1, ipol.ind_x[1], ipol.ind_x[1] + 1}) { // radial extent bins
-        for (int k : {ind_bin, ind_bin + 1}) { // disk radial bins
-          double sum = 0.0; // sum is zeroed every time
-          for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
-            sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
-            assert(sum >= 0.0);
+        if (a_i == ipol.ind_a) {
+          for (int k : {ind_bin_lo, ind_bin_lo + 1}) { // disk radial bins or lensing inclination bins
+            double sum = 0.0; // sum is zeroed every time
+            for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
+              sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
+              assert(sum >= 0.0);
+            }
+            tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
           }
-          tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
+        }
+        else {
+          for (int k : {ind_bin_hi, ind_bin_hi + 1}) {
+            double sum = 0.0;
+            for (int l = 0; l < tab->n_storage; l++) {
+              sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
+              assert(sum >= 0.0);
+            }
+            tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
+          }
         }
       }
     }
   }
+
+  double tab_lo_00 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo + 1]);
+  double tab_lo_01 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin_lo + 1]);
+  double tab_lo_10 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin_lo + 1]);
+  double tab_lo_11 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo + 1]);
+  double tab_hi_00 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi + 1]);
+  double tab_hi_01 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
+  double tab_hi_10 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi + 1]);
+  double tab_hi_11 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
+/*
   double g_gamma_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin],
@@ -269,7 +322,11 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
                                                tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin + 1],
                                                tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin + 1]);
 
-  double g_gamma = interp_lin_1d(ifac_bin, g_gamma_low, g_gamma_high);
+  //double g_gamma = interp_lin_1d(ifac_bin, g_gamma_low, g_gamma_high);
+*/
+  double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                          tab_lo_00,tab_lo_01,tab_lo_10,tab_lo_11,
+                                          tab_hi_00,tab_hi_01,tab_hi_10,tab_hi_11);
   return g_gamma;
 }
 
@@ -582,25 +639,6 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 }
 
 /**
- * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
- */
-void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_x[2],
-                             double ****energy_shift_bins, int num_radial_bins, int num_shift_bins, double gamma){
-  for (int i : {ind_h[0], ind_h[0] + 1, ind_h[1], ind_h[1] + 1}) { // vertical bins, ind_h
-    for (int j : {ind_x[0], ind_x[0] + 1, ind_x[1], ind_x[1] + 1}) { // radial extent bins, ind_r
-      for (int k = 0; k < num_radial_bins; k++) { // disk radial bins
-        double sum = 0.0; // sum is zeroed every time
-        for (int l = 0; l < num_shift_bins; l++) { // energy shift bins
-          sum += pow(energy_shift_bins[i][j][k][l], gamma);
-          assert(sum >= 0.0);
-        }
-        dat_ind_a.gshift[i][j][k] = sum / num_shift_bins;
-      }
-    }
-  }
-}
-
-/**
  * @brief Interpolation of the table between spins
  * @details
  * @param a; double, spin
@@ -630,31 +668,54 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
                                     tab->dat[ipol.ind_a + 1]->energy_data_storage,
                           tab->n_bin, tab->n_storage, gamma);
 
+  // pre-allocation of values shifted in radial grid before interpolation
+  double tab_lo_00, tab_lo_01, tab_lo_10, tab_lo_11, tab_hi_00, tab_hi_01, tab_hi_10, tab_hi_11;
+  double fac_rlo, fac_rhi;
+  int ind_rlo, ind_rhi;
   for (int ii = 0; ii < tab->n_bin; ii++) {
+    // as radial grids shift between spins, we try to compensate for this shift
+    // I know that sometimes we can extrapolate if r < r_low_spin. But normally only a bit
+    // If extrapolation comes too far -- then this grid is far from the desired spin
+    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_rlo, &fac_rlo);
+    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_rhi, &fac_rhi);
     // Interpolation of the flux
     // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
-    emis_profile_table->emis[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                                          tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ii],
-                                                          tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ii],
-                                                          tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ii],
-                                                          tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ii],
-                                                          tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ii],
-                                                          tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ii],
-                                                          tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ii],
-                                                          tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ii]);
+    //if (fac_rlo < 0.0 or fac_rlo > 1.0) {
+      //printf("Warning, radius interpolation out of bounds, at low spin interp factor is: %.6f at radius: %.6f\n", fac_rlo, radial_grid[ii]);
+    //}
+    //if (fac_rhi < 0.0 or fac_rhi > 1.0) { // shouldn't be for a > 0
+      //printf("Warning, radius interpolation out of bounds, at high spin interp factor is: %.6f at radius: %.6f\n", fac_rhi, radial_grid[ii]);
+    //}
 
-    ///// would be better if it was a separate function taking current rel_params as input. Need it for normalization
-    /// I don't like the fact that we have different radial girds, but iterate simply over bins of different grids
-    /// (spin-dependent). So it works approximately, only when grids do not differ too much (i.e. spins are ~close~)
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    emis_profile_table->emis[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                                          tab_lo_00,tab_lo_01,
+                                                          tab_lo_10,tab_lo_11,
+                                                          tab_hi_00,tab_hi_01,
+                                                          tab_hi_10,tab_hi_11);
+
+    // is it safe to reuse these temporary variables twice in cycle?
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+
     double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ii],
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ii],
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ii],
-                                            tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ii],
-                                            tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ii]);
+                                            tab_lo_00,tab_lo_01,
+                                            tab_lo_10,tab_lo_11,
+                                            tab_hi_00,tab_hi_01,
+                                            tab_hi_10,tab_hi_11);
 
 
     // this line accounts for g^Gamma:
