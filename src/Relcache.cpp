@@ -92,10 +92,14 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
   if (par->return_rad != cpar->return_rad) {
     return 1;
   }
-
+  // AN: this is a rare case of switching between model types in one session, but I caught it
+  // (can it also happen for emis_type?)
+  if (par->model_type != cpar->model_type) {
+    return 1;
+  }
   // for now, if we have correction factors, there is no caching of rel_param results possible
   // TODO: move correction factors and therefore the return rad emis profile outside of the system parameters
-  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors!= nullptr ){
+  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr ){
     return 1;
   }
 

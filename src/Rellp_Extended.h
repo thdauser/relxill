@@ -23,33 +23,33 @@
 #include "common.h"
 
 /** dimensions of the ES table */
-#define ESTABLE_NA 20 // number of spin values
-#define ESTABLE_NHEIGHT 50 // number of height values
-#define ESTABLE_NDISTANCE 50 // number of distance values
-#define ESTABLE_NRAD 99  // number of radial bin values
-#define ESTABLE_NENERGYBINS 20 // number of energy bin values
-#define ESTABLE_FILENAME "rel_extended_source_lowheight.fits"
-// #define ESTABLE_FILENAME "rel_extended_source_test.fits" // time to rename - this table is already final
+#define EXT_TABLE_NA 20 // number of spin values
+#define EXT_TABLE_NHEIGHT 50 // number of height values
+#define EXT_TABLE_NDISTANCE 50 // number of distance values
+#define EXT_TABLE_NRAD 99  // number of radial bin values
+#define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
+#define EXT_TABLE_FILENAME "rel_extended_source.fits"
 
+/** dimensions of the primary table */
+#define PRIM_TABLE_NA 11 // number of spin values
+#define PRIM_TABLE_NHEIGHT 50 // number of height values
+#define PRIM_TABLE_NDISTANCE 50 // number of distance values
+#define PRIM_TABLE_NINCL 20  // number of inclination bins
+#define PRIM_TABLE_NENERGYBINS 20 // number of energy bin values
+#define PRIM_TABLE_FILENAME "prim_extended_source.fits"
 
 typedef struct {
 
   double *height;
   double **r_ring;
-  double *radius;
-  double ***flux;
+  double *bin; // was radius. Now either radius or inclination
+  double ***val; // was flux. Now either flux or lensing_factor
   double ***gshift;
   double **refl_frac;
   double **f_ad;
   double **f_inf;
-
-  /* This will store the necessary table data (EnergyShift)
-   * in order to sum over the 20 bins for a given Gamma exponent
-   * which will then determine the gshift array
-   * this array has dimensions NHEIGHT x NDISTANCE x NA x NRAD
-   * x NENERGYBINS values corresponding to each radial bin
-   */
-  double ****energy_data_storage; // probably need to rename
+  double **f_bh; // now only primary table contains it
+  double ****energy_data_storage;
 
 } extendedSourceData;
 
@@ -58,49 +58,48 @@ typedef struct {
   float *a;
   int n_a;
   int n_h;
-  int n_rad;
-  int n_storage;
   int n_r;
+  int n_bin;
+  int n_storage;
   extendedSourceData **dat;
 } extendedSourceTable;
 
+typedef struct {
+  int ind_a;
+  double ifac_a; // simply between two spins
+  int ind_h[2]; // two values - 0 is for low spin, 1 is for high spin
+  double ifac_h[2];
+  int ind_x[2];
+  double ifac_x[2];
+} InterpFactors;
 
-extendedSourceTable* get_es_table(int* status);
+// no need to declare it really
+// extendedSourceTable* get_es_table(int* status);
 
-void printerror(int status);
-void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status);
+// these three I really need outside, all other - arguable
 void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
+double get_energyboost_ext_source_obs(const relParam *param, double gamma);
+double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma);
+
+
+// do I need to declare these two? I could just re-arrange code. Same applies to all below
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
-                        extendedSourceTable *tab, int *status);
+                        extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status);
 
 
+emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);
 
-// double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf);
-
-emisProfile *interpol_estable(double a, double height, double r_ring,
-                              double gamma, extendedSourceTable *tab, int *status);
-
-void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
-                                               double ifac_a,
-                                               const double *ifac_h,
-                                               const double *ifac_r,
-                                               const int *ind_h,
-                                               const int *ind_r,
-                                               extendedSourceData *const *dat,
-                                               int nr);
-
-
-// extendedSourceData functions
-extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
-                                             int n_a, int n_storage,
+// constructors and destructors
+extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
+                                             int n_a, int n_bin, int n_storage,
                                              int *status);
 
-void free_extendedSourceData(extendedSourceData *dat);
+extendedSourceData *new_extendedSourceData(int *status, bool lensing);
 
-extendedSourceData *new_extendedSourceData(int *status);
+void free_extendedSourceTable(extendedSourceTable *tab, bool lensing);
 
-void free_extendedSourceTable(extendedSourceTable *tab);
-
+void free_extendedSourceData(extendedSourceData *dat, bool is_lensing_table);
 
 
 #endif /* RELLP_EXTENDED_H_ */

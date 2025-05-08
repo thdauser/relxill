@@ -1,3 +1,12 @@
+[2.4]
+- changes definition of density parameter logN for density gradient models (now at the minimum value at 25/9*rin instead of at rin, as it is much less sensitive on the spin
+- implements additional caching for relxill to speed up evaluation for some cases
+- adds new environment variable RELXILL_RENORMALIZE. If set, it renormalizes the full relxill model output to 1 cts/sec/keV/cm2 at 3keV. This setting can strongly help fitting algorithms and MCMC to converge, as the normalization does not, e.g., depend on the height anymore
+- fixes installation issues with heasoft 6.35
+
+[2.3]
+- fixes issues for installation on Mac OS (removes complex.h from the code)
+
 [2.2]:
 - for the relxilllpCp model with beta>0, fixed a bug which resulted for some cases (very low height and large beta) in an over-estimated value of the fitted reflection fraction. Any fits done with switch_reflfrac_boost=1 are not affected, and also not the spectral shape, but only the value of the refl_frac parameter
 - fixes memory leak if the ENV variable RELXILL_WRITE_FILES=1 was set - 2022-08-30

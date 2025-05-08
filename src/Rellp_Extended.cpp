@@ -26,7 +26,7 @@
 
 #include "cfitsio.h"
 // #include "stdio.h"
-#include "Relbase.h"
+//#include "Relbase.h"
 #include "Rellp_Extended.h"
 #include "Rellp.h"
 #include "Relphysics.h"
@@ -36,7 +36,9 @@ extern "C"{
 #include "writeOutfiles.h"
 }
 
-extendedSourceTable *cached_extendedSource_table = nullptr;
+extendedSourceTable *cached_extendedSource_table = nullptr; // emissivity table
+
+extendedSourceTable *cached_extendedSource_table_prim = nullptr; // lensing table
 
 /**
  * @brief Gets extended source table with a given name
@@ -45,13 +47,26 @@ extendedSourceTable *cached_extendedSource_table = nullptr;
  * @return extendedSourceTable, cached extended source table
  */
 extendedSourceTable* get_es_table(int* status){
-  CHECK_STATUS_RET(*status,nullptr);
+  CHECK_STATUS_RET(*status, nullptr);
 
   if (cached_extendedSource_table == nullptr) {
-    read_extendedSource_table(ESTABLE_FILENAME, &cached_extendedSource_table, status);
+    read_extendedSource_table(EXT_TABLE_FILENAME, &cached_extendedSource_table, status);
     CHECK_STATUS_RET(*status, nullptr);
   }
   return cached_extendedSource_table;
+}
+
+extendedSourceTable* get_prim_table(int* status){
+  CHECK_STATUS_RET(*status, nullptr);
+  // maybe not the best decision, but otherwise how do I do all if else statements for two similar but different tables
+  // without duplicating functions
+  bool is_lensing_table = true;
+  if (cached_extendedSource_table_prim == nullptr) {
+    read_extendedSource_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
+                              is_lensing_table);
+    CHECK_STATUS_RET(*status, nullptr);
+  }
+  return cached_extendedSource_table_prim;
 }
 
 /**
@@ -79,23 +94,57 @@ static void get_extendedsourcetable_spin(int nrows, float **val, fitsfile *fptr,
 }
 
 /**
+ * @brief This function interpolates a given tabulated value (between 4 base points) between h and r,
+ * and then between spins. In fact, this is 3d interpolation in (a,h,x)
+ * @details Probably the input can be a reference to the structure with values, and interp factors can be also struct
+ * (Will it be safer, faster?)
+ * @return The interpolated value, double
+ */
+double get_interpolated_value(const double ifac_a, const double ifac_h[2], const double ifac_r[2],
+                              double vals_lo00, double vals_lo01, double vals_lo10, double vals_lo11,
+                              double vals_hi00, double vals_hi01, double vals_hi10, double vals_hi11){
+  // does h-r interpolation for spin[ind_a]
+  double val_at_spin_lo = interp_lin_2d(ifac_r[0],ifac_h[0],
+                                        vals_lo00,vals_lo01,vals_lo10,vals_lo11);
+  // does h-r interpolation for spin[ind_a+1]
+  double val_at_spin_hi = interp_lin_2d(ifac_r[1],ifac_h[1],
+                                        vals_hi00,vals_hi01,vals_hi10,vals_hi11);
+  // grid points must be equal, no adjustment done here
+  return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
+}
+
+/**
+ * @brief Simply divides flux by Kerr area (or kerr_flat ratio) and Lorentz correction
+ * When I do this in table - this function is gone TODO: cache these corrections in new table
+ */
+void apply_flux_correction(extendedSourceData *dat, double *r, double spin, int n_h, int n_r, int n_rad){
+  for (int i=0; i<n_h; i++) {
+    for (int j=0; j<n_r; j++) {
+      for (int k=0; k<n_rad; k++){
+        dat->val[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
+      }
+    }
+  }
+}
+
+/**
  * @brief Gets data for a single source from the table and then makes a relativistic correction of the flux
  * @details Need to set the variables for fits_read_col instead of using numbers with unclear origin
  * Should the relativistic correction be made by a separate function better?
  * @param fptr pointer, to the fits file location
  * @param n_h integer, number of heights simulated
  * @param n_r integer, number of ring radii simulated
- * @param n_rad integer, number of radial bins
+ * @param n_bin integer, number of radial bins
  * @param n_storage integer, number of energyshift storage bins. Used only to read the fifth column with shift
  * @param spin double, spin value of the source
  * @return extendedSourceData, data from the table
  */
 static extendedSourceData *
 load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
-                               int n_rad, int n_storage, int *status,
-                               double spin) {
+                               int n_bin, int n_storage, int *status,
+                               double spin, bool is_lensing_table) {
 
-  extendedSourceData *dat = new_extendedSourceData(status);
+  extendedSourceData *dat = new_extendedSourceData(status, is_lensing_table);
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
 
@@ -103,8 +152,8 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
   double doublenullptr = 0.0;
 
   /*  read the columns */
-  fits_read_col(fptr, TDOUBLE, 1, 1, 1, n_rad, &doublenullptr,
-                dat->radius,&anynullptr, status);
+  fits_read_col(fptr, TDOUBLE, 1, 1, 1, n_bin, &doublenullptr,
+                dat->bin,&anynullptr, status);
 
   for (int ii = 0; ii < n_h; ii++) {
     fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_h, 1, 1, &doublenullptr,
@@ -118,13 +167,11 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
       int irow = (ii * n_r) + jj + 1;
 
-      fits_read_col(fptr, TDOUBLE, 4, irow, 1, n_rad, &doublenullptr,
-                    dat->flux[ii][jj],&anynullptr, status);
+      fits_read_col(fptr, TDOUBLE, 4, irow, 1, n_bin, &doublenullptr,
+                    dat->val[ii][jj],&anynullptr, status);
 
-      for (int kk = 0; kk < n_rad; kk++){
-        // for some reason flux becomes uninitialized when n_h != n_r. Weird. I'll explore it later
-        // printf("Flux %.6e, bin %d, h %.3f, x %.3f \n", dat->flux[ii][jj][kk], kk, dat->height[ii], dat->r_ring[ii][jj]);
-        assert(dat->flux[ii][jj][kk] >= 0.0);
+      for (int kk = 0; kk < n_bin; kk++){
+        assert(dat->val[ii][jj][kk] >= 0.0);
         fits_read_col(fptr, TDOUBLE, 5, irow, kk*n_storage+1, n_storage,
                       &doublenullptr, dat->energy_data_storage[ii][jj][kk],&anynullptr, status);
       }
@@ -135,29 +182,154 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
 
       fits_read_col(fptr, TDOUBLE, 7, irow, 1, 1, &doublenullptr,
                     &dat->f_inf[ii][jj],&anynullptr, status);
-
+      if (is_lensing_table) { // extra column which is now only in the primary table
+        fits_read_col(fptr, TDOUBLE, 8, irow, 1, 1, &doublenullptr,
+                      &dat->f_bh[ii][jj],&anynullptr, status);
+      }
       dat->refl_frac[ii][jj] = dat->f_ad[ii][jj]/dat->f_inf[ii][jj];
 
-      //printf("load single source function. fr_disk=%e \t fr_inf=%e \t fr_disk/dr_inf=%e \t reflfrac=%e
-      // \t spin=%e \t height=%e \t dist=%e \n", dat->f_ad[ii][jj], dat->f_inf[ii][jj], dat->f_ad[ii][jj] /
-      // dat->f_inf[ii][jj], dat->refl_frac[ii][jj], spin, dat->height[ii], dat->r_ring[ii][jj]);
-      // checked - loaded correctly (at least for n_h == n_distance)
+    }
+  }
+  if (!is_lensing_table) { // only for flux, not for lensing_factor
+    /// TODO to be removed with new table, which does these corrections by default
+    apply_flux_correction(dat, dat->bin, spin, n_h, n_r, n_bin);
+  }
+  return dat;
+}
+
+
+void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *tab, InterpFactors& ipol) {
+  // interpolation factors between spins
+  get_ipol_factor((float) param->a, tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
+  if (ipol.ifac_a < 0.0 or ipol.ifac_a > 1.0){
+    // should not happen in the current table
+    printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ipol.ifac_a);
+    printf("Better limit a range of values within table limits \n");
+  }
+  for (int ii = 0; ii < 2; ii++) {
+    // interpolation factors between heights
+    get_ipol_factor_double(param->height, tab->dat[ipol.ind_a + ii]->height, tab->n_h,
+                           &(ipol.ind_h[ii]),&(ipol.ifac_h[ii]));
+    if (ipol.ifac_h[ii] < 0.0 or ipol.ifac_h[ii] > 1.0){
+      // should not happen in the current table
+      printf(" *** Warning : height interpolation becomes extrapolation: ifac_h = %.1f \n", ipol.ifac_h[ii]);
+      printf("Better limit a range of values within table limits \n");
+    }
+    // interpolation factors between extents
+    int index = (ipol.ifac_h[ii] > 0.999999) ? ipol.ind_h[ii] + 1 : ipol.ind_h[ii];
+    // this additional index shift doesn't matter for the current table
+    // but if tabulated extents will differ for different heights - it will matter
+    get_ipol_factor_double(param->r_ring, tab->dat[ipol.ind_a + ii]->r_ring[index], tab->n_r,
+                           &(ipol.ind_x[ii]), &(ipol.ifac_x[ii]));
+    if (ipol.ifac_x[ii] < 0.0 or ipol.ifac_x[ii] > 1.0){
+      // should not happen in the current table
+      printf(" *** Warning : extent interpolation becomes extrapolation: ifac_x = %.1f \n", ipol.ifac_x[ii]);
+      printf("Better limit a range of values within table limits \n");
+    }
+  }
+}
+
+
+/**
+ * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
+ */
+void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_x[2],
+                                       double ****energy_shift_bins, int num_bins, int num_shift_bins, double gamma){
+  for (int i : {ind_h[0], ind_h[0] + 1, ind_h[1], ind_h[1] + 1}) { // vertical bins, ind_h
+    for (int j : {ind_x[0], ind_x[0] + 1, ind_x[1], ind_x[1] + 1}) { // radial extent bins, ind_r
+      for (int k = 0; k < num_bins; k++) { // disk radial bins or lensing inclination bins
+        double sum = 0.0; // sum is zeroed every time
+        for (int l = 0; l < num_shift_bins; l++) { // energy shift bins
+          sum += pow(energy_shift_bins[i][j][k][l], gamma);
+          assert(sum >= 0.0);
+        }
+        dat_ind_a.gshift[i][j][k] = sum / num_shift_bins;
+      }
+    }
+  }
+}
+
+// a bit of duplicated functions for now. I am not sure what is a better way to avoid duplications
+//TODO avoid duplications
+double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double bin_val, double gamma) {
+  // do interpolation between bin values due to the fact: if binning at different spins/whatever is different --
+  // we have a slight shift of obtained values. In perspective would be good to divide these cases
+  int ind_bin_lo, ind_bin_hi;
+  double ifac_bin_lo, ifac_bin_hi;
+  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin_lo, &ifac_bin_lo);
+  get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_bin_hi, &ifac_bin_hi);
+
+  // some extra operations happen here, if we need only one bin in the end, not all
+  //calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
+                                    //tab->dat[ipol.ind_a]->energy_data_storage,
+                                    //tab->n_bin, tab->n_storage, gamma);
+  //calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h, ipol.ind_x,
+                                    //tab->dat[ipol.ind_a + 1]->energy_data_storage,
+                                    //->n_bin, tab->n_storage, gamma);
+
+  for (int a_i : {ipol.ind_a, ipol.ind_a + 1}) { // spin bins
+    for (int i : {ipol.ind_h[0], ipol.ind_h[0] + 1, ipol.ind_h[1], ipol.ind_h[1] + 1}) { // vertical bins
+      for (int j : {ipol.ind_x[0], ipol.ind_x[0] + 1, ipol.ind_x[1], ipol.ind_x[1] + 1}) { // radial extent bins
+        if (a_i == ipol.ind_a) {
+          for (int k : {ind_bin_lo, ind_bin_lo + 1}) { // disk radial bins or lensing inclination bins
+            double sum = 0.0; // sum is zeroed every time
+            for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
+              sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
+              assert(sum >= 0.0);
+            }
+            tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
+          }
+        }
+        else {
+          for (int k : {ind_bin_hi, ind_bin_hi + 1}) {
+            double sum = 0.0;
+            for (int l = 0; l < tab->n_storage; l++) {
+              sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
+              assert(sum >= 0.0);
+            }
+            tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
+          }
+        }
+      }
     }
   }
 
-   ////  add relativistic corrections to the flux. TODO: cache these corrections in new table
-   /// note however that the energy shift g^Gamma is not added here - it is added below in interpol_estable function
-   /// because Gamma is a variable
-   double *r = dat->radius;
-   for (int i=0; i<n_h; i++) {
-     for (int j=0; j<n_r; j++) {
-       for (int k=0; k<n_rad; k++){
-         dat->flux[i][j][k] /= (kerr_to_flat_area_ratio(r[k], spin) * gamma_correction(r[k], spin));
-       }
-     }
-   }
-  return dat;
+  double tab_lo_00 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo + 1]);
+  double tab_lo_01 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin_lo + 1]);
+  double tab_lo_10 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin_lo + 1]);
+  double tab_lo_11 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo + 1]);
+  double tab_hi_00 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi + 1]);
+  double tab_hi_01 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
+  double tab_hi_10 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi + 1]);
+  double tab_hi_11 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
+/*
+  double g_gamma_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin],
+                                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin],
+                                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin]);
+  double g_gamma_high = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin + 1],
+                                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin + 1]);
+
+  //double g_gamma = interp_lin_1d(ifac_bin, g_gamma_low, g_gamma_high);
+*/
+  double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                          tab_lo_00,tab_lo_01,tab_lo_10,tab_lo_11,
+                                          tab_hi_00,tab_hi_01,tab_hi_10,tab_hi_11);
+  return g_gamma;
 }
+
 
 
 /**
@@ -168,102 +340,68 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
  * @param tab, extendedSourceTable, a pointer to the structure containing a table
  * @return lpReflFrac, a pointer to the structure containing interpolated reflection fraction and photon fractions
  */
-static lpReflFrac *calc_refl_frac_ext(const relParam *param,
-                                      extendedSourceTable *tab, int *status) {
+static lpReflFrac *calc_refl_frac_ext(const extendedSourceTable *tab, InterpFactors ipol, int *status) {
 
   // Note that this function partially repeats the interpol_estable function. Maybe combine them?
+  // the difference is mainly the return.
 
-  lpReflFrac *str = new_lpReflFrac(status);
-  CHECK_STATUS_RET(*status, str);
+  lpReflFrac *fractions = new_lpReflFrac(status);
+  CHECK_STATUS_RET(*status, fractions);
 
+  fractions->f_ad = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                           tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0]][ipol.ind_x[0]],
+                                           tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0]][ipol.ind_x[0] + 1],
+                                           tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0] + 1][ipol.ind_x[0]],
+                                           tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1],
+                                           tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1]][ipol.ind_x[1]],
+                                           tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1]][ipol.ind_x[1] + 1],
+                                           tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1] + 1][ipol.ind_x[1]],
+                                           tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1]);
 
-  // BEGINNING OF REFL_FRAC INTERPOLATION
-  int ind_a;
-  double ifac_a;
-  get_ipol_factor((float) param->a, tab->a, tab->n_a, &ind_a, &ifac_a);
-  extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
+  fractions->f_inf = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                            tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0]][ipol.ind_x[0]],
+                                            tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0]][ipol.ind_x[0] + 1],
+                                            tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0] + 1][ipol.ind_x[0]],
+                                            tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1],
+                                            tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1]][ipol.ind_x[1]],
+                                            tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1]][ipol.ind_x[1] + 1],
+                                            tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1] + 1][ipol.ind_x[1]],
+                                            tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1]);
+  // new table contains this value too
+  fractions->f_bh = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                           tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0]][ipol.ind_x[0]],
+                                           tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0]][ipol.ind_x[0] + 1],
+                                           tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0] + 1][ipol.ind_x[0]],
+                                           tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1],
+                                           tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1]][ipol.ind_x[1]],
+                                           tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1]][ipol.ind_x[1] + 1],
+                                           tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1] + 1][ipol.ind_x[1]],
+                                           tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1]);
 
-  int ind_h[2];
-  double ifac_h[2];
+  // before there was one more interpolation of refl_frac between values written in function loadSingle source ... above
+  // but I don't see any obstacles against just calculating it here. Need to check if it is calculated the same
+  fractions->refl_frac = fractions->f_ad / fractions->f_inf;
 
-  for (int ii = 0; ii < 2; ii++) {
-    get_ipol_factor_double(param->height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]),
-                           &(ifac_h[ii]));
-  }
-
-  int ind_r[2];
-  double ifac_r[2];
-  for (int ii = 0; ii < 2; ii++) {
-    int index;
-    // doesn't matter for the currently used table (but if r_ring are different for different heights - it will matter)
-    if (ifac_h[ii] > 0.999999) {
-      index = ind_h[ii] + 1;
-    } else {
-      index = ind_h[ii];
-    }
-    get_ipol_factor_double(param->r_ring, dat_ind_a[ii]->r_ring[index], tab->n_r,
-                           &(ind_r[ii]), &(ifac_r[ii]));
-  }
-
-
-  // interpolate f_ad value in h-r plane
-  double f_ad_low = interp_lin_2d(ifac_r[0], ifac_h[0],
-                             dat_ind_a[0]->f_ad[ind_h[0]][ind_r[0]],
-                             dat_ind_a[0]->f_ad[ind_h[0]][ind_r[1]],
-                             dat_ind_a[0]->f_ad[ind_h[1]][ind_r[0]],
-                             dat_ind_a[0]->f_ad[ind_h[1]][ind_r[1]]);
-  double f_ad_high = interp_lin_2d(ifac_r[1], ifac_h[1],
-                             dat_ind_a[1]->f_ad[ind_h[0]][ind_r[0]],
-                             dat_ind_a[1]->f_ad[ind_h[0]][ind_r[1]],
-                             dat_ind_a[1]->f_ad[ind_h[1]][ind_r[0]],
-                             dat_ind_a[1]->f_ad[ind_h[1]][ind_r[1]]);
-  // interpolating between spins
-  str->f_ad = interp_lin_1d(ifac_a, f_ad_low, f_ad_high);
-
-  // interpolate f_inf value in h-r plane
-  double f_inf_low = interp_lin_2d(ifac_r[0], ifac_h[0],
-                               dat_ind_a[0]->f_inf[ind_h[0]][ind_r[0]],
-                               dat_ind_a[0]->f_inf[ind_h[0]][ind_r[1]],
-                               dat_ind_a[0]->f_inf[ind_h[1]][ind_r[0]],
-                               dat_ind_a[0]->f_inf[ind_h[1]][ind_r[1]]);
-  double f_inf_high = interp_lin_2d(ifac_r[1], ifac_h[1],
-                               dat_ind_a[1]->f_inf[ind_h[0]][ind_r[0]],
-                               dat_ind_a[1]->f_inf[ind_h[0]][ind_r[1]],
-                               dat_ind_a[1]->f_inf[ind_h[1]][ind_r[0]],
-                               dat_ind_a[1]->f_inf[ind_h[1]][ind_r[1]]);
-  str->f_inf = interp_lin_1d(ifac_a, f_inf_low, f_inf_high);
-
-  // interpolate refl_frac value in h-r plane
-  double refl_frac_low = interp_lin_2d(ifac_r[0], ifac_h[0],
-                               dat_ind_a[0]->refl_frac[ind_h[0]][ind_r[0]],
-                               dat_ind_a[0]->refl_frac[ind_h[0]][ind_r[1]],
-                               dat_ind_a[0]->refl_frac[ind_h[1]][ind_r[0]],
-                               dat_ind_a[0]->refl_frac[ind_h[1]][ind_r[1]]);
-  double refl_frac_high = interp_lin_2d(ifac_r[1],ifac_h[1],
-                               dat_ind_a[1]->refl_frac[ind_h[0]][ind_r[0]],
-                               dat_ind_a[1]->refl_frac[ind_h[0]][ind_r[1]],
-                               dat_ind_a[1]->refl_frac[ind_h[1]][ind_r[0]],
-                               dat_ind_a[1]->refl_frac[ind_h[1]][ind_r[1]]);
-  str->refl_frac = interp_lin_1d(ifac_a, refl_frac_low, refl_frac_high);
   // photons are not allowed to cross the disk plane
-  if (str->f_inf > 0.5) { // should never be the case - TODO in new table
-    str->f_inf = 0.5;
+  if (fractions->f_inf > 0.5) { // should never be the case - TODO in new table
+    fractions->f_inf = 0.5;
     printf("Rellp_Extended: inf fraction more than 0.5. \n");
     printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
   }
-  /// these are equal for now. f_inf_rest is used to calculate primary spectrum
-  /// (function flux_boost_source_to_observer in PrimarySource.h)
-  /// later maybe would be good to distinguish them correctly - AN
-  str->f_inf_rest = str->f_inf; /// anyway this is true for non-moving sources (beta=0)
-  // str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
 
-  str->f_bh = 1.0 - (str->f_ad + str->f_inf); // this is not true if we re-define f_inf to be <= 0.5.
+  ////str->f_bh = 1.0 - (str->f_ad + str->f_inf); // this is not true if we re-define f_inf to be <= 0.5.
   // But it is important only for very large heights.
-  // TODO: If I will make one more extended table, I will include the f_bh there.
   // TODO: This definition does not take into account a possible variability of the disk edges. Is there any way to
   // overcome this limitation? Probably only approximate way, because with raytracing it is not easy to vary r_in/r_out
 
-  return str;
+
+  /// these are equal for now. f_inf_rest is used to calculate primary spectrum
+  /// (function flux_boost_source_to_observer in PrimarySource.h)
+  /// later maybe would be good to distinguish them correctly - AN
+  fractions->f_inf_rest = fractions->f_inf; /// anyway this is true for non-moving sources (beta=0)
+  // str->f_inf_rest = 0.5 * (1.0 + cos(del_emit_ad_max));
+
+  return fractions;
 }
 
 /*
@@ -278,9 +416,47 @@ static lpReflFrac *calc_refl_frac_ext(const relParam *param,
 void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
-  // printf("call get emis\n");
-  extendedSourceTable* estable = get_es_table(status); // reading table everytime? No, caching
-  calc_extended_emis(emis, param, estable, status);
+
+  extendedSourceTable* emissivity_table = get_es_table(status);
+  // new part - loading primary normalization, i.e., lensing_factor * g_{so}^Gamma, to primary normalization
+  extendedSourceTable* prim_table = get_prim_table(status);
+  calc_extended_emis(emis, param, emissivity_table, prim_table, status); // PRIM , prim_table
+
+}
+
+/**
+ * @brief Secondary main routine which gets g^Gamma from source to observer from the table (at relxill inclination)
+ * @details for now it is almost duplicated with the function below, which does the same for the disk point
+ * @return The g^Gamma value with Gamma not necessarily taken from relParam (e.g. can be 1 for just energyshift)
+ */
+double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
+  int status = EXIT_SUCCESS;
+  extendedSourceTable* prim_table = get_prim_table(&status); // important to load the correct table
+  InterpFactors prim_ipol; // just get the factors to the closest table grid points in a, h, x dimensions
+  get_ipol_factors_a_h_x(param, prim_table, prim_ipol);
+  // input incl can be both in radian and in grads. The table has cos incl, so we (non-optimally) convert it here
+  // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
+  double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  // in the first case it is in radian, in the second it is in grad
+  double gshift = calc_energy_shift_gamma(prim_table, prim_ipol, cos_incl, gamma);
+  return gshift;
+}
+
+/**
+ * @brief Secondary main routine which gets g^Gamma from source to disk for a given disk radius
+ * @param param relxill parameters and values
+ * @param radius Disk radius
+ * @param gamma Optionally, gamma can be different from the gamma spectrum index (e.g., 1, when we need just energy shift)
+ * @return The g^Gamma value
+ */
+double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma) {
+  int status = EXIT_SUCCESS; // dumb solution to re-define status here, but we don't have it in the Relphysics functions
+  // and we have it in getting table routines...
+  extendedSourceTable* table = get_es_table(&status); // important to load the correct table
+  InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
+  get_ipol_factors_a_h_x(param, table, ipol);
+  double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
+  return gshift;
 }
 
 
@@ -290,7 +466,7 @@ void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *stat
  * @param filename; const char, pointer to the name of the file (now declared in Rellp_Extended.h)
  * @param inp_tab; extendedSourceTable, two-fold pointer to the input table data
  */
-void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status) {
+void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table) {
 
   extendedSourceTable *tab = (*inp_tab);
   fitsfile *fptr = nullptr;
@@ -302,9 +478,14 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       RELXILL_ERROR("extended source table already loaded\n", status);
       break;
     }
+    if (is_lensing_table) {
+      tab = new_extendedSourceTable(PRIM_TABLE_NHEIGHT,PRIM_TABLE_NDISTANCE, PRIM_TABLE_NA,
+                                    PRIM_TABLE_NINCL, PRIM_TABLE_NENERGYBINS, status);
+    } else {
+      tab = new_extendedSourceTable(EXT_TABLE_NHEIGHT, EXT_TABLE_NDISTANCE, EXT_TABLE_NA,
+                                    EXT_TABLE_NRAD, EXT_TABLE_NENERGYBINS, status);
+    }
 
-    tab = new_extendedSourceTable(ESTABLE_NHEIGHT, ESTABLE_NRAD,
-                                  ESTABLE_NDISTANCE, ESTABLE_NA, ESTABLE_NENERGYBINS, status);
     CHECK_STATUS_BREAK(*status);
 
     // should be set by previous routine
@@ -333,8 +514,7 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     get_extendedsourcetable_spin(tab->n_a, &(tab->a) , fptr, status);
     CHECK_RELXILL_ERROR("reading of spin axis failed\n", status);
 
-
-    // now load the full table (need to go through all extensions
+    // now load the full table (need to go through all extensions)
     int ii;
     int rownum;
     for (ii = 0; ii < tab->n_a; ii++) {
@@ -345,8 +525,8 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       assert(tab->dat[ii] == nullptr);
 
       tab->dat[ii] = load_single_extendedSourceData(
-          fptr, tab->n_h, tab->n_r, tab->n_rad, tab->n_storage, status,
-          tab->a[ii]);
+          fptr, tab->n_h, tab->n_r, tab->n_bin, tab->n_storage, status,
+          tab->a[ii], is_lensing_table);
       if (*status != EXIT_SUCCESS) {
         RELXILL_ERROR("failed to load data from the extended source table into memory\n", status);
 
@@ -360,48 +540,103 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     // assign the value
     (*inp_tab) = tab;
   } else {
-    free_extendedSourceTable(tab);
+    free_extendedSourceTable(tab, is_lensing_table);
   }
 
   if(fptr != nullptr) {fits_close_file(fptr, status);}
 
 }
 
+double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFactors ipol) {
+  int ind_incl; // get indexes of interpolation
+  double ifac_incl;
+  get_ipol_factor_double(incl, prim_tab->dat[ipol.ind_a]->bin, prim_tab->n_bin,
+                         &ind_incl, &ifac_incl);
+  if (ifac_incl < 0.0 or ifac_incl > 1.0){
+    // should not happen in the current table
+    printf(" *** Warning : inclination interpolation becomes extrapolation: ifac_i = %.1f \n", ifac_incl);
+    printf("Better limit a range of values within table limits, 0.025 < cos(incl) < 0.975 \n");
+  }
+
+  double lens_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl],
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_incl],
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_incl],
+                         prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_incl],
+                         prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_incl]);
+  double lens_high = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_incl + 1],
+                                           prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_incl + 1]);
+  double lensing = interp_lin_1d(ifac_incl, lens_low, lens_high);
+  return lensing;
+}
 
 /////////////////////////////////////////////////////////
 /**
  * @brief Calculates emissivity
  * @details
  * @param emisProf; emisProfile, pointer to the structure with emissivity profile
- * @param param; relParam, pointer to the parameters structure, as declared above
- * @param tab; extendedSourceTable, pointer to the table structure, as declared above
+ * @param param; relParam, pointer to the parameters structure
+ * @param tab; extendedSourceTable, pointer to the table structure
+ * @param prim_tab; extendedSourceTable, pointer to the primary table
  */
 void calc_extended_emis(emisProfile *emisProf, const relParam *param,
-                        extendedSourceTable *tab, int *status) {
+                        extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  emisProfile *emis_profile_table = interpol_estable(
-      param->a, param->height, param->r_ring, param->gamma, tab, status);
+  InterpFactors ipol; // new structure with interpolation factors instead of a ton of indexes and factors
+  get_ipol_factors_a_h_x(param, tab, ipol);
+
+
+  // rename function
+  emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
    rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
-  free(emis_profile_table->re); // is not freed by free_emisProfile
+  free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
   free_emisProfile(emis_profile_table);
-  // printf("call calc ext emis\n");
-  emisProf->photon_fate_fractions = calc_refl_frac_ext(param, tab, status);
+
+  InterpFactors prim_ipol;
+  get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
+  emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
+
+
+  // input incl can be both in radian and in grads. The table has cos incl, so we unoptimally convert it here
+  // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
+  double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  // in the first case it is in radian, in the second it is in grad
+
+    // experimentally put this calculation to refl_frac structure
+  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
+
+  // Lensing is currently calculated with raytracing for disk size r_out = 10^3 rg.
+  // Therefore at large heights we loose some fraction of photons (they go "under the disk")
+  // That is why I add here this empirical correction, which plays some role at large h
+  emisProf->photon_fate_fractions->lensing /= (1.0 -
+      sqrt(param->height * param->height + param->r_ring * param->r_ring + param->a * param->a) / 1000.0);
+
+  // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
+  emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
+      calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, param->gamma));
+
 
   // take the beaming of the jet into account (see Dauser et al., 2013)
-  // Not checked for extended source, todo later?
+  // Not done for extended source, todo
 //  for (int ii=0; ii<tab->n_rad; ii++){
 //    if (param->beta > 1e-6) {
 //      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
 //    }
 //  }
- // AN: not used as far as I see from other routines?
- // emisProf->normFactorPrimSpec = calc_norm_factor_primary_spectrum_ext(param->height, param->a, param->gamma,
- //         emisProf->photon_fate_fractions->f_inf);
 }
-
 
 /**
  * @brief Interpolation of the table between spins
@@ -413,180 +648,107 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
  * @param tab; extendedSourceTable, pointer to the table as declared above
  * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
  */
-emisProfile *interpol_estable(double a, double height, double r_ring,
-                              double gamma, extendedSourceTable *tab, int *status) {
+emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status) {
   CHECK_STATUS_RET(*status, nullptr);
 
-  int ind_a;
-  double ifac_a;
-  get_ipol_factor((float) a, tab->a, tab->n_a, &ind_a, &ifac_a);
-
-  // assert(ifac_a >= 0.0 && ifac_a <= 1.0);
-  if (ifac_a < 0.0 or ifac_a > 1.0){
-    // should not happen in the current table
-    printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ifac_a);
-    printf("Better limit a range of values within table limits \n");
-  }
-  extendedSourceData *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
-
-  // Need to interpolate radial grid of table because it is different for different spins
-  auto* radial_grid = (double*) malloc(sizeof(double)*tab->n_rad);
+  // Need to interpolate radial grid of table because it is different for different spins (risco(a))
+  auto* radial_grid = (double*) malloc(sizeof(double)*tab->n_bin);
   CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
-  for (int ii = 0; ii < tab->n_rad; ii++) {
-    radial_grid[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->radius[ii], dat_ind_a[1]->radius[ii]);
+  for (int ii = 0; ii < tab->n_bin; ii++) {
+    radial_grid[ii] = interp_lin_1d(ipol.ifac_a, tab->dat[ipol.ind_a]->bin[ii], tab->dat[ipol.ind_a+1]->bin[ii]);
   }
 
-  emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_rad, status);
+  emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
 
-  int ind_h[2];
-  double ifac_h[2];
+  // It is duplicated and could be done inside of existing element-vise function for g_gamma
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
+                                    tab->dat[ipol.ind_a]->energy_data_storage,
+                          tab->n_bin, tab->n_storage, gamma);
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h, ipol.ind_x,
+                                    tab->dat[ipol.ind_a + 1]->energy_data_storage,
+                          tab->n_bin, tab->n_storage, gamma);
 
-  for (int ii = 0; ii < 2; ii++) {
-    get_ipol_factor_double(height, dat_ind_a[ii]->height, tab->n_h, &(ind_h[ii]),
-                           &(ifac_h[ii]));
+  // pre-allocation of values shifted in radial grid before interpolation
+  double tab_lo_00, tab_lo_01, tab_lo_10, tab_lo_11, tab_hi_00, tab_hi_01, tab_hi_10, tab_hi_11;
+  double fac_rlo, fac_rhi;
+  int ind_rlo, ind_rhi;
+  for (int ii = 0; ii < tab->n_bin; ii++) {
+    // as radial grids shift between spins, we try to compensate for this shift
+    // I know that sometimes we can extrapolate if r < r_low_spin. But normally only a bit
+    // If extrapolation comes too far -- then this grid is far from the desired spin
+    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_rlo, &fac_rlo);
+    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_rhi, &fac_rhi);
+    // Interpolation of the flux
+    // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
+    //if (fac_rlo < 0.0 or fac_rlo > 1.0) {
+      //printf("Warning, radius interpolation out of bounds, at low spin interp factor is: %.6f at radius: %.6f\n", fac_rlo, radial_grid[ii]);
+    //}
+    //if (fac_rhi < 0.0 or fac_rhi > 1.0) { // shouldn't be for a > 0
+      //printf("Warning, radius interpolation out of bounds, at high spin interp factor is: %.6f at radius: %.6f\n", fac_rhi, radial_grid[ii]);
+    //}
 
-    //assert(ifac_h[ii] >= 0.0 && ifac_h[ii] <= 1.0);
-    if (ifac_h[ii] < 0.0 or ifac_h[ii] > 1.0){
-      printf(" *** Warning : height interpolation becomes extrapolation: ifac_h = %.1f \n", ifac_h[ii]);
-      printf("Better limit a range of values within table limits \n");
-    }
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    emis_profile_table->emis[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                                          tab_lo_00,tab_lo_01,
+                                                          tab_lo_10,tab_lo_11,
+                                                          tab_hi_00,tab_hi_01,
+                                                          tab_hi_10,tab_hi_11);
+
+    // is it safe to reuse these temporary variables twice in cycle?
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+
+    double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                            tab_lo_00,tab_lo_01,
+                                            tab_lo_10,tab_lo_11,
+                                            tab_hi_00,tab_hi_01,
+                                            tab_hi_10,tab_hi_11);
+
+
+    // this line accounts for g^Gamma:
+    emis_profile_table->emis[ii] *= g_gamma; // in fact, this is "boost" of the flux, which for lp model is taken
+    // into account only in calc_fluxboost_source_disk
+    assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
   }
-
-  int ind_r[2];
-  double ifac_r[2];
-  for (int ii = 0; ii < 2; ii++) {
-    int radial_index; // index of the range of ring values corresponding to a given height
-    // (in the currently used table it does not matter, as ring values in table are equal for all heights)
-    // if h almost equals the upper height, we also shift the index of the ring value
-    if (ifac_h[ii] > 0.999999) {
-      radial_index = ind_h[ii] + 1;
-    } else {
-      radial_index = ind_h[ii];
-    }
-    get_ipol_factor_double(r_ring, dat_ind_a[ii]->r_ring[radial_index], tab->n_r, &(ind_r[ii]),
-                           &(ifac_r[ii]));
-    //printf("interpolation factor distance, index distance: %e %d\n", ifac_d[ii], ind_d[ii]);
-    //printf("distance values interp and table: %e %e \n", r_ring, dat_ind_a[ii]->r_ring[index][ind_d[ii]]);
-    //assert(ifac_d[ii] >= -1.0 && ifac_d[ii] <= 1.0);
-    if (ifac_r[ii] < 0.0 or ifac_r[ii] > 1.0){
-      printf(" *** Warning : dist interpolation becomes extrapolation: ifac_r = %.1f \n", ifac_r[ii]);
-      printf("Better limit a range of values within table limits \n");
-    }
-  }
-
-  ///// should be a separate function
-  // determine the gshift for the two spin values required for interpolation in the next function
-  // energy shifts in a rectangle of base points need to be taken from table. We take only those values which are
-  // the closest below and above input h and x. It was done much less optimal before
-  for (int i=0; i < 2; i++) { // vertical bins, ind_h
-    for (int j = 0; j < 2; j++) { // radial offset bins, ind_r
-      for (int k = 0; k < tab->n_rad; k++) { // radial bins
-        double sum1 = 0.0; // sums are zeroed every time
-        double sum2 = 0.0; // two sums are defined for two spins
-        for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
-          sum1 += pow(tab->dat[ind_a]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
-          sum2 += pow(tab->dat[ind_a + 1]->energy_data_storage[ind_h[i]][ind_r[j]][k][l], gamma);
-          assert(sum1 >= 0.0);
-          assert(sum2 >= 0.0);
-        }
-        dat_ind_a[0]->gshift[ind_h[i]][ind_r[j]][k] = sum1 / tab->n_storage;
-        dat_ind_a[1]->gshift[ind_h[i]][ind_r[j]][k] = sum2 / tab->n_storage;
-      }
-    }
-  }
-  /////
-  interpol_emisprofile_spin_height_distance(emis_profile_table,
-                                            ifac_a,
-                                            ifac_h,
-                                            ifac_r,
-                                            ind_h,
-                                            ind_r,
-                                            dat_ind_a,
-                                            tab->n_rad);
   return emis_profile_table;
 }
 
 
-/**
- *
- * @brief Interpolates values in height-ring radius space for a given spin (already interpolated)
- * @details
- * @param emis_profile_table; emisProfile, pointer to the structure containing emissivity profile table
- * @param ifac_a; double, interpolated factor of spin, factor i.e. ratio between two closest base points
- * @param ifac_h; const double, pointer to interpolated factor of height
- * @param ifac_r; const double, pointer to interpolated factor of distance (r_ring)
- * @param ind_h; const int, pointer to index of height
- * @param ind_r; const int, pointer to index of distance (r_ring)
- * @param dat_a; *const extendedSourceData, pointer to the structure with data of spin
- * @param nr; const int, number of radial bins
- */
-void interpol_emisprofile_spin_height_distance(emisProfile *emis_profile_table,
-                                               double ifac_a,
-                                               const double *ifac_h,
-                                               const double *ifac_r,
-                                               const int *ind_h,
-                                               const int *ind_r,
-                                               extendedSourceData *const *dat_a,
-                                               const int nr) {
-
-  for (int ii = 0; ii < nr; ii++) {
-    // Interpolation of the flux
-    double rlo = interp_lin_2d(ifac_r[0], // does h-r interpolation of flux for spin[ind_a]
-                               ifac_h[0],
-                               dat_a[0]->flux[ind_h[0]][ind_r[0]][ii],
-                               dat_a[0]->flux[ind_h[0]][ind_r[1]][ii],
-                               dat_a[0]->flux[ind_h[1]][ind_r[0]][ii],
-                               dat_a[0]->flux[ind_h[1]][ind_r[1]][ii]);
-    double rhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of flux for spin[ind_a+1]
-                               ifac_h[1],
-                               dat_a[1]->flux[ind_h[0]][ind_r[0]][ii],
-                               dat_a[1]->flux[ind_h[0]][ind_r[1]][ii],
-                               dat_a[1]->flux[ind_h[1]][ind_r[0]][ii],
-                               dat_a[1]->flux[ind_h[1]][ind_r[1]][ii]);
-    emis_profile_table->emis[ii] = interp_lin_1d(ifac_a, rlo, rhi);
-
-    // Interpolation of the energy shift which is then immediately added to flux
-    double flo = interp_lin_2d(ifac_r[0], // does h-r interpolation of gshift for spin[ind_a]
-                               ifac_h[0],
-                               dat_a[0]->gshift[ind_h[0]][ind_r[0]][ii],
-                               dat_a[0]->gshift[ind_h[0]][ind_r[1]][ii],
-                               dat_a[0]->gshift[ind_h[1]][ind_r[0]][ii],
-                               dat_a[0]->gshift[ind_h[1]][ind_r[1]][ii]);
-    double fhi = interp_lin_2d(ifac_r[1], // does h-r interpolation of gshift for spin[ind_a+1]
-                               ifac_h[1],
-                               dat_a[1]->gshift[ind_h[0]][ind_r[0]][ii],
-                               dat_a[1]->gshift[ind_h[0]][ind_r[1]][ii],
-                               dat_a[1]->gshift[ind_h[1]][ind_r[0]][ii],
-                               dat_a[1]->gshift[ind_h[1]][ind_r[1]][ii]);
-
-    double g_gamma = interp_lin_1d(ifac_a, flo, fhi);
-    emis_profile_table->emis[ii] *= g_gamma; // this line accounts for g^Gamma
-    assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
-  }
-}
-
-// constructors and desctructors //
+// constructors and destructors //
 /**
  *
  * @brief Sets the memory for new extended source table
  * @details
  * @param n_h; int, number of heights in the table
- * @param n_rad; int, number of bins in the table
  * @param n_r; int, number of ring sources in the table
  * @param n_a; int, number of spins in the table
+ * @param n_bin; int, number of bins in the table (radius or inclination bins)
  * @param n_storage; int, number of the energy shift storage in the table
  * @return new_extendedSourceTable, new extended source table
  */
-extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
-                                             int n_a, int n_storage,
+extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
+                                             int n_a, int n_bin, int n_storage,
                                              int *status) {
-  extendedSourceTable *tab = (extendedSourceTable *) malloc(sizeof(extendedSourceTable));
+  auto *tab = (extendedSourceTable *) malloc(sizeof(extendedSourceTable));
 
   CHECK_MALLOC_RET_STATUS(tab, status, nullptr)
 
   tab->n_a = n_a;
   tab->n_h = n_h;
-  tab->n_rad = n_rad;
+  tab->n_bin = n_bin;
   tab->n_storage = n_storage;
   tab->n_r = n_r;
 
@@ -612,68 +774,83 @@ extendedSourceTable *new_extendedSourceTable(int n_h, int n_rad, int n_r,
  * @details
  * @return extendedSourceData, new extended source data
  */
-extendedSourceData *new_extendedSourceData(int *status) {
-
-  extendedSourceData *dat = (extendedSourceData *) malloc(sizeof(extendedSourceData));
+extendedSourceData *new_extendedSourceData(int *status, bool lensing) {
+  int n_h = EXT_TABLE_NHEIGHT;
+  int n_x = EXT_TABLE_NDISTANCE;
+  int n_bin = EXT_TABLE_NRAD;
+  int n_shift = EXT_TABLE_NENERGYBINS;
+  if (lensing) {
+    n_h = PRIM_TABLE_NHEIGHT;
+    n_x = PRIM_TABLE_NDISTANCE;
+    n_bin = PRIM_TABLE_NINCL;
+    n_shift = PRIM_TABLE_NENERGYBINS;
+  }
+  auto *dat = (extendedSourceData *) malloc(sizeof(extendedSourceData));
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
-  dat->height = (double *) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->height = (double *) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->height, status, nullptr)
 
-  dat->r_ring = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->r_ring = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->r_ring, status, nullptr)
 
-  dat->radius = (double *) malloc(sizeof(double) * ESTABLE_NRAD);
-  CHECK_MALLOC_RET_STATUS(dat->radius, status, nullptr)
+  dat->bin = (double *) malloc(sizeof(double) * n_bin);
+  CHECK_MALLOC_RET_STATUS(dat->bin, status, nullptr)
 
-  dat->refl_frac = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->refl_frac = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-  dat->f_ad = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->f_ad = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
 
-  dat->f_inf = (double **) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->f_inf = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->f_inf, status, nullptr)
 
-  dat->flux = (double ***) malloc(sizeof(double) * ESTABLE_NHEIGHT);
-  CHECK_MALLOC_RET_STATUS(dat->flux, status, nullptr)
+  dat->f_bh = (double **) malloc(sizeof(double) * n_h);
+  CHECK_MALLOC_RET_STATUS(dat->f_bh, status, nullptr)
 
-  dat->gshift = (double ***) malloc(sizeof(double) * ESTABLE_NHEIGHT);
-  CHECK_MALLOC_RET_STATUS(dat->flux, status, nullptr)
+  dat->val = (double ***) malloc(sizeof(double) * n_h);
+  CHECK_MALLOC_RET_STATUS(dat->val, status, nullptr)
 
-  dat->energy_data_storage = (double ****) malloc(sizeof(double) * ESTABLE_NHEIGHT);
+  dat->gshift = (double ***) malloc(sizeof(double) * n_h);
+  CHECK_MALLOC_RET_STATUS(dat->gshift, status, nullptr)
+
+  dat->energy_data_storage = (double ****) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
-  for (int i=0; i<ESTABLE_NHEIGHT; i++){
+  for (int i=0; i<EXT_TABLE_NHEIGHT; i++){
 
-    dat->refl_frac[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->refl_frac[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-    dat->r_ring[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->r_ring[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->r_ring, status, nullptr)
 
-    dat->f_ad[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->f_ad[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
 
-    dat->f_inf[i] = (double *) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->f_inf[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->f_inf, status, nullptr)
 
-    dat->gshift[i] = (double **) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->f_bh[i] = (double *) malloc(sizeof(double) * n_x);
+    CHECK_MALLOC_RET_STATUS(dat->f_bh, status, nullptr)
+
+    dat->gshift[i] = (double **) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->gshift, status, nullptr)
 
-    dat->flux[i] = (double **) malloc(sizeof(double) * ESTABLE_NDISTANCE);
-    CHECK_MALLOC_RET_STATUS(dat->flux, status, nullptr)
+    dat->val[i] = (double **) malloc(sizeof(double) * n_x);
+    CHECK_MALLOC_RET_STATUS(dat->val, status, nullptr)
 
-    dat->energy_data_storage[i] = (double ***) malloc(sizeof(double) * ESTABLE_NDISTANCE);
+    dat->energy_data_storage[i] = (double ***) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
-    for(int j=0; j<ESTABLE_NDISTANCE; j++){
-      dat->gshift[i][j] = (double *) malloc(sizeof(double) * ESTABLE_NRAD);
-      dat->flux[i][j] = (double *) malloc(sizeof(double) * ESTABLE_NRAD);
-      dat->energy_data_storage[i][j] = (double **) malloc(sizeof(double) * ESTABLE_NRAD);
+    for(int j=0; j<n_x; j++){
+      dat->gshift[i][j] = (double *) malloc(sizeof(double) * n_bin);
+      dat->val[i][j] = (double *) malloc(sizeof(double) * n_bin);
+      dat->energy_data_storage[i][j] = (double **) malloc(sizeof(double) * n_bin);
 
-      for(int k=0; k<ESTABLE_NRAD; k++){
-        dat->energy_data_storage[i][j][k] = (double *) malloc(sizeof(double) * ESTABLE_NENERGYBINS);
+      for(int k=0; k<n_bin; k++){
+        dat->energy_data_storage[i][j][k] = (double *) malloc(sizeof(double) * n_shift);
       }
     }
   }
@@ -688,12 +865,12 @@ extendedSourceData *new_extendedSourceData(int *status) {
  * @details
  * @param tab; extendedSourceTable, table to be freed from memory
  */
-void free_extendedSourceTable(extendedSourceTable *tab) {
+void free_extendedSourceTable(extendedSourceTable *tab, bool lensing) {
   if (tab != nullptr) {
     if (tab->dat != nullptr) {
       for (int ii = 0; ii < tab->n_a; ii++) {
         if (tab->dat[ii] != nullptr){
-          free_extendedSourceData(tab->dat[ii]);
+          free_extendedSourceData(tab->dat[ii], lensing);
           free(tab->dat[ii]);
         }
       }
@@ -711,63 +888,45 @@ void free_extendedSourceTable(extendedSourceTable *tab) {
  * @details
  * @param dat; extendedSourceData, data to be freed
  */
-void free_extendedSourceData(extendedSourceData *dat) {
+void free_extendedSourceData(extendedSourceData *dat, bool is_lensing_table) {
+  int n_h = EXT_TABLE_NHEIGHT;
+  int n_x = EXT_TABLE_NDISTANCE;
+  int n_r = EXT_TABLE_NRAD;
+  if (is_lensing_table) {
+    n_h = PRIM_TABLE_NHEIGHT; // re-define in case of lensing table, dimensions can be different
+    n_x = PRIM_TABLE_NDISTANCE;
+    n_r = PRIM_TABLE_NINCL;
+  }
   if (dat != nullptr) {
-    for (int ii =0; ii < ESTABLE_NHEIGHT; ii++) {
+    for (int ii=0; ii < n_h; ii++) {
       if (dat->r_ring != nullptr) free(dat->r_ring[ii]);
-      if (dat->flux != nullptr) free(dat->flux[ii]);
+      if (dat->val != nullptr) free(dat->val[ii]);
       if (dat->gshift != nullptr) free(dat->gshift[ii]);
       if (dat->refl_frac != nullptr) free(dat->refl_frac[ii]);
       if (dat->f_ad != nullptr) free(dat->f_ad[ii]);
       if (dat->f_inf != nullptr) free(dat->f_inf[ii]);
+      if (dat->f_bh != nullptr) free(dat->f_bh[ii]);
       if (dat->energy_data_storage != nullptr) free(dat->energy_data_storage[ii]);
 
-      for (int jj = 0; jj < ESTABLE_NDISTANCE; jj++) {
-        if (dat->flux[ii] != nullptr) free(dat->flux[ii][jj]);
+      for (int jj = 0; jj < n_x; jj++) {
+        if (dat->val[ii] != nullptr) free(dat->val[ii][jj]);
         if (dat->gshift[ii] != nullptr) free(dat->gshift[ii][jj]);
 
-        for (int kk = 0; kk < ESTABLE_NRAD; kk++){
+        for (int kk = 0; kk < n_r; kk++){
           if (dat->energy_data_storage[ii][jj] != nullptr) free(dat->energy_data_storage[ii][jj][kk]);
         }
       }
     }
   }
-    free(dat->radius);
+    free(dat->bin);
     free(dat->height);
     free(dat->r_ring);
-    free(dat->flux);
+    free(dat->val);
     free(dat->gshift);
     free(dat->energy_data_storage);
     free(dat->refl_frac);
     free(dat->f_inf);
     free(dat->f_ad);
+    free(dat->f_bh);
 
 }
-
-
-/**
- *
- * @brief Calculates norm factor of the primary spectrum -- not used anymore, table contains normalized emissivity
- * @details Calculates normalisation factor of the primary spectrum to the number of photons reaching infinity
- * Need to add velocity of the source here. AN: Not used anywhere.
- * @param height; double, height
- * @param a; double, spin
- * @param gamma; double, photon index
- * @param f_inf; double, fraction of photons reaching infinity
- * @return double, normalization factor
- */
-double calc_norm_factor_primary_spectrum_ext(double height, double a, double gamma, double f_inf) {
-  double g_inf = calc_g_inf(height, a);  // TODO: add velocity of the source (beta!) // should be done not here
-  return f_inf / 0.5 * pow(g_inf, gamma);
-}
-
-/**
- *
- * Function which prints error status
- */
-void printerror(int status) {
-  printf("Error Code: %d\n",status);
-}
-
-
-

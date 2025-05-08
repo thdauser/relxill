@@ -27,7 +27,12 @@
 #include <float.h>
 #include <fitsio.h>
 
-#include "fftw/fftw3.h"   // assumes installation in heasoft
+// assumes FFTW3 installation in heasoft
+#if __has_include("fftw3.h")  // quotes needed for GCC < 10
+#  include "fftw3.h"
+#else
+#  include "fftw/fftw3.h"
+#endif
 
 
 
@@ -279,6 +284,9 @@ typedef struct {
   double f_ad;
   double f_inf;
   double f_inf_rest;  // f_inf in the rest frame of the system (not taking beta of the LP into account)
+  double lensing; // for GR lensing from raytracing simulation
+  double lensing_and_boost_factor; // lensing * g_{so}^Gamma
+  // double lensing_factor; // add lensing_factor here, as in extended models it is taken from input table
 } lpReflFrac;
 
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/

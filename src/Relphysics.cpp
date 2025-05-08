@@ -17,6 +17,7 @@
 */
 
 #include "Relphysics.h"
+#include "Rellp_Extended.h" // for tabulated energy shifts only
 
 extern "C" {
 #include "common.h"
@@ -136,38 +137,39 @@ double calc_g_inf(double height, double a) {
 }
 
 /**
+<<<<<<< HEAD
  * @brief calculates the energy shift from a ring source to infinity (NOT YET FULLY IMPLEMENTED)
+=======
+ * @brief calculates the time-dilation component of energy shift from a ring source to infinity
+>>>>>>> extended_source_emis
  * @details cosinetheta is the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
  * Theta is polar angle of the ring, between 0 and pi/2 (r_ring^2 + height^2 are always > a^2)
  * @param height height of the ring source
  * @param r_ring radius of the ring
  * @param a spin of the black hole
- * @return energy shift (only e^nu component for now)
- * TODO: add the source rotation, add the lensing factor (raytracing required)
+ * @return energy shift (only e^nu component in this function)
  */
 double calc_g_inf_ext(double height, double r_ring, double a) {
   double g_inf;
   if (r_ring <= 1.0e-6){ // lamp-post source
     g_inf = calc_g_inf(height, a);
-  }
-  else{
-    if (a == 0.0){ // special case of zero spin. The block below would give inf
-      double cosine_theta = height / sqrt(height * height + r_ring * r_ring);
-      double r = height / cosine_theta;
-      g_inf = sqrt(1 - 2.0 / r);
+  } else {
+    if (height == 0.0) { // the disk case, cosinetheta = 0
+      double r = sqrt(r_ring * r_ring + a * a);
+      double Sigma = r * r;
+      double Delta = r * r - 2.0 * r + a * a;
+      double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a;
+      g_inf = sqrt(Sigma * Delta / rho_squared);
     } else {
-      if (height == 0.0) { // the disk case, cosinetheta = 0
-        double r = sqrt(r_ring * r_ring + a * a);
-        double Sigma = r * r;
-        double Delta = r * r - 2.0 * r + a * a;
-        double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a;
-        g_inf = sqrt(Sigma * Delta / rho_squared);
+      if (a == 0.0){ // special case of zero spin. The block below would give inf
+        double cosine_theta = height / sqrt(height * height + r_ring * r_ring);
+        double r = height / cosine_theta;
+        g_inf = sqrt(1 - 2.0 / r);
       } else { // general case
-        /// duplicates new function below:
+        /// can be replaced with a function
         double cosine_theta = sqrt((sqrt(4.0 * a * a * height * height + (height * height +
-                                                                          r_ring * r_ring - a * a) *
-                                                                         (height * height + r_ring * r_ring - a * a)) +
-                                    a * a - height * height - r_ring * r_ring) / (2.0 * a * a));
+            r_ring * r_ring - a * a) * (height * height + r_ring * r_ring - a * a)) +
+                a * a - height * height - r_ring * r_ring) / (2.0 * a * a));
         double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
         double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
         double Sigma = r * r + a * a * cosine_theta * cosine_theta;
@@ -299,6 +301,17 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
   return gi / beta_fac;
 }
 
+/** similar to gi_potential_lp below, but for ring source **/
+double gi_potential_ext(const relParam *param, double r) {
+  // temporary older solution
+  // double g_inf_s = calc_g_inf_ext(param->height, param->r_ring, param->a); // = E_inf / E_s
+  // double g_inf_d = calc_g_inf_ext(0.0, r, param->a); // = E_inf / E_d
+  //return g_inf_s / g_inf_d * gamma_correction(r, param->a); // = E_d / E_s
+  double g_sd = get_energyboost_ext_source_disk(param, r, 1.0); // it is just energy shift here, so no Gamma
+  // printf("Do we agree at LP? g old: %.6f, new %.6f \n", g_inf_s / g_inf_d * gamma_correction(r, param->a), g_sd);
+  return g_sd;
+}
+
 /**
  * @brief calculate the doppler factor from source to the observer
  * we currently assume that delta_obs and incl are the same (so no GR light-bending
@@ -307,7 +320,7 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
  * @param beta [in v/c]
  * @return
  */
-double doppler_factor_source_obs(const relParam *rel_param) {
+double doppler_factor_source_obs(const relParam *rel_param) { //update?
   // note that the angles incl and delta_obs are defined the opposite way
   double delta_obs = M_PI - rel_param->incl;
   assert(delta_obs > M_PI / 2);
@@ -338,11 +351,10 @@ double energy_shift_source_obs(const relParam *rel_param) {
     return g_inf_0;
   }
 
-  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) { // and RELLINE too?
-    // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->incl, rel_param->r_ring, rel_param->a);
-    g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);
-  }
-  else {
+  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+    // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);
+    g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
+  } else {
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
   }
 
@@ -357,7 +369,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
 /**
  * @brief calculate the energy shift from the LP to the disk zone with mean radius radius_disk of photon trajectories
  * emitted under del_emit (in the frame of the non-moving source); del_emit is only important for beta>0
- *
+ * @details AN: currently used in IonGradient.cpp
  * The connection for which del_emit which radius radius_disk is hit, is stored in the LP table structure
  */
 double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit) {
@@ -368,7 +380,9 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
     return 1;
   }
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
-    return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
+    double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
+    // return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
+    return gshift;
   }
   else{
     return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
@@ -394,6 +408,8 @@ double calc_lp_emissivity_newton(double h, double r) {
 /**
  * @brief calculate the fluxboost from the (moving) primary source to the accretion disk
  * at radius rad, following g^Gamma*Doppler_factor^2 (see Dauser et al., 2013)
+ * @details AN: used in Rellp to normalize flux of the LP model only. For ext models we do this during interpolation
+ * Which is a bit inconsistent, so TODO (maybe) unify boost calculation for lp and ext models
  * @param rad
  * @param del_emit
  * @param a
