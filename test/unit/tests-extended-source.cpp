@@ -90,14 +90,11 @@ TEST_CASE("Default relxill model call Test", "[extended]") {
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllp_ext};
-<<<<<<< HEAD
+
   double height = 1.6;
   double r_ring = 0.6;
   local_model.set_par(XPar::a, 0.998);
-=======
-  double height = 5.0;
-  double r_ring = 5.0;
->>>>>>> extended_source_emis
+
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::r_ring, r_ring);
 
@@ -170,20 +167,13 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   relParam* rel_param_ext = local_model_ext.get_rel_params();
   auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
-<<<<<<< HEAD
-  rel_param_ext->a = 0.998;
-  //rel_param_ext->height = 2.8962; // weird that rfrac coincides with lp only when I set slightly lower height than lp
-  rel_param_ext->height = 3.0;
-  rel_param_ext->r_ring = 50.0; // was = 0.0, but this tests logic is broken in this version with spherical radii
-  //rel_param_ext->rout= 1000.0;
-=======
+
   rel_param_ext->a = spin;
   rel_param_ext->rin = -1;
   rel_param_ext->rout = 1000.0;
   rel_param_ext->height = h;
   rel_param_ext->r_ring = 0.0;
   rel_param_ext->incl = incl;
->>>>>>> extended_source_emis
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
 
   local_model_ext.eval_model(spec_ext);
