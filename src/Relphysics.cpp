@@ -249,7 +249,7 @@ double gi_potential_ext(double r, double a, double h, double x) {
   // in general I need to take it from Rellp_Extended, as there we have proper g_sd source-disk
   double g_inf_s = calc_g_inf_ext(h, x, a); // = E_inf / E_s
   double g_inf_d = calc_g_inf_ext(0.0, r, a); // = E_inf / E_d
-  return g_inf_s / g_inf_d; // = E_d / E_s
+  return g_inf_s / g_inf_d * gamma_correction(r, a); // = E_d / E_s
 }
 
 /** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
@@ -367,7 +367,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
   if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
     return 1;
   }
-  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT || rel_param->model_type == MOD_TYPE_RELLINELPEXT) {
+  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
     return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
   }
   else{
