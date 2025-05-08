@@ -41,7 +41,7 @@ TEST_CASE("Default line model call  Test", "[extended]") {
   LocalModel local_model{ModelName::relline_lp_ext};
 
   double height = 3.0;
-  double r_ring = 5.0;
+  double r_ring = 0.9;
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::r_ring, r_ring);
 
@@ -72,7 +72,7 @@ TEST_CASE("Xspec line model call Test", "[extended]") {
   int status = EXIT_SUCCESS;
 
   LocalModel local_model{ModelName::relline_lp_ext};
-  local_model.set_par(XPar::r_ring, 5.0);
+  local_model.set_par(XPar::r_ring, 0.5);
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
@@ -92,7 +92,7 @@ TEST_CASE("Default relxill model call Test", "[extended]") {
   LocalModel local_model{ModelName::relxilllp_ext};
 
   double height = 1.6;
-  double r_ring = 0.6;
+  double r_ring = 0.9;
   local_model.set_par(XPar::a, 0.998);
 
   local_model.set_par(XPar::h, height);
@@ -114,7 +114,7 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
   LocalModel local_model{ModelName::relxilllpCp_ext};
   double spin = 0.998;
   double height = 2.0;
-  double r_ring = 0.0;
+  double r_ring = 0.9;
   double incl = 30.0;
   local_model.set_par(XPar::a, spin);
   local_model.set_par(XPar::h, height);
@@ -172,7 +172,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   rel_param_ext->rin = -1;
   rel_param_ext->rout = 1000.0;
   rel_param_ext->height = h;
-  rel_param_ext->r_ring = 0.0;
+  rel_param_ext->r_ring = 0.9;
   rel_param_ext->incl = incl;
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
 

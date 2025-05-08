@@ -337,11 +337,11 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->rbr = inp_param.get_otherwise_default(XPar::rbr, 0);
   param->lineE = inp_param.get_otherwise_default(XPar::linee, 0);
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
-  // UPD now height acts as a spherical radius and r_ring is the cosine of polar angle
+  // UPD now height acts as a spherical radius and r_ring is the polar angle in degrees
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  // UPD it cannot be zero. 1 = lp.
-  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 1);
+  // Convert input degrees and immediately take cosine
+  param->r_ring = cos(inp_param.get_otherwise_default(XPar::r_ring, 30) * M_PI / 180);
   // then we internally convert r_ring and height from r, costheta to their usual meanings
   param->height *= kerr_rplus(param->a);
   // i.e., h = r*costheta
