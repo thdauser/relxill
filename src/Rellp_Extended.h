@@ -24,19 +24,19 @@
 
 /** dimensions of the ES table */
 #define EXT_TABLE_NA 20 // number of spin values
-#define EXT_TABLE_NHEIGHT 50 // number of height values
+#define EXT_TABLE_NHEIGHT 54 // number of height values
 #define EXT_TABLE_NDISTANCE 50 // number of distance values
 #define EXT_TABLE_NRAD 99  // number of radial bin values
 #define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
-#define EXT_TABLE_FILENAME "rel_extended_source.fits"
+#define EXT_TABLE_FILENAME "table_v9_lowheight.fits"
 
 /** dimensions of the primary table */
 #define PRIM_TABLE_NA 11 // number of spin values
-#define PRIM_TABLE_NHEIGHT 50 // number of height values
+#define PRIM_TABLE_NHEIGHT 54 // number of height values
 #define PRIM_TABLE_NDISTANCE 50 // number of distance values
 #define PRIM_TABLE_NINCL 20  // number of inclination bins
 #define PRIM_TABLE_NENERGYBINS 20 // number of energy bin values
-#define PRIM_TABLE_FILENAME "prim_extended_source.fits"
+#define PRIM_TABLE_FILENAME "prim_table_v1_lowheight.fits"
 
 typedef struct {
 

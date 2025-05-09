@@ -156,10 +156,11 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_r,
                 dat->bin,&anynullptr, status);
 
   for (int ii = 0; ii < n_h; ii++) {
-    fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_h, 1, 1, &doublenullptr,
+    fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_r, 1, 1, &doublenullptr,
                   &(dat->height[ii]),&anynullptr, status);
-    fits_read_col(fptr, TDOUBLE, 3, 1 + ii * n_h, 1, n_r,
+    fits_read_col(fptr, TDOUBLE, 3, 1 + ii * n_r, 1, n_r,
                   &doublenullptr, dat->r_ring[ii],&anynullptr, status);
+    assert(*status == EXIT_SUCCESS);
   }
 
   for (int ii = 0; ii < n_h; ii++) {
