@@ -286,7 +286,7 @@ void check_parameter_bounds(relParam *param, int *status) {
           //param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
           printf("(too close to BH) Re-setting eXtent, polar angle kept constant \n");
           //printf("(too close to BH) Setting eXtent to = %.4f*r_g, polar angle kept constant \n", param->r_ring);
-          // always print while debug it (DONT FORGET TO PUT IT OUT OF IF IF STOP ALWAYS PRINTING)
+          // always print while debug it (DONT FORGET)
           warned_extent = 1;
           }
         r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
@@ -346,7 +346,9 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
   // Convert input degrees and immediately take cosine
-  param->r_ring = cos(inp_param.get_otherwise_default(XPar::r_ring, 30) * M_PI / 180);
+  // param->r_ring = cos(inp_param.get_otherwise_default(XPar::r_ring, 30) * M_PI / 180);
+  // if fit cosine
+  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 1.0);
   // then we internally convert r_ring and height from r, costheta to their usual meanings
   param->height *= kerr_rplus(param->a);
   // i.e., h = r*costheta
