@@ -203,8 +203,9 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
   // interpolation factors between spins
   get_ipol_factor((float) param->a, tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
   if (ipol.ifac_a < 0.0 or ipol.ifac_a > 1.0){
-    // should not happen in the current table
+    // should never happen in the current tables
     printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ipol.ifac_a);
+    printf(" *** The values: a = %.3f, h = %.3f, x = %.3f \n", param->a, param->height, param->r_ring);
     printf("Better limit a range of values within table limits \n");
   }
   for (int ii = 0; ii < 2; ii++) {
@@ -212,8 +213,9 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
     get_ipol_factor_double(param->height, tab->dat[ipol.ind_a + ii]->height, tab->n_h,
                            &(ipol.ind_h[ii]),&(ipol.ifac_h[ii]));
     if (ipol.ifac_h[ii] < 0.0 or ipol.ifac_h[ii] > 1.0){
-      // should not happen in the current table
+      // should not happen in the current tables
       printf(" *** Warning : height interpolation becomes extrapolation: ifac_h = %.1f \n", ipol.ifac_h[ii]);
+      printf(" *** The values: a = %.3f, h = %.3f, x = %.3f \n", param->a, param->height, param->r_ring);
       printf("Better limit a range of values within table limits \n");
     }
     // interpolation factors between extents
@@ -223,8 +225,9 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
     get_ipol_factor_double(param->r_ring, tab->dat[ipol.ind_a + ii]->r_ring[index], tab->n_r,
                            &(ipol.ind_x[ii]), &(ipol.ifac_x[ii]));
     if (ipol.ifac_x[ii] < 0.0 or ipol.ifac_x[ii] > 1.0){
-      // should not happen in the current table
+      // should not happen in the "normal" table, but can happen in low height table
       printf(" *** Warning : extent interpolation becomes extrapolation: ifac_x = %.1f \n", ipol.ifac_x[ii]);
+      printf(" *** The values: a = %.3f, h = %.3f, x = %.3f \n", param->a, param->height, param->r_ring);
       printf("Better limit a range of values within table limits \n");
     }
   }

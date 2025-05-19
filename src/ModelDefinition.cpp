@@ -268,11 +268,12 @@ void check_parameter_bounds(relParam *param, int *status) {
         if (!warned_height) {
           printf(" *** Warning : Ring source too close to the disk (h < %.1f r_g) \n", h_fac);
           printf("      Height, Extent = %.3f r_g, %.3f r_g \n", param->height, param->r_ring);
-          printf("      Setting    h =  %.1f r_g and x to the smallest possible value \n", h_fac);
+          printf("      Setting    h =  %.1f r_g and x fixed \n", h_fac);
           warned_height = 1;
         }
         param->height = h_fac * 1.001; // keep a bit of space above the actual limit
-        param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
+        // Not sure I need to reset ring size here. What if we are looking at sources far away from bh above the disk?
+        // param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
       }
       double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a); // in rg
       double costheta = calc_cos_theta_primary_source(param->height, param->r_ring, param->a);
@@ -280,7 +281,7 @@ void check_parameter_bounds(relParam *param, int *status) {
         if (!warned_extent) {
           printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
           printf("      Height, eXtent = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
-          printf("      Spherical radius = %.4f r_g, 1.5EH = %.4f r_g \n", r_spherical, 1.5 * r_event);
+          printf("      Spherical radius = %.4f r_g, 1.3EH = %.4f r_g \n", r_spherical, 1.3 * r_event);
           //r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
           // keeping costheta constant and re-define radius
           //param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
@@ -292,6 +293,8 @@ void check_parameter_bounds(relParam *param, int *status) {
         r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
         // keeping costheta constant and re-define radius
         param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
+        // also need to update h if really want to keep cos const
+        param->height = r_spherical * costheta;
         }
       }
     else { // lp is lp, so not mix it with ext
