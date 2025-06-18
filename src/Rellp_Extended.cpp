@@ -285,7 +285,7 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
             double sum = 0.0;
             for (int l = 0; l < tab->n_storage; l++) {
               sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
-              assert(sum >= 0.0);
+              assert(sum > 0.0);
             }
             tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
           }
@@ -597,10 +597,16 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   InterpFactors ipol; // new structure with interpolation factors instead of a ton of indexes and factors
   get_ipol_factors_a_h_x(param, tab, ipol);
 
-
-  // rename function
+  // for quick test of performance of summation of rings:
+  //for (int i = 0; i < 50; i++) {
+    //emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
+    //rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
+    //free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
+    //free_emisProfile(emis_profile_table);
+  //}
+    // rename function
   emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
-   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
+  rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
   free_emisProfile(emis_profile_table);
@@ -818,7 +824,7 @@ extendedSourceData *new_extendedSourceData(int *status, bool lensing) {
   dat->energy_data_storage = (double ****) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
-  for (int i=0; i<EXT_TABLE_NHEIGHT; i++){
+  for (int i=0; i < n_h; i++){
 
     dat->refl_frac[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
