@@ -223,7 +223,7 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
                            &(ipol.ind_x[ii]), &(ipol.ifac_x[ii]));
     if (ipol.ifac_x[ii] < 0.0 or ipol.ifac_x[ii] > 1.0){
       // should not happen in the current table
-      printf(" *** Warning : extent interpolation becomes extrapolation: ifac_x = %.1f \n", ipol.ifac_x[ii]);
+      printf(" *** Warning : radius interpolation becomes extrapolation: ifac_x = %.1f \n", ipol.ifac_x[ii]);
       printf("Better limit a range of values within table limits \n");
     }
   }
@@ -385,7 +385,7 @@ static lpReflFrac *calc_refl_frac_ext(const extendedSourceTable *tab, InterpFact
   // photons are not allowed to cross the disk plane
   if (fractions->f_inf > 0.5) { // should never be the case - TODO in new table
     fractions->f_inf = 0.5;
-    printf("Rellp_Extended: inf fraction more than 0.5. \n");
+    printf("Rellp_Extended: escaping photon fraction more than 0.5 (happens only for h>40rg). \n");
     printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
   }
 

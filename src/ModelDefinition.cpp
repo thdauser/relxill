@@ -37,15 +37,15 @@ int convertModelType(ModelName name) {
     case ModelName::relline: return MOD_TYPE_RELLINE;
     case ModelName::relconv: return MOD_TYPE_RELCONV;
     case ModelName::relline_lp: return MOD_TYPE_RELLINELP;
-    case ModelName::relline_lp_ext: return MOD_TYPE_RELLINELPEXT;
+    case ModelName::relline_ext: return MOD_TYPE_RELLINELPEXT;
     case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
     case ModelName::relxill  : return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
     case ModelName::relxillD: return MOD_TYPE_RELXILLDENS;
     case ModelName::relxilllp: return MOD_TYPE_RELXILLLP;
-    case ModelName::relxilllp_ext: return MOD_TYPE_RELXILLLPEXT;
+    case ModelName::relxill_ext_ecut: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpCp: return MOD_TYPE_RELXILLLP;
-    case ModelName::relxilllpCp_ext: return MOD_TYPE_RELXILLLPEXT;
+    case ModelName::relxill_ext: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
     case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
     case ModelName::relxilllpionCp: return MOD_TYPE_RELXILLLPION;
@@ -314,7 +314,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 0);
+  param->r_ring = inp_param.get_otherwise_default(XPar::x, 0); // todo refactor r_ring also internally
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);

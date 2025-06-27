@@ -38,12 +38,12 @@ TEST_CASE("Default line model call  Test", "[extended]") {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::relline_lp_ext};
+  LocalModel local_model{ModelName::relline_ext};
 
   double height = 3.0;
   double r_ring = 5.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::r_ring, r_ring);
+  local_model.set_par(XPar::x, r_ring);
 
   local_model.eval_model(spec);
 /*
@@ -71,8 +71,8 @@ TEST_CASE("Xspec line model call Test", "[extended]") {
 
   int status = EXIT_SUCCESS;
 
-  LocalModel local_model{ModelName::relline_lp_ext};
-  local_model.set_par(XPar::r_ring, 5.0);
+  LocalModel local_model{ModelName::relline_ext};
+  local_model.set_par(XPar::x, 5.0);
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
@@ -89,11 +89,11 @@ TEST_CASE("Default relxill model call Test", "[extended]") {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::relxilllp_ext};
+  LocalModel local_model{ModelName::relxill_ext_ecut};
   double height = 5.0;
   double r_ring = 5.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::r_ring, r_ring);
+  local_model.set_par(XPar::x, r_ring);
 
   local_model.eval_model(spec);
 
@@ -108,14 +108,14 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::relxilllpCp_ext};
+  LocalModel local_model{ModelName::relxill_ext};
   double spin = 0.998;
   double height = 2.0;
   double r_ring = 0.0;
   double incl = 30.0;
   local_model.set_par(XPar::a, spin);
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::r_ring, r_ring);
+  local_model.set_par(XPar::x, r_ring);
   local_model.set_par(XPar::incl, incl);
 
   local_model.eval_model(spec);
@@ -160,7 +160,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
 
   DefaultSpec default_spec_ext{};
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
-  LocalModel local_model_ext{ModelName::relxilllp_ext};
+  LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   relParam* rel_param_ext = local_model_ext.get_rel_params();
   auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
@@ -196,7 +196,7 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   relParam* rel_param = local_model.get_rel_params();
 
   DefaultSpec default_spec_ext{};
-  LocalModel local_model_ext{ModelName::relxilllp_ext};
+  LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   relParam* rel_param_ext = local_model_ext.get_rel_params();
   rel_param_ext->r_ring = 0.0; // for this test we compare the lp emissivity and ext for ring=0
 
@@ -247,8 +247,8 @@ TEST_CASE("Test to compare lp and ext line profiles for several spins and height
   DefaultSpec default_spec_ext{};
 
   LocalModel local_model{ModelName::relline_lp};
-  LocalModel local_model_ext{ModelName::relline_lp_ext};
-  local_model_ext.set_par(XPar::r_ring, 0.0);
+  LocalModel local_model_ext{ModelName::relline_ext};
+  local_model_ext.set_par(XPar::x, 0.0);
 
   double spins[3] = {0.0, 0.5, 0.998};
   double heights[3] = {2.2, 5.0, 10.0};
@@ -292,9 +292,9 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
 
   LocalModel local_model{ModelName::relxilllp};
   auto spec = default_spec.get_xspec_spectrum();
-  LocalModel local_model_ext{ModelName::relxilllp_ext};
+  LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   auto spec_ext = default_spec_ext.get_xspec_spectrum();
-  local_model_ext.set_par(XPar::r_ring, 0.0);
+  local_model_ext.set_par(XPar::x, 0.0);
   local_model_ext.set_par(XPar::refl_frac, -1);
   // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
   local_model.set_par(XPar::refl_frac, -1);
@@ -328,13 +328,13 @@ TEST_CASE("Test setting input parameters for extended source outside the allowed
 
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relxilllp_ext);
+  LocalModel lmod(ModelName::relxill_ext_ecut);
 
   auto spec = default_spec.get_xspec_spectrum();
 
   double height_below_horizon = 0.9;
   lmod.set_par(XPar::h, height_below_horizon);
-  lmod.set_par(XPar::r_ring, 0.01);
+  lmod.set_par(XPar::x, 0.01);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 
