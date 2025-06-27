@@ -59,7 +59,7 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   // GR lensing is implemented only for EXT model
   if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT || rel_param->model_type == MOD_TYPE_RELLINELPEXT) {
     printf(" - For inclination %.3f deg, GR lensing is %.3f, LP model would use %.3f, so ratio is %.3f \n",
-           rel_param->incl, m_lp_refl_frac->lensing, (2.0 * m_lp_refl_frac->f_inf_rest),
+           rel_param->incl * 180.0 / M_PI, m_lp_refl_frac->lensing, (2.0 * m_lp_refl_frac->f_inf_rest),
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
   }
 
