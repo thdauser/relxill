@@ -125,54 +125,43 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
 
 
 TEST_CASE("Checking the reflection fraction", "[extended]") {
-
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
   LocalModel local_model{ModelName::relxilllp};
-  relParam* rel_param = local_model.get_rel_params();
-  auto sys_par = get_system_parameters(rel_param, &status);
 
   double spin = 0.998;
-  double h = 2.1;
-  double incl = 51.93;
-
-  rel_param->a = spin;
-  rel_param->rin = -1; //kerr_rms(spin);
-  rel_param->rout = 1000.0;
-  rel_param->height = h;
-  rel_param->incl = incl;
-  lpTable *cached_lp_table = get_lp_table(&status);
-  calc_emis_jet_point_source(sys_par->emis, rel_param, rel_param->height, rel_param->beta,
-                             cached_lp_table, &status);
+  double h = 10.1;
+  local_model.set_par(XPar::a, spin);
+  local_model.set_par(XPar::rin, -1.0);
+  local_model.set_par(XPar::rout, 1000.0);
+  local_model.set_par(XPar::h, h);
 
   local_model.eval_model(spec);
-
+  relParam* rel_param = local_model.get_rel_params();
+  auto sys_par = get_system_parameters(rel_param, &status);
   double refl = sys_par->emis->photon_fate_fractions->refl_frac;
   double frac_inf = sys_par->emis->photon_fate_fractions->f_inf;
   double frac_disk = sys_par->emis->photon_fate_fractions->f_ad;
   double frac_bhole = sys_par->emis->photon_fate_fractions->f_bh;
-
   printf("test lp reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl,
          frac_disk, frac_inf, frac_bhole, frac_inf + frac_disk + frac_bhole, frac_disk / frac_inf);
 
   DefaultSpec default_spec_ext{};
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
-  relParam* rel_param_ext = local_model_ext.get_rel_params();
-  auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
-  rel_param_ext->a = spin;
-  rel_param_ext->rin = -1;
-  rel_param_ext->rout = 1000.0;
-  rel_param_ext->height = h;
-  rel_param_ext->r_ring = 0.0;
-  rel_param_ext->incl = incl;
-  get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
+  local_model_ext.set_par(XPar::a, spin);
+  local_model_ext.set_par(XPar::rin, -1.0);
+  local_model_ext.set_par(XPar::rout, 1000.0);
+  local_model_ext.set_par(XPar::h, h);
+  local_model_ext.set_par(XPar::x, 0.0);
+  local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
   local_model_ext.eval_model(spec_ext);
+  relParam* rel_param_ext = local_model_ext.get_rel_params();
+  auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
   double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
   double fraction_inf = sys_par_ext->emis->photon_fate_fractions->f_inf;

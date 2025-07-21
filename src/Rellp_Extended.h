@@ -78,16 +78,19 @@ typedef struct {
 // no need to declare it really
 // extendedSourceTable* get_es_table(int* status);
 
-// these three I really need outside, all other - arguable
-void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
+// these I really need outside, all other - arguable
+void calc_emis_ring_source(emisProfile *emisProf, const relParam *param, int *status);
+void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *status);
 double get_energyboost_ext_source_obs(const relParam *param, double gamma);
 double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma);
 
 
 // do I need to declare these two? I could just re-arrange code. Same applies to all below
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
-void calc_extended_emis(emisProfile *emisProf, const relParam *param,
-                        extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status);
+void calc_ring_emis(emisProfile *emisProf, const relParam *param,
+                    extendedSourceTable *tab, int *status);
+void calc_ring_fractions(emisProfile *emisProf, const relParam *param,
+                    extendedSourceTable *tab, int *status);
 
 
 emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);

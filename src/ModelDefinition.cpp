@@ -21,6 +21,7 @@
 #include "Relphysics.h"
 
 int get_iongrad_type(const ModelDefinition &params);
+int get_geometry_switch(const ModelDefinition &params);
 
 extern "C" {
 #include "relutility.h"
@@ -141,7 +142,7 @@ int is_env_set(const char* envname, int default_switch = 0) {
 
 static int get_returnrad_switch(const ModelDefinition &model_params) {
 
-  // (1) by default activated for Lamp Post, otherwise noe
+  // (1) by default activated for Lamp Post, otherwise not
   int default_switch = ( model_params.irradiation()==T_Irrad::LampPost) ? 1 : 0;
 
   // (2) if env is set, we use the value given there, it takes precedence over default values
@@ -315,12 +316,17 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
   param->r_ring = inp_param.get_otherwise_default(XPar::x, 0); // todo refactor r_ring also internally
+  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
   param->limb = static_cast<int>(lround(inp_param.get_otherwise_default(XPar::limb, 0)));
-  param->return_rad = get_returnrad_switch(inp_param );
+  param->return_rad = get_returnrad_switch(inp_param);
+  // default 0 - lp, 1 - ring, 2 - disk:
+  // param->prim_geometry_type = inp_param.get_otherwise_default(XPar::switch_source_geometry, 0);
+  param->prim_geometry_type = get_geometry_switch(inp_param);
+  // I see that switchers are handled differently - tbd
 
   param->rrad_corr_factors = nullptr; //
 
@@ -402,3 +408,12 @@ int get_iongrad_type(const ModelDefinition &params) {
   }
 }
 
+int get_geometry_switch(const ModelDefinition &params) {
+  if (params.get_model_name() != ModelName::relxill_ext && params.get_model_name() != ModelName::relxill_ext_ecut
+  && params.get_model_name() != ModelName::relline_ext) { // REALLY need to define just new type of EMIS_TYPE
+    return GEOMETRY_LP; // what about models with no geometry?
+  } else {
+    printf("Geometry number: %ld \n", lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+    return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+  }
+}

@@ -53,7 +53,8 @@ enum class XPar {
   boost,
   h,
   htop,
-  x,
+  x, // ring radius OR outer (corona) disk radius
+  x_in, // ONLY inner (corona) disk radius, no meaning for ring model
   beta,
   frac_pl_bb,
   ktbb,
@@ -62,6 +63,7 @@ enum class XPar {
   switch_switch_returnrad,
   switch_iongrad_type,
   shifttmaxrrad,  // only for testing relxillBB
+  switch_switch_source_geometry, // for extended corona geometries (ring, disk...)
   luminosity_source_1e38,
   distance,
   mass

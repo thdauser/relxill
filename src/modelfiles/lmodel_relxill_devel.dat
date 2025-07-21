@@ -67,6 +67,7 @@ z        ""    0.    0.      0.      10.       10.       -0.001
 limb     ""     0.      0.      0.      2.      2.      -1.
 gamma        ""    2 -10 1 4 10      -0.01
 $switch_returnrad 1
+$switch_source_geometry 1
 
 relxill_ext_ecut     15  0.         1.e20          c_lmodrelxilllpext     add  0
 h   GM/c^2     6.0   2.0   2.0     50.0       50.0     0.01
@@ -84,7 +85,7 @@ Ecut      keV    300.       5.       5.       1000.        1000.   -0.1
 refl_frac  ""   1.0       -1000       0       10.        1000.       0.01
 $switch_returnrad 1
 $switch_reflfrac_boost 0
-
+$switch_source_geometry 1
 
 relxill_ext     18  0.         1.e20          c_lmodrelxilllpextdensnthcomp     add  0
 Incl    deg     30.   3.      5.      80.       87.       -1
@@ -93,6 +94,7 @@ Rin  ""    -1.   -100.     -100.     -1.      -1.      -0.1
 Rout ""    400.  1.     1.     400.      1000.      -0.1
 h   GM/c^2     6.0   -100.0   2.0     50.0       50.0     0.01
 x   GM/c^2     3.0   0.0    0.0    50.0    50.0   0.01
+x_in   GM/c^2     0.0   0.0    0.0    45.0    50.0   0.01
 beta   c     0.0   0.0   0.0     0.99       0.99     0.001
 gamma    ""    2.       1.2      1.2       3.4       3.4       0.01
 logxi  ""    3.1      0.0      0.0       4.7       4.7       0.01
@@ -105,3 +107,4 @@ iongrad_index  ""    0.0      -10.0      0.0       3.0       10.0       -0.01
 $iongrad_type 0
 $switch_returnrad 1
 $switch_reflfrac_boost 0
+$switch_source_geometry 1

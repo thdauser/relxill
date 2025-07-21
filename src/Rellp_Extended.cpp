@@ -409,19 +409,39 @@ static lpReflFrac *calc_refl_frac_ext(const extendedSourceTable *tab, InterpFact
  * */
 /**
  * @brief The main routine
- * @details This routine calculates emissivity for the extended source using calc_extended_emis function declared further
- * @param emis, emisProfile, pointer to the structure containing emissivity profile
+ * @details This routine calculates emissivity for the extended source using calc_ring_emis function declared further
+ * @param emisProf, emisProfile, pointer to the structure containing emissivity profile
  * @param param, relParam, pointer to the structure containing the parameters used
  */
-void get_emis_extendedSource(emisProfile *emis, const relParam *param, int *status) {
+void calc_emis_ring_source(emisProfile *emisProf, const relParam *param, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   extendedSourceTable* emissivity_table = get_es_table(status);
-  // new part - loading primary normalization, i.e., lensing_factor * g_{so}^Gamma, to primary normalization
   extendedSourceTable* prim_table = get_prim_table(status);
-  calc_extended_emis(emis, param, emissivity_table, prim_table, status); // PRIM , prim_table
 
+  calc_ring_emis(emisProf, param, emissivity_table, status);
+  calc_ring_fractions(emisProf, param, prim_table, status);
+
+}
+
+void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *status) {
+
+  CHECK_STATUS_VOID(*status);
+
+  extendedSourceTable* emissivity_table = get_es_table(status);
+  extendedSourceTable* prim_table = get_prim_table(status);
+  printf("I DO NOTHING FOR NOW\n");
+// TBD: define grid of rings (linear works good), define weights (xdx/rdr), do simple math
+  // calc_ring_emis(emisProf, param, emissivity_table, prim_table, status);
+
+  // for quick test of performance of summation of rings:
+  //for (int i = 0; i < 50; i++) {
+  //emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
+  //rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
+  //free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
+  //free_emisProfile(emis_profile_table);
+  //}
 }
 
 /**
@@ -582,59 +602,24 @@ double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFa
 
 /////////////////////////////////////////////////////////
 /**
- * @brief Calculates emissivity
+ * @brief Calculates ring emissivity
  * @details
  * @param emisProf; emisProfile, pointer to the structure with emissivity profile
  * @param param; relParam, pointer to the parameters structure
  * @param tab; extendedSourceTable, pointer to the table structure
- * @param prim_tab; extendedSourceTable, pointer to the primary table
  */
-void calc_extended_emis(emisProfile *emisProf, const relParam *param,
-                        extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status) {
+void calc_ring_emis(emisProfile *emisProf, const relParam *param, extendedSourceTable *tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  InterpFactors ipol; // new structure with interpolation factors instead of a ton of indexes and factors
+  InterpFactors ipol;
   get_ipol_factors_a_h_x(param, tab, ipol);
 
-  // for quick test of performance of summation of rings:
-  //for (int i = 0; i < 50; i++) {
-    //emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
-    //rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
-    //free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
-    //free_emisProfile(emis_profile_table);
-  //}
-    // rename function
   emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
   free_emisProfile(emis_profile_table);
-
-  InterpFactors prim_ipol;
-  get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
-  emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
-
-
-  // input incl can be both in radian and in grads. The table has cos incl, so we unoptimally convert it here
-  // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
-  double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
-  // in the first case it is in radian, in the second it is in grad
-
-    // experimentally put this calculation to refl_frac structure
-  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
-
-  // Lensing is currently calculated with raytracing for disk size r_out = 10^3 rg.
-  // Therefore at large heights we loose some fraction of photons (they go "under the disk")
-  // That is why I add here this empirical correction, which plays some role at large h
-  emisProf->photon_fate_fractions->lensing /= (1.0 -
-      sqrt(param->height * param->height + param->r_ring * param->r_ring + param->a * param->a) / 1000.0);
-
-  // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
-  emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
-      calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, param->gamma));
-
-
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo
 //  for (int ii=0; ii<tab->n_rad; ii++){
@@ -642,6 +627,35 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
 //      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
 //    }
 //  }
+}
+
+/**
+ * @brief Calculates photon fractions (esc, bh, disk), lensing and boost of the primary emission for ring geometry
+ * @details
+ * @param emisProf; emisProfile, pointer to the structure with (emissivity profile) and necessary quantities
+ * @param param; relParam, pointer to the parameters structure
+ * @param prim_tab; extendedSourceTable, pointer to the primary table
+ */
+void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedSourceTable *prim_tab, int *status) {
+  CHECK_STATUS_VOID(*status);
+
+  InterpFactors prim_ipol;
+  get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
+  emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
+  // input incl can be both in radian and in grads. The table has cos incl, so we unoptimally convert it here
+  // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
+  double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  // in the first case it is in radian, in the second it is in grad
+  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
+  // Lensing is currently calculated with raytracing for disk size r_out = 10^3 rg.
+  // Therefore at large heights we loose some fraction of photons (they go "under the disk")
+  // That is why I add here this empirical correction, which plays some role at large h TODO remove this correction
+  emisProf->photon_fate_fractions->lensing /= (1.0 -
+      sqrt(param->height * param->height + param->r_ring * param->r_ring + param->a * param->a) / 1000.0);
+  // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
+  emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
+      calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, param->gamma));
+
 }
 
 /**

@@ -51,7 +51,7 @@ enum class ModelName {
 
 enum class T_Irrad {
   BknPowerlaw,
-  LampPost,
+  LampPost, // add new?
   BlackBody,
   Const,
   None
