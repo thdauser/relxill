@@ -23,27 +23,25 @@
 #include "common.h"
 
 /** dimensions of the ES table */
-#define EXT_TABLE_NA 20 // number of spin values
-#define EXT_TABLE_NHEIGHT 50 // number of height values
-#define EXT_TABLE_NDISTANCE 50 // number of distance values
-#define EXT_TABLE_NRAD 99  // number of radial bin values
-#define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
+#define EXT_TABLE_NUM_SPIN 20 // number of spin values
+#define EXT_TABLE_NUM_HEIGHT 50 // number of height values
+#define EXT_TABLE_NUM_RINGS 50 // number of ring size values
+#define EXT_TABLE_NUM_RADIUS 99  // number of radial bin values
+#define EXT_TABLE_NUM_ENERGYBINS 20 // number of energy bin values
 #define EXT_TABLE_FILENAME "rel_extended_source.fits"
-// #define EXT_TABLE_FILENAME "table_v1_static_source.fits"
 
 /** dimensions of the primary table */
-#define PRIM_TABLE_NA 11 // number of spin values
-#define PRIM_TABLE_NHEIGHT 50 // number of height values
-#define PRIM_TABLE_NDISTANCE 50 // number of distance values
-#define PRIM_TABLE_NINCL 20  // number of inclination bins
-#define PRIM_TABLE_NENERGYBINS 20 // number of energy bin values
-#define PRIM_TABLE_FILENAME "prim_extended_source.fits"
-// #define PRIM_TABLE_FILENAME "prim_table_v1_static_source.fits"
+#define EXT_LENS_TABLE_NUM_SPIN 11 // number of spin values
+#define EXT_LENS_TABLE_NUM_HEIGHT 50 // number of height values
+#define EXT_LENS_TABLE_NUM_RINGS 50 // number of ring size values
+#define EXT_LENS_TABLE_NUM_INCL 20  // number of inclination bins
+#define EXT_LENS_TABLE_NUM_ENERGYBINS 20 // number of energy bin values
+#define EXT_LENS_TABLE_FILENAME "prim_extended_source.fits"
 
 typedef struct {
 
   double *height;
-  double **r_ring;
+  double **x;
   double *bin; // was radius. Now either radius or inclination
   double ***val; // was flux. Now either flux or lensing_factor
   double ***gshift;
@@ -60,7 +58,7 @@ typedef struct {
   float *a;
   int n_a;
   int n_h;
-  int n_r;
+  int n_x;
   int n_bin;
   int n_storage;
   extendedSourceData **dat;
@@ -96,7 +94,7 @@ void calc_ring_fractions(emisProfile *emisProf, const relParam *param,
 emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);
 
 // constructors and destructors
-extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
+extendedSourceTable *new_extendedSourceTable(int n_h, int n_x,
                                              int n_a, int n_bin, int n_storage,
                                              int *status);
 

@@ -208,7 +208,7 @@ typedef struct {
   double lineE;
   double z;
   double height;
-  double r_ring; //RENAME to x
+  double x;
   double x_in;
   double htop;
   double gamma;

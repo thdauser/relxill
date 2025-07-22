@@ -262,10 +262,10 @@ void check_parameter_bounds(relParam *param, int *status) {
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->model_type == MOD_TYPE_RELXILLLPEXT) {
       h_fac = 1.2; // current table_v5.fits for extended emissivity extends down to 1.1 r_EH, but interpolation works without extrapolation only down to 1.2 EH
-      if (param->r_ring < 0.0) {
+      if (param->x < 0.0) {
           printf(" *** Warning : Ring source cannot have negative size (r < %.1f r_event) \n", 0.0);
-          printf("      Setting    r_ring = 0.0 \n");
-        param->r_ring = 0.0;
+          printf("      Setting    x = 0.0 \n");
+        param->x = 0.0;
       }
     }
     if ((h_fac * r_event - param->height) > 1e-4) {
@@ -315,7 +315,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  param->r_ring = inp_param.get_otherwise_default(XPar::x, 0); // todo refactor r_ring also internally
+  param->x = inp_param.get_otherwise_default(XPar::x, 0);
   param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
 
   // important default values

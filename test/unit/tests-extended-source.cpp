@@ -187,7 +187,7 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   DefaultSpec default_spec_ext{};
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   relParam* rel_param_ext = local_model_ext.get_rel_params();
-  rel_param_ext->r_ring = 0.0; // for this test we compare the lp emissivity and ext for ring=0
+  rel_param_ext->x = 0.0; // for this test we compare the lp emissivity and ext for ring=0
 
   double spins[3] = {0.0, 0.7, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
