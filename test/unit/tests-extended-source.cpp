@@ -47,13 +47,14 @@ TEST_CASE("Default line model call  Test", "[extended]") {
 
   local_model.eval_model(spec);
 /*
- *  ONLY FOR LOCAL USAGE
+ *  ONLY FOR LOCAL USAGE (to save fluxes or emissivities to files)
  *
   int n_bins = spec.num_flux_bins();
   double *flux = spec.flux;
   double *energy = spec.energy;
 
-  string strname = "/home/nekrasov/git/tables/test-ext-line-h" + std::to_string(height) + "-d" + std::to_string(dist) + ".dat";
+  string strname = "/home/nekrasov/git/tables/test-ext-line-h" + std::to_string(height)
+  + "-d" + std::to_string(dist) + ".dat";
   char *foutName = new char[999];
   strcpy(foutName, strname.c_str());
   FILE *fp = fopen(foutName, "w+");
@@ -181,13 +182,13 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
   LocalModel local_model{ModelName::relxilllp};
-  relParam* rel_param = local_model.get_rel_params();
-
   DefaultSpec default_spec_ext{};
+  XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
-  relParam* rel_param_ext = local_model_ext.get_rel_params();
-  rel_param_ext->x = 0.0; // for this test we compare the lp emissivity and ext for ring=0
+  // relParam* rel_param_ext = local_model_ext.get_rel_params();
+  local_model_ext.set_par(XPar::x, 0.0);  // for this test we compare the lp emissivity and ext for ring=0
 
   double spins[3] = {0.0, 0.7, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
@@ -195,18 +196,17 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   for (double spin : spins){
     for(double height : heights){
 
-      XspecSpectrum spec = default_spec.get_xspec_spectrum();
-      rel_param->a = spin;
-      rel_param->height = height;
-      rel_param->rin = kerr_rms(spin);
+      local_model.set_par(XPar::a, spin);
+      local_model.set_par(XPar::h, height);
+      local_model.set_par(XPar::rin, -1.0);
       local_model.eval_model(spec);
 
-
-      XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
-      rel_param_ext->a = spin;
-      rel_param_ext->height = height;
-      rel_param_ext->rin = kerr_rms(spin);
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::h, height);
+      local_model_ext.set_par(XPar::rin, -1.0);
       local_model_ext.eval_model(spec_ext);
+      relParam* rel_param = local_model.get_rel_params();
+      relParam* rel_param_ext = local_model_ext.get_rel_params();
       auto sys_par = get_system_parameters(rel_param, &status);
       auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
       int n_rad = sys_par->nr;
@@ -216,11 +216,12 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
 
       assert(n_rad_ext == n_rad);
       for (int i = 0; i < n_rad; i++) {
-        assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids are the same
+        assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids match
         // check if the emissivities are the same. Deviations of an order of a few % expected. Up to 10% in the most extreme cases
         // (h at EH)
         REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < 0.033);
-        //printf("Intensities lp %.6e, ext %.6e, ratio %.6f at radius %.6f\n", intens[i], intens_ext[i], intens[i] / intens_ext[i], sys_par_ext->re[i]);
+        //printf("Intensities lp %.6e, ext %.6e, ratio %.6f at radius %.6f\n", intens[i],
+        // intens_ext[i], intens[i] / intens_ext[i], sys_par_ext->re[i]);
 
       }
     }
@@ -234,7 +235,8 @@ TEST_CASE("Test to compare lp and ext line profiles for several spins and height
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
-
+  auto spec = default_spec.get_xspec_spectrum(); // when it is outside of "for" - energy shifts wrong
+  auto spec_ext = default_spec_ext.get_xspec_spectrum(); // or is it?
   LocalModel local_model{ModelName::relline_lp};
   LocalModel local_model_ext{ModelName::relline_ext};
   local_model_ext.set_par(XPar::x, 0.0);
@@ -244,9 +246,6 @@ TEST_CASE("Test to compare lp and ext line profiles for several spins and height
 
   for (double spin : spins){
     for (double height : heights){
-
-      auto spec = default_spec.get_xspec_spectrum(); // when it is outside of "for" - energy shifts wrong
-      auto spec_ext = default_spec_ext.get_xspec_spectrum();
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::h, height);
       local_model_ext.set_par(XPar::a, spin);

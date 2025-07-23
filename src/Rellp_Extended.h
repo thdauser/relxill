@@ -66,17 +66,14 @@ typedef struct {
 
 typedef struct {
   int ind_a;
-  double ifac_a; // simply between two spins
-  int ind_h[2]; // two values - 0 is for low spin, 1 is for high spin
+  double ifac_a; // factor between two spins
+  int ind_h[2]; // two values - 0 is for lower spin of interpolation, 1 is for higher spin
   double ifac_h[2];
   int ind_x[2];
   double ifac_x[2];
 } InterpFactors;
 
-// no need to declare it really
-// extendedSourceTable* get_es_table(int* status);
-
-// these I really need outside, all other - arguable
+// these I really need outside, all other below - arguable
 void calc_emis_ring_source(emisProfile *emisProf, const relParam *param, int *status);
 void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *status);
 double get_energyboost_ext_source_obs(const relParam *param, double gamma);
