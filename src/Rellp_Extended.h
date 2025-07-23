@@ -82,10 +82,8 @@ double get_energyboost_ext_source_disk(const relParam *param, double radius, dou
 
 // do I need to declare these two? I could just re-arrange code. Same applies to all below
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
-void calc_ring_emis(emisProfile *emisProf, const relParam *param,
-                    extendedSourceTable *tab, int *status);
-void calc_ring_fractions(emisProfile *emisProf, const relParam *param,
-                    extendedSourceTable *tab, int *status);
+void calc_ring_emis(emisProfile *emisProf, double a, double h, double x, double gamma, extendedSourceTable *tab, int *status);
+void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedSourceTable *tab, int *status);
 
 
 emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);

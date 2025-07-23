@@ -124,6 +124,29 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
   REQUIRE(status == EXIT_SUCCESS);
 }
 
+TEST_CASE("Default call of relxill ext model with disk geometry", "[extended]") {
+
+  int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  LocalModel local_model{ModelName::relxill_ext};
+  double spin = 0.998;
+  double height = 2.0;
+  double slab_extent = 3.0;
+  double incl = 30.0;
+  local_model.set_par(XPar::a, spin);
+  local_model.set_par(XPar::h, height);
+  local_model.set_par(XPar::x, slab_extent);
+  local_model.set_par(XPar::incl, incl);
+  local_model.set_par(XPar::switch_switch_source_geometry, 2);
+
+  local_model.eval_model(spec);
+
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
 
 TEST_CASE("Checking the reflection fraction", "[extended]") {
   int status = EXIT_SUCCESS;

@@ -198,9 +198,10 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_x,
 }
 
 
-void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *tab, InterpFactors& ipol) {
+void get_ipol_factors_a_h_x(const double a, const double h, const double x,
+                            const extendedSourceTable *tab, InterpFactors& ipol) {
   // interpolation factors between spins
-  get_ipol_factor((float) param->a, tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
+  get_ipol_factor((float) a, tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
   if (ipol.ifac_a < 0.0 or ipol.ifac_a > 1.0){
     // should not happen in the current table
     printf(" *** Warning : spin interpolation becomes extrapolation: ifac_a = %.1f \n", ipol.ifac_a);
@@ -208,7 +209,7 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
   }
   for (int ii = 0; ii < 2; ii++) {
     // interpolation factors between heights
-    get_ipol_factor_double(param->height, tab->dat[ipol.ind_a + ii]->height, tab->n_h,
+    get_ipol_factor_double(h, tab->dat[ipol.ind_a + ii]->height, tab->n_h,
                            &(ipol.ind_h[ii]),&(ipol.ifac_h[ii]));
     if (ipol.ifac_h[ii] < 0.0 or ipol.ifac_h[ii] > 1.0){
       // should not happen in the current table
@@ -219,7 +220,7 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
     int index = (ipol.ifac_h[ii] > 0.999999) ? ipol.ind_h[ii] + 1 : ipol.ind_h[ii];
     // this additional index shift doesn't matter for the current table
     // but if tabulated extents will differ for different heights - it will matter
-    get_ipol_factor_double(param->x, tab->dat[ipol.ind_a + ii]->x[index], tab->n_x,
+    get_ipol_factor_double(x, tab->dat[ipol.ind_a + ii]->x[index], tab->n_x,
                            &(ipol.ind_x[ii]), &(ipol.ifac_x[ii]));
     if (ipol.ifac_x[ii] < 0.0 or ipol.ifac_x[ii] > 1.0){
       // should not happen in the current table
@@ -399,9 +400,6 @@ static lpReflFrac *calc_refl_frac_ext(const extendedSourceTable *tab, InterpFact
 
   ////str->f_bh = 1.0 - (str->f_ad + str->f_inf); // this is not true if we re-define f_inf to be <= 0.5.
   // But it is important only for very large heights.
-  // TODO: This definition does not take into account a possible variability of the disk edges. Is there any way to
-  // overcome this limitation? Probably only approximate way, because with raytracing it is not easy to vary r_in/r_out
-
 
   /// these are equal for now. f_inf_rest is used to calculate primary spectrum
   /// (function flux_boost_source_to_observer in PrimarySource.h)
@@ -428,7 +426,7 @@ void calc_emis_ring_source(emisProfile *emisProf, const relParam *param, int *st
   extendedSourceTable* emissivity_table = get_es_table(status);
   extendedSourceTable* prim_table = get_prim_table(status);
 
-  calc_ring_emis(emisProf, param, emissivity_table, status);
+  calc_ring_emis(emisProf, param->a, param->height, param->x, param->gamma, emissivity_table, status);
   calc_ring_fractions(emisProf, param, prim_table, status);
 
 }
@@ -439,21 +437,61 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
 
   extendedSourceTable* emissivity_table = get_es_table(status);
   extendedSourceTable* prim_table = get_prim_table(status);
-  printf("I DO NOTHING FOR NOW\n");
-// TBD: define grid of rings (linear works good as a first step),
+  InterpFactors ipol;
+  InterpFactors prim_ipol;
+  // TODO need some more advanced scheme for primary normalization, here assume just the values from the outermost ring:
+  calc_ring_fractions(emisProf, param, prim_table, status);
 
-// define weights (xdx/rdr),
+  // these two define disk inner and outer radii  param->x_in  param->x
+  const int num_rings = 100; // first let's have a simple linear grid, not too fast but fine for now
+  std::array<double, num_rings> slab_grid{};
+  emisProfile *disk_emis_sum;
+  // auto *param_tmp = const_cast<relParam *>(param);
+  double weight_i;
+  double weight_sum = 0.0;
+  for (int ii = 0; ii < num_rings; ii++) {
+    slab_grid[ii] = param->x_in + (param->x - param->x_in) * ii / (num_rings - 1);
+  } // I do extra for because I need to access ii+1 step
+  for (int ii = 0; ii < num_rings; ii++) {
+    // param_tmp->x = slab_grid[ii];
+    // maybe need to optimize this function (or not use it)
+    // calc_ring_emis(ring_emis_tmp, param->a, param->height, slab_grid[ii], param->gamma,
+    //               emissivity_table, status);
+    // factors for emissivity
+    get_ipol_factors_a_h_x(param->a, param->height, slab_grid[ii], emissivity_table, ipol);
+    // factors for primary emission
+    get_ipol_factors_a_h_x(param->a, param->height, slab_grid[ii], prim_table, prim_ipol);
 
-// do simple math
-  // calc_ring_emis(emisProf, param, emissivity_table, prim_table, status);
+    emisProfile *ring_emis_tmp = interpol_estable(emissivity_table, ipol, param->gamma, status);
+    if (ii == 0) { // because I don't know the radial grid a priori
+      disk_emis_sum = new_emisProfile(ring_emis_tmp->re, ring_emis_tmp->nr, status);
+      // disk_emis_sum->
+    }
+    // fractions required for weights
+    ring_emis_tmp->photon_fate_fractions = calc_refl_frac_ext(prim_table, prim_ipol, status);
 
-  // for quick test of performance of summation of rings:
-  //for (int i = 0; i < 50; i++) {
-  //emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
-  //rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
-  //free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
-  //free_emisProfile(emis_profile_table);
-  //}
+    if (ii == num_rings - 1) { // last bin
+      weight_i = slab_grid[num_rings - 1] * (slab_grid[num_rings - 1] -
+          slab_grid[num_rings - 2]) * ring_emis_tmp->photon_fate_fractions->refl_frac;
+    } else { // ordinary bin
+      weight_i = slab_grid[ii] * (slab_grid[ii + 1] -
+          slab_grid[ii]) * ring_emis_tmp->photon_fate_fractions->refl_frac; // I cannot access ii+1 while it is not init
+    }
+    weight_sum += weight_i;
+    for (int nn = 0; nn < ring_emis_tmp->nr; nn++) { // seems maybe like a separate function for me
+      disk_emis_sum->emis[nn] += ring_emis_tmp->emis[nn] * weight_i;
+    }
+    // free(ring_emis_tmp->re);
+    // free_emisProfile(ring_emis_tmp);
+  }
+  for (int nn = 0; nn < emisProf->nr; nn++) {
+    emisProf->emis[nn] /= weight_sum; // normalize final profile with weights (one could also divide by disk area)
+  }
+  // match with relxill emissivity grid, emisProf is used further
+  rebin_emisprofile_on_radial_grid(emisProf, disk_emis_sum, status);
+  // too slow? save_emis_profiles(get_system_parameters(param, status));
+  free(disk_emis_sum->re);
+  free_emisProfile(disk_emis_sum);
 }
 
 /**
@@ -465,7 +503,7 @@ double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
   int status = EXIT_SUCCESS;
   extendedSourceTable* prim_table = get_prim_table(&status); // important to load the correct table
   InterpFactors prim_ipol; // just get the factors to the closest table grid points in a, h, x dimensions
-  get_ipol_factors_a_h_x(param, prim_table, prim_ipol);
+  get_ipol_factors_a_h_x(param->a, param->height, param->x, prim_table, prim_ipol);
   // input incl can be both in radian and in grads. The table has cos incl, so we (non-optimally) convert it here
   // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
   double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
@@ -486,7 +524,7 @@ double get_energyboost_ext_source_disk(const relParam *param, double radius, dou
   // and we have it in getting table routines...
   extendedSourceTable* table = get_es_table(&status); // important to load the correct table
   InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
-  get_ipol_factors_a_h_x(param, table, ipol);
+  get_ipol_factors_a_h_x(param->a, param->height, param->x, table, ipol);
   double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
   return gshift;
 }
@@ -620,14 +658,15 @@ double calc_primary_lensing(double incl, extendedSourceTable *prim_tab, InterpFa
  * @param param; relParam, pointer to the parameters structure
  * @param tab; extendedSourceTable, pointer to the table structure
  */
-void calc_ring_emis(emisProfile *emisProf, const relParam *param, extendedSourceTable *tab, int *status) {
+void calc_ring_emis(emisProfile *emisProf, const double a, const double h, const double x, const double gamma,
+                    extendedSourceTable *tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   InterpFactors ipol;
-  get_ipol_factors_a_h_x(param, tab, ipol);
+  get_ipol_factors_a_h_x(a, h, x, tab, ipol);
 
-  emisProfile *emis_profile_table = interpol_estable(tab, ipol, param->gamma, status);
+  emisProfile *emis_profile_table = interpol_estable(tab, ipol, gamma, status);
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
@@ -652,7 +691,7 @@ void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedS
   CHECK_STATUS_VOID(*status);
 
   InterpFactors prim_ipol;
-  get_ipol_factors_a_h_x(param, prim_tab, prim_ipol);
+  get_ipol_factors_a_h_x(param->a, param->height, param->x, prim_tab, prim_ipol);
   emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
   // input incl can be both in radian and in grads. The table has cos incl, so we unoptimally convert it here
   // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
@@ -663,7 +702,7 @@ void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedS
   // Therefore at large heights we loose some fraction of photons (they go "under the disk")
   // That is why I add here this empirical correction, which plays some role at large h TODO remove this correction
   emisProf->photon_fate_fractions->lensing /= (1.0 -
-                                               sqrt(param->height * param->height + param->x * param->x + param->a * param->a) / 1000.0);
+      sqrt(param->height * param->height + param->x * param->x + param->a * param->a) / 1000.0);
   // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
   emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
       calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, param->gamma));
