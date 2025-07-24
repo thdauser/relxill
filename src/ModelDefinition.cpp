@@ -316,7 +316,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
   param->x = inp_param.get_otherwise_default(XPar::x, 0);
-  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
+  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0); // ADD handling x_in > x
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
