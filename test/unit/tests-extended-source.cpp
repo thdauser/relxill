@@ -204,8 +204,8 @@ TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
 TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heights ", "[extended]") {
 
   int status = EXIT_SUCCESS;
-  double current_error_peak = 0.003;
-  double current_error_tail = 0.075;
+  double current_error_peak = 0.002;
+  double current_error_tail = 0.033; // almost same as for emissivity btw, which makes sense
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -216,7 +216,7 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
   local_model_ext.set_par(XPar::x, 0.0);
 
   double spins[3] = {0.0, 0.5, 0.998};
-  double heights[3] = {2.2, 5.0, 10.0};
+  double heights[3] = {2.5, 5.0, 10.0};
 
   for (double spin : spins){
     for (double height : heights){
