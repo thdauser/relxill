@@ -166,8 +166,12 @@ static void setNegativeHeightToRplus(double *h, double a) {
   }
 }
 
+// why int and not bool btw?
 int warned_rms = 0;
 int warned_height = 0;
+int warned_ring_radius = 0;
+int warned_slab_radius = 0;
+int warned_slab_bound = 0;
 
 void check_parameter_bounds(relParam *param, int *status) {
 
@@ -175,6 +179,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   setNegativeRadiiToRisco(&(param->rin), param->a);
   setNegativeRadiiToRisco(&(param->rout), param->a);
   setNegativeRadiiToRisco(&(param->rbr), param->a);
+  // should we have the same negative units for x, x_in in relxill_ext?
 
   const double rout_max = 1000.0;
 
@@ -211,7 +216,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     return;
   }
 
-  if (param->rout <= param->rin) {
+  if (param->rout <= param->rin) { // why twice? (line 182)
     printf(" *** Error : Rout <= Rin, model evaluation failed \n");
     *status = EXIT_FAILURE;
     return;
@@ -258,14 +263,36 @@ void check_parameter_bounds(relParam *param, int *status) {
     setNegativeHeightToRplus(&(param->height), param->a);
     setNegativeHeightToRplus(&(param->htop), param->a);
     double r_event = kerr_rplus(param->a);
-    double h_fac = 1.1;
+    double h_fac = (param->prim_geometry_type == GEOMETRY_LP) ? 1.1 : 1.2; // a bit more conservative limit for ext models
+
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
-    if (param->model_type == MOD_TYPE_RELXILLLPEXT) {
-      h_fac = 1.2; // current table_v5.fits for extended emissivity extends down to 1.1 r_EH, but interpolation works without extrapolation only down to 1.2 EH
+    if (param->prim_geometry_type == GEOMETRY_RING) {
       if (param->x < 0.0) {
+        if (not warned_ring_radius) {
           printf(" *** Warning : Ring source cannot have negative size (r < %.1f r_event) \n", 0.0);
-          printf("      Setting    x = 0.0 \n");
+          printf("      Setting    x = 0.0 rg \n");
+        }
+        warned_ring_radius = 1;
         param->x = 0.0;
+      }
+    }
+    if (param->prim_geometry_type == GEOMETRY_DISK) {
+      if (param->x < 0.1) {
+        if (not warned_slab_radius) {
+          printf(" *** Warning : Disk source cannot have too small size (r < %.1f r_event) \n", 0.1);
+          printf("      Setting    x = 0.1 rg \n");
+        }
+        warned_slab_radius = 1;
+        param->x = 0.1;
+      }
+      // new: for disk model we also check that inner edge is less than outer (x)
+      if (param->x <= param->x_in) {
+        if (not warned_slab_bound) {
+          printf(" *** Warning : x_in >= x outer edge cannot be smaller than inner edge \n");
+          printf("      Setting    x_in = x - 0.1 rg \n");
+        }
+        warned_slab_bound = 1;
+        param->x_in = param->x - 0.1;
       }
     }
     if ((h_fac * r_event - param->height) > 1e-4) {
