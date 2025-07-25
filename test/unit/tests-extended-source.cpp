@@ -33,7 +33,7 @@ extern "C" {
 
 
 
-TEST_CASE("Default line model call  Test", "[extended]") {
+TEST_CASE("Default line model call ", "[extended]") {
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -41,11 +41,11 @@ TEST_CASE("Default line model call  Test", "[extended]") {
   LocalModel local_model{ModelName::relline_ext};
 
   double height = 3.0;
-  double r_ring = 5.0;
+  double x = 5.0;
   local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::x, r_ring);
+  local_model.set_par(XPar::x, x);
 
-  local_model.eval_model(spec);
+  REQUIRE_NOTHROW(local_model.eval_model(spec));
 /*
  *  ONLY FOR LOCAL USAGE (to save fluxes or emissivities to files)
  *
@@ -68,87 +68,35 @@ TEST_CASE("Default line model call  Test", "[extended]") {
 }
 
 
-TEST_CASE("Xspec line model call Test", "[extended]") {
+TEST_CASE("Default call of relxill ext models for different geometries ", "[extended]") {
 
-  int status = EXIT_SUCCESS;
-
-  LocalModel local_model{ModelName::relline_ext};
-  local_model.set_par(XPar::x, 5.0);
+  //int status = EXIT_SUCCESS;
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  local_model.eval_model(spec);
-
-  REQUIRE(status == EXIT_SUCCESS);
-}
-
-
-TEST_CASE("Default relxill model call Test", "[extended]") {
-
-  int status = EXIT_SUCCESS;
-
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-  LocalModel local_model{ModelName::relxill_ext_ecut};
-  double height = 5.0;
-  double r_ring = 5.0;
-  local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::x, r_ring);
-
-  local_model.eval_model(spec);
-
-  REQUIRE(status == EXIT_SUCCESS);
-}
-
-
-TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
-
-  int status = EXIT_SUCCESS;
-
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-  LocalModel local_model{ModelName::relxill_ext};
-  double spin = 0.998;
+  // LocalModel local_model{ModelName::relxill_ext};
+  // do some dummy param sets just to try that it works
+  double spin = 0.99;
   double height = 2.0;
-  double r_ring = 0.0;
-  double incl = 30.0;
-  local_model.set_par(XPar::a, spin);
-  local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::x, r_ring);
-  local_model.set_par(XPar::incl, incl);
+  double x = 10.0;
+  double incl = 45.0;
+  for (ModelName model : {ModelName::relline_ext, ModelName::relxill_ext_ecut, ModelName::relxill_ext}) {
+    for (int type_geom : {1, 2}) {
+      LocalModel local_model{model};
+      local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
+      local_model.set_par(XPar::a, spin);
+      local_model.set_par(XPar::h, height);
+      local_model.set_par(XPar::x, x);
+      local_model.set_par(XPar::incl, incl);
 
-  local_model.eval_model(spec);
-
-  REQUIRE(status == EXIT_SUCCESS);
-}
-
-TEST_CASE("Default call of relxill ext model with disk geometry", "[extended]") {
-
-  int status = EXIT_SUCCESS;
-
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-  LocalModel local_model{ModelName::relxill_ext};
-  double spin = 0.998;
-  double height = 2.0;
-  double slab_extent = 3.0;
-  double incl = 30.0;
-  local_model.set_par(XPar::a, spin);
-  local_model.set_par(XPar::h, height);
-  local_model.set_par(XPar::x, slab_extent);
-  local_model.set_par(XPar::incl, incl);
-  local_model.set_par(XPar::switch_switch_source_geometry, 2);
-
-  local_model.eval_model(spec);
-
-  REQUIRE(status == EXIT_SUCCESS);
+      REQUIRE_NOTHROW(local_model.eval_model(spec));
+    }
+  }
+  //REQUIRE(status == EXIT_SUCCESS);
 }
 
 
-TEST_CASE("Checking the reflection fraction", "[extended]") {
+TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
@@ -156,7 +104,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   LocalModel local_model{ModelName::relxilllp};
 
   double spin = 0.998;
-  double h = 10.1;
+  double h = 3.0;
   local_model.set_par(XPar::a, spin);
   local_model.set_par(XPar::rin, -1.0);
   local_model.set_par(XPar::rout, 1000.0);
@@ -200,9 +148,10 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
 }
 
 
-TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
+TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
 
   int status = EXIT_SUCCESS;
+  double current_error = 0.033;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -242,7 +191,7 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
         assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids match
         // check if the emissivities are the same. Deviations of an order of a few % expected. Up to 10% in the most extreme cases
         // (h at EH)
-        REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < 0.033);
+        REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < current_error);
         //printf("Intensities lp %.6e, ext %.6e, ratio %.6f at radius %.6f\n", intens[i],
         // intens_ext[i], intens[i] / intens_ext[i], sys_par_ext->re[i]);
 
@@ -252,9 +201,11 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
   REQUIRE(status == EXIT_SUCCESS);
 }
 
-TEST_CASE("Test to compare lp and ext line profiles for several spins and heights ", "[extended]") {
+TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heights ", "[extended]") {
 
   int status = EXIT_SUCCESS;
+  double current_error_peak = 0.003;
+  double current_error_tail = 0.075;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -281,10 +232,10 @@ TEST_CASE("Test to compare lp and ext line profiles for several spins and height
         // to remove zero division
         if (spec.flux[i] > 0.0) {
           // currently due to slightly different energy shifts we can only get down to ~8% difference for these a,h
-          REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < 0.075);
+          REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_tail);
           // although these few % diff are only for the red tail of the line, on average it is below 1%
           if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) {
-            REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < 0.003);
+            REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_peak);
           }
         }
       }
@@ -294,9 +245,10 @@ TEST_CASE("Test to compare lp and ext line profiles for several spins and height
 }
 
 
-TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[extended]") {
+TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and heights ", "[extended]") {
 
   int status = EXIT_SUCCESS;
+  double current_error = 0.06;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -326,7 +278,7 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
         assert(spec.energy[i] == spec_ext.energy[i]);
         if (spec_ext.flux[i] != 0.0){
           // as with emissivities and line profiles, we expect the difference up to ~6% now
-          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < 0.06);
+          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error);
         }
       }
     }
@@ -335,21 +287,42 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
 }
 
 
-TEST_CASE("Test setting input parameters for extended source outside the allowed range","[extended]") {
+TEST_CASE("Setting input parameters for extended source outside of the allowed range ","[extended]") {
 
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relxill_ext_ecut);
+  LocalModel lmod(ModelName::relxill_ext);
 
   auto spec = default_spec.get_xspec_spectrum();
 
+  // height below EH (will be replaced with spherical radius eventually)
   double height_below_horizon = 0.9;
   lmod.set_par(XPar::h, height_below_horizon);
-  lmod.set_par(XPar::x, 0.01);
+  lmod.set_par(XPar::x, 0.1); // so the source is inside of BH
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
-  // require a real
+  double negative_x = -10.0;
+  // lmod.set_par(XPar::h, 3.0);
+  lmod.set_par(XPar::x, negative_x);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
+
+  // and for slab source
+  lmod.set_par(XPar::switch_switch_source_geometry, 2);
+  double too_small_x = 0.0;
+  // lmod.set_par(XPar::h, 3.0);
+  lmod.set_par(XPar::x, too_small_x);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
+
+  double who_missed_inequalities_lesson_in_school_math = 10.0;
+  lmod.set_par(XPar::x_in, who_missed_inequalities_lesson_in_school_math);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
 }
