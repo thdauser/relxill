@@ -34,6 +34,7 @@ extern "C" {
 
 
 TEST_CASE("Default line model call ", "[extended]") {
+  int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -41,30 +42,26 @@ TEST_CASE("Default line model call ", "[extended]") {
   LocalModel local_model{ModelName::relline_ext};
 
   double height = 3.0;
-  double x = 5.0;
+  double x = 1.0;
+  double a = 0.9837;
+  local_model.set_par(XPar::a, a);
+  local_model.set_par(XPar::rin, -1);
+  local_model.set_par(XPar::rout, 1000.0);
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::x, x);
 
-  REQUIRE_NOTHROW(local_model.eval_model(spec));
-/*
- *  ONLY FOR LOCAL USAGE (to save fluxes or emissivities to files)
- *
-  int n_bins = spec.num_flux_bins();
-  double *flux = spec.flux;
-  double *energy = spec.energy;
+  // slab-specific
+  local_model.set_par(XPar::x_in, 0.0);
+  local_model.set_par(XPar::switch_switch_source_geometry, 2);
 
-  string strname = "/home/nekrasov/git/tables/test-ext-line-h" + std::to_string(height)
-  + "-d" + std::to_string(dist) + ".dat";
-  char *foutName = new char[999];
-  strcpy(foutName, strname.c_str());
-  FILE *fp = fopen(foutName, "w+");
-  if (fp != nullptr) {
-    for (int ii = 0; ii < n_bins; ii++) {
-      fprintf(fp, " %e \t %e \n", energy[ii], flux[ii]);
-    }
-  }
-  fclose(fp);
-*/
+  REQUIRE_NOTHROW(local_model.eval_model(spec));
+
+  auto param = local_model.get_rel_params();
+  auto syspar = get_system_parameters(param, &status);
+  // save_emis_profiles(syspar); //only locally
+
+  REQUIRE(status == EXIT_SUCCESS);
+
 }
 
 

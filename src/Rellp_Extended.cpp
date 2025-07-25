@@ -444,14 +444,15 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
 
   // these two define disk inner and outer radii  param->x_in  param->x
   const int num_rings = 100; // first let's have a simple linear grid, not too fast but fine for now
+  // note: any grid that is sparse for large rings (>~10rg) produces clumpy emissivity profile - bad
   std::array<double, num_rings> slab_grid{};
   emisProfile *disk_emis_sum;
-  // auto *param_tmp = const_cast<relParam *>(param);
+  // auto *param_tmp = const_cast<relParam *>(param); // it could work too but I am not familiar with this enough yet
   double weight_i;
   double weight_sum = 0.0;
   for (int ii = 0; ii < num_rings; ii++) {
     slab_grid[ii] = param->x_in + (param->x - param->x_in) * ii / (num_rings - 1);
-  } // I do extra for because I need to access ii+1 step
+  } // I do extra for because I need to access ii+1 step (but in principle there is space for optimization)
   for (int ii = 0; ii < num_rings; ii++) {
     // param_tmp->x = slab_grid[ii];
     // maybe need to optimize this function (or not use it)
@@ -484,12 +485,12 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
     // free(ring_emis_tmp->re);
     // free_emisProfile(ring_emis_tmp);
   }
-  for (int nn = 0; nn < emisProf->nr; nn++) {
-    emisProf->emis[nn] /= weight_sum; // normalize final profile with weights (one could also divide by disk area)
+  for (int nn = 0; nn < disk_emis_sum->nr; nn++) {
+    disk_emis_sum->emis[nn] /= weight_sum; // normalize final profile with weights (one could also divide by disk area)
   }
   // match with relxill emissivity grid, emisProf is used further
   rebin_emisprofile_on_radial_grid(emisProf, disk_emis_sum, status);
-  // too slow? save_emis_profiles(get_system_parameters(param, status));
+
   free(disk_emis_sum->re);
   free_emisProfile(disk_emis_sum);
 }

@@ -35,6 +35,8 @@ void eval_local_model_param_range(ModelName model_name, XPar param, double pmin,
 
   LocalModel local_model(model_name);
 
+  // local_model.set_par(XPar::switch_switch_source_geometry, 2); // tmp for extended geometry speed test
+
   for (int ii=0; ii<npar; ii++){
     double param_value = (pmax - pmin) * ( static_cast<double>(ii) / static_cast<double>(npar) );
     local_model.set_par(param, param_value);

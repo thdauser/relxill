@@ -191,7 +191,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
     cached_tab_sysPar->re[ii] = interp_lin_1d(ifac_a,
                                               tab->arr[ind_a][ind_mu0]->r[ii], tab->arr[ind_a + 1][ind_mu0]->r[ii]);
   }
-  // we have problems for the intermost radius due to linear interpolation (-> set to RISCO)
+  // we have problems for the innermost radius due to linear interpolation (-> set to RISCO)
   if ((cached_tab_sysPar->re[tab->n_r - 1] > kerr_rms(a)) &&
       ((cached_tab_sysPar->re[tab->n_r - 1] - kerr_rms(a)) / cached_tab_sysPar->re[tab->n_r - 1] < 1e-3)) {
     //		printf(" re-setting RIN from %.3f to %.3f (dr = %.2e)\n",cached_tab_sysPar->re[tab->n_r-1],kerr_rms(a),
