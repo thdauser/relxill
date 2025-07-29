@@ -343,7 +343,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
   param->x = inp_param.get_otherwise_default(XPar::x, 0);
-  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0); // ADD handling x_in > x
+  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
@@ -353,9 +353,8 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   // default 0 - lp, 1 - ring, 2 - disk:
   // param->prim_geometry_type = inp_param.get_otherwise_default(XPar::switch_source_geometry, 0);
   param->prim_geometry_type = get_geometry_switch(inp_param);
-  // I see that switchers are handled differently - tbd
 
-  param->rrad_corr_factors = nullptr; //
+  param->rrad_corr_factors = nullptr;
 
   // this is set by the environment variable "RELLINE_PHYSICAL_NORM"
   param->do_renorm_relline = do_renorm_model(param);

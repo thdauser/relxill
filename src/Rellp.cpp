@@ -503,7 +503,7 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
   // Do switch with param->emis_type instead?
    } else if (modelLampPostRingSource(param)) {
-    calc_emis_ring_source(emis_profile, param, status);
+    calc_emis_ring_source(emis_profile, param, status); // switcher cannot be updated properly within one isis/xspec session - fix!
   } else if (modelDiskSource(param)) {
     calc_emis_disk_source(emis_profile, param, status);
   } else if (modelVertExtendSource(param)) {
