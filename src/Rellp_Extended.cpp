@@ -81,14 +81,17 @@ static void get_extendedsourcetable_spin(int nrows, float **val, fitsfile *fptr,
 
   *val = (float*)  malloc(nrows* sizeof(float));
 
-  for (int i=0; i<nrows; i++){
+  for (int ii = 0; ii < nrows; ii++){
 
-    int index = i + 2; // number of the row we read in the fits table
+    int index = ii + 2; // number of the row we read in the fits table
     fits_movabs_hdu(fptr, index, nullptr, status);
 
     // dereference val to write a value to array
-    fits_read_key(fptr, TFLOAT, "SPIN", &((*val)[i]), nullptr, status);
-    assert(*status == EXIT_SUCCESS);
+    fits_read_key(fptr, TFLOAT, "SPIN", &((*val)[ii]), nullptr, status);
+    // assert(*status == EXIT_SUCCESS);
+    if (*status != EXIT_SUCCESS) {
+      CHECK_RELXILL_ERROR("reading spin dimension in table failed,", status);
+    }
   }
 
 }
@@ -147,7 +150,6 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_x,
   extendedSourceData *dat = new_extendedSourceData(status, is_lensing_table);
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
-
   int anynullptr = 0;
   double doublenullptr = 0.0;
 
@@ -171,7 +173,10 @@ load_single_extendedSourceData(fitsfile *fptr, int n_h, int n_x,
                     dat->val[ii][jj],&anynullptr, status);
 
       for (int kk = 0; kk < n_bin; kk++){
-        assert(dat->val[ii][jj][kk] >= 0.0);
+        // should never happen with the proper table:
+        if (dat->val[ii][jj][kk] < 0.0) {
+          CHECK_RELXILL_ERROR("Negative value loaded from table, check your table", status);
+        }
         fits_read_col(fptr, TDOUBLE, 5, irow, kk*n_storage+1, n_storage,
                       &doublenullptr, dat->energy_data_storage[ii][jj][kk],&anynullptr, status);
       }
@@ -242,7 +247,8 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int 
         double sum = 0.0; // sum is zeroed every time
         for (int l = 0; l < num_shift_bins; l++) { // energy shift bins
           sum += pow(energy_shift_bins[i][j][k][l], gamma);
-          assert(sum >= 0.0);
+          // here I can't avoid using assert because there is no "status" for this function, as well as one more below
+          assert(sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
         }
         dat_ind_a.gshift[i][j][k] = sum / num_shift_bins;
       }
@@ -276,7 +282,7 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
             double sum = 0.0; // sum is zeroed every time
             for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
               sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
-              assert(sum >= 0.0);
+              assert(sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
             }
             tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
           }
@@ -286,7 +292,7 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
             double sum = 0.0;
             for (int l = 0; l < tab->n_storage; l++) {
               sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
-              assert(sum > 0.0);
+              assert(sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
             }
             tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
           }
@@ -336,6 +342,9 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
   double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                                           tab_lo_00,tab_lo_01,tab_lo_10,tab_lo_11,
                                           tab_hi_00,tab_hi_01,tab_hi_10,tab_hi_11);
+
+
+  assert (g_gamma > 0.0 || !"g^Gamma negative, wrong interpolation!\n");
   return g_gamma;
 }
 
@@ -429,6 +438,8 @@ void calc_emis_ring_source(emisProfile *emisProf, const relParam *param, int *st
   calc_ring_emis(emisProf, param->a, param->height, param->x, param->gamma, emissivity_table, status);
   calc_ring_fractions(emisProf, param, prim_table, status);
 
+  CHECK_STATUS_VOID(*status);
+
 }
 
 void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *status) {
@@ -493,6 +504,8 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
 
   free(disk_emis_sum->re);
   free_emisProfile(disk_emis_sum);
+
+  CHECK_STATUS_VOID(*status);
 }
 
 /**
@@ -501,8 +514,8 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
  * @return The g^Gamma value with Gamma not necessarily taken from relParam (e.g. can be 1 for just energyshift)
  */
 double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
-  int status = EXIT_SUCCESS;
-  extendedSourceTable* prim_table = get_prim_table(&status); // important to load the correct table
+  // int status = EXIT_SUCCESS; // this is dumb, need to propagate status throughout the algorithm or not use it
+  extendedSourceTable* prim_table = get_prim_table(nullptr); // important to load the correct table
   InterpFactors prim_ipol; // just get the factors to the closest table grid points in a, h, x dimensions
   get_ipol_factors_a_h_x(param->a, param->height, param->x, prim_table, prim_ipol);
   // input incl can be both in radian and in grads. The table has cos incl, so we (non-optimally) convert it here
@@ -521,9 +534,9 @@ double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
  * @return The g^Gamma value
  */
 double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma) {
-  int status = EXIT_SUCCESS; // dumb solution to re-define status here, but we don't have it in the Relphysics functions
+  // int status = EXIT_SUCCESS; // dumb solution to re-define status here, but we don't have it in the Relphysics functions
   // and we have it in getting table routines...
-  extendedSourceTable* table = get_es_table(&status); // important to load the correct table
+  extendedSourceTable* table = get_es_table(nullptr); // important to load the correct table
   InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
   get_ipol_factors_a_h_x(param->a, param->height, param->x, table, ipol);
   double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
@@ -544,6 +557,19 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
   char fullfilename[999];
 
+  // can do so:
+  // try {
+    //if (tab != nullptr) {
+      //throw 101?
+      // RELXILL_ERROR("extended source table already loaded\n", status);
+      // break;
+    //}
+    ////// can do all of below instead of loop "do" in a safer and more readable form
+  // }
+  // catch (int err_code) {
+    // *status = EXIT_FAILURE;
+  // }
+
   do {
     if (tab != nullptr) {
       RELXILL_ERROR("extended source table already loaded\n", status);
@@ -559,9 +585,8 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
     CHECK_STATUS_BREAK(*status);
 
-    // should be set by previous routine
-    assert(tab != nullptr);
-    assert(tab->dat != nullptr);
+    // assert(tab != nullptr); // not necessary - the above "if" does it in a safer form
+    // assert(tab->dat != nullptr); // must be handled inside of the allocating function
 
     // get the full filename
     if (sprintf(fullfilename, "%s/%s", get_relxill_table_path(), filename) == -1) {
@@ -577,11 +602,6 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       break;
     }
 
-    // first read the spin axes of the table AND move to the correct extension
-    // printf("************************\n");
-    // printf("filename : %s\n", fullfilename);
-
-
     get_extendedsourcetable_spin(tab->n_a, &(tab->a) , fptr, status);
     CHECK_RELXILL_ERROR("reading of spin axis failed\n", status);
 
@@ -593,7 +613,10 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
       rownum = ii + 2; // number of the row we read in the fits table
       fits_movabs_hdu(fptr, rownum, nullptr, status);
 
-      assert(tab->dat[ii] == nullptr);
+      // assert(tab->dat[ii] == nullptr);
+      if (tab->dat[ii] != nullptr) {
+        CHECK_RELXILL_ERROR("reading of spin axis failed\n", status);
+      }
 
       tab->dat[ii] = load_single_extendedSourceData(
           fptr, tab->n_h, tab->n_x, tab->n_bin, tab->n_storage, status,
@@ -803,11 +826,14 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
                                             tab_hi_00,tab_hi_01,
                                             tab_hi_10,tab_hi_11);
 
-
     // this line accounts for g^Gamma:
     emis_profile_table->emis[ii] *= g_gamma; // in fact, this is "boost" of the flux, which for lp model is taken
     // into account only in calc_fluxboost_source_disk
-    assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
+    // assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
+    if (emis_profile_table->emis[ii] < 0.0) {
+      CHECK_RELXILL_ERROR("Negative emissivity bin caught after table interpolation!", status);
+      // this should never happened, but for rapidly changing emissivity at ISCO for low height sources some (rare) times...
+    }
   }
   return emis_profile_table;
 }
@@ -828,6 +854,7 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
                                              int n_a, int n_bin, int n_storage,
                                              int *status) {
+
   auto *tab = (extendedSourceTable *) malloc(sizeof(extendedSourceTable));
 
   CHECK_MALLOC_RET_STATUS(tab, status, nullptr)
