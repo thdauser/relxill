@@ -514,8 +514,8 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
  * @return The g^Gamma value with Gamma not necessarily taken from relParam (e.g. can be 1 for just energyshift)
  */
 double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
-  // int status = EXIT_SUCCESS; // this is dumb, need to propagate status throughout the algorithm or not use it
-  extendedSourceTable* prim_table = get_prim_table(nullptr); // important to load the correct table
+  int status = EXIT_SUCCESS; // this is dumb, need to propagate status throughout the algorithm or not use it
+  extendedSourceTable* prim_table = get_prim_table(&status); // important to load the correct table
   InterpFactors prim_ipol; // just get the factors to the closest table grid points in a, h, x dimensions
   get_ipol_factors_a_h_x(param->a, param->height, param->x, prim_table, prim_ipol);
   // input incl can be both in radian and in grads. The table has cos incl, so we (non-optimally) convert it here
@@ -534,9 +534,9 @@ double get_energyboost_ext_source_obs(const relParam *param, double gamma) {
  * @return The g^Gamma value
  */
 double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma) {
-  // int status = EXIT_SUCCESS; // dumb solution to re-define status here, but we don't have it in the Relphysics functions
+  int status = EXIT_SUCCESS; // dumb solution to re-define status here, but we don't have it in the Relphysics functions
   // and we have it in getting table routines...
-  extendedSourceTable* table = get_es_table(nullptr); // important to load the correct table
+  extendedSourceTable* table = get_es_table(&status); // important to load the correct table
   InterpFactors ipol; // just get the factors to the closest table grid points in a, h, x dimensions
   get_ipol_factors_a_h_x(param->a, param->height, param->x, table, ipol);
   double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
