@@ -255,7 +255,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   }
   /** check height values (only applies to LP emissivity **/
   if (param->emis_type == EMIS_TYPE_LP) {
-    setNegativeHeightToRplus(&(param->height), param->a);
+    setNegativeHeightToRplus(&(param->height), param->a); // after that h is in rg in either case
     setNegativeHeightToRplus(&(param->htop), param->a);
     double r_event = kerr_rplus(param->a);
     double h_fac = 1.1;
@@ -375,10 +375,10 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   // **** (2) if table stores r and theta (degrees). We fit r, theta directly in this case
   param->height = inp_param.get_otherwise_default(XPar::h, 0); // NOTE: this line also executes for lp, do not mess them up
 
-  if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
+  // if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
     // better would be to do it in "check param bounds" but for now..
-    param->height *= kerr_rplus(param->a); // convert to rg (we fit in EH units as it gives simple limits)
-  }
+    //param->height *= kerr_rplus(param->a); // convert to rg (we fit in EH units as it gives simple limits)
+  //}
 
   param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 0.0);
 
