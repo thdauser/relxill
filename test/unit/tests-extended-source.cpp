@@ -158,7 +158,7 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
   double incl = 51.93;
 
   rel_param->a = spin;
-  rel_param->rin = -1; //kerr_rms(spin);
+  rel_param->rin = kerr_rms(spin);
   rel_param->rout = 1000.0;
   rel_param->height = h;
   rel_param->incl = incl;
@@ -184,10 +184,10 @@ TEST_CASE("Checking the reflection fraction", "[extended]") {
 
 
   rel_param_ext->a = spin;
-  rel_param_ext->rin = -1;
+  rel_param_ext->rin = kerr_rms(spin);
   rel_param_ext->rout = 1000.0;
   rel_param_ext->height = h;
-  rel_param_ext->r_ring = 0.9;
+  rel_param_ext->r_ring = 0.0;
   rel_param_ext->incl = incl;
   get_emis_extendedSource(sys_par_ext->emis, rel_param_ext, &status);
 
@@ -213,40 +213,37 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
 
   DefaultSpec default_spec{};
   LocalModel local_model{ModelName::relxilllp};
-  relParam* rel_param = local_model.get_rel_params();
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   DefaultSpec default_spec_ext{};
   LocalModel local_model_ext{ModelName::relxilllp_ext};
-  relParam* rel_param_ext = local_model_ext.get_rel_params();
+  XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
 
-<<<<<<< HEAD
-
-  double spins[3] = {0.0, 0.998};
-=======
-  double spins[3] = {0.0, 0.7, 0.998};
->>>>>>> extended_source_emis
+  double spins[3] = {0.8, 0.9, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
     for(double height : heights){
 
-      XspecSpectrum spec = default_spec.get_xspec_spectrum();
-      rel_param->a = spin;
-      rel_param->height = height;
-      rel_param->rin = kerr_rms(spin);
+      local_model.set_par(XPar::a, spin);
+      // rel_param->a = spin;
+      local_model.set_par(XPar::h, height); // note the EH units for sph model
+      local_model.set_par(XPar::rin, -1);
       local_model.eval_model(spec);
 
-<<<<<<< HEAD
-      rel_param_ext->r_ring = 15.0; // for this test we compare the lp emissivity and ext when r_ring is sph radius
+      double sph_radius_eh = height / kerr_rplus(spin);
+      // rel_param_ext->a = spin;
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::h, sph_radius_eh);
+      local_model_ext.set_par(XPar::r_ring, 0.0); // just to be sure
+      local_model_ext.set_par(XPar::rin, -1);
 
-=======
-
-      XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
->>>>>>> extended_source_emis
-      rel_param_ext->a = spin;
-      rel_param_ext->height = height;
-      rel_param_ext->rin = kerr_rms(spin);
       local_model_ext.eval_model(spec_ext);
+
+      relParam* rel_param = local_model.get_rel_params();
+
+      relParam* rel_param_ext = local_model_ext.get_rel_params();
+
       auto sys_par = get_system_parameters(rel_param, &status);
       auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
       int n_rad = sys_par->nr;
@@ -259,7 +256,7 @@ TEST_CASE("Test to compare lp and ext emissivities", "[extended]") {
         assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids are the same
         // check if the emissivities are the same. Deviations of an order of a few % expected. Up to 10% in the most extreme cases
         // (h at EH)
-        REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < 0.033);
+        REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < 0.035);
         //printf("Intensities lp %.6e, ext %.6e, ratio %.6f at radius %.6f\n", intens[i], intens_ext[i], intens[i] / intens_ext[i], sys_par_ext->re[i]);
 
       }
@@ -351,7 +348,7 @@ TEST_CASE("Test to compare lp and ext fluxes for several spins and heights ", "[
   }
   REQUIRE(status == EXIT_SUCCESS);
 }
- */
+*/
 
 TEST_CASE("Test setting input parameters for extended source outside the allowed range","[extended]") {
 

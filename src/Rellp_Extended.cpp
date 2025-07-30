@@ -634,8 +634,8 @@ void calc_extended_emis(emisProfile *emisProf, const relParam *param,
   // Lensing is currently calculated with raytracing for disk size r_out = 10^3 rg.
   // Therefore at large heights we loose some fraction of photons (they go "under the disk")
   // That is why I add here this empirical correction, which plays some role at large h
-  emisProf->photon_fate_fractions->lensing /= (1.0 -
-      sqrt(param->height * param->height + param->r_ring * param->r_ring + param->a * param->a) / 1000.0);
+  //emisProf->photon_fate_fractions->lensing /= (1.0 -
+    //  sqrt(param->height * param->height + param->r_ring * param->r_ring + param->a * param->a) / 1000.0);
 
   // The last step is to add boost g^Gamma to observer, which could also be done in PrimarySource.h
   emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
