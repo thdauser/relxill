@@ -349,14 +349,19 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
   // Convert input degrees and immediately take cosine
-  // param->r_ring = cos(inp_param.get_otherwise_default(XPar::r_ring, 30) * M_PI / 180);
+  param->r_ring = cos(inp_param.get_otherwise_default(XPar::r_ring, 30) * M_PI / 180);
   // if fit cosine
-  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 1.0);
+  // param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 1.0);
+  // assert(param->r_ring <= 1.0 and param->r_ring > 0.0); // spherical model with this definition
   // then we internally convert r_ring and height from r, costheta to their usual meanings
-  param->height *= kerr_rplus(param->a);
+  param->height *= kerr_rplus(param->a); // to rg
+  // r_sph = height
+  // costheta = r_ring
+
   // i.e., h = r*costheta
   param->height = param->height * param->r_ring;
   // i.e., r_ring = sqrt(r^2 + a^2)*sintheta
+
   param->r_ring = calc_extent_from_sph_radius_costheta(param->height / param->r_ring,
                                                        param->r_ring, param->a);
   // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);

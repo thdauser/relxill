@@ -112,16 +112,31 @@ TEST_CASE("Default relxill Cp ext model call ", "[extended]") {
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relxilllpCp_ext};
-  double spin = 0.998;
-  double height = 2.0;
-  double r_ring = 0.9;
-  double incl = 30.0;
+  double spin = 0.995;
+  double height = 1.7; //1.355; //1.49;
+  double r_ring = 0.1356; //0.766;
+  double incl = 50.0;
+
   local_model.set_par(XPar::a, spin);
+
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::r_ring, r_ring);
   local_model.set_par(XPar::incl, incl);
 
   local_model.eval_model(spec);
+  /*
+  for (int i = 0; i < 1000; i++) {
+    local_model.set_par(XPar::a, spin);
+
+    local_model.set_par(XPar::h, height);
+    local_model.set_par(XPar::r_ring, r_ring + i / 1000.0 * (0.3 - r_ring));
+
+    std::cout << r_ring + i / 1000.0 * (0.3 - r_ring) << std::endl;
+    local_model.set_par(XPar::incl, incl);
+
+    local_model.eval_model(spec);
+  }
+   */
 
   REQUIRE(status == EXIT_SUCCESS);
 }
@@ -348,7 +363,7 @@ TEST_CASE("Test setting input parameters for extended source outside the allowed
 
   double height_below_horizon = 0.1;
   lmod.set_par(XPar::h, height_below_horizon);
-  lmod.set_par(XPar::r_ring, 1.5);
+  lmod.set_par(XPar::r_ring, 0.5);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
 

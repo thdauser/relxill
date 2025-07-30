@@ -24,11 +24,13 @@
 
 /** dimensions of the ES table */
 #define EXT_TABLE_NA 20 // number of spin values
-#define EXT_TABLE_NHEIGHT 54 // number of height values
+#define EXT_TABLE_NHEIGHT 58 // number of height values
 #define EXT_TABLE_NDISTANCE 50 // number of distance values
 #define EXT_TABLE_NRAD 99  // number of radial bin values
 #define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
-#define EXT_TABLE_FILENAME "table_v9_lowheight.fits"
+#define EXT_TABLE_FILENAME "table_v9.1_lowheight.fits"
+// const std::string EXT_TABLE_FILENAME_ {"table_v9.1_lowheight.fits"};
+
 
 /** dimensions of the primary table */
 #define PRIM_TABLE_NA 11 // number of spin values
@@ -41,7 +43,9 @@
 typedef struct {
 
   double *height;
+
   double **r_ring;
+  // std::vector<std::vector<double>> r_ring;
   double *bin; // was radius. Now either radius or inclination
   double ***val; // was flux. Now either flux or lensing_factor
   double ***gshift;
@@ -50,6 +54,7 @@ typedef struct {
   double **f_inf;
   double **f_bh; // now only primary table contains it
   double ****energy_data_storage;
+  // std::vector<std::vector<std::vector<std::vector<double>>>> energy_data_storage;
 
 } extendedSourceData;
 

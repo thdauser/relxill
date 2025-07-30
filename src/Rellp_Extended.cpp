@@ -224,7 +224,7 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
     // but if tabulated extents will differ for different heights - it will matter
     get_ipol_factor_double(param->r_ring, tab->dat[ipol.ind_a + ii]->r_ring[index], tab->n_r,
                            &(ipol.ind_x[ii]), &(ipol.ifac_x[ii]));
-    if (ipol.ifac_x[ii] < 0.0 or ipol.ifac_x[ii] > 1.0){
+    if (ipol.ifac_x[ii] < 0.0 or ipol.ifac_x[ii] > 1.0) {
       // should not happen in the "normal" table, but can happen in low height table
       printf(" *** Warning : extent interpolation becomes extrapolation: ifac_x = %.1f \n", ipol.ifac_x[ii]);
       printf(" *** The values: a = %.3f, h = %.3f, x = %.3f \n", param->a, param->height, param->r_ring);
@@ -239,15 +239,15 @@ void get_ipol_factors_a_h_x(const relParam *param, const extendedSourceTable *ta
  */
 void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_x[2],
                                        double ****energy_shift_bins, int num_bins, int num_shift_bins, double gamma){
-  for (int i : {ind_h[0], ind_h[0] + 1, ind_h[1], ind_h[1] + 1}) { // vertical bins, ind_h
-    for (int j : {ind_x[0], ind_x[0] + 1, ind_x[1], ind_x[1] + 1}) { // radial extent bins, ind_r
-      for (int k = 0; k < num_bins; k++) { // disk radial bins or lensing inclination bins
+  for (int i_h : {ind_h[0], ind_h[0] + 1, ind_h[1], ind_h[1] + 1}) { // vertical bins, ind_h
+    for (int j_x : {ind_x[0], ind_x[0] + 1, ind_x[1], ind_x[1] + 1}) { // radial extent bins, ind_r
+      for (int k_rad = 0; k_rad < num_bins; k_rad++) { // disk radial bins or lensing inclination bins
         double sum = 0.0; // sum is zeroed every time
-        for (int l = 0; l < num_shift_bins; l++) { // energy shift bins
-          sum += pow(energy_shift_bins[i][j][k][l], gamma);
+        for (int l_en = 0; l_en < num_shift_bins; l_en++) { // energy shift bins
+          sum += pow(energy_shift_bins[i_h][j_x][k_rad][l_en], gamma);
           assert(sum >= 0.0);
         }
-        dat_ind_a.gshift[i][j][k] = sum / num_shift_bins;
+        dat_ind_a.gshift[i_h][j_x][k_rad] = sum / num_shift_bins;
       }
     }
   }
@@ -255,7 +255,7 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int 
 
 // a bit of duplicated functions for now. I am not sure what is a better way to avoid duplications
 //TODO avoid duplications
-double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, double bin_val, double gamma) {
+double calc_energy_shift_gamma(const extendedSourceTable *tab, InterpFactors ipol, double bin_val, double gamma) {
   // do interpolation between bin values due to the fact: if binning at different spins/whatever is different --
   // we have a slight shift of obtained values. In perspective would be good to divide these cases
   int ind_bin_lo, ind_bin_hi;
@@ -306,7 +306,8 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
   double tab_hi_01 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
   double tab_hi_10 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi + 1]);
   double tab_hi_11 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi], tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
-/*
+  // linterp? https://rncarpio.github.io/linterp/
+  /*
   double g_gamma_low = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin],
                                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin],
@@ -331,6 +332,7 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
   double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                                           tab_lo_00,tab_lo_01,tab_lo_10,tab_lo_11,
                                           tab_hi_00,tab_hi_01,tab_hi_10,tab_hi_11);
+  assert(g_gamma >= 0.0);
   return g_gamma;
 }
 
@@ -477,6 +479,11 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
 
   char fullfilename[999];
 
+  //try {
+    // instead of do while ....
+    //throw std::exception("extended source table already loaded\n");
+  //} catch {*status = EXIT_FAILURE;}
+
   do {
     if (tab != nullptr) {
       RELXILL_ERROR("extended source table already loaded\n", status);
@@ -499,6 +506,8 @@ void read_extendedSource_table(const char *filename, extendedSourceTable **inp_t
     // get the full filename
     if (sprintf(fullfilename, "%s/%s", get_relxill_table_path(), filename) == -1) {
       RELXILL_ERROR("failed to construct full path the rel table\n", status);
+
+
       break;
     }
 
@@ -691,6 +700,7 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
       //printf("Warning, radius interpolation out of bounds, at high spin interp factor is: %.6f at radius: %.6f\n", fac_rhi, radial_grid[ii]);
     //}
 
+
     tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
     tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
     tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo], tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
@@ -699,6 +709,9 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
     tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
     tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
     tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi], tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    // if (tab_lo_00 < 0)
+    // set to zero? Or how?
+
     emis_profile_table->emis[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                                                           tab_lo_00,tab_lo_01,
                                                           tab_lo_10,tab_lo_11,
@@ -721,10 +734,17 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
                                             tab_hi_00,tab_hi_01,
                                             tab_hi_10,tab_hi_11);
 
-
+    assert(g_gamma >= 0.0);
     // this line accounts for g^Gamma:
     emis_profile_table->emis[ii] *= g_gamma; // in fact, this is "boost" of the flux, which for lp model is taken
     // into account only in calc_fluxboost_source_disk
+    // std::cout << emis_profile_table->emis[ii] << std::endl;
+    if (emis_profile_table->emis[ii] < 0.0) {
+      printf("Values before assert fail %d %d %d %d %d %.6f %.6f %.6f\n", ipol.ind_a, ipol.ind_h[0], ipol.ind_x[0], ipol.ind_h[1], ipol.ind_x[1], fac_rlo, fac_rhi, emis_profile_table->emis[ii]);
+      printf("Values before assert fail %.6f %.6f %.6f %.6f %.6f\n", ipol.ifac_a, ipol.ifac_h[0], ipol.ifac_h[1], ipol.ifac_x[0], ipol.ifac_x[1]);
+      printf("Values before assert fail %.6f %.6f %.6f %.6f\n",tab->dat[ipol.ind_a]->height[ipol.ind_h[0]], tab->dat[ipol.ind_a]->height[ipol.ind_h[1]], tab->dat[ipol.ind_a]->r_ring[ipol.ind_h[0]][ipol.ind_x[0]], tab->dat[ipol.ind_a + 1]->r_ring[ipol.ind_h[1]][ipol.ind_x[1]]);
+
+    }
     assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
   }
   return emis_profile_table;
@@ -790,13 +810,19 @@ extendedSourceData *new_extendedSourceData(int *status, bool lensing) {
     n_shift = PRIM_TABLE_NENERGYBINS;
   }
   auto *dat = (extendedSourceData *) malloc(sizeof(extendedSourceData));
+  // std::vector<extendedSourceData> dat; -- no need
+  // RAII
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
   dat->height = (double *) malloc(sizeof(double) * n_h);
+  // std::vector<double> m_height; // in class def
+  // m_height.reserve(n_h); // if class m_
+
   CHECK_MALLOC_RET_STATUS(dat->height, status, nullptr)
 
   dat->r_ring = (double **) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->r_ring, status, nullptr)
+  // n_h * n_x vector
 
   dat->bin = (double *) malloc(sizeof(double) * n_bin);
   CHECK_MALLOC_RET_STATUS(dat->bin, status, nullptr)
@@ -822,7 +848,7 @@ extendedSourceData *new_extendedSourceData(int *status, bool lensing) {
   dat->energy_data_storage = (double ****) malloc(sizeof(double) * n_h);
   CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
-  for (int i=0; i<EXT_TABLE_NHEIGHT; i++){
+  for (int i=0; i < n_h; i++){
 
     dat->refl_frac[i] = (double *) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
