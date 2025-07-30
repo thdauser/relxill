@@ -28,7 +28,7 @@
 #define EXT_TABLE_NDISTANCE 17 // number of distance values
 #define EXT_TABLE_NRAD 99  // number of radial bin values
 #define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
-#define EXT_TABLE_FILENAME "table_v1_sph.fits"
+#define EXT_TABLE_FILENAME "rel_extended_source.fits"
 // const std::string EXT_TABLE_FILENAME_ {"table_v9.1_lowheight.fits"};
 
 
@@ -38,7 +38,7 @@
 #define PRIM_TABLE_NDISTANCE 17 // number of distance values
 #define PRIM_TABLE_NINCL 20  // number of inclination bins
 #define PRIM_TABLE_NENERGYBINS 20 // number of energy bin values
-#define PRIM_TABLE_FILENAME "prim_table_v1_sph.fits"
+#define PRIM_TABLE_FILENAME "prim_extended_source.fits"
 
 typedef struct {
 

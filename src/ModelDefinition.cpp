@@ -264,7 +264,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
       /// Not actual for version 2 with angles in table:
       // h_fac = 0.2; // the lowest possible height in rg for extended source
-      double r_fac = 1.1; // not less than 1.3 EH (actually for h >= 0.5 rg it can be 1.2 EH)
+      double r_fac = 1.2; // not less than 1.3 EH (actually for h >= 0.5 rg it can be 1.2 EH)
       /*
       if ((h_fac - param->height) > 1e-4) {
         if (!warned_height) {
@@ -285,11 +285,11 @@ void check_parameter_bounds(relParam *param, int *status) {
           printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
           // printf("      Height, eXtent = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
           printf("      Spherical radius, polar angle = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
-          printf("      Spherical radius = %.4f r_g, 1.3EH = %.4f r_g \n", param->height, r_fac * r_event);
+          printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f r_g \n", param->height, r_fac * r_event);
           //r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
           // keeping costheta constant and re-define radius
           //param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
-          printf("(too close to BH) Re-setting eXtent, polar angle kept constant \n");
+          printf("(too close to BH) Re-setting radius, polar angle kept constant \n");
           //printf("(too close to BH) Setting eXtent to = %.4f*r_g, polar angle kept constant \n", param->r_ring);
           // always print while debug it (DONT FORGET)
           warned_extent = 1;
