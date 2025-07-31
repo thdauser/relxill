@@ -439,7 +439,7 @@ int get_geometry_switch(const ModelDefinition &params) {
   && params.get_model_name() != ModelName::relline_ext) { // REALLY need to define just new type of EMIS_TYPE
     return GEOMETRY_LP; // what about models with no geometry?
   } else {
-    printf("Geometry number: %ld \n", lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+    // printf("Geometry number: %ld \n", lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
     return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
   }
 }
