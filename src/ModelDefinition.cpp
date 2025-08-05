@@ -269,7 +269,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     if (param->prim_geometry_type == GEOMETRY_RING) {
       if (param->x < 0.0) {
         if (not warned_ring_radius) {
-          printf(" *** Warning : Ring source cannot have negative size (r < %.1f r_event) \n", 0.0);
+          printf(" *** Warning : Ring source cannot have negative size (x = %.1f r_g) \n", param->x);
           printf("      Setting    x = 0.0 rg \n");
         }
         warned_ring_radius = 1;
@@ -279,13 +279,14 @@ void check_parameter_bounds(relParam *param, int *status) {
     if (param->prim_geometry_type == GEOMETRY_DISK) {
       if (param->x < 0.1) {
         if (not warned_slab_radius) {
-          printf(" *** Warning : Disk source cannot have too small size (r < %.1f r_event) \n", 0.1);
+          printf(" *** Warning : Disk source cannot have too small size (r = %.1f r_g) \n", param->x);
           printf("      Setting    x = 0.1 rg \n");
         }
         warned_slab_radius = 1;
         param->x = 0.1;
       }
       // new: for disk model we also check that inner edge is less than outer (x)
+      // alternatively: we can reset geometry type to ring if x_in >= x
       if (param->x <= param->x_in) {
         if (not warned_slab_bound) {
           printf(" *** Warning : x_in >= x outer edge cannot be smaller than inner edge \n");
