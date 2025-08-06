@@ -24,14 +24,14 @@ extern "C" {
 #include "relutility.h"
 }
 
-/* using an universal energy grid for calculating a BBODY spectrum
+/* using a universal energy grid for calculating a BBODY spectrum
  * this will save us many mallocs and loops
  * Function "get_std_bbody_energy_grid" will set up the grid
  */
 #define N_BBODY_ENER 500
 #define EMIN_BBODY 0.01
 #define EMAX_BBODY 50
-double *global_bbody_ener_std = NULL;
+double *global_bbody_ener_std = nullptr;
 
 
 returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,

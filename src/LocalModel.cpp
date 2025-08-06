@@ -18,6 +18,7 @@
 
 #include "LocalModel.h"
 #include "XspecSpectrum.h"
+#include "JedSad.h"
 
 #include <stdexcept>
 #include <iostream>
@@ -57,13 +58,34 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
 
   int status = EXIT_SUCCESS;
-  if (m_model_params.irradiation() == T_Irrad::Const){
+  if (m_model_params.irradiation() == T_Irrad::Const) {
     relParam *rel_param = LocalModel::get_rel_params();
     xillParam *xill_param = LocalModel::get_xill_params();
     relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), xill_param, rel_param, &status);
     delete rel_param;
     delete xill_param;
+
   } else {
+
+    if (LocalModel::m_model_params.get_model_name() == ModelName::relxill_jedsad) {
+
+      // convert jedsad parameters to Gamma/Ecut
+      auto primespec_params = convert_jedsad_to_primaryspec_params(m_model_params);
+
+      // add these parameters to the input list
+      m_model_params.insert_par(XPar::gamma, primespec_params.gamma);
+      m_model_params.insert_par(XPar::ecut, primespec_params.ecut);
+
+      if (primespec_params.gamma < 1e-8 || primespec_params.ecut < 1e-8) {
+        printf(" *** warning: jedsad parameters are 0, no reflection calculated\n");
+        setArrayToZero(spectrum.flux, spectrum.num_flux_bins());
+        return;
+      } else if (is_debug_run()) {
+        printf(" *** debug: jedsad parameters: gamma=%f, ecut=%f\n", primespec_params.gamma, primespec_params.ecut);
+      }
+
+    }
+
     relxill_kernel(spectrum, m_model_params, &status);
   }
 

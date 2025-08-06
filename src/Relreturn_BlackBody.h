@@ -56,7 +56,7 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
 
 
 void relxill_bb_kernel(double *ener_inp,
-                       double *spec_inp,
+                       double *specOutput,
                        int n_ener_inp,
                        xillParam *xill_param,
                        relParam *rel_param,
@@ -64,15 +64,11 @@ void relxill_bb_kernel(double *ener_inp,
 
 double *getRadialGridFromReturntab(returnSpec2D *spec, int* status);
 
-double * getXillverPrimaryBBodyNormalized(double kTbb, double* spec_in, double* ener, int n_ener, int* status);
+double *getXillverPrimaryBBody(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
-double calcXillverNormfacRetrad2BoodyAtHighenergy(double kTbb,
-                                                  double *spec_in,
-                                                  double *spec_bb,
-                                                  double *ener,
-                                                  int n_ener);
+double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, double *ener, int n_ener, int *status);
 
-double *scaledXillverPrimaryBBodyHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
+double *getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
 void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_multizone *rel_profile, const returnSpec2D *returnSpec,
                                          double *xill_flux_returnrad, int izone, int *status);

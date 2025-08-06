@@ -13,70 +13,16 @@
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2021 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2025 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-#include "LocalModel.h"
-#include "XspecSpectrum.h"
 
-#include <chrono>
-
-extern "C" {
-#include "relutility.h"
-}
-
-
-
-void eval_local_model_param_range(ModelName model_name, XPar param, double pmin, double pmax, int npar){
-
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-
-  LocalModel local_model(model_name);
-
-  // local_model.set_par(XPar::switch_switch_source_geometry, 2); // tmp for extended geometry speed test
-
-  for (int ii=0; ii<npar; ii++){
-    double param_value = (pmax - pmin) * ( static_cast<double>(ii) / static_cast<double>(npar) );
-    local_model.set_par(param, param_value);
-    local_model.eval_model(spec);
-  }
-
-}
-
-void eval_model_energy_grid_change(ModelName model_name, double eup_min, double eup_max, int npar) {
-
-  const double elo = 0.1;
-  const size_t nbins = 2000;
-
-  LocalModel local_model(model_name);
-
-  for (int ii = 0; ii < npar; ii++) {
-    double eup = (eup_max - eup_min) * (static_cast<double>(ii) / static_cast<double>(npar));
-    DefaultSpec default_spec{elo, eup, nbins};
-    XspecSpectrum spec = default_spec.get_xspec_spectrum();
-    local_model.eval_model(spec);
-  }
-}
-
-
-void eval_model_relat_param_changes(ModelName model_name, const int num_evaluations){
-  XPar rel_param = XPar::a;
-  eval_local_model_param_range(model_name, rel_param, 0.5, 0.998, num_evaluations);
-}
-
-void eval_model_xillver_param_changes(ModelName model_name, const int num_evaluations){
-  XPar rel_param = XPar::afe;
-  // only choose a small difference here such that the table does not need to be re-loaded
-  eval_local_model_param_range(model_name, rel_param, 3.1, 3.2, num_evaluations);
-}
-
+#include "subs_speed_test.h"
 
 // ------------------------- //
 int main(int argc, char *argv[]) {
 
-  if (argc < 2)  {
+  if (argc < 2) {
     printf(" Missing argument: ");
     printf("./speed_test <model> [<rel|m_cache_xill>]");
   } else {
@@ -85,16 +31,16 @@ int main(int argc, char *argv[]) {
 
     const int num_zones = 25;
     setenv("RELXILL_NUM_RZONES", std::to_string(num_zones).c_str(), 1);
-    printf(" testing %s for number of zones %i \n",argv[1], num_zones);
+    printf(" testing %s for number of zones %i \n", argv[1], num_zones);
 
     ModelName model_name = ModelDatabase::instance().model_name(std::string(argv[1]));
 
     auto tstart = std::chrono::steady_clock::now();
 
-    if (argc==2){
+    if (argc == 2) {
       static_assert(num_evaluations > 1);
-      eval_model_relat_param_changes(model_name, num_evaluations/2);
-      eval_model_xillver_param_changes(model_name, num_evaluations/2);
+      eval_model_relat_param_changes(model_name, num_evaluations / 2);
+      eval_model_xillver_param_changes(model_name, num_evaluations / 2);
     } else {
 
       if (std::string(argv[2]) == "rel") {
@@ -110,7 +56,7 @@ int main(int argc, char *argv[]) {
 
 
     auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
-        (std::chrono::steady_clock::now() - tstart ).count();
+        (std::chrono::steady_clock::now() - tstart).count();
 
     printf("Time elapsed:              %.2fsec\n", static_cast<double>(time_elapsed_msec) * 0.001);
     printf("Time per model evaluation: %.0fmsec ", static_cast<double>(time_elapsed_msec) / num_evaluations);

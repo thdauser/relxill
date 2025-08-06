@@ -159,7 +159,6 @@ define check_single_model(fn){ %{{{
    variable m_dat = eval_fun_keV(dat.bin_lo,dat.bin_hi);
    dat = struct_combine(dat, struct{model=m_dat} );
    
-   struct_filter(dat, where(dat.value != 0) );
    struct_filter(dat, where(dat.value > 1e-10) );
    
    variable ind = where(600 > dat.bin_lo>0.2);

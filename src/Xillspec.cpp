@@ -176,7 +176,7 @@ EnerGrid *get_coarse_xillver_energrid() {
   return global_xill_egrid_coarse;
 }
 
-double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status) {
+double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, const int n, int *status) {
   /* get the normalization of the spectrum with respect to xillver
  *  - everything is normalized using dens=10^15 cm^3
  *  - normalization defined, e.g., in Appendix of Dauser+2016
@@ -310,7 +310,8 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
 
   // calculate the normalization at the primary source (i.e., not shifted by the energy shift)
   double const
-      norm_factor_prim_spec = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, status);
+      norm_factor_prim_spec = 1. /
+                              calcXillverNormFromPrimarySpectrum(prim_spec_source, egrid->ener, egrid->nbins, status);
   delete[] prim_spec_source;
 
   // if we have the LP geometry defined, the spectrum will be different between the primary source and the observer
@@ -377,7 +378,8 @@ double calc_xillver_normalization_change(double energy_shift, const xillTablePar
   auto prime_spec = new double[egrid->nbins];
 
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
-  double source_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+  double source_spec_norm_factor = 1. /
+                                   calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
   // normalized source spec: prime_source_source*source_spec_norm_factor
 
   // get parameters for the source spectrum (ecut shifted in energy)
@@ -387,7 +389,8 @@ double calc_xillver_normalization_change(double energy_shift, const xillTablePar
 
   // calculate the primary spectrum at the source
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_source, &status);
-  double disk_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+  double disk_spec_norm_factor =
+      1. / calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
   // normalized prime spec: prime_spec_disk*disk_spec_norm_factor
 
   delete xill_param_source;
@@ -414,7 +417,8 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
   auto prime_spec = new double[egrid->nbins];
 
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
-  double source_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+  double source_spec_norm_factor = 1. /
+                                   calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
   // normalized disk spec: prime_spec_source*source_spec_norm_factor
 
   auto norm_factors = new double[n_zones];
@@ -427,7 +431,8 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
 
     // calculate the primary spectrum at the source
     calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_disk, &status);
-    double disk_spec_norm_factor = 1. / calcNormWrtXillverTableSpec(prime_spec, egrid->ener, egrid->nbins, &status);
+    double disk_spec_norm_factor = 1. /
+                                   calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
     // normalized prime spec: prime_spec_source*source_spec_norm_factor
 
     norm_factors[ii] = disk_spec_norm_factor / source_spec_norm_factor;
@@ -574,7 +579,7 @@ void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *d
 
 
 /**
- * @Function: get_xillver_angdep_spec
+ * @Function: calculateAngleWeightedXillverSpectrum
  * @Synopsis: Calculate the Angle Weighted Xillver Spectrum on the Standard Relxill Spectrum
  * @Input:  ener[n_ener]
  *         rel_dist[n_incl]
@@ -583,12 +588,12 @@ void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *d
  *  [reason for the required allocation is that this will be called in a large
  *   loop and otherwise we would need to allocate a 3000 bin array very often]
  **/
-void get_xillver_angdep_spec(double *o_xill_flux,
-                             double *ener,
-                             int n_ener,
-                             double *rel_dist,
-                             xillSpec *xill_spec,
-                             int *status) {
+void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
+                                           double *ener,
+                                           int n_ener,
+                                           double *rel_dist,
+                                           xillSpec *xill_spec,
+                                           int *status) {
 
   auto xill_angdist_inp = new double[xill_spec->n_ener];
 
@@ -613,13 +618,13 @@ void get_xillver_angdep_spec(double *o_xill_flux,
  * @param rel_cosne_dist
  * @param status
  */
-void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillParam* xill_param,
-                              double* rel_cosne_dist, int* status ){
+void getAnglecorrXillSpec(double *xill_flux, double *ener, int n_ener, xillParam *xill_param,
+                          double *rel_cosne_dist, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  xillSpec* xillSpecTable = get_xillver_spectra(xill_param, status);
-  get_xillver_angdep_spec(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecTable, status);
+  xillSpec *xillSpecAngles = get_xillver_spectra(xill_param, status);
+  calculateAngleWeightedXillverSpectrum(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
 
 }
 

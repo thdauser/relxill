@@ -33,7 +33,11 @@ define get_parvalues(_vmin, _vmax, n){
       (lo, hi) = linear_grid(abs(_vmin), abs(_vmax), n-1);
    }
 
-   return [lo,hi[-1]]*par_sign;
+   %% make sure that lowest and highest values is exactly the input
+   %% (otherwise it may create issues within the fit function evaluation)
+   lo[0] = _vmin;
+   
+   return [lo,_vmax]*par_sign;
 }
 
 

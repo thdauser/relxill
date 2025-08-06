@@ -138,7 +138,7 @@ void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const doub
                                    int re_rel, int re_xill, int izone, specCache *local_spec_cache, int *status);
 
 
-double calcNormWrtXillverTableSpec(const double *flux, const double *ener, const int n, int *status);
+double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, const int n, int *status);
 
 void set_stdNormXillverEnerygrid(int *status);
 // EnerGrid *get_coarse_xillver_energrid();

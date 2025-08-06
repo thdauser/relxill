@@ -1,3 +1,5 @@
+[2.5] Fixes a bug in the general relativistic weighting of the angle distribution in all relxill models. The details are described in Huang et al. (2025, arXiv:2506.00946). The main effect is for a flat emissivity and large inclination angles (70-80deg). Comparing v2.4 to v2.5 for NuSTAR data of EXO 1846–031 did not show any differences in the resulting parameters.
+
 [2.4]
 - changes definition of density parameter logN for density gradient models (now at the minimum value at 25/9*rin instead of at rin, as it is much less sensitive on the spin
 - implements additional caching for relxill to speed up evaluation for some cases

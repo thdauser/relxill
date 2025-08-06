@@ -1,7 +1,9 @@
-set(EXEC_FILES speed_test)
+set(EXEC_FILES speed_test speed_test_jedsad)
 
 foreach (execfile ${EXEC_FILES})
-    add_executable(${execfile} ${execfile}.cpp)
+    add_executable(${execfile} ${execfile}.cpp
+            subs_speed_test.cpp
+            subs_speed_test.h)
 
     target_link_libraries(${execfile} PUBLIC ${EXTRA_LIBS})
     target_link_libraries(${execfile} PUBLIC m cfitsio fftw3)

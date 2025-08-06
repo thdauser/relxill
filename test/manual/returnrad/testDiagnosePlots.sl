@@ -7,7 +7,7 @@ require("scripts/subs_filenames.sl");
 
 
 variable spin = 0.998;  %% currently only done for this value
-variable Tin = 1.0;
+variable Tin = 0.7;
 
 define getDiagnoseRframePlot(){ %{{{
    
@@ -66,19 +66,22 @@ define getDiagnoseXillverPlot(){ %{{{
 %}}}
 
 
-define getDiagnoseRelatSmearingPlot(){ %{{{
+
+
+
+define getDiagnoseRelxillBBPlot(){ %{{{
    
-   variable plotTitle = sprintf("Observer: Relat Refl. (solid), Primary BBody (dashed), Returning/Mirrord BBody  -- spin=%.3f",
+   variable plotTitle = sprintf("Relat Refl (solid), Primary BBody (dashed), Mirrord BBody (dotted)",
 				spin);
 
 
    variable files = getFilenameStruct();
-   variable fnames  = [files.fobs.reflect,files.fobs.primary,files.fobs.mirror];
+   variable fnames  = [files.fobs.reflect,files.fobs.primary, files.fobs.mirrorRefl];
    variable iRframe = [0,0,0];
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle);
    
-   pl.render(dir_plots+"diagnosePlotRelatSmearing.pdf");
+   pl.render(dir_plots+"diagnosePlotRelxillBB.pdf");
    
    return EXIT_SUCCESS;
 }
@@ -110,20 +113,24 @@ define createOutputFiles(){ %{{{
    load_xspec_local_models("build/");
    fit_fun("relxillBB");
    
-   putenv("RELXILL_WRITE_OUTFILES=1");
+   putenv("RELXILL_WRITE_FILES=1");
 
+   () = system("rm -f debug-testrr-bbody*");
+   
    message("  Creating Output Files (calling relxillBB model) ");
    
    set_par("*.a",spin);
    set_par("*.kTbb", Tin);
-   () = eval_fun(1,2);
+%   () = eval_fun(1,2);
    
    %% creating the "mirror" files
    putenv("RELXILL_BBRET_NOREFL=1");
 
-   set_par("*.Rout",100);
+   set_par("*.Rout",400);
    set_par("*.boost",1.0);
-   set_par("*.Incl",60);
+   set_par("*.Incl",40);
+   set_par("*.logxi",1.0);
+   set_par("*.boost",1);
    () = eval_fun(1,2);
 
    set_par("*.boost",0);
@@ -132,8 +139,20 @@ define createOutputFiles(){ %{{{
    set_par("*.boost",-1.0,0,-10,10);
    () = eval_fun(1,2);
    
+
+   %% creating the "reflection" files
+   putenv("RELXILL_BBRET_NOREFL=0");
+
+   set_par("*.boost",1);
+   () = eval_fun(1,2);
    
-   putenv("RELXILL_WRITE_OUTFILES=0");
+   set_par("*.boost",-1.0,0,-10,10);
+   () = eval_fun(1,2);
+
+   set_par("*.boost",0.0,0,-10,10);
+   () = eval_fun(1,2);
+
+   putenv("RELXILL_WRITE_FILES=0");
    putenv("RELXILL_BBRET_NOREFL=0");
 }
 %}}}
@@ -146,10 +165,9 @@ define testDiagnosePlots(){
 
    if (getDiagnoseMirrorBbody() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+   if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
    
-%   if (getDiagnoseXillverPrimPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-%   if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-%   if (getDiagnoseRelatSmearingPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
+   if (getDiagnoseRelxillBBPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
 
    return EXIT_SUCCESS;
 }

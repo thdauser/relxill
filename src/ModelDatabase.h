@@ -166,6 +166,7 @@ class ModelDatabase {
 
       {ModelName::relxillBB, ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)},
 
+      {ModelName::relxill_jedsad, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
   };
 };
 

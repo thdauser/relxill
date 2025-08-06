@@ -26,6 +26,7 @@ set(SOURCE_FILES
         Xillspec.cpp Xillspec.h
         PrimarySource.cpp PrimarySource.h
         Rellp_Extended.cpp Rellp_Extended.h
+        JedSad.cpp JedSad.h
         )
 ############################################
 

@@ -91,11 +91,11 @@ TEST_CASE(" normalization of LP primary spectrum", "[beta]") {
   auto prim_spec_source = new double[egrid->nbins];
   xill_param->ect = 100;
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, &status);
-  double norm_fac1 = 1./calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
+  double norm_fac1 = 1. / calcXillverNormFromPrimarySpectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
 
   xill_param->ect = 100;
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, &status, 0.3);
-  double norm_fac2 = 1. / calcNormWrtXillverTableSpec(prim_spec_source, egrid->ener, egrid->nbins, &status);
+  double norm_fac2 = 1. / calcXillverNormFromPrimarySpectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
 
   REQUIRE(norm_fac1 < norm_fac2);
 
