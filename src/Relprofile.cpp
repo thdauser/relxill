@@ -326,7 +326,7 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
     }
   } else {
     // NOT CACHED, so we need to calculate the system parameters
-    sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status);
+    sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status); // no need for ext geometry!
 
     CHECK_STATUS_RET(*status, nullptr);
 

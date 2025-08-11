@@ -239,18 +239,18 @@ void get_ipol_factors_a_h_x(const double a, const double h, const double x,
 /**
  * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
  */
-void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h[2], const int ind_x[2],
+void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int ind_h, const int ind_x,
                                        double ****energy_shift_bins, int num_bins, int num_shift_bins, double gamma){
-  for (int i : {ind_h[0], ind_h[0] + 1, ind_h[1], ind_h[1] + 1}) { // vertical bins, ind_h
-    for (int j : {ind_x[0], ind_x[0] + 1, ind_x[1], ind_x[1] + 1}) { // radial extent bins, ind_r
-      for (int k = 0; k < num_bins; k++) { // disk radial bins or lensing inclination bins
-        double sum = 0.0; // sum is zeroed every time
-        for (int l = 0; l < num_shift_bins; l++) { // energy shift bins
-          sum += pow(energy_shift_bins[i][j][k][l], gamma);
-          // here I can't avoid using assert because there is no "status" for this function, as well as one more below
-          assert(sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
+  for (int i_h : {ind_h, ind_h + 1}) { // vertical bins, ind_h
+    for (int j_x : {ind_x, ind_x + 1}) { // radial bins, ind_x
+      for (int k_b = 0; k_b < num_bins; k_b++) { // disk radial bins or lensing inclination bins
+                                            // (in this function we go through all bins)
+        double _sum = 0.0; // sum is zeroed every time
+        for (int l_e = 0; l_e < num_shift_bins; l_e++) { // energy shift bins
+          _sum += pow(energy_shift_bins[i_h][j_x][k_b][l_e], gamma);
+          assert(_sum > 0.0 || !"summation of g is negative, wrong value in table\n");
         }
-        dat_ind_a.gshift[i][j][k] = sum / num_shift_bins;
+        dat_ind_a.gshift[i_h][j_x][k_b] = _sum / num_shift_bins;
       }
     }
   }
@@ -266,40 +266,31 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
   get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin_lo, &ifac_bin_lo);
   get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_bin_hi, &ifac_bin_hi);
 
-  // some extra operations happen here, if we need only one bin in the end, not all
-  //calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
-                                    //tab->dat[ipol.ind_a]->energy_data_storage,
-                                    //tab->n_bin, tab->n_storage, gamma);
-  //calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h, ipol.ind_x,
-                                    //tab->dat[ipol.ind_a + 1]->energy_data_storage,
-                                    //->n_bin, tab->n_storage, gamma);
-
-  for (int a_i : {ipol.ind_a, ipol.ind_a + 1}) { // spin bins
-    for (int i : {ipol.ind_h[0], ipol.ind_h[0] + 1, ipol.ind_h[1], ipol.ind_h[1] + 1}) { // vertical bins
-      for (int j : {ipol.ind_x[0], ipol.ind_x[0] + 1, ipol.ind_x[1], ipol.ind_x[1] + 1}) { // radial extent bins
-        if (a_i == ipol.ind_a) {
-          for (int k : {ind_bin_lo, ind_bin_lo + 1}) { // disk radial bins or lensing inclination bins
-            double sum = 0.0; // sum is zeroed every time
-            for (int l = 0; l < tab->n_storage; l++) { // energy shift bins
-              sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
-              assert(sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
-            }
-            tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
-          }
+  for (int i_h : {ipol.ind_h[0], ipol.ind_h[0] + 1}) { // vertical bins
+    for (int j_x : {ipol.ind_x[0], ipol.ind_x[0] + 1}) { // radial extent bins
+      for (int k_b : {ind_bin_lo, ind_bin_lo + 1}) { // disk radial bins or lensing inclination bins
+        double _sum = 0.0; // sum is zeroed every time
+        for (int l_e = 0; l_e < tab->n_storage; l_e++) { // energy shift bins
+          _sum += pow(tab->dat[ipol.ind_a]->energy_data_storage[i_h][j_x][k_b][l_e], gamma);
+          assert(_sum > 0.0 || !"summation of g is negative, wrong value in table\n");
         }
-        else {
-          for (int k : {ind_bin_hi, ind_bin_hi + 1}) {
-            double sum = 0.0;
-            for (int l = 0; l < tab->n_storage; l++) {
-              sum += pow(tab->dat[a_i]->energy_data_storage[i][j][k][l], gamma);
-              assert(sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
-            }
-            tab->dat[a_i]->gshift[i][j][k] = sum / tab->n_storage;
-          }
-        }
+        tab->dat[ipol.ind_a]->gshift[i_h][j_x][k_b] = _sum / tab->n_storage;
       }
     }
   }
+  for (int i_h : {ipol.ind_h[1], ipol.ind_h[1] + 1}) { // vertical bins
+    for (int j_x : {ipol.ind_x[1], ipol.ind_x[1] + 1}) { // radial extent bins
+      for (int k_b : {ind_bin_hi, ind_bin_hi + 1}) {
+        double _sum = 0.0;
+        for (int l_e = 0; l_e < tab->n_storage; l_e++) {
+          _sum += pow(tab->dat[ipol.ind_a + 1]->energy_data_storage[i_h][j_x][k_b][l_e], gamma);
+          assert(_sum > 0.0 || !"summation of g is negative, wrong value in table\n");
+        }
+        tab->dat[ipol.ind_a + 1]->gshift[i_h][j_x][k_b] = _sum / tab->n_storage;
+      }
+    }
+  }
+
 
   double tab_lo_00 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo],
                                    tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo + 1]);
@@ -309,6 +300,7 @@ double calc_energy_shift_gamma(extendedSourceTable *tab, InterpFactors ipol, dou
                                    tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin_lo + 1]);
   double tab_lo_11 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo],
                                    tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo + 1]);
+
   double tab_hi_00 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi],
                                    tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi + 1]);
   double tab_hi_01 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi],
@@ -754,10 +746,10 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
   emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
 
   // It is duplicated and could be done inside of existing element-vise function for g_gamma
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h, ipol.ind_x,
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h[0], ipol.ind_x[0],
                                     tab->dat[ipol.ind_a]->energy_data_storage,
                           tab->n_bin, tab->n_storage, gamma);
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h, ipol.ind_x,
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h[1], ipol.ind_x[1],
                                     tab->dat[ipol.ind_a + 1]->energy_data_storage,
                           tab->n_bin, tab->n_storage, gamma);
 
@@ -788,6 +780,7 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
                               tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
     tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
                               tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+
     tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
                               tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
     tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],
@@ -811,6 +804,7 @@ emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, doub
                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
     tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
                               tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+
     tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
                               tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
     tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],

@@ -49,16 +49,19 @@ TEST_CASE("Default line model call ", "[extended]") {
   local_model.set_par(XPar::rout, 1000.0);
   local_model.set_par(XPar::h, height);
   local_model.set_par(XPar::x, x);
+  local_model.set_par(XPar::switch_switch_returnrad, 0);
+  local_model.set_par(XPar::gamma, 2.0);
 
   // slab-specific
   local_model.set_par(XPar::x_in, 0.0);
-  local_model.set_par(XPar::switch_switch_source_geometry, 2);
+  local_model.set_par(XPar::switch_switch_source_geometry, 1);
 
   REQUIRE_NOTHROW(local_model.eval_model(spec));
+  // local_model.eval_model(spec);
 
-  auto param = local_model.get_rel_params();
-  auto syspar = get_system_parameters(param, &status);
-  // save_emis_profiles(syspar); //only locally
+  //auto param = local_model.get_rel_params();
+  //auto syspar = get_system_parameters(param, &status);
+  // save_emis_profiles(syspar); //only local use
 
   REQUIRE(status == EXIT_SUCCESS);
 
