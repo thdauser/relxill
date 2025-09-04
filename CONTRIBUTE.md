@@ -77,6 +77,11 @@ therefore should only contain stable models with a stable interface.
    irradiation type (Lamp Post, Power Law, ...), and
    primary spectral shape (Cutoff-Powerlaw, Nthcomp, Blackbody) are set. 
 
+6) For proper caching of the new model, the new parameters unique for this model
+   have to be added for checks on updates to Relcache.cpp (functions 
+   `comp_sys_param`, `did_rel_param_change`, `set_cached_rel_param`, `set_cached_xill_param`). 
+   Otherwise these new parameters will not be properly updating inside of one xspec/isis/... session. 
+
 
 
 ## Test Setup

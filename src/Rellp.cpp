@@ -288,7 +288,7 @@ int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
   // "if" now accounts also for EXT type models. Eventually this needs to be restructured
   if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) &&
-        (param->model_type != MOD_TYPE_RELXILLLPEXT && param->model_type != MOD_TYPE_RELLINELPEXT)) {
+        param->prim_geometry_type == GEOMETRY_LP) {
     return 1;
   } else {
     return 0;
@@ -297,7 +297,17 @@ int modelLampPostPointSource(const relParam *param) {
 
 int modelLampPostRingSource(const relParam *param) {
   // simple explicit check for the model type, no replacement with other models. EXT models work fine with zero ring size
-  if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
+  // if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
+  // new approach with disks
+    if (param->prim_geometry_type == GEOMETRY_RING) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int modelDiskSource(const relParam *param) {
+  if (param->prim_geometry_type == GEOMETRY_DISK) {
     return 1;
   } else {
     return 0;
@@ -491,11 +501,13 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
   if (modelLampPostPointSource(param)) {
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
-  // param->emis_type
-   } else if (modelLampPostRingSource(param)){
-    get_emis_extendedSource(emis_profile, param, status);
-
+  // Do switch with param->emis_type instead?
+   } else if (modelLampPostRingSource(param)) {
+    calc_emis_ring_source(emis_profile, param, status); // switcher cannot be updated properly within one isis/xspec session - fix!
+  } else if (modelDiskSource(param)) {
+    calc_emis_disk_source(emis_profile, param, status);
   } else if (modelVertExtendSource(param)) {
+    // this case is just for two on-axis lp sources
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_extended(emis_profile, param, lp_table, status);
   } else {

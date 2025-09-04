@@ -191,7 +191,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
     cached_tab_sysPar->re[ii] = interp_lin_1d(ifac_a,
                                               tab->arr[ind_a][ind_mu0]->r[ii], tab->arr[ind_a + 1][ind_mu0]->r[ii]);
   }
-  // we have problems for the intermost radius due to linear interpolation (-> set to RISCO)
+  // we have problems for the innermost radius due to linear interpolation (-> set to RISCO)
   if ((cached_tab_sysPar->re[tab->n_r - 1] > kerr_rms(a)) &&
       ((cached_tab_sysPar->re[tab->n_r - 1] - kerr_rms(a)) / cached_tab_sysPar->re[tab->n_r - 1] < 1e-3)) {
     //		printf(" re-setting RIN from %.3f to %.3f (dr = %.2e)\n",cached_tab_sysPar->re[tab->n_r-1],kerr_rms(a),
@@ -326,7 +326,7 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
     }
   } else {
     // NOT CACHED, so we need to calculate the system parameters
-    sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status);
+    sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status); // no need for ext geometry!
 
     CHECK_STATUS_RET(*status, nullptr);
 
@@ -525,17 +525,13 @@ static double romberg_integration(double a, double b, int k, str_relb_func *str)
   const double prec = 0.02;
   double obtprec = 1.0;
   const int itermin = 0;
-  int itermax = 5;
+  const int itermax = 5;
   enum {
     maxiter = 6
   };
   double t[maxiter + 1][maxiter + 1];
 
   int niter = 0;
-
-  if (itermax > maxiter) {
-    itermax = maxiter;
-  }
 
   // check if this value has already been calculated
   double r;
@@ -803,7 +799,7 @@ int static get_cosne_bin(double mu, RelCosne *dat) {
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func *cached_str_relb_func = nullptr;
 
-static double calculate_radiallyResolvedFluxObs(str_relb_func *relb_func, relline_spec_multizone *spec, double weight) {
+static double calculate_radiallyResolvedFluxObs(str_relb_func *lb_func, relline_spec_multizone *spec, double weight) {
 
   double integRadialFlux = 0.0;
   for (int jj = 0; jj <= spec->n_ener; jj++) {
@@ -915,7 +911,7 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
             imu = get_cosne_bin(da->cosne[jj][kk], spec->rel_cosne);
 
             double tmp =
-                da->re * pow(2 * M_PI * g * da->re, 2) /
+                pow(2 * M_PI * g, 2) /
                     sqrt(da->gstar[jj] - da->gstar[jj] * da->gstar[jj]) *
                     da->trff[jj][kk] * da->emis
                     * weight * sysPar->d_gstar[jj];
@@ -925,12 +921,7 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
               printf(" *** backtrace %e %e %e %e %e %e\n",da->re, g, da->gstar[jj], da->trff[jj][kk], weight, da->emis);
               *status = EXIT_FAILURE;
             }
-
-            spec->rel_cosne->dist[izone][imu] +=
-                da->re * pow(2 * M_PI * g * da->re, 2) /
-                    sqrt(da->gstar[jj] - da->gstar[jj] * da->gstar[jj]) *
-                    da->trff[jj][kk] * da->emis
-                    * weight * sysPar->d_gstar[jj];
+            spec->rel_cosne->dist[izone][imu] += tmp;
           }
         }
       } /** end calculating angular distribution **/

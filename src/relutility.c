@@ -586,12 +586,14 @@ void _rebin_spectrum(const double *ener, double *flu, int nbins, const double *e
       if (ehi > ener0[imax + 1]) ehi = ener0[imax + 1];
 
       if (imax == imin) {
+        // flu0 needs to be interpolated
         flu[ii] = (ehi - elo) / (ener0[imin + 1] - ener0[imin]) * flu0[imin];
       } else {
 
         double dmin = (ener0[imin + 1] - elo) / (ener0[imin + 1] - ener0[imin]);
         double dmax = (ehi - ener0[imax]) / (ener0[imax + 1] - ener0[imax]);
 
+        // same here in principle
         flu[ii] += flu0[imin] * dmin + flu0[imax] * dmax;
 
         for (jj = imin + 1; jj <= imax - 1; jj++) {
@@ -815,4 +817,14 @@ void invertArray(double *vals, int n) {
 
 }
 
+
+void fits_movenam_hdu_cpp(fitsfile* fptr, int type, const char* extname, int extver, int* status){
+  fits_movnam_hdu(fptr, type, (char*) extname, extver, status);
+}
+
+double convert_to_isco(double rin_relxill, double a) {
+
+
+  return 0;
+}
 

@@ -258,7 +258,8 @@ TEST_CASE(" normalization of the primary continuum","[prim]"){
   auto pl_flux_xill = new double[egrid->nbins]; // global energy grid
   calc_primary_spectrum(pl_flux_xill, egrid->ener, egrid->nbins, xill_param, &status);
 
-  double primarySpecNormFactor = 1. / calcNormWrtXillverTableSpec(pl_flux_xill, egrid->ener, egrid->nbins, &status);
+  double primarySpecNormFactor = 1. /
+                                 calcXillverNormFromPrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, &status);
 
   for (int ii = 0; ii < egrid->nbins; ii++) {
     pl_flux_xill[ii] *= primarySpecNormFactor;

@@ -51,9 +51,10 @@ enum class XPar {
   kte,
   refl_frac,
   boost,
-  h,
+  h, // for extended corona, can be both height and spherical radius
   htop,
-  r_ring,
+  x, // ring radius/angle OR outer (corona) disk radius
+  x_in, // ONLY inner (corona) disk radius, no meaning for ring model
   beta,
   frac_pl_bb,
   ktbb,
@@ -62,9 +63,17 @@ enum class XPar {
   switch_switch_returnrad,
   switch_iongrad_type,
   shifttmaxrrad,  // only for testing relxillBB
+  switch_switch_source_geometry, // for extended corona geometries (ring, disk...)
   luminosity_source_1e38,
   distance,
-  mass
+  mass,
+  rj,        // parameter of jedsad
+  mdot,   // parameter of jedsad
+  omega,   // parameter of jedsad
+  mu,   // parameter of jedsad
+  ms,   // parameter of jedsad
+  b,   // parameter of jedsad
+  p   // parameter of jedsad
 };
 
 enum class AuxPar{
@@ -117,11 +126,11 @@ class ParamList {
  public:
 
   explicit ParamList( std::vector<XPar> parnames, std::vector<double> parvalues) :
-      m_parnames{std::move(parnames)}
+      m_parnames_xspec{std::move(parnames)}
   {
 
-    for (size_t ii = 0; ii < m_parnames.size() ; ++ii){
-      m_param.insert(std::make_pair(m_parnames[ii],parvalues[ii]));
+    for (size_t ii = 0; ii < m_parnames_xspec.size(); ++ii) {
+      m_param.insert(std::make_pair(m_parnames_xspec[ii], parvalues[ii]));
     }
   }
 
@@ -141,6 +150,9 @@ class ParamList {
     }
   }
 
+  void insert_par(XPar name, double value) {
+    m_param.insert(std::make_pair(name, value));
+  }
 
   auto &operator[](const XPar &name) const {
     try {
@@ -151,7 +163,7 @@ class ParamList {
   }
 
   auto num_params(){
-    return m_parnames.size();
+    return m_parnames_xspec.size();
   }
 
   bool does_parameter_exist(const XPar &name) const {
@@ -163,12 +175,12 @@ class ParamList {
   }
 
   auto get_parnames(){
-    return m_parnames;
+    return m_parnames_xspec;
   }
 
 
  private:
-  std::vector<XPar> m_parnames = {};  // need this as this needs to be in order given by Xspec TODO: could be fixed in xspec_wrapper
+  std::vector<XPar> m_parnames_xspec = {};  // need this as this needs to be in order given by Xspec TODO: could be fixed in xspec_wrapper
  protected:
   std::unordered_map<XPar, double> m_param = {};
 };
@@ -225,6 +237,5 @@ relParam *get_rel_params(const ModelDefinition &inp_param);
 xillParam *get_xill_params(const ModelDefinition &inp_param);
 
 int is_env_set(const char* envname, int default_value);
-
 
 #endif //RELXILL_SRC_MODELDEFINITION_H_

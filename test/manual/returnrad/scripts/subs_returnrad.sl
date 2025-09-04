@@ -92,8 +92,8 @@ define get_2d_plot(fdat,rframe,spin){
    variable pl = xfig_plot_new(13,10);
 
    pl.xlabel("Energy [keV]");
-   pl.ylabel("Energy Flux $F_\nu$"R);
-   pl.world(0.1,50,1e-4,7000;loglog);
+   pl.ylabel("Energy Flux $\nu\;F_\nu$"R);
+   pl.world(0.1,50,1e-4,700;loglog);
    
    fdat = [fdat];
    variable m = length(fdat);
@@ -116,11 +116,15 @@ define get_2d_plot(fdat,rframe,spin){
       variable elo = dat[jj].elo;
       variable ehi = dat[jj].ehi;
       variable emn = 0.5*(elo+ehi);
-      variable efac = emn/(ehi-elo);
+      variable efac = emn^2/(ehi-elo);
       
 
       pl.plot(emn,dat[jj].sumspec*efac; color="black",width=3,line=jj);
-                  
+
+      pl.add_object(xfig_new_text(sprintf("\fbox{$a = %.3f$}"R,spin);
+					     size="\footnotesize"R),
+				.03,0.99,-0.5,0.7;world0);
+      
       variable n = length(dat[jj].dat.spec[*,0]);
       variable mod_fac=9;
       _for ii(0,n-1){
@@ -130,10 +134,11 @@ define get_2d_plot(fdat,rframe,spin){
 	       pl.plot(emn,dat[jj].dat.spec[ii,*]*efac;color=get_col(), line=jj);
 	       
 	       if(jj==0){
-		  pl.add_object(xfig_new_text(sprintf("$r = %.2f\,r_\mathrm{g}$"R,
+		  pl.add_object(xfig_new_text(sprintf("$r = %.1f\,r_\mathrm{g}$"R,
 						      0.5*(dat[jj].dat.rlo[ii]+dat[jj].dat.rhi[ii]));
-					      color=get_col(;same)),
-				.78,0.95,-0.5,-0.5+1.1*ccount;world0);
+					      color=get_col(;same),
+					     size="\footnotesize"R),
+				.78,0.99,-0.5,-0.3+0.9*(ccount-1);world0);
 	       }
 	    }            	    
 	 }

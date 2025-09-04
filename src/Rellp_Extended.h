@@ -31,7 +31,6 @@
 #define EXT_TABLE_FILENAME "rel_extended_source_sph.fits"
 // const std::string EXT_TABLE_FILENAME_ {"table_v9.1_lowheight.fits"};
 
-
 /** dimensions of the primary table */
 #define PRIM_TABLE_NA 6 // number of spin values
 #define PRIM_TABLE_NHEIGHT 50 // number of height values
@@ -43,9 +42,8 @@
 typedef struct {
 
   double *height;
-
-  double **r_ring;
-  // std::vector<std::vector<double>> r_ring;
+  // std::vector<std::vector<double>> x;
+  double **x;
   double *bin; // was radius. Now either radius or inclination
   double ***val; // was flux. Now either flux or lensing_factor
   double ***gshift;
@@ -63,7 +61,7 @@ typedef struct {
   float *a;
   int n_a;
   int n_h;
-  int n_r;
+  int n_x;
   int n_bin;
   int n_storage;
   extendedSourceData **dat;
@@ -71,32 +69,30 @@ typedef struct {
 
 typedef struct {
   int ind_a;
-  double ifac_a; // simply between two spins
-  int ind_h[2]; // two values - 0 is for low spin, 1 is for high spin
+  double ifac_a; // factor between two spins
+  int ind_h[2]; // two values - 0 is for lower spin of interpolation, 1 is for higher spin
   double ifac_h[2];
   int ind_x[2];
   double ifac_x[2];
 } InterpFactors;
 
-// no need to declare it really
-// extendedSourceTable* get_es_table(int* status);
-
-// these three I really need outside, all other - arguable
-void get_emis_extendedSource(emisProfile *emisProf, const relParam *param, int *status);
+// these I really need outside, all other below - arguable
+void calc_emis_ring_source(emisProfile *emisProf, const relParam *param, int *status);
+void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *status);
 double get_energyboost_ext_source_obs(const relParam *param, double gamma);
 double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma);
 
 
 // do I need to declare these two? I could just re-arrange code. Same applies to all below
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
-void calc_extended_emis(emisProfile *emisProf, const relParam *param,
-                        extendedSourceTable *tab, extendedSourceTable *prim_tab, int *status);
+void calc_ring_emis(emisProfile *emisProf, double a, double h, double x, double gamma, extendedSourceTable *tab, int *status);
+void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedSourceTable *tab, int *status);
 
 
 emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);
 
 // constructors and destructors
-extendedSourceTable *new_extendedSourceTable(int n_h, int n_r,
+extendedSourceTable *new_extendedSourceTable(int n_h, int n_x,
                                              int n_a, int n_bin, int n_storage,
                                              int *status);
 

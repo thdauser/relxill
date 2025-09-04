@@ -55,10 +55,11 @@ refl_frac  ""   1.       -1000       0       10.        1000.       -0.001
 z        ""    0.    0.      0.      10.       10.       -0.001
 $switch_reflfrac_boost 1
 
-relline_lp_ext       11  0.         1.e20            c_lmodrellinelpext     add  0
+relline_ext       13  0.         1.e20            c_lmodrellinelpext     add  0
 lineE   keV     6.4   0.01    0.1     10.0       100.0     1.0
-h   EH(sph)     5.0   -40.0   1.2     40.0       40.0     0.01
-r_ring deg(theta)    0.0   0.0    0.0    75.0    80.0   0.5
+h   EH(sph)_or_rg     5.0   -40.0   1.2     40.0       40.0     0.01
+x deg    0.0   0.0    0.0    75.0    80.0   0.5
+x_in   GM/c^2(NEEDUPDATE)     0.0   0.0    0.0    45.0    50.0   0.01
 a        ""    0.998 -0.998     -0.998     0.998     0.998      0.1
 Incl    deg     30.   3.      5.      80.       87.       -1
 Rin  ""    -1.   -100.     -100.     -1.      -1.      -0.1
@@ -67,10 +68,12 @@ z        ""    0.    0.      0.      10.       10.       -0.001
 limb     ""     0.      0.      0.      2.      2.      -1.
 gamma        ""    2 -10 1 4 10      -0.01
 $switch_returnrad 1
+$switch_source_geometry 1
 
-relxilllp_ext     15  0.         1.e20          c_lmodrelxilllpext     add  0
-h   EH(sph)     5.0   -40.0   1.2     40.0       40.0     0.01
-r_ring deg(theta)    0.0   0.0    0.0    75.0    80.0   0.5
+relxill_ext_ecut     17  0.         1.e20          c_lmodrelxilllpext     add  0
+h   EH_or_rg     5.0   -40.0   1.2     40.0       40.0     0.01
+x   deg    0.0   0.0    0.0    75.0    80.0   0.5
+x_in   GM/c^2(NEEDUPDATE)     0.0   0.0    0.0    45.0    50.0   0.01
 beta   c     0.0   0.0   0.0     0.9       0.99     -0.001
 a        ""    0.998 -0.998     -0.998     0.998     0.998      0.1
 Incl    deg     30.   3.      5.      80.       87.       1.0
@@ -84,15 +87,16 @@ Ecut      keV    300.       5.       5.       1000.        1000.   -0.1
 refl_frac  ""   1.0       -1000       0       10.        1000.       0.01
 $switch_returnrad 1
 $switch_reflfrac_boost 0
+$switch_source_geometry 1
 
-
-relxilllpCp_ext     18  0.         1.e20          c_lmodrelxilllpextdensnthcomp     add  0
+relxill_ext     20  0.         1.e20          c_lmodrelxilllpextdensnthcomp     add  0
 Incl    deg     30.   3.      5.      80.       87.       -1
 a        ""    0.998 0.77     0.77     0.998     0.998      0.1
 Rin  ""    -1.   -100.     -100.     -1.      -1.      -0.1
 Rout ""    400.  1.     1.     400.      1000.      -0.1
-h   EH(sph)     5.0   -40.0   1.2     40.0       40.0     0.01
-r_ring deg(theta)    0.0   0.0    0.0    75.0    80.0   0.5
+h   EH_or_rg     5.0   -40.0   1.2     40.0       40.0     0.01
+x   deg    0.0   0.0    0.0    75.0    80.0   0.5
+x_in   GM/c^2(NEEDUPDATE)     0.0   0.0    0.0    45.0    50.0   0.01
 beta   c     0.0   0.0   0.0     0.99       0.99     0.001
 gamma    ""    2.       1.2      1.2       3.4       3.4       0.01
 logxi  ""    3.1      0.0      0.0       4.7       4.7       0.01
@@ -105,3 +109,26 @@ iongrad_index  ""    0.0      -10.0      0.0       3.0       10.0       -0.01
 $iongrad_type 0
 $switch_returnrad 1
 $switch_reflfrac_boost 0
+$switch_source_geometry 1
+
+relxill_jedsad       20  0.         1.e20            c_lmodrelxilljedsad     add  0
+Incl     deg   30.       3.       5.       80.       87.       -1.0
+a        ""    0.998   -0.998   -0.998     0.998     0.998     0.1
+Rin      ""   2    2    2       6       6       -0.1
+Rout     ""  400.       1.       1.      400.     1000.       -0.1
+Rbr      ""   15.0      1.0      1.0     400.     1000.       -0.1
+Index1   ""    3.     -10.     -10.       10.       10.       -0.1
+Index2   ""    3.     -10.     -10.       10.       10.       -0.1
+z        ""    0.    0.      0.      10.       10.       -0.001
+logxi  ""    3.1      0.0      0.0       4.7       4.7       0.01
+logN      "cm^-3"    15.       15.       15.       20.        20.   0.1
+Afe      ""    1.       .5       .5       10.        10.       0.01
+refl_frac  ""   -1       -1000       -10       0.        1000.       0.01
+mass  ""   10       10       10       10.        10.       -0.01
+Rj  ""   30       2       2       300.        300.       0.01
+Mdot  ""   1       0.01       0.01      10.        10.       0.01
+Omega  ""   0.1       0.01       0.01       0.1        0.1       0.01
+mu  ""   0.5       0.5       0.5       0.5        0.5       -0.01
+Ms  ""   1.5       0.5       0.5        3       3       0.01
+b  ""   0.3       0.3       0.3       0.3        0.3       -0.01
+p  ""   0.01       0.01       0.01       0.01        0.01       -0.01

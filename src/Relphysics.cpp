@@ -235,9 +235,9 @@ double kerr_rms(double a) {
   return 3.0 + Z2 - sign * sqrt((3.0 - Z1) * (3.0 + Z1 + (2 * Z2)));
 }
 
-/* get the rplus value (size if the black hole event horizon */
+/* get the rplus value (size of the black hole event horizon */
 double kerr_rplus(double a) {
-  return 1 + sqrt(1 - a * a);
+  return 1.0 + sqrt(1.0 - a * a);
 }
 
 /** calculate the doppler factor for a moving primary source **/
@@ -431,7 +431,7 @@ double calc_fluxboost_source_disk(double rad, double del_emit, double a, double 
 }
 
 double kerr_to_flat_area_ratio(double r, double a) {
-  // the value below is obtained directly from ratio A_flat / A_Kerr by all possible simplifications
+  // the value below is obtained directly from ratio A_Kerr / A_flat by all possible simplifications
   return sqrt( (r * r * r + a * a * r + 2.0 * a * a) /
                   (r * r * r + a * a * r - 2.0 * r * r) );
 }

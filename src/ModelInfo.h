@@ -25,7 +25,7 @@
 enum class ModelName {
   relline,
   relline_lp,
-  relline_lp_ext,
+  relline_ext,
   relconv,
   relconv_lp,
   relxill,
@@ -33,9 +33,9 @@ enum class ModelName {
   relxillCO,
   relxillCp,
   relxilllp,
-  relxilllp_ext,
+  relxill_ext_ecut,
   relxilllpCp,
-  relxilllpCp_ext,
+  relxill_ext,
   relxilllpion,
   relxilllpionCp,
   relxilllpAlpha,
@@ -46,12 +46,13 @@ enum class ModelName {
   xillverD,
   relxillD,
   relxilllpD,
-  relxillBB
+  relxillBB,
+  relxill_jedsad
 };
 
 enum class T_Irrad {
   BknPowerlaw,
-  LampPost,
+  LampPost, // add new?
   BlackBody,
   Const,
   None

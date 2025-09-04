@@ -47,7 +47,7 @@
 /** define Emissivity Model Type **/
 #define EMIS_TYPE_NONE 0
 #define EMIS_TYPE_BKN 1
-#define EMIS_TYPE_LP 2
+#define EMIS_TYPE_LP 2 // define new for extended models?
 #define EMIS_TYPE_ALPHA 3
 #define EMIS_TYPE_CONST 4
 /***************************************/
@@ -63,6 +63,12 @@
 #define ION_GRAD_TYPE_CONST 0
 #define ION_GRAD_TYPE_PL 1
 #define ION_GRAD_TYPE_ALPHA 2
+/***************************************/
+
+/** define Corona Geometry**/
+#define GEOMETRY_LP 0
+#define GEOMETRY_RING 1
+#define GEOMETRY_DISK 2
 /***************************************/
 
 /** dimensions of the RELLINE table */
@@ -115,7 +121,7 @@
 #define MOD_TYPE_RELXILLBBRET -300
 #define MOD_TYPE_RELXILLALPHA -2000
 #define MOD_TYPE_RELXILLLPALPHA -2001
-
+#define MOD_TYPE_RELXILL_JEDSAD -3000
 
 
 #define PARAM_DEFAULT 0.0
@@ -202,7 +208,8 @@ typedef struct {
   double lineE;
   double z;
   double height;
-  double r_ring;
+  double x;
+  double x_in;
   double htop;
   double gamma;
   double beta;
@@ -212,6 +219,7 @@ typedef struct {
   int num_zones;
   int return_rad;
   int ion_grad_type;
+  int prim_geometry_type;
   rradCorrFactors* rrad_corr_factors;
 } relParam;
 

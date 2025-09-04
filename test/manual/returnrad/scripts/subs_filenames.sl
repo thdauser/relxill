@@ -16,6 +16,7 @@ define getFilenameStruct(){
    variable f_obs = struct{    
       reflect = sprintf(fbase, "obs-reflect" ),
       primary = sprintf(fbase, "obs-primary" ),
+      total = sprintf(fbase, "obs-total" ),
       mirror  = sprintf(fbase, "obs-mirror" ),
       mirrorPrim  = sprintf(fbase, "obs-mirror-primary" ),
       mirrorRefl  = sprintf(fbase, "obs-mirror-refl" )

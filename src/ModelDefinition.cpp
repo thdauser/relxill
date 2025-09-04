@@ -21,6 +21,7 @@
 #include "Relphysics.h"
 
 int get_iongrad_type(const ModelDefinition &params);
+int get_geometry_switch(const ModelDefinition &params);
 
 extern "C" {
 #include "relutility.h"
@@ -37,15 +38,15 @@ int convertModelType(ModelName name) {
     case ModelName::relline: return MOD_TYPE_RELLINE;
     case ModelName::relconv: return MOD_TYPE_RELCONV;
     case ModelName::relline_lp: return MOD_TYPE_RELLINELP;
-    case ModelName::relline_lp_ext: return MOD_TYPE_RELLINELPEXT;
+    case ModelName::relline_ext: return MOD_TYPE_RELLINELPEXT;
     case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
     case ModelName::relxill  : return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
     case ModelName::relxillD: return MOD_TYPE_RELXILLDENS;
     case ModelName::relxilllp: return MOD_TYPE_RELXILLLP;
-    case ModelName::relxilllp_ext: return MOD_TYPE_RELXILLLPEXT;
+    case ModelName::relxill_ext_ecut: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpCp: return MOD_TYPE_RELXILLLP;
-    case ModelName::relxilllpCp_ext: return MOD_TYPE_RELXILLLPEXT;
+    case ModelName::relxill_ext: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
     case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
     case ModelName::relxilllpionCp: return MOD_TYPE_RELXILLLPION;
@@ -58,6 +59,7 @@ int convertModelType(ModelName name) {
     case ModelName::relxillCO: return MOD_TYPE_RELXILLCO;
     case ModelName::relxilllpAlpha: return MOD_TYPE_RELXILLLPALPHA;
     case ModelName::relxillBB: return MOD_TYPE_RELXILLBBRET;
+    case ModelName::relxill_jedsad: return MOD_TYPE_RELXILL_JEDSAD;
   }
   puts(" *** relxill-error: unknown ModelName, converting model name to integer failed ");
   exit(EXIT_FAILURE);
@@ -141,7 +143,7 @@ int is_env_set(const char* envname, int default_switch = 0) {
 
 static int get_returnrad_switch(const ModelDefinition &model_params) {
 
-  // (1) by default activated for Lamp Post, otherwise noe
+  // (1) by default activated for Lamp Post, otherwise not
   int default_switch = ( model_params.irradiation()==T_Irrad::LampPost) ? 1 : 0;
 
   // (2) if env is set, we use the value given there, it takes precedence over default values
@@ -165,9 +167,12 @@ static void setNegativeHeightToRplus(double *h, double a) {
   }
 }
 
-int warned_rms = 0; // why not bool btw?
+// why int and not bool btw?
+int warned_rms = 0;
 int warned_height = 0;
-int warned_extent = 0;
+int warned_ring_radius = 0;
+int warned_slab_radius = 0;
+int warned_slab_bound = 0;
 
 void check_parameter_bounds(relParam *param, int *status) {
 
@@ -175,6 +180,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   setNegativeRadiiToRisco(&(param->rin), param->a);
   setNegativeRadiiToRisco(&(param->rout), param->a);
   setNegativeRadiiToRisco(&(param->rbr), param->a);
+  // should we have the same negative units for x, x_in in relxill_ext?
 
   const double rout_max = 1000.0;
 
@@ -211,7 +217,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     return;
   }
 
-  if (param->rout <= param->rin) {
+  if (param->rout <= param->rin) { // why twice? (line 187)
     printf(" *** Error : Rout <= Rin, model evaluation failed \n");
     *status = EXIT_FAILURE;
     return;
@@ -258,33 +264,28 @@ void check_parameter_bounds(relParam *param, int *status) {
     setNegativeHeightToRplus(&(param->height), param->a); // after that h is in rg in either case
     setNegativeHeightToRplus(&(param->htop), param->a);
     double r_event = kerr_rplus(param->a);
+
     double h_fac = 1.1;
+    double r_fac = (param->prim_geometry_type == GEOMETRY_LP) ? 1.1 : 1.2; // a bit more conservative limit for ext models
 
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
-    if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
-      /// Not actual for version 2 with angles in table:
-      // h_fac = 0.2; // the lowest possible height in rg for extended source
-      double r_fac = 1.2; // not less than 1.3 EH (actually for h >= 0.5 rg it can be 1.2 EH)
-      /*
-      if ((h_fac - param->height) > 1e-4) {
-        if (!warned_height) {
-          printf(" *** Warning : Ring source too close to the disk (h < %.1f r_g) \n", h_fac);
-          printf("      Height, Extent = %.3f r_g, %.3f r_g \n", param->height, param->r_ring);
-          printf("      Setting    h =  %.1f r_g and x fixed \n", h_fac);
-          warned_height = 1;
+    if (param->prim_geometry_type == GEOMETRY_RING) {
+      if (param->x < 0.0) {
+        if (not warned_ring_radius) {
+          printf(" *** Warning : Ring source cannot have negative angle (theta = %.1f r_g) \n", param->x);
+          printf("      Setting    theta = 0 \n");
+          warned_ring_radius = 1;
         }
-        param->height = h_fac * 1.001; // keep a bit of space above the actual limit
-        // Not sure I need to reset ring size here. What if we are looking at sources far away from bh above the disk?
-        // param->r_ring = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
+        param->x = 0.0;
       }
-      */
+
       // double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a); // in rg
       // double costheta = calc_cos_theta_primary_source(param->height, param->r_ring, param->a);
-      if ((param->height - r_fac * r_event) < 1e-3) {
-        if (!warned_extent) {
+      if ((param->height - r_fac * r_event) < 1e-3) { // need this check also for other geometries, ONCE IMPLEMENTED
+        if (!warned_ring_radius) {
           printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
           // printf("      Height, eXtent = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
-          printf("      Spherical radius, polar angle = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
+          printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->height, param->x);
           printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f r_g \n", param->height, r_fac * r_event);
           //r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
           // keeping costheta constant and re-define radius
@@ -292,16 +293,35 @@ void check_parameter_bounds(relParam *param, int *status) {
           printf("(too close to BH) Re-setting radius, polar angle kept constant \n");
           //printf("(too close to BH) Setting eXtent to = %.4f*r_g, polar angle kept constant \n", param->r_ring);
           // always print while debug it (DONT FORGET)
-          warned_extent = 1;
-          }
+          warned_ring_radius = 1;
+        }
         param->height = r_fac * r_event; // in rg
         // keeping costheta constant and re-define radius
         // param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
         // also need to update h if really want to keep cos const
         // param->height = r_spherical * costheta;
-        }
       }
-    else { // lp is lp, so not mix it with ext
+    }
+    if (param->prim_geometry_type == GEOMETRY_DISK) { // NOT YET IMPLEMENTED ON SPHERICAL BRANCH
+      if (param->x < 0.1) {
+        if (not warned_slab_radius) {
+          printf(" *** Warning : Disk source cannot have too small size (r = %.1f r_g) \n", param->x);
+          printf("      Setting    x = 0.1 rg \n");
+          warned_slab_radius = 1;
+        }
+        param->x = 0.1;
+      }
+      // new: for disk model we also check that inner edge is less than outer (x)
+      // alternatively: we can reset geometry type to ring if x_in >= x
+      if (param->x <= param->x_in) {
+        if (not warned_slab_bound) {
+          printf(" *** Warning : x_in >= x outer edge cannot be smaller than inner edge \n");
+          printf("      Setting    x_in = x - 0.1 rg \n");
+          warned_slab_bound = 1;
+        }
+        param->x_in = param->x - 0.1;
+      }
+    } else { // lp is lp, so not mix it with ext
       if ((h_fac * r_event - param->height) > 1e-4) {
         if (!warned_height) {
           printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
@@ -343,7 +363,6 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
     throw ParamInputException("get_rel_params: model evaluation failed due to missing relativistic parameters");
   }
 
-  // those values should never be used, unless it is set by the model
   param->emis1 = inp_param.get_otherwise_default(XPar::index1, 0);
   param->emis2 = inp_param.get_otherwise_default(XPar::index2, 0);
   param->rbr = inp_param.get_otherwise_default(XPar::rbr, 0);
@@ -380,7 +399,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
     //param->height *= kerr_rplus(param->a); // convert to rg (we fit in EH units as it gives simple limits)
   //}
 
-  param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 0.0);
+  param->x = inp_param.get_otherwise_default(XPar::x, 0.0);
 
   // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
 
@@ -391,13 +410,18 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   //param->r_ring *= kerr_rplus(param->a); // to convert spherical radius in rg
   //param->r_ring = calc_extent_from_sph_radius_primary_source(height_rg, param->r_ring, param->a);
 
+  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
+
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
   param->limb = static_cast<int>(lround(inp_param.get_otherwise_default(XPar::limb, 0)));
-  param->return_rad = get_returnrad_switch(inp_param );
+  param->return_rad = get_returnrad_switch(inp_param);
+  // default 0 - lp, 1 - ring, 2 - disk:
+  // param->prim_geometry_type = inp_param.get_otherwise_default(XPar::switch_source_geometry, 0);
+  param->prim_geometry_type = get_geometry_switch(inp_param);
 
-  param->rrad_corr_factors = nullptr; //
+  param->rrad_corr_factors = nullptr;
 
   // this is set by the environment variable "RELLINE_PHYSICAL_NORM"
   param->do_renorm_relline = do_renorm_model(param);
@@ -477,3 +501,12 @@ int get_iongrad_type(const ModelDefinition &params) {
   }
 }
 
+int get_geometry_switch(const ModelDefinition &params) {
+  if (params.get_model_name() != ModelName::relxill_ext && params.get_model_name() != ModelName::relxill_ext_ecut
+  && params.get_model_name() != ModelName::relline_ext) { // REALLY need to define just new type of EMIS_TYPE
+    return GEOMETRY_LP; // what about models with no geometry?
+  } else {
+    // printf("Geometry number: %ld \n", lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+    return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+  }
+}

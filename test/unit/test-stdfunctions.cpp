@@ -21,6 +21,7 @@
 #include "common-functions.h"
 #include "Relbase.h"
 #include "Relphysics.h"
+#include "ModelDefinition.h"
 
 extern "C" {
 #include "relutility.h"
@@ -294,5 +295,16 @@ TEST_CASE(" Normlization of the FFT Convolution", "[bbasic]") {
   REQUIRE(fabs(sumProfileXill - sumProfileAfterWrong) > 1e-8);
   INFO(" the relativistic convolution is not normalized to 1 \n ");
   INFO(" but still the convoluation is normalized, which should not be the case\n ");
+
+}
+
+TEST_CASE("Adding input parameter", "[param]") {
+
+  auto param_list = ParamList({XPar::ecut, XPar::a}, {100, 0.5});
+
+  double gamma = 2;
+  param_list.insert_par(XPar::gamma, gamma);
+
+  REQUIRE_NOTHROW(fabs(param_list.get_par(XPar::gamma) - gamma) < 1e-8);
 
 }

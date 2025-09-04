@@ -100,27 +100,23 @@ static refSpecData *new_refSpecData(int nener, int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);
 
-  auto *spec = (refSpecData *) malloc(sizeof(refSpecData));
-  CHECK_MALLOC_RET_STATUS(spec, status, spec)
+  auto *spec = new refSpecData;
+  CHECK_MALLOC_RET_STATUS(spec, status, nullptr);
 
   spec->nener = nener;
 
-  spec->elo = (double *) malloc(sizeof(double) * nener);
-  CHECK_MALLOC_RET_STATUS(spec->elo, status, spec)
-  spec->ehi = (double *) malloc(sizeof(double) * nener);
-  CHECK_MALLOC_RET_STATUS(spec->ehi, status, spec)
-  spec->flux = (double *) malloc(sizeof(double) * nener);
-  CHECK_MALLOC_RET_STATUS(spec->flux, status, spec)
+  spec->elo = new double[nener];
+  spec->ehi = new double[nener];
+  spec->flux = new double[nener];
 
   return spec;
 }
 
 static void free_refSpecData(refSpecData *spec) {
-  if (spec != nullptr) {
-    free(spec->elo);
-    free(spec->ehi);
-    free(spec->flux);
-  }
+  delete[] spec->elo;
+  delete[] spec->ehi;
+  delete[] spec->flux;
+  delete spec;
 }
 
 static refSpecData *fits_read_refdata_spec(char *fname, int *status) {
@@ -136,7 +132,8 @@ static refSpecData *fits_read_refdata_spec(char *fname, int *status) {
   // get the number of rows
   if (fits_get_num_rows(fptr, &nener, status)) return nullptr;
 
-  refSpecData *spec = new_refSpecData((int) nener, status);
+  auto spec = new_refSpecData((int) nener, status);
+  CHECK_MALLOC_RET_STATUS(spec, status, nullptr);
 
   int anynul = 0;
   double nullptrval = 0.0;
@@ -190,10 +187,14 @@ static int compareWithRefdata(const char *fname_ref, const double *ener0, const 
 
   if (spec == nullptr){
     return -1;
-  } else {
-    return compare_refSpecDat(spec, ener0, flux0, nener0);
   }
+
+  int status_comp = compare_refSpecDat(spec, ener0, flux0, nener0);
+  free_refSpecData(spec);
+  return status_comp;
 }
+
+
 
 static double* integSpecArea(double** spec, int n_ener, double spin, const returnSpec2D *returnSpec, int* status) {
 
@@ -237,6 +238,7 @@ void fitsAddKeyRadialZone(char* fname, const returnSpec2D* returnSpec, int izone
 
   //relxill_check_fits_error(status);
 }
+
 
 /*
 void writeZoneXillverAllIncidentReturnSpec(double Tshift, int indZone, int n_ener, double *ener, xillParam *xill_param,
@@ -287,7 +289,7 @@ void writeZoneXillverAllIncidentReturnSpec(double Tshift, int indZone, int n_ene
   // -3- primary radiation causing the reflection
   sprintf(fnameSingleBuffer,fname_zone, "reflectPrim");
 
-  double* xillver_prim_out = scaledXillverPrimaryBBodyHighener(xill_param->kTbb, returnSpec->specRet[indZone],
+  double* xillver_prim_out = getXillverPimaryBBodyNormalizedAtHighener(xill_param->kTbb, returnSpec->specRet[indZone],
                                                                returnSpec->ener, returnSpec->n_ener, status);
   fits_write_spec(fnameSingleBuffer,ener, xillver_prim_out, n_ener, status);
   fitsAddKeyRadialZone(fnameSingleBuffer, returnSpec, indZone, status);
@@ -304,7 +306,7 @@ void writeZoneXillverAllIncidentReturnSpec(double Tshift, int indZone, int n_ene
 //  ======= TEST FUNCTIONS ========   //
 
 // ========== //
-TEST_CASE(" Check Temperature Profile"){
+TEST_CASE(" Check Temperature Profile", "[bbret]"){
 
   int status = EXIT_SUCCESS;
 
@@ -355,7 +357,7 @@ TEST_CASE(" DiskBB Spectrum ", "[bbret]"){
 }
 
 // ========== //
-TEST_CASE(" Return Radiation Black Body Spectrum"){
+TEST_CASE(" Return Radiation Black Body Spectrum", "[bbret]"){
 
   int status = EXIT_SUCCESS;
 
@@ -395,100 +397,46 @@ TEST_CASE(" Return Radiation Black Body Spectrum"){
 
 
 }
-//
-//static void testSingleZoneRframeReflectSpectrum(int* status){
-//
-//  CHECK_STATUS_VOID(*status);
-//  PRINT_RELXILL_TEST_MSG_DEFAULT();
-//
-//
-//  // get a standard grid for the convolution (is rebinned later to the input grid)
-//  int n_ener;
-//  double *ener;
-//  get_relxill_conv_energy_grid(&n_ener, &ener, status);
-//
-//  // set the standard parameters
-//  xillParam *xill_param = nullptr;
-//  relParam *rel_param = nullptr;
-//  get_std_param_relxill_bbret(&rel_param, &xill_param, status);
-//  xill_param->refl_frac = -1.0;
-//
-//  xillTable *xill_tab = nullptr;
-//  get_init_xillver_table(&xill_tab, xill_param, status);
-//
-//  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, nullptr, nullptr, n_ener, xill_param->kTbb, rel_param->rin,
-//                                                      rel_param->rout, rel_param->a, status);
-//
-//  double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
-//  relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
-//
-//  enum{ nzones = 4};
-//  enum{ nshift = 2};
-//  int indZone[nzones] = {10,20,30,40};
-//  double Tshift[nshift] = {1.0,1.4};
-//
-//  for (int ii=0; ii<nzones; ii++) {
-//    for (int jj=0; jj<nshift; jj++) {
-//      writeZoneXillverAllIncidentReturnSpec(Tshift[jj], indZone[ii], n_ener, ener, xill_param, returnSpec, rel_profile, status);
-//    }
-//  }
-//
-//  printf(" [ !! missing comparison !! ]  ");
-//
-//  print_relxill_test_result(*status);
-//
-//}
-//
-//static void test_rr_bbody_lmod(int* status){
-//
-//  CHECK_STATUS_VOID(*status);
-//  PRINT_RELXILL_TEST_MSG_DEFAULT();
-//
-//  double Tin = 1.0;
-//  double spin = 0.86;
-//
-//
-//  /* create an energy grid */
-//  int n_ener = 1000;
-//  double ener[n_ener + 1];
-//  get_log_grid(ener, n_ener + 1, 0.01, 50.0);
-//
-//  // set the standard parameters
-//  xillParam *xill_param = nullptr;
-//  relParam *rel_param = nullptr;
-//  get_std_param_relxill_bbret(&rel_param, &xill_param, status);
-//
-//  xill_param->kTbb = Tin;
-//  rel_param->a = spin;
-//  rel_param->rin = kerr_rms(spin);
-//  rel_param->incl = 60.0/180.0*M_PI;
-//
-//  // create space for the output spectrum
-//  double photar[n_ener];
-//
-//
-//  xill_param->refl_frac = -1.0;
-//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 1, status);
-//  fits_write_spec("!testrr-spec-rr-bbody.fits",ener, photar, n_ener, status);
-//
-//
-//  xill_param->refl_frac = 0.0;
-//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
-//  fits_write_spec("!testrr-spec-prim-bbody.fits",ener, photar, n_ener, status);
-//
-//  xill_param->refl_frac = -1.0;
-//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
-//  fits_write_spec("!testrr-spec-rr-bbody-reflect.fits",ener, photar, n_ener, status);
-//
-//  relxill_bb_kernel(ener, photar, n_ener, xill_param, rel_param, 0, status);
-//  fits_write_spec("!testrr-spec-rr-bbody-reflect.fits",ener, photar, n_ener, status);
-//
-//
-//  print_relxill_test_result(*status);
-//}
+
+/*
+static void testSingleZoneRframeReflectSpectrum(int* status){
+
+  CHECK_STATUS_VOID(*status);
+
+  // get a standard grid for the convolution (is rebinned later to the input grid)
+  int n_ener;
+  double *ener;
+  auto ener_grid  = get_relxill_conv_energy_grid();
+
+  // set the standard parameters
+  xillParam *xill_param = nullptr;
+  relParam *rel_param = nullptr;
+
+  xillTable *xill_tab = nullptr;
+  get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
+
+  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, nullptr, nullptr, n_ener, xill_param->kTbb, rel_param->rin,
+                                                      rel_param->rout, rel_param->a, status);
+
+  double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
+  relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
+
+  enum{ nzones = 4};
+  enum{ nshift = 2};
+  int indZone[nzones] = {10,20,30,40};
+  double Tshift[nshift] = {1.0,1.4};
+
+  for (int ii=0; ii<nzones; ii++) {
+    for (int jj=0; jj<nshift; jj++) {
+      writeZoneXillverAllIncidentReturnSpec(Tshift[jj], indZone[ii], n_ener, ener, xill_param, returnSpec, rel_profile, status);
+    }
+  }
+}*/
 
 
-TEST_CASE("Check if Second Evaluation returns the identical results"){
+
+
+TEST_CASE("Check if Second Evaluation returns the identical results", "[bbret]"){
 
   LocalModel lmod(ModelName::relxillBB);
 
@@ -506,7 +454,7 @@ TEST_CASE("Check if Second Evaluation returns the identical results"){
   }
 }
 
-TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret]") {
+TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret-eval]") {
 
   int status = EXIT_SUCCESS;
   setenv("RELXILL_WRITE_OUTFILES","1",1);

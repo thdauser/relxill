@@ -55,15 +55,15 @@ void free_xill_spec(xillSpec *spec);
 
 void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status);
 
-void get_xillver_angdep_spec(double *o_xill_flux,
-                             double *ener,
-                             int n_ener,
-                             double *rel_dist,
-                             xillSpec *xill_spec,
-                             int *status);
+void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
+                                           double *ener,
+                                           int n_ener,
+                                           double *rel_dist,
+                                           xillSpec *xill_spec,
+                                           int *status);
 
-void getNormalizedXillverSpec(double* xill_flux, double* ener, int n_ener, xillParam* xill_param,
-                              double *rel_cosne_dist, int *status);
+void getAnglecorrXillSpec(double *xill_flux, double *ener, int n_ener, xillParam *xill_param,
+                          double *rel_cosne_dist, int *status);
 
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         double *fac_fluxcorr,
@@ -83,7 +83,7 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
                                                          int n_zones,
                                                          const xillTableParam *xill_param_0);
 
-double calcNormWrtXillverTableSpec(const double *flux, const double *ener, int n, int *status);
+double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, int n, int *status);
 EnerGrid *get_coarse_xillver_energrid();
 
 #endif //XILLSPEC_H_
