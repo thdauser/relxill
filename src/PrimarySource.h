@@ -97,11 +97,12 @@ class PrimarySourceParameters {
       // as it is in LP RELXILL
       prime_spec_factors_source_to_observer =
           lp_refl_frac.f_inf_rest / 0.5 * pow(m_energy_shift_source_observer, PrimarySourceParameters::gam());
+      /// todo after Gullo and Adam discussion: for nthcomp the situation is different, boost is not g^gamma but just g, check that it is correct and update of Cp models required
     }
 
     // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
     if (PrimarySourceParameters::beta() > 1e-4) {
-      // need to approve/modify for extended source
+      // todo need to approve/modify for extended source
       prime_spec_factors_source_to_observer *= pow(doppler_factor_source_obs(m_rel_param), 2);
     }
     return prime_spec_factors_source_to_observer;

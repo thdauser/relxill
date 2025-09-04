@@ -197,7 +197,7 @@ double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener
   double sum_pl = 0.0;
   for (int ii = 0; ii < n; ii++) {
     if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii] <= EMAX_XILLVER_NORMALIZATION) {
-      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg;
+      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg; // * 1e20 * kev... can be out of for loop to save a bit of computation
     }
   }
   double norm_xillver_table = 1e15 / 4.0 / M_PI;

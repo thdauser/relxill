@@ -691,7 +691,7 @@ void calc_ring_emis(emisProfile *emisProf, const double a, const double h, const
   // Not done for extended source, todo
 //  for (int ii=0; ii<tab->n_rad; ii++){
 //    if (param->beta > 1e-6) {
-//      emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
+      // emisProf->emis[ii] *= pow(doppler_factor(emisProf->del_emit[ii], param->beta), 2);
 //    }
 //  }
 }

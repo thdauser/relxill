@@ -450,11 +450,10 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
       throw std::exception();
     }
     if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
-      // solution for lp can give div by zero or complex vals for h < 1 rg (and also gives too strong shift)
+      // todo better switcher ^
       return ecut_primary * gi_potential_ext(rel_param, rzone);
     }
     else {
-      // this does not work for extended source and gives NaN for h < 1EH:
       return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit[izone]);
     }
   }
