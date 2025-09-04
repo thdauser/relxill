@@ -171,6 +171,7 @@ static void setNegativeHeightToRplus(double *h, double a) {
 int warned_rms = 0;
 int warned_height = 0;
 int warned_ring_radius = 0;
+int warned_ring_angle = 0;
 int warned_slab_radius = 0;
 int warned_slab_bound = 0;
 
@@ -271,10 +272,10 @@ void check_parameter_bounds(relParam *param, int *status) {
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->prim_geometry_type == GEOMETRY_RING) {
       if (param->x < 0.0) {
-        if (not warned_ring_radius) {
-          printf(" *** Warning : Ring source cannot have negative angle (theta = %.1f r_g) \n", param->x);
-          printf("      Setting    theta = 0 \n");
-          warned_ring_radius = 1;
+        if (not warned_ring_angle) {
+          printf(" *** Warning : Ring source cannot have negative angle (theta = %.1f deg) \n", param->x);
+          printf("      Setting    theta = 0 deg \n");
+          warned_ring_angle = 1;
         }
         param->x = 0.0;
       }

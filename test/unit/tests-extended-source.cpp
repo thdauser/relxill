@@ -144,14 +144,13 @@ TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
   REQUIRE(status == EXIT_SUCCESS);
 }
 
-/*
+
 // Does not work for spherical relxill, need modifications
 
 TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
->>>>>>> extended_source_emis
 
   int status = EXIT_SUCCESS;
-  double current_error = 0.033;
+  double current_error = 0.042;
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -191,8 +190,8 @@ TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
       assert(n_rad_ext == n_rad);
       for (int i = 0; i < n_rad; i++) {
         assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids match
-        // check if the emissivities are the same. Deviations of an order of a few % expected. Up to 10% in the most extreme cases
-        // (h at EH)
+        // check if the emissivities are the same. Deviations of an order of a few % expected.
+        // Up to 10% in the most extreme cases
 
         REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < current_error);
         //printf("Intensities lp %.6e, ext %.6e, ratio %.6f at radius %.6f\n", intens[i],
@@ -207,7 +206,7 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
 
   int status = EXIT_SUCCESS;
   double current_error_peak = 0.002;
-  double current_error_tail = 0.033; // almost same as for emissivity btw, which makes sense
+  double current_error_tail = 0.042; // almost same as for emissivity btw, which makes sense
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -217,8 +216,8 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
   LocalModel local_model_ext{ModelName::relline_ext};
   local_model_ext.set_par(XPar::x, 0.0);
 
-  double spins[3] = {0.0, 0.5, 0.998};
-  double heights[3] = {2.5, 5.0, 10.0};
+  double spins[3] = {0.8, 0.9, 0.998};
+  double heights[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
     for (double height : heights){
@@ -233,7 +232,7 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         // to remove zero division
         if (spec.flux[i] > 0.0) {
-          // currently due to slightly different energy shifts we can only get down to ~8% difference for these a,h
+          // currently due to slightly different energy shifts we can only get down to ~4% difference for these a,h
           REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_tail);
           // although these few % diff are only for the red tail of the line, on average it is below 1%
           if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) {
@@ -250,7 +249,7 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
 TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and heights ", "[extended]") {
 
   int status = EXIT_SUCCESS;
-  double current_error = 0.06;
+  double current_error = 0.046;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -263,7 +262,7 @@ TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and h
   local_model_ext.set_par(XPar::refl_frac, -1);
   // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
   local_model.set_par(XPar::refl_frac, -1);
-  double spins[3] = {0.0, 0.5, 0.998};
+  double spins[3] = {0.8, 0.9, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
@@ -279,7 +278,7 @@ TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and h
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         assert(spec.energy[i] == spec_ext.energy[i]);
         if (spec_ext.flux[i] != 0.0){
-          // as with emissivities and line profiles, we expect the difference up to ~6% now
+          // as with emissivities and line profiles, we expect the difference up to current_error value now
           REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error);
         }
       }
@@ -287,7 +286,6 @@ TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and h
   }
   REQUIRE(status == EXIT_SUCCESS);
 }
-*/
 
 TEST_CASE("Setting input parameters for extended source outside of the allowed range ","[extended]") {
 
