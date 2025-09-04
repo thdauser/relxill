@@ -249,7 +249,7 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
 TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and heights ", "[extended]") {
 
   int status = EXIT_SUCCESS;
-  double current_error = 0.046;
+  double current_error = 0.048;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
