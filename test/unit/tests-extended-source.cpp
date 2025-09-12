@@ -54,8 +54,8 @@ TEST_CASE("Default line model call ", "[extended]") {
   local_model.set_par(XPar::gamma, 2.0);
 
   // slab-specific
-  local_model.set_par(XPar::x_in, 0.0);
-  local_model.set_par(XPar::switch_switch_source_geometry, 2);
+  //local_model.set_par(XPar::x_in, 0.0);
+  //local_model.set_par(XPar::switch_switch_source_geometry, 2);
 
   REQUIRE_NOTHROW(local_model.eval_model(spec));
   // local_model.eval_model(spec);
@@ -79,7 +79,7 @@ TEST_CASE("Default call of relxill ext models for different geometries ", "[exte
   for (ModelName model : {ModelName::relline_ext, ModelName::relxill_ext_ecut, ModelName::relxill_ext}) {
     for (int type_geom : {1}) {
       LocalModel local_model{model};
-      local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
+      // local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::r, height);
       local_model.set_par(XPar::theta, x);
@@ -126,7 +126,7 @@ TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
   local_model_ext.set_par(XPar::rout, 1000.0);
   local_model_ext.set_par(XPar::r, h);
   local_model_ext.set_par(XPar::theta, 0.0);
-  local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
+  //local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
   local_model_ext.eval_model(spec_ext);
   relParam* rel_param_ext = local_model_ext.get_rel_params();

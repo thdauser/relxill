@@ -55,9 +55,9 @@ define check_caching_single(ff,par){ %{{{
 
    %% AN: more bad hacks to test the slowest ext relxill geometry
    %% (condemn bad cod coding but use it when no one suffers)
-      if (ff == "relxill_ext"){
-         set_par("relxill_ext(1).switch_source_geometry", 2);
-      }
+      %if (ff == "relxill_ext"){
+      %   set_par("relxill_ext(1).switch_source_geometry", 2);
+      %}
    
    variable param0 = get_params("*."+par);
    if (length(param0)!=1){
