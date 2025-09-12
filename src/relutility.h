@@ -166,6 +166,7 @@ void invertArray(double *vals, int n);
 double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius);
 
 void get_ipol_factor(const float value, const float *arr, const int n_arr, int *ind, double *ifac);
+void get_ipol_factor_double(const double value, const double* arr, const int n_arr, int *ind, double *ifac);
 
 void get_fine_radial_grid(double rin, double rout, double *re, int nr);
 

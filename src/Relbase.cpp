@@ -315,11 +315,23 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
       // if set, it is given as boost, wrt predicted refl_frac
       xill_input_param->refl_frac *= struct_refl_frac->refl_frac;
     }
+    /* I was wrong thinking that this function is used to calculate primary normalization
+    double prim_fac;
 
+    if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT){
+      // normFactorPrimSpec was meaningful only for relxill extended. It defined lensing * g^Gamma to observer
+      // (the simplified "else" below takes classical lensing into account only)
+      prim_fac = sys_par->emis->normFactorPrimSpec;
+
+      double prim_fac_lp = struct_refl_frac->f_inf_rest / 0.5 * pow(energy_shift_source_obs(rel_param), xill_input_param->gam);
+    } else{
+     */
     double g_inf = energy_shift_source_obs(rel_param);
     double prim_fac = struct_refl_frac->f_inf_rest / 0.5 * pow(g_inf, xill_input_param->gam);
+    //}
+
     if (rel_param->beta
-        > 1e-4) { // flux boost of primary radiation taking into account here (therfore we need f_inf_rest above)
+        > 1e-4) { // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
       prim_fac *= pow(doppler_factor_source_obs(rel_param), 2);
     }
 
@@ -580,6 +592,8 @@ void free_cached_tables() {
   free_cached_relTable();
   free_cached_lpTable();
   free_cached_xillTable();
+  // this function is not used, but just in case - here is the routine to free ext table(s)
+  //free_extendedSourceTable
 
   // TODO: implement cache in a general way
  // free(cached_rel_param);

@@ -9,14 +9,14 @@ software ISIS and XSPEC.
 
 (1) Installing the model:
 
-  - All to execute the compile script by "chmod u+x compile_relxill.sh"
+  - Do the compile script executable by "chmod u+x compile_relxill.sh"
 
   - Execute "./compile_relxill.sh"
 
 (2) Setting up the model environment:
 
   - Most importantly the model needs to know where the pre-calculated
-    tables are located. By default it assumed that they are in the
+    tables are located. By default it is assumed that they are in the
     current working directory.
 
   - The recommended approach is to set the environment variable

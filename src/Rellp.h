@@ -43,6 +43,10 @@ emisProfile *calc_emis_profile(double *r, int nr, const relParam *param, int *st
 void get_emis_bkn(double *emis, const double *re, int nr,
                   double index1, double index2, double rbr);
 
+void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param, double height, double beta,
+                                       lpTable *tab, int *status);
+
+lpTable* get_lp_table(int* status);
 
 void get_emis_jet(emisProfile *, const relParam *param, int *status);
 

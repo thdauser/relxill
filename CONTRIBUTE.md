@@ -52,19 +52,19 @@ file endings are `.c .cpp .h`.
 
 ## Adding a new Model
 
-A new model is first and foremost defined by the `lmodel.dat` file. How such an entry 
+A new model is first and foremost defined by the `lmodel_*.dat` file. How such an entry 
 has to be structured is defined 
 in Xspec: https://heasarc.gsfc.nasa.gov/xanadu/xspec/manual/XSappendixLocal.html
 
-1)  First add the model to the `lmodel.dat` file. There are two version of the file contained in 
+1)  First add the model to the `lmodel_*.dat` file. There are two versions of the file contained in 
 `src/modelfiles`, a public (`lmodel_relxill_public.dat`) and a development (`lmodel_relxill_devel.dat`) one. 
 The difference is that only the public models are included in the official release of the relxill model and 
 therefore should only contain stable models with a stable interface.
 
-2) Any new parameters have to be added in `class XPar` and a default value defined  in 
-   `class XspecSingleLmodelDefinition` (ModelDefinition.h)
+2) Any new parameters have to be added in `class XPar` (ModelDefinition.h), structure `relParam` (common.h) and a default value defined  in 
+   `relParam *get_rel_params` (ModelDefinition.cpp)
 
-3) The new model name as to be added as to be added in the `class ModelName` (ModelInfo.h). 
+3) The new model name has to be added in the `class ModelName` (ModelInfo.h). 
    It is used to uniquely identify the model.
    
 4) Additionally, a unique model integer 
@@ -76,6 +76,11 @@ therefore should only contain stable models with a stable interface.
    model type (Convolution, Relxill-Type, Line-Model, ...), 
    irradiation type (Lamp Post, Power Law, ...), and
    primary spectral shape (Cutoff-Powerlaw, Nthcomp, Blackbody) are set. 
+
+6) For proper caching of the new model, the new parameters unique for this model
+   have to be added for checks on updates to Relcache.cpp (functions 
+   `comp_sys_param`, `did_rel_param_change`, `set_cached_rel_param`, `set_cached_xill_param`). 
+   Otherwise these new parameters will not be properly updating inside of one xspec/isis/... session. 
 
 
 

@@ -422,6 +422,11 @@ void get_ipol_factor(const float value, const float* arr, const int n_arr, int *
       (arr[*ind + 1] - arr[*ind]);
 }
 
+void get_ipol_factor_double(const double value, const double* arr, const int n_arr, int *ind, double *ifac) {
+  (*ind) = binary_search(arr, n_arr, value);
+  (*ifac) = (value - arr[*ind]) /
+      (arr[*ind + 1] - arr[*ind]);
+}
 
 
 /* A simple implementation of the FFT taken from http://paulbourke.net/miscellaneous/dft/

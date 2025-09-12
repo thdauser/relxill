@@ -40,6 +40,11 @@ double density_ss73_zone_a(double radius, double rms);
 // energy shift from the primary source to the observer
 double calc_g_inf(double height, double a);
 
+double calc_cos_theta_primary_source(double height, double r_ring, double a);
+double calc_spherical_radius_primary_source(double height, double r_ring, double a);
+double calc_extent_from_sph_radius_primary_source(double height, double sph_radius, double a);
+double calc_extent_from_sph_radius_costheta(double sph_radius, double costheta, double a);
+
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);
 
@@ -52,6 +57,9 @@ double doppler_factor(double del, double bet);
 /** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
 double gi_potential_lp(double r, double a, double h, double bet, double del);
 
+// double gi_potential_ext(double r, double a, double h, double x);
+double gi_potential_ext(const relParam *param, double r);
+
 double relat_abberation(double del, double beta);
 
 double doppler_factor_source_obs(const relParam *rel_param);
@@ -60,5 +68,8 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
 
 double calc_lp_emissivity_newton(double h, double r);
 double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta);
+
+double kerr_to_flat_area_ratio(double r, double a);
+double gamma_correction(double r, double a);
 
 #endif //RELXILL__RELPHYSICS_H_

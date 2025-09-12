@@ -18,7 +18,7 @@
 
 #include "Rellp.h"
 #include "Relphysics.h"
-
+#include "Rellp_Extended.h"
 extern "C" {
 #include "writeOutfiles.h"
 }
@@ -94,7 +94,7 @@ static void norm_emis_profile(const double *re, const int nr, double *emis) {
   auto delta_area = new double[nr];
 
   for (int ii = 0; ii < nr; ii++) {
-    if (re[1] < re[0]) {  // desencing grid
+    if (re[1] < re[0]) {  // descending grid
       delta_area[ii] = trapez_integ_single(re, ii, nr) * 2;
     } else {
       delta_area[ii] = trapez_integ_single_rad_ascending(re, ii, nr) * 2;
@@ -255,7 +255,7 @@ void apply_emis_fluxboost_source_disk(emisProfile *emisProf, double a, double he
 /**
  * @brief calculate the emissivity profile of a lamp post point source
  * Important: from the relParam input values, height and beta will be ignored (as this allows
- * the routine to be called for different values if height and beta for an extended source)
+ * the routine to be called for different values of height and beta for an extended source)
  * @param emis_profile
  * @param param
  * @param height
@@ -263,7 +263,7 @@ void apply_emis_fluxboost_source_disk(emisProfile *emisProf, double a, double he
  * @param tab
  * @param status
  */
-static void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param, double height, double beta,
+void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param, double height, double beta,
                                        lpTable *tab, int *status) {
   CHECK_STATUS_VOID(*status);
 
@@ -284,9 +284,39 @@ static void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam
   emis_profile->normFactorPrimSpec = 0.0; // currently not used, calculated directly in add_primary_component
 }
 
-int modelLampPostPointsource(const relParam *param) {
+int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  if ((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) {
+  // "if" now accounts also for EXT type models. Eventually this needs to be restructured
+  if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) &&
+        param->prim_geometry_type == GEOMETRY_LP) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int modelLampPostRingSource(const relParam *param) {
+  // simple explicit check for the model type, no replacement with other models. EXT models work fine with zero ring size
+  // if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
+  // new approach with disks
+    if (param->prim_geometry_type == GEOMETRY_RING) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int modelDiskSource(const relParam *param) {
+  if (param->prim_geometry_type == GEOMETRY_SLAB) {
+    return 1;
+  } else {
+    return 0;
+  }
+}
+
+int modelVertExtendSource(const relParam *param) {
+  const double htopPrecLimit = 1e-3;
+  if ((fabs(param->htop) >= 1.0) || (param->htop - htopPrecLimit >= param->height)) {
     return 1;
   } else {
     return 0;
@@ -295,7 +325,7 @@ int modelLampPostPointsource(const relParam *param) {
 
 /*
  * Calculate the velocity (in units of c) for a given height, hbase and a given
- * velocity (beta) at 100Rg. Specfici definitions are:
+ * velocity (beta) at 100Rg. Specific definitions are:
  *  - beta is defined as the velocity at 100r_g above the jet base at hbase
  *  - we assume constant acceleration such that currentBeta=bet100
  */
@@ -402,7 +432,7 @@ void calc_emis_jet_extended(emisProfile *emisProf,
 }
 
 
-static lpTable* get_lp_table(int* status){
+lpTable* get_lp_table(int* status){
   CHECK_STATUS_RET(*status,nullptr);
 
   if (cached_lp_table == nullptr) {
@@ -460,7 +490,6 @@ static void get_emis_constant(double *emis, int n) {
   }
 }
 
-
 /**
   * @syopsis: calculate the emissivity profile for any jet like source
   * (extended, lamp post, ...)
@@ -469,12 +498,20 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
 
   CHECK_STATUS_VOID(*status);
 
-  lpTable* lp_table = get_lp_table(status);
-
-  if (modelLampPostPointsource(param)) {
+  if (modelLampPostPointSource(param)) {
+    lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
-  } else {
+  // Do switch with param->emis_type instead?
+   } else if (modelLampPostRingSource(param)) {
+    calc_emis_ring_source(emis_profile, param, status); // switcher cannot be updated properly within one isis/xspec session - fix!
+  } else if (modelDiskSource(param)) {
+    calc_emis_disk_source(emis_profile, param, status);
+  } else if (modelVertExtendSource(param)) {
+    // this case is just for two on-axis lp sources
+    lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_extended(emis_profile, param, lp_table, status);
+  } else {
+      RELXILL_ERROR("None of lamppost, radially or vertically extended sources are obtained from input parameters", status);
   }
 
 }
@@ -598,7 +635,8 @@ lpReflFrac *new_lpReflFrac(int *status) {
   str->f_inf_rest = 0.0;
   str->f_ad = 0.0;
   str->f_bh = 0.0;
-
+  str->lensing = 0.0;
+  str->lensing_and_boost_factor = 0.0;
   return str;
 }
 

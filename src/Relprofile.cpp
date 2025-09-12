@@ -191,7 +191,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
     cached_tab_sysPar->re[ii] = interp_lin_1d(ifac_a,
                                               tab->arr[ind_a][ind_mu0]->r[ii], tab->arr[ind_a + 1][ind_mu0]->r[ii]);
   }
-  // we have problems for the intermost radius due to linear interpolation (-> set to RISCO)
+  // we have problems for the innermost radius due to linear interpolation (-> set to RISCO)
   if ((cached_tab_sysPar->re[tab->n_r - 1] > kerr_rms(a)) &&
       ((cached_tab_sysPar->re[tab->n_r - 1] - kerr_rms(a)) / cached_tab_sysPar->re[tab->n_r - 1] < 1e-3)) {
     //		printf(" re-setting RIN from %.3f to %.3f (dr = %.2e)\n",cached_tab_sysPar->re[tab->n_r-1],kerr_rms(a),
@@ -207,7 +207,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
   int kk;
   for (ii = 0; ii < tab->n_r; ii++) {
     // TODO: SHOULD WE ONLY INTERPOLATE ONLY THE VALUES WE NEED??? //
-    // only interpolate values where we need them (radius is defined invers!)
+    // only interpolate values where we need them (radius is defined inverse!)
     if (ii <= ind_rmin || ii >= ind_rmax + 1) {
       interpol_a_mu0(ii, ifac_a, ifac_mu0, ind_a, ind_mu0, cached_tab_sysPar, tab);
     } else {  // set everything we won't need to 0 (just to be sure)
@@ -237,7 +237,7 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
     cached_tab_sysPar->re[ind_rmax] = rmax;
   }
 
-  // let's try to be as efficient as possible here (note that "r" DEcreases)
+  // let's try to be as efficient as possible here (note that "r" Decreases)
   assert(ind_rmin > 0); // as defined inverse, re[ind_rmin+1] is the lowest value
   assert((cached_tab_sysPar->re[ind_rmin + 1] <= rin));
   assert((cached_tab_sysPar->re[ind_rmin] >= rin));
@@ -326,7 +326,8 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
     }
   } else {
     // NOT CACHED, so we need to calculate the system parameters
-    sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status);
+    sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status); // no need for ext geometry!
+
     CHECK_STATUS_RET(*status, nullptr);
 
     sysPar->limb_law = param->limb;
@@ -334,7 +335,6 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
     // get emissivity profile
     sysPar->emis = calc_emis_profile(sysPar->re, sysPar->nr, param, status);
     CHECK_STATUS_RET(*status, nullptr);
-
     // now add (i.e., prepend) the current calculation to the cache
     set_cache_syspar(&cache_syspar, param, sysPar, status);
 
@@ -915,12 +915,10 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
                     sqrt(da->gstar[jj] - da->gstar[jj] * da->gstar[jj]) *
                     da->trff[jj][kk] * da->emis
                     * weight * sysPar->d_gstar[jj];
-
             // this catches if "tmp" is NaN
             if (tmp != tmp) {
               printf(" *** error in function calc_relline_profile (NaN) *** \n");
-              printf(" *** backtrace %e %e %e %e %e\n",
-                     da->re, g, da->gstar[jj], da->trff[jj][kk], weight);
+              printf(" *** backtrace %e %e %e %e %e %e\n",da->re, g, da->gstar[jj], da->trff[jj][kk], weight, da->emis);
               *status = EXIT_FAILURE;
             }
             spec->rel_cosne->dist[izone][imu] += tmp;

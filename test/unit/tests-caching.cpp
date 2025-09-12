@@ -79,14 +79,15 @@ void simple_relxill_cache_test(ModelName _model_name) {
 
 TEST_CASE(" caching of energy grid", "[cache]") {
 
-  const int nmodel = 6;
+  const int nmodel = 7;
   std::array<ModelName, nmodel> model_names =
       {ModelName::relxillCp,
        ModelName::relxilllp,
        ModelName::relxilllpCp,
        ModelName::relxilllpAlpha,
        ModelName::relxillNS,
-       ModelName::relxillCO
+       ModelName::relxillCO,
+       ModelName::relxill_ext
       };
 
   for (const auto &elem: model_names) {

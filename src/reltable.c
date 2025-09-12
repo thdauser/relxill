@@ -388,7 +388,7 @@ void read_lp_table(const char *filename, lpTable **inp_tab, int *status) {
 
   char fullfilename[999];
 
-  do { // Errot handling loop
+  do { // Error handling loop
     if (tab != NULL) {
       RELXILL_ERROR("relline LP table already loaded", status);
       break;

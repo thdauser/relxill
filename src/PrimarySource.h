@@ -29,6 +29,7 @@
 #include "Relphysics.h"
 #include "Xillspec.h"
 #include "Relcache.h"
+//#include "Rellp_Extended.h" // to calculate energy shift from source to observer (cannot load??)
 
 extern "C" {
 #include "common.h"
@@ -82,11 +83,26 @@ class PrimarySourceParameters {
    * @return
    */
   double flux_boost_source_to_observer(const lpReflFrac &lp_refl_frac) const {
-    double prime_spec_factors_source_to_observer =
-        lp_refl_frac.f_inf_rest / 0.5 * pow(m_energy_shift_source_observer, PrimarySourceParameters::gam());
+    double prime_spec_factors_source_to_observer;
+    if (m_rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+      // general lensing_factor and energy shift to observer (now calculated in Rellp_Extended and has form lensing_factor * g_{so}^Gamma)
+      prime_spec_factors_source_to_observer = lp_refl_frac.lensing_and_boost_factor;
+  // For some reason I cannot import Rellp_Ext.h in here. Therefore cannot use this function and need to put boost into lensing:
+      //prime_spec_factors_source_to_observer *= get_energyshift_gamma_ext_source_obs(m_rel_param);
+      // todo: ideally, m_energy_shift_source_observer^Gamma should be calculated from extended table for ext models
+      // then lp_refl_frac.lensing_factor will be indeed lensing_factor
+
+      assert(prime_spec_factors_source_to_observer > 0.0);
+    } else {
+      // as it is in LP RELXILL
+      prime_spec_factors_source_to_observer =
+          lp_refl_frac.f_inf_rest / 0.5 * pow(m_energy_shift_source_observer, PrimarySourceParameters::gam());
+      /// todo after Gullo and Adam discussion: for nthcomp the situation is different, boost is not g^gamma but just g, check that it is correct and update of Cp models required
+    }
 
     // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
     if (PrimarySourceParameters::beta() > 1e-4) {
+      // todo need to approve/modify for extended source
       prime_spec_factors_source_to_observer *= pow(doppler_factor_source_obs(m_rel_param), 2);
     }
     return prime_spec_factors_source_to_observer;

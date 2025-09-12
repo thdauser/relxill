@@ -82,17 +82,29 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
   if (are_values_different(par->rout, cpar->rout)) {
     return 1;
   }
-
+  if (are_values_different(par->x, cpar->x)) {
+    return 1;
+  }
+  if (are_values_different(par->x_in, cpar->x_in)) {
+    return 1;
+  }
   if (par->limb != cpar->limb) {
     return 1;
   }
   if (par->return_rad != cpar->return_rad) {
     return 1;
   }
-
+  // AN: this is a rare case of switching between model types in one session, but I caught it
+  // (can it also happen for emis_type?)
+  if (par->model_type != cpar->model_type) {
+    return 1;
+  }
+  if (par->prim_geometry_type != cpar->prim_geometry_type) {
+    return 1;
+  }
   // for now, if we have correction factors, there is no caching of rel_param results possible
   // TODO: move correction factors and therefore the return rad emis profile outside of the system parameters
-  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors!= nullptr ){
+  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr ){
     return 1;
   }
 
@@ -161,6 +173,8 @@ void set_cached_rel_param(const relParam *par, relParam **ca_rel_param, int *sta
   (*ca_rel_param)->htop = par->htop;
   (*ca_rel_param)->incl = par->incl;
   (*ca_rel_param)->beta = par->beta;
+  (*ca_rel_param)->x = par->x;
+  (*ca_rel_param)->x_in = par->x_in;
 
   (*ca_rel_param)->z = par->z;
   (*ca_rel_param)->limb = par->limb;
@@ -168,6 +182,7 @@ void set_cached_rel_param(const relParam *par, relParam **ca_rel_param, int *sta
 
   (*ca_rel_param)->emis_type = par->emis_type;
   (*ca_rel_param)->model_type = par->model_type;
+  (*ca_rel_param)->prim_geometry_type = par->prim_geometry_type;
 
   (*ca_rel_param)->rbr = par->rbr;
   (*ca_rel_param)->rin = par->rin;

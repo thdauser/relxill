@@ -21,6 +21,7 @@
 #include "Relphysics.h"
 
 int get_iongrad_type(const ModelDefinition &params);
+int get_geometry_switch(const ModelDefinition &params);
 
 extern "C" {
 #include "relutility.h"
@@ -37,12 +38,15 @@ int convertModelType(ModelName name) {
     case ModelName::relline: return MOD_TYPE_RELLINE;
     case ModelName::relconv: return MOD_TYPE_RELCONV;
     case ModelName::relline_lp: return MOD_TYPE_RELLINELP;
+    case ModelName::relline_ext: return MOD_TYPE_RELLINELPEXT;
     case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
     case ModelName::relxill  : return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
     case ModelName::relxillD: return MOD_TYPE_RELXILLDENS;
     case ModelName::relxilllp: return MOD_TYPE_RELXILLLP;
+    case ModelName::relxill_ext_ecut: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpCp: return MOD_TYPE_RELXILLLP;
+    case ModelName::relxill_ext: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
     case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
     case ModelName::relxilllpionCp: return MOD_TYPE_RELXILLLPION;
@@ -139,7 +143,7 @@ int is_env_set(const char* envname, int default_switch = 0) {
 
 static int get_returnrad_switch(const ModelDefinition &model_params) {
 
-  // (1) by default activated for Lamp Post, otherwise noe
+  // (1) by default activated for Lamp Post, otherwise not
   int default_switch = ( model_params.irradiation()==T_Irrad::LampPost) ? 1 : 0;
 
   // (2) if env is set, we use the value given there, it takes precedence over default values
@@ -163,8 +167,13 @@ static void setNegativeHeightToRplus(double *h, double a) {
   }
 }
 
+// why int and not bool btw?
 int warned_rms = 0;
 int warned_height = 0;
+int warned_ring_radius = 0;
+int warned_ring_angle = 0;
+int warned_slab_radius = 0;
+int warned_slab_bound = 0;
 
 void check_parameter_bounds(relParam *param, int *status) {
 
@@ -172,6 +181,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   setNegativeRadiiToRisco(&(param->rin), param->a);
   setNegativeRadiiToRisco(&(param->rout), param->a);
   setNegativeRadiiToRisco(&(param->rbr), param->a);
+  // should we have the same negative units for x, x_in in relxill_ext?
 
   const double rout_max = 1000.0;
 
@@ -208,7 +218,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     return;
   }
 
-  if (param->rout <= param->rin) {
+  if (param->rout <= param->rin) { // why twice? (line 187)
     printf(" *** Error : Rout <= Rin, model evaluation failed \n");
     *status = EXIT_FAILURE;
     return;
@@ -250,27 +260,79 @@ void check_parameter_bounds(relParam *param, int *status) {
       param->beta = 0.99;
     }
   }
-
   /** check height values (only applies to LP emissivity **/
   if (param->emis_type == EMIS_TYPE_LP) {
-    setNegativeHeightToRplus(&(param->height), param->a);
+    setNegativeHeightToRplus(&(param->height), param->a); // after that h is in rg in either case
     setNegativeHeightToRplus(&(param->htop), param->a);
+    double r_event = kerr_rplus(param->a);
 
     double h_fac = 1.1;
-    double r_event = kerr_rplus(param->a);
-    if ((h_fac * r_event - param->height) > 1e-4) {
-      if (!warned_height) {
-        printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
-        printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
-               h_fac);
-        printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
-        printf("      Setting    h =  1.1*r_event  = %.3f \n", r_event * h_fac);
-        warned_height = 1;
-      }
-      param->height = r_event * h_fac;
-    }
-  }
+    double r_fac = (param->prim_geometry_type == GEOMETRY_LP) ? 1.1 : 1.2; // a bit more conservative limit for ext models
 
+    /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
+    if (param->prim_geometry_type == GEOMETRY_RING) {
+      if (param->x < 0.0) {
+        if (not warned_ring_angle) {
+          printf(" *** Warning : Ring source cannot have negative angle (theta = %.1f deg) \n", param->x);
+          printf("      Setting    theta = 0.0 deg \n");
+          warned_ring_angle = 1;
+        }
+        param->x = 0.0;
+      }
+
+      // double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a); // in rg
+      // double costheta = calc_cos_theta_primary_source(param->height, param->r_ring, param->a);
+      if ((param->height - r_fac * r_event) < 1e-3) { // need this check also for other geometries, ONCE IMPLEMENTED
+        if (!warned_ring_radius) {
+          printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
+          // printf("      Height, eXtent = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
+          printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->height, param->x);
+          printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f r_g \n", param->height, r_fac * r_event);
+          //r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
+          // keeping costheta constant and re-define radius
+          //param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
+          printf("(too close to BH) Re-setting radius, polar angle kept constant \n");
+          //printf("(too close to BH) Setting eXtent to = %.4f*r_g, polar angle kept constant \n", param->r_ring);
+          // always print while debug it (DONT FORGET)
+          warned_ring_radius = 1;
+        }
+        param->height = r_fac * r_event; // in rg
+      }
+    }
+    if (param->prim_geometry_type == GEOMETRY_SLAB) { // NOT YET IMPLEMENTED ON SPHERICAL BRANCH
+      if (param->x < 0.1) {
+        if (not warned_slab_radius) {
+          printf(" *** Warning : Slab source cannot have too small size (x = %.1f r_g) \n", param->x);
+          printf("      Setting    x = 0.1 rg \n");
+          warned_slab_radius = 1;
+        }
+        param->x = 0.1;
+      }
+      // new: for disk model we also check that inner edge is less than outer (x)
+      // alternatively: we can reset geometry type to ring if x_in >= x
+      if (param->x <= param->x_in) {
+        if (not warned_slab_bound) {
+          printf(" *** Warning : x_in >= x outer edge cannot be smaller than inner edge \n");
+          printf("      Setting    x_in = x - 0.1 rg \n");
+          warned_slab_bound = 1;
+        }
+        param->x_in = param->x - 0.1;
+      }
+    } else { // lp is lp, so not mix it with ext
+      if ((h_fac * r_event - param->height) > 1e-4) {
+        if (!warned_height) {
+          printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
+          printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
+                 h_fac);
+          printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
+          printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
+          warned_height = 1;
+        }
+        param->height = r_event * h_fac;
+      }
+    }
+
+  }
 }
 
 /**
@@ -288,6 +350,9 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->model_type = convertModelType(inp_param.get_model_name());
   param->emis_type = convertIrradType(inp_param.irradiation());
 
+  // default 0 - lp, 1 - ring, 2 - disk (or other - don't include in release):
+  param->prim_geometry_type = get_geometry_switch(inp_param); // new for extended geometry
+
   // these parameters have to be given for any relativistic parameter structure
   try {
     param->a = inp_param.get_par(XPar::a);
@@ -303,17 +368,29 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->rbr = inp_param.get_otherwise_default(XPar::rbr, 0);
   param->lineE = inp_param.get_otherwise_default(XPar::linee, 0);
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
-  param->height = inp_param.get_otherwise_default(XPar::h, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
-  param->d_offaxis = inp_param.get_otherwise_default(XPar::d_offaxis, 0);
+
+  // NOTE: here height acts as a spherical radius and x is the polar angle in degrees
+  // We fit r, theta directly from the table, but internally still call them height, x
+  if (param->prim_geometry_type == GEOMETRY_RING || param->prim_geometry_type == GEOMETRY_SLAB) {
+    param->height = inp_param.get_otherwise_default(XPar::r, 0);
+  } else { // NOTE: this line is intended to be used for LP only
+    // TODO better switch of parameters for other extended geometries
+    param->height = inp_param.get_otherwise_default(XPar::h, 0);
+  }
+  param->x = inp_param.get_otherwise_default(XPar::theta, 0.0);
+
+  // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
+
+  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0); // no meaning for ring and lp geometry
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
   param->limb = static_cast<int>(lround(inp_param.get_otherwise_default(XPar::limb, 0)));
-  param->return_rad = get_returnrad_switch(inp_param );
+  param->return_rad = get_returnrad_switch(inp_param);
 
-  param->rrad_corr_factors = nullptr; //
+  param->rrad_corr_factors = nullptr;
 
   // this is set by the environment variable "RELLINE_PHYSICAL_NORM"
   param->do_renorm_relline = do_renorm_model(param);
@@ -393,3 +470,12 @@ int get_iongrad_type(const ModelDefinition &params) {
   }
 }
 
+int get_geometry_switch(const ModelDefinition &params) {
+  if (params.get_model_name() != ModelName::relxill_ext && params.get_model_name() != ModelName::relxill_ext_ecut
+  && params.get_model_name() != ModelName::relline_ext) { // REALLY need to define just new type of EMIS_TYPE
+    return GEOMETRY_LP; // what about models with no geometry?
+  } else {
+    // printf("Geometry number: %ld \n", lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+    return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+  }
+}

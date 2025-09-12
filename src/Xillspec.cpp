@@ -197,7 +197,7 @@ double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener
   double sum_pl = 0.0;
   for (int ii = 0; ii < n; ii++) {
     if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii] <= EMAX_XILLVER_NORMALIZATION) {
-      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg;
+      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg; // * 1e20 * kev... can be out of for loop to save a bit of computation
     }
   }
   double norm_xillver_table = 1e15 / 4.0 / M_PI;
@@ -493,7 +493,7 @@ double get_xillver_gshift_fluxcorr(double *flu, const double *ener, int n_ener, 
 
 /**
  * @brief calculate the (energy) flux correction factors for a xillver spectrum.
- * @detail Two correction factors are calculate, which are both the ratio of the energy flux of two spectra:
+ * @detail Two correction factors are calculated, which are both the ratio of the energy flux of two spectra:
  * (1) fac_fluxcorr: ratio of reflected xillver spectrum to its input spectrum (below 1 for low ionization and above 1
  * for high ionization)
  * (2) fac_gshift_fluxcorr: ratio of xillver spectrum shifted to lower energy by a factor 1.5 (g=2/3) to a

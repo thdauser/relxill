@@ -47,11 +47,31 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   if (is_iongrad_model(rel_param->ion_grad_type) || rel_param->beta > 1e-6) {
     printf(" and beta=%.3f v/c", rel_param->beta);
   }
+  // TODO is_ext_model? for a nicer swap of models
+  // if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT || rel_param->model_type == MOD_TYPE_RELLINELPEXT) {
+  if (rel_param->prim_geometry_type == GEOMETRY_RING) {
+    printf(" and ring polar angle = %.2f deg", rel_param->x);
+  }
+  if (rel_param->prim_geometry_type == GEOMETRY_SLAB) {
+    printf(" and disk inner radius, x_in = %.2f rg, outer radius, x = %.2f rg", rel_param->x_in, rel_param->x);
+  }
   printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
          m_lp_refl_frac->refl_frac,
          sum / sum_pl);
   printf(" - photons falling into the black hole or plunging region: %.2f%%\n", m_lp_refl_frac->f_bh * 100);
   printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
+  // GR lensing is implemented only for EXT models
+  if (rel_param->prim_geometry_type == GEOMETRY_RING) {
+    printf(" - For inclination %.3f deg, GR lensing of ring is %.3f, LP model would use %.3f, so ratio is %.3f \n",
+           rel_param->incl * 180.0 / M_PI, m_lp_refl_frac->lensing, (2.0 * m_lp_refl_frac->f_inf_rest),
+           m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
+  }
+  // will have to add average lensing/shift here:
+  if (rel_param->prim_geometry_type == GEOMETRY_SLAB) {
+    printf(" - For inclination %.3f deg, (average) GR lensing of disk is %.3f, LP model would use %.3f, so ratio is %.3f \n",
+           rel_param->incl * 180.0 / M_PI, m_lp_refl_frac->lensing, (2.0 * m_lp_refl_frac->f_inf_rest),
+           m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
+  }
 
   if (is_alpha_model(rel_param->model_type)) {
     const double l_source = source_parameters.luminosity_source_cgs();

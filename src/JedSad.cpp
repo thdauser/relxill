@@ -62,7 +62,7 @@ void JedsadTable::read_jstable_params(fitsfile* fptr){
 
   assert(param_vals.size() == n);
   for (ii = 0; ii < n; ii++) {
-    /** the we load the parameter values **/
+    /** here we load the parameter values **/
     param_vals[ii] = new double[num_param_vals[ii]];
     fits_read_col(fptr, TDOUBLE, colnum_vals, ii + 1, 1, num_param_vals[ii], &nullval, param_vals[ii], &anynul,&status);
     CHECK_STATUS_CFITSIO(status)

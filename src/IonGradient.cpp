@@ -449,8 +449,13 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
       printf("       can not calculate Ecut/kTe on the disk \n\n");
       throw std::exception();
     }
-
-    return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit[izone]);
+    if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+      // todo better switcher ^
+      return ecut_primary * gi_potential_ext(rel_param, rzone);
+    }
+    else {
+      return ecut_primary * gi_potential_lp(rzone, rel_param->a, rel_param->height, rel_param->beta, del_emit[izone]);
+    }
   }
 }
 

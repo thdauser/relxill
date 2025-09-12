@@ -47,7 +47,7 @@
 /** define Emissivity Model Type **/
 #define EMIS_TYPE_NONE 0
 #define EMIS_TYPE_BKN 1
-#define EMIS_TYPE_LP 2
+#define EMIS_TYPE_LP 2 // define new for extended models?
 #define EMIS_TYPE_ALPHA 3
 #define EMIS_TYPE_CONST 4
 /***************************************/
@@ -65,6 +65,12 @@
 #define ION_GRAD_TYPE_ALPHA 2
 /***************************************/
 
+/** define Corona Geometry**/
+#define GEOMETRY_LP 0
+#define GEOMETRY_RING 1
+#define GEOMETRY_SLAB 2
+/***************************************/
+
 /** dimensions of the RELLINE table */
 #define RELTABLE_NA 25
 #define RELTABLE_NR 100
@@ -80,10 +86,10 @@
 #define LPTABLE_FILENAME "rel_lp_table_v0.5b.fits"
 #define LPTABLE_NR 100
 
-
 /**** DEFINES **/
 #define MOD_TYPE_RELLINE 1
 #define MOD_TYPE_RELLINELP 2
+#define MOD_TYPE_RELLINELPEXT 3
 
 #define MOD_TYPE_RELCONV 11
 #define MOD_TYPE_RELCONVLP 12
@@ -93,6 +99,7 @@
 
 #define MOD_TYPE_RELXILL -1
 #define MOD_TYPE_RELXILLLP -2
+#define MOD_TYPE_RELXILLLPEXT -3
 
 /** density models **/
 #define MOD_TYPE_RELXILLDENS -10
@@ -201,15 +208,18 @@ typedef struct {
   double lineE;
   double z;
   double height;
-  double d_offaxis;
+  double x;
+  double x_in;
   double htop;
   double gamma;
   double beta;
+  double distance;
   int limb;
   int do_renorm_relline;
   int num_zones;
   int return_rad;
   int ion_grad_type;
+  int prim_geometry_type;
   rradCorrFactors* rrad_corr_factors;
 } relParam;
 
@@ -282,6 +292,9 @@ typedef struct {
   double f_ad;
   double f_inf;
   double f_inf_rest;  // f_inf in the rest frame of the system (not taking beta of the LP into account)
+  double lensing; // for GR lensing from raytracing simulation
+  double lensing_and_boost_factor; // lensing * g_{so}^Gamma
+  // double lensing_factor; // add lensing_factor here, as in extended models it is taken from input table
 } lpReflFrac;
 
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
