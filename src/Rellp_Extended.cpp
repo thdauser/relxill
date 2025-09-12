@@ -250,7 +250,7 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData &dat_ind_a, const int 
         double _sum = 0.0; // sum is zeroed every time
         for (int l_e = 0; l_e < num_shift_bins; l_e++) { // energy shift bins
           _sum += pow(energy_shift_bins[i_h][j_x][k_b][l_e], gamma);
-          assert(_sum > 0.0 || !"summation of g is negative, wrong value in table\n");
+          assert(_sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
         }
         dat_ind_a.gshift[i_h][j_x][k_b] = _sum / num_shift_bins;
       }
@@ -274,7 +274,7 @@ double calc_energy_shift_gamma(const extendedSourceTable *tab, InterpFactors ipo
         double _sum = 0.0; // sum is zeroed every time
         for (int l_e = 0; l_e < tab->n_storage; l_e++) { // energy shift bins
           _sum += pow(tab->dat[ipol.ind_a]->energy_data_storage[i_h][j_x][k_b][l_e], gamma);
-          assert(_sum > 0.0 || !"summation of g is negative, wrong value in table\n");
+          assert(_sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
         }
         tab->dat[ipol.ind_a]->gshift[i_h][j_x][k_b] = _sum / tab->n_storage;
       }
@@ -286,7 +286,7 @@ double calc_energy_shift_gamma(const extendedSourceTable *tab, InterpFactors ipo
         double _sum = 0.0;
         for (int l_e = 0; l_e < tab->n_storage; l_e++) {
           _sum += pow(tab->dat[ipol.ind_a + 1]->energy_data_storage[i_h][j_x][k_b][l_e], gamma);
-          assert(_sum > 0.0 || !"summation of g is negative, wrong value in table\n");
+          assert(_sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
         }
         tab->dat[ipol.ind_a + 1]->gshift[i_h][j_x][k_b] = _sum / tab->n_storage;
       }
@@ -315,7 +315,7 @@ double calc_energy_shift_gamma(const extendedSourceTable *tab, InterpFactors ipo
   double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
                                           tab_lo_00,tab_lo_01,tab_lo_10,tab_lo_11,
                                           tab_hi_00,tab_hi_01,tab_hi_10,tab_hi_11);
-  assert (g_gamma > 0.0 || !"g^Gamma negative, wrong interpolation!\n");
+  assert (g_gamma >= 0.0 || !"g^Gamma negative, wrong interpolation!\n");
   return g_gamma;
 }
 

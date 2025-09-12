@@ -52,7 +52,7 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   if (rel_param->prim_geometry_type == GEOMETRY_RING) {
     printf(" and ring polar angle = %.2f deg", rel_param->x);
   }
-  if (rel_param->prim_geometry_type == GEOMETRY_DISK) {
+  if (rel_param->prim_geometry_type == GEOMETRY_SLAB) {
     printf(" and disk inner radius, x_in = %.2f rg, outer radius, x = %.2f rg", rel_param->x_in, rel_param->x);
   }
   printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
@@ -67,7 +67,7 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
   }
   // will have to add average lensing/shift here:
-  if (rel_param->prim_geometry_type == GEOMETRY_DISK) {
+  if (rel_param->prim_geometry_type == GEOMETRY_SLAB) {
     printf(" - For inclination %.3f deg, (average) GR lensing of disk is %.3f, LP model would use %.3f, so ratio is %.3f \n",
            rel_param->incl * 180.0 / M_PI, m_lp_refl_frac->lensing, (2.0 * m_lp_refl_frac->f_inf_rest),
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));

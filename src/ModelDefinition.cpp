@@ -274,7 +274,7 @@ void check_parameter_bounds(relParam *param, int *status) {
       if (param->x < 0.0) {
         if (not warned_ring_angle) {
           printf(" *** Warning : Ring source cannot have negative angle (theta = %.1f deg) \n", param->x);
-          printf("      Setting    theta = 0 deg \n");
+          printf("      Setting    theta = 0.0 deg \n");
           warned_ring_angle = 1;
         }
         param->x = 0.0;
@@ -297,16 +297,12 @@ void check_parameter_bounds(relParam *param, int *status) {
           warned_ring_radius = 1;
         }
         param->height = r_fac * r_event; // in rg
-        // keeping costheta constant and re-define radius
-        // param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
-        // also need to update h if really want to keep cos const
-        // param->height = r_spherical * costheta;
       }
     }
-    if (param->prim_geometry_type == GEOMETRY_DISK) { // NOT YET IMPLEMENTED ON SPHERICAL BRANCH
+    if (param->prim_geometry_type == GEOMETRY_SLAB) { // NOT YET IMPLEMENTED ON SPHERICAL BRANCH
       if (param->x < 0.1) {
         if (not warned_slab_radius) {
-          printf(" *** Warning : Disk source cannot have too small size (r = %.1f r_g) \n", param->x);
+          printf(" *** Warning : Slab source cannot have too small size (x = %.1f r_g) \n", param->x);
           printf("      Setting    x = 0.1 rg \n");
           warned_slab_radius = 1;
         }
@@ -354,6 +350,9 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->model_type = convertModelType(inp_param.get_model_name());
   param->emis_type = convertIrradType(inp_param.irradiation());
 
+  // default 0 - lp, 1 - ring, 2 - disk (or other - don't include in release):
+  param->prim_geometry_type = get_geometry_switch(inp_param); // new for extended geometry
+
   // these parameters have to be given for any relativistic parameter structure
   try {
     param->a = inp_param.get_par(XPar::a);
@@ -371,56 +370,25 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
 
-  // UPD here height acts as a spherical radius and r_ring is the polar angle in degrees
-  // depending on what table you use - may need to do some manipulations here
-
-  // **** (1) if table stores h and x. We fit r, theta and convert them to h,x here
-  // param->height = inp_param.get_otherwise_default(XPar::h, 0);
-  // Convert input degrees and immediately take cosine
-  // param->r_ring = cos(inp_param.get_otherwise_default(XPar::r_ring, 30) * M_PI / 180);
-  // if fit cosine
-  //// param->r_ring = inp_param.get_otherwise_default(XPar::r_ring, 1.0);
-  // assert(param->r_ring <= 1.0 and param->r_ring > 0.0); // spherical model with this definition
-  // then we internally convert r_ring and height from r, costheta to their usual meanings
-  // param->height *= kerr_rplus(param->a); // to rg
-  // i.e., r_sph = height
-  // i.e., costheta = r_ring
-
-  // i.e., h = r*costheta
-  // param->height = param->height * param->r_ring;
-  // i.e., r_ring = sqrt(r^2 + a^2)*sintheta
-
-  // param->r_ring = calc_extent_from_sph_radius_costheta(param->height / param->r_ring, param->r_ring, param->a);
-
-  // **** (2) if table stores r and theta (degrees). We fit r, theta directly in this case
-  param->height = inp_param.get_otherwise_default(XPar::h, 0); // NOTE: this line also executes for lp, do not mess them up
-
-  // if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
-    // better would be to do it in "check param bounds" but for now..
-    //param->height *= kerr_rplus(param->a); // convert to rg (we fit in EH units as it gives simple limits)
-  //}
-
-  param->x = inp_param.get_otherwise_default(XPar::x, 0.0);
+  // NOTE: here height acts as a spherical radius and x is the polar angle in degrees
+  // We fit r, theta directly from the table, but internally still call them height, x
+  if (param->prim_geometry_type == GEOMETRY_RING || param->prim_geometry_type == GEOMETRY_SLAB) {
+    param->height = inp_param.get_otherwise_default(XPar::r, 0);
+  } else { // NOTE: this line is intended to be used for LP only
+    // TODO better switch of parameters for other extended geometries
+    param->height = inp_param.get_otherwise_default(XPar::h, 0);
+  }
+  param->x = inp_param.get_otherwise_default(XPar::theta, 0.0);
 
   // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
 
-  // older approach with h and r as fitting params
-  //double height_rg = param->height; // copy to not mess up with following conversions
-  // temporary solution to have height in EH for spherical radius calculation
-  //setNegativeHeightToRplus(&height_rg, param->a); // convert to rg if not yet in rg
-  //param->r_ring *= kerr_rplus(param->a); // to convert spherical radius in rg
-  //param->r_ring = calc_extent_from_sph_radius_primary_source(height_rg, param->r_ring, param->a);
-
-  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
+  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0); // no meaning for ring and lp geometry
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);
   param->beta = inp_param.get_otherwise_default(XPar::beta, 0);
   param->limb = static_cast<int>(lround(inp_param.get_otherwise_default(XPar::limb, 0)));
   param->return_rad = get_returnrad_switch(inp_param);
-  // default 0 - lp, 1 - ring, 2 - disk:
-  // param->prim_geometry_type = inp_param.get_otherwise_default(XPar::switch_source_geometry, 0);
-  param->prim_geometry_type = get_geometry_switch(inp_param);
 
   param->rrad_corr_factors = nullptr;
 

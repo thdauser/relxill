@@ -307,7 +307,7 @@ int modelLampPostRingSource(const relParam *param) {
 }
 
 int modelDiskSource(const relParam *param) {
-  if (param->prim_geometry_type == GEOMETRY_DISK) {
+  if (param->prim_geometry_type == GEOMETRY_SLAB) {
     return 1;
   } else {
     return 0;

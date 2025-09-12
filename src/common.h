@@ -68,7 +68,7 @@
 /** define Corona Geometry**/
 #define GEOMETRY_LP 0
 #define GEOMETRY_RING 1
-#define GEOMETRY_DISK 2
+#define GEOMETRY_SLAB 2
 /***************************************/
 
 /** dimensions of the RELLINE table */
