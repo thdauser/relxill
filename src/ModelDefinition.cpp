@@ -291,7 +291,7 @@ void check_parameter_bounds(relParam *param, int *status) {
           //r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
           // keeping costheta constant and re-define radius
           //param->r_ring = calc_extent_from_sph_radius_costheta(r_spherical, costheta, param->a);
-          printf("(too close to BH) Re-setting radius, polar angle kept constant \n");
+          printf("(too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
           //printf("(too close to BH) Setting eXtent to = %.4f*r_g, polar angle kept constant \n", param->r_ring);
           // always print while debug it (DONT FORGET)
           warned_ring_radius = 1;
