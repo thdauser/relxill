@@ -189,7 +189,7 @@ define runtest(ffs){
 #ifndef STABLE
    ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
    ff_arr["relxilllpAlpha"] = [std_rel_param, "Afe", "z", "logN", "h", "refl_frac", "mass", "distance"];
-   ff_arr["relxill_ext"] = [std_rel_param, "r", "theta", "refl_frac", std_xill_param, "logN", "kTe"];
+   ff_arr["relxill_ext"] = [std_rel_param, "source_r", "source_theta", "refl_frac", std_xill_param, "logN", "kTe"];
 #endif
    
    variable ff, params;

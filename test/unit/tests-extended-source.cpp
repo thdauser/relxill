@@ -48,8 +48,8 @@ TEST_CASE("Default line model call ", "[extended]") {
   local_model.set_par(XPar::a, a);
   local_model.set_par(XPar::rin, -1);
   local_model.set_par(XPar::rout, 1000.0);
-  local_model.set_par(XPar::r, height);
-  local_model.set_par(XPar::theta, x);
+  local_model.set_par(XPar::source_r, height);
+  local_model.set_par(XPar::source_theta, x);
   local_model.set_par(XPar::switch_switch_returnrad, 0);
   local_model.set_par(XPar::gamma, 2.0);
 
@@ -81,8 +81,8 @@ TEST_CASE("Default call of relxill ext models for different geometries ", "[exte
       LocalModel local_model{model};
       // local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
       local_model.set_par(XPar::a, spin);
-      local_model.set_par(XPar::r, height);
-      local_model.set_par(XPar::theta, x);
+      local_model.set_par(XPar::source_r, height);
+      local_model.set_par(XPar::source_theta, x);
       local_model.set_par(XPar::incl, incl);
 
       REQUIRE_NOTHROW(local_model.eval_model(spec));
@@ -124,8 +124,9 @@ TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
   local_model_ext.set_par(XPar::a, spin);
   local_model_ext.set_par(XPar::rin, -1.0);
   local_model_ext.set_par(XPar::rout, 1000.0);
-  local_model_ext.set_par(XPar::r, h);
-  local_model_ext.set_par(XPar::theta, 0.0);
+
+  local_model_ext.set_par(XPar::source_r, h);
+  local_model_ext.set_par(XPar::source_theta, 0.0);
   //local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
   local_model_ext.eval_model(spec_ext);
@@ -160,7 +161,7 @@ TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   // relParam* rel_param_ext = local_model_ext.get_rel_params();
-  local_model_ext.set_par(XPar::theta, 0.0);  // for this test we compare the lp emissivity and ext for ring=0
+  local_model_ext.set_par(XPar::source_theta, 0.0);  // for this test we compare the lp emissivity and ext for ring=0
 
   double spins[3] = {0.8, 0.9, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
@@ -175,7 +176,7 @@ TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
       local_model.eval_model(spec);
 
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::r, height);
+      local_model_ext.set_par(XPar::source_r, height);
       local_model_ext.set_par(XPar::rin, -1.0);
       local_model_ext.eval_model(spec_ext);
       relParam* rel_param = local_model.get_rel_params();
@@ -214,7 +215,7 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
   auto spec_ext = default_spec_ext.get_xspec_spectrum(); // or is it?
   LocalModel local_model{ModelName::relline_lp};
   LocalModel local_model_ext{ModelName::relline_ext};
-  local_model_ext.set_par(XPar::theta, 0.0);
+  local_model_ext.set_par(XPar::source_theta, 0.0);
 
   double spins[3] = {0.8, 0.9, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
@@ -224,7 +225,7 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::h, height);
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::r, height);
+      local_model_ext.set_par(XPar::source_r, height);
 
       REQUIRE_NOTHROW(local_model.eval_model(spec));
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
@@ -258,7 +259,7 @@ TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and h
   auto spec = default_spec.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   auto spec_ext = default_spec_ext.get_xspec_spectrum();
-  local_model_ext.set_par(XPar::theta, 0.0);
+  local_model_ext.set_par(XPar::source_theta, 0.0);
   local_model_ext.set_par(XPar::refl_frac, -1);
   // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
   local_model.set_par(XPar::refl_frac, -1);
@@ -270,8 +271,7 @@ TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and h
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::h, height);
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::r, height);
-
+      local_model_ext.set_par(XPar::source_r, height);
       REQUIRE_NOTHROW(local_model.eval_model(spec));
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 
@@ -297,15 +297,15 @@ TEST_CASE("Setting input parameters for extended source outside of the allowed r
 
   // height below EH (will be replaced with spherical radius eventually)
   double height_below_horizon = 0.9;
-  lmod.set_par(XPar::r, height_below_horizon);
-  lmod.set_par(XPar::theta, 0.1); // so the source is inside of BH
+  lmod.set_par(XPar::source_r, height_below_horizon);
+  lmod.set_par(XPar::source_theta, 0.1); // so the source is inside of BH
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
   double negative_x = -10.0;
   // lmod.set_par(XPar::h, 3.0);
-  lmod.set_par(XPar::theta, negative_x);
+  lmod.set_par(XPar::source_theta, negative_x);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
