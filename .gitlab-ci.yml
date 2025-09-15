@@ -12,6 +12,7 @@ stages:
 build:
   stage: build
   script:
+    - make model-stable
     - make model
   artifacts:
     expire_in: 30 min
