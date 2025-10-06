@@ -114,36 +114,34 @@ double* getTemperatureProfileDiskZones(returningFractions* dat, double Rin, doub
 
 
 /**
- * Computes the returning black body emission spectrum for the given radial zones.
- * The primary (emitted) and (incident) returning radiation are computed and returned
- * in a 2D structure.
+ * @brief Calculates a 2D blackbody return radiation spectrum for relativistic disk models
  *
- * @param ener Array of energy values for the spectral grid.
- * @param spec Pointer to the array to receive the summed returning radiation spectrum.
- *           If nullptr, it is not computed.
- * @param spec_prim Pointer to the array to receive the summed primary radiation spectrum.
- *           If nullptr, it is not computed.
- * @param nener Number of energy bins in the spectral grid.
- * @param Tin Inner disk temperature in keV.
- * @param Rin Inner radius of the disk in gravitational radii.
- * @param Rout Outer radius of the disk in gravitational radii.
- * @param spin Dimensionless black hole spin parameter.
- * @param status Pointer to the integer status flag for error reporting and propagation.
- *           If an error occurs, the function sets this flag and may return a nullptr.
- * @return Pointer to a returnSpec2D structure that contains the computed primary and
- *         returning radiation spectra over the disk zones. If an error occurs,
- *         returns nullptr.
+ * This function computes the returning radiation spectrum from a relativistic accretion disk
+ * using blackbody emission. The spectrum is calculated across multiple radial zones and
+ * energy bins, taking into account relativistic effects near a spinning black hole.
  *
- * Steps:
- * 1. Interpolates returning radiation fractions based on spin, Rin, Rout.
- * 2. Calculates the temperature profile across the disk zones using the provided
- *    inner disk temperature and inner radius.
- * 3. Computes the 2D spectral zones for the returning radiation and primary
- *    blackbody radiation.
- * 4. Constructs and returns the result structure, normalizing the spectra if needed.
- * 5. Optionally writes debugging FITS files if debugging mode is enabled.
+ * @param ener Pointer to array of energy values [keV] (input energy grid)
+ * @param nener Number of energy bins in the energy array
+ * @param Tin Temperature at the inner disk radius [K]
+ * @param Rin Inner disk radius [gravitational radii, r_g = GM/c²]
+ * @param Rout Outer disk radius [gravitational radii]
+ * @param spin Dimensionless black hole spin parameter (a* = a/M, range: -1 to 1)
+ * @param status Pointer to status variable (0 = success, non-zero = error)
+ *
+ * @return Pointer to returnSpec2D structure containing:
+ *         - 2D spectral array [n_radial_zones][n_energy_bins]
+ *         - Radial grid information
+ *         - Energy grid information
+ *         Returns NULL on error
+ *
+ * @note The function assumes a standard temperature profile T(r) ∝ r^(-3/4) for the disk
+ * @note Memory for the returned structure must be freed by the caller
+ * @note The spin parameter follows the convention where positive values indicate prograde rotation
+ *
+ * @see returnSpec2D for the structure definition
+ * @see spec_diskbb for single-zone blackbody spectrum calculation
  */
-returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_prim, int nener,
+returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
                                        double Tin, double Rin, double Rout, double spin, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
@@ -157,30 +155,13 @@ returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_
   // 3 - get primary and returning 2D spectrum
   double **spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status);
   double **spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature, status);
+  free(temperature);
 
   // normalizeSpectraOverTheFullDisk(spec_prim_zones, spec_rr_zones, ener, nener, dat);
 
   returnSpec2D *returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
-
-  // get the primary spectrum for the given radial grid and temperature profile
-  if (spec!=nullptr) { // TODO: decide if we need this spec
-    sum_2Dspec(spec, spec_rr_zones, nener, dat->nrad, status);
-  }
-  if (spec_prim!=nullptr) { // TODO: decide if we need this spec
-    sum_2Dspec(spec_prim, spec_prim_zones, nener, dat->nrad, status);
-  }
-
-  if ( is_debug_run() ) {
-    fits_rr_write_2Dspec("!debug-testrr-rframe-rr-bbody.fits", returnSpec->specRet, ener, nener,
-                         dat->rlo, dat->rhi, dat->nrad, dat, status);
-    fits_rr_write_2Dspec("!debug-testrr-rframe-prim-bbody.fits", returnSpec->specPri, ener, nener,
-                         dat->rlo, dat->rhi, dat->nrad, dat, status);
-  }
-
-  free(temperature);
-
+  
   return returnSpec;
-
 }
 
 
@@ -481,7 +462,7 @@ double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_in, double *ener, 
  * This function calculates the zone-specific reflected return flux in the disk frame
  * by calculating the xillver reflection spectrum, which is normalized by a normalization
  * factor derived from the primary spectrum, which is then adjusted by another factor at high energies
- * according to the black body show which was actually used to calculate the loaded xillver spectrum.
+ * according to the black body which was actually used to calculate the tabulated xillver spectrum.
  * The final flux is multiplied with the value of the of boost parameter (optionally add direct spectrum
  * if boost >=0).
  *
@@ -658,7 +639,8 @@ static int should_noXillverRefl_calculated(){
  * full output spectrum.
  *
  * @param ener_inp Pointer to the input energy grid where the final output spectrum will be calculated.
- * @param specOutput Pointer to the output spectrum array to store the computed spectrum.
+ * @param specOutput Pointer to the output spectrum array to store the computed spectrum. Any values written to this
+ *        array will be set to zero
  * @param n_ener_inp Number of energy bins in the input energy grid.
  * @param xill_param Struct pointer that holds parameters related to the XILLVER reflection model, blackbody
  *        parameters, and source properties.
@@ -700,8 +682,9 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
   xillTable *xill_tab = nullptr;
   get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
 
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, nullptr, nullptr, n_ener, xill_param->kTbb, rel_param->rin,
-                                                      rel_param->rout, rel_param->a, status);
+  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
+                                                      rel_param->rin, rel_param->rout, rel_param->a,
+                                                      status);
 
   double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
   RelSysPar *systemParameters = get_system_parameters(rel_param, status);
@@ -746,9 +729,11 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
     }
 
     // calculate xillver primary spectrum (only used for additional/debug output)
-    specXillverPrimZones[izone] = getXillverPimaryBBodyNormalizedAtHighener(xill_param->kTbb, returnSpec->specRet[izone],
-                                                                    returnSpec->ener, returnSpec->n_ener, status);
-    //   calculated_combined_flux(specXillverReflZones[izone], specXillverPrimZones[izone], n_ener, xill_param->boost);
+    if ( shouldOutfilesBeWritten() ){
+      specXillverPrimZones[izone] =
+        getXillverPimaryBBodyNormalizedAtHighener(xill_param->kTbb, returnSpec->specRet[izone], returnSpec->ener,
+                                                  returnSpec->n_ener, status);
+    }
 
     specConvOutputZones[izone] = new double[n_ener];
     convolveSpectrumFFTNormalized(ener,
@@ -781,47 +766,50 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
 
   if ( shouldOutfilesBeWritten() ) {
 
-  //  std::cout << " writing BBret diagnose outfiles " << std::endl;
 
     std::string fname = "!undefined.fits";
+    std::string fbase = "!__relxillOutput-rrad-bbody-";
 
     if ( should_noXillverRefl_calculated() ){
       if (fabs(xill_param->boost) < 1e-8) {
-        fname = "!debug-testrr-bbody-obs-mirror-primary.fits";
+        fname = fbase+"obs-mirror-primary.fits";
       } else if (xill_param->boost < 0 ){
-        fname = "!debug-testrr-bbody-obs-mirror-refl.fits";
+        fname = fbase+"obs-mirror-refl.fits";
       } else {
-        fname = "!debug-testrr-bbody-obs-mirror.fits";
+        fname = fbase+"obs-mirror.fits";
       }
-
     } else {
       if (fabs(xill_param->boost) < 1e-8) {
-        fname = "!debug-testrr-bbody-obs-primary.fits";
+        fname = fbase+"obs-primary.fits";
       } else if (xill_param->boost < 1) {
-        fname = "!debug-testrr-bbody-obs-reflect.fits";
+        fname = fbase+"obs-reflect.fits";
       } else {
-        fname = "!debug-testrr-bbody-obs-total.fits";
+        fname = fbase+"obs-total.fits";
       }
     }
+    std::cout << " writing BBret diagnose outfile: " <<  fname.c_str() <<std::endl;
 
     fits_rr_write_2Dspec(fname.c_str(), specConvOutputZones, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-
-    fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-xillverRefl.fits", specXillverReflZones, ener, n_ener,
+    fname = fbase+"rframe-xillverRefl.fits";
+    fits_rr_write_2Dspec(fname.c_str(), specXillverReflZones, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-    fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-xillverPrim.fits", specXillverPrimZones, ener, n_ener,
+    fname = fbase+"rframe-xillverPrim.fits";
+    fits_rr_write_2Dspec(fname.c_str(), specXillverPrimZones, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-
-    fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-specRet.fits", returnSpec->specRet, ener, n_ener,
-                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
-    fits_rr_write_2Dspec("!debug-testrr-bbody-rframe-specPri.fits", returnSpec->specPri, ener, n_ener,
+    fname = fbase+"rframe-bbodyRet.fits";
+    fits_rr_write_2Dspec(fname.c_str(), returnSpec->specRet, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
+    fname = fbase+"rframe-bbodyEmit.fits";
+    fits_rr_write_2Dspec(fname.c_str(), returnSpec->specPri, ener, n_ener,
+                         returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
+
+    free_2d(&specXillverPrimZones, returnSpec->nrad);
   }
   free_2d(&specConvOutputZones, returnSpec->nrad);
-  free_2d(&specXillverPrimZones, returnSpec->nrad);
 
 }

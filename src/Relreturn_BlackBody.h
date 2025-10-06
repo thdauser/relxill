@@ -51,7 +51,7 @@ void spec_diskbb(double *ener, double *spec, int n, double Tin, double spin, int
 
 
 // spec_prim can be NULL
-returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_prim, int nener,
+returnSpec2D *spec_returnrad_blackbody(double *ener, int nener,
                                        double Tin, double Rin, double Rout, double spin, int *status);
 
 

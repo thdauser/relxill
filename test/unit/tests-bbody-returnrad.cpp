@@ -376,7 +376,7 @@ TEST_CASE(" Return Radiation Black Body Spectrum", "[bbret]"){
   double Rin = kerr_rms(spin);
   double Rout = RMAX_RELRET;
 
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, photar, photar0, n_ener, Tin, Rin, Rout, spin, &status);
+  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, Tin, Rin, Rout, spin, &status);
 
   assert(returnSpec != nullptr);
 
