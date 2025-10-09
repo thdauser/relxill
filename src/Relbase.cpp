@@ -23,6 +23,10 @@ extern "C" {
 #include "writeOutfiles.h"
 }
 
+#include <vector>
+#include <utility>
+#include <algorithm>
+
 // new CACHE routines
 cnode *cache_relbase = nullptr;
 
@@ -362,55 +366,38 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
 }
 
+
+
+/**
+ * @brief Check if any xillver parameters have changed between two parameter sets
+ * @param cpar Current parameters
+ * @param par New parameters
+ * @return 1 if any parameter changed, 0 if all are the same
+ */
 int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
-  if (are_values_different(par->afe, cpar->afe)) {
-    return 1;
-  }
-  if (are_values_different(par->dens, cpar->dens)) {
-    return 1;
-  }
-  if (are_values_different(par->ect, cpar->ect)) {
-    return 1;
-  }
-  if (are_values_different(par->gam, cpar->gam)) {
-    return 1;
-  }
-  if (are_values_different(par->lxi, cpar->lxi)) {
-    return 1;
-  }
-  if (are_values_different(par->kTbb, cpar->kTbb)) {
-    return 1;
-  }
-  if (are_values_different(par->frac_pl_bb, cpar->frac_pl_bb)) {
-    return 1;
-  }
-  if (are_values_different(par->z, cpar->z)) {
-    return 1;
-  }
 
-  if (are_values_different((double) par->prim_type, (double) cpar->prim_type)) {
-    return 1;
-  }
-  if (are_values_different((double) par->model_type, (double) cpar->model_type)) {
-    return 1;
-  }
+  std::vector<std::pair<double, double>> param_pairs = {
+    {par->afe, cpar->afe},
+    {par->dens, cpar->dens},
+    {par->ect, cpar->ect},
+    {par->gam, cpar->gam},
+    {par->lxi, cpar->lxi},
+    {par->kTbb, cpar->kTbb},
+    {par->frac_pl_bb, cpar->frac_pl_bb},
+    {par->radzone, cpar->radzone},
+    {par->z, cpar->z},
+    {par->iongrad_index, cpar->iongrad_index},
+    {par->distance, cpar->distance},
+    {par->mass_msolar, cpar->mass_msolar},
+    {par->luminosity_primary_source, cpar->luminosity_primary_source},
+    {static_cast<double>(par->prim_type), static_cast<double>(cpar->prim_type)},
+    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}
+  };
 
-  if (are_values_different(par->iongrad_index, cpar->iongrad_index)) {
-    return 1;
-  }
-
-  if (are_values_different(par->distance, cpar->distance)) {
-    return 1;
-  }
-  if (are_values_different(par->mass_msolar, cpar->mass_msolar)) {
-    return 1;
-  }
-  if (are_values_different(par->luminosity_primary_source, cpar->luminosity_primary_source)) {
-    return 1;
-  }
-
-  return 0;
+  return std::any_of(param_pairs.begin(), param_pairs.end(),
+                     [](const auto& p) { return are_values_different(p.first, p.second); });
 }
+
 
 /* check if values, which need a re-computation of the relline profile, have changed */
 int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
