@@ -138,6 +138,7 @@ int is_ns_model(int model_type);
 int is_co_model(int model_type);
 int is_xill_model(int model_type);
 int is_alpha_model(int model_type);
+int is_returnrad_bb_model(int model_type);
 
 /** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
 void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int nn, int *status);

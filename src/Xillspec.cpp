@@ -627,4 +627,3 @@ void getAnglecorrXillSpec(double *xill_flux, double *ener, int n_ener, xillParam
   calculateAngleWeightedXillverSpectrum(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
 
 }
-

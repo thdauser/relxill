@@ -373,7 +373,6 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
  * @return 1 if any parameter changed, 0 if all are the same
  */
 int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
-
   std::unordered_map<double, double> param_comparison = {
     {par->afe, cpar->afe},
     {par->dens, cpar->dens},
@@ -392,8 +391,10 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
     {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}
   };
 
-  for (const auto& param : param_comparison) {
-    if (are_values_different(param.first, param.second)) {
+  for (const auto& param : param_comparison)
+  {
+    if (are_values_different(param.first, param.second))
+    {
       return 1;
     }
   }

@@ -50,7 +50,6 @@ bool are_values_different(double val1, double val2) {
 }
 
 static int comp_sys_param(const relParam *cpar, const relParam *par) {
-
   std::unordered_map<double, double> param_comparison = {
     {par->a, cpar->a},
     {par->emis1, cpar->emis1},
@@ -71,8 +70,10 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
     {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
   };
 
-  for (const auto& param : param_comparison) {
-    if (are_values_different(param.first, param.second)) {
+  for (const auto& param : param_comparison)
+  {
+    if (are_values_different(param.first, param.second))
+    {
       return 1;
     }
   }
@@ -80,7 +81,8 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
   // Handle the special case for correction factors
   // for now, if we have correction factors, there is no caching of rel_param results possible
   // TODO: move correction factors and therefore the return rad emis profile outside of the system parameters
-  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr) {
+  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr)
+  {
     return 1;
   }
 
@@ -94,8 +96,8 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
  * @param par New parameters
  * @return 1 if any parameter changed, 0 if all are the same
  */
-int did_rel_param_change(const relParam *cpar, const relParam *par) {
-
+int did_rel_param_change(const relParam *cpar, const relParam * par)
+{
   std::unordered_map<double, double> param_comparison = {
     {par->a, cpar->a},
     {par->incl, cpar->incl},
@@ -122,8 +124,10 @@ int did_rel_param_change(const relParam *cpar, const relParam *par) {
     {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
   };
 
-  for (const auto& param : param_comparison) {
-    if (are_values_different(param.first, param.second)) {
+  for (const auto& param : param_comparison)
+  {
+    if (are_values_different(param.first, param.second))
+    {
       return 1;
     }
   }

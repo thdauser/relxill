@@ -164,7 +164,8 @@ class ModelDatabase {
       {ModelName::xillverCO, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverNS, ModelInfo(T_Model::Xill, T_PrimSpec::Blackbody)},
 
-      {ModelName::relxillBB, ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)},
+      {ModelName::relxillBB,     ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)},  // xillverNS table
+      {ModelName::relxillBBxill, ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)},  // xillverRTR table
 
       {ModelName::relxill_jedsad, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
   };

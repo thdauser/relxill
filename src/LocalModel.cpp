@@ -102,7 +102,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
   int status = EXIT_SUCCESS;
 
-  if (m_model_params.get_model_name() == ModelName::relxillBB)
+  if (m_model_params.get_model_name() == ModelName::relxillBB || m_model_params.get_model_name() == ModelName::relxillBBxill)
   {
     relParam *rel_param = LocalModel::get_rel_params();
     xillParam *xill_param = LocalModel::get_xill_params();
@@ -129,7 +129,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
  * @description note the model is only defined in the 0.01-1000 keV energy range and will
  * return 0 outside this range (see function relconv_kernel for more details)
  */
-void LocalModel::conv_model(const XspecSpectrum &spectrum) {
+void LocalModel::conv_model(const XspecSpectrum &spectrum) const {
 
   if (calcSum(spectrum.flux, spectrum.num_flux_bins()) <= 0.0) {
     throw ModelEvalFailed("input flux for convolution model needs to be >0");
@@ -151,7 +151,7 @@ void LocalModel::conv_model(const XspecSpectrum &spectrum) {
 /**
  * @brief calculate xillver model
  */
-void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
+void LocalModel::xillver_model(const XspecSpectrum &spectrum) const {
 
   int status = EXIT_SUCCESS;
 
@@ -205,6 +205,4 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
   } catch (ModelNotFound &e) {
     std::cout << e.what();
   }
-    // TODO: what should we do if the evaluation fails? return zeros?
-
 }

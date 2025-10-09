@@ -146,8 +146,8 @@ class LocalModel {
   bool handle_zero_jedsad_parameters(const XspecSpectrum& spectrum);
   void check_relxill_error_default(int status);
   void relxill_model(const XspecSpectrum &spectrum);
-  void conv_model(const XspecSpectrum &spectrum);
-  void xillver_model(const XspecSpectrum &spectrum);
+  void conv_model(const XspecSpectrum &spectrum) const;
+  void xillver_model(const XspecSpectrum &spectrum) const;
 
   void set_input_params(const double *inp_par_values) {
     auto parnames = m_model_params.get_parnames();

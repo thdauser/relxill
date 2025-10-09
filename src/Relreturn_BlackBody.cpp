@@ -160,7 +160,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
   // normalizeSpectraOverTheFullDisk(spec_prim_zones, spec_rr_zones, ener, nener, dat);
 
   returnSpec2D *returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
-  
+
   return returnSpec;
 }
 
@@ -483,17 +483,16 @@ void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_mul
   getAnglecorrXillSpec(xill_flux_returnrad, returnSpec->ener, returnSpec->n_ener, xill_param,
                        rel_profile->rel_cosne->dist[izone], status);
 
-
   double xillverReflectionNormFactor
-      = getXillverNormFactorFromPrimarySpectrum(returnSpec->specRet[izone], returnSpec->ener, returnSpec->n_ener, status);
+    = getXillverNormFactorFromPrimarySpectrum(returnSpec->specRet[izone], returnSpec->ener, returnSpec->n_ener, status);
   CHECK_STATUS_VOID(*status);
 
   double normfacMatchAtHighEnergies
-      = calcNormfacBBodyAtHighenergy(xill_param->kTbb,
-                                     returnSpec->specRet[izone],
-                                     returnSpec->ener,
-                                     returnSpec->n_ener,
-                                     status);
+    = calcNormfacBBodyAtHighenergy(xill_param->kTbb,
+                                   returnSpec->specRet[izone],
+                                   returnSpec->ener,
+                                   returnSpec->n_ener,
+                                   status);
   CHECK_STATUS_VOID(*status);
 
   for (int jj = 0; jj < returnSpec->n_ener; jj++) {
@@ -682,7 +681,7 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
   xillTable *xill_tab = nullptr;
   get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
 
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
+  returnSpec2D* returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
                                                       rel_param->rin, rel_param->rout, rel_param->a,
                                                       status);
 
@@ -716,20 +715,28 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
 
     specXillverReflZones[izone] = new double[n_ener];
 
-    if ( should_noXillverRefl_calculated() ){
+    if ( should_noXillverRefl_calculated() )
+    {
       getZoneIncidentReturnFlux(xill_param, returnSpec, specXillverReflZones[izone], izone);
-    } else {
-      xill_param->kTbb=Tin*xill_param->shiftTmaxRRet;  // currently set for testing
-      getZoneReflectedReturnFluxDiskframe(xill_param,
-                                          relProfile,
-                                          returnSpec,
-                                          specXillverReflZones[izone],
-                                          izone,
-                                          status);
+    }
+    else
+    {
+      if (xill_param->model_type == MOD_TYPE_RELXILLBBRET) {
+        xill_param->kTbb=Tin*xill_param->shiftTmaxRRet;  // currently set for testing the xillverNS table
+      }
+      if (xill_param->model_type == MOD_TYPE_RELXILLBBRET)
+      {
+        // very dangerous; need to check that it is within the table boundaries as well
+        // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )
+        xill_param->radzone = izone;
+      }
+      getZoneReflectedReturnFluxDiskframe(xill_param, relProfile, returnSpec, specXillverReflZones[izone],
+                                          izone, status);
     }
 
     // calculate xillver primary spectrum (only used for additional/debug output)
-    if ( shouldOutfilesBeWritten() ){
+    if (shouldOutfilesBeWritten())
+    {
       specXillverPrimZones[izone] =
         getXillverPimaryBBodyNormalizedAtHighener(xill_param->kTbb, returnSpec->specRet[izone], returnSpec->ener,
                                                   returnSpec->n_ener, status);
@@ -772,19 +779,26 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
 
     if ( should_noXillverRefl_calculated() ){
       if (fabs(xill_param->boost) < 1e-8) {
-        fname = fbase+"obs-mirror-primary.fits";
-      } else if (xill_param->boost < 0 ){
-        fname = fbase+"obs-mirror-refl.fits";
-      } else {
-        fname = fbase+"obs-mirror.fits";
+        fname = fbase + "obs-mirror-primary.fits";
+      } else if (xill_param->boost < 0)
+      {
+        fname = fbase + "obs-mirror-refl.fits";
+      }
+      else
+      {
+        fname = fbase + "obs-mirror.fits";
       }
     } else {
-      if (fabs(xill_param->boost) < 1e-8) {
-        fname = fbase+"obs-primary.fits";
-      } else if (xill_param->boost < 1) {
-        fname = fbase+"obs-reflect.fits";
-      } else {
-        fname = fbase+"obs-total.fits";
+      if (fabs(xill_param->boost) < 1e-8)
+      {
+        fname = fbase + "obs-primary.fits";
+      } else if (xill_param->boost < 1)
+      {
+        fname = fbase + "obs-reflect.fits";
+      }
+      else
+      {
+        fname = fbase + "obs-total.fits";
       }
     }
     std::cout << " writing BBret diagnose outfile: " <<  fname.c_str() <<std::endl;
@@ -792,19 +806,19 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
     fits_rr_write_2Dspec(fname.c_str(), specConvOutputZones, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-    fname = fbase+"rframe-xillverRefl.fits";
+    fname = fbase + "rframe-xillverRefl.fits";
     fits_rr_write_2Dspec(fname.c_str(), specXillverReflZones, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-    fname = fbase+"rframe-xillverPrim.fits";
+    fname = fbase + "rframe-xillverPrim.fits";
     fits_rr_write_2Dspec(fname.c_str(), specXillverPrimZones, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-    fname = fbase+"rframe-bbodyRet.fits";
+    fname = fbase + "rframe-bbodyRet.fits";
     fits_rr_write_2Dspec(fname.c_str(), returnSpec->specRet, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-    fname = fbase+"rframe-bbodyEmit.fits";
+    fname = fbase + "rframe-bbodyEmit.fits";
     fits_rr_write_2Dspec(fname.c_str(), returnSpec->specPri, ener, n_ener,
                          returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 

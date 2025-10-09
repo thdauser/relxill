@@ -47,6 +47,7 @@ enum class ModelName {
   relxillD,
   relxilllpD,
   relxillBB,
+  relxillBBxill,
   relxill_jedsad
 };
 

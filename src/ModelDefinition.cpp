@@ -413,11 +413,20 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
 /**
  * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
-xillParam *get_xill_params(const ModelDefinition &inp_param) {
+xillParam *get_xill_params(ModelDefinition &inp_param) {
   auto *param = new xillParam;
 
   param->model_type = convertModelType(inp_param.get_model_name());
   param->prim_type = convertPrimSpecType(inp_param.primeSpec());
+
+  // currently this model does not allow for many parameters
+  if (is_returnrad_bb_model(param->model_type))
+  {
+    inp_param.insert_par(XPar::afe,1);
+    inp_param.insert_par(XPar::logxi,2);
+    inp_param.insert_par(XPar::logn,18);
+  }
+
 
   // these parameters have to be given for any xillver parameter structure
   try {
@@ -450,6 +459,9 @@ xillParam *get_xill_params(const ModelDefinition &inp_param) {
   param->gam = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->refl_frac = inp_param.get_otherwise_default(XPar::refl_frac, 0);
   param->frac_pl_bb = inp_param.get_otherwise_default(XPar::frac_pl_bb, 0);
+  // "radzone" is the radial zone for the returning bbody radiation as used within the relxillBB for the given radial zone
+  // (not implemented to use it directly, but possible)
+  param->radzone = -1;
   param->kTbb = inp_param.get_otherwise_default(XPar::ktbb, 0);
 
   param->interpret_reflfrac_as_boost =
