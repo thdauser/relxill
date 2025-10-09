@@ -33,7 +33,7 @@ xillTable *cached_xill_tab_nthcomp = NULL;
 xillTable *cached_xill_tab_dens_nthcomp = NULL;
 xillTable *cached_xill_tab_ns = NULL;
 xillTable *cached_xill_tab_co = NULL;
-xillTable *cached_xill_tab_rrad_bb = NULL;
+xillTable* cached_xill_tab_rrad_bb = NULL;
 
 static int get_num_elem(const int *n_parvals, int npar) {
 
@@ -159,7 +159,6 @@ static void set_parindex_from_parname(int *pindex, char **pname, int n, int *sta
 }
 
 void print_xilltable_parameters(const xillTable *tab, char *const *xilltab_parname) {
-
   assert(tab != NULL);
 
   int ii;
@@ -298,7 +297,7 @@ float *get_xilltab_paramvals(const xillTableParam *param, int *status) {
   param_vals[PARAM_DNS] = (float) param->dens;
   param_vals[PARAM_KTB] = (float) param->kTbb;
   param_vals[PARAM_FRA] = (float) param->frac_pl_bb;
-  param_vals[PARAM_RID] = (float) param->radindex;
+  param_vals[PARAM_RID] = (float)param->radindex;
   param_vals[PARAM_INC] = (float) param->incl;
 
   return param_vals;
@@ -315,8 +314,7 @@ int *get_xilltab_indices_for_paramvals(const xillTableParam *param, xillTable *t
   CHECK_MALLOC_RET_STATUS(ind, status, NULL)
 
   for (ii = 0; ii < tab->num_param; ii++) {
-
-    if (tab->num_param_vals[ii] == 0)  // if only 1 value exists in the table
+    if (tab->num_param_vals[ii] == 0) // if only 1 value exists in the table
     {
       ind[ii] = 0;
       continue;
@@ -701,19 +699,24 @@ enum xillTableIds get_xilltable_id(int model_id, int prim_type) {
     return XILLTABLE_ID_NS;
   }
 
-  if (is_co_model(model_id)) {
+  if (is_co_model(model_id))
+  {
     return XILLTABLE_ID_CO;
   }
 
-  if (prim_type == PRIM_SPEC_NTHCOMP) {
+  if (prim_type == PRIM_SPEC_NTHCOMP)
+  {
     return XILLTABLE_ID_NTHCOMP;
   }
 
-  if (is_returnrad_bb_model(model_id)) {
-    if (model_id == MOD_TYPE_RELXILLBBRET){  // relxillBB uses xillverNS table
+  if (is_returnrad_bb_model(model_id))
+  {
+    if (model_id == MOD_TYPE_RELXILLBBRET)
+    {
+      // relxillBB uses xillverNS table
       return XILLTABLE_ID_NS;
     }
-    return XILLTABLE_ID_RRAD;  // relxillBBxill uses xillverRTR table
+    return XILLTABLE_ID_RRAD; // relxillBBxill uses xillverRTR table
   }
 
   return XILLTABLE_ID_STANDARD;
@@ -776,7 +779,8 @@ const char *get_init_xillver_table(xillTable **tab, int model_type, int prim_typ
     }
 
     case XILLTABLE_ID_CO: {
-      if (cached_xill_tab_co == NULL) {
+      if (cached_xill_tab_co == NULL)
+      {
         // not working anymore as param does not exist
         //        assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
         //        assert(param->lxi == 0); // the CO_Table does not have an ionization (weak test to assert it has its default value)
@@ -785,15 +789,17 @@ const char *get_init_xillver_table(xillTable **tab, int model_type, int prim_typ
       }
       *tab = cached_xill_tab_co;
       return XILLTABLE_CO_FILENAME;
-    }
+  }
 
-  case XILLTABLE_ID_RRAD: {
-        if (cached_xill_tab_rrad_bb == NULL) {
-          init_xillver_table(XILLTABLE_RRAD_FILENAME, &cached_xill_tab_rrad_bb, status);
-          CHECK_STATUS_RET(*status, NULL);
-        }
-        *tab = cached_xill_tab_rrad_bb;
-        return XILLTABLE_RRAD_FILENAME;
+  case XILLTABLE_ID_RRAD:
+    {
+      if (cached_xill_tab_rrad_bb == NULL)
+      {
+        init_xillver_table(XILLTABLE_RRAD_FILENAME, &cached_xill_tab_rrad_bb, status);
+        CHECK_STATUS_RET(*status, NULL);
+      }
+      *tab = cached_xill_tab_rrad_bb;
+      return XILLTABLE_RRAD_FILENAME;
   }
 
     default: {

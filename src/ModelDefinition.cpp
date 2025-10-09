@@ -413,7 +413,8 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
 /**
  * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
-xillParam *get_xill_params(ModelDefinition &inp_param) {
+xillParam* get_xill_params(ModelDefinition& inp_param)
+{
   auto *param = new xillParam;
 
   param->model_type = convertModelType(inp_param.get_model_name());
@@ -422,9 +423,9 @@ xillParam *get_xill_params(ModelDefinition &inp_param) {
   // currently this model does not allow for many parameters
   if (is_returnrad_bb_model(param->model_type))
   {
-    inp_param.insert_par(XPar::afe,1);
-    inp_param.insert_par(XPar::logxi,2);
-    inp_param.insert_par(XPar::logn,18);
+    inp_param.insert_par(XPar::afe, 1);
+    inp_param.insert_par(XPar::logxi, 2);
+    inp_param.insert_par(XPar::logn, 18);
   }
 
 

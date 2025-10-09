@@ -32,24 +32,20 @@ extern "C" {
 }
 
 
-
 #define PREC 1e-6
 
 
 // ------- //
-TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]") {
-
+TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
+{
     int status = EXIT_SUCCESS;
 
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.get_xill_params();
 
 
-    xillTable *xill_tab = nullptr;
-    REQUIRE_NOTHROW( get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status) );
-
-
-
+    xillTable* xill_tab = nullptr;
+    REQUIRE_NOTHROW(get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status));
 }
 
 

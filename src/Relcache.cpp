@@ -96,7 +96,7 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
  * @param par New parameters
  * @return 1 if any parameter changed, 0 if all are the same
  */
-int did_rel_param_change(const relParam *cpar, const relParam * par)
+int did_rel_param_change(const relParam* cpar, const relParam* par)
 {
   std::unordered_map<double, double> param_comparison = {
     {par->a, cpar->a},

@@ -715,14 +715,15 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
 
     specXillverReflZones[izone] = new double[n_ener];
 
-    if ( should_noXillverRefl_calculated() )
+    if (should_noXillverRefl_calculated())
     {
       getZoneIncidentReturnFlux(xill_param, returnSpec, specXillverReflZones[izone], izone);
     }
     else
     {
-      if (xill_param->model_type == MOD_TYPE_RELXILLBBRET) {
-        xill_param->kTbb=Tin*xill_param->shiftTmaxRRet;  // currently set for testing the xillverNS table
+      if (xill_param->model_type == MOD_TYPE_RELXILLBBRET)
+      {
+        xill_param->kTbb = Tin * xill_param->shiftTmaxRRet; // currently set for testing the xillverNS table
       }
       if (xill_param->model_type == MOD_TYPE_RELXILLBBRET)
       {
@@ -778,9 +779,11 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
     std::string fbase = "!__relxillOutput-rrad-bbody-";
 
     if ( should_noXillverRefl_calculated() ){
-      if (fabs(xill_param->boost) < 1e-8) {
+      if (fabs(xill_param->boost) < 1e-8)
+      {
         fname = fbase + "obs-mirror-primary.fits";
-      } else if (xill_param->boost < 0)
+      }
+      else if (xill_param->boost < 0)
       {
         fname = fbase + "obs-mirror-refl.fits";
       }
@@ -788,11 +791,14 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
       {
         fname = fbase + "obs-mirror.fits";
       }
-    } else {
+    }
+    else
+    {
       if (fabs(xill_param->boost) < 1e-8)
       {
         fname = fbase + "obs-primary.fits";
-      } else if (xill_param->boost < 1)
+      }
+      else if (xill_param->boost < 1)
       {
         fname = fbase + "obs-reflect.fits";
       }

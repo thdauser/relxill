@@ -93,7 +93,8 @@ int is_alpha_model(int model_type) {
 }
 
 int is_ns_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) ) {
+  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS))
+  {
     return 1;
   } else {
     return 0;
@@ -219,8 +220,10 @@ int is_relxill_model(int model_type) {
   }
 }
 
-int is_returnrad_bb_model(int model_type) {
-  if (model_type == MOD_TYPE_RELXILLBBRET || model_type == MOD_TYPE_RELXILLBBRETXILL){
+int is_returnrad_bb_model(int model_type)
+{
+  if (model_type == MOD_TYPE_RELXILLBBRET || model_type == MOD_TYPE_RELXILLBBRETXILL)
+  {
     return 1;
   }
   return 0;
@@ -610,9 +613,10 @@ int do_renorm_model(relParam *rel_param) {
 
   int renorm;
 
-  if (is_relxill_model(rel_param->model_type)) {
+  if (is_relxill_model(rel_param->model_type))
+  {
     if (rel_param->emis_type == EMIS_TYPE_LP || is_returnrad_bb_model(rel_param->model_type)
-        || do_not_normalize_relline()) {
+      || do_not_normalize_relline()) {
       renorm = 0;
     } else {
       renorm = 1;
