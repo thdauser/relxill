@@ -23,9 +23,8 @@ extern "C" {
 #include "writeOutfiles.h"
 }
 
-#include <vector>
 #include <utility>
-#include <algorithm>
+#include <unordered_map>
 
 // new CACHE routines
 cnode *cache_relbase = nullptr;
@@ -367,7 +366,6 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 }
 
 
-
 /**
  * @brief Check if any xillver parameters have changed between two parameter sets
  * @param cpar Current parameters
@@ -376,7 +374,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
  */
 int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
 
-  std::vector<std::pair<double, double>> param_pairs = {
+  std::unordered_map<double, double> param_comparison = {
     {par->afe, cpar->afe},
     {par->dens, cpar->dens},
     {par->ect, cpar->ect},
@@ -394,8 +392,13 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
     {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}
   };
 
-  return std::any_of(param_pairs.begin(), param_pairs.end(),
-                     [](const auto& p) { return are_values_different(p.first, p.second); });
+  for (const auto& param : param_comparison) {
+    if (are_values_different(param.first, param.second)) {
+      return 1;
+    }
+  }
+
+  return 0;
 }
 
 

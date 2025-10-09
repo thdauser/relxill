@@ -19,6 +19,8 @@
 #include "Relcache.h"
 #include "Relbase.h"
 
+#include <unordered_map>
+
 /** probably best move to "utils" **/
 inpar *get_inputvals_struct(double *ener, int n_ener, const relParam *rel_par, int *status) {
   auto *inp = (inpar *) malloc(sizeof(inpar));
@@ -49,108 +51,81 @@ bool are_values_different(double val1, double val2) {
 
 static int comp_sys_param(const relParam *cpar, const relParam *par) {
 
-  if (are_values_different(par->a, cpar->a)) {
-    return 1;
+  std::unordered_map<double, double> param_comparison = {
+    {par->a, cpar->a},
+    {par->emis1, cpar->emis1},
+    {par->emis2, cpar->emis2},
+    {par->gamma, cpar->gamma},
+    {par->height, cpar->height},
+    {par->htop, cpar->htop},
+    {par->incl, cpar->incl},
+    {par->beta, cpar->beta},
+    {par->rin, cpar->rin},
+    {par->rbr, cpar->rbr},
+    {par->rout, cpar->rout},
+    {par->x, cpar->x},
+    {par->x_in, cpar->x_in},
+    {static_cast<double>(par->limb), static_cast<double>(cpar->limb)},
+    {static_cast<double>(par->return_rad), static_cast<double>(cpar->return_rad)},
+    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)},
+    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
+  };
+
+  for (const auto& param : param_comparison) {
+    if (are_values_different(param.first, param.second)) {
+      return 1;
+    }
   }
-  if (are_values_different(par->emis1, cpar->emis1)) {
-    return 1;
-  }
-  if (are_values_different(par->emis2, cpar->emis2)) {
-    return 1;
-  }
-  if (are_values_different(par->gamma, cpar->gamma)) {
-    return 1;
-  }
-  if (are_values_different(par->height, cpar->height)) {
-    return 1;
-  }
-  if (are_values_different(par->htop, cpar->htop)) {
-    return 1;
-  }
-  if (are_values_different(par->incl, cpar->incl)) {
-    return 1;
-  }
-  if (are_values_different(par->beta, cpar->beta)) {
-    return 1;
-  }
-  if (are_values_different(par->rin, cpar->rin)) {
-    return 1;
-  }
-  if (are_values_different(par->rbr, cpar->rbr)) {
-    return 1;
-  }
-  if (are_values_different(par->rout, cpar->rout)) {
-    return 1;
-  }
-  if (are_values_different(par->x, cpar->x)) {
-    return 1;
-  }
-  if (are_values_different(par->x_in, cpar->x_in)) {
-    return 1;
-  }
-  if (par->limb != cpar->limb) {
-    return 1;
-  }
-  if (par->return_rad != cpar->return_rad) {
-    return 1;
-  }
-  // AN: this is a rare case of switching between model types in one session, but I caught it
-  // (can it also happen for emis_type?)
-  if (par->model_type != cpar->model_type) {
-    return 1;
-  }
-  if (par->prim_geometry_type != cpar->prim_geometry_type) {
-    return 1;
-  }
+
+  // Handle the special case for correction factors
   // for now, if we have correction factors, there is no caching of rel_param results possible
   // TODO: move correction factors and therefore the return rad emis profile outside of the system parameters
-  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr ){
+  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr) {
     return 1;
   }
 
   return 0;
 }
 
+
+/**
+ * @brief Check if any relativistic parameters have changed between two parameter sets
+ * @param cpar Current parameters
+ * @param par New parameters
+ * @return 1 if any parameter changed, 0 if all are the same
+ */
 int did_rel_param_change(const relParam *cpar, const relParam *par) {
 
-  if (cpar == nullptr) {
-    return 1;
-  }
+  std::unordered_map<double, double> param_comparison = {
+    {par->a, cpar->a},
+    {par->incl, cpar->incl},
+    {par->rin, cpar->rin},
+    {par->rout, cpar->rout},
+    {par->emis1, cpar->emis1},
+    {par->emis2, cpar->emis2},
+    {par->rbr, cpar->rbr},
+    {par->lineE, cpar->lineE},
+    {par->gamma, cpar->gamma},
+    {par->height, cpar->height},
+    {par->htop, cpar->htop},
+    {par->beta, cpar->beta},
+    {par->z, cpar->z},
+    {par->x, cpar->x},
+    {par->x_in, cpar->x_in},
+    {static_cast<double>(par->emis_type), static_cast<double>(cpar->emis_type)},
+    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)},
+    {static_cast<double>(par->limb), static_cast<double>(cpar->limb)},
+    {static_cast<double>(par->return_rad), static_cast<double>(cpar->return_rad)},
+    {static_cast<double>(par->do_renorm_relline), static_cast<double>(cpar->do_renorm_relline)},
+    {static_cast<double>(par->ion_grad_type), static_cast<double>(cpar->ion_grad_type)},
+    {static_cast<double>(par->num_zones), static_cast<double>(cpar->num_zones)},
+    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
+  };
 
-  // first check all system parameters
-  if (comp_sys_param(cpar, par)) {
-    return 1;
-  }
-
-  if (are_values_different((double) par->emis_type, (double) cpar->emis_type)) {
-    return 1;
-  }
-  if (are_values_different((double) par->model_type, (double) cpar->model_type)) {
-    return 1;
-  }
-
-  if (are_values_different(par->z, cpar->z)) {
-    return 1;
-  }
-  if (are_values_different(par->lineE, cpar->lineE)) {
-    return 1;
-  }
-
-  if (par->do_renorm_relline != cpar->do_renorm_relline) {
-    return 1;
-  }
-
-  if (par->return_rad != cpar->return_rad) {
-    return 1;
-  }
-
-  if (are_values_different((double) par->ion_grad_type, (double) cpar->ion_grad_type)) {
-    return 1;
-  }
-
-  /** also check if the number of zones changed **/
-  if (par->num_zones != cpar->num_zones) {
-    return 1;
+  for (const auto& param : param_comparison) {
+    if (are_values_different(param.first, param.second)) {
+      return 1;
+    }
   }
 
   return 0;
@@ -211,6 +186,7 @@ void set_cached_xill_param(xillParam *par, xillParam **ca_xill_param, int *statu
   (*ca_xill_param)->lxi = par->lxi;
   (*ca_xill_param)->kTbb = par->kTbb;
   (*ca_xill_param)->frac_pl_bb = par->frac_pl_bb;
+  (*ca_xill_param)->radzone = par->radzone;
 
   (*ca_xill_param)->z = par->z;
 
