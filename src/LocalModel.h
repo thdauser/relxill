@@ -142,6 +142,9 @@ class LocalModel {
   ModelDefinition m_model_params;
 
   void line_model(const XspecSpectrum &spectrum);
+  void add_jedsad_parameters_to_model_params();
+  bool handle_zero_jedsad_parameters(const XspecSpectrum& spectrum);
+  void check_relxill_error_default(int status);
   void relxill_model(const XspecSpectrum &spectrum);
   void conv_model(const XspecSpectrum &spectrum);
   void xillver_model(const XspecSpectrum &spectrum);

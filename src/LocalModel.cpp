@@ -51,48 +51,76 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
 
 }
 
-/*
- * @brief calculate relxill model
+void LocalModel::add_jedsad_parameters_to_model_params()
+{
+  // convert jedsad parameters to Gamma/Ecut
+  auto primespec_params = convert_jedsad_to_primaryspec_params(m_model_params);
+
+  // add these parameters to the input list
+  m_model_params.insert_par(XPar::gamma, primespec_params.gamma);
+  m_model_params.insert_par(XPar::ecut, primespec_params.ecut);
+
+  if (is_debug_run())
+  {
+    printf(" *** debug: jedsad parameters: gamma=%f, ecut=%f\n", primespec_params.gamma, primespec_params.ecut);
+  }
+}
+
+bool LocalModel::handle_zero_jedsad_parameters(const XspecSpectrum& spectrum)
+{
+  if (m_model_params.get_par(XPar::gamma) < 1e-8 || m_model_params.get_par(XPar::ecut) < 1e-8)
+  {
+    printf(" *** warning: jedsad parameters are 0, no reflection calculated\n");
+    setArrayToZero(spectrum.flux, spectrum.num_flux_bins());
+    return true;
+  }
+  return false;
+}
+
+void LocalModel::check_relxill_error_default(int status)
+{
+  if (status != EXIT_SUCCESS)
+  {
+    throw std::exception();
+  }
+}
+
+
+/**
+ * @brief Calculates the RELXILL model spectrum combining relativistic reflection and X-ray illumination
+ *
+ * Handles different RELXILL variants:
+ * - RelxillBB: Uses relxill_bb_kernel() with separate rel/xill parameter structures
+ * - JedSad variant: Converts JedSad parameters to gamma/Ecut, validates non-zero values
+ * - Standard: Uses relxill_kernel() with combined model parameters
+ *
+ * @param spectrum Input/output spectrum object (energy grid, flux array, bin count)
+ * @throws std::exception on calculation failures
+ * @note Modifies spectrum.flux array; may add parameters for JedSad models
  */
 void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
-
   int status = EXIT_SUCCESS;
-  if (m_model_params.irradiation() == T_Irrad::Const) {
+
+  if (m_model_params.get_model_name() == ModelName::relxillBB)
+  {
     relParam *rel_param = LocalModel::get_rel_params();
     xillParam *xill_param = LocalModel::get_xill_params();
     relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), xill_param, rel_param, &status);
     delete rel_param;
     delete xill_param;
-
-  } else {
-
-    if (LocalModel::m_model_params.get_model_name() == ModelName::relxill_jedsad) {
-
-      // convert jedsad parameters to Gamma/Ecut
-      auto primespec_params = convert_jedsad_to_primaryspec_params(m_model_params);
-
-      // add these parameters to the input list
-      m_model_params.insert_par(XPar::gamma, primespec_params.gamma);
-      m_model_params.insert_par(XPar::ecut, primespec_params.ecut);
-
-      if (primespec_params.gamma < 1e-8 || primespec_params.ecut < 1e-8) {
-        printf(" *** warning: jedsad parameters are 0, no reflection calculated\n");
-        setArrayToZero(spectrum.flux, spectrum.num_flux_bins());
-        return;
-      } else if (is_debug_run()) {
-        printf(" *** debug: jedsad parameters: gamma=%f, ecut=%f\n", primespec_params.gamma, primespec_params.ecut);
-      }
-
+  }
+  else
+  {
+    if (m_model_params.get_model_name() == ModelName::relxill_jedsad)
+    {
+      add_jedsad_parameters_to_model_params();
+      if (handle_zero_jedsad_parameters(spectrum)) return;
     }
-
     relxill_kernel(spectrum, m_model_params, &status);
   }
 
-  if (status != EXIT_SUCCESS) {
-    throw std::exception();
-  }
-
+  check_relxill_error_default(status);
 }
 
 
