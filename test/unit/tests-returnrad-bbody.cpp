@@ -46,6 +46,10 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
 
     xillTable* xill_tab = nullptr;
     REQUIRE_NOTHROW(get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status));
+
+    DefaultSpec default_spec{};
+    XspecSpectrum spec = default_spec.get_xspec_spectrum();
+    lmod.eval_model(spec);
 }
 
 

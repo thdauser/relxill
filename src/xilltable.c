@@ -22,9 +22,9 @@
 
 // possible parameters for the xillver tables
 int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_KTE, PARAM_DNS,
-                            PARAM_KTB, PARAM_ACO, PARAM_FRA, PARAM_INC};
+                            PARAM_KTB, PARAM_ACO, PARAM_FRA, PARAM_INC, PARAM_RID};
 char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_KTE, NAME_DNS,
-                              NAME_KTB, NAME_ACO, NAME_FRA, NAME_INC};
+                              NAME_KTB, NAME_ACO, NAME_FRA, NAME_INC, NAME_RID};
 
 // storage for the tables
 xillTable *cached_xill_tab = NULL;
@@ -77,7 +77,7 @@ xillTable *new_xillTable(int num_param, int *status) {
   tab->num_param = num_param;
 
   // first make sure we ask only for the dimensions that are implemented
-  if (!(tab->num_param == 5 || tab->num_param == 6)) {
+  if (!(tab->num_param == 5 || tab->num_param == 6 || tab->num_param == 2)) {
     RELXILL_ERROR("wrong dimensionality of the xillver table", status);
     return NULL;
   }
@@ -609,7 +609,7 @@ void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTab
   // Set up bounds for the all dimensions (not we count backwards, meaning first entries are zero for dim<max_dims)
   for (int iloop = 0; iloop < max_dims; iloop++)
   {
-    int ipar = max_dims - num_param + iloop; // parameter index from the input array
+    int ipar = num_param - max_dims + iloop; // parameter index from the input array
     if (iloop == max_dims - 1) // the last entry is always the inclination
     {
       assert(ipar == num_param - 1);

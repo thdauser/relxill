@@ -176,7 +176,7 @@
 #define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.4.fits"
 #define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
 #define XILLTABLE_CO_FILENAME "xillverCO.fits"
-#define XILLTABLE_RRAD_FILENAME "xillverRTR_v0.1.fits"
+#define XILLTABLE_RRAD_FILENAME "xillverRTR_v0.1_mod.fits"
 
 // useful constants
 #define CONVERT_KEV2ERG 1.6021773000008302e-09  // 1 keV in erg

@@ -669,7 +669,7 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
                        int *status) {
 
   CHECK_STATUS_VOID(*status);
-  assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET);
+  assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET || xill_param->model_type == MOD_TYPE_RELXILLBBRETXILL);
 
 
   // get a standard grid for the convolution (is rebinned later to the input grid)

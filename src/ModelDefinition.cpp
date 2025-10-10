@@ -59,8 +59,8 @@ int convertModelType(ModelName name) {
     case ModelName::relxillCO: return MOD_TYPE_RELXILLCO;
     case ModelName::relxilllpAlpha: return MOD_TYPE_RELXILLLPALPHA;
     case ModelName::relxillBB: return MOD_TYPE_RELXILLBBRET;
-    case ModelName::relxillBBxill: return MOD_TYPE_RELXILLBBRETXILL;
-    case ModelName::relxill_jedsad: return MOD_TYPE_RELXILL_JEDSAD;
+  case ModelName::relxillBBxill: return MOD_TYPE_RELXILLBBRETXILL;
+  case ModelName::relxill_jedsad: return MOD_TYPE_RELXILL_JEDSAD;
   }
   puts(" *** relxill-error: unknown ModelName, converting model name to integer failed ");
   exit(EXIT_FAILURE);
@@ -428,7 +428,8 @@ xillParam* get_xill_params(const ModelDefinition& inp_param)
   {
     default_logxi = 2.0;
     default_logn = 18.0;
-  } else if (is_co_model(param->model_type))
+  }
+  else if (is_co_model(param->model_type))
   {
     default_afe = inp_param.get_par(XPar::a_co);
     default_logn = 17.0;
@@ -444,10 +445,10 @@ xillParam* get_xill_params(const ModelDefinition& inp_param)
   }
 
   // important default values
-    param->afe = inp_param.get_otherwise_default(XPar::afe, default_afe);
+  param->afe = inp_param.get_otherwise_default(XPar::afe, default_afe);
   param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp)   // can be either ecut or kte
-               ? inp_param.get_otherwise_default(XPar::kte, 0)
-               : inp_param.get_otherwise_default(XPar::ecut, 300);
+                 ? inp_param.get_otherwise_default(XPar::kte, 0)
+                 : inp_param.get_otherwise_default(XPar::ecut, 300);
   param->lxi = inp_param.get_otherwise_default(XPar::logxi, default_logxi);
   param->dens = inp_param.get_otherwise_default(XPar::logn, default_logn);
   param->iongrad_index = inp_param.get_otherwise_default(XPar::iongrad_index, 0);

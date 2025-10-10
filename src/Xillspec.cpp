@@ -595,6 +595,8 @@ void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
                                            xillSpec *xill_spec,
                                            int *status) {
 
+  CHECK_STATUS_VOID(*status);
+
   auto xill_angdist_inp = new double[xill_spec->n_ener];
 
   calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
