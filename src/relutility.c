@@ -616,7 +616,8 @@ int do_renorm_model(relParam *rel_param) {
   if (is_relxill_model(rel_param->model_type))
   {
     if (rel_param->emis_type == EMIS_TYPE_LP || is_returnrad_bb_model(rel_param->model_type)
-      || do_not_normalize_relline()) {
+      || do_not_normalize_relline())
+    {
       renorm = 0;
     } else {
       renorm = 1;

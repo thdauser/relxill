@@ -607,23 +607,24 @@ void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTab
   int loop_end[max_dims];
 
   // Set up bounds for the all dimensions (not we count backwards, meaning first entries are zero for dim<max_dims)
-  for (int iloop = 0; iloop < max_dims  ; iloop++)
+  for (int iloop = 0; iloop < max_dims; iloop++)
   {
     int ipar = max_dims - num_param + iloop; // parameter index from the input array
-    if ( iloop == max_dims -1 )  // the last entry is always the inclination
+    if (iloop == max_dims - 1) // the last entry is always the inclination
     {
       assert(ipar == num_param - 1);
       // always load **all** incl bins as for relxill we will certainly need it
       loop_start[iloop] = 0;
       loop_end[iloop] = tab->n_incl;
     }
-    else if (ipar>=0 && ipar < num_param - 1) // all remaining existing dimensions
+    else if (ipar >= 0 && ipar < num_param - 1) // all remaining existing dimensions
     {
       loop_start[iloop] = ind[ipar];
       loop_end[iloop] = ind[ipar] + 1;
     }
     else
-    { // dimension does not exist
+    {
+      // dimension does not exist
       loop_start[iloop] = 0;
       loop_end[iloop] = 0;
     }
@@ -633,13 +634,18 @@ void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTab
   double defLogxi = getDefaultLogxi(param);
 
   int ii, jj, kk, ll, mm, nn;
-  for (nn = loop_start[0]; nn <= loop_end[0]; nn++) {
-    for (ii = loop_start[1]; ii <= loop_end[1]; ii++) {
-      for (jj = loop_start[2]; jj <= loop_end[2]; jj++) {
-        for (kk = loop_start[3]; kk <= loop_end[3]; kk++) {
-          for (ll = loop_start[4]; ll <= loop_end[4]; ll++) {
-            for (mm = loop_start[5]; mm < loop_end[5]; mm++) {
-
+  for (nn = loop_start[0]; nn <= loop_end[0]; nn++)
+  {
+    for (ii = loop_start[1]; ii <= loop_end[1]; ii++)
+    {
+      for (jj = loop_start[2]; jj <= loop_end[2]; jj++)
+      {
+        for (kk = loop_start[3]; kk <= loop_end[3]; kk++)
+        {
+          for (ll = loop_start[4]; ll <= loop_end[4]; ll++)
+          {
+            for (mm = loop_start[5]; mm < loop_end[5]; mm++)
+            {
               if (get_xillspec(tab, nn, ii, jj, kk, ll, mm) == NULL) {
                 xilltable_fits_load_single_spec(fname,
                                                 &fptr,

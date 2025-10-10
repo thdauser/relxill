@@ -132,7 +132,6 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
  */
 void LocalModel::conv_model(const XspecSpectrum& spectrum) const
 {
-
   if (calcSum(spectrum.flux, spectrum.num_flux_bins()) <= 0.0) {
     throw ModelEvalFailed("input flux for convolution model needs to be >0");
   }
@@ -155,7 +154,6 @@ void LocalModel::conv_model(const XspecSpectrum& spectrum) const
  */
 void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
 {
-
   int status = EXIT_SUCCESS;
 
   xillParam *xill_param = get_xill_params();

@@ -237,7 +237,7 @@ typedef struct {
   double dens;
   double frac_pl_bb;
   double kTbb;
-  int radindex; // for the relxillBB model this is the number of the specific zone
+  double radindex; // for the relxillBB model this is the number of the specific zone
   int prim_type;
   int model_type;
 } xillTableParam;
