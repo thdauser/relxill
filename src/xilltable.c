@@ -336,18 +336,24 @@ int *get_xilltab_indices_for_paramvals(const xillTableParam *param, xillTable *t
   return ind;
 }
 
-static int
-get_xillspec_rownum(const int *num_param_vals, int num_param, int nn, int ii, int jj, int kk, int ll, int mm) {
+static int get_xillspec_rownum(const int* num_param_vals, int num_param, int nn, int ii, int jj, int kk, int ll, int mm)
+{
+  switch (num_param)
+  {
+  case 2:
+    return (ii * num_param_vals[1] + jj);
 
-  if (num_param == 5) {
+  case 5:
     return (((ii * num_param_vals[1] + jj) * num_param_vals[2]
         + kk) * num_param_vals[3] + ll) * num_param_vals[4] + mm + 1;
-  } else if (num_param == 6) {
+
+  case 6:
     return ((((nn * num_param_vals[1] + ii) * num_param_vals[2]
         + jj) * num_param_vals[3] + kk) * num_param_vals[4] + ll) * num_param_vals[5] + mm + 1;
-  }
 
-  return -1;
+  default:
+    return -1;
+  }
 }
 
 static void set_dat(float *spec, xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
@@ -592,29 +598,47 @@ void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTab
 
   fitsfile *fptr = NULL;
 
-  // (current) standard case for 5 param
-  int i0lo = 0;
-  int i0hi = 0;
-  int istart = 0;
-  // for 6dim we (i.e., I) decided to use the complicated statement
-  // (reason: new dimension has to be at the beginning, as inclination HAS to be last
-  if (tab->num_param == 6) {
-    i0lo = ind[0];
-    i0hi = ind[0] + 1;
-    istart = 1;
+  // Determine the actual number of parameters we need to iterate over
+  int num_param = tab->num_param;
+  int max_dims = 6; // Maximum supported dimensions
+
+  // Set up loop bounds for each dimension
+  int loop_start[max_dims];
+  int loop_end[max_dims];
+
+  // Set up bounds for the all dimensions (not we count backwards, meaning first entries are zero for dim<max_dims)
+  for (int iloop = 0; iloop < max_dims  ; iloop++)
+  {
+    int ipar = max_dims - num_param + iloop; // parameter index from the input array
+    if ( iloop == max_dims -1 )  // the last entry is always the inclination
+    {
+      assert(ipar == num_param - 1);
+      // always load **all** incl bins as for relxill we will certainly need it
+      loop_start[iloop] = 0;
+      loop_end[iloop] = tab->n_incl;
+    }
+    else if (ipar>=0 && ipar < num_param - 1) // all remaining existing dimensions
+    {
+      loop_start[iloop] = ind[ipar];
+      loop_end[iloop] = ind[ipar] + 1;
+    }
+    else
+    { // dimension does not exist
+      loop_start[iloop] = 0;
+      loop_end[iloop] = 0;
+    }
   }
 
   double defDensity = getDefaultDensity(param);
   double defLogxi = getDefaultLogxi(param);
 
   int ii, jj, kk, ll, mm, nn;
-  for (nn = i0lo; nn <= i0hi; nn++) { // for 5dim this is a dummy loop
-    for (ii = ind[istart]; ii <= ind[istart] + 1; ii++) {
-      for (jj = ind[istart + 1]; jj <= ind[istart + 1] + 1; jj++) {
-        for (kk = ind[istart + 2]; kk <= ind[istart + 2] + 1; kk++) {
-          for (ll = ind[istart + 3]; ll <= ind[istart + 3] + 1; ll++) {
-            // always load **all** incl bins as for relxill we will certainly need it
-            for (mm = 0; mm < tab->n_incl; mm++) {
+  for (nn = loop_start[0]; nn <= loop_end[0]; nn++) {
+    for (ii = loop_start[1]; ii <= loop_end[1]; ii++) {
+      for (jj = loop_start[2]; jj <= loop_end[2]; jj++) {
+        for (kk = loop_start[3]; kk <= loop_end[3]; kk++) {
+          for (ll = loop_start[4]; ll <= loop_end[4]; ll++) {
+            for (mm = loop_start[5]; mm < loop_end[5]; mm++) {
 
               if (get_xillspec(tab, nn, ii, jj, kk, ll, mm) == NULL) {
                 xilltable_fits_load_single_spec(fname,
@@ -637,7 +661,6 @@ void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTab
         }
       }
     }
-
   }
 
   if (fptr != NULL) {
@@ -800,7 +823,7 @@ const char *get_init_xillver_table(xillTable **tab, int model_type, int prim_typ
       }
       *tab = cached_xill_tab_rrad_bb;
       return XILLTABLE_RRAD_FILENAME;
-  }
+    }
 
     default: {
       RELXILL_ERROR("could not identify a xillver table for this model", status);
