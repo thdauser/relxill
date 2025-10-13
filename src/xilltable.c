@@ -333,7 +333,7 @@ int* get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTa
     float pval = inp_global_paramvals[tab->param_index[ii]];
     ind_xilltab[ii] = binary_search_float(tab->param_vals[ii], tab->num_param_vals[ii], pval);
 
-   // routine should be safe, meaning index always within the array bounds
+    // routine should be safe, meaning index always within the array bounds
     assert(ind_xilltab[ii] >= 0 && ind_xilltab[ii] < tab->num_param_vals[ii]);
 
     // make sure all parameters are by default within the defined limits here!!
@@ -380,17 +380,18 @@ static int get_xillspec_rownum(const int* num_param_vals, int num_param, int nn,
   }
 }
 
-static void set_dat(float* spec, const xillTable* tab, int i0, int i1, int i2, int i3, int i4, int i5) {
+static void set_dat(float* spec, const xillTable* tab, int i0, int i1, int i2, int i3, int i4, int i5)
+{
   int row_index = get_xillspec_rownum(tab->num_param_vals, tab->num_param,
-                                  i0, i1, i2, i3, i4, i5);
-  tab->data_storage[row_index-1] = spec;
+                                      i0, i1, i2, i3, i4, i5);
+  tab->data_storage[row_index - 1] = spec;
 }
 
 // get one Spectrum from the Data Storage
-float* get_xillspec(const xillTable* tab, int i0, int i1, int i2, int i3, int i4, int i5) {
-
+float* get_xillspec(const xillTable* tab, int i0, int i1, int i2, int i3, int i4, int i5)
+{
   int rowindex = get_xillspec_rownum(tab->num_param_vals, tab->num_param,
-                                  i0, i1, i2, i3, i4, i5);
+                                     i0, i1, i2, i3, i4, i5);
 
   return tab->data_storage[rowindex-1];
 }
@@ -536,7 +537,8 @@ static int convertTo6dimTableIndex(int num_param, int indexTable) {
 }
 
 
-void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
+void renorm_xill_spec(float* spec, int n, double lxi, double dens)
+{
   for (int ii = 0; ii < n; ii++)
   {
     spec[ii] /= pow(10, lxi); // do not cast to float (fails refdata) NOLINT(*-narrowing-conversions)
@@ -573,7 +575,7 @@ static void normalizeXillverSpecLogxiDensity(float* spec,
 }
 
 
-static void xilltable_fits_load_single_spec(const char *fname,
+static void xilltable_fits_load_single_spec(const char* fname,
                                             fitsfile** fptr,
                                             const xillTable* tab,
                                             double defDensity,
@@ -584,7 +586,7 @@ static void xilltable_fits_load_single_spec(const char *fname,
                                             int kk,
                                             int ll,
                                             int mm,
-                                            int *status)
+                                            int* status)
 {
   CHECK_STATUS_VOID(*status);
 
@@ -631,13 +633,15 @@ static void xilltable_fits_load_single_spec(const char *fname,
 static double getDefaultDensity(const xillTableParam *param) {
   return param->dens;
 }
+
 static double getDefaultLogxi(const xillTableParam* param)
 {
   return param->lxi;
 }
 
-void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, const int *ind, int *status) {
-
+void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, const int* ind,
+                         int* status)
+{
   CHECK_STATUS_VOID(*status);
 
   fitsfile *fptr = NULL;
@@ -799,10 +803,9 @@ enum xillTableIds get_xilltable_id(int model_id, int prim_type) {
 }
 
 xillTableParam* get_xilltab_param(const xillParam *param, int *status) {
-
   CHECK_STATUS_RET(*status, NULL);
 
-  xillTableParam *tab_param = malloc(sizeof(xillTableParam));
+  xillTableParam* tab_param = malloc(sizeof(xillTableParam));
   CHECK_MALLOC_RET_STATUS(tab_param, status, NULL)
 
   tab_param->gam = param->gam;
@@ -956,7 +959,7 @@ void free_all_cached_xillTables(void)
   }
 }
 
-static void interp_5d_tab_incl(const xillTable* tab, double*flu, int n_ener,
+static void interp_5d_tab_incl(const xillTable* tab, double* flu, int n_ener,
                                double f1, double f2, double f3, double f4,
                                int i0, int i1, int i2, int i3, int i4, int i5) {
 
@@ -1002,26 +1005,26 @@ static void interp_5d_tab_incl(const xillTable* tab, double*flu, int n_ener,
   int ii;
   for (ii = 0; ii < n_ener; ii++) {
     flu[ii] =
-        f_0000 * (double) (dat_0000[ii]) +
-            f_1000 * (double) (dat_1000[ii]) +
-            f_0100 * (double) (dat_0100[ii]) +
-            f_0010 * (double) (dat_0010[ii]) +
-            f_1100 * (double) (dat_1100[ii]) +
-            f_1010 * (double) (dat_1010[ii]) +
-            f_0110 * (double) (dat_0110[ii]) +
-            f_1110 * (double) (dat_1110[ii]) +
-            f_0001 * (double) (dat_0001[ii]) +
-            f_1001 * (double) (dat_1001[ii]) +
-            f_0101 * (double) (dat_0101[ii]) +
-            f_0011 * (double) (dat_0011[ii]) +
-            f_1101 * (double) (dat_1101[ii]) +
-            f_1011 * (double) (dat_1011[ii]) +
-            f_0111 * (double) (dat_0111[ii]) +
-        f_1111 * (double)(dat_1111[ii]);
+      f_0000 * (double)dat_0000[ii] +
+      f_1000 * (double)dat_1000[ii] +
+      f_0100 * (double)dat_0100[ii] +
+      f_0010 * (double)dat_0010[ii] +
+      f_1100 * (double)dat_1100[ii] +
+      f_1010 * (double)dat_1010[ii] +
+      f_0110 * (double)dat_0110[ii] +
+      f_1110 * (double)dat_1110[ii] +
+      f_0001 * (double)dat_0001[ii] +
+      f_1001 * (double)dat_1001[ii] +
+      f_0101 * (double)dat_0101[ii] +
+      f_0011 * (double)dat_0011[ii] +
+      f_1101 * (double)dat_1101[ii] +
+      f_1011 * (double)dat_1011[ii] +
+      f_0111 * (double)dat_0111[ii] +
+      f_1111 * (double)dat_1111[ii];
   }
 }
 
-static void interp_5d_tab(const xillTable* tab, double *flu, int n_ener,
+static void interp_5d_tab(const xillTable* tab, double* flu, int n_ener,
                           double f1, double f2, double f3, double f4, double f5,
                           int i0, int i1, int i2, int i3, int i4,
                           int i5) {
@@ -1101,41 +1104,42 @@ static void interp_5d_tab(const xillTable* tab, double *flu, int n_ener,
   double f_11111 = (f1) * (f2) * (f3) * (f4) * (f5);
 
   int ii;
-  for (ii = 0; ii < n_ener; ii++) {
+  for (ii = 0; ii < n_ener; ii++)
+  {
     flu[ii] =
         f_00000 * (double) dat_00000[ii] +
-            f_10000 * (double) dat_10000[ii] +
-            f_01000 * (double) dat_01000[ii] +
-            f_00100 * (double) dat_00100[ii] +
-            f_11000 * (double) dat_11000[ii] +
-            f_10100 * (double) dat_10100[ii] +
-            f_01100 * (double) dat_01100[ii] +
-            f_11100 * (double) dat_11100[ii] +
-            f_00010 * (double) dat_00010[ii] +
-            f_10010 * (double) dat_10010[ii] +
-            f_01010 * (double) dat_01010[ii] +
-            f_00110 * (double) dat_00110[ii] +
-            f_11010 * (double) dat_11010[ii] +
-            f_10110 * (double) dat_10110[ii] +
-            f_01110 * (double) dat_01110[ii] +
-            f_11110 * (double) dat_11110[ii]
-            +
-                f_00001 * (double) dat_00001[ii] +
-            f_10001 * (double) dat_10001[ii] +
-            f_01001 * (double) dat_01001[ii] +
-            f_00101 * (double) dat_00101[ii] +
-            f_11001 * (double) dat_11001[ii] +
-            f_10101 * (double) dat_10101[ii] +
-            f_01101 * (double) dat_01101[ii] +
-            f_11101 * (double) dat_11101[ii] +
-            f_00011 * (double) dat_00011[ii] +
-            f_10011 * (double) dat_10011[ii] +
-            f_01011 * (double) dat_01011[ii] +
-            f_00111 * (double) dat_00111[ii] +
-            f_11011 * (double) dat_11011[ii] +
-            f_10111 * (double) dat_10111[ii] +
-            f_01111 * (double) dat_01111[ii] +
-            f_11111 * (double)dat_11111[ii];
+        f_10000 * (double)dat_10000[ii] +
+        f_01000 * (double) dat_01000[ii] +
+        f_00100 * (double) dat_00100[ii] +
+        f_11000 * (double) dat_11000[ii] +
+        f_10100 * (double) dat_10100[ii] +
+        f_01100 * (double) dat_01100[ii] +
+        f_11100 * (double) dat_11100[ii] +
+        f_00010 * (double) dat_00010[ii] +
+        f_10010 * (double) dat_10010[ii] +
+        f_01010 * (double) dat_01010[ii] +
+        f_00110 * (double) dat_00110[ii] +
+        f_11010 * (double) dat_11010[ii] +
+        f_10110 * (double) dat_10110[ii] +
+        f_01110 * (double) dat_01110[ii] +
+        f_11110 * (double) dat_11110[ii]
+        +
+        f_00001 * (double) dat_00001[ii] +
+        f_10001 * (double) dat_10001[ii] +
+        f_01001 * (double) dat_01001[ii] +
+        f_00101 * (double) dat_00101[ii] +
+        f_11001 * (double) dat_11001[ii] +
+        f_10101 * (double) dat_10101[ii] +
+        f_01101 * (double) dat_01101[ii] +
+        f_11101 * (double) dat_11101[ii] +
+        f_00011 * (double) dat_00011[ii] +
+        f_10011 * (double) dat_10011[ii] +
+        f_01011 * (double) dat_01011[ii] +
+        f_00111 * (double) dat_00111[ii] +
+        f_11011 * (double) dat_11011[ii] +
+        f_10111 * (double) dat_10111[ii] +
+        f_01111 * (double) dat_01111[ii] +
+        f_11111 * (double) dat_11111[ii];
   }
 }
 
@@ -1215,7 +1219,8 @@ static void interp_6d_tab(const xillTable* tab, double* flu, int n_ener,
 static void ensure_ecut_within_boundarys(const xillTable* tab, const xillTableParam *param, double *ipol_fac) {
   // first need to make sure ECUT is a parameter in the table
   int index_ect = get_xilltab_param_index(tab, PARAM_ECT);
-  if (index_ect >= 0) {
+  if (index_ect >= 0)
+  {
     if (param->ect <= tab->param_vals[tab->param_index[index_ect]][0]) {
       ipol_fac[index_ect] = 0.0;
     }

@@ -38,7 +38,7 @@ TEST_CASE(" creating of new xillver table ", "[xilltab]") {
   for (ii = 0; ii < ndim; ii++) {
     xillTable *tab = new_xillTable(dim[ii], &status);
     REQUIRE(status == EXIT_SUCCESS);
-    free_xillTable(tab);
+    free_xillTable(&tab);
   }
 
 }
