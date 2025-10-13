@@ -34,7 +34,7 @@ extern "C" {
 
 #define PREC 1e-6
 
-TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
+TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody-table]")
 {
     // by default, xill_param->radzone == -1 should fail loading the table
     int status = EXIT_SUCCESS;
@@ -69,12 +69,10 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
 }
 
 
-TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody]")
+TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody-default]")
 {
     LocalModel lmod(ModelName::relxillBBxill);
     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
     REQUIRE_NOTHROW(lmod.eval_model(spec));
-
-
 }

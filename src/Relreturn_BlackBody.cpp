@@ -725,11 +725,11 @@ void relxill_bb_kernel(double *ener_inp, double *specOutput, int n_ener_inp, xil
       {
         xill_param->kTbb = Tin * xill_param->shiftTmaxRRet; // currently set for testing the xillverNS table
       }
-      if (xill_param->model_type == MOD_TYPE_RELXILLBBRET)
+      if (xill_param->model_type == MOD_TYPE_RELXILLBBRETXILL)
       {
         // very dangerous; need to check that it is within the table boundaries as well
         // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )
-        xill_param->radzone = izone;
+        xill_param->radzone = (double)izone;
       }
       getZoneReflectedReturnFluxDiskframe(xill_param, relProfile, returnSpec, specXillverReflZones[izone],
                                           izone, status);
