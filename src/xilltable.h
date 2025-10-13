@@ -27,21 +27,22 @@ void renorm_xill_spec(float *spec, int n, double lxi, double dens);
 
 enum xillTableIds get_xilltable_id(int model_id, int prim_type);
 
-xillTableParam *get_xilltab_param(const xillParam *param, int *status);
+xillTableParam* get_xilltab_param(const xillParam* param, int* status);
 
 /** get a new and empty rel table (structure will be allocated)  */
 xillTable *new_xillTable(int num_param, int *status);
 
 /* destroy the relline table structure */
-void free_xillTable(xillTable **tab);
+void free_xillTable(xillTable** tab);
 
-xillSpec *interp_xill_table(const xillTable *tab, const xillTableParam *param, const int *ind, int *status);
+xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const int* ind, int* status);
 
 int get_xilltab_param_index(const xillTable* tab, int unique_param_identifier);
 float* get_xilltab_global_paramvals(const xillTableParam* param, int* status);
-int *get_xilltab_indices_for_paramvals(const xillTableParam *param, const xillTable *tab, int *status);
+int* get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTable* tab, int* status);
 
-void check_xilltab_cache(const char *fname, const xillTableParam *param, const xillTable *tab, const int *ind, int *status);
+void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, const int* ind,
+                         int* status);
 
 void free_all_cached_xillTables(void);
 
