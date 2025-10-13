@@ -22,9 +22,11 @@
 
 // possible parameters for the xillver tables
 int global_param_index[] = {PARAM_GAM, PARAM_AFE, PARAM_LXI, PARAM_ECT, PARAM_KTE, PARAM_DNS,
-                            PARAM_KTB, PARAM_ACO, PARAM_FRA, PARAM_INC, PARAM_RID};
+  PARAM_KTB, PARAM_ACO, PARAM_FRA, PARAM_INC, PARAM_RID
+};
 char *global_param_names[] = {NAME_GAM, NAME_AFE, NAME_LXI, NAME_ECT, NAME_KTE, NAME_DNS,
-                              NAME_KTB, NAME_ACO, NAME_FRA, NAME_INC, NAME_RID};
+  NAME_KTB, NAME_ACO, NAME_FRA, NAME_INC, NAME_RID
+};
 
 // storage for the tables
 xillTable *cached_xill_tab = NULL;
@@ -77,7 +79,8 @@ xillTable *new_xillTable(int num_param, int *status) {
   tab->num_param = num_param;
 
   // first make sure we ask only for the dimensions that are implemented
-  if (!(tab->num_param == 5 || tab->num_param == 6 || tab->num_param == 2)) {
+  if (!(tab->num_param == 5 || tab->num_param == 6 || tab->num_param == 2))
+  {
     RELXILL_ERROR("wrong dimensionality of the xillver table", status);
     return NULL;
   }
@@ -283,57 +286,74 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
 
 }
 
-float *get_xilltab_paramvals(const xillTableParam *param, int *status) {
+/**
+ * @brief Convert xillver table parameters to a global parameter values array
+ * @details Creates an array indexed by global parameter identifiers (PARAM_GAM, PARAM_AFE, etc.)
+ *          containing the corresponding values from the xillTableParam structure. This allows
+ *          unified access to all xillver parameters using their global index constants.
+ * @param param Input structure containing xillver table parameters
+ * @param status Status variable for error handling
+ * @return Pointer to allocated float array with N_PARAM_MAX elements, or NULL on error.
+ *         Caller is responsible for freeing the returned array.
+ */
+float *get_xilltab_global_paramvals(const xillTableParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
-  float *param_vals = (float *) malloc(N_PARAM_MAX * sizeof(float));
-  CHECK_MALLOC_RET_STATUS(param_vals, status, NULL)
+  float *global_param_vals = (float *) malloc(N_PARAM_MAX * sizeof(float));
+  CHECK_MALLOC_RET_STATUS(global_param_vals, status, NULL)
 
-  param_vals[PARAM_GAM] = (float) param->gam;
-  param_vals[PARAM_AFE] = (float) param->afe;
-  param_vals[PARAM_LXI] = (float) param->lxi;
-  param_vals[PARAM_ECT] = (float) param->ect;
-  param_vals[PARAM_DNS] = (float) param->dens;
-  param_vals[PARAM_KTB] = (float) param->kTbb;
-  param_vals[PARAM_FRA] = (float) param->frac_pl_bb;
-  param_vals[PARAM_RID] = (float)param->radindex;
-  param_vals[PARAM_INC] = (float) param->incl;
+  global_param_vals[PARAM_GAM] = (float) param->gam;
+  global_param_vals[PARAM_AFE] = (float) param->afe;
+  global_param_vals[PARAM_LXI] = (float) param->lxi;
+  global_param_vals[PARAM_ECT] = (float) param->ect;
+  global_param_vals[PARAM_DNS] = (float) param->dens;
+  global_param_vals[PARAM_KTB] = (float) param->kTbb;
+  global_param_vals[PARAM_FRA] = (float) param->frac_pl_bb;
+  global_param_vals[PARAM_RID] = (float) param->radindex;
+  global_param_vals[PARAM_INC] = (float) param->incl;
 
-  return param_vals;
+  return global_param_vals;
 }
 
 int *get_xilltab_indices_for_paramvals(const xillTableParam *param, xillTable *tab, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
   // store the input in a variable
-  float *inp_param_vals = get_xilltab_paramvals(param, status);
+  float *inp_global_paramvals = get_xilltab_global_paramvals(param, status);
 
   int ii;
-  int *ind = (int *) malloc(tab->num_param * sizeof(int));
-  CHECK_MALLOC_RET_STATUS(ind, status, NULL)
+  int *ind_xilltab = (int *) malloc(tab->num_param * sizeof(int));
+  CHECK_MALLOC_RET_STATUS(ind_xilltab, status, NULL)
 
   for (ii = 0; ii < tab->num_param; ii++) {
-    if (tab->num_param_vals[ii] == 0) // if only 1 value exists in the table
-    {
-      ind[ii] = 0;
-      continue;
-    }
+   assert(tab->num_param_vals[ii] > 1 ); // we need at least two values per parameter (for the interpolation later)
 
-    ind[ii] = binary_search_float(tab->param_vals[ii], tab->num_param_vals[ii],
-                                  inp_param_vals[tab->param_index[ii]]);
+   double pval = inp_global_paramvals[tab->param_index[ii]];
+    ind_xilltab[ii] = binary_search_float(tab->param_vals[ii], tab->num_param_vals[ii], pval);
+
+   // routine should be safe, meaning index always within the array bounds
+    assert( ind_xilltab[ii] >= 0 && ind_xilltab[ii] < tab->num_param_vals[ii]);
 
     // make sure all parameters are by default within the defined limits here!!
-    if (ind[ii] < 0) {
-      ind[ii] = 0;
-    } else if (ind[ii] > tab->num_param_vals[ii] - 2) {
-      ind[ii] = tab->num_param_vals[ii] - 2;
+    if ( tab->param_index[ii] == PARAM_RID &&  pval < 0){
+      RELXILL_ERROR("radial zone index not set (needs to be given for the xillver-RTR table)", status);
+      free(inp_global_paramvals);
+      return NULL;
     }
+
+    // for the other parameters, we reset ot
+    if (ind_xilltab[ii] < 0) {
+      ind_xilltab[ii] = 0;
+    } else if (ind_xilltab[ii] > tab->num_param_vals[ii] - 2) {
+      ind_xilltab[ii] = tab->num_param_vals[ii] - 2;
+    }
+
   }
 
-  free(inp_param_vals);
+  free(inp_global_paramvals);
 
-  return ind;
+  return ind_xilltab;
 }
 
 static int get_xillspec_rownum(const int* num_param_vals, int num_param, int nn, int ii, int jj, int kk, int ll, int mm)
@@ -341,7 +361,7 @@ static int get_xillspec_rownum(const int* num_param_vals, int num_param, int nn,
   switch (num_param)
   {
   case 2:
-    return (ii * num_param_vals[1] + jj);
+    return (ii * num_param_vals[1] + jj + 1);
 
   case 5:
     return (((ii * num_param_vals[1] + jj) * num_param_vals[2]
@@ -472,24 +492,26 @@ void init_xillver_table(const char *filename, xillTable **inp_tab, int *status) 
  *  -1 : not found
  *  ii : return index where this value is found in the param_index array
  **/
-int get_xilltab_param_index(xillTable *tab, int ind) {
+int get_xilltab_param_index(xillTable *tab, int unique_param_identifier) {
 
   int ii;
   for (ii = 0; ii < tab->num_param; ii++) {
-    if (tab->param_index[ii] == ind) {
+    if (tab->param_index[ii] == unique_param_identifier) {
       return ii;
     }
   }
   return -1;
 }
 
-// convert the index from the (actual) xillver FITS table parameter
-// extension to out (strange!) universal parameter index which can
-// handle 5dim and 6dim tables
+/* convert the index from the (actual) xillver FITS table parameter
+/ extension to the code internal param_index structure, which leaves
+/ the first bins empty to fill up the array until the last bin
+*/
 static int convertTo6dimTableIndex(int num_param, int indexTable) {
-  assert(num_param == 6 || num_param == 5);
-  if (num_param == 5) {
-    indexTable++; // for 5dim, the first index is left empty
+  const int num_param_max = 6;
+  assert(num_param <= 6 || num_param >= 2);
+  if (num_param != num_param_max) {
+    indexTable += num_param_max - num_param ; // for 5dim, the first index is left empty
   }
   return indexTable;
 }
@@ -514,21 +536,21 @@ static void normalizeXillverSpecLogxiDensity(float *spec,
   int ind_dens = get_xilltab_param_index(tab, PARAM_DNS);
   int ind_lxi = get_xilltab_param_index(tab, PARAM_LXI);
 
-  int ind_dens_6dim = convertTo6dimTableIndex(tab->num_param, ind_dens);
-  int ind_lxi_6dim = convertTo6dimTableIndex(tab->num_param, ind_lxi);
 
   // ind==-1 if parameter not contained
   if (ind_dens >= 0) {
+    int ind_dens_6dim = convertTo6dimTableIndex(tab->num_param, ind_dens);
     density = tab->param_vals[ind_dens][indVals[ind_dens_6dim]];
 
   }
   if (ind_lxi >= 0) {
+    int ind_lxi_6dim = convertTo6dimTableIndex(tab->num_param, ind_lxi);
     logxi = tab->param_vals[ind_lxi][indVals[ind_lxi_6dim]];
   }
 
   renorm_xill_spec(spec, tab->n_ener, logxi, density);
-
 }
+
 
 static void xilltable_fits_load_single_spec(const char *fname,
                                             fitsfile **fptr,
@@ -1067,6 +1089,23 @@ static void interp_5d_tab(xillTable *tab, double *flu, int n_ener,
 
 }
 
+static void interp_2d_tab_incl(xillTable *tab, double *flu, int n_ener,
+                               double *fac, int nfac, const int *ind, int iincl)
+{
+  assert(nfac == 2);
+
+  int i4 = ind[0];
+  int i5 = ind[1];
+
+  float *dat_0 = get_xillspec(tab, 0, 0, 0, 0, i4, i5);
+  float *dat_1 = get_xillspec(tab, 0, 0, 0, 0, i4+1, i5);
+
+  int ii;
+  for (ii = 0; ii < n_ener; ii++) {
+    flu[ii] = interp_lin_1d(fac[0], dat_0[ii], dat_1[ii]);
+  }
+}
+
 /* cheap man's version of a 6dim interpolation */
 static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
                                double *fac, int nfac, const int *ind, int iincl) {
@@ -1185,7 +1224,7 @@ xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *in
     spec->incl[ii] = tab->incl[ii];
   }
 
-  float *inp_param_vals = get_xilltab_paramvals(param, status);
+  float *inp_param_vals = get_xilltab_global_paramvals(param, status);
 
   int nfac = tab->num_param;
   double *ipol_fac = (double *) malloc(sizeof(double) * nfac);
@@ -1212,6 +1251,8 @@ xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *in
   // check boundary of the Ecut parameter and set ipol_fac[ECUT] accordingly
   // (can happen due to strong grav. redshift)
   ensure_ecut_within_boundarys(tab, param, ipol_fac);
+
+  assert(tab->num_param == 6 || (tab->num_param == 5) || (tab->num_param == 2) );
 
   if (tab->num_param == 5) {
     if (is_xill_model(param->model_type)) {
@@ -1244,8 +1285,23 @@ xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *in
                            ipol_fac, nfac, ind, ii);
       }
     }
-
   }
+  else if (tab->num_param == 2)
+  {
+    if (is_xill_model(param->model_type))
+    {
+      RELXILL_ERROR("xillver type model with 2 parameters does not exist", status);
+    } else
+    {
+      interp_2d_tab_incl(tab, spec->flu[ii], spec->n_ener,
+                         ipol_fac, nfac, ind, ii);
+    }
+  }
+  else
+  {
+    RELXILL_ERROR("Given number of parameters of the xillver table not implemented", status);
+  }
+
 
   free(ipol_fac);
 

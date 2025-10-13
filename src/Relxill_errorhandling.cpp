@@ -22,8 +22,10 @@ extern "C" {
 #include "common.h"
 }
 
-void check_status_and_throw(const char* func_name, int status) {
-  if (status == EXIT_FAILURE) {
-    throw RelxillStatusException(func_name);
-  }
+void check_status_and_throw(const char* func_name, int status)
+{
+    if (status == EXIT_FAILURE)
+    {
+        throw RelxillStatusException(func_name);
+    }
 }

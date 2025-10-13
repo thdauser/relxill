@@ -131,8 +131,12 @@ void print_relxill_test_msg(const char *const func, const char *const msg) {
 }
 
 
-/**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
- 	 return bin k for which arr[k]<=val<arr[k+1] **/
+/** @brief FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
+ 	 return bin k for which arr[k]<=val<arr[k+1] *
+
+ 	 @description return -1 upon error (if array too small), otherwise always the index will always
+ 	 be within the given length of the array, meaning 0 also for val<arr[0] or n-1 for val>arr[n-1]
+ 	 */
 int binary_search_float(const float *arr, int n, float val) {
 
   if (n <= 1) return -1;

@@ -22,8 +22,6 @@
 #include <string>
 
 
-
-
 /**
  * @brief Exception thrown when a status variable indicates EXIT_FAILURE
  *
@@ -31,30 +29,33 @@
  * It captures the function name where the error occurred and provides a descriptive
  * error message following C++ standard exception handling patterns.
  */
-class RelxillStatusException : public std::exception {
- public:
-  RelxillStatusException() = default;
+class RelxillStatusException : public std::exception
+{
+public:
+    RelxillStatusException() = default;
 
-  /**
-   * @brief Construct exception with function name
-   * @param func_name Name of the function where the error occurred
-   */
-  explicit RelxillStatusException(const char* func_name) {
-    m_msg += "error in function ";
-    m_msg += func_name;
-    m_msg += " from previous call exiting with failure status";
-  }
+    /**
+     * @brief Construct exception with function name
+     * @param func_name Name of the function where the error occurred
+     */
+    explicit RelxillStatusException(const char* func_name)
+    {
+        m_msg += "error in function ";
+        m_msg += func_name;
+        m_msg += " from previous call exiting with failure status";
+    }
 
-  /**
-   * @brief Get the error message
-   * @return C-string containing the error message
-   */
-  [[nodiscard]] const char *what() const noexcept override {
-    return m_msg.c_str();
-  }
+    /**
+     * @brief Get the error message
+     * @return C-string containing the error message
+     */
+    [[nodiscard]] const char* what() const noexcept override
+    {
+        return m_msg.c_str();
+    }
 
- private:
-  std::string m_msg{"*** relxill-error: "};
+private:
+    std::string m_msg{"*** relxill-error: "};
 };
 
 /**

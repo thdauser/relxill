@@ -34,22 +34,49 @@ extern "C" {
 
 #define PREC 1e-6
 
+TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
+{
+    // by default, xill_param->radzone == -1 should fail loading the table
+    int status = EXIT_SUCCESS;
+    LocalModel lmod(ModelName::relxillBBxill);
+    auto xill_param = lmod.get_xill_params();
+
+    REQUIRE_THROWS(get_xillver_spectra(xill_param, &status));
+}
+
 
 // ------- //
 TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
 {
-    int status = EXIT_SUCCESS;
-
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.get_xill_params();
 
-
+    int status = EXIT_SUCCESS;
     xillTable* xill_tab = nullptr;
     REQUIRE_NOTHROW(get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status));
 
-    DefaultSpec default_spec{};
-    XspecSpectrum spec = default_spec.get_xspec_spectrum();
-    lmod.eval_model(spec);
+    xill_param->radzone = 0;
+    auto xillspec = get_xillver_spectra(xill_param, &status);
+
+    for (int ii=0; ii<xillspec->n_incl; ii++)
+    {
+        INFO("Failing index: " << ii);
+        REQUIRE( sum_flux(xillspec->flu[ii], xillspec->n_ener) > 1e-10);
+    }
+
+    write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
+        xillspec->ener, xillspec->flu[1], xillspec->n_ener);
+
 }
 
 
+TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody]")
+{
+
+    LocalModel lmod(ModelName::relxillBBxill);
+    DefaultSpec default_spec{};
+    XspecSpectrum spec = default_spec.get_xspec_spectrum();
+    REQUIRE_NOTHROW(lmod.eval_model(spec));
+
+
+}

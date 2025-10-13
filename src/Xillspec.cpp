@@ -18,6 +18,7 @@
 
 #include "Xillspec.h"
 #include "Relphysics.h"
+#include "Relxill_errorhandling.h"
 
 extern "C" {
 #include "xilltable.h"
@@ -61,20 +62,22 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
 
   xillTable *tab = nullptr;
   const char *fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, status);
+  CHECK_STATUS_AND_THROW(*status);
 
   CHECK_STATUS_RET(*status, nullptr);
   assert(fname != nullptr);
 
   // =1=  get the inidices
   int *indparam = get_xilltab_indices_for_paramvals(param, tab, status);
+  CHECK_STATUS_AND_THROW(*status);
 
   // =2=  check if the necessary spectra for interpolation are loaded
   check_xilltab_cache(fname, param, tab, indparam, status);
+  CHECK_STATUS_AND_THROW(*status);
 
   // =3= interpolate values
   xillSpec *spec = interp_xill_table(tab, param, indparam, status);
-
-  CHECK_RELXILL_DEFAULT_ERROR(status);
+  CHECK_STATUS_AND_THROW(*status);
 
   free(indparam);
   return spec;
@@ -594,7 +597,6 @@ void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
                                            double *rel_dist,
                                            xillSpec *xill_spec,
                                            int *status) {
-
   CHECK_STATUS_VOID(*status);
 
   auto xill_angdist_inp = new double[xill_spec->n_ener];

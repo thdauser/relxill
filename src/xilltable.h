@@ -37,8 +37,8 @@ void free_xillTable(xillTable *tab);
 
 xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *ind, int *status);
 
-int get_xilltab_param_index(xillTable *tab, int ind);
-float *get_xilltab_paramvals(const xillTableParam *param, int *status);
+int get_xilltab_param_index(xillTable *tab, int unique_param_identifier);
+float *get_xilltab_global_paramvals(const xillTableParam *param, int *status);
 int *get_xilltab_indices_for_paramvals(const xillTableParam *param, xillTable *tab, int *status);
 
 void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTable *tab, const int *ind, int *status);
