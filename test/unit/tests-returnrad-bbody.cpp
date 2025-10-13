@@ -58,21 +58,19 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
     xill_param->radzone = 0;
     auto xillspec = get_xillver_spectra(xill_param, &status);
 
-    for (int ii=0; ii<xillspec->n_incl; ii++)
+    for (int ii = 0; ii < xillspec->n_incl; ii++)
     {
         INFO("Failing index: " << ii);
-        REQUIRE( sum_flux(xillspec->flu[ii], xillspec->n_ener) > 1e-10);
+        REQUIRE(sum_flux(xillspec->flu[ii], xillspec->n_ener) > 1e-10);
     }
 
     write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
-        xillspec->ener, xillspec->flu[1], xillspec->n_ener);
-
+                       xillspec->ener, xillspec->flu[1], xillspec->n_ener);
 }
 
 
 TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody]")
 {
-
     LocalModel lmod(ModelName::relxillBBxill);
     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();

@@ -35,15 +35,14 @@ xillTable *cached_xill_tab_nthcomp = NULL;
 xillTable *cached_xill_tab_dens_nthcomp = NULL;
 xillTable *cached_xill_tab_ns = NULL;
 xillTable *cached_xill_tab_co = NULL;
-xillTable* cached_xill_tab_rrad_bb = NULL;
+xillTable *cached_xill_tab_rrad_bb = NULL;
 
 static int get_num_elem(const int *n_parvals, int npar) {
 
   assert(npar >= 1);
   long num_elem = n_parvals[0];
 
-  int ii;
-  for (ii = 1; ii < npar; ii++) {
+  for (int ii = 1; ii < npar; ii++) {
     num_elem *= n_parvals[ii];
   }
 
@@ -56,6 +55,8 @@ static void init_xilltable_data_struct(xillTable *tab, int *status) {
 
   CHECK_STATUS_VOID(*status);
   assert(tab != NULL);
+  assert(tab->param_vals != NULL);
+  assert(tab->data_storage == NULL);
 
   tab->num_elements = get_num_elem(tab->num_param_vals, tab->num_param);
 
@@ -78,12 +79,6 @@ xillTable *new_xillTable(int num_param, int *status) {
 
   tab->num_param = num_param;
 
-  // first make sure we ask only for the dimensions that are implemented
-  if (!(tab->num_param == 5 || tab->num_param == 6 || tab->num_param == 2))
-  {
-    RELXILL_ERROR("wrong dimensionality of the xillver table", status);
-    return NULL;
-  }
 
   tab->num_param_vals = (int *) malloc(sizeof(int) * num_param);
   CHECK_MALLOC_RET_STATUS(tab->num_param_vals, status, NULL)
@@ -135,7 +130,7 @@ static int get_num_param_auto(fitsfile *fptr, int *status) {
 }
 
 /* routine to get the pointer to the pre-defined parameter index array
- * (i.e. with this we know which parameter relates to the input parameters ) */
+ * (i.e., with this we know which parameter relates to the input parameters) */
 static void set_parindex_from_parname(int *pindex, char **pname, int n, int *status) {
 
   int ii;
@@ -186,7 +181,6 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status
 
   // we know the column numbers
   int colnum_n = 9;
-  int colnum_vals = 10;
 
   long n;
   if (fits_get_num_rows(fptr, &n, status)) return;
@@ -214,6 +208,7 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status
   fits_read_col(fptr, TSTRING, 1, 1, 1, tab->num_param, strnull, tab->param_names, &anynul, status);
 
   for (ii = 0; ii < tab->num_param; ii++) {
+    int colnum_vals = 10;
     /** the we load the parameter values **/
     float **ptr_val = &(tab->param_vals[ii]);
 
@@ -293,62 +288,69 @@ static void get_xilltable_ener(int *n_ener, float **elo, float **ehi, fitsfile *
  *          unified access to all xillver parameters using their global index constants.
  * @param param Input structure containing xillver table parameters
  * @param status Status variable for error handling
- * @return Pointer to allocated float array with N_PARAM_MAX elements, or NULL on error.
+ * @return Pointer to the allocated float array with N_PARAM_MAX elements, or NULL on error.
  *         Caller is responsible for freeing the returned array.
  */
-float *get_xilltab_global_paramvals(const xillTableParam *param, int *status) {
-
+float* get_xilltab_global_paramvals(const xillTableParam* param, int* status)
+{
   CHECK_STATUS_RET(*status, NULL);
 
-  float *global_param_vals = (float *) malloc(N_PARAM_MAX * sizeof(float));
+  float* global_param_vals = (float*)malloc(N_PARAM_MAX * sizeof(float));
   CHECK_MALLOC_RET_STATUS(global_param_vals, status, NULL)
 
-  global_param_vals[PARAM_GAM] = (float) param->gam;
-  global_param_vals[PARAM_AFE] = (float) param->afe;
-  global_param_vals[PARAM_LXI] = (float) param->lxi;
-  global_param_vals[PARAM_ECT] = (float) param->ect;
-  global_param_vals[PARAM_DNS] = (float) param->dens;
-  global_param_vals[PARAM_KTB] = (float) param->kTbb;
-  global_param_vals[PARAM_FRA] = (float) param->frac_pl_bb;
-  global_param_vals[PARAM_RID] = (float) param->radindex;
-  global_param_vals[PARAM_INC] = (float) param->incl;
+  global_param_vals[PARAM_GAM] = (float)param->gam;
+  global_param_vals[PARAM_AFE] = (float)param->afe;
+  global_param_vals[PARAM_LXI] = (float)param->lxi;
+  global_param_vals[PARAM_ECT] = (float)param->ect;
+  global_param_vals[PARAM_DNS] = (float)param->dens;
+  global_param_vals[PARAM_KTB] = (float)param->kTbb;
+  global_param_vals[PARAM_FRA] = (float)param->frac_pl_bb;
+  global_param_vals[PARAM_RID] = (float)param->radindex;
+  global_param_vals[PARAM_INC] = (float)param->incl;
 
   return global_param_vals;
 }
 
-int *get_xilltab_indices_for_paramvals(const xillTableParam *param, xillTable *tab, int *status) {
+int* get_xilltab_indices_for_paramvals(const xillTableParam *param, const xillTable *tab, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
   // store the input in a variable
   float *inp_global_paramvals = get_xilltab_global_paramvals(param, status);
 
   int ii;
-  int *ind_xilltab = (int *) malloc(tab->num_param * sizeof(int));
-  CHECK_MALLOC_RET_STATUS(ind_xilltab, status, NULL)
+  int *ind_xilltab = (int*)malloc(tab->num_param * sizeof(int));
+  if (ind_xilltab == NULL)
+  {
+    free(inp_global_paramvals);
+    return NULL;
+  }
 
   for (ii = 0; ii < tab->num_param; ii++) {
-   assert(tab->num_param_vals[ii] > 1 ); // we need at least two values per parameter (for the interpolation later)
+   assert(tab->num_param_vals[ii] > 1); // we need at least two values per parameter (for the interpolation later)
 
-   double pval = inp_global_paramvals[tab->param_index[ii]];
-    ind_xilltab[ii] = binary_search_float(tab->param_vals[ii], tab->num_param_vals[ii], pval);
+   float pval = inp_global_paramvals[tab->param_index[ii]];
+   ind_xilltab[ii] = binary_search_float(tab->param_vals[ii], tab->num_param_vals[ii], pval);
 
    // routine should be safe, meaning index always within the array bounds
-    assert( ind_xilltab[ii] >= 0 && ind_xilltab[ii] < tab->num_param_vals[ii]);
+   assert(ind_xilltab[ii] >= 0 && ind_xilltab[ii] < tab->num_param_vals[ii]);
 
-    // make sure all parameters are by default within the defined limits here!!
-    if ( tab->param_index[ii] == PARAM_RID &&  pval < 0){
-      RELXILL_ERROR("radial zone index not set (needs to be given for the xillver-RTR table)", status);
-      free(inp_global_paramvals);
-      return NULL;
-    }
+   // make sure all parameters are by default within the defined limits here!!
+    if ( tab->param_index[ii] == PARAM_RID && pval < 0)
+   {
+     RELXILL_ERROR("radial zone index not set (needs to be given for the xillver-RTR table)", status);
+     free(inp_global_paramvals);
+     return NULL;
+   }
 
-    // for the other parameters, we reset ot
-    if (ind_xilltab[ii] < 0) {
-      ind_xilltab[ii] = 0;
-    } else if (ind_xilltab[ii] > tab->num_param_vals[ii] - 2) {
-      ind_xilltab[ii] = tab->num_param_vals[ii] - 2;
-    }
-
+   // for the other parameters, we reset ot
+   if (ind_xilltab[ii] < 0)
+   {
+     ind_xilltab[ii] = 0;
+   }
+   else if (ind_xilltab[ii] > tab->num_param_vals[ii] - 2)
+   {
+     ind_xilltab[ii] = tab->num_param_vals[ii] - 2;
+   }
   }
 
   free(inp_global_paramvals);
@@ -376,14 +378,14 @@ static int get_xillspec_rownum(const int* num_param_vals, int num_param, int nn,
   }
 }
 
-static void set_dat(float *spec, xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
+static void set_dat(float *spec, const xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
   int index = get_xillspec_rownum(tab->num_param_vals, tab->num_param,
                                   i0, i1, i2, i3, i4, i5);
   tab->data_storage[index] = spec;
 }
 
 // get one Spectrum from the Data Storage
-float *get_xillspec(xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
+float *get_xillspec(const xillTable *tab, int i0, int i1, int i2, int i3, int i4, int i5) {
 
   int index = get_xillspec_rownum(tab->num_param_vals, tab->num_param,
                                   i0, i1, i2, i3, i4, i5);
@@ -451,33 +453,41 @@ void init_xillver_table(const char *filename, xillTable **inp_tab, int *status) 
 
   CHECK_STATUS_VOID(*status);
 
-  xillTable *tab = (*inp_tab);
+  assert(*inp_tab == NULL); // only write the table if it is empty
+  xillTable *tab = NULL;
   fitsfile *fptr = NULL;
 
   print_version_number();
 
-  fptr = open_fits_table_stdpath(filename, status);
-  CHECK_STATUS_VOID(*status);
+  do {  // loop to ensure if *status!=EXIT_SUCCESS no further functions are called
+    fptr = open_fits_table_stdpath(filename, status);
+    CHECK_STATUS_BREAK(*status);
 
-  assert(tab == NULL);
+    int num_param = get_num_param_auto(fptr, status);
+    CHECK_STATUS_BREAK(*status);
 
-  int num_param = get_num_param_auto(fptr, status);
-  CHECK_STATUS_VOID(*status);
+    tab = new_xillTable(num_param, status);
+    CHECK_STATUS_BREAK(*status);
+    assert(tab != NULL);
 
-  tab = new_xillTable(num_param, status);
+    get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
+    CHECK_STATUS_BREAK(*status);
 
-  get_xilltable_ener(&(tab->n_ener), &(tab->elo), &(tab->ehi), fptr, status);
+    get_xilltable_parameters(fptr, tab, status);
+    CHECK_STATUS_BREAK(*status);
 
-  get_xilltable_parameters(fptr, tab, status);
+    init_xilltable_data_struct(tab, status);
+    CHECK_STATUS_BREAK(*status);
+  } while (0);
 
-  init_xilltable_data_struct(tab, status);
-
-  if (*status == EXIT_SUCCESS) {
+  if (*status == EXIT_SUCCESS && tab != NULL) {
     // assign the value
-    (*inp_tab) = tab;
+    *inp_tab = tab;
   } else {
     printf(" *** error *** initializing of the XILLVER table %s failed \n", filename);
-    free_xillTable(tab);
+    if (tab != NULL) {
+      free_xillTable(&tab);
+    }
   }
 
   if (fptr != NULL) {
@@ -489,14 +499,15 @@ void init_xillver_table(const char *filename, xillTable **inp_tab, int *status) 
 /**
  * @brief: check if the given parameter index is in the xillver table
  * @return
- *  -1 : not found
- *  ii : return index where this value is found in the param_index array
+ *  -1: not found
+ *  ii: return index where this value is found in the param_index array
  **/
-int get_xilltab_param_index(xillTable *tab, int unique_param_identifier) {
-
+int get_xilltab_param_index(const xillTable* tab, int unique_param_identifier)
+{
   int ii;
   for (ii = 0; ii < tab->num_param; ii++) {
-    if (tab->param_index[ii] == unique_param_identifier) {
+    if (tab->param_index[ii] == unique_param_identifier)
+    {
       return ii;
     }
   }
@@ -510,8 +521,9 @@ int get_xilltab_param_index(xillTable *tab, int unique_param_identifier) {
 static int convertTo6dimTableIndex(int num_param, int indexTable) {
   const int num_param_max = 6;
   assert(num_param <= 6 || num_param >= 2);
-  if (num_param != num_param_max) {
-    indexTable += num_param_max - num_param ; // for 5dim, the first index is left empty
+  if (num_param != num_param_max)
+  {
+    indexTable += num_param_max - num_param; // for 5dim, the first index is left empty
   }
   return indexTable;
 }
@@ -519,16 +531,16 @@ static int convertTo6dimTableIndex(int num_param, int indexTable) {
 
 void renorm_xill_spec(float *spec, int n, double lxi, double dens) {
   for (int ii = 0; ii < n; ii++) {
-    spec[ii] /=  pow(10, lxi);  // do not cast to float (fails refdata)
+    spec[ii] /=  pow(10, lxi);  // do not cast to float (fails refdata) NOLINT(*-narrowing-conversions)
     if (fabs(dens - 15) > 1e-6) {
-      spec[ii] /=  pow(10, dens - 15); // do not cast to float (fails refdata)
+      spec[ii] /=  pow(10, dens - 15); // do not cast to float (fails refdata) NOLINT(*-narrowing-conversions)
     }
   }
 }
 
 
 static void normalizeXillverSpecLogxiDensity(float *spec,
-                                             xillTable *tab,
+                                             const xillTable *tab,
                                              double density,
                                              double logxi,
                                              const int *indVals) {
@@ -554,7 +566,7 @@ static void normalizeXillverSpecLogxiDensity(float *spec,
 
 static void xilltable_fits_load_single_spec(const char *fname,
                                             fitsfile **fptr,
-                                            xillTable *tab,
+                                            const xillTable *tab,
                                             double defDensity,
                                             double defLogxi,
                                             int nn,
@@ -567,7 +579,7 @@ static void xilltable_fits_load_single_spec(const char *fname,
 
   CHECK_STATUS_VOID(*status);
 
-  // open the fits file if not already open
+  // open the FITS file if not already open
   if (*fptr == NULL) {
     *fptr = open_fits_table_stdpath(fname, status);
     CHECK_STATUS_VOID(*status);
@@ -614,7 +626,7 @@ static double getDefaultLogxi(const xillTableParam *param) {
   return param->lxi;
 }
 
-void check_xilltab_cache(const char *fname, const xillTableParam *param, xillTable *tab, const int *ind, int *status) {
+void check_xilltab_cache(const char *fname, const xillTableParam *param, const xillTable *tab, const int *ind, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -773,7 +785,7 @@ enum xillTableIds get_xilltable_id(int model_id, int prim_type) {
   return XILLTABLE_ID_STANDARD;
 }
 
-xillTableParam *get_xilltab_param(xillParam *param, int *status) {
+xillTableParam *get_xilltab_param(const xillParam *param, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -834,7 +846,7 @@ const char *get_init_xillver_table(xillTable **tab, int model_type, int prim_typ
       {
         // not working anymore as param does not exist
         //        assert(param->dens == 17); // the CO_Table is explicitly calculated for logN=17
-        //        assert(param->lxi == 0); // the CO_Table does not have an ionization (weak test to assert it has its default value)
+        //        assert(param->lxi == 0); // the CO_Table does not have ionization as a parameter (weak test to assert it has its default value)
         init_xillver_table(XILLTABLE_CO_FILENAME, &cached_xill_tab_co, status);
         CHECK_STATUS_RET(*status, NULL);
       }
@@ -862,7 +874,9 @@ const char *get_init_xillver_table(xillTable **tab, int model_type, int prim_typ
 }
 
 
-void free_xillTable(xillTable *tab) {
+void free_xillTable(xillTable **ptr_tab) {
+
+  xillTable* tab = *ptr_tab;
   if (tab != NULL) {
 
     int ii;
@@ -894,16 +908,35 @@ void free_xillTable(xillTable *tab) {
     free(tab->ehi);
 
     free(tab);
+    tab = NULL;
   }
 }
 
-void free_cached_xillTable(void) {
-  free_xillTable(cached_xill_tab);
-  free_xillTable(cached_xill_tab_dens);
-  free_xillTable(cached_xill_tab_nthcomp);
+void free_all_cached_xillTables(void) {
+  if (cached_xill_tab != NULL) {
+    free_xillTable(&cached_xill_tab);
+  }
+  if (cached_xill_tab_dens != NULL) {
+    free_xillTable(&cached_xill_tab_dens);
+  }
+  if (cached_xill_tab_nthcomp != NULL) {
+    free_xillTable(&cached_xill_tab_nthcomp);
+  }
+  if (cached_xill_tab_dens_nthcomp != NULL) {
+    free_xillTable(&cached_xill_tab_dens_nthcomp);
+  }
+  if (cached_xill_tab_ns != NULL) {
+    free_xillTable(&cached_xill_tab_ns);
+  }
+  if (cached_xill_tab_co != NULL) {
+    free_xillTable(&cached_xill_tab_co);
+  }
+  if (cached_xill_tab_rrad_bb != NULL) {
+    free_xillTable(&cached_xill_tab_rrad_bb);
+  }
 }
 
-static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
+static void interp_5d_tab_incl(const xillTable *tab, double *flu, int n_ener,
                                double f1, double f2, double f3, double f4,
                                int i0, int i1, int i2, int i3, int i4, int i5) {
 
@@ -969,7 +1002,7 @@ static void interp_5d_tab_incl(xillTable *tab, double *flu, int n_ener,
 
 }
 
-static void interp_5d_tab(xillTable *tab, double *flu, int n_ener,
+static void interp_5d_tab(const xillTable *tab, double *flu, int n_ener,
                           double f1, double f2, double f3, double f4, double f5,
                           int i0, int i1, int i2, int i3, int i4,
                           int i5) {
@@ -1089,26 +1122,27 @@ static void interp_5d_tab(xillTable *tab, double *flu, int n_ener,
 
 }
 
-static void interp_2d_tab_incl(xillTable *tab, double *flu, int n_ener,
-                               double *fac, int nfac, const int *ind, int iincl)
+static void interp_2d_tab_incl(const xillTable* tab, double* flu, int n_ener,
+                               const double* fac, int nfac, const int* ind, int iincl)
 {
   assert(nfac == 2);
 
   int i4 = ind[0];
   int i5 = ind[1];
 
-  float *dat_0 = get_xillspec(tab, 0, 0, 0, 0, i4, i5);
-  float *dat_1 = get_xillspec(tab, 0, 0, 0, 0, i4+1, i5);
+  float* dat_0 = get_xillspec(tab, 0, 0, 0, 0, i4, i5);
+  float* dat_1 = get_xillspec(tab, 0, 0, 0, 0, i4 + 1, i5);
 
   int ii;
-  for (ii = 0; ii < n_ener; ii++) {
+  for (ii = 0; ii < n_ener; ii++)
+  {
     flu[ii] = interp_lin_1d(fac[0], dat_0[ii], dat_1[ii]);
   }
 }
 
-/* cheap man's version of a 6dim interpolation */
-static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
-                               double *fac, int nfac, const int *ind, int iincl) {
+
+static void interp_6d_tab_incl(const xillTable *tab, double *flu, int n_ener,
+                               const double *fac, int nfac, const int *ind, int iincl) {
 
   assert(nfac == 6);
 
@@ -1129,9 +1163,8 @@ static void interp_6d_tab_incl(xillTable *tab, double *flu, int n_ener,
   }
 }
 
-/* cheap man's version of a 6dim interpolation */
-static void interp_6d_tab(xillTable *tab, double *flu, int n_ener,
-                          double *fac, int nfac, const int *ind) {
+static void interp_6d_tab(const xillTable *tab, double *flu, int n_ener,
+                          const double *fac, int nfac, const int *ind) {
 
   assert(nfac == 6);
 
@@ -1155,14 +1188,14 @@ static void interp_6d_tab(xillTable *tab, double *flu, int n_ener,
 }
 
 /**
- * @brief check boundary of the Ecut parameter and set ipol_factor accordingly
+ * @brief check the boundary of the Ecut parameter and set ipol_factor accordingly
  * @detail grav. redshift can lead to the code asking for an Ecut not tabulated,
  * although actually observed ecut is larger. We set it to the lowest/highest value in this case
  * @param: (input) tab
  * @param: (input) param
  * @param: (output) ipol_fac
  **/
-static void ensure_ecut_within_boundarys(xillTable *tab, const xillTableParam *param, double *ipol_fac) {
+static void ensure_ecut_within_boundarys(const xillTable *tab, const xillTableParam *param, double *ipol_fac) {
   // first need to make sure ECUT is a parameter in the table
   int index_ect = get_xilltab_param_index(tab, PARAM_ECT);
   if (index_ect >= 0) {
@@ -1198,7 +1231,7 @@ static void resetInpvalsToBoundaries(char *pname, float *p_inpVal, float tabValL
 
 }
 
-xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *ind, int *status) {
+xillSpec *interp_xill_table(const xillTable *tab, const xillTableParam *param, const int *ind, int *status) {
 
   CHECK_STATUS_RET(*status, NULL);
 
@@ -1224,14 +1257,14 @@ xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *in
     spec->incl[ii] = tab->incl[ii];
   }
 
-  float *inp_param_vals = get_xilltab_global_paramvals(param, status);
+  float * inp_param_vals = get_xilltab_global_paramvals(param, status);
 
   int nfac = tab->num_param;
   double *ipol_fac = (double *) malloc(sizeof(double) * nfac);
   CHECK_MALLOC_RET_STATUS(ipol_fac, status, NULL)
 
-  /* calculate interpolation factor for all parameters
-   * ([nfac-1] is inclination, which might not be used ) */
+  /* calculate the interpolation factor for all parameters
+   * ([nfac-1] is inclination, which might not be used) */
   int pind;
   for (ii = 0; ii < nfac; ii++) {
     // need the index
@@ -1248,11 +1281,9 @@ xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *in
 
   free(inp_param_vals);
 
-  // check boundary of the Ecut parameter and set ipol_fac[ECUT] accordingly
+  // check the boundary of the Ecut parameter and set ipol_fac[ECUT] accordingly
   // (can happen due to strong grav. redshift)
   ensure_ecut_within_boundarys(tab, param, ipol_fac);
-
-  assert(tab->num_param == 6 || (tab->num_param == 5) || (tab->num_param == 2) );
 
   if (tab->num_param == 5) {
     if (is_xill_model(param->model_type)) {
@@ -1291,7 +1322,8 @@ xillSpec *interp_xill_table(xillTable *tab, xillTableParam *param, const int *in
     if (is_xill_model(param->model_type))
     {
       RELXILL_ERROR("xillver type model with 2 parameters does not exist", status);
-    } else
+    }
+    else
     {
       interp_2d_tab_incl(tab, spec->flu[ii], spec->n_ener,
                          ipol_fac, nfac, ind, ii);
