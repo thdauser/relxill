@@ -58,7 +58,7 @@ void get_RelProfileConstEmisZones(relline_spec_multizone **p_rel_profile, relPar
 
   auto ener_grid = get_relxill_conv_energy_grid();
 
-  *p_rel_param = lmod.get_rel_params();
+  *p_rel_param = lmod.rel_params();
   (*p_rel_param)->num_zones = nzones;
 
   assert(*p_rel_param != nullptr);
@@ -73,12 +73,12 @@ relline_spec_multizone *get_stdRelProfile(int *status) {
 
   auto ener_grid = get_relxill_conv_energy_grid();
 
-  return relbase(ener_grid->ener, ener_grid->nbins, lmod.get_rel_params(), status);
+  return relbase(ener_grid->ener, ener_grid->nbins, lmod.rel_params(), status);
 }
 
 xillSpec *get_std_xill_spec(int *status) {
   LocalModel lmod(ModelName::xillver);
-  xillSpec *xill_spec = get_xillver_spectra(lmod.get_xill_params(), status);
+  xillSpec* xill_spec = get_xillver_spectra(lmod.xill_params(), status);
   return xill_spec;
 }
 

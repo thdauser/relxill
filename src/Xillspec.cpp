@@ -64,7 +64,6 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
   const char *fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, status);
   CHECK_STATUS_AND_THROW(*status);
 
-  CHECK_STATUS_RET(*status, nullptr);
   assert(fname != nullptr);
 
   // =1=  get the inidices
@@ -90,15 +89,25 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
  * @param status
  * @return xillSpec
  */
-xillSpec *get_xillver_spectra(xillParam *param, int *status) {
+xillSpec *get_xillver_spectra(const xillParam* param, int *status) {
 
   CHECK_STATUS_RET(*status, nullptr);
+  xillTableParam *param_table = nullptr;
+  xillSpec* xill_spec = nullptr;
 
-  xillTableParam *param_table = get_xilltab_param(param, status);
-  xillSpec *xill_spec = get_xillver_spectra_table(param_table, status);
-  CHECK_STATUS_RET(*status, nullptr);
-
-  free(param_table);
+  try
+  {
+   param_table = get_xilltab_param(param, status);
+   CHECK_STATUS_AND_THROW(*status);
+   xill_spec = get_xillver_spectra_table(param_table, status);
+   free(param_table);
+  } catch (const std::exception &e)
+  {
+    free(param_table);
+    free_xill_spec(xill_spec);
+    RELXILL_ERROR("getting spectra from xillver table failed", status);
+    return nullptr;
+  }
 
   return xill_spec;
 }

@@ -194,7 +194,31 @@ class ModelDefinition : public ParamList {
   ModelDefinition(const ParamList &param_list, ModelName model_name, const ModelInfo &model_info) :
       ParamList(param_list), m_model_name{model_name}, m_model_info{model_info}
   {
-  };
+  }
+
+  // Move constructor
+  ModelDefinition(ModelDefinition&& other) noexcept
+    : ParamList(std::move(other)),
+      m_model_name(other.m_model_name),
+      m_model_info(other.m_model_info)
+  {
+  }
+
+  // Move assignment operator
+  ModelDefinition& operator=(ModelDefinition&& other) noexcept
+  {
+    if (this != &other)
+    {
+      ParamList::operator=(std::move(other));
+      m_model_name = other.m_model_name;
+      m_model_info = other.m_model_info;
+    }
+    return *this;
+  }
+
+  // Delete copy constructor and copy assignment (if not already deleted)
+  ModelDefinition(const ModelDefinition&) = default;
+  ModelDefinition& operator=(const ModelDefinition&) = default;
 
   auto get_model_name() const{
     return m_model_name;

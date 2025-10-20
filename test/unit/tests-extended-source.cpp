@@ -32,8 +32,12 @@ extern "C" {
 #define PREC 1e-6
 
 
-
-TEST_CASE("Default line model call ", "[extended]") {
+TEST_CASE (
+"Default line model call "
+,
+"[extended]"
+)
+ {
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
@@ -64,7 +68,12 @@ TEST_CASE("Default line model call ", "[extended]") {
 }
 
 
-TEST_CASE("Default call of relxill ext models for different geometries ", "[extended]") {
+TEST_CASE (
+"Default call of relxill ext models for different geometries "
+,
+"[extended]"
+)
+ {
 
   //int status = EXIT_SUCCESS;
   DefaultSpec default_spec{};
@@ -92,7 +101,12 @@ TEST_CASE("Default call of relxill ext models for different geometries ", "[exte
 }
 
 
-TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
+TEST_CASE (
+"Checking the reflection fraction in the lp limit"
+,
+"[extended]"
+)
+ {
   int status = EXIT_SUCCESS;
 
   DefaultSpec default_spec{};
@@ -107,7 +121,7 @@ TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
   local_model.set_par(XPar::h, h);
 
   local_model.eval_model(spec);
-  relParam* rel_param = local_model.get_rel_params();
+  relParam* rel_param = local_model.rel_params();
   auto sys_par = get_system_parameters(rel_param, &status);
   double refl = sys_par->emis->photon_fate_fractions->refl_frac;
   double frac_inf = sys_par->emis->photon_fate_fractions->f_inf;
@@ -130,7 +144,7 @@ TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
   //local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
   local_model_ext.eval_model(spec_ext);
-  relParam* rel_param_ext = local_model_ext.get_rel_params();
+  relParam* rel_param_ext = local_model_ext.rel_params();
   auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
 
   double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
@@ -148,7 +162,12 @@ TEST_CASE("Checking the reflection fraction in the lp limit", "[extended]") {
 
 // Does not work for spherical relxill, need modifications
 
-TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
+TEST_CASE (
+"Compare lp and ext emissivities for x = 0"
+,
+"[extended]"
+)
+ {
 
   int status = EXIT_SUCCESS;
   double current_error = 0.045;
@@ -179,8 +198,8 @@ TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
       local_model_ext.set_par(XPar::source_r, height);
       local_model_ext.set_par(XPar::rin, -1.0);
       local_model_ext.eval_model(spec_ext);
-      relParam* rel_param = local_model.get_rel_params();
-      relParam* rel_param_ext = local_model_ext.get_rel_params();
+      relParam* rel_param = local_model.rel_params();
+      relParam* rel_param_ext = local_model_ext.rel_params();
       auto sys_par = get_system_parameters(rel_param, &status);
       auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
       int n_rad = sys_par->nr;
@@ -203,7 +222,12 @@ TEST_CASE("Compare lp and ext emissivities for x = 0", "[extended]") {
   REQUIRE(status == EXIT_SUCCESS);
 }
 
-TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heights ", "[extended]") {
+TEST_CASE (
+"Compare lp and ext line profiles for x = 0 for several spins and heights "
+,
+"[extended]"
+)
+ {
 
   int status = EXIT_SUCCESS;
   double current_error_peak = 0.002;
@@ -247,7 +271,12 @@ TEST_CASE("Compare lp and ext line profiles for x = 0 for several spins and heig
 }
 
 
-TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and heights ", "[extended]") {
+TEST_CASE (
+"Compare lp and ext reflected fluxes for x = 0 for several spins and heights "
+,
+"[extended]"
+)
+ {
 
   int status = EXIT_SUCCESS;
   double current_error = 0.047;
@@ -287,7 +316,12 @@ TEST_CASE("Compare lp and ext reflected fluxes for x = 0 for several spins and h
   REQUIRE(status == EXIT_SUCCESS);
 }
 
-TEST_CASE("Setting input parameters for extended source outside of the allowed range ","[extended]") {
+TEST_CASE (
+"Setting input parameters for extended source outside of the allowed range "
+,
+"[extended]"
+)
+ {
 
   DefaultSpec default_spec{};
 
@@ -327,4 +361,3 @@ TEST_CASE("Setting input parameters for extended source outside of the allowed r
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
   */
 }
-

@@ -31,8 +31,7 @@
  *  the line for 1 keV
  */
 void LocalModel::line_model(const XspecSpectrum &spectrum) {
-
-  auto rel_param = get_rel_params();
+  auto rel_param = rel_params();
 
   // relbase calculates the line for 1keV, i.e., shift the energy grid accordingly
   spectrum.shift_energy_grid_1keV(rel_param->lineE);
@@ -105,8 +104,8 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   if (m_model_params.get_model_name() == ModelName::relxillBB || m_model_params.get_model_name() ==
     ModelName::relxillBBxill)
   {
-    relParam *rel_param = LocalModel::get_rel_params();
-    xillParam *xill_param = LocalModel::get_xill_params();
+    relParam* rel_param = LocalModel::rel_params();
+    xillParam* xill_param = LocalModel::xill_params();
     relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), xill_param, rel_param, &status);
     delete rel_param;
     delete xill_param;
@@ -136,7 +135,7 @@ void LocalModel::conv_model(const XspecSpectrum& spectrum) const
     throw ModelEvalFailed("input flux for convolution model needs to be >0");
   }
 
-  relParam *rel_param = LocalModel::get_rel_params();
+  relParam* rel_param = LocalModel::rel_params();
 
   int status = EXIT_SUCCESS;
   relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_param, &status);
@@ -156,7 +155,7 @@ void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
 {
   int status = EXIT_SUCCESS;
 
-  xillParam *xill_param = get_xill_params();
+  xillParam* xill_param = xill_params();
   xillSpec *spec = get_xillver_spectra(xill_param, &status);
 
   // add the dependence on incl, assuming a semi-infinite slab

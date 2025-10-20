@@ -138,6 +138,7 @@ static void set_parindex_from_parname(int *pindex, char **pname, int n, int *sta
   // loop over given parameters
   for (ii = 0; ii < n; ii++) {
     pindex[ii] = -1;
+    assert(pname!=NULL);
 
     // now loop over all possible parameters
     int jj;
@@ -202,11 +203,18 @@ static void get_xilltable_parameters(fitsfile *fptr, xillTable *tab, int *status
   assert(tab->param_names != NULL);
 
   for (ii = 0; ii < tab->num_param; ii++) {
-    tab->param_names[ii] = (char *) malloc(sizeof(char) * 8);
-    CHECK_MALLOC_VOID_STATUS(tab->param_names, status)
+    tab->param_names[ii] = (char *) malloc(sizeof(char) * 16);
+    CHECK_MALLOC_VOID_STATUS(tab->param_names[ii], status)
+    memset(tab->param_names[ii], 0, 16); // Initialize to zero to ensure null termination
   }
   fits_read_col(fptr, TINT, colnum_n, 1, 1, tab->num_param, &nullval, tab->num_param_vals, &anynul, status);
   fits_read_col(fptr, TSTRING, 1, 1, 1, tab->num_param, strnull, tab->param_names, &anynul, status);
+
+  // Ensure all strings are properly null-terminated (fits_read_col, might not guarantee this)
+  for (ii = 0; ii < tab->num_param; ii++)
+  {
+    tab->param_names[ii][15] = '\0'; // Force null termination
+  }
 
   for (ii = 0; ii < tab->num_param; ii++)
   {
@@ -322,6 +330,7 @@ int* get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTa
   int* ind_xilltab = (int*)malloc(tab->num_param * sizeof(int));
   if (ind_xilltab == NULL)
   {
+    RELXILL_ERROR("failed to allocate memory for the xillver table indices", status);
     free(inp_global_paramvals);
     return NULL;
   }
@@ -737,20 +746,33 @@ xillSpec *new_xill_spec(int n_incl, int n_ener, int *status) {
 
   spec->n_ener = n_ener;
   spec->n_incl = n_incl;
+  spec->ener = NULL;
+  spec->incl = NULL;
+  spec->flu = NULL;
 
-  spec->ener = (double *) malloc(sizeof(double) * (n_ener + 1));
-  CHECK_MALLOC_RET_STATUS(spec->ener, status, spec)
+  do
+  {
+    spec->ener = (double *) malloc(sizeof(double) * (n_ener + 1));
+    CHECK_MALLOC_BREAK_STATUS(spec->ener, status)
 
-  spec->incl = (double *) malloc(sizeof(double) * (n_incl));
-  CHECK_MALLOC_RET_STATUS(spec->incl, status, spec)
+    spec->incl = (double *) malloc(sizeof(double) * (n_incl));
+    CHECK_MALLOC_BREAK_STATUS(spec->incl, status)
 
-  spec->flu = (double **) malloc(sizeof(double *) * n_incl);
-  CHECK_MALLOC_RET_STATUS(spec->flu, status, spec)
+    spec->flu = (double **) malloc(sizeof(double *) * n_incl);
+    CHECK_MALLOC_BREAK_STATUS(spec->flu, status)
 
-  int ii;
-  for (ii = 0; ii < n_incl; ii++) {
-    spec->flu[ii] = (double *) malloc(sizeof(double) * n_ener);
-    CHECK_MALLOC_RET_STATUS(spec->flu[ii], status, spec)
+    int ii;
+    for (ii = 0; ii < n_incl; ii++) {
+      spec->flu[ii] = (double *) malloc(sizeof(double) * n_ener);
+      CHECK_MALLOC_BREAK_STATUS(spec->flu[ii], status)
+    }
+  } while (0);
+
+  if (*status==EXIT_FAILURE || spec->ener == NULL || spec->incl == NULL || spec->flu == NULL)
+  {
+    printf(" error: allocating memeory for the xillver spectrum failed!\n");
+    free_xill_spec(spec);
+    return NULL;
   }
 
   assert(spec != NULL);
@@ -1262,6 +1284,11 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
   } else {
     spec = new_xill_spec(tab->n_incl, tab->n_ener, status);
   }
+  if (*status != EXIT_SUCCESS)
+  {
+    free_xill_spec(spec);
+    return NULL;
+  }
 
   assert(spec != NULL);
   assert(spec->n_ener == tab->n_ener);
@@ -1278,11 +1305,23 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
     spec->incl[ii] = tab->incl[ii];
   }
 
-  float* inp_param_vals = get_xilltab_global_paramvals(param, status);
-
   int nfac = tab->num_param;
-  double *ipol_fac = (double *) malloc(sizeof(double) * nfac);
-  CHECK_MALLOC_RET_STATUS(ipol_fac, status, NULL)
+  float* inp_param_vals = NULL;
+  double* ipol_fac = NULL;
+  do
+  {
+    inp_param_vals = get_xilltab_global_paramvals(param, status);
+    CHECK_MALLOC_BREAK_STATUS(inp_param_vals, status)
+    ipol_fac = (double *) malloc(sizeof(double) * nfac);
+    CHECK_MALLOC_BREAK_STATUS(ipol_fac, status)
+  } while (0);
+
+  if (*status!=EXIT_SUCCESS)
+  {
+    free_xill_spec(spec);
+    return NULL;
+  }
+
 
   /* calculate the interpolation factor for all parameters
    * ([nfac-1] is inclination, which might not be used) */
@@ -1355,7 +1394,11 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
     RELXILL_ERROR("Given number of parameters of the xillver table not implemented", status);
   }
 
-
+  if (*status!=EXIT_SUCCESS)
+  {
+    free_xill_spec(spec);
+    return NULL;
+  }
   free(ipol_fac);
 
   return spec;
