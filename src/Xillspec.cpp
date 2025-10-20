@@ -59,11 +59,11 @@ EnerGrid *get_relxill_conv_energy_grid() {
 }
 
 
-xillSpec *new_xill_spec(int n_incl, int n_ener, int *status) {
-
+xillSpec* new_xill_spec(int n_incl, int n_ener, int* status)
+{
   CHECK_STATUS_RET(*status, NULL);
 
-  xillSpec *spec = (xillSpec *) malloc(sizeof(xillSpec));
+  xillSpec* spec = (xillSpec*)malloc(sizeof(xillSpec));
   CHECK_MALLOC_RET_STATUS(spec, status, NULL)
 
   spec->n_ener = n_ener;
@@ -104,13 +104,17 @@ xillSpec *new_xill_spec(int n_incl, int n_ener, int *status) {
   return spec;
 }
 
-void free_xill_spec(xillSpec *spec) {
-  if (spec != NULL) {
+void free_xill_spec(xillSpec* spec)
+{
+  if (spec != NULL)
+  {
     free(spec->ener);
     free(spec->incl);
-    if (spec->flu != NULL) {
+    if (spec->flu != NULL)
+    {
       int ii;
-      for (ii = 0; ii < spec->n_incl; ii++) {
+      for (ii = 0; ii < spec->n_incl; ii++)
+      {
         free(spec->flu[ii]);
       }
       free(spec->flu);
@@ -130,7 +134,8 @@ std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, 
     free
   );
 
-  if (*status != EXIT_SUCCESS || !inp_global_paramvals) {
+  if (*status != EXIT_SUCCESS || !inp_global_paramvals)
+  {
     return std::vector<int>{};
   }
 
@@ -171,7 +176,8 @@ std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, 
 
 // Default values from the param-structure, as those are set to the value the table is calculated
 // with, even if the model does not have a lxi or density parameter
-static double getDefaultDensity(const xillTableParam *param) {
+static double getDefaultDensity(const xillTableParam* param)
+{
   return param->dens;
 }
 
@@ -186,11 +192,11 @@ void check_xilltab_cache(const char* fname, const xillTableParam* param, const x
 {
   CHECK_STATUS_VOID(*status);
 
-  fitsfile *fptr = nullptr;
+  fitsfile* fptr = nullptr;
 
   // Determine the actual number of parameters we need to iterate over
   int num_param = tab->num_param;
-  assert(tab->num_param == ind.size());  // check that we have the correct number of indizes
+  assert(tab->num_param == ind.size()); // check that we have the correct number of indizes
   int max_dims = 6; // Maximum supported dimensions
 
   // Set up loop bounds for each dimension
@@ -237,7 +243,8 @@ void check_xilltab_cache(const char* fname, const xillTableParam* param, const x
           {
             for (mm = loop_start[5]; mm < loop_end[5]; mm++)
             {
-              if (get_xillspec_table(tab, nn, ii, jj, kk, ll, mm) == nullptr) {
+              if (get_xillspec_table(tab, nn, ii, jj, kk, ll, mm) == nullptr)
+              {
                 xilltable_fits_load_single_spec(fname,
                                                 &fptr,
                                                 tab,
@@ -252,7 +259,6 @@ void check_xilltab_cache(const char* fname, const xillTableParam* param, const x
                                                 status);
                 CHECK_STATUS_VOID(*status);
               }
-
             }
           }
         }
@@ -262,8 +268,10 @@ void check_xilltab_cache(const char* fname, const xillTableParam* param, const x
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
-  if (fptr != nullptr) {
-    if (fits_close_file(fptr, status)) {
+  if (fptr != nullptr)
+  {
+    if (fits_close_file(fptr, status))
+    {
       RELXILL_ERROR(" *** error closing FITS file", status);
     }
   }
@@ -272,30 +280,29 @@ void check_xilltab_cache(const char* fname, const xillTableParam* param, const x
 }
 
 
-
 static void interp_5d_tab_incl(const xillTable* tab, double* flu, int n_ener,
                                double f1, double f2, double f3, double f4,
-                               int i0, int i1, int i2, int i3, int i4, int i5) {
+                               int i0, int i1, int i2, int i3, int i4, int i5)
+{
+  float* dat_0000 = get_xillspec_table(tab, i0, i1, i2, i3, i4, i5);
+  float* dat_1000 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4, i5);
+  float* dat_0100 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4, i5);
+  float* dat_0010 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4, i5);
 
-  float *dat_0000 = get_xillspec_table(tab, i0, i1, i2, i3, i4, i5);
-  float *dat_1000 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4, i5);
-  float *dat_0100 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4, i5);
-  float *dat_0010 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4, i5);
+  float* dat_1100 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4, i5);
+  float* dat_1010 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4, i5);
+  float* dat_0110 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4, i5);
+  float* dat_1110 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5);
 
-  float *dat_1100 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4, i5);
-  float *dat_1010 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4, i5);
-  float *dat_0110 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4, i5);
-  float *dat_1110 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5);
+  float* dat_0001 = get_xillspec_table(tab, i0, i1, i2, i3, i4 + 1, i5);
+  float* dat_1001 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4 + 1, i5);
+  float* dat_0101 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4 + 1, i5);
+  float* dat_0011 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4 + 1, i5);
 
-  float *dat_0001 = get_xillspec_table(tab, i0, i1, i2, i3, i4 + 1, i5);
-  float *dat_1001 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4 + 1, i5);
-  float *dat_0101 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4 + 1, i5);
-  float *dat_0011 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4 + 1, i5);
-
-  float *dat_1101 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5);
-  float *dat_1011 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5);
-  float *dat_0111 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5);
-  float *dat_1111 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5);
+  float* dat_1101 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5);
+  float* dat_1011 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5);
+  float* dat_0111 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5);
+  float* dat_1111 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5);
 
   double f_0000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4);
   double f_1000 = (f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4);
@@ -317,7 +324,8 @@ static void interp_5d_tab_incl(const xillTable* tab, double* flu, int n_ener,
   double f_1111 = (f1) * (f2) * (f3) * (f4);
 
   int ii;
-  for (ii = 0; ii < n_ener; ii++) {
+  for (ii = 0; ii < n_ener; ii++)
+  {
     flu[ii] =
       f_0000 * (double)dat_0000[ii] +
       f_1000 * (double)dat_1000[ii] +
@@ -341,47 +349,47 @@ static void interp_5d_tab_incl(const xillTable* tab, double* flu, int n_ener,
 static void interp_5d_tab(const xillTable* tab, double* flu, int n_ener,
                           double f1, double f2, double f3, double f4, double f5,
                           int i0, int i1, int i2, int i3, int i4,
-                          int i5) {
+                          int i5)
+{
+  float* dat_00000 = get_xillspec_table(tab, i0, i1, i2, i3, i4, i5);
+  float* dat_10000 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4, i5);
+  float* dat_01000 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4, i5);
+  float* dat_00100 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4, i5);
 
-  float *dat_00000 = get_xillspec_table(tab, i0, i1, i2, i3, i4, i5);
-  float *dat_10000 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4, i5);
-  float *dat_01000 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4, i5);
-  float *dat_00100 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4, i5);
+  float* dat_11000 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4, i5);
+  float* dat_10100 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4, i5);
+  float* dat_01100 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4, i5);
+  float* dat_11100 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5);
 
-  float *dat_11000 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4, i5);
-  float *dat_10100 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4, i5);
-  float *dat_01100 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4, i5);
-  float *dat_11100 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5);
+  float* dat_00010 = get_xillspec_table(tab, i0, i1, i2, i3, i4 + 1, i5);
+  float* dat_10010 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4 + 1, i5);
+  float* dat_01010 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4 + 1, i5);
+  float* dat_00110 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4 + 1, i5);
 
-  float *dat_00010 = get_xillspec_table(tab, i0, i1, i2, i3, i4 + 1, i5);
-  float *dat_10010 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4 + 1, i5);
-  float *dat_01010 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4 + 1, i5);
-  float *dat_00110 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4 + 1, i5);
+  float* dat_11010 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5);
+  float* dat_10110 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5);
+  float* dat_01110 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5);
+  float* dat_11110 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5);
 
-  float *dat_11010 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5);
-  float *dat_10110 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5);
-  float *dat_01110 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5);
-  float *dat_11110 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5);
+  float* dat_00001 = get_xillspec_table(tab, i0, i1, i2, i3, i4, i5 + 1);
+  float* dat_10001 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4, i5 + 1);
+  float* dat_01001 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4, i5 + 1);
+  float* dat_00101 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4, i5 + 1);
 
-  float *dat_00001 = get_xillspec_table(tab, i0, i1, i2, i3, i4, i5 + 1);
-  float *dat_10001 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4, i5 + 1);
-  float *dat_01001 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4, i5 + 1);
-  float *dat_00101 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4, i5 + 1);
+  float* dat_11001 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4, i5 + 1);
+  float* dat_10101 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4, i5 + 1);
+  float* dat_01101 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4, i5 + 1);
+  float* dat_11101 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5 + 1);
 
-  float *dat_11001 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4, i5 + 1);
-  float *dat_10101 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4, i5 + 1);
-  float *dat_01101 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4, i5 + 1);
-  float *dat_11101 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4, i5 + 1);
+  float* dat_00011 = get_xillspec_table(tab, i0, i1, i2, i3, i4 + 1, i5 + 1);
+  float* dat_10011 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4 + 1, i5 + 1);
+  float* dat_01011 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4 + 1, i5 + 1);
+  float* dat_00111 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4 + 1, i5 + 1);
 
-  float *dat_00011 = get_xillspec_table(tab, i0, i1, i2, i3, i4 + 1, i5 + 1);
-  float *dat_10011 = get_xillspec_table(tab, i0, i1 + 1, i2, i3, i4 + 1, i5 + 1);
-  float *dat_01011 = get_xillspec_table(tab, i0, i1, i2 + 1, i3, i4 + 1, i5 + 1);
-  float *dat_00111 = get_xillspec_table(tab, i0, i1, i2, i3 + 1, i4 + 1, i5 + 1);
-
-  float *dat_11011 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5 + 1);
-  float *dat_10111 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5 + 1);
-  float *dat_01111 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5 + 1);
-  float *dat_11111 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5 + 1);
+  float* dat_11011 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3, i4 + 1, i5 + 1);
+  float* dat_10111 = get_xillspec_table(tab, i0, i1 + 1, i2, i3 + 1, i4 + 1, i5 + 1);
+  float* dat_01111 = get_xillspec_table(tab, i0, i1, i2 + 1, i3 + 1, i4 + 1, i5 + 1);
+  float* dat_11111 = get_xillspec_table(tab, i0, i1 + 1, i2 + 1, i3 + 1, i4 + 1, i5 + 1);
 
   double f_00000 = (1.0 - f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4) * (1 - f5);
   double f_10000 = (f1) * (1.0 - f2) * (1.0 - f3) * (1 - f4) * (1 - f5);
@@ -421,39 +429,39 @@ static void interp_5d_tab(const xillTable* tab, double* flu, int n_ener,
   for (ii = 0; ii < n_ener; ii++)
   {
     flu[ii] =
-        f_00000 * (double) dat_00000[ii] +
-        f_10000 * (double)dat_10000[ii] +
-        f_01000 * (double) dat_01000[ii] +
-        f_00100 * (double) dat_00100[ii] +
-        f_11000 * (double) dat_11000[ii] +
-        f_10100 * (double) dat_10100[ii] +
-        f_01100 * (double) dat_01100[ii] +
-        f_11100 * (double) dat_11100[ii] +
-        f_00010 * (double) dat_00010[ii] +
-        f_10010 * (double) dat_10010[ii] +
-        f_01010 * (double) dat_01010[ii] +
-        f_00110 * (double) dat_00110[ii] +
-        f_11010 * (double) dat_11010[ii] +
-        f_10110 * (double) dat_10110[ii] +
-        f_01110 * (double) dat_01110[ii] +
-        f_11110 * (double) dat_11110[ii]
-        +
-        f_00001 * (double) dat_00001[ii] +
-        f_10001 * (double) dat_10001[ii] +
-        f_01001 * (double) dat_01001[ii] +
-        f_00101 * (double) dat_00101[ii] +
-        f_11001 * (double) dat_11001[ii] +
-        f_10101 * (double) dat_10101[ii] +
-        f_01101 * (double) dat_01101[ii] +
-        f_11101 * (double) dat_11101[ii] +
-        f_00011 * (double) dat_00011[ii] +
-        f_10011 * (double) dat_10011[ii] +
-        f_01011 * (double) dat_01011[ii] +
-        f_00111 * (double) dat_00111[ii] +
-        f_11011 * (double) dat_11011[ii] +
-        f_10111 * (double) dat_10111[ii] +
-        f_01111 * (double) dat_01111[ii] +
-        f_11111 * (double) dat_11111[ii];
+      f_00000 * (double)dat_00000[ii] +
+      f_10000 * (double)dat_10000[ii] +
+      f_01000 * (double)dat_01000[ii] +
+      f_00100 * (double)dat_00100[ii] +
+      f_11000 * (double)dat_11000[ii] +
+      f_10100 * (double)dat_10100[ii] +
+      f_01100 * (double)dat_01100[ii] +
+      f_11100 * (double)dat_11100[ii] +
+      f_00010 * (double)dat_00010[ii] +
+      f_10010 * (double)dat_10010[ii] +
+      f_01010 * (double)dat_01010[ii] +
+      f_00110 * (double)dat_00110[ii] +
+      f_11010 * (double)dat_11010[ii] +
+      f_10110 * (double)dat_10110[ii] +
+      f_01110 * (double)dat_01110[ii] +
+      f_11110 * (double)dat_11110[ii]
+      +
+      f_00001 * (double)dat_00001[ii] +
+      f_10001 * (double)dat_10001[ii] +
+      f_01001 * (double)dat_01001[ii] +
+      f_00101 * (double)dat_00101[ii] +
+      f_11001 * (double)dat_11001[ii] +
+      f_10101 * (double)dat_10101[ii] +
+      f_01101 * (double)dat_01101[ii] +
+      f_11101 * (double)dat_11101[ii] +
+      f_00011 * (double)dat_00011[ii] +
+      f_10011 * (double)dat_10011[ii] +
+      f_01011 * (double)dat_01011[ii] +
+      f_00111 * (double)dat_00111[ii] +
+      f_11011 * (double)dat_11011[ii] +
+      f_10111 * (double)dat_10111[ii] +
+      f_01111 * (double)dat_01111[ii] +
+      f_11111 * (double)dat_11111[ii];
   }
 }
 
@@ -478,8 +486,8 @@ static void interp_2d_tab_incl(const xillTable* tab, double* flu, int n_ener,
 
 
 static void interp_6d_tab_incl(const xillTable* tab, double* flu, int n_ener,
-                               const double* fac, int nfac, const std::vector<int>& ind, int iincl) {
-
+                               const double* fac, int nfac, const std::vector<int>& ind, int iincl)
+{
   assert(nfac == 6);
 
   double s1[n_ener];
@@ -494,14 +502,15 @@ static void interp_6d_tab_incl(const xillTable* tab, double* flu, int n_ener,
                      ind[1], ind[2], ind[3], ind[4], iincl);
 
   int ii;
-  for (ii = 0; ii < n_ener; ii++) {
+  for (ii = 0; ii < n_ener; ii++)
+  {
     flu[ii] = interp_lin_1d(fac[0], s1[ii], s2[ii]);
   }
 }
 
 static void interp_6d_tab(const xillTable* tab, double* flu, int n_ener,
-                          const double *fac, int nfac, const std::vector<int> &ind) {
-
+                          const double* fac, int nfac, const std::vector<int>& ind)
+{
   assert(nfac == 6);
 
   double s1[n_ener];
@@ -518,7 +527,8 @@ static void interp_6d_tab(const xillTable* tab, double* flu, int n_ener,
                 ind[1], ind[2], ind[3], ind[4], ind[5]);
 
   int ii;
-  for (ii = 0; ii < n_ener; ii++) {
+  for (ii = 0; ii < n_ener; ii++)
+  {
     flu[ii] = interp_lin_1d(fac[0], s1[ii], s2[ii]);
   }
 }
@@ -531,33 +541,41 @@ static void interp_6d_tab(const xillTable* tab, double* flu, int n_ener,
  * @param: (input) param
  * @param: (output) ipol_fac
  **/
-static void ensure_ecut_within_boundarys(const xillTable* tab, const xillTableParam *param, double *ipol_fac) {
+static void ensure_ecut_within_boundarys(const xillTable* tab, const xillTableParam* param, double* ipol_fac)
+{
   // first need to make sure ECUT is a parameter in the table
   int index_ect = get_xilltab_param_index(tab, PARAM_ECT);
   if (index_ect >= 0)
   {
-    if (param->ect <= tab->param_vals[tab->param_index[index_ect]][0]) {
+    if (param->ect <= tab->param_vals[tab->param_index[index_ect]][0])
+    {
       ipol_fac[index_ect] = 0.0;
     }
     // can happen due to grav. redshift, although actually observed ecut is larger
     if (param->ect >=
-        tab->param_vals[tab->param_index[index_ect]][tab->num_param_vals[tab->param_index[index_ect]] - 1]) {
+      tab->param_vals[tab->param_index[index_ect]][tab->num_param_vals[tab->param_index[index_ect]] - 1])
+    {
       ipol_fac[index_ect] = 1.0;
     }
   }
 }
 
-static void resetInpvalsToBoundaries(char *pname, float *p_inpVal, float tabValLo, float tabValHi) {
-
+static void resetInpvalsToBoundaries(char* pname, float* p_inpVal, float tabValLo, float tabValHi)
+{
   float inpVal = *p_inpVal;
-  if (inpVal < tabValLo) {
-    if (is_debug_run()) {
+  if (inpVal < tabValLo)
+  {
+    if (is_debug_run())
+    {
       printf(" *** warning: paramter %s=%e below lowest table value, restetting to %e\n",
              pname, inpVal, tabValLo);
     }
     inpVal = tabValLo;
-  } else if (inpVal > tabValHi) {
-    if (is_debug_run()) {
+  }
+  else if (inpVal > tabValHi)
+  {
+    if (is_debug_run())
+    {
       printf("\n *** warning: paramter %s=%e above largest table value, restetting to %e\n",
              pname, inpVal, tabValHi);
     }
@@ -568,14 +586,17 @@ static void resetInpvalsToBoundaries(char *pname, float *p_inpVal, float tabValL
 }
 
 
-xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const std::vector<int> ind, int *status) {
-
+xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const std::vector<int> ind, int* status)
+{
   CHECK_STATUS_RET(*status, nullptr);
 
-  xillSpec *spec = nullptr;
-  if (is_xill_model(param->model_type)) {
+  xillSpec* spec = nullptr;
+  if (is_xill_model(param->model_type))
+  {
     spec = new_xill_spec(1, tab->n_ener, status);
-  } else {
+  }
+  else
+  {
     spec = new_xill_spec(tab->n_incl, tab->n_ener, status);
   }
   if (*status != EXIT_SUCCESS)
@@ -589,13 +610,15 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
 
   // set the energy grid
   int ii;
-  for (ii = 0; ii < spec->n_ener; ii++) {
+  for (ii = 0; ii < spec->n_ener; ii++)
+  {
     spec->ener[ii] = tab->elo[ii];
   }
   spec->ener[spec->n_ener] = tab->ehi[spec->n_ener - 1];
 
   // set the inclination grid
-  for (ii = 0; ii < spec->n_incl; ii++) {
+  for (ii = 0; ii < spec->n_incl; ii++)
+  {
     spec->incl[ii] = tab->incl[ii];
   }
 
@@ -621,17 +644,19 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
   /* calculate the interpolation factor for all parameters
    * ([nfac-1] is inclination, which might not be used) */
   int pind;
-  for (ii = 0; ii < nfac; ii++) {
+  for (ii = 0; ii < nfac; ii++)
+  {
     // need the index
     pind = tab->param_index[ii];
 
-    if (!((!is_xill_model(param->model_type)) && (tab->param_index[ii] == PARAM_INC))) {
+    if (!((!is_xill_model(param->model_type)) && (tab->param_index[ii] == PARAM_INC)))
+    {
       resetInpvalsToBoundaries(tab->param_names[ii], &(inp_param_vals[pind]), tab->param_vals[ii][0],
                                tab->param_vals[ii][tab->num_param_vals[ii] - 1]);
     }
 
     ipol_fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
-        (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
+      (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
   }
 
   free(inp_param_vals);
@@ -640,33 +665,42 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
   // (can happen due to strong grav. redshift)
   ensure_ecut_within_boundarys(tab, param, ipol_fac);
 
-  if (tab->num_param == 5) {
-    if (is_xill_model(param->model_type)) {
+  if (tab->num_param == 5)
+  {
+    if (is_xill_model(param->model_type))
+    {
       interp_5d_tab(tab, spec->flu[0], spec->n_ener,
                     ipol_fac[0], ipol_fac[1], ipol_fac[2], ipol_fac[3], ipol_fac[4], 0,
                     ind[0], ind[1], ind[2], ind[3], ind[4]);
-
-    } else {
+    }
+    else
+    {
       // do not interpolate over the inclination (so skip the last parameter)
       nfac--;
       assert(nfac == 4);
       // get the spectrum for EACH flux bin
-      for (ii = 0; ii < spec->n_incl; ii++) {
+      for (ii = 0; ii < spec->n_incl; ii++)
+      {
         interp_5d_tab_incl(tab, spec->flu[ii], spec->n_ener,
                            ipol_fac[0], ipol_fac[1], ipol_fac[2], ipol_fac[3], 0,
                            ind[0], ind[1], ind[2], ind[3], ii);
       }
-
     }
-  } else if (tab->num_param == 6) {
-
-    if (is_xill_model(param->model_type)) {
-      for (ii = 0; ii < spec->n_incl; ii++) {
+  }
+  else if (tab->num_param == 6)
+  {
+    if (is_xill_model(param->model_type))
+    {
+      for (ii = 0; ii < spec->n_incl; ii++)
+      {
         interp_6d_tab(tab, spec->flu[ii], spec->n_ener,
                       ipol_fac, nfac, ind);
       }
-    } else {
-      for (ii = 0; ii < spec->n_incl; ii++) {
+    }
+    else
+    {
+      for (ii = 0; ii < spec->n_incl; ii++)
+      {
         interp_6d_tab_incl(tab, spec->flu[ii], spec->n_ener,
                            ipol_fac, nfac, ind, ii);
       }

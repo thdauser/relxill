@@ -92,7 +92,7 @@ EnerGrid *get_coarse_xillver_energrid();
 std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTable* tab, int* status);
 
 void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, std::vector<int> ind,
-    int* status);
+                         int* status);
 
 xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const std::vector<int> ind, int* status);
 
