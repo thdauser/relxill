@@ -35,14 +35,9 @@ xillTable *new_xillTable(int num_param, int *status);
 /* destroy the relline table structure */
 void free_xillTable(xillTable** tab);
 
-xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const int* ind, int* status);
 
 int get_xilltab_param_index(const xillTable* tab, int unique_param_identifier);
 float* get_xilltab_global_paramvals(const xillTableParam* param, int* status);
-int* get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTable* tab, int* status);
-
-void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, const int* ind,
-                         int* status);
 
 void free_all_cached_xillTables(void);
 
@@ -61,5 +56,21 @@ int is_6dim_table(int model_type);
 
 
 void free_xill_spec(xillSpec *spec);
+
+void xilltable_fits_load_single_spec(const char* fname,
+                                     fitsfile** fptr,
+                                     const xillTable* tab,
+                                     double defDensity,
+                                     double defLogxi,
+                                     int nn,
+                                     int ii,
+                                     int jj,
+                                     int kk,
+                                     int ll,
+                                     int mm,
+                                     int* status);
+
+
+float* get_xillspec_table(const xillTable* tab, int i0, int i1, int i2, int i3, int i4, int i5);
 
 #endif /* XILLTABLE_H_ */

@@ -20,10 +20,13 @@
 #define XILLSPEC_H_
 
 extern "C" {
-#include "xilltable.h"
+#include "xilltable_reading.h"
 #include "relutility.h"
 #include "common.h"
 }
+
+#include <vector>
+#include <memory>
 
 #define EMIN_XILLVER_NORMALIZATION 0.1
 #define EMAX_XILLVER_NORMALIZATION 1000.0
@@ -85,5 +88,13 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
 
 double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, int n, int *status);
 EnerGrid *get_coarse_xillver_energrid();
+
+std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTable* tab, int* status);
+
+void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, std::vector<int> ind,
+    int* status);
+
+xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const std::vector<int> ind, int* status);
+
 
 #endif //XILLSPEC_H_

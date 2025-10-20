@@ -30,7 +30,7 @@
 extern "C" {
 #include "relutility.h"
 #include "writeOutfiles.h"
-#include "xilltable.h"
+#include "xilltable_reading.h"
 }
 
 #include <vector>
@@ -125,6 +125,7 @@ static void test_table_fractions_normalization(tabulatedReturnFractions* dat)
 
 // ------- //
 TEST_CASE (
+
 " Returning Radiation Table "
 ,
 "[table]"
@@ -201,6 +202,7 @@ emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* statu
 
 // ------- //
 TEST_CASE (
+
 " Changing number of radial bins if Rin is increased"
 ,
 "[returnrad]"
@@ -233,6 +235,7 @@ TEST_CASE (
 
 // ------- //
 TEST_CASE (
+
 " Rebining the return rad emissivity profile"
 ,
 "[returnrad]"
@@ -277,6 +280,7 @@ TEST_CASE (
 
 // ------- //
 TEST_CASE (
+
 " Line profile for Returning Radiation "
 ,
 "[returnrad]"
@@ -325,6 +329,7 @@ TEST_CASE (
 
 // ------- //
 TEST_CASE (
+
 " Write emissivity profile"
 ,
 "[returnrad-emis]"
@@ -350,6 +355,7 @@ TEST_CASE (
 
 // ------- //
 TEST_CASE (
+
 " Increasing Rin has to reduce the flux at the next zone (in radius)"
 ,
 "[returnrad]"
@@ -419,6 +425,7 @@ TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
 
 // ------- //
 TEST_CASE (
+
 " Changing Rin should result in a change in line shape"
 ,
 "[returnrad-single]"
@@ -456,6 +463,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 "Test Flux Correction Factor"
 ,
 "[returnrad]"
@@ -493,6 +501,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 "Test Gshift Correction Factor"
 ,
 "[returnrad]"
@@ -531,6 +540,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 "Test Gshift Linear Interpolation of the Correction Factor"
 ,
 "[returnrad]"
@@ -556,6 +566,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 "Write Flux Correction Factor"
 ,
 "[returnrad]"
@@ -601,6 +612,7 @@ TEST_CASE (
 
 // ------- //
 TEST_CASE (
+
 " Test relxilllp including returning radiation"
 ,
 "[returnrad-fail]"
@@ -633,6 +645,7 @@ TEST_CASE (
 
 // ------- //
 TEST_CASE (
+
 " Test return rad ENV variable"
 ,
 "[returnrad]"
@@ -674,6 +687,7 @@ static void require_values_differ(const double* val, const int n)
 }
 
 TEST_CASE (
+
 "Calculation of Correction Factors"
 ,
 "[returnrad]"
@@ -743,6 +757,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " Test that no warning is printed"
 ,
 "[returnrad]"
@@ -771,6 +786,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " Caching of spectrum with return radiation correction factors"
 ,
 "[returnrad]"
@@ -807,6 +823,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 " Test that returnrad is also implemented for low spin"
 ,
 "[returnrad2]"

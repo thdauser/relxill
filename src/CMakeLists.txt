@@ -7,7 +7,7 @@ set(SOURCE_FILES
         Rellp.cpp Rellp.h
         reltable.c reltable.h
         relutility.c relutility.h
-        xilltable.c xilltable.h
+        xilltable_reading.c xilltable_reading.h
         Relphysics.cpp Relphysics.h
         writeOutfiles.c writeOutfiles.h
         Relprofile.cpp Relprofile.h

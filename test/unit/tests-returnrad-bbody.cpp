@@ -29,7 +29,7 @@ This file is part of the RELXILL model code.
 extern "C" {
 #include "relutility.h"
 #include "writeOutfiles.h"
-#include "xilltable.h"
+#include "xilltable_reading.h"
 }
 
 

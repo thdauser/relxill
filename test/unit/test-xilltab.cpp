@@ -23,11 +23,12 @@
 #include "Xillspec.h"
 
 extern "C" {
-#include "xilltable.h"
+#include "xilltable_reading.h"
 }
 
 
 TEST_CASE (
+
 " creating of new xillver table "
 ,
 "[xilltab]"
@@ -60,6 +61,7 @@ static void test_tab_num_param(const xillParam* param, int* status, const xillTa
 
 
 TEST_CASE (
+
 " initialize Xillver table "
 ,
 "[xilltab]"
@@ -134,6 +136,7 @@ static void test_get_spec(const std::string& specName, xillParam* param)
 }
 
 TEST_CASE (
+
 " xillver spectra evaluation "
 ,
 "[xilltab]"
@@ -173,6 +176,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " automated loading of the xillver tables "
 ,
 "[xilltab]"
@@ -198,6 +202,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " loading table which does not exist "
 ,
 "[xilltab]"
@@ -216,6 +221,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 " check for existing table "
 ,
 "[xilltab]"
@@ -245,6 +251,7 @@ static void testNormfacBand(xillSpec** spec, double elo, double ehi, double prec
 }
 
 TEST_CASE (
+
 " renorm xilltable with density and logxi "
 )
  {
@@ -272,6 +279,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 " normalization of the primary continuum"
 ,
 "[prim]"
@@ -322,6 +330,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " test normalization factor when shifting ecut/kTe"
 ,
 "[prim]"
