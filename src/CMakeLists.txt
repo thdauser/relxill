@@ -23,7 +23,7 @@ set(SOURCE_FILES
         Relreturn_Datastruct.cpp Relreturn_Datastruct.h
         Relreturn_Table.cpp Relreturn_Table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
-        Xillspec.cpp Xillspec.h
+        Xillspec.cpp Xillspec.h Xilltable_handling.cpp Xilltable_handling.h
         PrimarySource.cpp PrimarySource.h
         Rellp_Extended.cpp Rellp_Extended.h
         JedSad.cpp JedSad.h
