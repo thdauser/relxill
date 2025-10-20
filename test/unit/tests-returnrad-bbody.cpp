@@ -61,22 +61,19 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-vg]")
         }()
     );
 
-    xill_param->radzone = 0;
     xillSpec* xillspec = nullptr;
+    xill_param->radzone = 2;
     xillspec = get_xillver_spectra(xill_param, &status);
     REQUIRE(xillspec != nullptr);
 
-    // for (int ii = 0; ii < xillspec->n_incl; ii++)
-    int ii = 0;
+     for (int ii = 0; ii < xillspec->n_incl; ii++)
     {
         INFO("Failing index: " << ii);
-        double sum = sum_flux(xillspec->flu[ii], xillspec->n_ener);
-        printf(" sum: %.5e\n", sum);
-        // REQUIRE(sum_flux(xillspec->flu[ii], xillspec->n_ener) > 1e-10);
+        REQUIRE(sum_flux(xillspec->flu[ii], xillspec->n_ener) > 1e-10);
     }
 
-    //  write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
-    //                    xillspec->ener, xillspec->flu[1], xillspec->n_ener);
+      write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
+                        xillspec->ener, xillspec->flu[1], xillspec->n_ener);
 
     free_xill_spec(xillspec);
     //  free_all_cached_xillTables();

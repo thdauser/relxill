@@ -190,8 +190,8 @@ void check_xilltab_cache(const char* fname, const xillTableParam* param, const x
   int max_dims = 6; // Maximum supported dimensions
 
   // Set up loop bounds for each dimension
-  int loop_start[max_dims];
-  int loop_end[max_dims];
+  std::vector<int> loop_start(max_dims);
+  std::vector<int> loop_end(max_dims);
 
   // Set up bounds for the all dimensions (not we count backwards, meaning first entries are zero for dim<max_dims)
   for (int iloop = 0; iloop < max_dims; iloop++)
@@ -456,16 +456,15 @@ static void interp_5d_tab(const xillTable* tab, double* flu, int n_ener,
 }
 
 static void interp_2d_tab_incl(const xillTable* tab, double* flu, int n_ener,
-                               const std::vector<double>& fac, const std::vector<int>& ind)
+                               const std::vector<double>& fac, int ind_radzone, int ind_incl)
 {
   // make sure this is only for 2D interpolation
   int dim = 2;
-  assert(ind.size() == dim);
   assert(fac.size() == dim);
   assert(tab->num_param == dim);
 
-  int i4 = ind[0];
-  int i5 = ind[1];
+  int i4 = ind_radzone;
+  int i5 = ind_incl;
 
   float* dat_0 = get_xillspec_table(tab, 0, 0, 0, 0, i4, i5);
   float* dat_1 = get_xillspec_table(tab, 0, 0, 0, 0, i4 + 1, i5);
@@ -484,6 +483,8 @@ static void interp_6d_tab_incl(const xillTable* tab, double* flu, int n_ener,
   // make sure this is only for 2D interpolation
   int dim = 6;
   assert(fac.size() == dim);
+  assert(ind.size() == dim);
+  assert(tab->num_param == dim);
 
   double s1[n_ener];
   double s2[n_ener];
@@ -701,8 +702,12 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
     }
     else
     {
-      interp_2d_tab_incl(tab, spec->flu[ii], spec->n_ener,
-                         ipol_fac, ind);
+      for (ii = 0; ii < spec->n_incl; ii++)
+      {
+        interp_2d_tab_incl(tab, spec->flu[ii], spec->n_ener,
+                           ipol_fac, ind[0], ii);
+        spec->flu[ii][0] = 1.0;
+      }
     }
   }
   else
@@ -734,7 +739,7 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
   auto indparam = get_xilltab_indices_for_paramvals(param, tab, status);
   CHECK_STATUS_AND_THROW(*status);
 
-  // =2=  check if the necessary spectra for interpolation are loaded
+  // =2= check if the necessary spectra for interpolation are loaded
   check_xilltab_cache(fname, param, tab, indparam, status);
   CHECK_STATUS_AND_THROW(*status);
 

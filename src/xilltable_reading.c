@@ -343,7 +343,7 @@ static int get_xillspec_rownum(const int* num_param_vals, int num_param, int nn,
   switch (num_param)
   {
   case 2:
-    return (ii * num_param_vals[1] + jj + 1);
+    return (ll * num_param_vals[1] + mm + 1);
 
   case 5:
     return (((ii * num_param_vals[1] + jj) * num_param_vals[2]
