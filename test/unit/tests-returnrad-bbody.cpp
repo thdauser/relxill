@@ -51,7 +51,6 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-vg]")
 {
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.xill_params();
-    auto rel_param = lmod.rel_params();
 
     int status = EXIT_SUCCESS;
     xillTable* xill_tab = nullptr;

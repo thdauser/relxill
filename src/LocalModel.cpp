@@ -31,7 +31,7 @@
  *  the line for 1 keV
  */
 void LocalModel::line_model(const XspecSpectrum &spectrum) {
-  auto rel_param = rel_params();
+  auto rel_param = get_rel_params(m_model_params);
 
   // relbase calculates the line for 1keV, i.e., shift the energy grid accordingly
   spectrum.shift_energy_grid_1keV(rel_param->lineE);
@@ -104,11 +104,10 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   if (m_model_params.get_model_name() == ModelName::relxillBB || m_model_params.get_model_name() ==
     ModelName::relxillBBxill)
   {
-    relParam* rel_param = LocalModel::rel_params();
-    xillParam* xill_param = LocalModel::xill_params();
-    relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), xill_param, rel_param, &status);
+    auto rel_param = get_rel_params(m_model_params);
+    relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
+                      xill_params(), rel_param, &status);
     delete rel_param;
-    delete xill_param;
   }
   else
   {
@@ -135,16 +134,12 @@ void LocalModel::conv_model(const XspecSpectrum& spectrum) const
     throw ModelEvalFailed("input flux for convolution model needs to be >0");
   }
 
-  relParam* rel_param = LocalModel::rel_params();
-
   int status = EXIT_SUCCESS;
-  relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_param, &status);
+  relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_params(), &status);
 
   if (status != EXIT_SUCCESS) {
     throw ModelEvalFailed("executing convolution failed");
   }
-
-  delete rel_param;
 }
 
 
@@ -155,7 +150,7 @@ void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
 {
   int status = EXIT_SUCCESS;
 
-  xillParam* xill_param = xill_params();
+  xillParam* xill_param = get_xill_params(m_model_params);
   xillSpec *spec = get_xillver_spectra(xill_param, &status);
 
   // add the dependence on incl, assuming a semi-infinite slab
@@ -163,6 +158,7 @@ void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
 
   _rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), spec->ener, spec->flu[0], spec->n_ener);
   free_xill_spec(spec);
+  delete xill_param;
 
   add_primary_component(spectrum.energy,
                         spectrum.num_flux_bins(),
@@ -171,8 +167,6 @@ void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
                         xill_param,
                         nullptr,
                         &status);
-
-  delete xill_param;
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();

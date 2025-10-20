@@ -93,8 +93,7 @@ int convertPrimSpecType(T_PrimSpec name) {
     case T_PrimSpec::CutoffPl: return PRIM_SPEC_ECUT;
     case T_PrimSpec::Nthcomp: return PRIM_SPEC_NTHCOMP;
     case T_PrimSpec::Blackbody: return PRIM_SPEC_BB;
-    case T_PrimSpec::None:puts(" *** relxill-error: not possible construct a model with Primary-Spectrum-Type <None> ");
-      break;
+    case T_PrimSpec::None: return PRIM_SPEC_NONE;
   }
   exit(EXIT_FAILURE);
 }

@@ -160,7 +160,6 @@ TEST_CASE (
       test_get_spec(lmod.get_model_string(),  param);
 
       testAutomaticLoadingTable(param);
-      free(param);
 
     } catch (std::exception &e){
       throw ModelNotFound(" (unknown error, maybe model database is not including all models)");
@@ -195,7 +194,6 @@ TEST_CASE (
       LocalModel local_model(mod_name);
       xillParam *param = local_model.xill_params();
       testAutomaticLoadingTable(param);
-      free(param);
     }
   }
 
