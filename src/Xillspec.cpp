@@ -89,19 +89,20 @@ xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
  * @param status
  * @return xillSpec
  */
-xillSpec *get_xillver_spectra(const xillParam* param, int *status) {
-
+xillSpec* get_xillver_spectra(const xillParam* param, int* status)
+{
   CHECK_STATUS_RET(*status, nullptr);
-  xillTableParam *param_table = nullptr;
+  xillTableParam* param_table = nullptr;
   xillSpec* xill_spec = nullptr;
 
   try
   {
-   param_table = get_xilltab_param(param, status);
-   CHECK_STATUS_AND_THROW(*status);
-   xill_spec = get_xillver_spectra_table(param_table, status);
-   free(param_table);
-  } catch (const std::exception &e)
+    param_table = get_xilltab_param(param, status);
+    CHECK_STATUS_AND_THROW(*status);
+    xill_spec = get_xillver_spectra_table(param_table, status);
+    free(param_table);
+  }
+  catch (const std::exception& e)
   {
     free(param_table);
     free_xill_spec(xill_spec);

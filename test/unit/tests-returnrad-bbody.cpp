@@ -56,13 +56,13 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-vg]")
     int status = EXIT_SUCCESS;
     xillTable* xill_tab = nullptr;
     REQUIRE_NOTHROW([&]()
-    {
+        {
         auto tmp = get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
-    }()
+        }()
     );
 
     xill_param->radzone = 0;
-    xillSpec *xillspec = nullptr;
+    xillSpec* xillspec = nullptr;
     xillspec = get_xillver_spectra(xill_param, &status);
     REQUIRE(xillspec != nullptr);
 
@@ -75,15 +75,12 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-vg]")
         // REQUIRE(sum_flux(xillspec->flu[ii], xillspec->n_ener) > 1e-10);
     }
 
-  //  write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
-   //                    xillspec->ener, xillspec->flu[1], xillspec->n_ener);
+    //  write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
+    //                    xillspec->ener, xillspec->flu[1], xillspec->n_ener);
 
     free_xill_spec(xillspec);
     //  free_all_cached_xillTables();
 }
-
-
-
 
 
 TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody]")
