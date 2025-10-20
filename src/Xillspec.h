@@ -25,6 +25,8 @@ extern "C" {
 #include "common.h"
 }
 
+#include "Xilltable_handling.h"
+
 #include <vector>
 #include <memory>
 

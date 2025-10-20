@@ -25,4 +25,7 @@ extern "C" {
 
 xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status);
 
+void free_xill_spec(xillSpec *spec);
+
+
 #endif // XILLTABLE_HANDLING_H_

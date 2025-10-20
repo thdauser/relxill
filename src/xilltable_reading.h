@@ -54,9 +54,6 @@ int checkIfTableExists(const char *filename, int *status);
 
 int is_6dim_table(int model_type);
 
-
-void free_xill_spec(xillSpec *spec);
-
 void xilltable_fits_load_single_spec(const char* fname,
                                      fitsfile** fptr,
                                      const xillTable* tab,
