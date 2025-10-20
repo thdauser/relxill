@@ -49,9 +49,6 @@ double norm_factor_semi_infinite_slab(double incl_deg);
 void norm_xillver_spec(xillSpec *spec, double incl);
 
 
-
-xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status);
-
 xillSpec* get_xillver_spectra(const xillParam* param, int* status);
 
 
@@ -96,7 +93,7 @@ std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, 
 void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, std::vector<int> ind,
                          int* status);
 
-xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const std::vector<int> ind, int* status);
+xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, std::vector<int> ind, int* status);
 
 
 #endif //XILLSPEC_H_

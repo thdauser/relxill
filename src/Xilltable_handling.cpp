@@ -22,6 +22,7 @@
 extern "C" {
 #include "xilltable_reading.h"
 #include "common.h"
+#include "relutility.h"
 }
 
 #include <vector>
@@ -33,7 +34,7 @@ extern "C" {
  *   - decides if the table needs to be initialized and/or more data loaded
  *   - automatically normalizes  the spectra to logN=1e15 and logXi=0
  *   - for relxill type models it returns spectra for all available inclinations
- * @param param
+ * @param n_incl, n_ener
  * @param status
  * @return xillSpec
  */
@@ -43,7 +44,7 @@ xillSpec* new_xill_spec(int n_incl, int n_ener, int* status)
 {
   CHECK_STATUS_RET(*status, nullptr);
 
-  xillSpec* spec = (xillSpec*)malloc(sizeof(xillSpec));
+  auto* spec = new xillSpec;
   CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
 
   spec->n_ener = n_ener;
@@ -52,34 +53,26 @@ xillSpec* new_xill_spec(int n_incl, int n_ener, int* status)
   spec->incl = nullptr;
   spec->flu = nullptr;
 
-  do
+  try
   {
-    spec->ener = (double*)malloc(sizeof(double) * (n_ener + 1));
-    CHECK_MALLOC_BREAK_STATUS(spec->ener, status)
+    spec->ener = new double[n_ener + 1];
+    spec->incl = new double[n_incl];
+    spec->flu = new double*[n_incl];
 
-    spec->incl = (double*)malloc(sizeof(double) * (n_incl));
-    CHECK_MALLOC_BREAK_STATUS(spec->incl, status)
-
-    spec->flu = (double**)malloc(sizeof(double*) * n_incl);
-    CHECK_MALLOC_BREAK_STATUS(spec->flu, status)
-
-    int ii;
-    for (ii = 0; ii < n_incl; ii++)
+    for (int ii = 0; ii < n_incl; ii++)
     {
-      spec->flu[ii] = (double*)malloc(sizeof(double) * n_ener);
-      CHECK_MALLOC_BREAK_STATUS(spec->flu[ii], status)
+      spec->flu[ii] = new double[n_ener];
     }
+  }  catch (const std::bad_alloc&) {
+    *status = EXIT_FAILURE;
   }
-  while (0);
 
-  if (*status == EXIT_FAILURE || spec->ener == nullptr || spec->incl == nullptr || spec->flu == nullptr)
+  if (*status == EXIT_FAILURE)
   {
     printf(" error: allocating memeory for the xillver spectrum failed!\n");
     free_xill_spec(spec);
     return nullptr;
   }
-
-  assert(spec != nullptr);
 
   return spec;
 }
@@ -88,36 +81,53 @@ void free_xill_spec(xillSpec* spec)
 {
   if (spec != nullptr)
   {
-    free(spec->ener);
-    free(spec->incl);
+    delete[] spec->ener;
+    delete[] spec->incl;
     if (spec->flu != nullptr)
     {
-      int ii;
-      for (ii = 0; ii < spec->n_incl; ii++)
+      for (int ii = 0; ii < spec->n_incl; ii++)
       {
-        free(spec->flu[ii]);
+        delete[] spec->flu[ii];
       }
-      free(spec->flu);
+      delete[] spec->flu;
     }
-    free(spec);
+    delete spec;
   }
 }
 
+/**
+ * @brief Convert xillver table parameters to a global parameter values array
+ * @details Creates an array indexed by global parameter identifiers (PARAM_GAM, PARAM_AFE, etc.)
+ *          containing the corresponding values from the xillTableParam structure. This allows
+ *          unified access to all xillver parameters using their global index constants.
+ * @param param Input structure containing xillver table parameters
+ * @return Pointer to the allocated float array with N_PARAM_MAX elements, or NULL on error.
+ *         Caller is responsible for freeing the returned array.
+ */
+std::vector<float> get_xilltab_global_paramvals(const xillTableParam* param)
+{
+  std::vector<float> global_param_vals(N_PARAM_MAX);
+
+  global_param_vals[PARAM_GAM] = static_cast<float>(param->gam);
+  global_param_vals[PARAM_AFE] = static_cast<float>(param->afe);
+  global_param_vals[PARAM_LXI] = static_cast<float>(param->lxi);
+  global_param_vals[PARAM_ECT] = static_cast<float>(param->ect);
+  global_param_vals[PARAM_DNS] = static_cast<float>(param->dens);
+  global_param_vals[PARAM_KTB] = static_cast<float>(param->kTbb);
+  global_param_vals[PARAM_FRA] = static_cast<float>(param->frac_pl_bb);
+  global_param_vals[PARAM_RID] = static_cast<float>(param->radindex);
+  global_param_vals[PARAM_INC] = static_cast<float>(param->incl);
+
+  return global_param_vals;
+}
 
 std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTable* tab, int* status)
 {
   CHECK_STATUS_RET(*status, std::vector<int>{});
 
   // Use unique_ptr for automatic memory management
-  std::unique_ptr<float[], decltype(&free)> inp_global_paramvals(
-    get_xilltab_global_paramvals(param, status),
-    free
-  );
-
-  if (*status != EXIT_SUCCESS || !inp_global_paramvals)
-  {
-    return std::vector<int>{};
-  }
+  auto inp_global_paramvals =
+    get_xilltab_global_paramvals(param);
 
   // Use vector instead of manual memory management
   std::vector<int> ind_xilltab(tab->num_param);
@@ -446,10 +456,13 @@ static void interp_5d_tab(const xillTable* tab, double* flu, int n_ener,
 }
 
 static void interp_2d_tab_incl(const xillTable* tab, double* flu, int n_ener,
-                               const double* fac, int nfac, const std::vector<int>& ind, int iincl)
+                               const std::vector<double>& fac, const std::vector<int>& ind)
 {
-  assert(nfac == 2);
-  assert(fac != nullptr);
+  // make sure this is only for 2D interpolation
+  int dim = 2;
+  assert(ind.size() == dim);
+  assert(fac.size() == dim);
+  assert(tab->num_param == dim);
 
   int i4 = ind[0];
   int i5 = ind[1];
@@ -466,9 +479,11 @@ static void interp_2d_tab_incl(const xillTable* tab, double* flu, int n_ener,
 
 
 static void interp_6d_tab_incl(const xillTable* tab, double* flu, int n_ener,
-                               const double* fac, int nfac, const std::vector<int>& ind, int iincl)
+                               const std::vector<double>& fac, const std::vector<int>& ind, int iincl)
 {
-  assert(nfac == 6);
+  // make sure this is only for 2D interpolation
+  int dim = 6;
+  assert(fac.size() == dim);
 
   double s1[n_ener];
   double s2[n_ener];
@@ -489,9 +504,11 @@ static void interp_6d_tab_incl(const xillTable* tab, double* flu, int n_ener,
 }
 
 static void interp_6d_tab(const xillTable* tab, double* flu, int n_ener,
-                          const double* fac, int nfac, const std::vector<int>& ind)
+                          const std::vector<double>& fac, const std::vector<int>& ind)
 {
-  assert(nfac == 6);
+  // make sure this is only for 2D interpolation
+  int dim = 6;
+  assert(fac.size() == dim);
 
   double s1[n_ener];
   double s2[n_ener];
@@ -521,7 +538,7 @@ static void interp_6d_tab(const xillTable* tab, double* flu, int n_ener,
  * @param: (input) param
  * @param: (output) ipol_fac
  **/
-static void ensure_ecut_within_boundarys(const xillTable* tab, const xillTableParam* param, double* ipol_fac)
+static void ensure_ecut_within_boundarys(const xillTable* tab, const xillTableParam* param, std::vector<double> ipol_fac)
 {
   // first need to make sure ECUT is a parameter in the table
   int index_ect = get_xilltab_param_index(tab, PARAM_ECT);
@@ -566,7 +583,7 @@ static void resetInpvalsToBoundaries(char* pname, float* p_inpVal, float tabValL
 }
 
 
-xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const std::vector<int> ind, int* status)
+xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, const std::vector<int>& ind, int* status)
 {
   CHECK_STATUS_RET(*status, nullptr);
 
@@ -603,18 +620,10 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
   }
 
   int nfac = tab->num_param;
-  float* inp_param_vals = nullptr;
-  double* ipol_fac = nullptr;
-  do
-  {
-    inp_param_vals = get_xilltab_global_paramvals(param, status);
-    CHECK_MALLOC_BREAK_STATUS(inp_param_vals, status)
-    ipol_fac = (double*)malloc(sizeof(double) * nfac);
-    CHECK_MALLOC_BREAK_STATUS(ipol_fac, status)
-  }
-  while (0);
+  auto inp_param_vals = get_xilltab_global_paramvals(param);
+  std::vector<double> ipol_fac(nfac);
 
-  if (*status != EXIT_SUCCESS || inp_param_vals == nullptr || ipol_fac == nullptr)
+  if (*status != EXIT_SUCCESS)
   {
     free_xill_spec(spec);
     return nullptr;
@@ -638,8 +647,6 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
     ipol_fac[ii] = (inp_param_vals[pind] - tab->param_vals[ii][ind[ii]]) /
       (tab->param_vals[ii][ind[ii] + 1] - tab->param_vals[ii][ind[ii]]);
   }
-
-  free(inp_param_vals);
 
   // check the boundary of the Ecut parameter and set ipol_fac[ECUT] accordingly
   // (can happen due to strong grav. redshift)
@@ -674,7 +681,7 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
       for (ii = 0; ii < spec->n_incl; ii++)
       {
         interp_6d_tab(tab, spec->flu[ii], spec->n_ener,
-                      ipol_fac, nfac, ind);
+                      ipol_fac, ind);
       }
     }
     else
@@ -682,7 +689,7 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
       for (ii = 0; ii < spec->n_incl; ii++)
       {
         interp_6d_tab_incl(tab, spec->flu[ii], spec->n_ener,
-                           ipol_fac, nfac, ind, ii);
+                           ipol_fac, ind, ii);
       }
     }
   }
@@ -695,7 +702,7 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
     else
     {
       interp_2d_tab_incl(tab, spec->flu[ii], spec->n_ener,
-                         ipol_fac, nfac, ind, ii);
+                         ipol_fac, ind);
     }
   }
   else
@@ -708,7 +715,6 @@ xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, c
     free_xill_spec(spec);
     return nullptr;
   }
-  free(ipol_fac);
 
   return spec;
 }

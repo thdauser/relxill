@@ -18,7 +18,6 @@
 #ifndef XILLTABLE_H_
 #define XILLTABLE_H_
 
-#include "relutility.h"
 #include "common.h"
 
 
@@ -27,6 +26,7 @@ void renorm_xill_spec(float *spec, int n, double lxi, double dens);
 
 enum xillTableIds get_xilltable_id(int model_id, int prim_type);
 
+int get_xilltab_param_index(const xillTable* tab, int unique_param_identifier);
 xillTableParam* get_xilltab_param(const xillParam* param, int* status);
 
 /** get a new and empty rel table (structure will be allocated)  */
@@ -34,10 +34,6 @@ xillTable *new_xillTable(int num_param, int *status);
 
 /* destroy the relline table structure */
 void free_xillTable(xillTable** tab);
-
-
-int get_xilltab_param_index(const xillTable* tab, int unique_param_identifier);
-float* get_xilltab_global_paramvals(const xillTableParam* param, int* status);
 
 void free_all_cached_xillTables(void);
 
