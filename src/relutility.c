@@ -267,51 +267,6 @@ double gstar2ener(double g, double gmin, double gmax, double ener) {
   return (g * (gmax - gmin) + gmin) * ener;
 }
 
-/** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-double *get_rzone_grid(double rmin, double rmax, int nzones, double h, int *status) {
-
-  CHECK_STATUS_RET(*status, NULL);
-
-  double *rgrid = malloc(sizeof(double) * (nzones + 1));
-  CHECK_MALLOC_RET_STATUS(rgrid, status, rgrid)
-
-  if (nzones == 1) {
-    rgrid[0] = rmin;
-    rgrid[1] = rmax;
-  } else {
-
-    double r_transition = rmin;
-    int indr = 0;
-
-    // if h > rmin we choose a log grid for r<h
-    if (h > rmin) {
-
-      r_transition = h;
-
-      get_log_grid(rgrid, nzones + 1, rmin, rmax);
-      indr = binary_search(rgrid, nzones + 1, r_transition);
-
-      r_transition = rgrid[indr];
-
-    }
-
-    if (indr < nzones) {
-
-      double rlo = r_transition;
-      double rhi = rmax; // radius[nzones];
-      // add 1/r for larger radii
-      int ii;
-      for (ii = indr; ii < nzones + 1; ii++) {
-        rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
-        rgrid[ii] = fabs(1.0 / rgrid[ii]);
-      }
-
-    }
-
-  }
-
-  return rgrid;
-}
 
 double get_env_otherwise_default(const char *env, double def_value) {
   char *value_string = getenv(env);

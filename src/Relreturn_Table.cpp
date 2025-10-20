@@ -31,7 +31,7 @@ int global_rr_do_interpolation = 1;
 /** create a new return table */
 static returnTable* new_returnTable(int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     auto tab = (returnTable*)malloc(sizeof(returnTable));
     CHECK_MALLOC_RET_STATUS(tab, status, tab)
@@ -44,8 +44,9 @@ static void init_returnTable(returnTable* tab, int nspin, int* status)
 {
     CHECK_STATUS_VOID(*status);
 
+    assert(tab != nullptr);
     tab->nspin = nspin;
-    tab->spin = NULL;
+    tab->spin = nullptr;
 
     tab->retFrac = (tabulatedReturnFractions**)malloc(nspin * sizeof(tabulatedReturnFractions*));
     CHECK_MALLOC_VOID_STATUS(tab->retFrac, status)
@@ -53,7 +54,7 @@ static void init_returnTable(returnTable* tab, int nspin, int* status)
 
 void free_2d(double*** vals, int n1)
 {
-    if (*vals != NULL)
+    if (*vals != nullptr)
     {
         for (int ii = 0; ii < n1; ii++)
         {
@@ -65,7 +66,7 @@ void free_2d(double*** vals, int n1)
 
 static void free_returnFracData(tabulatedReturnFractions* dat)
 {
-    if (dat != NULL)
+    if (dat != nullptr)
     {
         free(dat->f_bh);
         free(dat->f_inf);
@@ -80,7 +81,7 @@ static void free_returnFracData(tabulatedReturnFractions* dat)
         free_2d(&(dat->gmin), dat->nrad);
         free_2d(&(dat->gmax), dat->nrad);
 
-        if (dat->frac_g != NULL)
+        if (dat->frac_g != nullptr)
         {
             for (int ii = 0; ii < dat->nrad; ii++)
             {
@@ -95,9 +96,9 @@ static void free_returnFracData(tabulatedReturnFractions* dat)
 
 static void free_returnTable(returnTable** tab)
 {
-    if (*tab != NULL)
+    if (*tab != nullptr)
     {
-        if ((*tab)->spin != NULL)
+        if ((*tab)->spin != nullptr)
         {
             for (int ii = 0; ii < (*tab)->nspin; ii++)
             {
@@ -109,17 +110,17 @@ static void free_returnTable(returnTable** tab)
         free(*tab);
     }
 
-    *tab = NULL;
+    *tab = nullptr;
 }
 
-void free_cached_returnTable(void)
+void free_cached_returnTable()
 {
     free_returnTable(&cached_retTable);
 }
 
 static tabulatedReturnFractions* new_returnFracData(int nrad, int ng, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     tabulatedReturnFractions* dat = (tabulatedReturnFractions*)malloc(sizeof(tabulatedReturnFractions));
     CHECK_MALLOC_RET_STATUS(dat, status, dat)
@@ -127,19 +128,19 @@ static tabulatedReturnFractions* new_returnFracData(int nrad, int ng, int* statu
     dat->nrad = nrad;
     dat->ng = ng;
 
-    dat->f_bh = NULL;
-    dat->f_ret = NULL;
-    dat->f_inf = NULL;
+    dat->f_bh = nullptr;
+    dat->f_ret = nullptr;
+    dat->f_inf = nullptr;
 
-    dat->frac_e = NULL;
-    dat->tf_r = NULL;
-    dat->frac_g = NULL;
+    dat->frac_e = nullptr;
+    dat->tf_r = nullptr;
+    dat->frac_g = nullptr;
 
-    dat->gmin = NULL;
-    dat->gmax = NULL;
+    dat->gmin = nullptr;
+    dat->gmax = nullptr;
 
-    dat->rlo = NULL;
-    dat->rhi = NULL;
+    dat->rlo = nullptr;
+    dat->rhi = nullptr;
 
     return dat;
 }
@@ -183,7 +184,7 @@ static void get_reltable_axis_double(double** val,
 
     int anynul = 0;
     double nullval = 0.0;
-    LONGLONG nelem = (LONGLONG)n;
+    auto nelem = (LONGLONG)n;
     fits_read_col(fptr, TDOUBLE, colnum, 1, 1, nelem, &nullval, *val, &anynul, status);
 
     *nval = (int)n;
@@ -222,7 +223,7 @@ static void fits_rr_read_col(fitsfile* fptr,
 
     int anynul = 0;
     double nullval = 0.0;
-    LONGLONG nelem = (LONGLONG)nval;
+    auto nelem = (LONGLONG)nval;
     fits_read_col(fptr, TDOUBLE, colnum, (long)firstrow, (long)firstelem, nelem, &nullval, val, &anynul, status);
 
     relxill_check_fits_error(status);
@@ -238,13 +239,13 @@ int get_colnum(fitsfile* fptr, char* colname, int* status)
 
 static double* fits_rr_load_1d_data(fitsfile* fptr, char* colname, int nval, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     int colnum = get_colnum(fptr, colname, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     double* val = (double*)malloc(nval * sizeof(double));
-    CHECK_MALLOC_RET_STATUS(val, status, NULL)
+    CHECK_MALLOC_RET_STATUS(val, status, nullptr)
 
     fits_rr_read_col(fptr, val, 1, 1, nval, colnum, status);
 
@@ -253,18 +254,18 @@ static double* fits_rr_load_1d_data(fitsfile* fptr, char* colname, int nval, int
 
 static double** fits_rr_load_2d_data(fitsfile* fptr, char* colname, int nval1, int nval2, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     int colnum = get_colnum(fptr, colname, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     double** val = (double**)malloc(nval1 * sizeof(double*));
-    CHECK_MALLOC_RET_STATUS(val, status, NULL)
+    CHECK_MALLOC_RET_STATUS(val, status, nullptr)
 
     for (int ii = 0; ii < nval1; ii++)
     {
         val[ii] = (double*)malloc(nval2 * sizeof(double));
-        CHECK_MALLOC_RET_STATUS(val[ii], status, NULL)
+        CHECK_MALLOC_RET_STATUS(val[ii], status, nullptr)
 
         fits_rr_read_col(fptr, val[ii], ii + 1, 1, nval2, colnum, status);
     }
@@ -274,23 +275,23 @@ static double** fits_rr_load_2d_data(fitsfile* fptr, char* colname, int nval1, i
 
 static double*** fits_rr_load_3d_data(fitsfile* fptr, char* colname, int nval1, int nval2, int nval3, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     int colnum = get_colnum(fptr, colname, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     double*** val = (double***)malloc(nval1 * sizeof(double**));
-    CHECK_MALLOC_RET_STATUS(val, status, NULL)
+    CHECK_MALLOC_RET_STATUS(val, status, nullptr)
 
     for (int ii = 0; ii < nval1; ii++)
     {
         val[ii] = (double**)malloc(nval2 * sizeof(double*));
-        CHECK_MALLOC_RET_STATUS(val[ii], status, NULL)
+        CHECK_MALLOC_RET_STATUS(val[ii], status, nullptr)
 
         for (int jj = 0; jj < nval2; jj++)
         {
             val[ii][jj] = (double*)malloc(nval3 * sizeof(double));
-            CHECK_MALLOC_RET_STATUS(val[ii][jj], status, NULL)
+            CHECK_MALLOC_RET_STATUS(val[ii][jj], status, nullptr)
 
             fits_rr_read_col(fptr, val[ii][jj], ii + 1, jj * nval3 + 1, nval3, colnum, status);
         }
@@ -301,10 +302,10 @@ static double*** fits_rr_load_3d_data(fitsfile* fptr, char* colname, int nval1, 
 
 static tabulatedReturnFractions* fits_rr_load_single_fractions(fitsfile* fptr, char* extname, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     fits_moveToExtension(extname, fptr, status);
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     int nrad = 0;
     int ng = 0;
@@ -379,8 +380,8 @@ static void fits_read_returnRadTable(char* filename, returnTable** inp_tab, int*
     // open the table, stored at pwd or RELXILL_TABLE_PATH
     fitsfile* fptr = open_fits_table_stdpath(filename, status);
 
-    // make sure we only store the table in a location which is empty / NULL
-    assert(*inp_tab == NULL);
+    // make sure we only store the table in a location which is empty / nullptr
+    assert(*inp_tab == nullptr);
 
     fits_rr_load_returnRadTable(fptr, inp_tab, status);
 
@@ -390,7 +391,7 @@ static void fits_read_returnRadTable(char* filename, returnTable** inp_tab, int*
         free_returnTable(inp_tab);
     }
 
-    if (fptr != NULL)
+    if (fptr != nullptr)
     {
         fits_close_file(fptr, status);
     }
@@ -398,7 +399,7 @@ static void fits_read_returnRadTable(char* filename, returnTable** inp_tab, int*
 
 returnTable* get_returnrad_table(int* status)
 {
-    if (cached_retTable == NULL)
+    if (cached_retTable == nullptr)
     {
         fits_read_returnRadTable((char*)RETURNRAD_TABLE_FILENAME, &cached_retTable, status);
     }
@@ -431,6 +432,7 @@ static int select_spinIndexForTable(double val_spin, double* arr_spin, int nspin
 
 static void allocate_radial_grid(returningFractions* ipol, double Rin, double Rout, int* status)
 {
+    assert(ipol != nullptr);
     int klo_Rlo = binary_search(ipol->tabData->rlo, ipol->tabData->nrad, Rin);
     int khi_Rhi = binary_search(ipol->tabData->rhi, ipol->tabData->nrad, Rout);
 
@@ -473,7 +475,7 @@ static void allocate_radial_grid(returningFractions* ipol, double Rin, double Ro
     ipol->rad = (double*)malloc(nrad_trim * sizeof(double));
     CHECK_MALLOC_VOID_STATUS(ipol->rad, status)
 
-    ipol->proper_area_ring = NULL;
+    ipol->proper_area_ring = nullptr;
 
     for (int ii = 0; ii < nrad_trim; ii++)
     {
@@ -502,7 +504,7 @@ static void allocate_radial_grid(returningFractions* ipol, double Rin, double Ro
 
 static returningFractions* new_returningFractions(tabulatedReturnFractions* tab, double spin, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
     returningFractions* dat = (returningFractions*)malloc(sizeof(returningFractions));
     CHECK_MALLOC_RET_STATUS(dat, status, dat)
@@ -511,20 +513,20 @@ static returningFractions* new_returningFractions(tabulatedReturnFractions* tab,
 
     dat->a = spin;
 
-    dat->irad = NULL;
+    dat->irad = nullptr;
 
-    dat->proper_area_ring = NULL;
+    dat->proper_area_ring = nullptr;
 
-    dat->tf_r = NULL;
-    dat->f_ret = NULL;
-    dat->f_inf = NULL;
+    dat->tf_r = nullptr;
+    dat->f_ret = nullptr;
+    dat->f_inf = nullptr;
 
     return dat;
 }
 
 void free_returningFractions(returningFractions** dat)
 {
-    if (*dat != NULL)
+    if (*dat != nullptr)
     {
         free((*dat)->rlo);
         free((*dat)->rhi);
@@ -537,14 +539,14 @@ void free_returningFractions(returningFractions** dat)
         free((*dat)->f_inf);
 
         free(*dat);
-        *dat = NULL;
+        *dat = nullptr;
     }
 }
 
 static double** trim_transfun_to_radial_grid(double** tab_tfr, const int* ind_arr, int n, int* status)
 {
     double** tfr_trim = (double**)malloc(n * sizeof(double*));
-    CHECK_MALLOC_RET_STATUS(tfr_trim, status, NULL)
+    CHECK_MALLOC_RET_STATUS(tfr_trim, status, nullptr)
     for (int ii = 0; ii < n; ii++)
     {
         tfr_trim[ii] = (double*)malloc(n * sizeof(double));
@@ -561,6 +563,7 @@ static double** trim_transfun_to_radial_grid(double** tab_tfr, const int* ind_ar
 
 static double get_ring_area_correction_factor(int index_radius, returningFractions* ret_fractions)
 {
+    assert(ret_fractions->irad != nullptr);
     double rlo_table = ret_fractions->tabData->rlo[ret_fractions->irad[index_radius]];
 
     // make sure the lowest radial value of the table is at the ISCO
@@ -585,9 +588,9 @@ static double get_ring_area_correction_factor(int index_radius, returningFractio
 
 static double** get_interpolated_tfr(returningFractions* ret_fractions, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
 
-    assert(ret_fractions->irad != NULL);
+    assert(ret_fractions->irad != nullptr);
     double** tfr = trim_transfun_to_radial_grid(ret_fractions->tabData->tf_r,
                                                 ret_fractions->irad,
                                                 ret_fractions->nrad,
@@ -622,7 +625,7 @@ static double** get_interpolated_tfr(returningFractions* ret_fractions, int* sta
 
 returningFractions* get_rrad_fractions(double spin, double rin, double rout, int* status)
 {
-    CHECK_STATUS_RET(*status, NULL);
+    CHECK_STATUS_RET(*status, nullptr);
     assert(rin > 0);
     assert(rout > rin);
 

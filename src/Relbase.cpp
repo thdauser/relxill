@@ -464,7 +464,7 @@ void write_output_rel_param(relParam *pa) {
 relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *param,
                                        RelSysPar *sysPar,
                                        xillTable *xill_tab,
-                                       const double *radialZones,
+                                       const double *radialZones,  // TODO: make this a vetor as well
                                        int nzones,
                                        int *status) {
 
@@ -515,6 +515,51 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
 }
 
 
+/** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
+std::vector<double> get_rzone_grid(double rmin, double rmax, int nzones, double h, int *status) {
+
+  std::vector<double> rgrid( nzones + 1);
+
+  if (nzones == 1) {
+    rgrid[0] = rmin;
+    rgrid[1] = rmax;
+  } else {
+
+    double r_transition = rmin;
+    int indr = 0;
+
+    // if h > rmin we choose a log grid for r<h
+    if (h > rmin) {
+
+      r_transition = h;
+
+      get_log_grid(rgrid.data(), rgrid.size(), rmin, rmax);
+      indr = binary_search(rgrid.data(), rgrid.size(), r_transition);
+
+      r_transition = rgrid[indr];
+
+    }
+
+    if (indr < nzones) {
+
+      double rlo = r_transition;
+      double rhi = rmax; // radius[nzones];
+      // add 1/r for larger radii
+      int ii;
+      for (ii = indr; ii < nzones + 1; ii++) {
+        rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
+        rgrid[ii] = fabs(1.0 / rgrid[ii]);
+      }
+
+    }
+
+  }
+
+  return rgrid;
+}
+
+
+
 /** @brief relbase wrapper function, calculating the m_cache_relat system params plus the relbase profile
  *  @details
  *    - for more details see relbase_profile function
@@ -531,11 +576,8 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
   CHECK_STATUS_RET(*status, nullptr);
   assert(sysPar != nullptr);
 
-  double *rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
-
-  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid, param->num_zones, status);
-
-  delete[] rgrid;
+  auto rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
+  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid.data(), param->num_zones, status);
 
   return rel_spec;
 }
