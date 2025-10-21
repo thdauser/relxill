@@ -238,7 +238,7 @@ TEST_CASE (
 
 " Rebining the return rad emissivity profile"
 ,
-"[returnrad]"
+"[returnrad-v]"
 )
  {
 
@@ -252,9 +252,14 @@ TEST_CASE (
 
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
 
- returningFractions *dat = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
- invertArray(dat->rad, dat->nrad);
- emisProfile *emisCoarse = calc_emis_profile(dat->rad, dat->nrad, rel_param, &status);
+  returningFractions *dat = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
+  auto* rad = new double[dat->nrad];
+  auto nrad = dat->nrad;
+  std::memcpy(rad, dat->rad, nrad * sizeof(double));  // one-line copy
+  free_returningFractions(&dat);
+
+ invertArray(rad, nrad);
+ emisProfile *emisCoarse = calc_emis_profile(rad, nrad, rel_param, &status);
  invert_emis_profile(emisCoarse);
 
   emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
@@ -280,6 +285,7 @@ TEST_CASE (
     free_emisProfile(emisCoarse);
     free_emisProfile(emisFineReference);
     free_emisProfile(emisRebin);
+    delete[] rad;
 }
 
 // ------- //
@@ -384,6 +390,8 @@ TEST_CASE (
   INFO("but not change for any other emitting radius");
   REQUIRE(abs(rf_grid->tf_r[1][1] - rf0->tf_r[1][1]) < 1e-8);
 
+  free_returningFractions(&rf0);
+  free_returningFractions(&rf_grid);
 }
 
 /*
@@ -772,10 +780,12 @@ TEST_CASE (
     free_rrad_corr_factors(&grad_corrfactors);
     for (int ii = 0; ii < n_zones; ii++)
     {
+        free_xill_spec(xill_spec[ii]);
         free(xill_table_param[ii]);
         xill_table_param[ii] = nullptr;
     }
     delete_rel_params(rel_param);
+    free_returningFractions(&ret_fractions);
 }
 
 TEST_CASE (
