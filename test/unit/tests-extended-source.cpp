@@ -121,8 +121,7 @@ TEST_CASE (
   local_model.set_par(XPar::h, h);
 
   local_model.eval_model(spec);
-  relParam* rel_param = local_model.rel_params();
-  auto sys_par = get_system_parameters(rel_param, &status);
+  auto sys_par = get_system_parameters(local_model.rel_params(), &status);
   double refl = sys_par->emis->photon_fate_fractions->refl_frac;
   double frac_inf = sys_par->emis->photon_fate_fractions->f_inf;
   double frac_disk = sys_par->emis->photon_fate_fractions->f_ad;
@@ -144,8 +143,7 @@ TEST_CASE (
   //local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
   local_model_ext.eval_model(spec_ext);
-  relParam* rel_param_ext = local_model_ext.rel_params();
-  auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
+  auto sys_par_ext = get_system_parameters(local_model_ext.rel_params(), &status);
 
   double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
   double fraction_inf = sys_par_ext->emis->photon_fate_fractions->f_inf;
@@ -198,10 +196,8 @@ TEST_CASE (
       local_model_ext.set_par(XPar::source_r, height);
       local_model_ext.set_par(XPar::rin, -1.0);
       local_model_ext.eval_model(spec_ext);
-      relParam* rel_param = local_model.rel_params();
-      relParam* rel_param_ext = local_model_ext.rel_params();
-      auto sys_par = get_system_parameters(rel_param, &status);
-      auto sys_par_ext = get_system_parameters(rel_param_ext, &status);
+      auto sys_par = get_system_parameters(local_model.rel_params(), &status);
+      auto sys_par_ext = get_system_parameters(local_model_ext.rel_params(), &status);
       int n_rad = sys_par->nr;
       double *intens = sys_par->emis->emis;
       int n_rad_ext = sys_par_ext->nr;

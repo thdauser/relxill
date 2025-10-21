@@ -58,7 +58,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 void relxill_bb_kernel(double *ener_inp,
                        double *specOutput,
                        int n_ener_inp,
-                       xillParam *xill_param,
+                       const xillParam* xill_param,
                        relParam *rel_param,
                        int *status);
 

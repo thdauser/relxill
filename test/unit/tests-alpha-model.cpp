@@ -119,9 +119,6 @@ double calculate_lxi(const LocalModel& lmod)
     const double lxi_max = IonGradient::calculate_lxi_max_from_distance(*(sys_par->emis),
                                                                         primary_source_params,
                                                                         logn);
-
-    delete rel_param;
-
     return lxi_max;
 }
 
@@ -145,15 +142,6 @@ TEST_CASE (
   lmod_alpha.set_par(XPar::refl_frac, -1);
 
   const double ref_value_flux_obs_cgs = 1e-10;
-  //  auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
-  //  auto rel_params = lmod_alpha.get_rel_params();
-  //  auto sys_par = get_system_parameters(rel_params, &status);
-  //  REQUIRE(1e-3 >
-  //      fabs(
-  //          ref_value_l_source / primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions)) - 1
-  //      ));
-
-  // delete rel_params;
 
   const double lxi_max = calculate_lxi(lmod_alpha);
 

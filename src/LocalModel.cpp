@@ -31,14 +31,14 @@
  *  the line for 1 keV
  */
 void LocalModel::line_model(const XspecSpectrum &spectrum) {
-  auto rel_param = get_rel_params(m_model_params);
+  auto rel_param = get_rel_params_struct();
 
   // relbase calculates the line for 1keV, i.e., shift the energy grid accordingly
   spectrum.shift_energy_grid_1keV(rel_param->lineE);
 
   int status = EXIT_SUCCESS;
   relline_spec_multizone *spec = relbase(spectrum.energy, spectrum.num_flux_bins(), rel_param, &status);
-  delete rel_param;
+  delete_rel_params(rel_param);
 
   for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
     spectrum.flux[ii] = spec->flux[0][ii];
@@ -107,7 +107,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
     auto rel_param = get_rel_params(m_model_params);
     relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
                       xill_params(), rel_param, &status);
-    delete rel_param;
+    delete_rel_params(rel_param);
   }
   else
   {
@@ -135,7 +135,9 @@ void LocalModel::conv_model(const XspecSpectrum& spectrum) const
   }
 
   int status = EXIT_SUCCESS;
-  relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_params(), &status);
+  auto rel_params = get_rel_params(m_model_params);
+  relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_params, &status);
+  delete_rel_params(rel_params);
 
   if (status != EXIT_SUCCESS) {
     throw ModelEvalFailed("executing convolution failed");

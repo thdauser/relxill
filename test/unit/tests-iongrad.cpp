@@ -39,8 +39,8 @@ TEST_CASE (
 
   local_model.eval_model(spec);
 
-  xillParam *xill_param = local_model.xill_params();
-  relParam *rel_param = local_model.rel_params();
+  const xillParam *xill_param = local_model.xill_params();
+  const relParam *rel_param = local_model.rel_params();
 
   // relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, &status);
   RelSysPar *sys_par = get_system_parameters(rel_param, &status);
@@ -122,8 +122,8 @@ TEST_CASE (
 
 IonGradient get_ion_gradient(LocalModel const& lmod)
 {
-    xillParam* xill_param = lmod.xill_params();
-    relParam* rel_param = lmod.rel_params();
+    const xillParam* xill_param = lmod.xill_params();
+    const relParam* rel_param = lmod.rel_params();
 
     // relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, &status);
     int status = EXIT_SUCCESS;
@@ -133,9 +133,6 @@ IonGradient get_ion_gradient(LocalModel const& lmod)
 
     IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
     ion_gradient.calculate_gradient(*(sys_par->emis), PrimarySourceParameters{lmod.get_model_params()});
-
-    delete rel_param;
-    delete xill_param;
 
     return ion_gradient;
 }

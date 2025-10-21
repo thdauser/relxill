@@ -134,8 +134,8 @@ TEST_CASE (
   local_model.set_par(XPar::h, 50.0);
   local_model.set_par(XPar::kte, kte_primary);
 
-  xillParam *xill_param = local_model.xill_params();
-  relParam *rel_param = local_model.rel_params();
+  const xillParam *xill_param = local_model.xill_params();
+  const relParam *rel_param = local_model.rel_params();
   RelSysPar *sys_par = get_system_parameters(rel_param, &status);
 
   RadialGrid const radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};

@@ -50,7 +50,7 @@ TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbo
 TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-vg]")
 {
     LocalModel lmod(ModelName::relxillBBxill);
-    auto xill_param = lmod.xill_params();
+    auto xill_param = lmod.get_xill_param_struct();
 
     int status = EXIT_SUCCESS;
     xillTable* xill_tab = nullptr;
@@ -74,6 +74,7 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-vg]")
       write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
                         xillspec->ener, xillspec->flu[1], xillspec->n_ener);
 
+    delete_xill_params(xill_param);
     free_xill_spec(xillspec);
     //  free_all_cached_xillTables();
 }

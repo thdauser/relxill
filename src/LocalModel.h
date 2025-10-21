@@ -93,12 +93,12 @@ class LocalModel {
   {
     if (m_rel_params != nullptr)
     {
-      delete m_rel_params;
+      delete_rel_params(m_rel_params);
       m_rel_params = nullptr;
     }
     if (m_xill_params != nullptr)
     {
-      delete m_xill_params;
+      delete_xill_params(m_xill_params);
       m_xill_params = nullptr;
     }
   }
@@ -147,10 +147,10 @@ class LocalModel {
     m_model_params.set_par(param, value);
 
       // make sure the resulting rel and xill params are always updated and reflect the changes in m_model_params
-    delete m_rel_params;
+    delete_rel_params(m_rel_params);
     m_rel_params = ::get_rel_params(m_model_params);
 
-    delete m_xill_params;
+    delete_xill_params(m_xill_params);
     m_xill_params = ::get_xill_params(m_model_params);
   }
 
@@ -187,7 +187,7 @@ class LocalModel {
 
     }
 
-  relParam *rel_params() const {
+  const relParam *rel_params() const {
     if (m_rel_params == nullptr)
     {
       m_rel_params = ::get_rel_params(m_model_params);
@@ -195,7 +195,13 @@ class LocalModel {
     return m_rel_params;
   }
 
-  xillParam* xill_params() const
+  relParam* get_rel_params_struct()
+  {
+    return ::get_rel_params(m_model_params);
+  }
+
+
+  const xillParam* xill_params() const
   {
     if (m_xill_params == nullptr)
     {
@@ -203,6 +209,12 @@ class LocalModel {
     }
     return m_xill_params;
   }
+
+  xillParam* get_xill_param_struct()
+  {
+    return ::get_xill_params(m_model_params);
+  }
+
 
   const ModelDefinition& get_model_params() const
   {

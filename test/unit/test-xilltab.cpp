@@ -107,7 +107,7 @@ static void test_spec_norm(xillSpec* spec)
     REQUIRE(norm_spectrum > 1e-8);
 }
 
-static void testAutomaticLoadingTable(xillParam* param)
+static void testAutomaticLoadingTable(const xillParam* param)
 {
     xillTable* tab = nullptr;
 
@@ -119,7 +119,7 @@ static void testAutomaticLoadingTable(xillParam* param)
     REQUIRE(tab != nullptr);
 }
 
-static void test_get_spec(const std::string& specName, xillParam* param)
+static void test_get_spec(const std::string& specName, const xillParam* param)
 {
     INFO(" loading spec for model %s (type = %i): " << specName);
 
@@ -143,7 +143,7 @@ TEST_CASE (
 )
  {
 
-  xillParam *param;
+  xillParam *param = nullptr;
 
   std::vector<ModelName> const names = {
       ModelName::xillver,
@@ -155,12 +155,13 @@ TEST_CASE (
   for ( auto mod_name : names ){
     try {
       LocalModel lmod(mod_name);
-      param = lmod.xill_params();
+      param = lmod.get_xill_param_struct();
 
       test_get_spec(lmod.get_model_string(),  param);
 
       testAutomaticLoadingTable(param);
 
+      delete_xill_params(param);
     } catch (std::exception &e){
       throw ModelNotFound(" (unknown error, maybe model database is not including all models)");
     }
@@ -192,8 +193,7 @@ TEST_CASE (
   for ( auto mod_name : names ) {
     DYNAMIC_SECTION(" loading table for single model ") {
       LocalModel local_model(mod_name);
-      xillParam *param = local_model.xill_params();
-      testAutomaticLoadingTable(param);
+      testAutomaticLoadingTable(local_model.xill_params());
     }
   }
 
@@ -288,7 +288,6 @@ TEST_CASE (
 
   LocalModel lmod(ModelName::relxillNS);
   // lmod.set_par(XPar::switch_switch_returnrad, 0);  // need this for the comparison (which is without return_rad)
-  relParam *rel_param = lmod.rel_params();
   xillTableParam *xill_param = get_xilltab_param(lmod.xill_params(), &status);
 
   auto spec = DefaultSpec(0.1, 1000, 3000);
@@ -320,9 +319,6 @@ TEST_CASE (
 
   delete[] pl_flux_xill;
 
-  free(xill_param);
-  free(rel_param);
-
   REQUIRE(status == EXIT_SUCCESS);
 
 }
@@ -339,34 +335,32 @@ TEST_CASE (
 
   LocalModel lmod(ModelName::relxilllpCp);
   lmod.set_par(XPar::kte, 40.0);
-  xillParam *xill_param_full = lmod.xill_params();
-  xillTableParam *xill_param = get_xilltab_param(xill_param_full, &status);
-  relParam *rel_param = lmod.rel_params();
+  xillTableParam *xill_tab_param = get_xilltab_param(lmod.xill_params(), &status);
 
   EnerGrid *egrid = get_coarse_xillver_energrid();
 
   double energy_shift_disk_source = 0.5;
 
   auto prime_spec_disk = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
-                                                          nullptr, xill_param, &status);
-  double norm_fac_shifted = calc_xillver_normalization_change(energy_shift_disk_source, xill_param);
+                                                          nullptr, xill_tab_param, &status);
+  double norm_fac_shifted = calc_xillver_normalization_change(energy_shift_disk_source, xill_tab_param);
 
   // if kTe to lower energies, the normalization increases
   REQUIRE(norm_fac_shifted > 1.0);
 
-  xill_param->ect *= energy_shift_disk_source;
+  xill_tab_param->ect *= energy_shift_disk_source;
   auto prime_spec_source = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
-                                                            nullptr, xill_param, &status);
+                                                            nullptr, xill_tab_param, &status);
 
   double spec_ratio = prime_spec_source[0] / prime_spec_disk[0];
   REQUIRE(fabs(spec_ratio - norm_fac_shifted) < 1e-3);
 
   // if kTe to higher energies, the normalization decreases
-  double norm_fac_shifted_higher_energies = calc_xillver_normalization_change(2.0, xill_param);
+  double norm_fac_shifted_higher_energies = calc_xillver_normalization_change(2.0, xill_tab_param);
   REQUIRE(norm_fac_shifted_higher_energies < 1.0);
 
   delete[] prime_spec_disk;
   delete[] prime_spec_source;
-  free(xill_param);
+  free(xill_tab_param);
 
 }

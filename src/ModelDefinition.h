@@ -259,8 +259,10 @@ class ModelDefinition : public ParamList {
 };
 
 relParam *get_rel_params(const ModelDefinition &inp_param);
+void delete_rel_params(relParam* rel_param);
 
 xillParam *get_xill_params(const ModelDefinition &inp_param);
+void delete_xill_params(xillParam* xill_param);
 
 int is_env_set(const char* envname, int default_value);
 

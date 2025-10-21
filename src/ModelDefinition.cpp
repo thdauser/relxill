@@ -19,6 +19,7 @@
 #include "ModelDefinition.h"
 #include "ModelDatabase.h"
 #include "Relphysics.h"
+#include "Relreturn_Corona.h"
 
 int get_iongrad_type(const ModelDefinition &params);
 int get_geometry_switch(const ModelDefinition &params);
@@ -409,6 +410,25 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
 
   return param;
 }
+
+void delete_rel_params(relParam* rel_param)
+{
+  if (rel_param != nullptr)
+  {
+    if (rel_param->rrad_corr_factors != nullptr)
+    {
+      free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
+    }
+    delete rel_param;
+  }
+}
+
+void delete_xill_params(xillParam* xill_param)
+{
+    delete xill_param;
+}
+
+
 
 /**
  * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES

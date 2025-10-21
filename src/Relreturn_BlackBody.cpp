@@ -707,9 +707,12 @@ static int should_noXillverRefl_calculated()
  *   to its original value upon completion.
  * - Diagnostic FITS files are written if diagnostic flags are set via shouldOutfilesBeWritten().
  */
-void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, xillParam* xill_param, relParam* rel_param,
+void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, const xillParam* xill_param_orig, relParam* rel_param,
                        int* status)
 {
+    xillParam xill_param_struct = *xill_param_orig; // make a copy of the input parameters
+    xillParam* xill_param = &xill_param_struct; // make a pointer to the copy
+
     CHECK_STATUS_VOID(*status);
     assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET || xill_param->model_type == MOD_TYPE_RELXILLBBRETXILL);
 

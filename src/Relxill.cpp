@@ -428,8 +428,8 @@ void relxill_kernel(const XspecSpectrum& xspec_spectrum,
         primary_source.add_primary_spectrum(relxill_spec);
 
         RelxillCache::instance().add(params, relxill_spec);
-        delete rel_param;
-        delete xill_param;
+        delete_rel_params(rel_param);
+        delete_xill_params(xill_param);
     }
 
     rebin_and_normalize_relxill_for_xspec(xspec_spectrum, relxill_spec);

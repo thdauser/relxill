@@ -248,7 +248,7 @@ TEST_CASE (
 
   LocalModel lmod(ModelName::relline_lp);
   lmod.set_par(XPar::switch_switch_returnrad, 0);  // need this for the comparison (which is without return_rad)
-  relParam* rel_param = lmod.rel_params();
+  const relParam* rel_param = lmod.rel_params();
 
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
 
@@ -260,6 +260,7 @@ TEST_CASE (
   emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, &status);
   rebin_emisprofile_on_radial_grid(emisRebin, emisCoarse, &status);
+
 
   REQUIRE(status==EXIT_SUCCESS);
 
@@ -276,6 +277,9 @@ TEST_CASE (
     REQUIRE(fabs(emisRebin->emis[ii] / emisFineReference->emis[ii] - 1) < precRebinCoarse);
   }
 
+    free_emisProfile(emisCoarse);
+    free_emisProfile(emisFineReference);
+    free_emisProfile(emisRebin);
 }
 
 // ------- //
@@ -291,7 +295,7 @@ TEST_CASE (
   int status = EXIT_SUCCESS;
 
   LocalModel lmod(ModelName::relline_lp);
-  relParam* rel_param = lmod.rel_params();
+  relParam* rel_param = lmod.get_rel_params_struct();
   rel_param->a = 0.998;
   rel_param->height = 5.0;
   rel_param->rout = 1000.0;
@@ -323,7 +327,7 @@ TEST_CASE (
   );
 
   free_Spectrum(&spec);
-
+  delete_rel_params(rel_param);
 }
 
 
@@ -340,7 +344,7 @@ TEST_CASE (
 
   LocalModel lmod(ModelName::relline_lp);
   lmod.set_par(XPar::switch_switch_returnrad, -1);  // need this for the comparison (which is without return_rad)
-  relParam *rel_param = lmod.rel_params();
+  const relParam *rel_param = lmod.rel_params();
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
   emisProfile *emis_profile = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   write_emis_profile("__output_emis_profile_rrad.dat", emis_profile);
@@ -479,8 +483,9 @@ TEST_CASE (
   lmod.set_par(XPar::logxi, 3.0);
   double flux_corr1=0;
   xillSpec* xill_spec = get_xillver_spectra(lmod.xill_params(), &status);
+    auto xilltab_param = get_xilltab_param(lmod.xill_params(), &status);
   get_xillver_fluxcorrection_factors(xill_spec, &flux_corr1, nullptr,
-                                     get_xilltab_param(lmod.xill_params(), &status),
+                                     xilltab_param,
                                      &status);
   REQUIRE(flux_corr1 > 0.5);
   REQUIRE(flux_corr1 < 1.0); // only works for logxi<=4
@@ -488,9 +493,12 @@ TEST_CASE (
   lmod.set_par(XPar::logxi, 0.0);
   xillSpec* xill_spec2 = get_xillver_spectra(lmod.xill_params(), &status);
   double flux_corr2=0;
+    auto xilltab_param2 = get_xilltab_param(lmod.xill_params(), &status);
   get_xillver_fluxcorrection_factors(xill_spec2, &flux_corr2, nullptr,
-                                     get_xilltab_param(lmod.xill_params(), &status) ,
+                                     xilltab_param2 ,
                                      &status);
+  free(xilltab_param);
+  free(xilltab_param2);
 
   REQUIRE(flux_corr1 > 2 * flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
 
@@ -519,16 +527,20 @@ TEST_CASE (
   lmod.set_par(XPar::logxi, 3.0);
   double gshift_flux_corr1;
   xillSpec* xill_spec = get_xillver_spectra(lmod.xill_params(), &status);
-  get_xillver_fluxcorrection_factors(xill_spec, nullptr, &gshift_flux_corr1,
-                                     get_xilltab_param(lmod.xill_params(), &status), &status);
+    auto xilltab_param = get_xilltab_param(lmod.xill_params(), &status);
+  get_xillver_fluxcorrection_factors(xill_spec, nullptr, &gshift_flux_corr1, xilltab_param , &status);
+    free(xilltab_param);
+
   REQUIRE(gshift_flux_corr1 > 1);
   REQUIRE(gshift_flux_corr1 < pow(gshift_ref_value,gam+0.5)/pow(gshift_ref_value,gam));
 
   lmod.set_par(XPar::logxi, 0.0);
   double gshift_flux_corr2;
   xillSpec* xill_spec2 = get_xillver_spectra(lmod.xill_params(), &status);
+    auto xilltab_param2 = get_xilltab_param(lmod.xill_params(), &status);
   get_xillver_fluxcorrection_factors(xill_spec2, nullptr, &gshift_flux_corr2,
-                                     get_xilltab_param(lmod.xill_params(), &status), &status);
+                                     xilltab_param2, &status);
+    free(xilltab_param2);
 
   REQUIRE(gshift_flux_corr2 < 1 );
   REQUIRE(gshift_flux_corr1 > 1.5 * gshift_flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
@@ -597,8 +609,10 @@ TEST_CASE (
       logxi[ii] = (logxi_max - logxi_min) * (ii * 1.0 / (n_logxi - 1)) + logxi_min;
       lmod.set_par(XPar::logxi, logxi[ii]);
       xillSpec* xill_spec = get_xillver_spectra(lmod.xill_params(), &status);
+        auto xilltab_param = get_xilltab_param(lmod.xill_params(), &status);
       get_xillver_fluxcorrection_factors(xill_spec, &(flux_corr[ii]), &(gshift_corr[ii]),
-                                         get_xilltab_param(lmod.xill_params(), &status), &status);
+                                         xilltab_param, &status);
+      free(xilltab_param);
       free_xill_spec(xill_spec);
     }
     int retval = sprintf(buffer, "test-flux-corr-returnrad_gam%.1f.dat",gam);
@@ -699,7 +713,7 @@ TEST_CASE (
   LocalModel lmod{ModelName::relxilllp};
   lmod.set_par(XPar::switch_switch_returnrad, 1);
 
-  relParam* rel_param = lmod.rel_params();
+  relParam* rel_param = lmod.get_rel_params_struct();
 
   const auto n_zones = rel_param->num_zones;
   double logxi_min = 0.0;
@@ -711,16 +725,15 @@ TEST_CASE (
   xillSpec* xill_spec[n_zones];
 
   // TEST contant spectrum over the disk
-  xillParam* xill_param = lmod.xill_params();
   for (int ii = 0; ii < n_zones; ii++) {
-    xill_table_param[ii] = get_xilltab_param(xill_param, &status);
+    xill_table_param[ii] = get_xilltab_param(lmod.xill_params(), &status);
     xill_spec[ii] = get_xillver_spectra_table(xill_table_param[ii], &status);
   }
 
   rel_param->rrad_corr_factors =
       calc_rrad_corr_factors(xill_spec, radial_grid, xill_table_param, &status);
 
-  require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_flux, n_zones);
+    require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_flux, n_zones);
   require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_gshift, n_zones);
 
   returningFractions *ret_fractions = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
@@ -735,6 +748,7 @@ TEST_CASE (
   REQUIRE(rel_param->rrad_corr_factors->corrfac_flux[0] == tab_corrfactors->corrfac_flux[0]);
   REQUIRE(rel_param->rrad_corr_factors->corrfac_gshift[0] == tab_corrfactors->corrfac_gshift[0]);
 
+  free_rrad_corr_factors(&tab_corrfactors);
 
   // TEST ionization gradient
   xillSpec* xill_spec_grad[n_zones];
@@ -754,6 +768,14 @@ TEST_CASE (
   require_values_differ(tab_grad_corrfactors->corrfac_flux, tab_grad_corrfactors->n_zones);
   require_values_differ(tab_grad_corrfactors->corrfac_gshift, tab_grad_corrfactors->n_zones);
 
+    free_rrad_corr_factors(&tab_grad_corrfactors);
+    free_rrad_corr_factors(&grad_corrfactors);
+    for (int ii = 0; ii < n_zones; ii++)
+    {
+        free(xill_table_param[ii]);
+        xill_table_param[ii] = nullptr;
+    }
+    delete_rel_params(rel_param);
 }
 
 TEST_CASE (
