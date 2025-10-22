@@ -37,12 +37,12 @@ extern "C" {
 
 TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
 {
-    // by default, xill_param->radzone == -1 should fail loading the table
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.xill_params();
 
-    REQUIRE_THROWS(get_xillver_spectra(xill_param, &status));
+    // by default, xill_param->radzone == -1 should fail to load the xillver spectrum
+    REQUIRE(get_xillver_spectra(xill_param, &status) == nullptr);
 }
 
 
