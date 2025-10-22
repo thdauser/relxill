@@ -50,7 +50,7 @@ bool are_values_different(double val1, double val2) {
 }
 
 static int comp_sys_param(const relParam *cpar, const relParam *par) {
-  std::unordered_map<double, double> param_comparison = {
+  std::vector<std::pair<double, double>> param_comparison = {
     {par->a, cpar->a},
     {par->emis1, cpar->emis1},
     {par->emis2, cpar->emis2},
@@ -98,7 +98,7 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
  */
 int did_rel_param_change(const relParam* cpar, const relParam* par)
 {
-  std::unordered_map<double, double> param_comparison = {
+  std::vector<std::pair<double, double>> param_comparison = {
     {par->a, cpar->a},
     {par->incl, cpar->incl},
     {par->rin, cpar->rin},

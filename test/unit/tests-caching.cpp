@@ -27,6 +27,8 @@ void simple_relxill_cache_test(ModelName _model_name) {
 
   LocalModel lmod(_model_name);
 
+  INFO("testing caching of " << lmod.get_model_string());
+
   const double elo = 0.1;
   const double eup1 = 100.0;
   const double eup2 = 150.0;
@@ -44,7 +46,7 @@ void simple_relxill_cache_test(ModelName _model_name) {
 
   // not cached
   auto tstart = std::chrono::steady_clock::now();
-  lmod.set_par(XPar::a, 0.942);
+  lmod.set_par(XPar::incl, 54);
   lmod.eval_model(spec1);
   auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
       (std::chrono::steady_clock::now() - tstart).count();
@@ -76,6 +78,18 @@ void simple_relxill_cache_test(ModelName _model_name) {
   REQUIRE(fabs(flu1 / flu2 - 1) > 1e-6);
 }
 
+TEST_CASE(" caching of model parameters", "[cache]")
+{
+
+  LocalModel lmod(ModelName::relxilllp);
+
+  lmod.set_par(XPar::switch_switch_returnrad, 1);
+  auto par = lmod.get_rel_params_struct();
+  lmod.set_par(XPar::switch_switch_returnrad, 0);
+  auto cpar = lmod.get_rel_params_struct();
+
+  REQUIRE( did_rel_param_change(cpar, par));
+}
 
 TEST_CASE(" caching of energy grid", "[cache]") {
 
@@ -87,6 +101,7 @@ TEST_CASE(" caching of energy grid", "[cache]") {
        ModelName::relxilllpAlpha,
        ModelName::relxillNS,
        ModelName::relxillCO,
+       // ModelName::relxillBBxill,  // TODO: not yet implemented
        ModelName::relxill_ext
       };
 

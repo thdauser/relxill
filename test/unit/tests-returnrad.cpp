@@ -637,7 +637,7 @@ TEST_CASE (
 
 " Test relxilllp including returning radiation"
 ,
-"[returnrad-fail]"
+"[returnrad]"
 )
  {
 
@@ -858,7 +858,7 @@ TEST_CASE (
 
 " Test that returnrad is also implemented for low spin"
 ,
-"[returnrad2]"
+"[returnrad]"
 )
 {
 

@@ -665,10 +665,25 @@ static int should_noXillverRefl_calculated()
     {
         return 1;
     }
-    else
+    return 0;
+}
+
+
+void check_and_reset_value(double* ptr_val, double val_ref, const char* param_name)
+{
+    const double prec = 1e-6;
+    if (fabs(*ptr_val-val_ref) > prec)
     {
-        return 0;
+        *ptr_val = val_ref;
+        printf(" re-setting parameter %s to %.3e (only this value allowed)\n", param_name , val_ref);
     }
+}
+
+void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
+{
+    check_and_reset_value( &(rel_param->a), 0.998, "a");
+    check_and_reset_value( &(rel_param->rin), kerr_rms(0.998), "Rin");
+    check_and_reset_value( &(rel_param->rout), 1000, "Rout");
 }
 
 
@@ -713,15 +728,15 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     xillParam xill_param_struct = *xill_param_orig; // make a copy of the input parameters
     xillParam* xill_param = &xill_param_struct; // make a pointer to the copy
 
+    check_parameter_bounds_relxillBB(xill_param, rel_param);
+
     CHECK_STATUS_VOID(*status);
     assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET || xill_param->model_type == MOD_TYPE_RELXILLBBRETXILL);
-
 
     // get a standard grid for the convolution (is rebinned later to the input grid)
     auto ener_grid = get_relxill_conv_energy_grid();
     int n_ener = ener_grid->nbins;
     double* ener = ener_grid->ener;
-
 
     xillTable* xill_tab = nullptr;
     get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
@@ -879,3 +894,4 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     }
     free_2d(&specConvOutputZones, returnSpec->nrad);
 }
+
