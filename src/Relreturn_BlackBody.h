@@ -74,11 +74,11 @@ double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, double *ener, 
 VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
 void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_multizone *rel_profile, const returnSpec2D *returnSpec,
-                                         double *xill_flux_returnrad, int izone, int *status);
+                                         VecD xill_flux_returnrad, int izone, int *status);
 
 void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
 void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
 
-double *getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
+VecD getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
 
 #endif //RELXILL__RELRETURN_H_

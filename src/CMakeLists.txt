@@ -44,7 +44,8 @@ endforeach (execfile ${EXEC_FILES_CPP})
 
 ### RELXILL LIBRARY ###
 set(LIBNAME Relxill)
-add_library(${LIBNAME} ${SOURCE_FILES} ${CONFIG_FILE})
+add_library(${LIBNAME} ${SOURCE_FILES} ${CONFIG_FILE}
+        Types.h)
 target_include_directories(${LIBNAME} PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(${LIBNAME} cfitsio fftw3 m)
 ########################

@@ -319,11 +319,10 @@ TEST_CASE(" Check Temperature Profile", "[bbret]"){
     double Rin = kerr_rms(spin);
     dat = get_rrad_fractions(spin, Rin, Rout, &status);
 
-    double* temperature = getTemperatureProfileDiskZones(dat, Rin, 1.0, &status);
+   VecD temperature = getTemperatureProfileDiskZones(dat, Rin, 1.0, &status);
 
-    REQUIRE( checkTemperatureProfile(temperature, dat->nrad) == EXIT_SUCCESS);
+    REQUIRE( checkTemperatureProfile(temperature.data(), dat->nrad) == EXIT_SUCCESS);
 
-    free(temperature);
   }
 
 }

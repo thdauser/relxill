@@ -60,7 +60,7 @@ void get_gfac_grid(double* gfac, double gmin, double gmax, int ng) {
 
 void get_std_bbody_energy_grid(int *n_ener, double **ener, int *status) {
   CHECK_STATUS_VOID(*status);
-  if (global_bbody_ener_std == NULL) {
+  if (global_bbody_ener_std == nullptr) {
     global_bbody_ener_std = (double *) malloc((N_BBODY_ENER + 1) * sizeof(double));
     CHECK_MALLOC_VOID_STATUS(global_bbody_ener_std, status)
     get_log_grid(global_bbody_ener_std, (N_BBODY_ENER + 1), EMIN_BBODY, EMAX_BBODY);
@@ -104,9 +104,27 @@ returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener,
   rspec->ener = ener;
   rspec->n_ener = n_ener;
 
-  rspec->specPri = NULL;
-  rspec->specRet = NULL;
+  rspec->specPri = nullptr;
+  rspec->specRet = nullptr;
 
   return rspec;
 }
 
+void delete_returnSpec2D(returnSpec2D *rspec)
+{
+  if (rspec != nullptr)
+  {
+    free(rspec->rlo);
+    free(rspec->rhi);
+    free(rspec->ener);
+    if (rspec->specPri != nullptr)
+    {
+      free_2d(&rspec->specPri,rspec->nrad);
+    }
+    if (rspec->specPri != nullptr)
+    {
+      free_2d(&rspec->specRet,rspec->nrad);
+    }
+    free(rspec);
+  }
+}

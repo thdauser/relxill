@@ -130,7 +130,7 @@ void fits_rr_write_2Dspec(const char* fname, const std::vector<std::vector<doubl
     fits_rr_write_2Dspec(fname, ptrs.data(), ener, nener, rlo, rhi, nrad, dat, status);
 }
 
-double* getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double Tin, int* status)
+VecD getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double Tin, int* status)
 {
     return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, TPROFILE_ALPHA, status);
 }
@@ -173,12 +173,11 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     returningFractions* dat = get_rrad_fractions(spin, Rin, Rout, status);
 
     // 2 - temperature profile of the whole disk
-    double* temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
+    VecD temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
 
     // 3 - get primary and returning 2D spectrum
-    double** spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status);
-    double** spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature, status);
-    free(temperature);
+    double** spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature.data(), status);
+    double** spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature.data(), status);
 
     // normalizeSpectraOverTheFullDisk(spec_prim_zones, spec_rr_zones, ener, nener, dat);
 
@@ -404,10 +403,10 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin, double spin, int
     const double rin = kerr_rms(spin);
     returningFractions* dat = get_rrad_fractions(spin, rin, RMAX_RELRET, status);
 
-    double* temperature =
+    VecD temperature =
         get_tprofile(dat->rlo, dat->rhi, dat->nrad, 0.5 * (dat->rlo[0] + dat->rhi[0]), Tin, TPROFILE_DISKBB, status);
 
-    double** spec_arr = get_bbody_specs(ener, n, dat, temperature, status); // spectra integrated over the ring area
+    double** spec_arr = get_bbody_specs(ener, n, dat, temperature.data(), status); // spectra integrated over the ring area
 
     /* need area correction for diskbb */
     assert(dat->rhi[0] > dat->rlo[0]);
@@ -430,7 +429,6 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin, double spin, int
     sum_2Dspec(spec, spec_arr, n, dat->nrad, status);
 
     free_2d(&spec_arr, dat->nrad);
-    delete[]temperature;
 }
 
 
@@ -521,7 +519,7 @@ double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, double* ener, 
  */
 void getZoneReflectedReturnFluxDiskframe(xillParam* xill_param, relline_spec_multizone* rel_profile,
                                          const returnSpec2D* returnSpec,
-                                         double* xill_flux_returnrad, int izone, int* status)
+                                         VecD xill_flux_returnrad, int izone, int* status)
 {
     getAnglecorrXillSpec(xill_flux_returnrad, returnSpec->ener, returnSpec->n_ener, xill_param,
                          rel_profile->rel_cosne->dist[izone], status);
@@ -551,7 +549,7 @@ void getZoneReflectedReturnFluxDiskframe(xillParam* xill_param, relline_spec_mul
     }
 }
 
-void getZoneIncidentReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, double* returnFlux, int ii)
+void getZoneIncidentReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, VecD returnFlux, int ii)
 {
     for (int jj = 0; jj < returnSpec->n_ener; jj++)
     {
@@ -784,7 +782,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
 
         if (should_noXillverRefl_calculated())
         {
-            getZoneIncidentReturnFlux(xill_param, returnSpec, specXillverReflZones[izone].data(), izone);
+            getZoneIncidentReturnFlux(xill_param, returnSpec, specXillverReflZones[izone], izone);
         }
         else
         {
@@ -798,7 +796,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                 // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )
                 xill_param->radzone = (double)izone;
             }
-            getZoneReflectedReturnFluxDiskframe(xill_param, relProfile, returnSpec, specXillverReflZones[izone].data(),
+            getZoneReflectedReturnFluxDiskframe(xill_param, relProfile, returnSpec, specXillverReflZones[izone],
                                                 izone, status);
         }
 
@@ -897,5 +895,6 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
     }
+
 }
 

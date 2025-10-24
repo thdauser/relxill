@@ -576,8 +576,8 @@ void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *d
  *  [reason for the required allocation is that this will be called in a large
  *   loop and otherwise we would need to allocate a 3000 bin array very often]
  **/
-void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
-                                           double *ener,
+void calculateAngleWeightedXillverSpectrum(VecD o_xill_flux,
+                                           const double *ener,
                                            int n_ener,
                                            double *rel_dist,
                                            xillSpec *xill_spec,
@@ -588,7 +588,7 @@ void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
 
   calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
 
-  _rebin_spectrum(ener, o_xill_flux, n_ener,
+  _rebin_spectrum(ener, o_xill_flux.data(), n_ener,
                   xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
 
   delete[] xill_angdist_inp;
@@ -607,12 +607,13 @@ void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
  * @param rel_cosne_dist
  * @param status
  */
-void getAnglecorrXillSpec(double *xill_flux, double *ener, int n_ener, xillParam *xill_param,
+void getAnglecorrXillSpec(VecD xill_flux, double *ener, int n_ener, xillParam *xill_param,
                           double *rel_cosne_dist, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   xillSpec *xillSpecAngles = get_xillver_spectra(xill_param, status);
   calculateAngleWeightedXillverSpectrum(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
+  free_xill_spec(xillSpecAngles);
 
 }

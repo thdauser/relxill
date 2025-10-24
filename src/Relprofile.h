@@ -23,7 +23,7 @@ extern "C" {
 #include "common.h"
 }
 
-using VecD = std::vector<double>;
+#include "Types.h"
 
 void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
 
