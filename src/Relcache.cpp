@@ -50,6 +50,7 @@ bool are_values_different(double val1, double val2) {
 }
 
 static int comp_sys_param(const relParam *cpar, const relParam *par) {
+
   std::vector<std::pair<double, double>> param_comparison = {
     {par->a, cpar->a},
     {par->emis1, cpar->emis1},
@@ -66,14 +67,13 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
     {par->x_in, cpar->x_in},
     {static_cast<double>(par->limb), static_cast<double>(cpar->limb)},
     {static_cast<double>(par->return_rad), static_cast<double>(cpar->return_rad)},
-    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)},
-    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
+    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}, // TD: do we really need this?
+    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)} // TD: do we really need this?
   };
 
-  for (const auto& param : param_comparison)
-  {
-    if (are_values_different(param.first, param.second))
-    {
+
+  for (const auto& param : param_comparison) {
+    if (are_values_different(param.first, param.second)) {
       return 1;
     }
   }
@@ -81,8 +81,7 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
   // Handle the special case for correction factors
   // for now, if we have correction factors, there is no caching of rel_param results possible
   // TODO: move correction factors and therefore the return rad emis profile outside of the system parameters
-  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr)
-  {
+  if (par->rrad_corr_factors != nullptr || cpar->rrad_corr_factors != nullptr) {
     return 1;
   }
 
@@ -96,38 +95,30 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
  * @param par New parameters
  * @return 1 if any parameter changed, 0 if all are the same
  */
-int did_rel_param_change(const relParam* cpar, const relParam* par)
-{
+int did_rel_param_change(const relParam *cpar, const relParam *par) {
+
+  if (cpar == nullptr) {
+    return 1;
+  }
+
+  // first check all system parameters
+  if (comp_sys_param(cpar, par)) {
+    return 1;
+  }
+
   std::vector<std::pair<double, double>> param_comparison = {
-    {par->a, cpar->a},
-    {par->incl, cpar->incl},
-    {par->rin, cpar->rin},
-    {par->rout, cpar->rout},
-    {par->emis1, cpar->emis1},
-    {par->emis2, cpar->emis2},
-    {par->rbr, cpar->rbr},
-    {par->lineE, cpar->lineE},
-    {par->gamma, cpar->gamma},
-    {par->height, cpar->height},
-    {par->htop, cpar->htop},
-    {par->beta, cpar->beta},
     {par->z, cpar->z},
-    {par->x, cpar->x},
-    {par->x_in, cpar->x_in},
+    {par->lineE, cpar->lineE},
     {static_cast<double>(par->emis_type), static_cast<double>(cpar->emis_type)},
     {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)},
-    {static_cast<double>(par->limb), static_cast<double>(cpar->limb)},
-    {static_cast<double>(par->return_rad), static_cast<double>(cpar->return_rad)},
     {static_cast<double>(par->do_renorm_relline), static_cast<double>(cpar->do_renorm_relline)},
     {static_cast<double>(par->ion_grad_type), static_cast<double>(cpar->ion_grad_type)},
     {static_cast<double>(par->num_zones), static_cast<double>(cpar->num_zones)},
     {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
   };
 
-  for (const auto& param : param_comparison)
-  {
-    if (are_values_different(param.first, param.second))
-    {
+  for (const auto& param : param_comparison) {
+    if (are_values_different(param.first, param.second)) {
       return 1;
     }
   }
