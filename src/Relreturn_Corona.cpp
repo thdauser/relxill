@@ -102,7 +102,7 @@ static double calc_rrad_emis_zone(tabulatedReturnFractions* tabData, int ind_tab
 
   const int ng = tabData->ng;
   auto g  = new double[ng];
-  get_gfac_grid(g, tabData->gmin[ind_table_ro][ind_table_re], tabData->gmax[ind_table_ro][ind_table_re], ng);
+  auto gfac = get_gfac_grid(tabData->gmin[ind_table_ro][ind_table_re], tabData->gmax[ind_table_ro][ind_table_re], ng);
 
   double emis_zone = 0.0;
   for (int jj = 0; jj < ng; jj++) {

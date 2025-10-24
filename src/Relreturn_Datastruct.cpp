@@ -17,6 +17,8 @@
 */
 
 #include "Relreturn_Datastruct.h"
+
+#include "Relbase.h"
 #include "Relreturn_Table.h"
 
 extern "C" {
@@ -52,10 +54,12 @@ static double gstar2gfac(double gmin, double gmax, double gstar) {
   return gstar * (gmax - gmin) + gmin;
 }
 
-void get_gfac_grid(double* gfac, double gmin, double gmax, int ng) {
+VecD get_gfac_grid(double gmin, double gmax, int ng) {
+  VecD gfac(ng);
   for (int ii=0; ii<ng; ii++){
     gfac[ii] =  gstar2gfac(gmin,gmax, (ii+0.5)/ng);
   }
+  return gfac;
 }
 
 void get_std_bbody_energy_grid(int *n_ener, double **ener, int *status) {

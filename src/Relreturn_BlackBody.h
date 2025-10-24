@@ -19,9 +19,11 @@
 #ifndef RELXILL__RELRETURN_H_
 #define RELXILL__RELRETURN_H_
 
+#include "Types.h"
 #include "Relreturn_Table.h"
 #include "Relreturn_Datastruct.h"
 #include "Relbase.h"
+
 
 extern "C" {
 #include "common.h"

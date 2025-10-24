@@ -20,6 +20,7 @@
 #define RELXILL_RELRETURN_C_RELRETURN_GRIDS_H_
 
 #include "Relreturn_Table.h"
+#include "Types.h"
 
 typedef struct {
 
@@ -36,7 +37,7 @@ typedef struct {
 } returnSpec2D;
 
 
-void get_gfac_grid(double* gfac, double gmin, double gmax, int ng);
+VecD get_gfac_grid(double gmin, double gmax, int ng);
 void get_std_bbody_energy_grid(int *n_ener, double **ener, int *status);
 
 double **new_specZonesArr(int nener_inp, int nrad, int *status);

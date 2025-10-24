@@ -218,7 +218,6 @@ static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad,
         spec[jj] = 0.0;
     }
 
-    auto gfac = new double[dat->tabData->ng];
     auto spec_r = new double[nener];
     for (int ii = 0; ii < dat->nrad; ii++)
     {
@@ -229,12 +228,12 @@ static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad,
             spec_r[jj] = 0.0;
         }
 
-        get_gfac_grid(gfac, dat->tabData->gmin[irad][ii], dat->tabData->gmax[irad][ii], dat->tabData->ng);
+        auto gfac = get_gfac_grid(dat->tabData->gmin[irad][ii], dat->tabData->gmax[irad][ii], dat->tabData->ng);
 
         // only calculate it for a significant redshift, otherwise return BBODY without gshift
         if (fabs(dat->tabData->gmax[irad][ii] - dat->tabData->gmin[irad][ii]) > LIM_GFAC_RR_BBODY)
         {
-            calc_rr_bbspec_gzone(ener, nener, spec_r, temp[ii], gfac, dat->tabData->ng, dat->tabData->frac_g[irad][ii]);
+            calc_rr_bbspec_gzone(ener, nener, spec_r, temp[ii], gfac.data(), dat->tabData->ng, dat->tabData->frac_g[irad][ii]);
         }
         else
         {
