@@ -414,13 +414,14 @@ RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 /**
   * Initialize the structure to store the relline spectra for multiple radial zones
   **/
-void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, const double *radial_zones,
+void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, const VecD& radial_zones,
                                  double **pt_ener, const int n_ener, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   /** in case of the relxill-LP model multiple zones are used **/
   int nzones = param->num_zones;
+  assert(radial_zones.size() == nzones +1);
 
   if ((*spec) == nullptr) {
     (*spec) = new_rel_spec(nzones, n_ener, status);
@@ -448,9 +449,10 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
 
  // copy the radial grid to the structure
   if ((*spec)->rgrid == nullptr) {
-    (*spec)->rgrid = new double[param->num_zones + 1];
-    for (int ii=0; ii<param->num_zones+1; ii++){
-      (*spec)->rgrid[ii] = radial_zones[ii];
+    (*spec)->rgrid = new double[radial_zones.size()];
+    size_t ii = 0;
+    for (const auto& zone : radial_zones){
+      (*spec)->rgrid[ii++] = zone;
     }
   }
 

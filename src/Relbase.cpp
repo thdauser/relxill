@@ -17,14 +17,12 @@
 */
 #include "Relbase.h"
 #include "Xillspec.h"
-#include "Relphysics.h"
 
 extern "C" {
 #include "writeOutfiles.h"
 }
 
 #include <utility>
-#include <unordered_map>
 
 // new CACHE routines
 cnode *cache_relbase = nullptr;
@@ -464,10 +462,11 @@ void write_output_rel_param(relParam *pa) {
 relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *param,
                                        RelSysPar *sysPar,
                                        xillTable *xill_tab,
-                                       const double *radialZones,  // TODO: make this a vetor as well
+                                       const VecD& radialZones,  // TODO: make this a vetor as well
                                        int nzones,
                                        int *status) {
 
+  assert(radialZones.size() == nzones +1 );
 
   inpar* inp = get_inputvals_struct(ener, n_ener, param, status);
   cache_info *ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
@@ -577,7 +576,7 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
   assert(sysPar != nullptr);
 
   auto rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
-  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid.data(), param->num_zones, status);
+  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid, param->num_zones, status);
 
   return rel_spec;
 }

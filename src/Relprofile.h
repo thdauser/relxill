@@ -17,10 +17,13 @@
 */
 #ifndef RELPROFILE_H_
 #define RELPROFILE_H_
+#include <vector>
 
 extern "C" {
 #include "common.h"
 }
+
+using VecD = std::vector<double>;
 
 void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
 
@@ -31,7 +34,7 @@ void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, c
 void init_relline_spec_multizone(relline_spec_multizone **spec,
                                  relParam *param,
                                  xillTable *xill_tab,
-                                 const double *radial_zones,
+                                 const VecD& radial_zones,
                                  double **pt_ener,
                                  int n_ener,
                                  int *status);

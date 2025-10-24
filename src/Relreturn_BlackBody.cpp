@@ -747,8 +747,11 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     returnSpec2D* returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
                                                         rel_param->rin, rel_param->rout, rel_param->a,
                                                         status);
+   CHECK_RELXILL_ERROR("calculating return rad spec, failed", status);
 
     auto radialGrid = getRadialGridFromReturntab(returnSpec);
+    auto nrad_grid = returnSpec->nrad;
+    assert(radialGrid.size()-1 == nrad_grid); // uses upper and lower bounds of the bins so nrad+1
     RelSysPar* systemParameters = get_system_parameters(rel_param, status);
     relline_spec_multizone
         * relProfile = relbase_profile(ener,
@@ -756,8 +759,8 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                                        rel_param,
                                        systemParameters,
                                        xill_tab,
-                                       radialGrid.data(),
-                                       radialGrid.size(),
+                                       radialGrid,
+                                       nrad_grid,
                                        status);
 
     // ========== //
@@ -777,7 +780,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     {
         assert(returnSpec->n_ener == n_ener);
 
-        specXillverReflZones[izone] = VecD(n_ener);
+        specXillverReflZones[izone] = VecD(n_ener, 0.0);
 
         if (should_noXillverRefl_calculated())
         {
@@ -808,7 +811,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                                                           returnSpec->n_ener, status);
         }
 
-        specConvOutputZones[izone] = VecD(n_ener);
+        specConvOutputZones[izone] = VecD(n_ener, 0.0);
         convolveSpectrumFFTNormalized(ener,
                                       specXillverReflZones[izone].data(),
                                       relProfile->flux[izone],
@@ -894,10 +897,5 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
     }
-  /*  delete_2d(&specConvOutputZones, returnSpec->nrad);
-    delete_2d(&specXillverPrimZones, returnSpec->nrad);
-    delete_2d(&specXillverReflZones, returnSpec->nrad);
-
-    delete[] specSingleZone;*/
 }
 

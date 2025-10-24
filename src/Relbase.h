@@ -36,7 +36,6 @@ extern "C" {
 #include "reltable.h"
 }
 
-#include <vector>
 
 /*********** DEFINE STATEMENTS *********/
 
@@ -83,25 +82,17 @@ typedef struct
 void get_version_number(char** vstr, int* status);
 
 /* the relbase function calculating the basic relativistic line shape for a given parameter setup*/
-relline_spec_multizone* relbase(double* ener, const int n_ener, relParam* param, int* status);
+relline_spec_multizone* relbase(double* ener, int n_ener, relParam* param, int* status);
 
 relline_spec_multizone* relbase_profile(double* ener, int n_ener, relParam* param,
                                         RelSysPar* sysPar,
                                         xillTable* xill_tab,
-                                        const double* radialZones,
+                                        const VecD& radialZones,
                                         int nzones,
                                         int* status);
 
 
-relline_spec_multizone* relbase_multizone(double* ener,
-                                          const int n_ener,
-                                          relParam* param,
-                                          xillTable* xill_tab,
-                                          double* radialZones,
-                                          int nzones,
-                                          int* status);
-
-void free_cached_tables(void);
+void free_cached_tables();
 
 
 void relconv_kernel(double* ener_inp, double* spec_inp, int n_ener_inp, relParam* rel_param, int* status);
