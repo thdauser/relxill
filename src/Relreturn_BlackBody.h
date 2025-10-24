@@ -21,10 +21,13 @@
 
 #include "Relreturn_Table.h"
 #include "Relreturn_Datastruct.h"
+#include "Relbase.h"
 
 extern "C" {
 #include "common.h"
 }
+
+#include <vector>
 
 typedef struct {
 
@@ -62,13 +65,13 @@ void relxill_bb_kernel(double *ener_inp,
                        relParam *rel_param,
                        int *status);
 
-double *getRadialGridFromReturntab(returnSpec2D *spec, int* status);
+std::vector<double> getRadialGridFromReturntab(returnSpec2D *spec);
 
-double *getXillverPrimaryBBody(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
+VecD getXillverPrimaryBBody(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
 double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, double *ener, int n_ener, int *status);
 
-double *getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
+VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
 
 void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_multizone *rel_profile, const returnSpec2D *returnSpec,
                                          double *xill_flux_returnrad, int izone, int *status);

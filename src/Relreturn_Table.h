@@ -88,6 +88,7 @@ typedef struct {
 
 returnTable *get_returnrad_table(int *status);
 
+void delete_2d(double*** vals, int n1);
 void free_2d(double ***vals, int n1);
 void free_cached_returnTable(void);
 void free_returningFractions(returningFractions **dat);

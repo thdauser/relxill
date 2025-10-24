@@ -36,6 +36,7 @@ extern "C" {
 #include "reltable.h"
 }
 
+#include <vector>
 
 /*********** DEFINE STATEMENTS *********/
 
@@ -48,6 +49,9 @@ extern "C" {
 #define RELCONV_EMAX 1000.0
 
 /****** TYPE DEFINITIONS ******/
+
+using VecD = std::vector<double>;
+using VecD_2D = std::vector<std::vector<double>>;
 
 typedef struct
 {

@@ -61,8 +61,23 @@ void free_2d(double*** vals, int n1)
             free((*vals)[ii]);
         }
         free(*vals);
+        *vals = nullptr;
     }
 }
+
+void delete_2d(double*** vals, int n1)
+{
+    if (*vals != nullptr)
+    {
+        for (int ii = 0; ii < n1; ii++)
+        {
+            delete[] (*vals)[ii];
+        }
+        delete[] *vals;
+        *vals = nullptr;
+    }
+}
+
 
 static void free_returnFracData(tabulatedReturnFractions* dat)
 {
