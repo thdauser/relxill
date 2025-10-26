@@ -101,8 +101,7 @@ static double calc_rrad_emis_zone(tabulatedReturnFractions* tabData, int ind_tab
                                   double gamma, double corrfac_gshift) {
 
   const int ng = tabData->ng;
-  auto g  = new double[ng];
-  auto gfac = get_gfac_grid(tabData->gmin[ind_table_ro][ind_table_re], tabData->gmax[ind_table_ro][ind_table_re], ng);
+  auto g  = get_gfac_grid(tabData->gmin[ind_table_ro][ind_table_re], tabData->gmax[ind_table_ro][ind_table_re], ng);
 
   double emis_zone = 0.0;
   for (int jj = 0; jj < ng; jj++) {
@@ -114,8 +113,6 @@ static double calc_rrad_emis_zone(tabulatedReturnFractions* tabData, int ind_tab
     }
     emis_zone += emis_single_g;
   }
-
-  delete[] g;
 
   return emis_zone;
 }

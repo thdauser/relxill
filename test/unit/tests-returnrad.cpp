@@ -637,7 +637,7 @@ TEST_CASE (
 
 " Test relxilllp including returning radiation"
 ,
-"[returnrad]"
+"[returnrad-vg]"
 )
  {
 

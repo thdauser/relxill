@@ -133,6 +133,8 @@ void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile*
     return;
   }
 
+  assert(emis_prof!=nullptr);
+  assert(emis_prof_tab!=nullptr);
 
   double* re = emis_prof->re;
   int nr = emis_prof->nr;
@@ -519,6 +521,7 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
 
 static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* status) {
 
+  assert(emis0 != nullptr);
   if ( is_debug_run() ) {
     write_data_to_file("test-rrad-emis-input.dat", emis0->re, emis0->emis, emis0->nr);
   }
