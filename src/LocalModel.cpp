@@ -160,7 +160,6 @@ void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
 
   _rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), spec->ener, spec->flu[0], spec->n_ener);
   free_xill_spec(spec);
-  delete xill_param;
 
   add_primary_component(spectrum.energy,
                         spectrum.num_flux_bins(),
@@ -169,6 +168,8 @@ void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
                         xill_param,
                         nullptr,
                         &status);
+
+  delete xill_param;
 
   if (status != EXIT_SUCCESS) {
     throw std::exception();
