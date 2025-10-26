@@ -13,7 +13,7 @@ This file is part of the RELXILL model code.
    For a copy of the GNU General Public License see
    <http://www.gnu.org/licenses/>.
 
-    Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
+    Copyright 2025 Thomas Dauser, Remeis Observatory & ECAP
 */
 
 

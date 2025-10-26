@@ -28,6 +28,7 @@ set(SOURCE_FILES
         Rellp_Extended.cpp Rellp_Extended.h
         JedSad.cpp JedSad.h
         Relxill_errorhandling.cpp Relxill_errorhandling.h
+        Types.h
         )
 ############################################
 
