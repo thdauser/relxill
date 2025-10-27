@@ -187,6 +187,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     // normalizeSpectraOverTheFullDisk(spec_prim_zones, spec_rr_zones, ener, nener, dat);
 
     returnSpec2D* returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
+    free_returningFractions(&dat);
 
     return returnSpec;
 }
@@ -882,5 +883,6 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
 
     }
 
+    delete_returnSpec2D(returnSpec);
 }
 

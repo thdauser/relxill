@@ -601,7 +601,7 @@ void free_rel_cosne(RelCosne *spec) {
 void free_rel_spec(relline_spec_multizone *spec) {
   if (spec != nullptr) {
     free(spec->ener);
-    free(spec->rgrid);
+    delete[] spec->rgrid;
     if (spec->flux != nullptr) {
       int ii;
       for (ii = 0; ii < spec->n_zones; ii++) {
@@ -614,7 +614,7 @@ void free_rel_spec(relline_spec_multizone *spec) {
     if (spec->rel_cosne != nullptr) {
       free_rel_cosne(spec->rel_cosne);
     }
-    free(spec);
+    delete spec;
   }
 }
 

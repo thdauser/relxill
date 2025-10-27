@@ -45,6 +45,7 @@ VecU_D new_specZonesArrVec(int nener_inp, int nrad);
 void sum_2Dspec(double *spec, double **spec_arr, int nener, int nrad, const int *status);
 
 returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status);
+void delete_returnSpec2D(returnSpec2D *rspec);
 
 returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
                                           double **spec_rr_zones,
