@@ -75,4 +75,4 @@ double calc_fluxboost_source_disk(double rad, double del_emit, double a, double 
 double kerr_to_flat_area_ratio(double r, double a);
 double gamma_correction(double r, double a);
 
-#endif //RELXILL__RELPHYSICS_H_
+#endif //RELXILL_RELPHYSICS_H_

@@ -179,6 +179,11 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     double** spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature.data(), status);
     double** spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature.data(), status);
 
+    for (int ii=0; ii<dat->nrad; ii++)
+    {
+        assert_double_array_isnormal(spec_rr_zones[ii], nener);
+        assert_double_array_isnormal(spec_prim_zones[ii], nener);
+    }
     // normalizeSpectraOverTheFullDisk(spec_prim_zones, spec_rr_zones, ener, nener, dat);
 
     returnSpec2D* returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
@@ -196,10 +201,10 @@ static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec, double t
                                  double* gfac, int ng, const double* frac_g)
 {
     // loop over all gfac and calculate the spectrum for each
-    auto spec_g = new double[nener];
+    VecD spec_g(nener);
     for (int kk = 0; kk < ng; kk++)
     {
-        bbody_spec(ener, nener, spec_g, temp, gfac[kk]);
+        bbody_spec(ener, nener, spec_g.data(), temp, gfac[kk]);
         for (int jj = 0; jj < nener; jj++)
         {
             spec[jj] += spec_g[jj] * frac_g[kk];
@@ -208,36 +213,23 @@ static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec, double t
 }
 
 
-static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad, const double* temp,
+static void calc_rr_bbspec_ring(VecD& spec, double* ener, int nener, int irad, const double* temperature,
                                 returningFractions* dat, const int* status)
 {
-    CHECK_STATUS_VOID(*status);
+    VecD spec_r(nener, 0.0);
 
-    for (int jj = 0; jj < nener; jj++)
-    {
-        spec[jj] = 0.0;
-    }
-
-    auto spec_r = new double[nener];
     for (int ii = 0; ii < dat->nrad; ii++)
     {
-        // loop over all radial zones
-
-        for (int jj = 0; jj < nener; jj++)
-        {
-            spec_r[jj] = 0.0;
-        }
-
         auto gfac = get_gfac_grid(dat->tabData->gmin[irad][ii], dat->tabData->gmax[irad][ii], dat->tabData->ng);
 
         // only calculate it for a significant redshift, otherwise return BBODY without gshift
         if (fabs(dat->tabData->gmax[irad][ii] - dat->tabData->gmin[irad][ii]) > LIM_GFAC_RR_BBODY)
         {
-            calc_rr_bbspec_gzone(ener, nener, spec_r, temp[ii], gfac.data(), dat->tabData->ng, dat->tabData->frac_g[irad][ii]);
+            calc_rr_bbspec_gzone(ener, nener, spec_r.data(), temperature[ii], gfac.data(), dat->tabData->ng, dat->tabData->frac_g[irad][ii]);
         }
         else
         {
-            bbody_spec(ener, nener, spec_r, temp[ii], dat->tabData->gmin[irad][ii]); // caveat, gmean might not be 1.0
+            bbody_spec(ener, nener, spec_r.data(), temperature[ii], dat->tabData->gmin[irad][ii]); // caveat, gmean might not be 1.0
         }
 
         // apply the correct fractions and add it to the zone output spectrum
@@ -246,17 +238,17 @@ static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad,
             spec[jj] += spec_r[jj] * dat->tabData->f_ret[ii] * dat->tf_r[irad][ii];
         }
     }
+    assert_double_array_isnormal(spec.data(), nener);
 }
 
 
 /**
- * Computes the returning radiation spectra for a given set of input photon energy grid,
+ * @brief Computes the returning radiation spectra for a given set of input photon energy grid,
  * considering the radial distribution of returning fractions and the provided temperature profile.
  *
  * @param ener_inp Pointer to the array of input photon energies (in keV).
  * @param nener_inp Number of input energy bins corresponding to `ener_inp`.
- * @param dat Pointer to the `returningFractions` structure, which holds radial properties,
- *            fractional distribution of radiation, and tabulated data for calculations.
+ * @param dat Pointer to the `returningFractions` structure, which holds interpolated returning fractionsxs
  * @param temperature Pointer to the array of temperatures (in keV) defined per radial zone.
  * @param status Pointer to the status code variable. If non-zero, the function will return early with NULL.
  *
@@ -279,13 +271,6 @@ static void calc_rr_bbspec_ring(double* ener, double* spec, int nener, int irad,
 static double** get_returnrad_specs(double* ener_inp, int nener_inp, returningFractions* dat,
                                     const double* temperature, int* status)
 {
-    /* returns: - 2D-spectral array, unit is cts/bin  (xspec standard)
- *          - normalization
- * input:   - temperature profile (in keV)
- *          - interpolated return radiation fractions
- */
-
-
     CHECK_STATUS_RET(*status, NULL);
 
     int nener;
@@ -296,16 +281,14 @@ static double** get_returnrad_specs(double* ener_inp, int nener_inp, returningFr
 
     assert(dat->tf_r[0] != nullptr);
 
-    auto spec = new double[nener];
+    VecD spec(nener,0.0);
     for (int ii = 0; ii < dat->nrad; ii++)
     {
-        calc_rr_bbspec_ring(ener, spec, nener, ii, temperature, dat, status); // return ph / cm²/s/keV ( not bin integ.)
-
-        rebin_mean_flux(ener_inp, spec_zones[ii], nener_inp, ener, spec, nener, status);
+        calc_rr_bbspec_ring(spec, ener, nener, ii, temperature, dat, status); // return ph / cm²/s/keV ( not bin integ.)
+        rebin_mean_flux(ener_inp, spec_zones[ii], nener_inp, ener, spec.data(), nener, status);
+        assert_double_array_isnormal(spec_zones[ii],nener_inp);
     }
-
     normalizeFluxRrad(dat->nrad, nener_inp, ener_inp, spec_zones);
-
 
     return spec_zones;
 }
@@ -338,6 +321,7 @@ static double** get_bbody_specs(double* ener, int nener, returningFractions* dat
     CHECK_STATUS_RET(*status, NULL);
 
     double** spec_array = new_specZonesArr(nener, dat->nrad, status);
+    // auto spec_array = new_specZonesArrVec(nener, dat->nrad); need to do proper refactoring for this
 
     for (int ii = 0; ii < dat->nrad; ii++)
     {
@@ -491,6 +475,8 @@ double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, double* ener, 
 
     double norm_fac = normalizationFactorBBodyAtHighener(kTbb, spec_in, spec_bb, ener, n_ener);
 
+    assert( std::isnormal(norm_fac));
+
     return norm_fac;
 }
 
@@ -518,7 +504,7 @@ double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, double* ener, 
  */
 void getZoneReflectedReturnFluxDiskframe(xillParam* xill_param, relline_spec_multizone* rel_profile,
                                          const returnSpec2D* returnSpec,
-                                         VecD xill_flux_returnrad, int izone, int* status)
+                                         VecD& xill_flux_returnrad, int izone, int* status)
 {
     getAnglecorrXillSpec(xill_flux_returnrad, returnSpec->ener, returnSpec->n_ener, xill_param,
                          rel_profile->rel_cosne->dist[izone], status);
@@ -534,6 +520,7 @@ void getZoneReflectedReturnFluxDiskframe(xillParam* xill_param, relline_spec_mul
                                        returnSpec->ener,
                                        returnSpec->n_ener,
                                        status);
+    assert(std::isnormal(normfacMatchAtHighEnergies));
     CHECK_STATUS_VOID(*status);
 
     for (int jj = 0; jj < returnSpec->n_ener; jj++)
@@ -548,7 +535,7 @@ void getZoneReflectedReturnFluxDiskframe(xillParam* xill_param, relline_spec_mul
     }
 }
 
-void getZoneIncidentReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, VecD returnFlux, int ii)
+void getZoneIncidentReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, VecD& returnFlux, int ii)
 {
     for (int jj = 0; jj < returnSpec->n_ener; jj++)
     {

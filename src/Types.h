@@ -20,7 +20,9 @@ This file is part of the RELXILL model code.
 #ifndef RELXILL_TYPES_H
 #define RELXILL_TYPES_H
 
+#include <memory>
 #include <vector>
 using VecD = std::vector<double>;
+using VecU_D = std::vector<std::unique_ptr<double[]>>;
 
 #endif //RELXILL_TYPES_H

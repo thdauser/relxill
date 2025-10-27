@@ -41,6 +41,7 @@ VecD get_gfac_grid(double gmin, double gmax, int ng);
 void get_std_bbody_energy_grid(int *n_ener, double **ener, int *status);
 
 double **new_specZonesArr(int nener_inp, int nrad, int *status);
+VecU_D new_specZonesArrVec(int nener_inp, int nrad);
 void sum_2Dspec(double *spec, double **spec_arr, int nener, int nrad, const int *status);
 
 returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status);
@@ -50,5 +51,7 @@ returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
                                           double **spec_prim_zones,
                                           double* ener, int n_ener,
                                           int *status);
+
+void assert_double_array_isnormal(double* spec, int n);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_GRIDS_H_

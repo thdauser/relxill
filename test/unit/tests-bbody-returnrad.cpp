@@ -432,6 +432,24 @@ static void testSingleZoneRframeReflectSpectrum(int* status){
   }
 }*/
 
+TEST_CASE(" Check loading of relxillBB table","[bbret]")
+{
+  int status = EXIT_SUCCESS;
+
+  LocalModel lmod(ModelName::relxillBB);
+  auto xill_params = lmod.xill_params();
+  auto xill_table_params = get_xilltab_param(xill_params, &status);
+  auto xill_spec = get_xillver_spectra_table(xill_table_params, &status);
+
+  for (size_t ii = 0; ii < xill_spec->n_incl; ii++)
+  {
+    REQUIRE(calcSum(xill_spec->flu[ii], xill_spec->n_ener) > 1e-8);
+  }
+
+  free_xill_spec(xill_spec);
+  free(xill_table_params);
+}
+
 
 
 
@@ -447,13 +465,13 @@ TEST_CASE("Check if Second Evaluation returns the identical results", "[bbret]")
   XspecSpectrum spec0 = default_spec0.get_xspec_spectrum();
   lmod.eval_model(spec0);
 
-
-  for (int ii=0; ii<spec0.num_flux_bins(); ii++){
-    REQUIRE((spec0.flux[ii] - spec1.flux[ii]) < PREC);
-  }
+  auto sum0 = calcSum(spec0.flux,spec0.num_flux_bins());
+  REQUIRE( std::isnormal (sum0));
+  auto sum1 = calcSum(spec1.flux,spec0.num_flux_bins());
+    REQUIRE(fabs(sum0 - sum1) < PREC);
 }
 
-TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret-eval]") {
+TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret]") {
 
   int status = EXIT_SUCCESS;
   setenv("RELXILL_WRITE_OUTFILES","1",1);

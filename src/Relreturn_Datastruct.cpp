@@ -95,6 +95,14 @@ double **new_specZonesArr(int nener_inp, int nrad, int *status) {
   return spec_zones;
 }
 
+VecU_D new_specZonesArrVec(int nener_inp, int nrad) {
+  VecU_D spec_zones(nrad);
+  for (int ii = 0; ii < nrad; ii++) {
+    spec_zones[ii] = std::make_unique<double[]>(nener_inp);
+  }
+  return spec_zones;
+}
+
 
 returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status) {
 
@@ -131,4 +139,11 @@ void delete_returnSpec2D(returnSpec2D *rspec)
     }
     free(rspec);
   }
+}
+
+
+void assert_double_array_isnormal(double* spec, int n)
+{
+  double sum = calcSum(spec,n);
+  assert(std::isnormal(sum) == true);
 }

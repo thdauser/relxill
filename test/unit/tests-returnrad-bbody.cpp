@@ -80,7 +80,7 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
 }
 
 
-TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody-exec]")
+TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody]")
 {
     LocalModel lmod(ModelName::relxillBBxill);
     DefaultSpec default_spec{};

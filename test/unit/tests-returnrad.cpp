@@ -768,6 +768,7 @@ TEST_CASE (
   rradCorrFactors* grad_corrfactors =
       calc_rrad_corr_factors(xill_spec_grad, radial_grid, xill_table_param, &status);
 
+
   require_values_differ(grad_corrfactors->corrfac_flux, n_zones);
   require_values_differ(grad_corrfactors->corrfac_gshift, n_zones);
 
@@ -781,6 +782,7 @@ TEST_CASE (
     for (int ii = 0; ii < n_zones; ii++)
     {
         free_xill_spec(xill_spec[ii]);
+        free_xill_spec(xill_spec_grad[ii]);
         free(xill_table_param[ii]);
         xill_table_param[ii] = nullptr;
     }
