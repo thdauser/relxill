@@ -418,7 +418,29 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin, double spin, int
 
 std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
 {
-    auto rgrid = std::vector<double>(spec->nrad + 1); // we use n+1 grid points
+    assert(spec != nullptr);
+    assert(spec->nrad > 0);
+    assert(spec->rlo != nullptr);
+    assert(spec->rhi != nullptr);
+
+    VecD rgrid;
+    rgrid.reserve(spec->nrad + 1); // we use n+1 grid points
+
+    // Add lower bounds
+    for (int ii = 0; ii < spec->nrad; ii++)
+    {
+        rgrid.push_back(spec->rlo[ii]);
+    }
+
+    // Add the upper bound of the last zone
+    rgrid.push_back(spec->rhi[spec->nrad - 1]);
+
+    return rgrid;
+}
+
+/*std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
+{
+    VecD rgrid(spec->nrad + 1);
 
     for (int ii = 0; ii < spec->nrad; ii++)
     {
@@ -427,7 +449,7 @@ std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
     rgrid[spec->nrad] = spec->rhi[spec->nrad - 1];
 
     return rgrid;
-}
+}*/
 
 
 static double getXillverNormFactorFromPrimarySpectrum(double* spec_in, double* ener, int n_ener, int* status)
@@ -883,6 +905,6 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
 
     }
 
-    delete_returnSpec2D(returnSpec);
+    delete_returnSpec2D(&returnSpec);
 }
 

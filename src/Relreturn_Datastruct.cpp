@@ -122,22 +122,23 @@ returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener,
   return rspec;
 }
 
-void delete_returnSpec2D(returnSpec2D *rspec)
+void delete_returnSpec2D(returnSpec2D** rspec)
 {
-  if (rspec != nullptr)
+  if (*rspec != nullptr)
   {
-    free(rspec->rlo);
-    free(rspec->rhi);
-    free(rspec->ener);
-    if (rspec->specPri != nullptr)
+   // free((*rspec)->rlo); not owned by returnSpec2D
+   // free((*rspec)->rhi); not owned by returnSpec2D
+   // free((*rspec)->ener); not owned by returnSpec2D
+    if ((*rspec)->specPri != nullptr)
     {
-      free_2d(&rspec->specPri,rspec->nrad);
+      free_2d(&(*rspec)->specPri,(*rspec)->nrad);
     }
-    if (rspec->specPri != nullptr)
+    if ((*rspec)->specPri != nullptr)
     {
-      free_2d(&rspec->specRet,rspec->nrad);
+      free_2d(&(*rspec)->specRet,(*rspec)->nrad);
     }
-    free(rspec);
+    free(*rspec);
+    *rspec = nullptr;
   }
 }
 
