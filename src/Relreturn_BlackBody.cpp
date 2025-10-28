@@ -694,9 +694,12 @@ void check_and_reset_value(double* ptr_val, double val_ref, const char* param_na
 
 void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
 {
-    check_and_reset_value( &(rel_param->a), 0.998, "a");
-    check_and_reset_value( &(rel_param->rin), kerr_rms(0.998), "Rin");
-    check_and_reset_value( &(rel_param->rout), 1000, "Rout");
+    if (rel_param->model_type == MOD_TYPE_RELXILLBBRETXILL)
+    {
+        check_and_reset_value( &(rel_param->a), 0.998, "a");
+        check_and_reset_value( &(rel_param->rin), kerr_rms(0.998), "Rin");
+        check_and_reset_value( &(rel_param->rout), 1000, "Rout");
+    }
 }
 
 

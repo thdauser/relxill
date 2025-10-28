@@ -44,16 +44,18 @@ define runtest(ffs){
    variable dE = (hi-lo);
    variable diff =  abs(1 - sum(val[ind]*dE[ind]) / sum(val_ref[ind]*dE[ind]));
 
+%   ylog;xlog;
+%   hplot(lo,hi,val);
+%   ohplot(lo,hi,val_ref);
+
    %% profiles will not be the same as
    %%  (1) some relativity is still contained
    %%  (2) relxillBB uses the proper alpha-disk Temperature Profile
    %%      and not the approximated one from diskbb
-   if (diff > 0.01)
+   if (diff > 0.01){
+      msg_log += " *** error: relxillBB model does not resemble diskbb shape in the non-relativistic limit";
      status = EXIT_FAILURE;
-
-%   ylog;xlog;
-%   hplot(lo,hi,val);
-%   ohplot(lo,hi,val_ref);
+   }
 
    
    return status;
