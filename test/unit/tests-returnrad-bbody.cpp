@@ -72,7 +72,7 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
     }
 
       write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
-                        xillspec->ener, xillspec->flu[1], xillspec->n_ener);
+                         xillspec->ener, xillspec->flu[1], xillspec->n_ener);
 
     delete_xill_params(xill_param);
     free_xill_spec(xillspec);
@@ -80,7 +80,7 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
 }
 
 
-TEST_CASE(" Test relxillBB-xill Model ", "[rrad-bbody]")
+TEST_CASE(" Test relxillBB-xill Model ", "[relxillbbxill]")
 {
     LocalModel lmod(ModelName::relxillBBxill);
     DefaultSpec default_spec{};

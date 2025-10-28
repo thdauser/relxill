@@ -146,12 +146,12 @@ int is_alpha_model(int model_type);
 int is_returnrad_bb_model(int model_type);
 
 /** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
-void inv_rebin_mean(double* x0, double* y0, int n0, double* xn, double* yn, int nn, int* status);
+void inv_rebin_mean(const double* x0, double* y0, int n0, const double* xn, double* yn, int nn, int* status);
 
 void rebin_mean_flux(double* x0, double* y0, int n0, double* xn, double* yn, int nn, int* status);
 
 double calcSum(const double* array, int n_array);
-double calcSumInEnergyBand(const double* array, int n_array, double* ener, double valLo, double valHi);
+double calcSumInEnergyBand(const double* array, int n_array, const double* ener, double valLo, double valHi);
 
 void setArrayToZero(double* arr, int n);
 

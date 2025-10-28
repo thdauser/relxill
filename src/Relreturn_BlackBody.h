@@ -47,8 +47,8 @@ typedef struct {
 } spec2D;
 
 
-void fits_rr_write_2Dspec(const char *fname, double **spec_arr, double *ener, int nener,
-                          double *rlo, double *rhi, int nrad,
+void fits_rr_write_2Dspec(const char *fname, double **spec_arr, const double* ener, int nener,
+                          const VecD& rlo, const VecD& rhi, int nrad,
                           returningFractions *dat, int *status);
 
 /**  return the diskbb spectrum for the radial grid given by the table for this spin value **/
@@ -69,11 +69,11 @@ void relxill_bb_kernel(double *ener_inp,
 
 std::vector<double> getRadialGridFromReturntab(returnSpec2D *spec);
 
-VecD getXillverPrimaryBBody(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
+VecD getXillverPrimaryBBody(double kTbb, double *spec_in, const double* ener, int n_ener, int *status);
 
-double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, double *ener, int n_ener, int *status);
+double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, const double* ener, int n_ener, int *status);
 
-VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
+VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, const double* ener, int n_ener, int *status);
 
 void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_multizone *rel_profile, const returnSpec2D *returnSpec,
                                          VecD& xill_flux_returnrad, int izone, int *status);

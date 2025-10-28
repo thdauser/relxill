@@ -525,7 +525,7 @@ void get_nthcomp_param(double *nthcomp_param, double gam, double kte, double z) 
 
 
 // for x0 descending and xn ascending, calculate the mean at xn
-void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int nn, int *status) {
+void inv_rebin_mean(const double *x0, double *y0, int n0, const double *xn, double *yn, int nn, int *status) {
   if (xn[0] > xn[nn - 1] || x0[nn - 1] > x0[0]) {
     RELXILL_ERROR(" *** grid in wrong order", status);
     return;
@@ -631,7 +631,7 @@ double calcSum(const double *array, int n_array) {
 /*
  * ener has n_array+1 bins
  */
-double calcSumInEnergyBand(const double *array, int n_array, double *ener, double valLo, double valHi) {
+double calcSumInEnergyBand(const double *array, int n_array, const double* ener, double valLo, double valHi) {
   double testSum = 0.0;
   for (int jj = 0; jj < n_array; jj++) {
     if (ener[jj] >= valLo && ener[jj + 1] <= valHi) {

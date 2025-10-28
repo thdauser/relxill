@@ -59,14 +59,14 @@ xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
 
 void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status);
 
-void calculateAngleWeightedXillverSpectrum(VecD o_xill_flux,
+void calculateAngleWeightedXillverSpectrum(VecD& o_xill_flux,
                                            const double *ener,
                                            int n_ener,
                                            double *rel_dist,
                                            xillSpec *xill_spec,
                                            int *status);
 
-void getAnglecorrXillSpec(VecD xill_flux, double *ener, int n_ener, xillParam *xill_param,
+void getAnglecorrXillSpec(VecD& xill_flux, const double* ener, int n_ener, xillParam *xill_param,
                           double *rel_cosne_dist, int *status);
 
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,

@@ -229,8 +229,10 @@ void fitsAddKeyRadialZone(char* fname, const returnSpec2D* returnSpec, int izone
   fitsfile* fptr = nullptr;
   fits_open_table(&fptr, fname, READWRITE, status);
 
-  fits_update_key(fptr, TDOUBLE, "rlo",&(returnSpec->rlo[izone]),"radial zone grid", status);
-  fits_update_key(fptr, TDOUBLE, "rhi",&(returnSpec->rhi[izone]),"radial zone grid", status);
+  double rlo = returnSpec->rlo[izone];
+  double rhi = returnSpec->rhi[izone];
+  fits_update_key(fptr, TDOUBLE, "rlo",&(rlo),"radial zone grid", status);
+  fits_update_key(fptr, TDOUBLE, "rhi",&(rhi),"radial zone grid", status);
   fits_update_key(fptr, TINT, "izone",&izone,"radial zone grid", status);
 
   fits_close_file(fptr, status);

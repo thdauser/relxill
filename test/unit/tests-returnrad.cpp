@@ -157,9 +157,9 @@ TEST_CASE (
 
 
 
-static void invert_emis_profile(emisProfile* emis)
+static void invert_emis_profile(emisProfile* emis, double* rad)
 {
-    invertArray(emis->re, emis->nr);
+    invertArray(rad, emis->nr);
     invertArray(emis->emis, emis->nr);
 
     if (emis->del_inc != nullptr)
@@ -184,7 +184,7 @@ emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* statu
     returningFractions* rf = get_rrad_fractions(spin, rin, rout, status);
     double gamma = 2;
 
-    emisProfile* emis = new_emisProfile(rf->rad, rf->nrad, status);
+    emisProfile* emis = new_emisProfile(rf->rad.data(), rf->nrad, status);
     get_emis_bkn(emis->emis, emis->re, emis->nr, 3.0, 3.0, emis->re[0]);
     for (int ii = 0; ii < rf->nrad; ii++)
     {
@@ -193,7 +193,7 @@ emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* statu
 
     emisProfile* emis_return = calc_rrad_emis_corona(rf, nullptr, emis, gamma, status);
 
-    free_returningFractions(&rf);
+    delete_returningFractions(&rf);
     free_emisProfile(emis);
 
     return emis_return;
@@ -219,14 +219,14 @@ TEST_CASE (
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rms = dat->nrad;
 
-  free_returningFractions(&dat);
+  delete_returningFractions(&dat);
 
   Rin *= 2;
   dat = get_rrad_fractions(spin, Rin, Rout, &status);
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rfac2 = dat->nrad;
 
-  free_returningFractions(&dat);
+  delete_returningFractions(&dat);
 
   REQUIRE(nrad_rms > nrad_rfac2);
 
@@ -255,12 +255,12 @@ TEST_CASE (
   returningFractions *dat = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
   auto* rad = new double[dat->nrad];
   auto nrad = dat->nrad;
-  std::memcpy(rad, dat->rad, nrad * sizeof(double));  // one-line copy
-  free_returningFractions(&dat);
+  std::memcpy(rad, dat->rad.data(), nrad * sizeof(double));  // one-line copy
+  delete_returningFractions(&dat);
 
  invertArray(rad, nrad);
  emisProfile *emisCoarse = calc_emis_profile(rad, nrad, rel_param, &status);
- invert_emis_profile(emisCoarse);
+ invert_emis_profile(emisCoarse,rad);  // be careful, rad is used in emisCoarse and needs to be inverted as well
 
   emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, &status);
@@ -390,8 +390,8 @@ TEST_CASE (
   INFO("but not change for any other emitting radius");
   REQUIRE(abs(rf_grid->tf_r[1][1] - rf0->tf_r[1][1]) < 1e-8);
 
-  free_returningFractions(&rf0);
-  free_returningFractions(&rf_grid);
+  delete_returningFractions(&rf0);
+  delete_returningFractions(&rf_grid);
 }
 
 /*
@@ -787,7 +787,7 @@ TEST_CASE (
         xill_table_param[ii] = nullptr;
     }
     delete_rel_params(rel_param);
-    free_returningFractions(&ret_fractions);
+    delete_returningFractions(&ret_fractions);
 }
 
 TEST_CASE (

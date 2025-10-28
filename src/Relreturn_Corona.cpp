@@ -97,7 +97,7 @@ double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, doubl
  * @param corrfac_gshift (double)
  * @return
  */
-static double calc_rrad_emis_zone(tabulatedReturnFractions* tabData, int ind_table_ro, int ind_table_re,
+static double calc_rrad_emis_zone(const tabulatedReturnFractions* tabData, int ind_table_ro, int ind_table_re,
                                   double gamma, double corrfac_gshift) {
 
   const int ng = tabData->ng;
@@ -120,10 +120,10 @@ static double calc_rrad_emis_zone(tabulatedReturnFractions* tabData, int ind_tab
 static void test_radial_emis_grid(const returningFractions *ret_fractions,
                            const emisProfile *emis_input) {
   // need to have emis_input on the SAME radial zone grid, ASCENDING (as tables are ascending in radius)
-  //  -> require the grid of the emissivity profile to be identical, means they share the same pointer
-  assert(emis_input->re == ret_fractions->rad);
   assert(emis_input->nr == ret_fractions->nrad);
   assert(emis_input->re[0] < emis_input->re[1]);
+  assert(fabs(emis_input->re[0] - ret_fractions->rad[0]) < 1e-8);
+  assert(fabs(emis_input->re[1] - ret_fractions->rad[1]) < 1e-8);
 }
 
 emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rradCorrFactors* corr_factors,
@@ -137,7 +137,7 @@ emisProfile* calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
   const int nrad = ret_fractions->nrad;
   auto emis_single_zone = new double[nrad];
 
-  emisProfile* emis_return = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emisReturn
+  emisProfile* emis_return = new_emisProfile(ret_fractions->rad.data(), ret_fractions->nrad, status); // ret_fractions->rad is not owned by emisReturn
 
   for (int i_rad_incident = 0; i_rad_incident < nrad; i_rad_incident++) {
     int ind_table_ro = ret_fractions->irad[i_rad_incident];
@@ -184,7 +184,7 @@ void determine_rlo_rhi(const emisProfile *emisInput, double *rlo_emis, double *r
   assert((*rlo_emis) < (*rhi_emis));
 }
 
-rradCorrFactors *init_rrad_corr_factors(const double *rlo, const double *rhi, int n_zones) {
+rradCorrFactors *init_rrad_corr_factors(const VecD& rlo, const VecD& rhi, int n_zones) {
   auto* corr_factors = new rradCorrFactors;
 
   corr_factors->rgrid = new double[n_zones+1];
@@ -242,7 +242,7 @@ void free_rrad_corr_factors(rradCorrFactors** p_corr_factors){
  *  @param value0[n0-1]
  *
  */
-static void rebin_to_grid(double* value, const double* rmean, const double nzones,
+static void rebin_to_grid(double* value, const VecD& rmean, const double nzones,
                           const double*rgrid0, const double* value0, const int n0){
 
   for (int ii=0; ii<nzones; ii++){
@@ -293,7 +293,7 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
   determine_rlo_rhi(emis_input, &rlo_emis, &rhi_emis);
 
   returningFractions *ret_fractions = get_rrad_fractions(param->a, rlo_emis, rhi_emis, status);
-  emisProfile* emis_input_rebinned = new_emisProfile(ret_fractions->rad, ret_fractions->nrad, status); // ret_fractions->rad is not owned by emis_return
+  emisProfile* emis_input_rebinned = new_emisProfile(ret_fractions->rad.data(), ret_fractions->nrad, status); // ret_fractions->rad is not owned by emis_return
   inv_rebin_mean(emis_input->re, emis_input->emis, emis_input->nr,
                  emis_input_rebinned->re, emis_input_rebinned->emis, emis_input_rebinned->nr, status);
 
@@ -309,7 +309,7 @@ emisProfile *get_rrad_emis_corona(const emisProfile* emis_input, const relParam*
 
   free_emisProfile(emis_return);
   free_emisProfile(emis_input_rebinned);
-  free_returningFractions(&ret_fractions);
+  delete_returningFractions(&ret_fractions);
   free_rrad_corr_factors(&rrad_corr_factors);
 
   return emis_return_rebinned;

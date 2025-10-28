@@ -34,7 +34,7 @@ double calc_proper_area_ring(double rlo, double rhi, double spin);
 
 void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int n, double Rin, double Tin);
 void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, int n, double Tin);
-VecD get_tprofile(const double *rlo, double *rhi, int nrad, double Rin, double Tin, int type, int *status);
+VecD get_tprofile(const VecD& rlo, const VecD& rhi, int nrad, double Rin, double Tin, int type, int *status);
 
 void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac);
 

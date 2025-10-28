@@ -93,14 +93,14 @@ void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, in
   }
 }
 
-VecD get_tprofile(const double *rlo, double *rhi, const int nrad, double Rin, double Tin, int type, int *status) {
+VecD get_tprofile(const VecD& rlo, const VecD& rhi, const int nrad, double Rin, double Tin, int type, int *status) {
 
   VecD tprofile(nrad);
 
   if (type == TPROFILE_ALPHA) {
-    disk_Tprofile_alpha(rlo, rhi, tprofile.data(), nrad, Rin, Tin);
+    disk_Tprofile_alpha(rlo.data(), rhi.data(), tprofile.data(), nrad, Rin, Tin);
   } else if (type == TPROFILE_DISKBB) {
-    disk_Tprofile_diskbb(rlo, rhi, tprofile.data(), nrad, Tin);
+    disk_Tprofile_diskbb(rlo.data(), rhi.data(), tprofile.data(), nrad, Tin);
   } else {
     RELXILL_ERROR(" failed getting the temperature profile ", status);
     printf("    reason: type=%i is unknown\n", type);

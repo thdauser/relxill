@@ -445,7 +445,7 @@ static int select_spinIndexForTable(double val_spin, double* arr_spin, int nspin
 }
 
 
-static void allocate_radial_grid(returningFractions* ipol, double Rin, double Rout, int* status)
+static void allocate_radial_grid(returningFractions* ipol, double Rin, double Rout)
 {
     assert(ipol != nullptr);
     int klo_Rlo = binary_search(ipol->tabData->rlo, ipol->tabData->nrad, Rin);
@@ -472,25 +472,16 @@ static void allocate_radial_grid(returningFractions* ipol, double Rin, double Ro
     assert(nrad_trim <= ipol->tabData->nrad);
 
     ipol->nrad = nrad_trim;
-
-    ipol->irad = (int*)malloc(nrad_trim * sizeof(int));
-    CHECK_MALLOC_VOID_STATUS(ipol->irad, status)
+    ipol->irad = VecI(nrad_trim);
 
     for (int ii = 0; ii < nrad_trim; ii++)
     {
         ipol->irad[ii] = klo_Rlo + ii;
     }
 
-    ipol->rlo = (double*)malloc(nrad_trim * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(ipol->rlo, status)
-
-    ipol->rhi = (double*)malloc(nrad_trim * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(ipol->rhi, status)
-
-    ipol->rad = (double*)malloc(nrad_trim * sizeof(double));
-    CHECK_MALLOC_VOID_STATUS(ipol->rad, status)
-
-    ipol->proper_area_ring = nullptr;
+    ipol->rlo = VecD(nrad_trim);
+    ipol->rhi = VecD(nrad_trim);
+    ipol->rad = VecD(nrad_trim);
 
     for (int ii = 0; ii < nrad_trim; ii++)
     {
@@ -509,11 +500,6 @@ static void allocate_radial_grid(returningFractions* ipol, double Rin, double Ro
     {
         ipol->rad[ii] = 0.5 * (ipol->rlo[ii] + ipol->rhi[ii]);
     }
-
-
-    //  for (int ii = 0; ii < nrad_trim; ii++) {
-    //    ipol->proper_area_ring[ii] = calc_proper_area_ring(ipol->rlo[ii],ipol->rhi[ii], ipol->a);
-    //  }
 }
 
 
@@ -521,64 +507,46 @@ static returningFractions* new_returningFractions(tabulatedReturnFractions* tab,
 {
     CHECK_STATUS_RET(*status, nullptr);
 
-    returningFractions* dat = (returningFractions*)malloc(sizeof(returningFractions));
+    auto dat = new returningFractions;
     CHECK_MALLOC_RET_STATUS(dat, status, dat)
 
     dat->tabData = tab;
-
     dat->a = spin;
-
-    dat->irad = nullptr;
-
-    dat->proper_area_ring = nullptr;
-
-    dat->tf_r = nullptr;
-    dat->f_ret = nullptr;
-    dat->f_inf = nullptr;
-
+    dat->nrad = 0;
+    dat->irad = VecI();
+    dat->rlo = VecD();
+    dat->rhi = VecD();
+    dat->rad = VecD();
+    dat->tf_r = VecD_2D();
     return dat;
 }
 
-void free_returningFractions(returningFractions** dat)
+void delete_returningFractions(returningFractions** dat)
 {
     if (*dat != nullptr)
     {
-        free((*dat)->rlo);
-        free((*dat)->rhi);
-        free((*dat)->rad);
-        free((*dat)->irad);
-
-        free_2d(&((*dat)->tf_r), (*dat)->nrad);
-
-        free((*dat)->f_ret);
-        free((*dat)->f_inf);
-
-        free(*dat);
+        delete *dat;
         *dat = nullptr;
     }
 }
 
-static double** trim_transfun_to_radial_grid(double** tab_tfr, const int* ind_arr, int n, int* status)
+static VecD_2D trim_transfun_to_radial_grid(double** tab_tfr, const VecI& ind_arr, int n)
 {
-    double** tfr_trim = (double**)malloc(n * sizeof(double*));
-    CHECK_MALLOC_RET_STATUS(tfr_trim, status, nullptr)
+    VecD_2D tfr_trim(n);
     for (int ii = 0; ii < n; ii++)
     {
-        tfr_trim[ii] = (double*)malloc(n * sizeof(double));
-        CHECK_MALLOC_RET_STATUS(tfr_trim[ii], status, tfr_trim)
-
+        tfr_trim[ii] = VecD(n );
         for (int jj = 0; jj < n; jj++)
         {
             tfr_trim[ii][jj] = tab_tfr[ind_arr[ii]][ind_arr[jj]];
         }
     }
-
     return tfr_trim;
 }
 
 static double get_ring_area_correction_factor(int index_radius, returningFractions* ret_fractions)
 {
-    assert(ret_fractions->irad != nullptr);
+    assert(!ret_fractions->irad.empty());
     double rlo_table = ret_fractions->tabData->rlo[ret_fractions->irad[index_radius]];
 
     // make sure the lowest radial value of the table is at the ISCO
@@ -601,15 +569,14 @@ static double get_ring_area_correction_factor(int index_radius, returningFractio
     return area_model / area_table;
 }
 
-static double** get_interpolated_tfr(returningFractions* ret_fractions, int* status)
+void calculate_interpolated_tfr(returningFractions* ret_fractions)
 {
-    CHECK_STATUS_RET(*status, nullptr);
+    assert(!ret_fractions->irad.empty());
+    assert(ret_fractions->tf_r.empty());
 
-    assert(ret_fractions->irad != nullptr);
-    double** tfr = trim_transfun_to_radial_grid(ret_fractions->tabData->tf_r,
-                                                ret_fractions->irad,
-                                                ret_fractions->nrad,
-                                                status);
+    ret_fractions->tf_r = trim_transfun_to_radial_grid(ret_fractions->tabData->tf_r,
+                                            ret_fractions->irad,
+                                            ret_fractions->nrad);
 
     int i_rad_rin = 0;
     int i_rad_rout = ret_fractions->nrad - 1;
@@ -625,16 +592,14 @@ static double** get_interpolated_tfr(returningFractions* ret_fractions, int* sta
         // correction of frac_e by emitted photons with respect to the smaller area of emission at i_rad_in
         for (int i_rad_incident = i_rad_rin; i_rad_incident < i_rad_rout; i_rad_incident++)
         {
-            tfr[i_rad_incident][i_rad_rin] *= area_correction_rin;
+            ret_fractions->tf_r[i_rad_incident][i_rad_rin] *= area_correction_rin;
         }
         // same for i_rad_out
         for (int i_rad_incident = i_rad_rin; i_rad_incident < i_rad_rout - 1; i_rad_incident++)
         {
-            tfr[i_rad_incident][i_rad_rout] *= area_correction_rout;
+            ret_fractions->tf_r[i_rad_incident][i_rad_rout] *= area_correction_rout;
         }
     }
-
-    return tfr;
 }
 
 
@@ -651,8 +616,14 @@ returningFractions* get_rrad_fractions(double spin, double rin, double rout, int
 
     returningFractions* ret_fractions = new_returningFractions(tab_fractions, spin, status);
 
-    allocate_radial_grid(ret_fractions, rin, rout, status);
-    ret_fractions->tf_r = get_interpolated_tfr(ret_fractions, status);
+    if (ret_fractions == nullptr)
+    {
+        CHECK_STATUS_AND_THROW(*status);
+        return ret_fractions;
+    }
+
+    allocate_radial_grid(ret_fractions, rin, rout);
+    calculate_interpolated_tfr(ret_fractions);
 
     return ret_fractions;
 }

@@ -24,11 +24,11 @@
 
 typedef struct {
 
-  double *rlo;
-  double *rhi;
+  VecD rlo;
+  VecD rhi;
   int nrad;
 
-  double* ener; // length is n_ener+1
+  const double* ener; // length is n_ener+1
   int n_ener;
 
   double **specRet;
@@ -44,7 +44,7 @@ double **new_specZonesArr(int nener_inp, int nrad, int *status);
 VecU_D new_specZonesArrVec(int nener_inp, int nrad);
 void sum_2Dspec(double *spec, double **spec_arr, int nener, int nrad, const int *status);
 
-returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status);
+returnSpec2D *new_returnSpec2D(const VecD& rlo, const VecD& rhi, int nrad, const double* ener, int n_ener, int *status);
 void delete_returnSpec2D(returnSpec2D** rspec);
 
 returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,

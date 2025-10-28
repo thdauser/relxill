@@ -23,6 +23,9 @@ This file is part of the RELXILL model code.
 #include <memory>
 #include <vector>
 using VecD = std::vector<double>;
+using VecD_2D = std::vector<std::vector<double>>;
 using VecU_D = std::vector<std::unique_ptr<double[]>>;
+
+using VecI = std::vector<int>;
 
 #endif //RELXILL_TYPES_H

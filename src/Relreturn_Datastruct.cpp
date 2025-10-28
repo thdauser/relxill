@@ -104,9 +104,9 @@ VecU_D new_specZonesArrVec(int nener_inp, int nrad) {
 }
 
 
-returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status) {
+returnSpec2D *new_returnSpec2D(const VecD& rlo, const VecD& rhi, int nrad, const double* ener, int n_ener, int *status) {
 
-  auto rspec = (returnSpec2D *) malloc(sizeof(returnSpec2D));
+  auto rspec = new returnSpec2D;
   CHECK_MALLOC_RET_STATUS(rspec, status, rspec)
 
   rspec->rlo = rlo;
@@ -126,9 +126,6 @@ void delete_returnSpec2D(returnSpec2D** rspec)
 {
   if (*rspec != nullptr)
   {
-   // free((*rspec)->rlo); not owned by returnSpec2D
-   // free((*rspec)->rhi); not owned by returnSpec2D
-   // free((*rspec)->ener); not owned by returnSpec2D
     if ((*rspec)->specPri != nullptr)
     {
       free_2d(&(*rspec)->specPri,(*rspec)->nrad);
@@ -137,7 +134,7 @@ void delete_returnSpec2D(returnSpec2D** rspec)
     {
       free_2d(&(*rspec)->specRet,(*rspec)->nrad);
     }
-    free(*rspec);
+    delete *rspec;
     *rspec = nullptr;
   }
 }

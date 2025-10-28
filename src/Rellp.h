@@ -65,7 +65,7 @@ void free_cached_lpTable(void);
 lpReflFrac *new_lpReflFrac(int *status);
 void free_lpReflFrac(lpReflFrac **str);
 
-emisProfile *new_emisProfile(double *re, int nr, int *status);
+emisProfile *new_emisProfile(const double* re, int nr, int *status);
 void free_emisProfile(emisProfile *emis_profile);
 
 extPrimSource *new_extendedPrimarySource(int nh, int *status);

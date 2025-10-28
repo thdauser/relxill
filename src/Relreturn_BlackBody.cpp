@@ -45,8 +45,8 @@ void normalizeFluxRrad(int nrad, int nener, const double* ener, double** spec);
 // Program Code
 
 
-void fits_rr_write_2Dspec(const char* fname, double** spec_arr, double* ener, int nener,
-                          double* rlo, double* rhi, int nrad, returningFractions* dat, int* status)
+void fits_rr_write_2Dspec(const char* fname, double** spec_arr, const double* ener, int nener,
+                          const VecD& rlo, const VecD& rhi, int nrad, returningFractions* dat, int* status)
 {
     CHECK_STATUS_VOID(*status);
 
@@ -88,11 +88,12 @@ void fits_rr_write_2Dspec(const char* fname, double** spec_arr, double* ener, in
     int firstrow = 1; /* first row in table to write   */
     int firstelem = 1; /* first element in row  */
 
-    fits_write_col(fptr, TDOUBLE, 1, firstrow, firstelem, n1, rlo, status);
-    fits_write_col(fptr, TDOUBLE, 2, firstrow, firstelem, n1, rhi, status);
+    // we use "const_cast" as with legacy cfitsio this is the only way (and assume those values are never changed)
+    fits_write_col(fptr, TDOUBLE, 1, firstrow, firstelem, n1, const_cast<double*>(rlo.data()), status);
+    fits_write_col(fptr, TDOUBLE, 2, firstrow, firstelem, n1, const_cast<double*>(rhi.data()), status);
     for (int ii = 0; ii < n1; ii++)
     {
-        fits_write_col(fptr, TDOUBLE, 3, firstrow + ii, firstelem, n2, ener, status);
+        fits_write_col(fptr, TDOUBLE, 3, firstrow + ii, firstelem, n2, const_cast<double*>(ener), status);
         fits_write_col(fptr, TDOUBLE, 4, firstrow + ii, firstelem, n2, spec_arr[ii], status);
     }
 
@@ -100,7 +101,7 @@ void fits_rr_write_2Dspec(const char* fname, double** spec_arr, double* ener, in
     {
         for (int ii = 0; ii < n1; ii++)
         {
-            fits_write_col(fptr, TDOUBLE, 5, firstrow + ii, firstelem, n1, dat->tf_r[ii], status);
+            fits_write_col(fptr, TDOUBLE, 5, firstrow + ii, firstelem, n1, dat->tf_r[ii].data(), status);
         }
         fits_write_col(fptr, TDOUBLE, 6, firstrow, firstelem, n1, dat->tabData->f_ret, status);
         if (fits_write_key(fptr, TDOUBLE, "SPIN", &(dat->a), nullptr, status))
@@ -116,8 +117,8 @@ void fits_rr_write_2Dspec(const char* fname, double** spec_arr, double* ener, in
 
 
 void fits_rr_write_2Dspec(const char* fname, const std::vector<std::vector<double>>& spec_arr,
-                          double* ener, int nener,
-                          double* rlo, double* rhi, int nrad, returningFractions* dat, int* status)
+                          const double* ener, int nener,
+                          const VecD& rlo, const VecD& rhi, int nrad, returningFractions* dat, int* status)
 {
     // Convert to double** temporarily
     std::vector<double*> ptrs(spec_arr.size());
@@ -179,15 +180,17 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     double** spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature.data(), status);
     double** spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature.data(), status);
 
-    for (int ii=0; ii<dat->nrad; ii++)
+    if (is_debug_run())
     {
-        assert_double_array_isnormal(spec_rr_zones[ii], nener);
-        assert_double_array_isnormal(spec_prim_zones[ii], nener);
+        for (int ii=0; ii<dat->nrad; ii++)
+        {
+            assert_double_array_isnormal(spec_rr_zones[ii], nener);
+            assert_double_array_isnormal(spec_prim_zones[ii], nener);
+        }
     }
-    // normalizeSpectraOverTheFullDisk(spec_prim_zones, spec_rr_zones, ener, nener, dat);
 
     returnSpec2D* returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
-    free_returningFractions(&dat);
+    delete_returningFractions(&dat);
 
     return returnSpec;
 }
@@ -280,7 +283,7 @@ static double** get_returnrad_specs(double* ener_inp, int nener_inp, returningFr
 
     double** spec_zones = new_specZonesArr(nener_inp, dat->nrad, status);
 
-    assert(dat->tf_r[0] != nullptr);
+    assert(!dat->tf_r[0].empty());
 
     VecD spec(nener,0.0);
     for (int ii = 0; ii < dat->nrad; ii++)
@@ -420,8 +423,8 @@ std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
 {
     assert(spec != nullptr);
     assert(spec->nrad > 0);
-    assert(spec->rlo != nullptr);
-    assert(spec->rhi != nullptr);
+    assert(!spec->rlo.empty());
+    assert(!spec->rhi.empty());
 
     VecD rgrid;
     rgrid.reserve(spec->nrad + 1); // we use n+1 grid points
@@ -452,7 +455,7 @@ std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
 }*/
 
 
-static double getXillverNormFactorFromPrimarySpectrum(double* spec_in, double* ener, int n_ener, int* status)
+static double getXillverNormFactorFromPrimarySpectrum(double* spec_in, const double* ener, int n_ener, int* status)
 {
     CHECK_STATUS_RET(*status, 0.0);
 
@@ -472,7 +475,7 @@ static double getXillverNormFactorFromPrimarySpectrum(double* spec_in, double* e
 }
 
 
-double normalizationFactorBBodyAtHighener(double kTbb, double* spec1, const VecD& spec_bb, double* ener, int n_ener)
+double normalizationFactorBBodyAtHighener(double kTbb, const double* spec1, const VecD& spec_bb, const double* ener, int n_ener)
 {
     assert(spec1 != nullptr);
     assert(spec_bb.size() == n_ener);
@@ -486,7 +489,7 @@ double normalizationFactorBBodyAtHighener(double kTbb, double* spec1, const VecD
 }
 
 
-double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, double* ener, int n_ener, int* status)
+double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
 {
     assert(spec_in != nullptr);
 
@@ -598,7 +601,7 @@ void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnS
  *         to the Xillver primary spectrum. The caller assumes responsibility for deallocating
  *         the memory using delete[] when no longer needed. Returns nullptr if an error occurs.
  */
-VecD getXillverPrimaryBBody(double kTbb, double* spec_in, double* ener, int n_ener, int* status)
+VecD getXillverPrimaryBBody(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
 {
     VecD spec_bb(n_ener);
 
@@ -621,7 +624,7 @@ VecD getXillverPrimaryBBody(double kTbb, double* spec_in, double* ener, int n_en
 }
 
 
-VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double* spec_in, double* ener, int n_ener, int* status)
+VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
 {
     VecD spec_bbody_xillver = getXillverPrimaryBBody(kTbb, spec_in, ener, n_ener, status);
 

@@ -33,7 +33,7 @@ lpTable *cached_lp_table = nullptr;
  *  - del_emit_ad_max: emission angle hitting the outer edge of the fully, simulated accretion disk at
  *    1000Rg, regardless of Rout (as photons are not allowed to cross the disk plane)
  **/
-static lpReflFrac *calc_refl_frac(emisProfile *emis_profile,
+static lpReflFrac *calc_refl_frac(const emisProfile* emis_profile,
                                   double rin,
                                   double rout,
                                   double del_emit_ad_max,
@@ -136,10 +136,10 @@ void rebin_emisprofile_on_radial_grid(emisProfile *emis_prof, const emisProfile*
   assert(emis_prof!=nullptr);
   assert(emis_prof_tab!=nullptr);
 
-  double* re = emis_prof->re;
+  const double* re = emis_prof->re;
   int nr = emis_prof->nr;
 
-  double* re_tab = emis_prof_tab->re;
+  const double* re_tab = emis_prof_tab->re;
   int nr_tab = emis_prof_tab->nr;
 
   assert(emis_prof->re[0]>emis_prof->re[1]); // decreasing radius in input emis profile
@@ -214,11 +214,12 @@ static void interpol_emisprofile_spin_height(emisProfile *emis_profile_table,
 /*
  * @function:  interpol_lptable
  * @synoposis: interpolate the LP table for a given spin and height
+ * @jet_rad [double*] pointer to array, as radial grid is _not_ owned by the emissivity prof
  * @output: emisProfile
  *   - the "emis" here is the photon flux, as stored in the table
  *   - radial grid is the one of the table
  */
-emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status){
+emisProfile* interpol_lptable(double a, double height, lpTable* tab, double* jet_rad, int* status){
 
   CHECK_STATUS_RET(*status, nullptr);
 
@@ -229,7 +230,8 @@ emisProfile* interpol_lptable(double a, double height, lpTable* tab, int* status
 
   lpDat *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
-  auto* jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
+  assert(jet_rad==nullptr);
+  jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
   CHECK_MALLOC_RET_STATUS(jet_rad,status,nullptr)
   for (int ii = 0; ii < tab->n_rad; ii++) {
     jet_rad[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->rad[ii], dat_ind_a[1]->rad[ii]);
@@ -269,7 +271,8 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
                                        lpTable *tab, int *status) {
   CHECK_STATUS_VOID(*status);
 
-  emisProfile *emis_profile_table = interpol_lptable(param->a, height, tab, status);
+  double* jet_rad = nullptr;
+  emisProfile *emis_profile_table = interpol_lptable(param->a, height, tab, jet_rad, status);
 
   rebin_emisprofile_on_radial_grid(emis_profile, emis_profile_table, status);
 
@@ -278,7 +281,7 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
   const double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
   emis_profile->photon_fate_fractions =
       calc_refl_frac(emis_profile, param->rin, param->rout, del_emit_ad_max, param->beta, status);
-  free(emis_profile_table->re); // is not freed by free_emisProfile
+  free(jet_rad);
   free_emisProfile(emis_profile_table);
 
   apply_emis_fluxboost_source_disk(emis_profile, param->a, height, param->gamma, beta);
@@ -650,7 +653,7 @@ void free_lpReflFrac(lpReflFrac **str) {
   }
 }
 
-emisProfile *new_emisProfile(double *re, int nr, int *status) {
+emisProfile *new_emisProfile(const double* re, int nr, int *status) {
 
   auto *emis = (emisProfile *) malloc(sizeof(emisProfile));
   CHECK_MALLOC_RET_STATUS(emis, status, nullptr)
