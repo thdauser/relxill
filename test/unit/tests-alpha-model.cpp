@@ -25,7 +25,12 @@
 #include <vector>
 #include <filesystem>
 
-TEST_CASE(" Execute relxillpAlpha", "[alpha]") {
+TEST_CASE (
+" Execute relxillpAlpha"
+,
+"[alpha]"
+)
+ {
 
   DefaultSpec default_spec{};
 
@@ -37,7 +42,12 @@ TEST_CASE(" Execute relxillpAlpha", "[alpha]") {
 }
 
 
-TEST_CASE(" Execute relxillpAlpha printing the output", "[alpha]") {
+TEST_CASE (
+" Execute relxillpAlpha printing the output"
+,
+"[alpha]"
+)
+ {
 
   DefaultSpec default_spec{};
 
@@ -50,21 +60,27 @@ TEST_CASE(" Execute relxillpAlpha printing the output", "[alpha]") {
 }
 
 
-void set_default_par(LocalModel &lmod) {
-  lmod.set_par(XPar::a, 0.998);
-  lmod.set_par(XPar::h, 60.0);
-  lmod.set_par(XPar::rout, 400);
-  lmod.set_par(XPar::afe, 1.0);
-  lmod.set_par(XPar::incl, 30.0);
-  lmod.set_par(XPar::logn, 15);
-  lmod.set_par(XPar::gamma, 2.0);
-  lmod.set_par(XPar::kte, 60);
-  lmod.set_par(XPar::beta, 0.0);
-  lmod.set_par(XPar::z, 0.0);
-  lmod.set_par(XPar::switch_switch_reflfrac_boost, 1.0);
+void set_default_par(LocalModel& lmod)
+{
+    lmod.set_par(XPar::a, 0.998);
+    lmod.set_par(XPar::h, 60.0);
+    lmod.set_par(XPar::rout, 400);
+    lmod.set_par(XPar::afe, 1.0);
+    lmod.set_par(XPar::incl, 30.0);
+    lmod.set_par(XPar::logn, 15);
+    lmod.set_par(XPar::gamma, 2.0);
+    lmod.set_par(XPar::kte, 60);
+    lmod.set_par(XPar::beta, 0.0);
+    lmod.set_par(XPar::z, 0.0);
+    lmod.set_par(XPar::switch_switch_reflfrac_boost, 1.0);
 }
 
-TEST_CASE(" Calculate L_source", "[alpha]") {
+TEST_CASE (
+" Calculate L_source"
+,
+"[alpha]"
+)
+ {
 
   LocalModel lmod_alpha(ModelName::relxilllpAlpha);
   set_default_par(lmod_alpha);
@@ -78,7 +94,7 @@ TEST_CASE(" Calculate L_source", "[alpha]") {
   auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
 
   int status = EXIT_SUCCESS;
-  auto rel_params = lmod_alpha.get_rel_params();
+  auto rel_params = lmod_alpha.rel_params();
   RelSysPar *sys_par = get_system_parameters(rel_params, &status);
   const double flux_observed_cgs = primary_source_params.flux_observed_cgs(*sys_par->emis->photon_fate_fractions);
 
@@ -87,30 +103,31 @@ TEST_CASE(" Calculate L_source", "[alpha]") {
 }
 
 
-double calculate_lxi(const LocalModel &lmod) {
+double calculate_lxi(const LocalModel& lmod)
+{
+    auto rel_param = lmod.rel_params();
 
-  auto rel_param = lmod.get_rel_params();
+    int status = EXIT_SUCCESS;
+    RelSysPar* sys_par = get_system_parameters(rel_param, &status);
 
-  int status = EXIT_SUCCESS;
-  RelSysPar *sys_par = get_system_parameters(rel_param, &status);
+    auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
+    IonGradient const ion_gradient{radial_grid, rel_param->ion_grad_type, 0};
 
-  auto radial_grid = RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height);
-  IonGradient const ion_gradient{radial_grid, rel_param->ion_grad_type, 0};
+    const double logn = lmod.get_model_params().get_par(XPar::logn);
 
-  const double logn = lmod.get_model_params().get_par(XPar::logn);
-
-  auto primary_source_params = PrimarySourceParameters(lmod.get_model_params());
-  const double lxi_max = IonGradient::calculate_lxi_max_from_distance(*(sys_par->emis),
-                                                                      primary_source_params,
-                                                                      logn);
-
-  delete rel_param;
-
-  return lxi_max;
-
+    auto primary_source_params = PrimarySourceParameters(lmod.get_model_params());
+    const double lxi_max = IonGradient::calculate_lxi_max_from_distance(*(sys_par->emis),
+                                                                        primary_source_params,
+                                                                        logn);
+    return lxi_max;
 }
 
-TEST_CASE(" Calculate lxi ", "[alpha]") {
+TEST_CASE (
+" Calculate lxi "
+,
+"[alpha]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
@@ -125,15 +142,6 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
   lmod_alpha.set_par(XPar::refl_frac, -1);
 
   const double ref_value_flux_obs_cgs = 1e-10;
-  //  auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
-  //  auto rel_params = lmod_alpha.get_rel_params();
-  //  auto sys_par = get_system_parameters(rel_params, &status);
-  //  REQUIRE(1e-3 >
-  //      fabs(
-  //          ref_value_l_source / primary_source_params.luminosity_source_cgs((*sys_par->emis->photon_fate_fractions)) - 1
-  //      ));
-
-  // delete rel_params;
 
   const double lxi_max = calculate_lxi(lmod_alpha);
 
@@ -155,25 +163,31 @@ TEST_CASE(" Calculate lxi ", "[alpha]") {
 
 }
 
-LocalModel get_std_lmod_alpha() {
-  LocalModel lmod_alpha(ModelName::relxilllpAlpha);
-  set_default_par(lmod_alpha);
-  lmod_alpha.set_par(XPar::distance, 1e5);  // distance of 100 Mpc
-  lmod_alpha.set_par(XPar::mass, 1e6);      // mass of 1e6 Msolar
-  lmod_alpha.set_par(XPar::luminosity_source_1e38, 1e4);
+LocalModel get_std_lmod_alpha()
+{
+    LocalModel lmod_alpha(ModelName::relxilllpAlpha);
+    set_default_par(lmod_alpha);
+    lmod_alpha.set_par(XPar::distance, 1e5); // distance of 100 Mpc
+    lmod_alpha.set_par(XPar::mass, 1e6); // mass of 1e6 Msolar
+    lmod_alpha.set_par(XPar::luminosity_source_1e38, 1e4);
 
-  return lmod_alpha;
+    return lmod_alpha;
 }
 
 
-TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
+TEST_CASE (
+" Flux Normalization of the Continuum"
+,
+"[alpha]"
+)
+ {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
   auto lmod_alpha = get_std_lmod_alpha();
   auto primary_source_params = PrimarySourceParameters(lmod_alpha.get_model_params());
 
   int status = EXIT_SUCCESS;
-  auto rel_params = lmod_alpha.get_rel_params();
+  auto rel_params = lmod_alpha.rel_params();
   RelSysPar *sys_par = get_system_parameters(rel_params, &status);
   // Flux in the 0.01-1000keV band in erg/cm^2/s
   auto flux_direct_obs = primary_source_params.flux_observed_cgs(*(sys_par->emis->photon_fate_fractions));
@@ -200,7 +214,12 @@ TEST_CASE(" Flux Normalization of the Continuum", "[alpha]") {
 }
 
 
-TEST_CASE("refl/direct flux ratio identical to relxilllpCp Model", "[alpha]") {
+TEST_CASE (
+"refl/direct flux ratio identical to relxilllpCp Model"
+,
+"[alpha]"
+)
+ {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
@@ -237,7 +256,12 @@ TEST_CASE("refl/direct flux ratio identical to relxilllpCp Model", "[alpha]") {
 }
 
 
-TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[alpha]") {
+TEST_CASE (
+" Test the refl_frac parameter works with the alpha model as well"
+,
+"[alpha]"
+)
+ {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
@@ -278,7 +302,12 @@ TEST_CASE(" Test the refl_frac parameter works with the alpha model as well", "[
 
 }
 
-TEST_CASE(" Test that the distance parameter", "[alpha]") {
+TEST_CASE (
+" Test that the distance parameter"
+,
+"[alpha]"
+)
+ {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
@@ -300,7 +329,12 @@ TEST_CASE(" Test that the distance parameter", "[alpha]") {
 
 }
 
-TEST_CASE(" Test the mass parameter", "[alpha]") {
+TEST_CASE (
+" Test the mass parameter"
+,
+"[alpha]"
+)
+ {
   /*
    *  The mass influences the flux the disk sees from the primary source
    *  (as Rg is converted to cm). Meaning also that the direct flux seen
@@ -340,7 +374,12 @@ TEST_CASE(" Test the mass parameter", "[alpha]") {
   REQUIRE(fabs(flux_direct_1 / flux_direct_2 - 1) < 1e-6);
 }
 
-TEST_CASE(" Test the density gradient", "[alpha-test]") {
+TEST_CASE (
+" Test the density gradient"
+,
+"[alpha-test]"
+)
+ {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
@@ -354,7 +393,12 @@ TEST_CASE(" Test the density gradient", "[alpha-test]") {
 
 }
 
-TEST_CASE("CGS Flux does not change with different energy range of data", "[alpha]") {
+TEST_CASE (
+"CGS Flux does not change with different energy range of data"
+,
+"[alpha]"
+)
+ {
   auto lmod_alpha = get_std_lmod_alpha();
 
   lmod_alpha.set_par(XPar::refl_frac, 0.0); // only the continuum

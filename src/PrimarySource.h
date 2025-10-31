@@ -33,7 +33,7 @@
 
 extern "C" {
 #include "common.h"
-#include "xilltable.h"
+#include "xilltable_reading.h"
 }
 
 #include <vector>

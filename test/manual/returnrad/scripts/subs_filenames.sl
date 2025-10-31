@@ -2,11 +2,11 @@
 define getFilenameStruct(){
    
    variable outdir = "./";
-   variable fbase = outdir + "debug-testrr-bbody-%s.fits";
+   variable fbase = outdir + "__relxillOutput-rrad-bbody-%s.fits";
 
    variable f_rframe = struct{
-      specRet  = sprintf(fbase, "rframe-specRet" ),      %% returning spectrum on the disk (rest-frame)
-      specPri  = sprintf(fbase, "rframe-specPri" ),      %% primary BBody spectrum (rest-frame)
+      specRet  = sprintf(fbase, "rframe-bbodyRet" ),      %% returning spectrum on the disk (rest-frame)
+      specPri  = sprintf(fbase, "rframe-bbodyEmit" ),      %% primary BBody spectrum (rest-frame)
       xillRefl = sprintf(fbase, "rframe-xillverRefl" ),  %% reflected xillver spectrum (rest-frame)
       xillPrim =  sprintf(fbase, "rframe-xillverPrim" )  %% primary spectrum producing reflected xillver spectrum (rest-frame)
    };

@@ -20,10 +20,17 @@
 #define XILLSPEC_H_
 
 extern "C" {
-#include "xilltable.h"
+#include "xilltable_reading.h"
 #include "relutility.h"
 #include "common.h"
 }
+
+#include "Types.h"
+
+#include "Xilltable_handling.h"
+
+#include <vector>
+#include <memory>
 
 #define EMIN_XILLVER_NORMALIZATION 0.1
 #define EMAX_XILLVER_NORMALIZATION 1000.0
@@ -44,25 +51,22 @@ double norm_factor_semi_infinite_slab(double incl_deg);
 void norm_xillver_spec(xillSpec *spec, double incl);
 
 
-
-xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status);
-
-xillSpec *get_xillver_spectra(xillParam *param, int *status);
+xillSpec* get_xillver_spectra(const xillParam* param, int* status);
 
 
 xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
-void free_xill_spec(xillSpec *spec);
+
 
 void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status);
 
-void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
-                                           double *ener,
+void calculateAngleWeightedXillverSpectrum(VecD& o_xill_flux,
+                                           const double *ener,
                                            int n_ener,
                                            double *rel_dist,
                                            xillSpec *xill_spec,
                                            int *status);
 
-void getAnglecorrXillSpec(double *xill_flux, double *ener, int n_ener, xillParam *xill_param,
+void getAnglecorrXillSpec(VecD& xill_flux, const double* ener, int n_ener, xillParam *xill_param,
                           double *rel_cosne_dist, int *status);
 
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
@@ -85,5 +89,13 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
 
 double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, int n, int *status);
 EnerGrid *get_coarse_xillver_energrid();
+
+std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTable* tab, int* status);
+
+void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, std::vector<int> ind,
+                         int* status);
+
+xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, std::vector<int> ind, int* status);
+
 
 #endif //XILLSPEC_H_

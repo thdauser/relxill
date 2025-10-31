@@ -9,7 +9,8 @@ set(UNIT_TEST_FILES_CPP
         tests-extended-source.cpp
         tests-bbody-returnrad.cpp tests-alpha-model.cpp tests-caching.cpp
         test-jedsad.cpp
-        )
+        tests-returnrad-bbody.cpp
+)
 
 set(EXEC_FILES_CPP tests)
 

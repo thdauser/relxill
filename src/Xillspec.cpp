@@ -18,12 +18,16 @@
 
 #include "Xillspec.h"
 #include "Relphysics.h"
+#include "Relxill_errorhandling.h"
 
 extern "C" {
-#include "xilltable.h"
-#include "writeOutfiles.h"
 #include "common.h"
 }
+
+#include <vector>
+#include <memory>
+#include <cassert>
+
 
 EnerGrid *global_xill_egrid_coarse = nullptr;
 EnerGrid *global_energy_grid_relxill = nullptr;
@@ -54,48 +58,32 @@ EnerGrid *get_relxill_conv_energy_grid() {
 }
 
 
-
-xillSpec *get_xillver_spectra_table(xillTableParam *param, int *status) {
-
-  CHECK_STATUS_RET(*status, nullptr);
-
-  xillTable *tab = nullptr;
-  const char *fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, status);
-
-  CHECK_STATUS_RET(*status, nullptr);
-  assert(fname != nullptr);
-
-  // =1=  get the inidices
-  int *indparam = get_xilltab_indices_for_paramvals(param, tab, status);
-
-  // =2=  check if the necessary spectra for interpolation are loaded
-  check_xilltab_cache(fname, param, tab, indparam, status);
-
-  // =3= interpolate values
-  xillSpec *spec = interp_xill_table(tab, param, indparam, status);
-
-  CHECK_RELXILL_DEFAULT_ERROR(status);
-
-  free(indparam);
-  return spec;
-}
-
-
 /** @brief similar to get_xillver_spectra_table, but uses the full xill_param input (from xpsecc)
  *  @details see get_xillver_spectra_table for more details, this function is just a wrapper
  * @param param
  * @param status
  * @return xillSpec
  */
-xillSpec *get_xillver_spectra(xillParam *param, int *status) {
-
+xillSpec* get_xillver_spectra(const xillParam* param, int* status)
+{
   CHECK_STATUS_RET(*status, nullptr);
+  xillTableParam* param_table = nullptr;
+  xillSpec* xill_spec = nullptr;
 
-  xillTableParam *param_table = get_xilltab_param(param, status);
-  xillSpec *xill_spec = get_xillver_spectra_table(param_table, status);
-  CHECK_STATUS_RET(*status, nullptr);
-
-  free(param_table);
+  try
+  {
+    param_table = get_xilltab_param(param, status);
+    CHECK_STATUS_AND_THROW(*status);
+    xill_spec = get_xillver_spectra_table(param_table, status);
+    free(param_table);
+  }
+  catch (const std::exception& e)
+  {
+    free(param_table);
+    free_xill_spec(xill_spec);
+    RELXILL_ERROR("getting spectra from xillver table failed", status);
+    return nullptr;
+  }
 
   return xill_spec;
 }
@@ -588,18 +576,19 @@ void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *d
  *  [reason for the required allocation is that this will be called in a large
  *   loop and otherwise we would need to allocate a 3000 bin array very often]
  **/
-void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
-                                           double *ener,
+void calculateAngleWeightedXillverSpectrum(VecD& o_xill_flux,
+                                           const double *ener,
                                            int n_ener,
                                            double *rel_dist,
                                            xillSpec *xill_spec,
                                            int *status) {
+  CHECK_STATUS_VOID(*status);
 
   auto xill_angdist_inp = new double[xill_spec->n_ener];
 
   calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
 
-  _rebin_spectrum(ener, o_xill_flux, n_ener,
+  _rebin_spectrum(ener, o_xill_flux.data(), n_ener,
                   xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
 
   delete[] xill_angdist_inp;
@@ -618,13 +607,13 @@ void calculateAngleWeightedXillverSpectrum(double *o_xill_flux,
  * @param rel_cosne_dist
  * @param status
  */
-void getAnglecorrXillSpec(double *xill_flux, double *ener, int n_ener, xillParam *xill_param,
+void getAnglecorrXillSpec(VecD& xill_flux, const double* ener, int n_ener, xillParam *xill_param,
                           double *rel_cosne_dist, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   xillSpec *xillSpecAngles = get_xillver_spectra(xill_param, status);
   calculateAngleWeightedXillverSpectrum(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
+  free_xill_spec(xillSpecAngles);
 
 }
-

@@ -26,7 +26,12 @@
 
 #define PREC 1e-6
 
-TEST_CASE(" test printing of reflection strength", "[rellp]" ){
+TEST_CASE (
+" test printing of reflection strength"
+,
+"[rellp]"
+)
+{
 
   DefaultSpec default_spec{};
   LocalModel lmod(ModelName::relxilllp);
@@ -47,7 +52,12 @@ TEST_CASE(" test printing of reflection strength", "[rellp]" ){
 
 }
 
-TEST_CASE(" beta>0 of a lamp post changes the primary spectrum", "[beta]") {
+TEST_CASE (
+" beta>0 of a lamp post changes the primary spectrum"
+,
+"[beta]"
+)
+ {
 
   DefaultSpec default_spec{};
   LocalModel lmod(ModelName::relxilllpCp);
@@ -73,7 +83,12 @@ TEST_CASE(" beta>0 of a lamp post changes the primary spectrum", "[beta]") {
 
 }
 
-TEST_CASE(" normalization of LP primary spectrum", "[beta]") {
+TEST_CASE (
+" normalization of LP primary spectrum"
+,
+"[beta]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
@@ -86,7 +101,7 @@ TEST_CASE(" normalization of LP primary spectrum", "[beta]") {
   lmod.set_par(XPar::kte, 100);
   lmod.set_par(XPar::h, 30);
   lmod.set_par(XPar::incl, 20);
-  xillTableParam *xill_param = get_xilltab_param(lmod.get_xill_params(), &status);
+  xillTableParam *xill_param = get_xilltab_param(lmod.xill_params(), &status);
 
   auto prim_spec_source = new double[egrid->nbins];
   xill_param->ect = 100;
@@ -103,7 +118,12 @@ TEST_CASE(" normalization of LP primary spectrum", "[beta]") {
 
 }
 
-TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
+TEST_CASE (
+" Change of Ecut on the disk with beta>0  "
+,
+"[beta]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
@@ -114,8 +134,8 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
   local_model.set_par(XPar::h, 50.0);
   local_model.set_par(XPar::kte, kte_primary);
 
-  xillParam *xill_param = local_model.get_xill_params();
-  relParam *rel_param = local_model.get_rel_params();
+  const xillParam *xill_param = local_model.xill_params();
+  const relParam *rel_param = local_model.rel_params();
   RelSysPar *sys_par = get_system_parameters(rel_param, &status);
 
   RadialGrid const radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
@@ -136,7 +156,6 @@ TEST_CASE(" Change of Ecut on the disk with beta>0  ", "[beta]") {
 
   ion_gradient.calculate_gradient(*(sys_par->emis), primary_source_params_beta);
   const double ecut_in_beta = ion_gradient.get_ecut_disk_zone(rel_param_beta, kte_primary, 0);
-
 
 
   // require that the first zone is most blue-shifted
@@ -232,4 +251,3 @@ static void test_calcEmisProfileLp(int *status) {
 
 }
 */
-

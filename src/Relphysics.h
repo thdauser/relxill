@@ -16,12 +16,15 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+#ifndef RELXILL__RELPHYSICS_H_
+#define RELXILL__RELPHYSICS_H_
+
+
 extern "C" {
 #include "common.h"
 }
 
-#ifndef RELXILL__RELPHYSICS_H_
-#define RELXILL__RELPHYSICS_H_
+#include "Types.h"
 
 #define TPROFILE_ALPHA 1
 #define TPROFILE_DISKBB 2
@@ -31,7 +34,7 @@ double calc_proper_area_ring(double rlo, double rhi, double spin);
 
 void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int n, double Rin, double Tin);
 void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, int n, double Tin);
-double *get_tprofile(double *rlo, double *rhi, int nrad, double Rin, double Tin, int type, int *status);
+VecD get_tprofile(const VecD& rlo, const VecD& rhi, int nrad, double Rin, double Tin, int type, int *status);
 
 void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac);
 
@@ -72,4 +75,4 @@ double calc_fluxboost_source_disk(double rad, double del_emit, double a, double 
 double kerr_to_flat_area_ratio(double r, double a);
 double gamma_correction(double r, double a);
 
-#endif //RELXILL__RELPHYSICS_H_
+#endif //RELXILL_RELPHYSICS_H_

@@ -7,7 +7,7 @@ set(SOURCE_FILES
         Rellp.cpp Rellp.h
         reltable.c reltable.h
         relutility.c relutility.h
-        xilltable.c xilltable.h
+        xilltable_reading.c xilltable_reading.h
         Relphysics.cpp Relphysics.h
         writeOutfiles.c writeOutfiles.h
         Relprofile.cpp Relprofile.h
@@ -23,10 +23,12 @@ set(SOURCE_FILES
         Relreturn_Datastruct.cpp Relreturn_Datastruct.h
         Relreturn_Table.cpp Relreturn_Table.h
         xspec_wrapper_lmodels.cpp xspec_wrapper_lmodels.h   #are created by the wrapper script
-        Xillspec.cpp Xillspec.h
+        Xillspec.cpp Xillspec.h Xilltable_handling.cpp Xilltable_handling.h
         PrimarySource.cpp PrimarySource.h
         Rellp_Extended.cpp Rellp_Extended.h
         JedSad.cpp JedSad.h
+        Relxill_errorhandling.cpp Relxill_errorhandling.h
+        Types.h
         )
 ############################################
 
@@ -43,7 +45,8 @@ endforeach (execfile ${EXEC_FILES_CPP})
 
 ### RELXILL LIBRARY ###
 set(LIBNAME Relxill)
-add_library(${LIBNAME} ${SOURCE_FILES} ${CONFIG_FILE})
+add_library(${LIBNAME} ${SOURCE_FILES} ${CONFIG_FILE}
+        Types.h)
 target_include_directories(${LIBNAME} PUBLIC "${PROJECT_BINARY_DIR}")
 target_link_libraries(${LIBNAME} cfitsio fftw3 m)
 ########################

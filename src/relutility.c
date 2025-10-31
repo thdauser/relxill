@@ -93,7 +93,8 @@ int is_alpha_model(int model_type) {
 }
 
 int is_ns_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS) || model_type == MOD_TYPE_RELXILLBBRET) {
+  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS))
+  {
     return 1;
   } else {
     return 0;
@@ -130,8 +131,12 @@ void print_relxill_test_msg(const char *const func, const char *const msg) {
 }
 
 
-/**  FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
- 	 return bin k for which arr[k]<=val<arr[k+1] **/
+/** @brief FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
+ 	 return bin k for which arr[k]<=val<arr[k+1] *
+
+ 	 @description return -1 upon error (if array too small), otherwise always the index will always
+ 	 be within the given length of the array, meaning 0 also for val<arr[0] or n-1 for val>arr[n-1]
+ 	 */
 int binary_search_float(const float *arr, int n, float val) {
 
   if (n <= 1) return -1;
@@ -219,12 +224,13 @@ int is_relxill_model(int model_type) {
   }
 }
 
-int is_returnrad_model(int model_type) {
-  if (model_type == MOD_TYPE_RELXILLBBRET) {
+int is_returnrad_bb_model(int model_type)
+{
+  if (model_type == MOD_TYPE_RELXILLBBRET || model_type == MOD_TYPE_RELXILLBBRETXILL)
+  {
     return 1;
-  } else {
-    return 0;
   }
+  return 0;
 }
 
 /** trapez integration around a single bin
@@ -261,51 +267,6 @@ double gstar2ener(double g, double gmin, double gmax, double ener) {
   return (g * (gmax - gmin) + gmin) * ener;
 }
 
-/** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
-double *get_rzone_grid(double rmin, double rmax, int nzones, double h, int *status) {
-
-  CHECK_STATUS_RET(*status, NULL);
-
-  double *rgrid = malloc(sizeof(double) * (nzones + 1));
-  CHECK_MALLOC_RET_STATUS(rgrid, status, rgrid)
-
-  if (nzones == 1) {
-    rgrid[0] = rmin;
-    rgrid[1] = rmax;
-  } else {
-
-    double r_transition = rmin;
-    int indr = 0;
-
-    // if h > rmin we choose a log grid for r<h
-    if (h > rmin) {
-
-      r_transition = h;
-
-      get_log_grid(rgrid, nzones + 1, rmin, rmax);
-      indr = binary_search(rgrid, nzones + 1, r_transition);
-
-      r_transition = rgrid[indr];
-
-    }
-
-    if (indr < nzones) {
-
-      double rlo = r_transition;
-      double rhi = rmax; // radius[nzones];
-      // add 1/r for larger radii
-      int ii;
-      for (ii = indr; ii < nzones + 1; ii++) {
-        rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
-        rgrid[ii] = fabs(1.0 / rgrid[ii]);
-      }
-
-    }
-
-  }
-
-  return rgrid;
-}
 
 double get_env_otherwise_default(const char *env, double def_value) {
   char *value_string = getenv(env);
@@ -398,6 +359,7 @@ int do_not_normalize_relline(void) {
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double *ener, int n_ener, double emin, double emax) {
   int ii;
+  assert(ener!=NULL);
   for (ii = 0; ii < n_ener; ii++) {
     ener[ii] = 1.0 * ii / (n_ener - 1) * (log(emax) - log(emin)) + log(emin);
     ener[ii] = exp(ener[ii]);
@@ -428,84 +390,6 @@ void get_ipol_factor_double(const double value, const double* arr, const int n_a
       (arr[*ind + 1] - arr[*ind]);
 }
 
-
-/* A simple implementation of the FFT taken from http://paulbourke.net/miscellaneous/dft/
-   (uses the Radix-2 Cooley-Tukey algorithm)
-
-   This computes an in-place complex-to-complex FFT
-   x and y are the real and imaginary arrays of 2^m points.
-   dir =  1 gives forward transform
-   dir = -1 gives reverse transform
-*/
-void FFT_R2CT(short int dir, long m, double *x, double *y) {
-
-  long n, i, i1, j, k, i2, l, l1, l2;
-  double c1, c2, tx, ty, t1, t2, u1, u2, z;
-
-  /* Calculate the number of points */
-  n = 1;
-  for (i = 0; i < m; i++) {
-    n *= 2;
-  }
-
-  /* Do the bit reversal */
-  i2 = n >> 1;
-  j = 0;
-  for (i = 0; i < n - 1; i++) {
-    if (i < j) {
-      tx = x[i];
-      ty = y[i];
-      x[i] = x[j];
-      y[i] = y[j];
-      x[j] = tx;
-      y[j] = ty;
-    }
-    k = i2;
-    while (k <= j) {
-      j -= k;
-      k >>= 1;
-    }
-    j += k;
-  }
-
-  /* Compute the FFT */
-  c1 = -1.0;
-  c2 = 0.0;
-  l2 = 1;
-  for (l = 0; l < m; l++) {
-    l1 = l2;
-    l2 <<= 1;
-    u1 = 1.0;
-    u2 = 0.0;
-    for (j = 0; j < l1; j++) {
-      for (i = j; i < n; i += l2) {
-        i1 = i + l1;
-        t1 = u1 * x[i1] - u2 * y[i1];
-        t2 = u1 * y[i1] + u2 * x[i1];
-        x[i1] = x[i] - t1;
-        y[i1] = y[i] - t2;
-        x[i] += t1;
-        y[i] += t2;
-      }
-      z = u1 * c1 - u2 * c2;
-      u2 = u1 * c2 + u2 * c1;
-      u1 = z;
-    }
-    c2 = sqrt((1.0 - c1) / 2.0);
-    if (dir == 1)
-      c2 = -c2;
-    c1 = sqrt((1.0 + c1) / 2.0);
-  }
-
-  /* Scaling for forward transform */
-  if (dir == 1) {
-    for (i = 0; i < n; i++) {
-      x[i] /= n;
-      y[i] /= n;
-    }
-  }
-
-}
 
 /** get the number of zones on which we calculate the relline-spectrum **/
 int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
@@ -550,7 +434,6 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 
 /** rebin spectrum to a given energy grid
  *  length of ener is num_flux_bins+1       **/
-
 void _rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
 
   int ii;
@@ -611,9 +494,11 @@ int do_renorm_model(relParam *rel_param) {
 
   int renorm;
 
-  if (is_relxill_model(rel_param->model_type)) {
-    if (rel_param->emis_type == EMIS_TYPE_LP || is_returnrad_model(rel_param->model_type)
-        || do_not_normalize_relline()) {
+  if (is_relxill_model(rel_param->model_type))
+  {
+    if (rel_param->emis_type == EMIS_TYPE_LP || is_returnrad_bb_model(rel_param->model_type)
+      || do_not_normalize_relline())
+    {
       renorm = 0;
     } else {
       renorm = 1;
@@ -640,7 +525,7 @@ void get_nthcomp_param(double *nthcomp_param, double gam, double kte, double z) 
 
 
 // for x0 descending and xn ascending, calculate the mean at xn
-void inv_rebin_mean(double *x0, double *y0, int n0, double *xn, double *yn, int nn, int *status) {
+void inv_rebin_mean(const double *x0, double *y0, int n0, const double *xn, double *yn, int nn, int *status) {
   if (xn[0] > xn[nn - 1] || x0[nn - 1] > x0[0]) {
     RELXILL_ERROR(" *** grid in wrong order", status);
     return;
@@ -746,7 +631,7 @@ double calcSum(const double *array, int n_array) {
 /*
  * ener has n_array+1 bins
  */
-double calcSumInEnergyBand(const double *array, int n_array, double *ener, double valLo, double valHi) {
+double calcSumInEnergyBand(const double *array, int n_array, const double* ener, double valLo, double valHi) {
   double testSum = 0.0;
   for (int jj = 0; jj < n_array; jj++) {
     if (ener[jj] >= valLo && ener[jj + 1] <= valHi) {

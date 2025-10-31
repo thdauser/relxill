@@ -88,8 +88,6 @@ void calc_ring_emis(emisProfile *emisProf, double a, double h, double x, double 
 void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedSourceTable *tab, int *status);
 
 
-emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status);
-
 // constructors and destructors
 extendedSourceTable *new_extendedSourceTable(int n_h, int n_x,
                                              int n_a, int n_bin, int n_storage,

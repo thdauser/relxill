@@ -66,7 +66,6 @@ param.insert(std::make_pair(parnames[ii],parvalues[ii]));
 }
 }; */
 
-
 /**
    * class LocalModel
    */
@@ -74,8 +73,10 @@ class LocalModel {
 
  public:
   LocalModel(const ParamList& par, ModelName model_name):
-      m_model_params{ModelDefinition(par, model_name, ModelDatabase::instance().model_info(model_name))}
-          {  };
+    m_model_params{ModelDefinition(par, model_name, ModelDatabase::instance().model_info(model_name))},
+    m_rel_params{nullptr},
+    m_xill_params{nullptr}
+  {  };
 
     LocalModel(const double* inp_param, ModelName model_name)
         : LocalModel(ModelDatabase::instance().param_list(model_name), model_name )
@@ -87,16 +88,75 @@ class LocalModel {
         LocalModel(ModelDatabase::instance().param_list(model_name), model_name)
     {  };
 
-    /** set the value of a single parameter
-     * @param XPar param
-     * @param double value
-     */
-    void set_par(const XPar param, double value){
-      m_model_params.set_par(param, value);
+    // Destructor to clean up allocated parameters
+  ~LocalModel()
+  {
+    if (m_rel_params != nullptr)
+    {
+      delete_rel_params(m_rel_params);
+      m_rel_params = nullptr;
     }
+    if (m_xill_params != nullptr)
+    {
+      delete_xill_params(m_xill_params);
+      m_xill_params = nullptr;
+    }
+  }
 
-    std::string get_model_string(){
-      return ModelDatabase::instance().model_string(m_model_params.get_model_name());
+  // Delete copy constructor and assignment operator to prevent double-free
+  LocalModel(const LocalModel&) = delete;
+  LocalModel& operator=(const LocalModel&) = delete;
+
+  // Allow move operations
+  LocalModel(LocalModel&& other) noexcept
+    : m_model_params(std::move(other.m_model_params)),
+      m_rel_params(other.m_rel_params),
+      m_xill_params(other.m_xill_params)
+  {
+    other.m_rel_params = nullptr;
+    other.m_xill_params = nullptr;
+  }
+
+  // Move assignment operator - swap idiom
+  LocalModel& operator=(LocalModel&& other) noexcept
+  {
+    if (this != &other)
+    {
+      // Clean up existing resources
+      delete m_rel_params;
+      delete m_xill_params;
+
+      m_model_params = std::move(other.m_model_params);
+      m_rel_params = other.m_rel_params;
+      m_xill_params = other.m_xill_params;
+
+      // Reset other
+      other.m_rel_params = nullptr;
+      other.m_xill_params = nullptr;
+    }
+    return *this;
+  }
+
+  /** set the value of a single parameter
+   *  this routine ensures that also xill_params and rel_params is updated
+   * @param XPar param
+   * @param double value
+   */
+  void set_par(const XPar param, double value)
+  {
+    m_model_params.set_par(param, value);
+
+      // make sure the resulting rel and xill params are always updated and reflect the changes in m_model_params
+    delete_rel_params(m_rel_params);
+    m_rel_params = ::get_rel_params(m_model_params);
+
+    delete_xill_params(m_xill_params);
+    m_xill_params = ::get_xill_params(m_model_params);
+  }
+
+  std::string get_model_string()
+  {
+    return ModelDatabase::instance().model_string(m_model_params.get_model_name());
     }
 
     /**
@@ -127,24 +187,52 @@ class LocalModel {
 
     }
 
-  relParam *get_rel_params() const {
+  const relParam *rel_params() const {
+    if (m_rel_params == nullptr)
+    {
+      m_rel_params = ::get_rel_params(m_model_params);
+    }
+    return m_rel_params;
+  }
+
+  relParam* get_rel_params_struct()
+  {
     return ::get_rel_params(m_model_params);
   }
-  xillParam *get_xill_params() const {
+
+
+  const xillParam* xill_params() const
+  {
+    if (m_xill_params == nullptr)
+    {
+      m_xill_params = ::get_xill_params(m_model_params);
+    }
+    return m_xill_params;
+  }
+
+  xillParam* get_xill_param_struct()
+  {
     return ::get_xill_params(m_model_params);
   }
 
-  const ModelDefinition &get_model_params() const {
+
+  const ModelDefinition& get_model_params() const
+  {
     return m_model_params;
   }
 
  private:
   ModelDefinition m_model_params;
+  mutable relParam* m_rel_params; // mutable because automatically synchronized
+  mutable xillParam* m_xill_params; // mutable because automatically synchronized
 
-  void line_model(const XspecSpectrum &spectrum);
+  void line_model(const XspecSpectrum& spectrum);
+  void add_jedsad_parameters_to_model_params();
+  bool handle_zero_jedsad_parameters(const XspecSpectrum& spectrum);
+  static void check_relxill_error_default(int status);
   void relxill_model(const XspecSpectrum &spectrum);
-  void conv_model(const XspecSpectrum &spectrum);
-  void xillver_model(const XspecSpectrum &spectrum);
+  void conv_model(const XspecSpectrum &spectrum) const;
+  void xillver_model(const XspecSpectrum &spectrum) const;
 
   void set_input_params(const double *inp_par_values) {
     auto parnames = m_model_params.get_parnames();

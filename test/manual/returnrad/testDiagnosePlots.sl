@@ -127,10 +127,10 @@ define createOutputFiles(){ %{{{
    putenv("RELXILL_BBRET_NOREFL=1");
 
    set_par("*.Rout",400);
-   set_par("*.boost",1.0);
    set_par("*.Incl",40);
    set_par("*.logxi",1.0);
-   set_par("*.boost",1);
+
+   set_par("*.boost",1.0);
    () = eval_fun(1,2);
 
    set_par("*.boost",0);

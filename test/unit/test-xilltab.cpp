@@ -23,12 +23,17 @@
 #include "Xillspec.h"
 
 extern "C" {
-#include "xilltable.h"
+#include "xilltable_reading.h"
 }
 
 
+TEST_CASE (
 
-TEST_CASE(" creating of new xillver table ", "[xilltab]") {
+" creating of new xillver table "
+,
+"[xilltab]"
+)
+ {
   int status = EXIT_SUCCESS;
 
   int dim[] = {5, 6};
@@ -38,23 +43,30 @@ TEST_CASE(" creating of new xillver table ", "[xilltab]") {
   for (ii = 0; ii < ndim; ii++) {
     xillTable *tab = new_xillTable(dim[ii], &status);
     REQUIRE(status == EXIT_SUCCESS);
-    free_xillTable(tab);
+    free_xillTable(&tab);
   }
 
 }
 
 
-static void test_tab_num_param(const xillParam *param, int *status, const xillTable *tab) {
-
-  int dim_expect = 5;
-  if (is_6dim_table(param->model_type)) {
-    dim_expect = 6;
-  }
-  REQUIRE(tab->num_param == dim_expect);
+static void test_tab_num_param(const xillParam* param, int* status, const xillTable* tab)
+{
+    int dim_expect = 5;
+    if (is_6dim_table(param->model_type))
+    {
+        dim_expect = 6;
+    }
+    REQUIRE(tab->num_param == dim_expect);
 }
 
 
-TEST_CASE(" initialize Xillver table ", "[xilltab]") {
+TEST_CASE (
+
+" initialize Xillver table "
+,
+"[xilltab]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
@@ -73,61 +85,65 @@ TEST_CASE(" initialize Xillver table ", "[xilltab]") {
   }
 
   REQUIRE(tab->num_param > 0);
-  test_tab_num_param(lmod.get_xill_params(), &status, tab);
+  test_tab_num_param(lmod.xill_params(), &status, tab);
 
 }
 
-static void test_spec_norm(xillSpec *spec) {
+static void test_spec_norm(xillSpec* spec)
+{
+    int ii;
+    int jj;
 
-  int ii;
-  int jj;
+    double norm_spectrum = 0.0;
 
-  double norm_spectrum = 0.0;
-
-  for (jj = 0; jj < spec->n_incl; jj++) {
-    for (ii = 0; ii < spec->n_ener; ii++) {
-      REQUIRE(spec->flu[jj][ii] >= 0);
-      norm_spectrum += spec->flu[jj][ii];
+    for (jj = 0; jj < spec->n_incl; jj++)
+    {
+        for (ii = 0; ii < spec->n_ener; ii++)
+        {
+            REQUIRE(spec->flu[jj][ii] >= 0);
+            norm_spectrum += spec->flu[jj][ii];
+        }
     }
-  }
-  REQUIRE(norm_spectrum > 1e-8);
-
+    REQUIRE(norm_spectrum > 1e-8);
 }
 
-static void testAutomaticLoadingTable(xillParam *param) {
+static void testAutomaticLoadingTable(const xillParam* param)
+{
+    xillTable* tab = nullptr;
 
-  xillTable *tab = nullptr;
-
-  int status = EXIT_SUCCESS;
-  const char *fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, &status);
-  REQUIRE(fname != nullptr);
-  REQUIRE(status == EXIT_SUCCESS);
-  INFO("  -> loading table for model type = %i: " << fname);
-  REQUIRE(tab != nullptr);
-
+    int status = EXIT_SUCCESS;
+    const char* fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, &status);
+    REQUIRE(fname != nullptr);
+    REQUIRE(status == EXIT_SUCCESS);
+    INFO("  -> loading table for model type = %i: " << fname);
+    REQUIRE(tab != nullptr);
 }
 
-static void test_get_spec(const std::string& specName, xillParam *param) {
+static void test_get_spec(const std::string& specName, const xillParam* param)
+{
+    INFO(" loading spec for model %s (type = %i): " << specName);
 
+    int status = EXIT_SUCCESS;
 
-  INFO(" loading spec for model %s (type = %i): " << specName);
+    xillSpec* spec = get_xillver_spectra(param, &status);
+    REQUIRE(status == EXIT_SUCCESS);
 
-  int status = EXIT_SUCCESS;
+    REQUIRE(spec->n_ener > 0);
+    REQUIRE(spec->n_incl > 0);
 
-  xillSpec *spec = get_xillver_spectra(param, &status);
-  REQUIRE( status == EXIT_SUCCESS);
-
-  REQUIRE(spec->n_ener > 0);
-  REQUIRE(spec->n_incl > 0);
-
-  test_spec_norm(spec);
-  free_xill_spec(spec);
-
+    test_spec_norm(spec);
+    free_xill_spec(spec);
 }
 
-TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
+TEST_CASE (
 
-  xillParam *param;
+" xillver spectra evaluation "
+,
+"[xilltab]"
+)
+ {
+
+  xillParam *param = nullptr;
 
   std::vector<ModelName> const names = {
       ModelName::xillver,
@@ -139,13 +155,13 @@ TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
   for ( auto mod_name : names ){
     try {
       LocalModel lmod(mod_name);
-      param = lmod.get_xill_params();
+      param = lmod.get_xill_param_struct();
 
       test_get_spec(lmod.get_model_string(),  param);
 
       testAutomaticLoadingTable(param);
-      free(param);
 
+      delete_xill_params(param);
     } catch (std::exception &e){
       throw ModelNotFound(" (unknown error, maybe model database is not including all models)");
     }
@@ -154,12 +170,18 @@ TEST_CASE(" xillver spectra evaluation ", "[xilltab]") {
 
   LocalModel lmod_dens(ModelName::xillverCp);
   lmod_dens.set_par(XPar::logn, 17.0);
-  test_get_spec("xillverDCp (dens=1e17)", lmod_dens.get_xill_params() );
+  test_get_spec("xillverDCp (dens=1e17)", lmod_dens.xill_params() );
 
 
 }
 
-TEST_CASE(" automated loading of the xillver tables ", "[xilltab]") {
+TEST_CASE (
+
+" automated loading of the xillver tables "
+,
+"[xilltab]"
+)
+ {
 
   std::vector<ModelName> names = {
       ModelName::xillver,
@@ -171,15 +193,19 @@ TEST_CASE(" automated loading of the xillver tables ", "[xilltab]") {
   for ( auto mod_name : names ) {
     DYNAMIC_SECTION(" loading table for single model ") {
       LocalModel local_model(mod_name);
-      xillParam *param = local_model.get_xill_params();
-      testAutomaticLoadingTable(param);
-      free(param);
+      testAutomaticLoadingTable(local_model.xill_params());
     }
   }
 
 }
 
-TEST_CASE(" loading table which does not exist ", "[xilltab]") {
+TEST_CASE (
+
+" loading table which does not exist "
+,
+"[xilltab]"
+)
+ {
 
   std::string nonExistingFilename = "no_table_has_this_name_1234.fits";
 
@@ -192,7 +218,13 @@ TEST_CASE(" loading table which does not exist ", "[xilltab]") {
 }
 
 
-TEST_CASE(" check for existing table ", "[xilltab]") {
+TEST_CASE (
+
+" check for existing table "
+,
+"[xilltab]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
@@ -206,18 +238,21 @@ TEST_CASE(" check for existing table ", "[xilltab]") {
 }
 
 
-static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec) {
+static void testNormfacBand(xillSpec** spec, double elo, double ehi, double prec)
+{
+    double sum0 = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, elo, ehi);
+    double sum1 = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, elo, ehi);
 
-  double sum0 = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, elo, ehi);
-  double sum1 = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, elo, ehi);
+    double fraction = sum0 / sum1 - 1;
 
-  double fraction = sum0 / sum1 - 1;
-
-  REQUIRE(fabs(fraction) < prec);
-
+    REQUIRE(fabs(fraction) < prec);
 }
 
-TEST_CASE(" renorm xilltable with density and logxi ") {
+TEST_CASE (
+
+" renorm xilltable with density and logxi "
+)
+ {
 
 
   const double emin = 30.0;
@@ -227,12 +262,12 @@ TEST_CASE(" renorm xilltable with density and logxi ") {
   xillSpec *spec[2];
   int status = EXIT_SUCCESS;
   LocalModel lmod(ModelName::xillverCp);
-  spec[0] = get_xillver_spectra(lmod.get_xill_params(), &status);
+  spec[0] = get_xillver_spectra(lmod.xill_params(), &status);
 
   double flux_in_band_stdparam = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, emin, emax);
 
   lmod.set_par(XPar::logn, 15.5);
-  spec[1] = get_xillver_spectra(lmod.get_xill_params(), &status);
+  spec[1] = get_xillver_spectra(lmod.xill_params(), &status);
   double flux_in_band_logn_changed = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, emin, emax);
 
   const double prec = 0.01;
@@ -241,14 +276,19 @@ TEST_CASE(" renorm xilltable with density and logxi ") {
 }
 
 
-TEST_CASE(" normalization of the primary continuum","[prim]"){
+TEST_CASE (
+
+" normalization of the primary continuum"
+,
+"[prim]"
+)
+{
 
   int status = EXIT_SUCCESS;
 
   LocalModel lmod(ModelName::relxillNS);
   // lmod.set_par(XPar::switch_switch_returnrad, 0);  // need this for the comparison (which is without return_rad)
-  relParam *rel_param = lmod.get_rel_params();
-  xillTableParam *xill_param = get_xilltab_param(lmod.get_xill_params(), &status);
+  xillTableParam *xill_param = get_xilltab_param(lmod.xill_params(), &status);
 
   auto spec = DefaultSpec(0.1, 1000, 3000);
 
@@ -279,47 +319,48 @@ TEST_CASE(" normalization of the primary continuum","[prim]"){
 
   delete[] pl_flux_xill;
 
-  free(xill_param);
-  free(rel_param);
-
   REQUIRE(status == EXIT_SUCCESS);
 
 }
 
-TEST_CASE(" test normalization factor when shifting ecut/kTe", "[prim]") {
+TEST_CASE (
+
+" test normalization factor when shifting ecut/kTe"
+,
+"[prim]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
   LocalModel lmod(ModelName::relxilllpCp);
   lmod.set_par(XPar::kte, 40.0);
-  xillParam *xill_param_full = lmod.get_xill_params();
-  xillTableParam *xill_param = get_xilltab_param(xill_param_full, &status);
-  relParam *rel_param = lmod.get_rel_params();
+  xillTableParam *xill_tab_param = get_xilltab_param(lmod.xill_params(), &status);
 
   EnerGrid *egrid = get_coarse_xillver_energrid();
 
   double energy_shift_disk_source = 0.5;
 
   auto prime_spec_disk = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
-                                                          nullptr, xill_param, &status);
-  double norm_fac_shifted = calc_xillver_normalization_change(energy_shift_disk_source, xill_param);
+                                                          nullptr, xill_tab_param, &status);
+  double norm_fac_shifted = calc_xillver_normalization_change(energy_shift_disk_source, xill_tab_param);
 
   // if kTe to lower energies, the normalization increases
   REQUIRE(norm_fac_shifted > 1.0);
 
-  xill_param->ect *= energy_shift_disk_source;
+  xill_tab_param->ect *= energy_shift_disk_source;
   auto prime_spec_source = calc_normalized_primary_spectrum(egrid->ener, egrid->nbins,
-                                                            nullptr, xill_param, &status);
+                                                            nullptr, xill_tab_param, &status);
 
   double spec_ratio = prime_spec_source[0] / prime_spec_disk[0];
   REQUIRE(fabs(spec_ratio - norm_fac_shifted) < 1e-3);
 
   // if kTe to higher energies, the normalization decreases
-  double norm_fac_shifted_higher_energies = calc_xillver_normalization_change(2.0, xill_param);
+  double norm_fac_shifted_higher_energies = calc_xillver_normalization_change(2.0, xill_tab_param);
   REQUIRE(norm_fac_shifted_higher_energies < 1.0);
 
   delete[] prime_spec_disk;
   delete[] prime_spec_source;
-  free(xill_param);
+  free(xill_tab_param);
 
 }
