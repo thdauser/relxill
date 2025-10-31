@@ -319,6 +319,115 @@ double calc_energy_shift_gamma(const extendedSourceTable *tab, InterpFactors ipo
   return g_gamma;
 }
 
+/**
+ * @brief Interpolation of the table between spins
+ * @details
+ * @param tab; extendedSourceTable, pointer to the table as declared above
+ * @param ipol; structure with interpolation factors between a, h, x
+ * @param gamma; double, photon index
+ * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
+ */
+emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, double* radial_grid, int *status) {
+  CHECK_STATUS_RET(*status, nullptr);
+
+  // Need to interpolate radial grid of table because it is different for different spins (risco(a))
+  assert(radial_grid == nullptr);
+  radial_grid = (double*) malloc(sizeof(double)*tab->n_bin);
+  CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
+  for (int ii = 0; ii < tab->n_bin; ii++) {
+    radial_grid[ii] = interp_lin_1d(ipol.ifac_a, tab->dat[ipol.ind_a]->bin[ii], tab->dat[ipol.ind_a+1]->bin[ii]);
+  }
+
+  emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
+
+  // It is duplicated and could be done inside of existing element-vise function for g_gamma
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h[0], ipol.ind_x[0],
+                                    tab->dat[ipol.ind_a]->energy_data_storage,
+                          tab->n_bin, tab->n_storage, gamma);
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h[1], ipol.ind_x[1],
+                                    tab->dat[ipol.ind_a + 1]->energy_data_storage,
+                          tab->n_bin, tab->n_storage, gamma);
+
+  // pre-allocation of values shifted in radial grid before interpolation
+  double tab_lo_00, tab_lo_01, tab_lo_10, tab_lo_11, tab_hi_00, tab_hi_01, tab_hi_10, tab_hi_11;
+  double fac_rlo, fac_rhi;
+  int ind_rlo, ind_rhi;
+  for (int ii = 0; ii < tab->n_bin; ii++) {
+    // as radial grids shift between spins, we try to compensate for this shift
+    // I know that sometimes we can extrapolate if r < r_low_spin. But normally only a bit
+    // If extrapolation comes too far -- then this grid is far from the desired spin
+    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_rlo, &fac_rlo);
+    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_rhi, &fac_rhi);
+    // Interpolation of the flux
+    // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
+    //if (fac_rlo < 0.0 or fac_rlo > 1.0) {
+      //printf("Warning, radius interpolation out of bounds, at low spin interp factor is: %.6f at radius: %.6f\n", fac_rlo, radial_grid[ii]);
+    //}
+    //if (fac_rhi < 0.0 or fac_rhi > 1.0) { // shouldn't be for a > 0
+      //printf("Warning, radius interpolation out of bounds, at high spin interp factor is: %.6f at radius: %.6f\n", fac_rhi, radial_grid[ii]);
+    //}
+
+
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+
+    emis_profile_table->emis[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                                          tab_lo_00,tab_lo_01,
+                                                          tab_lo_10,tab_lo_11,
+                                                          tab_hi_00,tab_hi_01,
+                                                          tab_hi_10,tab_hi_11);
+
+    // is it safe to reuse these temporary variables twice in cycle?
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+
+    double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+                                            tab_lo_00,tab_lo_01,
+                                            tab_lo_10,tab_lo_11,
+                                            tab_hi_00,tab_hi_01,
+                                            tab_hi_10,tab_hi_11);
+
+    // this line accounts for g^Gamma:
+    emis_profile_table->emis[ii] *= g_gamma; // in fact, this is "boost" of the flux, which for lp model is taken
+    // into account only in calc_fluxboost_source_disk
+    // assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
+    if (emis_profile_table->emis[ii] < 0.0) {
+      CHECK_RELXILL_ERROR("Negative emissivity bin caught after table interpolation!", status);
+      // this should never happen, but for rapidly changing emissivity at ISCO for low height sources some (rare) times...
+    }
+  }
+  return emis_profile_table;
+}
 
 
 /**
@@ -333,6 +442,7 @@ static lpReflFrac *calc_refl_frac_ext(const extendedSourceTable *tab, InterpFact
 
   // Note that this function partially repeats the interpol_estable function. Maybe combine them?
   // the difference is mainly the return.
+  // TODO yes please!!  [TD]
 
   lpReflFrac *fractions = new_lpReflFrac(status);
   CHECK_STATUS_RET(*status, fractions);
@@ -428,10 +538,13 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
   const int num_rings = 100; // first let's have a simple linear grid, not too fast but fine for now
   // note: any grid that is sparse for large rings (>~10rg) produces clumpy emissivity profile - bad
   std::array<double, num_rings> slab_grid{};
-  emisProfile *disk_emis_sum;
+  emisProfile *disk_emis_sum = nullptr;
+  double* rad_grid = nullptr;
+
   // auto *param_tmp = const_cast<relParam *>(param); // it could work too but I am not familiar with this enough yet
   double weight_i;
   double weight_sum = 0.0;
+
   for (int ii = 0; ii < num_rings; ii++) {
     slab_grid[ii] = param->x_in + (param->x - param->x_in) * ii / (num_rings - 1);
   } // I do extra for because I need to access ii+1 step (but in principle there is space for optimization)
@@ -445,11 +558,14 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
     // factors for primary emission
     get_ipol_factors_a_h_x(param->a, param->height, slab_grid[ii], prim_table, prim_ipol);
 
-    emisProfile *ring_emis_tmp = interpol_estable(emissivity_table, ipol, param->gamma, status);
+    emisProfile *ring_emis_tmp = interpol_estable(emissivity_table, ipol, param->gamma, rad_grid, status);
     if (ii == 0) { // because I don't know the radial grid a priori
       disk_emis_sum = new_emisProfile(ring_emis_tmp->re, ring_emis_tmp->nr, status);
       // disk_emis_sum->
     }
+    assert(disk_emis_sum!=nullptr);
+    assert(disk_emis_sum->emis!=nullptr);
+
     // fractions required for weights
     ring_emis_tmp->photon_fate_fractions = calc_refl_frac_ext(prim_table, prim_ipol, status);
 
@@ -465,7 +581,7 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
       disk_emis_sum->emis[nn] += ring_emis_tmp->emis[nn] * weight_i;
     }
     // free(ring_emis_tmp->re);
-    // free_emisProfile(ring_emis_tmp);
+    // free_emisProfile(ring_emis_tmp);  // TODO: why not?? I think you definitely need to free it [TD]
   }
   for (int nn = 0; nn < disk_emis_sum->nr; nn++) {
     disk_emis_sum->emis[nn] /= weight_sum; // normalize final profile with weights (one could also divide by disk area)
@@ -473,7 +589,7 @@ void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *st
   // match with relxill emissivity grid, emisProf is used further
   rebin_emisprofile_on_radial_grid(emisProf, disk_emis_sum, status);
 
-  free(disk_emis_sum->re);
+  free(rad_grid);
   free_emisProfile(disk_emis_sum);
 
   CHECK_STATUS_VOID(*status);
@@ -667,10 +783,11 @@ void calc_ring_emis(emisProfile *emisProf, const double a, const double h, const
   InterpFactors ipol;
   get_ipol_factors_a_h_x(a, h, x, tab, ipol);
 
-  emisProfile *emis_profile_table = interpol_estable(tab, ipol, gamma, status);
+  double* radial_grid = nullptr;
+  emisProfile *emis_profile_table = interpol_estable(tab, ipol, gamma, radial_grid, status);
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
-  free(emis_profile_table->re); // is not freed by free_emisProfile (Rellp.cpp)
+  free(radial_grid); // radial_grid is _not_ owned by emissivity profile structure
   free_emisProfile(emis_profile_table);
   // take the beaming of the jet into account (see Dauser et al., 2013)
   // Not done for extended source, todo
@@ -710,114 +827,6 @@ void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedS
 
 }
 
-/**
- * @brief Interpolation of the table between spins
- * @details
- * @param tab; extendedSourceTable, pointer to the table as declared above
- * @param ipol; structure with interpolation factors between a, h, x
- * @param gamma; double, photon index
- * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
- */
-emisProfile *interpol_estable(extendedSourceTable *tab, InterpFactors ipol, double gamma, int *status) {
-  CHECK_STATUS_RET(*status, nullptr);
-
-  // Need to interpolate radial grid of table because it is different for different spins (risco(a))
-  auto* radial_grid = (double*) malloc(sizeof(double)*tab->n_bin);
-  CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
-  for (int ii = 0; ii < tab->n_bin; ii++) {
-    radial_grid[ii] = interp_lin_1d(ipol.ifac_a, tab->dat[ipol.ind_a]->bin[ii], tab->dat[ipol.ind_a+1]->bin[ii]);
-  }
-
-  emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
-
-  // It is duplicated and could be done inside of existing element-vise function for g_gamma
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h[0], ipol.ind_x[0],
-                                    tab->dat[ipol.ind_a]->energy_data_storage,
-                          tab->n_bin, tab->n_storage, gamma);
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h[1], ipol.ind_x[1],
-                                    tab->dat[ipol.ind_a + 1]->energy_data_storage,
-                          tab->n_bin, tab->n_storage, gamma);
-
-  // pre-allocation of values shifted in radial grid before interpolation
-  double tab_lo_00, tab_lo_01, tab_lo_10, tab_lo_11, tab_hi_00, tab_hi_01, tab_hi_10, tab_hi_11;
-  double fac_rlo, fac_rhi;
-  int ind_rlo, ind_rhi;
-  for (int ii = 0; ii < tab->n_bin; ii++) {
-    // as radial grids shift between spins, we try to compensate for this shift
-    // I know that sometimes we can extrapolate if r < r_low_spin. But normally only a bit
-    // If extrapolation comes too far -- then this grid is far from the desired spin
-    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_rlo, &fac_rlo);
-    get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_rhi, &fac_rhi);
-    // Interpolation of the flux
-    // looks like meh, but gives some generalization potential (maybe refactor to smth better reading further?)
-    //if (fac_rlo < 0.0 or fac_rlo > 1.0) {
-      //printf("Warning, radius interpolation out of bounds, at low spin interp factor is: %.6f at radius: %.6f\n", fac_rlo, radial_grid[ii]);
-    //}
-    //if (fac_rhi < 0.0 or fac_rhi > 1.0) { // shouldn't be for a > 0
-      //printf("Warning, radius interpolation out of bounds, at high spin interp factor is: %.6f at radius: %.6f\n", fac_rhi, radial_grid[ii]);
-    //}
-
-
-    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
-    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
-
-    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
-    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
-
-    emis_profile_table->emis[ii] = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                                          tab_lo_00,tab_lo_01,
-                                                          tab_lo_10,tab_lo_11,
-                                                          tab_hi_00,tab_hi_01,
-                                                          tab_hi_10,tab_hi_11);
-
-    // is it safe to reuse these temporary variables twice in cycle?
-    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
-    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
-
-    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
-    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
-
-    double g_gamma = get_interpolated_value(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                            tab_lo_00,tab_lo_01,
-                                            tab_lo_10,tab_lo_11,
-                                            tab_hi_00,tab_hi_01,
-                                            tab_hi_10,tab_hi_11);
-
-    // this line accounts for g^Gamma:
-    emis_profile_table->emis[ii] *= g_gamma; // in fact, this is "boost" of the flux, which for lp model is taken
-    // into account only in calc_fluxboost_source_disk
-    // assert(emis_profile_table->emis[ii] >= 0.0); // if interpolation behaves wrong
-    if (emis_profile_table->emis[ii] < 0.0) {
-      CHECK_RELXILL_ERROR("Negative emissivity bin caught after table interpolation!", status);
-      // this should never happen, but for rapidly changing emissivity at ISCO for low height sources some (rare) times...
-    }
-  }
-  return emis_profile_table;
-}
 
 
 // constructors and destructors //

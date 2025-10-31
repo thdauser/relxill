@@ -31,7 +31,7 @@ emisProfile *calc_rrad_emis_corona(const returningFractions *ret_fractions, rrad
                                    const emisProfile *emis_input, double gamma, int *status);
 double corrected_gshift_fluxboost_factor(double xill_gshift_fac, double g, double gamma);
 
-rradCorrFactors *init_rrad_corr_factors(const double *rlo, const double *rhi, int n_zones);
+rradCorrFactors *init_rrad_corr_factors(const VecD& rlo, const VecD& rhi, int n_zones);
 rradCorrFactors *init_rrad_corr_factors(const RadialGrid &rgrid);
 
 rradCorrFactors* rebin_corrfactors_to_rradtable_grid

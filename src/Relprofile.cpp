@@ -414,13 +414,14 @@ RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 /**
   * Initialize the structure to store the relline spectra for multiple radial zones
   **/
-void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, const double *radial_zones,
+void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, const VecD& radial_zones,
                                  double **pt_ener, const int n_ener, int *status) {
 
   CHECK_STATUS_VOID(*status);
 
   /** in case of the relxill-LP model multiple zones are used **/
   int nzones = param->num_zones;
+  assert(radial_zones.size() == nzones +1);
 
   if ((*spec) == nullptr) {
     (*spec) = new_rel_spec(nzones, n_ener, status);
@@ -448,9 +449,10 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
 
  // copy the radial grid to the structure
   if ((*spec)->rgrid == nullptr) {
-    (*spec)->rgrid = new double[param->num_zones + 1];
-    for (int ii=0; ii<param->num_zones+1; ii++){
-      (*spec)->rgrid[ii] = radial_zones[ii];
+    (*spec)->rgrid = new double[radial_zones.size()];
+    size_t ii = 0;
+    for (const auto& zone : radial_zones){
+      (*spec)->rgrid[ii++] = zone;
     }
   }
 
@@ -916,8 +918,8 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
                     da->trff[jj][kk] * da->emis
                     * weight * sysPar->d_gstar[jj];
             // this catches if "tmp" is NaN
-            if (tmp != tmp) {
-              printf(" *** error in function calc_relline_profile (NaN) *** \n");
+            if (std::isnan(tmp) || std::isinf(tmp)) {
+              printf(" *** error in function calc_relline_profile (NaN/Inf) *** \n");
               printf(" *** backtrace %e %e %e %e %e %e\n",da->re, g, da->gstar[jj], da->trff[jj][kk], weight, da->emis);
               *status = EXIT_FAILURE;
             }

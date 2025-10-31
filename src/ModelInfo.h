@@ -47,6 +47,7 @@ enum class ModelName {
   relxillD,
   relxilllpD,
   relxillBB,
+  relxillBBxill,
   relxill_jedsad
 };
 
@@ -84,15 +85,21 @@ class ModelInfo {
  public:
   ModelInfo(T_Model _type, T_Irrad _irrad, T_PrimSpec _prim)
       : m_type{_type}, m_irradiation{_irrad}, m_primeSpec{_prim} {
-  };
+  }
 
   ModelInfo(T_Model type, T_Irrad irrad)
       : ModelInfo(type, irrad, T_PrimSpec::None) {
-  };
+  }
 
   ModelInfo(T_Model type, T_PrimSpec prim)
       : ModelInfo(type, T_Irrad::None, prim) {
-  };
+  }
+
+  // Add default copy and move operations (compiler will generate them)
+  ModelInfo(const ModelInfo&) = default;
+  ModelInfo& operator=(const ModelInfo&) = default;
+  ModelInfo(ModelInfo&&) noexcept = default;
+  ModelInfo& operator=(ModelInfo&&) noexcept = default;
 
   [[nodiscard]] T_Model type() const {
     return m_type;
@@ -111,9 +118,9 @@ class ModelInfo {
   }
 
  private:
-  const T_Model m_type;
-  const T_Irrad m_irradiation;
-  const T_PrimSpec m_primeSpec;
+  T_Model m_type;
+  T_Irrad m_irradiation;
+  T_PrimSpec m_primeSpec;
 };
 
 #endif //RELXILL__CPPTYPES_H_

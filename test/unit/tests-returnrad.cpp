@@ -30,7 +30,7 @@
 extern "C" {
 #include "relutility.h"
 #include "writeOutfiles.h"
-#include "xilltable.h"
+#include "xilltable_reading.h"
 }
 
 #include <vector>
@@ -38,86 +38,99 @@ extern "C" {
 #define PREC 1e-6
 
 
-static int is_grid_consistent(const double* rlo, const double* rhi, int nrad){
-  for (int ii=1; ii<nrad; ii++){
-    if (fabs(rhi[ii-1]-rlo[ii])>PREC){
-      printf(" *** error: lower boundary rlo[ii]-rhi[ii-1] = %e - %e = %e  for ii=%i \n",
-             rlo[ii], rhi[ii-1],
-             fabs(rhi[ii-1]-rlo[ii]), ii);
-      return 0;
+static int is_grid_consistent(const double* rlo, const double* rhi, int nrad)
+{
+    for (int ii = 1; ii < nrad; ii++)
+    {
+        if (fabs(rhi[ii - 1] - rlo[ii]) > PREC)
+        {
+            printf(" *** error: lower boundary rlo[ii]-rhi[ii-1] = %e - %e = %e  for ii=%i \n",
+                   rlo[ii], rhi[ii - 1],
+                   fabs(rhi[ii - 1] - rlo[ii]), ii);
+            return 0;
+        }
     }
-  }
-  return 1;
+    return 1;
 }
 
-static void test_table_radial_grid(tabulatedReturnFractions *dat) {
+static void test_table_radial_grid(tabulatedReturnFractions* dat)
+{
+    REQUIRE(dat->nrad == RETURNRAD_TABLE_NR);
+    REQUIRE(dat->ng == RETURNRAD_TABLE_NG);
 
-  REQUIRE(dat->nrad == RETURNRAD_TABLE_NR);
-  REQUIRE(dat->ng == RETURNRAD_TABLE_NG);
+    REQUIRE(dat->rlo[0] > 1.0);
+    REQUIRE(dat->rhi[dat->nrad - 1] <= 1000.1); // don't care about border effects so add the 0.1
 
-  REQUIRE(dat->rlo[0] > 1.0);
-  REQUIRE(dat->rhi[dat->nrad - 1] <= 1000.1); // don't care about border effects so add the 0.1
-
-  REQUIRE(is_grid_consistent(dat->rlo, dat->rhi, dat->nrad)==1);
+    REQUIRE(is_grid_consistent(dat->rlo, dat->rhi, dat->nrad) == 1);
 }
 
-static int test_table_fracE_norm(const tabulatedReturnFractions *dat) {
+static int test_table_fracE_norm(const tabulatedReturnFractions* dat)
+{
+    int status = EXIT_SUCCESS;
+    double kSumfrac;
+    double kSumfrac_ref = 1.0;
 
-  int status = EXIT_SUCCESS;
-  double kSumfrac;
-  double kSumfrac_ref = 1.0;
-
-  for (int jj=0; jj<dat->nrad; jj++) {
-
-    kSumfrac=0.0;
-    for (int ii = 0; ii < dat->nrad; ii++) {
-
-      kSumfrac += dat->frac_e[ii][jj];
+    for (int jj = 0; jj < dat->nrad; jj++)
+    {
+        kSumfrac = 0.0;
+        for (int ii = 0; ii < dat->nrad; ii++)
+        {
+            kSumfrac += dat->frac_e[ii][jj];
+        }
+        if (fabs(kSumfrac - kSumfrac_ref) > PREC)
+        {
+            RELXILL_ERROR("testing the normalization of FRAC_E failed (return radiation table)", &status);
+            printf(" expecting a normalization of %e, but found %e\n", kSumfrac_ref, kSumfrac);
+            break;
+        }
     }
-    if (fabs(kSumfrac - kSumfrac_ref) > PREC) {
-      RELXILL_ERROR("testing the normalization of FRAC_E failed (return radiation table)", &status);
-      printf(" expecting a normalization of %e, but found %e\n", kSumfrac_ref, kSumfrac);
-      break;
+    return status;
+}
+
+static int test_table_fracG_norm(const tabulatedReturnFractions* dat)
+{
+    int status = EXIT_SUCCESS;
+    double kSumfrac;
+    double kSumfrac_ref = 1.0;
+
+    for (int ii = 0; ii < dat->nrad; ii++)
+    {
+        for (int jj = 0; jj < dat->nrad; jj++)
+        {
+            kSumfrac = 0.0;
+            for (int kk = 0; kk < dat->ng; kk++)
+            {
+                kSumfrac += dat->frac_g[ii][jj][kk];
+            }
+
+            if (fabs(kSumfrac - kSumfrac_ref) > PREC)
+            {
+                RELXILL_ERROR("testing the normalization of FRAC_G failed (return radiation table)", &status);
+                printf(" [%02i][%02i] expecting a normalization of %e, but found %e\n", ii, jj, kSumfrac_ref, kSumfrac);
+                break;
+            }
+        }
     }
-  }
-  return status;
-}
-
-static int test_table_fracG_norm(const tabulatedReturnFractions *dat) {
-
-  int status = EXIT_SUCCESS;
-  double kSumfrac;
-  double kSumfrac_ref = 1.0;
-
-  for (int ii=0; ii<dat->nrad; ii++) {
-    for (int jj=0; jj<dat->nrad; jj++) {
-
-      kSumfrac = 0.0;
-      for (int kk = 0; kk < dat->ng; kk++) {
-        kSumfrac += dat->frac_g[ii][jj][kk];
-      }
-
-      if (fabs(kSumfrac-kSumfrac_ref)>PREC){
-        RELXILL_ERROR("testing the normalization of FRAC_G failed (return radiation table)",&status);
-        printf (" [%02i][%02i] expecting a normalization of %e, but found %e\n", ii,jj,kSumfrac_ref, kSumfrac);
-        break;
-      }
-    }
-  }
-  return status;
+    return status;
 }
 
 
-static void test_table_fractions_normalization(tabulatedReturnFractions* dat){
-  REQUIRE(dat->frac_e[0][0]!= 0);
-//  REQUIRE(test_table_fracE_norm(dat) == EXIT_SUCCESS);
-  REQUIRE(test_table_fracG_norm(dat) == EXIT_SUCCESS);
+static void test_table_fractions_normalization(tabulatedReturnFractions* dat)
+{
+    REQUIRE(dat->frac_e[0][0] != 0);
+    //  REQUIRE(test_table_fracE_norm(dat) == EXIT_SUCCESS);
+    REQUIRE(test_table_fracG_norm(dat) == EXIT_SUCCESS);
 }
-
 
 
 // ------- //
-TEST_CASE(" Returning Radiation Table ", "[table]") {
+TEST_CASE (
+
+" Returning Radiation Table "
+,
+"[table]"
+)
+ {
 
   int status = EXIT_SUCCESS;
   returnTable *tab = get_returnrad_table(&status);
@@ -144,49 +157,57 @@ TEST_CASE(" Returning Radiation Table ", "[table]") {
 
 
 
-static void invert_emis_profile(emisProfile* emis){
-  invertArray(emis->re, emis->nr);
-  invertArray(emis->emis, emis->nr);
+static void invert_emis_profile(emisProfile* emis, double* rad)
+{
+    invertArray(rad, emis->nr);
+    invertArray(emis->emis, emis->nr);
 
-  if(emis->del_inc!= nullptr){
-    invertArray(emis->del_inc, emis->nr);
-  }
+    if (emis->del_inc != nullptr)
+    {
+        invertArray(emis->del_inc, emis->nr);
+    }
 
-  if(emis->del_emit!= nullptr){
-    invertArray(emis->del_emit, emis->nr);
-  }
+    if (emis->del_emit != nullptr)
+    {
+        invertArray(emis->del_emit, emis->nr);
+    }
 }
 
-static void write_emis_profile(const std::string& fname, emisProfile* emis_profile){
-  write_data_to_file( fname.c_str() , emis_profile->re, emis_profile->emis, emis_profile->nr);
-}
-
-
-emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* status){
-
-  returningFractions *rf = get_rrad_fractions(spin,rin , rout, status);
-  double gamma = 2;
-
-  emisProfile* emis = new_emisProfile(rf->rad, rf->nrad, status);
-  get_emis_bkn(emis->emis, emis->re, emis->nr,3.0,3.0,emis->re[0]);
-  for (int ii=0; ii<rf->nrad; ii++){
-    emis->emis[ii] /= emis->emis[0]; //
-  }
-
-  emisProfile* emis_return = calc_rrad_emis_corona(rf, nullptr, emis, gamma, status);
-
-  free_returningFractions(&rf);
-  free_emisProfile(emis);
-
-  return emis_return;
+static void write_emis_profile(const std::string& fname, emisProfile* emis_profile)
+{
+    write_data_to_file(fname.c_str(), emis_profile->re, emis_profile->emis, emis_profile->nr);
 }
 
 
+emisProfile* get_test_emis_rrad(double rin, double rout, double spin, int* status)
+{
+    returningFractions* rf = get_rrad_fractions(spin, rin, rout, status);
+    double gamma = 2;
 
+    emisProfile* emis = new_emisProfile(rf->rad.data(), rf->nrad, status);
+    get_emis_bkn(emis->emis, emis->re, emis->nr, 3.0, 3.0, emis->re[0]);
+    for (int ii = 0; ii < rf->nrad; ii++)
+    {
+        emis->emis[ii] /= emis->emis[0]; //
+    }
+
+    emisProfile* emis_return = calc_rrad_emis_corona(rf, nullptr, emis, gamma, status);
+
+    delete_returningFractions(&rf);
+    free_emisProfile(emis);
+
+    return emis_return;
+}
 
 
 // ------- //
-TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") {
+TEST_CASE (
+
+" Changing number of radial bins if Rin is increased"
+,
+"[returnrad]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
@@ -198,14 +219,14 @@ TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") 
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rms = dat->nrad;
 
-  free_returningFractions(&dat);
+  delete_returningFractions(&dat);
 
   Rin *= 2;
   dat = get_rrad_fractions(spin, Rin, Rout, &status);
   REQUIRE(status==EXIT_SUCCESS);
   int nrad_rfac2 = dat->nrad;
 
-  free_returningFractions(&dat);
+  delete_returningFractions(&dat);
 
   REQUIRE(nrad_rms > nrad_rfac2);
 
@@ -213,7 +234,13 @@ TEST_CASE(" Changing number of radial bins if Rin is increased", "[returnrad]") 
 
 
 // ------- //
-TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
+TEST_CASE (
+
+" Rebining the return rad emissivity profile"
+,
+"[returnrad-v]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
@@ -221,18 +248,24 @@ TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
 
   LocalModel lmod(ModelName::relline_lp);
   lmod.set_par(XPar::switch_switch_returnrad, 0);  // need this for the comparison (which is without return_rad)
-  relParam* rel_param = lmod.get_rel_params();
+  const relParam* rel_param = lmod.rel_params();
 
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
 
- returningFractions *dat = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
- invertArray(dat->rad, dat->nrad);
- emisProfile *emisCoarse = calc_emis_profile(dat->rad, dat->nrad, rel_param, &status);
- invert_emis_profile(emisCoarse);
+  returningFractions *dat = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
+  auto* rad = new double[dat->nrad];
+  auto nrad = dat->nrad;
+  std::memcpy(rad, dat->rad.data(), nrad * sizeof(double));  // one-line copy
+  delete_returningFractions(&dat);
+
+ invertArray(rad, nrad);
+ emisProfile *emisCoarse = calc_emis_profile(rad, nrad, rel_param, &status);
+ invert_emis_profile(emisCoarse,rad);  // be careful, rad is used in emisCoarse and needs to be inverted as well
 
   emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, &status);
   rebin_emisprofile_on_radial_grid(emisRebin, emisCoarse, &status);
+
 
   REQUIRE(status==EXIT_SUCCESS);
 
@@ -249,16 +282,26 @@ TEST_CASE(" Rebining the return rad emissivity profile", "[returnrad]") {
     REQUIRE(fabs(emisRebin->emis[ii] / emisFineReference->emis[ii] - 1) < precRebinCoarse);
   }
 
+    free_emisProfile(emisCoarse);
+    free_emisProfile(emisFineReference);
+    free_emisProfile(emisRebin);
+    delete[] rad;
 }
 
 // ------- //
-TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
+TEST_CASE (
+
+" Line profile for Returning Radiation "
+,
+"[returnrad]"
+)
+ {
 
 
   int status = EXIT_SUCCESS;
 
   LocalModel lmod(ModelName::relline_lp);
-  relParam* rel_param = lmod.get_rel_params();
+  relParam* rel_param = lmod.get_rel_params_struct();
   rel_param->a = 0.998;
   rel_param->height = 5.0;
   rel_param->rout = 1000.0;
@@ -290,18 +333,24 @@ TEST_CASE(" Line profile for Returning Radiation ", "[returnrad]") {
   );
 
   free_Spectrum(&spec);
-
+  delete_rel_params(rel_param);
 }
 
 
 // ------- //
-TEST_CASE(" Write emissivity profile", "[returnrad-emis]") {
+TEST_CASE (
+
+" Write emissivity profile"
+,
+"[returnrad-emis]"
+)
+ {
 
   int status = EXIT_SUCCESS;
 
   LocalModel lmod(ModelName::relline_lp);
   lmod.set_par(XPar::switch_switch_returnrad, -1);  // need this for the comparison (which is without return_rad)
-  relParam *rel_param = lmod.get_rel_params();
+  const relParam *rel_param = lmod.rel_params();
   RelSysPar *sysPar = get_system_parameters(rel_param, &status);
   emisProfile *emis_profile = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   write_emis_profile("__output_emis_profile_rrad.dat", emis_profile);
@@ -315,7 +364,13 @@ TEST_CASE(" Write emissivity profile", "[returnrad-emis]") {
 
 
 // ------- //
-TEST_CASE(" Increasing Rin has to reduce the flux at the next zone (in radius)", "[returnrad]") {
+TEST_CASE (
+
+" Increasing Rin has to reduce the flux at the next zone (in radius)"
+,
+"[returnrad]"
+)
+ {
 
   int status = EXIT_SUCCESS;
   double spin = 0.99;
@@ -335,6 +390,8 @@ TEST_CASE(" Increasing Rin has to reduce the flux at the next zone (in radius)",
   INFO("but not change for any other emitting radius");
   REQUIRE(abs(rf_grid->tf_r[1][1] - rf0->tf_r[1][1]) < 1e-8);
 
+  delete_returningFractions(&rf0);
+  delete_returningFractions(&rf_grid);
 }
 
 /*
@@ -379,7 +436,13 @@ TEST_CASE(" Interpolation of Returning Radiation Fractions", "[returnrad]") {
 
 
 // ------- //
-TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad-single]") {
+TEST_CASE (
+
+" Changing Rin should result in a change in line shape"
+,
+"[returnrad-single]"
+)
+ {
 
   double spin = 0.995;
   double rin_scaled = kerr_rms(0.99025);
@@ -411,7 +474,13 @@ TEST_CASE(" Changing Rin should result in a change in line shape", "[returnrad-s
 
 }
 
-TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
+TEST_CASE (
+
+"Test Flux Correction Factor"
+,
+"[returnrad]"
+)
+ {
   //
 
   int status = EXIT_SUCCESS;
@@ -421,19 +490,23 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
 
   lmod.set_par(XPar::logxi, 3.0);
   double flux_corr1=0;
-  xillSpec* xill_spec = get_xillver_spectra(lmod.get_xill_params(), &status);
+  xillSpec* xill_spec = get_xillver_spectra(lmod.xill_params(), &status);
+    auto xilltab_param = get_xilltab_param(lmod.xill_params(), &status);
   get_xillver_fluxcorrection_factors(xill_spec, &flux_corr1, nullptr,
-                                     get_xilltab_param(lmod.get_xill_params(), &status),
+                                     xilltab_param,
                                      &status);
   REQUIRE(flux_corr1 > 0.5);
   REQUIRE(flux_corr1 < 1.0); // only works for logxi<=4
 
   lmod.set_par(XPar::logxi, 0.0);
-  xillSpec* xill_spec2 = get_xillver_spectra(lmod.get_xill_params(), &status);
+  xillSpec* xill_spec2 = get_xillver_spectra(lmod.xill_params(), &status);
   double flux_corr2=0;
+    auto xilltab_param2 = get_xilltab_param(lmod.xill_params(), &status);
   get_xillver_fluxcorrection_factors(xill_spec2, &flux_corr2, nullptr,
-                                     get_xilltab_param(lmod.get_xill_params(), &status) ,
+                                     xilltab_param2 ,
                                      &status);
+  free(xilltab_param);
+  free(xilltab_param2);
 
   REQUIRE(flux_corr1 > 2 * flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
 
@@ -443,7 +516,13 @@ TEST_CASE("Test Flux Correction Factor", "[returnrad]") {
 }
 
 
-TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
+TEST_CASE (
+
+"Test Gshift Correction Factor"
+,
+"[returnrad]"
+)
+ {
   int status = EXIT_SUCCESS;
 
   LocalModel lmod{ModelName::relxilllp};
@@ -455,17 +534,21 @@ TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
   lmod.set_par(XPar::gamma, gam);
   lmod.set_par(XPar::logxi, 3.0);
   double gshift_flux_corr1;
-  xillSpec* xill_spec = get_xillver_spectra(lmod.get_xill_params(), &status);
-  get_xillver_fluxcorrection_factors(xill_spec, nullptr, &gshift_flux_corr1,
-                                     get_xilltab_param(lmod.get_xill_params(), &status), &status);
+  xillSpec* xill_spec = get_xillver_spectra(lmod.xill_params(), &status);
+    auto xilltab_param = get_xilltab_param(lmod.xill_params(), &status);
+  get_xillver_fluxcorrection_factors(xill_spec, nullptr, &gshift_flux_corr1, xilltab_param , &status);
+    free(xilltab_param);
+
   REQUIRE(gshift_flux_corr1 > 1);
   REQUIRE(gshift_flux_corr1 < pow(gshift_ref_value,gam+0.5)/pow(gshift_ref_value,gam));
 
   lmod.set_par(XPar::logxi, 0.0);
   double gshift_flux_corr2;
-  xillSpec* xill_spec2 = get_xillver_spectra(lmod.get_xill_params(), &status);
+  xillSpec* xill_spec2 = get_xillver_spectra(lmod.xill_params(), &status);
+    auto xilltab_param2 = get_xilltab_param(lmod.xill_params(), &status);
   get_xillver_fluxcorrection_factors(xill_spec2, nullptr, &gshift_flux_corr2,
-                                     get_xilltab_param(lmod.get_xill_params(), &status), &status);
+                                     xilltab_param2, &status);
+    free(xilltab_param2);
 
   REQUIRE(gshift_flux_corr2 < 1 );
   REQUIRE(gshift_flux_corr1 > 1.5 * gshift_flux_corr2);  // for low instead high ionization it is much lower, only works if logxi_hi>3.5
@@ -476,7 +559,13 @@ TEST_CASE("Test Gshift Correction Factor", "[returnrad]") {
 }
 
 
-TEST_CASE("Test Gshift Linear Interpolation of the Correction Factor", "[returnrad]") {
+TEST_CASE (
+
+"Test Gshift Linear Interpolation of the Correction Factor"
+,
+"[returnrad]"
+)
+ {
 
   double gamma = 2.0;
 
@@ -496,7 +585,13 @@ TEST_CASE("Test Gshift Linear Interpolation of the Correction Factor", "[returnr
 
 }
 
-TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
+TEST_CASE (
+
+"Write Flux Correction Factor"
+,
+"[returnrad]"
+)
+ {
   //
 
   int status = EXIT_SUCCESS;
@@ -521,9 +616,11 @@ TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
     for (int ii = 0; ii < n_logxi; ii++) {
       logxi[ii] = (logxi_max - logxi_min) * (ii * 1.0 / (n_logxi - 1)) + logxi_min;
       lmod.set_par(XPar::logxi, logxi[ii]);
-      xillSpec* xill_spec = get_xillver_spectra(lmod.get_xill_params(), &status);
+      xillSpec* xill_spec = get_xillver_spectra(lmod.xill_params(), &status);
+        auto xilltab_param = get_xilltab_param(lmod.xill_params(), &status);
       get_xillver_fluxcorrection_factors(xill_spec, &(flux_corr[ii]), &(gshift_corr[ii]),
-                                         get_xilltab_param(lmod.get_xill_params(), &status), &status);
+                                         xilltab_param, &status);
+      free(xilltab_param);
       free_xill_spec(xill_spec);
     }
     int retval = sprintf(buffer, "test-flux-corr-returnrad_gam%.1f.dat",gam);
@@ -536,7 +633,13 @@ TEST_CASE("Write Flux Correction Factor", "[returnrad]") {
 
 
 // ------- //
-TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
+TEST_CASE (
+
+" Test relxilllp including returning radiation"
+,
+"[returnrad-vg]"
+)
+ {
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -563,7 +666,13 @@ TEST_CASE(" Test relxilllp including returning radiation", "[returnrad]") {
 
 
 // ------- //
-TEST_CASE(" Test return rad ENV variable", "[returnrad]") {
+TEST_CASE (
+
+" Test return rad ENV variable"
+,
+"[returnrad]"
+)
+ {
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -586,25 +695,33 @@ TEST_CASE(" Test return rad ENV variable", "[returnrad]") {
   REQUIRE( fabs(model_rrad_flux - model_no_rrad_flux) <1e-8);
 }
 
-static void require_all_values_the_same(const double* val, const int n){
-  double avg = calcSum(val, n) / n;
-  REQUIRE( fabs( avg - val[0]) < 1e-6);
+static void require_all_values_the_same(const double* val, const int n)
+{
+    double avg = calcSum(val, n) / n;
+    REQUIRE(fabs(avg - val[0]) < 1e-6);
 }
 
-static void require_values_differ(const double* val, const int n){
-  double avg = calcSum(val, n) / n;
-  REQUIRE( fabs( (avg - val[0]) / avg) > 1e-2);
-  REQUIRE( fabs( (avg - val[n-1]) / avg) > 1e-2);
+static void require_values_differ(const double* val, const int n)
+{
+    double avg = calcSum(val, n) / n;
+    REQUIRE(fabs((avg - val[0]) / avg) > 1e-2);
+    REQUIRE(fabs((avg - val[n - 1]) / avg) > 1e-2);
 }
 
-TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
+TEST_CASE (
+
+"Calculation of Correction Factors"
+,
+"[returnrad]"
+)
+{
 
   int status = EXIT_SUCCESS;
 
   LocalModel lmod{ModelName::relxilllp};
   lmod.set_par(XPar::switch_switch_returnrad, 1);
 
-  relParam* rel_param = lmod.get_rel_params();
+  relParam* rel_param = lmod.get_rel_params_struct();
 
   const auto n_zones = rel_param->num_zones;
   double logxi_min = 0.0;
@@ -616,16 +733,15 @@ TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
   xillSpec* xill_spec[n_zones];
 
   // TEST contant spectrum over the disk
-  xillParam* xill_param = lmod.get_xill_params();
   for (int ii = 0; ii < n_zones; ii++) {
-    xill_table_param[ii] = get_xilltab_param(xill_param, &status);
+    xill_table_param[ii] = get_xilltab_param(lmod.xill_params(), &status);
     xill_spec[ii] = get_xillver_spectra_table(xill_table_param[ii], &status);
   }
 
   rel_param->rrad_corr_factors =
       calc_rrad_corr_factors(xill_spec, radial_grid, xill_table_param, &status);
 
-  require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_flux, n_zones);
+    require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_flux, n_zones);
   require_all_values_the_same(rel_param->rrad_corr_factors->corrfac_gshift, n_zones);
 
   returningFractions *ret_fractions = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
@@ -640,6 +756,7 @@ TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
   REQUIRE(rel_param->rrad_corr_factors->corrfac_flux[0] == tab_corrfactors->corrfac_flux[0]);
   REQUIRE(rel_param->rrad_corr_factors->corrfac_gshift[0] == tab_corrfactors->corrfac_gshift[0]);
 
+  free_rrad_corr_factors(&tab_corrfactors);
 
   // TEST ionization gradient
   xillSpec* xill_spec_grad[n_zones];
@@ -651,6 +768,7 @@ TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
   rradCorrFactors* grad_corrfactors =
       calc_rrad_corr_factors(xill_spec_grad, radial_grid, xill_table_param, &status);
 
+
   require_values_differ(grad_corrfactors->corrfac_flux, n_zones);
   require_values_differ(grad_corrfactors->corrfac_gshift, n_zones);
 
@@ -659,9 +777,26 @@ TEST_CASE("Calculation of Correction Factors", "[returnrad]"){
   require_values_differ(tab_grad_corrfactors->corrfac_flux, tab_grad_corrfactors->n_zones);
   require_values_differ(tab_grad_corrfactors->corrfac_gshift, tab_grad_corrfactors->n_zones);
 
+    free_rrad_corr_factors(&tab_grad_corrfactors);
+    free_rrad_corr_factors(&grad_corrfactors);
+    for (int ii = 0; ii < n_zones; ii++)
+    {
+        free_xill_spec(xill_spec[ii]);
+        free_xill_spec(xill_spec_grad[ii]);
+        free(xill_table_param[ii]);
+        xill_table_param[ii] = nullptr;
+    }
+    delete_rel_params(rel_param);
+    delete_returningFractions(&ret_fractions);
 }
 
-TEST_CASE(" Test that no warning is printed", "[returnrad]") {
+TEST_CASE (
+
+" Test that no warning is printed"
+,
+"[returnrad]"
+)
+ {
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -684,7 +819,13 @@ TEST_CASE(" Test that no warning is printed", "[returnrad]") {
 
 }
 
-TEST_CASE(" Caching of spectrum with return radiation correction factors", "[returnrad]"){
+TEST_CASE (
+
+" Caching of spectrum with return radiation correction factors"
+,
+"[returnrad]"
+)
+{
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -715,7 +856,13 @@ TEST_CASE(" Caching of spectrum with return radiation correction factors", "[ret
 }
 
 
-TEST_CASE(" Test that returnrad is also implemented for low spin","[returnrad2]"){
+TEST_CASE (
+
+" Test that returnrad is also implemented for low spin"
+,
+"[returnrad]"
+)
+{
 
   LocalModel local_model{ModelName::relxilllpCp};
 

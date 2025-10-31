@@ -17,6 +17,8 @@
 */
 
 #include "Relreturn_Datastruct.h"
+
+#include "Relbase.h"
 #include "Relreturn_Table.h"
 
 extern "C" {
@@ -52,15 +54,17 @@ static double gstar2gfac(double gmin, double gmax, double gstar) {
   return gstar * (gmax - gmin) + gmin;
 }
 
-void get_gfac_grid(double* gfac, double gmin, double gmax, int ng) {
+VecD get_gfac_grid(double gmin, double gmax, int ng) {
+  VecD gfac(ng);
   for (int ii=0; ii<ng; ii++){
     gfac[ii] =  gstar2gfac(gmin,gmax, (ii+0.5)/ng);
   }
+  return gfac;
 }
 
 void get_std_bbody_energy_grid(int *n_ener, double **ener, int *status) {
   CHECK_STATUS_VOID(*status);
-  if (global_bbody_ener_std == NULL) {
+  if (global_bbody_ener_std == nullptr) {
     global_bbody_ener_std = (double *) malloc((N_BBODY_ENER + 1) * sizeof(double));
     CHECK_MALLOC_VOID_STATUS(global_bbody_ener_std, status)
     get_log_grid(global_bbody_ener_std, (N_BBODY_ENER + 1), EMIN_BBODY, EMAX_BBODY);
@@ -91,10 +95,18 @@ double **new_specZonesArr(int nener_inp, int nrad, int *status) {
   return spec_zones;
 }
 
+VecU_D new_specZonesArrVec(int nener_inp, int nrad) {
+  VecU_D spec_zones(nrad);
+  for (int ii = 0; ii < nrad; ii++) {
+    spec_zones[ii] = std::make_unique<double[]>(nener_inp);
+  }
+  return spec_zones;
+}
 
-returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener, int n_ener, int *status) {
 
-  auto rspec = (returnSpec2D *) malloc(sizeof(returnSpec2D));
+returnSpec2D *new_returnSpec2D(const VecD& rlo, const VecD& rhi, int nrad, const double* ener, int n_ener, int *status) {
+
+  auto rspec = new returnSpec2D;
   CHECK_MALLOC_RET_STATUS(rspec, status, rspec)
 
   rspec->rlo = rlo;
@@ -104,9 +116,32 @@ returnSpec2D *new_returnSpec2D(double *rlo, double *rhi, int nrad, double* ener,
   rspec->ener = ener;
   rspec->n_ener = n_ener;
 
-  rspec->specPri = NULL;
-  rspec->specRet = NULL;
+  rspec->specPri = nullptr;
+  rspec->specRet = nullptr;
 
   return rspec;
 }
 
+void delete_returnSpec2D(returnSpec2D** rspec)
+{
+  if (*rspec != nullptr)
+  {
+    if ((*rspec)->specPri != nullptr)
+    {
+      free_2d(&(*rspec)->specPri,(*rspec)->nrad);
+    }
+    if ((*rspec)->specPri != nullptr)
+    {
+      free_2d(&(*rspec)->specRet,(*rspec)->nrad);
+    }
+    delete *rspec;
+    *rspec = nullptr;
+  }
+}
+
+
+void assert_double_array_isnormal(double* spec, int n)
+{
+  double sum = calcSum(spec,n);
+  assert(std::isnormal(sum) == true);
+}

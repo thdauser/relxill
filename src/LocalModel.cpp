@@ -31,15 +31,14 @@
  *  the line for 1 keV
  */
 void LocalModel::line_model(const XspecSpectrum &spectrum) {
-
-  auto rel_param = get_rel_params();
+  auto rel_param = get_rel_params_struct();
 
   // relbase calculates the line for 1keV, i.e., shift the energy grid accordingly
   spectrum.shift_energy_grid_1keV(rel_param->lineE);
 
   int status = EXIT_SUCCESS;
   relline_spec_multizone *spec = relbase(spectrum.energy, spectrum.num_flux_bins(), rel_param, &status);
-  delete rel_param;
+  delete_rel_params(rel_param);
 
   for (int ii = 0; ii < spectrum.num_flux_bins(); ii++) {
     spectrum.flux[ii] = spec->flux[0][ii];
@@ -51,48 +50,76 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
 
 }
 
-/*
- * @brief calculate relxill model
+void LocalModel::add_jedsad_parameters_to_model_params()
+{
+  // convert jedsad parameters to Gamma/Ecut
+  auto primespec_params = convert_jedsad_to_primaryspec_params(m_model_params);
+
+  // add these parameters to the input list
+  m_model_params.insert_par(XPar::gamma, primespec_params.gamma);
+  m_model_params.insert_par(XPar::ecut, primespec_params.ecut);
+
+  if (is_debug_run())
+  {
+    printf(" *** debug: jedsad parameters: gamma=%f, ecut=%f\n", primespec_params.gamma, primespec_params.ecut);
+  }
+}
+
+bool LocalModel::handle_zero_jedsad_parameters(const XspecSpectrum& spectrum)
+{
+  if (m_model_params.get_par(XPar::gamma) < 1e-8 || m_model_params.get_par(XPar::ecut) < 1e-8)
+  {
+    printf(" *** warning: jedsad parameters are 0, no reflection calculated\n");
+    setArrayToZero(spectrum.flux, spectrum.num_flux_bins());
+    return true;
+  }
+  return false;
+}
+
+void LocalModel::check_relxill_error_default(int status)
+{
+  if (status != EXIT_SUCCESS)
+  {
+    throw std::exception();
+  }
+}
+
+
+/**
+ * @brief Calculates the RELXILL model spectrum combining relativistic reflection and X-ray illumination
+ *
+ * Handles different RELXILL variants:
+ * - RelxillBB: Uses relxill_bb_kernel() with separate rel/xill parameter structures
+ * - JedSad variant: Converts JedSad parameters to gamma/Ecut, validates non-zero values
+ * - Standard: Uses relxill_kernel() with combined model parameters
+ *
+ * @param spectrum Input/output spectrum object (energy grid, flux array, bin count)
+ * @throws std::exception on calculation failures
+ * @note Modifies spectrum.flux array; may add parameters for JedSad models
  */
 void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
 
-
   int status = EXIT_SUCCESS;
-  if (m_model_params.irradiation() == T_Irrad::Const) {
-    relParam *rel_param = LocalModel::get_rel_params();
-    xillParam *xill_param = LocalModel::get_xill_params();
-    relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), xill_param, rel_param, &status);
-    delete rel_param;
-    delete xill_param;
 
-  } else {
-
-    if (LocalModel::m_model_params.get_model_name() == ModelName::relxill_jedsad) {
-
-      // convert jedsad parameters to Gamma/Ecut
-      auto primespec_params = convert_jedsad_to_primaryspec_params(m_model_params);
-
-      // add these parameters to the input list
-      m_model_params.insert_par(XPar::gamma, primespec_params.gamma);
-      m_model_params.insert_par(XPar::ecut, primespec_params.ecut);
-
-      if (primespec_params.gamma < 1e-8 || primespec_params.ecut < 1e-8) {
-        printf(" *** warning: jedsad parameters are 0, no reflection calculated\n");
-        setArrayToZero(spectrum.flux, spectrum.num_flux_bins());
-        return;
-      } else if (is_debug_run()) {
-        printf(" *** debug: jedsad parameters: gamma=%f, ecut=%f\n", primespec_params.gamma, primespec_params.ecut);
-      }
-
+  if (m_model_params.get_model_name() == ModelName::relxillBB || m_model_params.get_model_name() ==
+    ModelName::relxillBBxill)
+  {
+    auto rel_param = get_rel_params(m_model_params);
+    relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
+                      xill_params(), rel_param, &status);
+    delete_rel_params(rel_param);
+  }
+  else
+  {
+    if (m_model_params.get_model_name() == ModelName::relxill_jedsad)
+    {
+      add_jedsad_parameters_to_model_params();
+      if (handle_zero_jedsad_parameters(spectrum)) return;
     }
-
     relxill_kernel(spectrum, m_model_params, &status);
   }
 
-  if (status != EXIT_SUCCESS) {
-    throw std::exception();
-  }
-
+  check_relxill_error_default(status);
 }
 
 
@@ -101,33 +128,31 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
  * @description note the model is only defined in the 0.01-1000 keV energy range and will
  * return 0 outside this range (see function relconv_kernel for more details)
  */
-void LocalModel::conv_model(const XspecSpectrum &spectrum) {
-
+void LocalModel::conv_model(const XspecSpectrum& spectrum) const
+{
   if (calcSum(spectrum.flux, spectrum.num_flux_bins()) <= 0.0) {
     throw ModelEvalFailed("input flux for convolution model needs to be >0");
   }
 
-  relParam *rel_param = LocalModel::get_rel_params();
-
   int status = EXIT_SUCCESS;
-  relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_param, &status);
+  auto rel_params = get_rel_params(m_model_params);
+  relconv_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), rel_params, &status);
+  delete_rel_params(rel_params);
 
   if (status != EXIT_SUCCESS) {
     throw ModelEvalFailed("executing convolution failed");
   }
-
-  delete rel_param;
 }
 
 
 /**
  * @brief calculate xillver model
  */
-void LocalModel::xillver_model(const XspecSpectrum &spectrum) {
-
+void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
+{
   int status = EXIT_SUCCESS;
 
-  xillParam *xill_param = get_xill_params();
+  xillParam* xill_param = get_xill_params(m_model_params);
   xillSpec *spec = get_xillver_spectra(xill_param, &status);
 
   // add the dependence on incl, assuming a semi-infinite slab
@@ -177,6 +202,4 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
   } catch (ModelNotFound &e) {
     std::cout << e.what();
   }
-    // TODO: what should we do if the evaluation fails? return zeros?
-
 }

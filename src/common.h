@@ -119,6 +119,7 @@
 
 // unpublished models
 #define MOD_TYPE_RELXILLBBRET -300
+#define MOD_TYPE_RELXILLBBRETXILL -301
 #define MOD_TYPE_RELXILLALPHA -2000
 #define MOD_TYPE_RELXILLLPALPHA -2001
 #define MOD_TYPE_RELXILL_JEDSAD -3000
@@ -144,7 +145,7 @@
 
 
 // currently the number of different parameters that can be given in a table
-#define N_PARAM_MAX 10  // has to be as long as the NAME_ array
+#define N_PARAM_MAX 11  // has to be as long as the NAME_ array
 #define PARAM_GAM 0
 #define PARAM_AFE 1
 #define PARAM_ACO 1  // caveat: internally we use it same as AFE
@@ -155,6 +156,7 @@
 #define PARAM_KTB 5
 #define PARAM_FRA 6
 #define PARAM_INC 7
+#define PARAM_RID 8
 
 #define NAME_GAM "Gamma"
 #define NAME_AFE "A_Fe"
@@ -165,6 +167,7 @@
 #define NAME_DNS "Dens"
 #define NAME_ACO "A_CO"
 #define NAME_FRA "Frac"
+#define NAME_RID "radindex"
 #define NAME_INC "Incl"
 
 
@@ -173,6 +176,7 @@
 #define XILLTABLE_NTHCOMP_FILENAME "xillverCp_v3.4.fits"
 #define XILLTABLE_NS_FILENAME "xillverNS-2.fits"
 #define XILLTABLE_CO_FILENAME "xillverCO.fits"
+#define XILLTABLE_RRAD_FILENAME "xillverRTR_v0.1_mod.fits"
 
 // useful constants
 #define CONVERT_KEV2ERG 1.6021773000008302e-09  // 1 keV in erg
@@ -182,6 +186,7 @@ enum xillTableIds {
   XILLTABLE_ID_NTHCOMP,
   XILLTABLE_ID_NS,
   XILLTABLE_ID_CO,
+  XILLTABLE_ID_RRAD
 };
 
 #define AD_ROUT_MAX 1000
@@ -232,6 +237,7 @@ typedef struct {
   double dens;
   double frac_pl_bb;
   double kTbb;
+  double radindex; // for the relxillBB model this is the number of the specific zone
   int prim_type;
   int model_type;
 } xillTableParam;
@@ -244,6 +250,7 @@ typedef struct {
   double incl;
   double dens;
   double frac_pl_bb;
+  double radzone; // for the relxillBB model this is the number of the radial zone (intrinsically an integer)
   int model_type;
   int prim_type;
   double z;
@@ -300,7 +307,7 @@ typedef struct {
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
 typedef struct {
 
-  double *re;
+  const double *re;  // radial grid
   int nr;
   double *emis;       // intensity on the surface of the accretion disc
   double *del_emit;   // angle under which the photon is emitted from the primary source

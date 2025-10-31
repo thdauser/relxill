@@ -20,6 +20,9 @@
 
 #define RMAX_RELRET 1000
 
+#include "Types.h"
+#include "Relxill_errorhandling.h"
+
 typedef struct {
 
   double a;  // store the spin here as well ?!
@@ -59,27 +62,24 @@ typedef struct {
 typedef struct {
   double a;  // store the spin here as well ?!
 
-  double *rlo; // for debugging only
-  double *rhi; // for debugging only
-  double *rad; // grid for r_i and r_e
+  VecD rlo;
+  VecD rhi;
+  VecD rad; // grid for r_i and r_e
   int nrad;
-
-  double *proper_area_ring;  // proper area of this ring
 
   // indicies of the radial bins that are used here from tabData, i.e., that are
   //  now the new rlo, rhi and therefore rlo = tabData->rlo[irad] (except for Rin and Rout bin)
   //  that means, this array has a length of nrad, and maps to the tabData
-  int *irad;
+  VecI irad;
 
   /*  2d array of fractions, first dimension is r_incident, second is r_emitted */
-  double **tf_r;  //
-  double **frac_e;  //
+  VecD_2D tf_r;  //
 
-  double *f_ret; // fraction of returning photons  [dimension r_incident]
-  double *f_inf; // fraction of photons reaching the observed [dimension r_incident]
+ VecD f_ret; // fraction of returning photons [dimension r_incident]
+  VecD f_inf; // fraction of photons reaching the observed [dimension r_incident]
 
   /* everything we do not interpolate we directly take from the table */
-  tabulatedReturnFractions *tabData;
+  const tabulatedReturnFractions *tabData;
 
 } returningFractions;
 
@@ -88,9 +88,10 @@ typedef struct {
 
 returnTable *get_returnrad_table(int *status);
 
+void delete_2d(double*** vals, int n1);
 void free_2d(double ***vals, int n1);
 void free_cached_returnTable(void);
-void free_returningFractions(returningFractions **dat);
+void delete_returningFractions(returningFractions **dat);
 
 returningFractions *get_rrad_fractions(double spin, double rin, double rout, int *status);
 

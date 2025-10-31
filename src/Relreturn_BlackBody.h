@@ -19,12 +19,17 @@
 #ifndef RELXILL__RELRETURN_H_
 #define RELXILL__RELRETURN_H_
 
+#include "Types.h"
 #include "Relreturn_Table.h"
 #include "Relreturn_Datastruct.h"
+#include "Relbase.h"
+
 
 extern "C" {
 #include "common.h"
 }
+
+#include <vector>
 
 typedef struct {
 
@@ -42,8 +47,8 @@ typedef struct {
 } spec2D;
 
 
-void fits_rr_write_2Dspec(const char *fname, double **spec_arr, double *ener, int nener,
-                          double *rlo, double *rhi, int nrad,
+void fits_rr_write_2Dspec(const char *fname, double **spec_arr, const double* ener, int nener,
+                          const VecD& rlo, const VecD& rhi, int nrad,
                           returningFractions *dat, int *status);
 
 /**  return the diskbb spectrum for the radial grid given by the table for this spin value **/
@@ -51,31 +56,30 @@ void spec_diskbb(double *ener, double *spec, int n, double Tin, double spin, int
 
 
 // spec_prim can be NULL
-returnSpec2D *spec_returnrad_blackbody(double *ener, double *spec, double *spec_prim, int nener,
+returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
                                        double Tin, double Rin, double Rout, double spin, int *status);
 
 
 void relxill_bb_kernel(double *ener_inp,
                        double *specOutput,
                        int n_ener_inp,
-                       xillParam *xill_param,
+                       const xillParam* xill_param,
                        relParam *rel_param,
                        int *status);
 
-double *getRadialGridFromReturntab(returnSpec2D *spec, int* status);
+std::vector<double> getRadialGridFromReturntab(returnSpec2D *spec);
 
-double *getXillverPrimaryBBody(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
+VecD getXillverPrimaryBBody(double kTbb, double *spec_in, const double* ener, int n_ener, int *status);
 
-double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, double *ener, int n_ener, int *status);
+double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, const double* ener, int n_ener, int *status);
 
-double *getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, double *ener, int n_ener, int *status);
+VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double *spec_in, const double* ener, int n_ener, int *status);
 
 void getZoneReflectedReturnFluxDiskframe(xillParam *xill_param, relline_spec_multizone *rel_profile, const returnSpec2D *returnSpec,
-                                         double *xill_flux_returnrad, int izone, int *status);
+                                         VecD& xill_flux_returnrad, int izone, int *status);
 
-void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
-void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii);
+void getZoneIncidentReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, VecD& returnFlux, int ii);
 
-double *getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
+VecD getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
 
 #endif //RELXILL__RELRETURN_H_

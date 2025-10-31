@@ -486,6 +486,7 @@ void free_relTable(relTable *tab) {
     free(tab->a);
     free(tab->mu0);
     free(tab);
+    tab = NULL;
   }
 }
 

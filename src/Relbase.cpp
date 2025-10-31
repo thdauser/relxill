@@ -17,11 +17,12 @@
 */
 #include "Relbase.h"
 #include "Xillspec.h"
-#include "Relphysics.h"
 
 extern "C" {
 #include "writeOutfiles.h"
 }
+
+#include <utility>
 
 // new CACHE routines
 cnode *cache_relbase = nullptr;
@@ -362,55 +363,43 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
 }
 
+
+/**
+ * @brief Check if any xillver parameters have changed between two parameter sets
+ * @param cpar Current parameters
+ * @param par New parameters
+ * @return 1 if any parameter changed, 0 if all are the same
+ */
 int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
-  if (are_values_different(par->afe, cpar->afe)) {
-    return 1;
-  }
-  if (are_values_different(par->dens, cpar->dens)) {
-    return 1;
-  }
-  if (are_values_different(par->ect, cpar->ect)) {
-    return 1;
-  }
-  if (are_values_different(par->gam, cpar->gam)) {
-    return 1;
-  }
-  if (are_values_different(par->lxi, cpar->lxi)) {
-    return 1;
-  }
-  if (are_values_different(par->kTbb, cpar->kTbb)) {
-    return 1;
-  }
-  if (are_values_different(par->frac_pl_bb, cpar->frac_pl_bb)) {
-    return 1;
-  }
-  if (are_values_different(par->z, cpar->z)) {
-    return 1;
-  }
+  std::vector<std::pair<double, double>> param_comparison = {
+    {par->afe, cpar->afe},
+    {par->dens, cpar->dens},
+    {par->ect, cpar->ect},
+    {par->gam, cpar->gam},
+    {par->lxi, cpar->lxi},
+    {par->kTbb, cpar->kTbb},
+    {par->frac_pl_bb, cpar->frac_pl_bb},
+    {par->radzone, cpar->radzone},
+    {par->z, cpar->z},
+    {par->iongrad_index, cpar->iongrad_index},
+    {par->distance, cpar->distance},
+    {par->mass_msolar, cpar->mass_msolar},
+    {par->luminosity_primary_source, cpar->luminosity_primary_source},
+    {static_cast<double>(par->prim_type), static_cast<double>(cpar->prim_type)},
+    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}
+  };
 
-  if (are_values_different((double) par->prim_type, (double) cpar->prim_type)) {
-    return 1;
-  }
-  if (are_values_different((double) par->model_type, (double) cpar->model_type)) {
-    return 1;
-  }
-
-  if (are_values_different(par->iongrad_index, cpar->iongrad_index)) {
-    return 1;
-  }
-
-  if (are_values_different(par->distance, cpar->distance)) {
-    return 1;
-  }
-  if (are_values_different(par->mass_msolar, cpar->mass_msolar)) {
-    return 1;
-  }
-  if (are_values_different(par->luminosity_primary_source, cpar->luminosity_primary_source)) {
-    return 1;
+  for (const auto& param : param_comparison)
+  {
+    if (are_values_different(param.first, param.second))
+    {
+      return 1;
+    }
   }
 
   return 0;
 }
+
 
 /* check if values, which need a re-computation of the relline profile, have changed */
 int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
@@ -473,10 +462,11 @@ void write_output_rel_param(relParam *pa) {
 relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *param,
                                        RelSysPar *sysPar,
                                        xillTable *xill_tab,
-                                       const double *radialZones,
+                                       const VecD& radialZones,  // TODO: make this a vetor as well
                                        int nzones,
                                        int *status) {
 
+  assert(radialZones.size() == nzones +1 );
 
   inpar* inp = get_inputvals_struct(ener, n_ener, param, status);
   cache_info *ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
@@ -524,6 +514,51 @@ relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *para
 }
 
 
+/** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
+std::vector<double> get_rzone_grid(double rmin, double rmax, int nzones, double h, int *status) {
+
+  std::vector<double> rgrid( nzones + 1);
+
+  if (nzones == 1) {
+    rgrid[0] = rmin;
+    rgrid[1] = rmax;
+  } else {
+
+    double r_transition = rmin;
+    int indr = 0;
+
+    // if h > rmin we choose a log grid for r<h
+    if (h > rmin) {
+
+      r_transition = h;
+
+      get_log_grid(rgrid.data(), rgrid.size(), rmin, rmax);
+      indr = binary_search(rgrid.data(), rgrid.size(), r_transition);
+
+      r_transition = rgrid[indr];
+
+    }
+
+    if (indr < nzones) {
+
+      double rlo = r_transition;
+      double rhi = rmax; // radius[nzones];
+      // add 1/r for larger radii
+      int ii;
+      for (ii = indr; ii < nzones + 1; ii++) {
+        rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
+        rgrid[ii] = fabs(1.0 / rgrid[ii]);
+      }
+
+    }
+
+  }
+
+  return rgrid;
+}
+
+
+
 /** @brief relbase wrapper function, calculating the m_cache_relat system params plus the relbase profile
  *  @details
  *    - for more details see relbase_profile function
@@ -540,11 +575,8 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
   CHECK_STATUS_RET(*status, nullptr);
   assert(sysPar != nullptr);
 
-  double *rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
-
+  auto rgrid = get_rzone_grid(param->rin, param->rout, param->num_zones, param->height, status);
   relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid, param->num_zones, status);
-
-  delete[] rgrid;
 
   return rel_spec;
 }
@@ -569,7 +601,7 @@ void free_rel_cosne(RelCosne *spec) {
 void free_rel_spec(relline_spec_multizone *spec) {
   if (spec != nullptr) {
     free(spec->ener);
-    free(spec->rgrid);
+    delete[] spec->rgrid;
     if (spec->flux != nullptr) {
       int ii;
       for (ii = 0; ii < spec->n_zones; ii++) {
@@ -582,7 +614,7 @@ void free_rel_spec(relline_spec_multizone *spec) {
     if (spec->rel_cosne != nullptr) {
       free_rel_cosne(spec->rel_cosne);
     }
-    free(spec);
+    delete spec;
   }
 }
 
@@ -591,7 +623,7 @@ void free_cached_tables() {
 
   free_cached_relTable();
   free_cached_lpTable();
-  free_cached_xillTable();
+  free_all_cached_xillTables();
   // this function is not used, but just in case - here is the routine to free ext table(s)
   //free_extendedSourceTable
 
