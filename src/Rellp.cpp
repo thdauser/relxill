@@ -510,7 +510,7 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
    } else if (modelLampPostRingSource(param)) {
     calc_emis_ring_source(emis_profile, param, status); // switcher cannot be updated properly within one isis/xspec session - fix!
   } else if (modelDiskSource(param)) {
-    calc_emis_disk_source(emis_profile, param, status);
+    calc_emis_slab_source(emis_profile, param, status);
   } else if (modelVertExtendSource(param)) {
     // this case is just for two on-axis lp sources
     lpTable* lp_table = get_lp_table(status);

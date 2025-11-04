@@ -43,13 +43,13 @@ typedef struct {
   double *height;
   // std::vector<std::vector<double>> x;
   double **x;
-  double *bin; // was radius. Now either radius or inclination
-  double ***val; // was flux. Now either flux or lensing_factor
+  double *bin; // either radius or inclination
+  double ***val; // either flux or lensing_factor
   double ***gshift;
   double **refl_frac;
   double **f_ad;
   double **f_inf;
-  double **f_bh; // now only primary table contains it
+  double **f_bh; // only primary table contains this value
   double ****energy_data_storage;
   // std::vector<std::vector<std::vector<std::vector<double>>>> energy_data_storage;
 
@@ -67,22 +67,20 @@ typedef struct {
 } extendedSourceTable;
 
 typedef struct {
-  int ind_a;
-  double ifac_a; // factor between two spins
-  int ind_h[2]; // two values - 0 is for lower spin of interpolation, 1 is for higher spin
+  int ind_a; // index of the spin
+  double ifac_a; // interpolation factor between two spins
+  int ind_h[2]; // two values - 0 is for lower spin of interpolation, 1 for higher spin
   double ifac_h[2];
   int ind_x[2];
   double ifac_x[2];
 } InterpFactors;
 
-// these I really need outside, all other below - arguable
 void calc_emis_ring_source(emisProfile *emisProf, const relParam *param, int *status);
-void calc_emis_disk_source(emisProfile *emisProf, const relParam *param, int *status);
+void calc_emis_slab_source(emisProfile *emisProf, const relParam *param, int *status);
 double get_energyboost_ext_source_obs(const relParam *param, double gamma);
 double get_energyboost_ext_source_disk(const relParam *param, double radius, double gamma);
 
 
-// do I need to declare these two? I could just re-arrange code. Same applies to all below
 void read_extendedSource_table(const char *filename, extendedSourceTable **inp_tab, int *status, bool is_lensing_table=false);
 void calc_ring_emis(emisProfile *emisProf, double a, double h, double x, double gamma, extendedSourceTable *tab, int *status);
 void calc_ring_fractions(emisProfile *emisProf, const relParam *param, extendedSourceTable *tab, int *status);

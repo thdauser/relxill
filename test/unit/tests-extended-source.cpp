@@ -157,18 +157,15 @@ TEST_CASE (
   REQUIRE(status == EXIT_SUCCESS);
 }
 
-
-// Does not work for spherical relxill, need modifications
-
 TEST_CASE (
-"Compare lp and ext emissivities for x = 0"
+"Compare lp and ext emissivities for x = 0 or theta = 0"
 ,
 "[extended]"
 )
  {
 
   int status = EXIT_SUCCESS;
-  double current_error = 0.045;
+  double current_error = 0.045; // this is the current level of agreement
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -178,7 +175,7 @@ TEST_CASE (
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   // relParam* rel_param_ext = local_model_ext.get_rel_params();
-  local_model_ext.set_par(XPar::source_theta, 0.0);  // for this test we compare the lp emissivity and ext for ring=0
+  local_model_ext.set_par(XPar::source_theta, 0.0);
 
   double spins[3] = {0.8, 0.9, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
@@ -206,8 +203,6 @@ TEST_CASE (
       assert(n_rad_ext == n_rad);
       for (int i = 0; i < n_rad; i++) {
         assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids match
-        // check if the emissivities are the same. Deviations of an order of a few % expected.
-        // Up to 10% in the most extreme cases
 
         REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < current_error);
         //printf("Intensities lp %.6e, ext %.6e, ratio %.6f at radius %.6f\n", intens[i],
@@ -227,12 +222,12 @@ TEST_CASE (
 
   int status = EXIT_SUCCESS;
   double current_error_peak = 0.002;
-  double current_error_tail = 0.042; // almost same as for emissivity btw, which makes sense
+  double current_error_tail = 0.042;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
-  auto spec = default_spec.get_xspec_spectrum(); // when it is outside of "for" - energy shifts wrong
-  auto spec_ext = default_spec_ext.get_xspec_spectrum(); // or is it?
+  auto spec = default_spec.get_xspec_spectrum();
+  auto spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model{ModelName::relline_lp};
   LocalModel local_model_ext{ModelName::relline_ext};
   local_model_ext.set_par(XPar::source_theta, 0.0);
@@ -251,12 +246,9 @@ TEST_CASE (
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 
       for (int i = 0; i < spec.num_flux_bins(); i++) {
-        // to remove zero division
-        if (spec.flux[i] > 0.0) {
-          // currently due to slightly different energy shifts we can only get down to ~4% difference for these a,h
+        if (spec.flux[i] > 0.0) { // to remove zero division
           REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_tail);
-          // although these few % diff are only for the red tail of the line, on average it is below 1%
-          if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) {
+          if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) { // this is the most important range of energies
             REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_peak);
           }
         }
@@ -325,35 +317,17 @@ TEST_CASE (
 
   auto spec = default_spec.get_xspec_spectrum();
 
-  // height below EH (will be replaced with spherical radius eventually)
-  double height_below_horizon = 0.9;
-  lmod.set_par(XPar::source_r, height_below_horizon);
-  lmod.set_par(XPar::source_theta, 0.1); // so the source is inside of BH
+  double radius_below_horizon = 0.5;
+  lmod.set_par(XPar::source_r, radius_below_horizon);
+  lmod.set_par(XPar::source_theta, 5.0); // the source is inside of BH and not on-axis
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
-  double negative_x = -10.0;
-  // lmod.set_par(XPar::h, 3.0);
-  lmod.set_par(XPar::source_theta, negative_x);
+  double negative_angle = -10.0;
+  lmod.set_par(XPar::source_theta, negative_angle);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
-  /*
-  // and for slab source
-  lmod.set_par(XPar::switch_switch_source_geometry, 2);
-  double too_small_x = 0.0;
-  // lmod.set_par(XPar::h, 3.0);
-  lmod.set_par(XPar::x, too_small_x);
-
-  REQUIRE_NOTHROW(lmod.eval_model(spec));
-  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
-
-  double who_missed_inequalities_lesson_in_school_math = 10.0;
-  lmod.set_par(XPar::x_in, who_missed_inequalities_lesson_in_school_math);
-
-  REQUIRE_NOTHROW(lmod.eval_model(spec));
-  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
-  */
 }
