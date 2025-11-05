@@ -48,7 +48,7 @@ extendedSourceTable* get_es_table(int* status){
   CHECK_STATUS_RET(*status, nullptr);
 
   if (cached_extendedSource_table == nullptr) {
-    read_extendedSource_table(EXT_TABLE_FILENAME, &cached_extendedSource_table, status);
+    read_extended_source_table(EXT_TABLE_FILENAME, &cached_extendedSource_table, status);
     CHECK_STATUS_RET(*status, nullptr);
   }
   return cached_extendedSource_table;
@@ -59,8 +59,8 @@ extendedSourceTable* get_prim_table(int* status){
 
   bool is_lensing_table = true; // quick solution to have two tables instead of one
   if (cached_extendedSource_table_prim == nullptr) {
-    read_extendedSource_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
-                              is_lensing_table);
+    read_extended_source_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
+                               is_lensing_table);
     CHECK_STATUS_RET(*status, nullptr);
   }
   return cached_extendedSource_table_prim;
@@ -134,11 +134,11 @@ void apply_flux_correction(extendedSourceData* dat, const double* r, const doubl
  * @param spin double, spin value of the source
  * @return extendedSourceData, data from the table
  */
-static extendedSourceData* load_single_extendedSourceData(
+static extendedSourceData* load_single_extended_source_data(
     fitsfile* fptr, const int n_h, const int n_x, const int n_bin, const int n_storage,
     int* status, const double spin, const bool is_lensing_table) {
 
-  extendedSourceData *dat = new_extendedSourceData(status, is_lensing_table);
+  extendedSourceData *dat = new_extended_source_data(status, is_lensing_table);
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
   int anynullptr = 0;
@@ -583,8 +583,8 @@ double get_energyboost_ext_source_disk(const relParam* param, const double radiu
  * @param filename; const char, pointer to the name of the file (declared in Rellp_Extended.h)
  * @param inp_tab; extendedSourceTable, two-fold pointer to the input table data
  */
-void read_extendedSource_table(const char* filename, extendedSourceTable** inp_tab, int* status,
-                               const bool is_lensing_table) {
+void read_extended_source_table(const char* filename, extendedSourceTable** inp_tab, int* status,
+                                const bool is_lensing_table) {
 
   extendedSourceTable *tab = (*inp_tab);
   fitsfile *fptr = nullptr;
@@ -597,11 +597,11 @@ void read_extendedSource_table(const char* filename, extendedSourceTable** inp_t
       break;
     }
     if (is_lensing_table) {
-      tab = new_extendedSourceTable(PRIM_TABLE_NHEIGHT, PRIM_TABLE_NDISTANCE, PRIM_TABLE_NA,
-                                    PRIM_TABLE_NINCL, PRIM_TABLE_NENERGYBINS, status);
+      tab = new_extended_source_table(PRIM_TABLE_NHEIGHT, PRIM_TABLE_NDISTANCE, PRIM_TABLE_NA,
+                                      PRIM_TABLE_NINCL, PRIM_TABLE_NENERGYBINS, status);
     } else {
-      tab = new_extendedSourceTable(EXT_TABLE_NHEIGHT, EXT_TABLE_NDISTANCE, EXT_TABLE_NA,
-                                    EXT_TABLE_NRAD, EXT_TABLE_NENERGYBINS, status);
+      tab = new_extended_source_table(EXT_TABLE_NHEIGHT, EXT_TABLE_NDISTANCE, EXT_TABLE_NA,
+                                      EXT_TABLE_NRAD, EXT_TABLE_NENERGYBINS, status);
     }
 
     CHECK_STATUS_BREAK(*status);
@@ -636,7 +636,7 @@ void read_extendedSource_table(const char* filename, extendedSourceTable** inp_t
         CHECK_RELXILL_ERROR("reading of spin axis failed\n", status);
       }
 
-      tab->dat[ii] = load_single_extendedSourceData(
+      tab->dat[ii] = load_single_extended_source_data(
           fptr, tab->n_h, tab->n_x, tab->n_bin, tab->n_storage, status,
           tab->a[ii], is_lensing_table);
       if (*status != EXIT_SUCCESS) {
@@ -651,7 +651,7 @@ void read_extendedSource_table(const char* filename, extendedSourceTable** inp_t
   if (*status == EXIT_SUCCESS) {
     (*inp_tab) = tab;
   } else {
-    free_extendedSourceTable(tab, is_lensing_table);
+    free_extended_source_table(tab, is_lensing_table);
   }
 
   if(fptr != nullptr) {fits_close_file(fptr, status);}
@@ -770,11 +770,11 @@ void calc_ring_fractions(emisProfile* emisProf, const relParam* param, extendedS
  * @param n_a; int, number of spins in the table
  * @param n_bin; int, number of bins in the table (radius or inclination bins)
  * @param n_storage; int, number of the energy shift storage in the table
- * @return new_extendedSourceTable, new extended source table
+ * @return new_extended_source_table, new extended source table
  */
-extendedSourceTable* new_extendedSourceTable(const int n_h, const int n_r,
-                                             const int n_a, const int n_bin, const int n_storage,
-                                             int* status) {
+extendedSourceTable* new_extended_source_table(const int n_h, const int n_r,
+                                               const int n_a, const int n_bin, const int n_storage,
+                                               int* status) {
   auto *tab = (extendedSourceTable*) malloc(sizeof(extendedSourceTable));
 
   CHECK_MALLOC_RET_STATUS(tab, status, nullptr)
@@ -807,7 +807,7 @@ extendedSourceTable* new_extendedSourceTable(const int n_h, const int n_r,
  * @details
  * @return extendedSourceData, new extended source data
  */
-extendedSourceData* new_extendedSourceData(int* status, const bool is_lensing_table) {
+extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_table) {
   int n_h = EXT_TABLE_NHEIGHT;
   int n_x = EXT_TABLE_NDISTANCE;
   int n_bin = EXT_TABLE_NRAD;
@@ -898,12 +898,12 @@ extendedSourceData* new_extendedSourceData(int* status, const bool is_lensing_ta
  * @details
  * @param tab; extendedSourceTable, table to be freed from memory
  */
-void free_extendedSourceTable(extendedSourceTable* tab, const bool is_lensing_table) {
+void free_extended_source_table(extendedSourceTable* tab, const bool is_lensing_table) {
   if (tab != nullptr) {
     if (tab->dat != nullptr) {
       for (int ii = 0; ii < tab->n_a; ii++) {
         if (tab->dat[ii] != nullptr){
-          free_extendedSourceData(tab->dat[ii], is_lensing_table);
+          free_extended_source_data(tab->dat[ii], is_lensing_table);
           free(tab->dat[ii]);
         }
       }
@@ -920,7 +920,7 @@ void free_extendedSourceTable(extendedSourceTable* tab, const bool is_lensing_ta
  * @details
  * @param dat; extendedSourceData, data to be freed
  */
-void free_extendedSourceData(extendedSourceData* dat, const bool is_lensing_table) {
+void free_extended_source_data(extendedSourceData* dat, const bool is_lensing_table) {
   int n_h = EXT_TABLE_NHEIGHT;
   int n_x = EXT_TABLE_NDISTANCE;
   int n_r = EXT_TABLE_NRAD;

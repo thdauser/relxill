@@ -86,7 +86,7 @@ double get_interpolated_value_a_h_x(const double ifac_a, const double ifac_h[2],
 void apply_flux_correction(extendedSourceData* dat, const double* r,
                            const double spin, const int n_h, const int n_x, const int n_rad);
 
-static extendedSourceData* load_single_extendedSourceData(
+static extendedSourceData* load_single_extended_source_data(
           fitsfile* fptr, const int n_h, const int n_x, const int n_bin, const int n_storage,
           int* status, const double spin, const bool is_lensing_table);
 void get_ipol_factors_a_h_x(double a, double h, double x,
@@ -100,8 +100,8 @@ emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipo
                                      const double gamma, double* radial_grid, int* status);
 static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors ipol, int* status);
 
-void read_extendedSource_table(const char* filename, extendedSourceTable** inp_tab, int* status,
-                               const bool is_lensing_table=false);
+void read_extended_source_table(const char* filename, extendedSourceTable** inp_tab, int* status,
+                                const bool is_lensing_table=false);
 
 double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors ipol);
 void calc_ring_emis(emisProfile* emisProf, double a, double h, double x, double gamma, extendedSourceTable* tab, int* status);
@@ -115,15 +115,15 @@ double get_energyboost_ext_source_obs(const relParam* param, const double gamma)
 double get_energyboost_ext_source_disk(const relParam* param, const double radius, const double gamma);
 
 // constructors and destructors:
-extendedSourceTable* new_extendedSourceTable(const int n_h, const int n_x,
-                                             const int n_a, const int n_bin, const int n_storage,
-                                             int* status);
+extendedSourceTable* new_extended_source_table(const int n_h, const int n_x,
+                                               const int n_a, const int n_bin, const int n_storage,
+                                               int* status);
 
-extendedSourceData* new_extendedSourceData(int* status, const bool is_lensing_table);
+extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_table);
 
-void free_extendedSourceTable(extendedSourceTable* tab, const bool is_lensing_table);
+void free_extended_source_table(extendedSourceTable* tab, const bool is_lensing_table);
 
-void free_extendedSourceData(extendedSourceData* dat, const bool is_lensing_table);
+void free_extended_source_data(extendedSourceData* dat, const bool is_lensing_table);
 
 
 #endif /* RELLP_EXTENDED_H_ */
