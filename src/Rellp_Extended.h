@@ -80,15 +80,18 @@ extendedSourceTable* get_es_table(int* status);
 extendedSourceTable* get_prim_table(int* status);
 
 static void get_spin_rows_extended_table(const int nrows, float** val, fitsfile* fptr, int* status);
-double get_interpolated_value_a_h_x(const double ifac_a, const double ifac_h[2], const double ifac_x[2],
-                 const double vals_lo00, const double vals_lo01, const double vals_lo10, const double vals_lo11,
-                 const double vals_hi00, const double vals_hi01, const double vals_hi10, const double vals_hi11);
-void apply_flux_correction(extendedSourceData* dat, const double* r,
-                           const double spin, const int n_h, const int n_x, const int n_rad);
-
 static extendedSourceData* load_single_extended_source_data(
           fitsfile* fptr, const int n_h, const int n_x, const int n_bin, const int n_storage,
           int* status, const double spin, const bool is_lensing_table);
+void read_extended_source_table(const char* filename, extendedSourceTable** inp_tab, int* status,
+                                const bool is_lensing_table=false);
+
+emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipol,
+                                     const double gamma, double* radial_grid, int* status);
+
+double get_interpolated_value_a_h_x(const double ifac_a, const double ifac_h[2], const double ifac_x[2],
+                                    const double vals_lo00, const double vals_lo01, const double vals_lo10, const double vals_lo11,
+                                    const double vals_hi00, const double vals_hi01, const double vals_hi10, const double vals_hi11);
 void get_ipol_factors_a_h_x(double a, double h, double x,
                             const extendedSourceTable* tab, InterpFactors& ipol);
 void calc_energy_shift_gamma_tabulated(extendedSourceData& dat_ind_a, const int ind_h, const int ind_x,
@@ -96,15 +99,12 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData& dat_ind_a, const int 
                                        const double gamma);
 double calc_energy_shift_gamma(extendedSourceTable* tab, const InterpFactors ipol,
                                const double bin_val, const double gamma);
-emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipol,
-                                     const double gamma, double* radial_grid, int* status);
 static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors ipol, int* status);
-
-void read_extended_source_table(const char* filename, extendedSourceTable** inp_tab, int* status,
-                                const bool is_lensing_table=false);
 
 double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors ipol);
 void calc_ring_emis(emisProfile* emisProf, double a, double h, double x, double gamma, extendedSourceTable* tab, int* status);
+void apply_flux_correction(extendedSourceData* dat, const double* r,
+                           const double spin, const int n_h, const int n_x, const int n_rad);
 void calc_ring_fractions(emisProfile* emisProf, const relParam* param, extendedSourceTable* tab, int* status);
 
 // functions used globally:
