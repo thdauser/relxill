@@ -300,10 +300,7 @@ int modelLampPostPointSource(const relParam *param) {
   }
 }
 
-int modelLampPostRingSource(const relParam *param) {
-  // simple explicit check for the model type, no replacement with other models. EXT models work fine with zero ring size
-  // if (param->model_type == MOD_TYPE_RELXILLLPEXT || param->model_type == MOD_TYPE_RELLINELPEXT) {
-  // new approach with disks
+int modelRingSource(const relParam *param) {
     if (param->prim_geometry_type == GEOMETRY_RING) {
     return 1;
   } else {
@@ -311,7 +308,7 @@ int modelLampPostRingSource(const relParam *param) {
   }
 }
 
-int modelDiskSource(const relParam *param) {
+int modelSlabSource(const relParam *param) {
   if (param->prim_geometry_type == GEOMETRY_SLAB) {
     return 1;
   } else {
@@ -507,9 +504,9 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
     lpTable* lp_table = get_lp_table(status);
     calc_emis_jet_point_source(emis_profile, param, param->height, param->beta, lp_table, status);
   // Do switch with param->emis_type instead?
-   } else if (modelLampPostRingSource(param)) {
-    calc_emis_ring_source(emis_profile, param, status); // switcher cannot be updated properly within one isis/xspec session - fix!
-  } else if (modelDiskSource(param)) {
+   } else if (modelRingSource(param)) {
+    calc_emis_ring_source(emis_profile, param, status);
+  } else if (modelSlabSource(param)) {
     calc_emis_slab_source(emis_profile, param, status);
   } else if (modelVertExtendSource(param)) {
     // this case is just for two on-axis lp sources

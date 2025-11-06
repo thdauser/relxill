@@ -40,6 +40,7 @@ int convertModelType(ModelName name) {
     case ModelName::relconv: return MOD_TYPE_RELCONV;
     case ModelName::relline_lp: return MOD_TYPE_RELLINELP;
     case ModelName::relline_ring: return MOD_TYPE_RELLINELPEXT;
+    case ModelName::relline_slab: return MOD_TYPE_RELLINESLAB;
     case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
     case ModelName::relxill  : return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
@@ -48,6 +49,7 @@ int convertModelType(ModelName name) {
     case ModelName::relxill_ring_ecut: return MOD_TYPE_RELXILLLPEXT;
     case ModelName::relxilllpCp: return MOD_TYPE_RELXILLLP;
     case ModelName::relxill_ring: return MOD_TYPE_RELXILLLPEXT;
+    case ModelName::relxill_slab: return MOD_TYPE_RELXILLSLAB;
     case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
     case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
     case ModelName::relxilllpionCp: return MOD_TYPE_RELXILLLPION;
@@ -505,12 +507,17 @@ int get_iongrad_type(const ModelDefinition &params) {
   }
 }
 
+/*
+ * Perhaps a temporary solution with an internal "switch" of geometries. Better solution would be to define a separate
+ * EMIS_TYPE for each corona geometry instead of using LP of extended geometries
+ */
 int get_geometry_switch(const ModelDefinition &params) {
-  if (params.get_model_name() != ModelName::relxill_ring && params.get_model_name() != ModelName::relxill_ring_ecut
-      && params.get_model_name() != ModelName::relline_ring) { // REALLY need to define just new type of EMIS_TYPE
-    return GEOMETRY_LP; // what about models with no geometry?
+  if (params.get_model_name() == ModelName::relxill_ring || params.get_model_name() == ModelName::relxill_ring_ecut
+      || params.get_model_name() == ModelName::relline_ring) { // REALLY need to define just new type of EMIS_TYPE
+      return GEOMETRY_RING;
+  } else if (params.get_model_name() == ModelName::relxill_slab || params.get_model_name() == ModelName::relline_slab) {
+    return GEOMETRY_SLAB;
   } else {
-    // printf("Geometry number: %ld \n", lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
-    return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_switch_source_geometry, 1)));
+    return GEOMETRY_LP; // what about models with no geometry? This switcher is not used for those, though
   }
 }
