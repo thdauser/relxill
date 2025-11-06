@@ -102,7 +102,7 @@ TEST_CASE(" caching of energy grid", "[cache]") {
        ModelName::relxillNS,
        ModelName::relxillCO,
        // ModelName::relxillBBxill,  // TODO: not yet implemented
-       ModelName::relxill_ext
+       ModelName::relxill_ring
       };
 
   for (const auto &elem: model_names) {

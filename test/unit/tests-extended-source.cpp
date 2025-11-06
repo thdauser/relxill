@@ -43,7 +43,7 @@ TEST_CASE (
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  LocalModel local_model{ModelName::relline_ext};
+  LocalModel local_model{ModelName::relline_ring};
 
   double height = 3.0;
 
@@ -85,7 +85,7 @@ TEST_CASE (
   double height = 2.0;
   double x = 10.0;
   double incl = 45.0;
-  for (ModelName model : {ModelName::relline_ext, ModelName::relxill_ext_ecut, ModelName::relxill_ext}) {
+  for (ModelName model : {ModelName::relline_ring, ModelName::relxill_ring_ecut, ModelName::relxill_ring}) {
     for (int type_geom : {1}) {
       LocalModel local_model{model};
       // local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
@@ -131,7 +131,7 @@ TEST_CASE (
 
   DefaultSpec default_spec_ext{};
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
-  LocalModel local_model_ext{ModelName::relxill_ext_ecut};
+  LocalModel local_model_ext{ModelName::relxill_ring_ecut};
 
 
   local_model_ext.set_par(XPar::a, spin);
@@ -173,7 +173,7 @@ TEST_CASE (
 
   DefaultSpec default_spec_ext{};
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
-  LocalModel local_model_ext{ModelName::relxill_ext_ecut};
+  LocalModel local_model_ext{ModelName::relxill_ring_ecut};
   // relParam* rel_param_ext = local_model_ext.get_rel_params();
   local_model_ext.set_par(XPar::theta_src, 0.0);
 
@@ -229,7 +229,7 @@ TEST_CASE (
   auto spec = default_spec.get_xspec_spectrum();
   auto spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model{ModelName::relline_lp};
-  LocalModel local_model_ext{ModelName::relline_ext};
+  LocalModel local_model_ext{ModelName::relline_ring};
   local_model_ext.set_par(XPar::theta_src, 0.0);
 
   double spins[3] = {0.8, 0.9, 0.998};
@@ -274,7 +274,7 @@ TEST_CASE (
 
   LocalModel local_model{ModelName::relxilllp};
   auto spec = default_spec.get_xspec_spectrum();
-  LocalModel local_model_ext{ModelName::relxill_ext_ecut};
+  LocalModel local_model_ext{ModelName::relxill_ring_ecut};
   auto spec_ext = default_spec_ext.get_xspec_spectrum();
   local_model_ext.set_par(XPar::theta_src, 0.0);
   local_model_ext.set_par(XPar::refl_frac, -1);
@@ -313,7 +313,7 @@ TEST_CASE (
 
   DefaultSpec default_spec{};
 
-  LocalModel lmod(ModelName::relxill_ext);
+  LocalModel lmod(ModelName::relxill_ring);
 
   auto spec = default_spec.get_xspec_spectrum();
 

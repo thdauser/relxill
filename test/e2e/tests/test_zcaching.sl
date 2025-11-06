@@ -55,8 +55,8 @@ define check_caching_single(ff,par){ %{{{
 
    %% AN: more bad hacks to test the slowest ext relxill geometry
    %% (condemn bad cod coding but use it when no one suffers)
-      %if (ff == "relxill_ext"){
-      %   set_par("relxill_ext(1).switch_source_geometry", 2);
+      %if (ff == "relxill_ring"){
+      %   set_par("relxill_ring(1).switch_source_geometry", 2);
       %}
    
    variable param0 = get_params("*."+par);
@@ -189,7 +189,7 @@ define runtest(ffs){
 #ifndef STABLE
    ff_arr["relxillCO"] = [std_rel_param, "A_CO", "frac_pl_bb", "kTbb"];
    ff_arr["relxilllpAlpha"] = [std_rel_param, "Afe", "z", "logN", "h", "refl_frac", "mass", "distance"];
-   ff_arr["relxill_ext"] = [std_rel_param, "r_src", "theta_src", "refl_frac", std_xill_param, "logN", "kTe"];
+   ff_arr["relxill_ring"] = [std_rel_param, "r_src", "theta_src", "refl_frac", std_xill_param, "logN", "kTe"];
 #endif
    
    variable ff, params;
