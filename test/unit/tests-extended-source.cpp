@@ -52,8 +52,8 @@ TEST_CASE (
   local_model.set_par(XPar::a, a);
   local_model.set_par(XPar::rin, -1);
   local_model.set_par(XPar::rout, 1000.0);
-  local_model.set_par(XPar::source_r, height);
-  local_model.set_par(XPar::source_theta, x);
+  local_model.set_par(XPar::r_src, height);
+  local_model.set_par(XPar::theta_src, x);
   local_model.set_par(XPar::switch_switch_returnrad, 0);
   local_model.set_par(XPar::gamma, 2.0);
 
@@ -90,8 +90,8 @@ TEST_CASE (
       LocalModel local_model{model};
       // local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
       local_model.set_par(XPar::a, spin);
-      local_model.set_par(XPar::source_r, height);
-      local_model.set_par(XPar::source_theta, x);
+      local_model.set_par(XPar::r_src, height);
+      local_model.set_par(XPar::theta_src, x);
       local_model.set_par(XPar::incl, incl);
 
       REQUIRE_NOTHROW(local_model.eval_model(spec));
@@ -138,8 +138,8 @@ TEST_CASE (
   local_model_ext.set_par(XPar::rin, -1.0);
   local_model_ext.set_par(XPar::rout, 1000.0);
 
-  local_model_ext.set_par(XPar::source_r, h);
-  local_model_ext.set_par(XPar::source_theta, 0.0);
+  local_model_ext.set_par(XPar::r_src, h);
+  local_model_ext.set_par(XPar::theta_src, 0.0);
   //local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
   local_model_ext.eval_model(spec_ext);
@@ -175,7 +175,7 @@ TEST_CASE (
   XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   // relParam* rel_param_ext = local_model_ext.get_rel_params();
-  local_model_ext.set_par(XPar::source_theta, 0.0);
+  local_model_ext.set_par(XPar::theta_src, 0.0);
 
   double spins[3] = {0.8, 0.9, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
@@ -190,7 +190,7 @@ TEST_CASE (
       local_model.eval_model(spec);
 
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::source_r, height);
+      local_model_ext.set_par(XPar::r_src, height);
       local_model_ext.set_par(XPar::rin, -1.0);
       local_model_ext.eval_model(spec_ext);
       auto sys_par = get_system_parameters(local_model.rel_params(), &status);
@@ -230,7 +230,7 @@ TEST_CASE (
   auto spec_ext = default_spec_ext.get_xspec_spectrum();
   LocalModel local_model{ModelName::relline_lp};
   LocalModel local_model_ext{ModelName::relline_ext};
-  local_model_ext.set_par(XPar::source_theta, 0.0);
+  local_model_ext.set_par(XPar::theta_src, 0.0);
 
   double spins[3] = {0.8, 0.9, 0.998};
   double heights[3] = {3.0, 5.0, 10.0};
@@ -240,7 +240,7 @@ TEST_CASE (
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::h, height);
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::source_r, height);
+      local_model_ext.set_par(XPar::r_src, height);
 
       REQUIRE_NOTHROW(local_model.eval_model(spec));
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
@@ -276,7 +276,7 @@ TEST_CASE (
   auto spec = default_spec.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_ext_ecut};
   auto spec_ext = default_spec_ext.get_xspec_spectrum();
-  local_model_ext.set_par(XPar::source_theta, 0.0);
+  local_model_ext.set_par(XPar::theta_src, 0.0);
   local_model_ext.set_par(XPar::refl_frac, -1);
   // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
   local_model.set_par(XPar::refl_frac, -1);
@@ -288,7 +288,7 @@ TEST_CASE (
       local_model.set_par(XPar::a, spin);
       local_model.set_par(XPar::h, height);
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::source_r, height);
+      local_model_ext.set_par(XPar::r_src, height);
       REQUIRE_NOTHROW(local_model.eval_model(spec));
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 
@@ -318,14 +318,14 @@ TEST_CASE (
   auto spec = default_spec.get_xspec_spectrum();
 
   double radius_below_horizon = 0.5;
-  lmod.set_par(XPar::source_r, radius_below_horizon);
-  lmod.set_par(XPar::source_theta, 5.0); // the source is inside of BH and not on-axis
+  lmod.set_par(XPar::r_src, radius_below_horizon);
+  lmod.set_par(XPar::theta_src, 5.0); // the source is inside of BH and not on-axis
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
   double negative_angle = -10.0;
-  lmod.set_par(XPar::source_theta, negative_angle);
+  lmod.set_par(XPar::theta_src, negative_angle);
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);

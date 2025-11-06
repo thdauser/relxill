@@ -51,12 +51,12 @@ enum class XPar {
   kte,
   refl_frac,
   boost,
-  h, // for extended corona, use either this or r:
-  source_r, // spherical radius as in metric
+  h,
+  r_src, // spherical radius as in metric, for extended corona
   htop,
-  x, // ring radius OR outer (corona) slab radius
-  source_theta, // polar angle of the source (meaningful only for extended geometry)
-  x_in, // ONLY inner (corona) slab radius, no meaning for ring model
+  x, // ring radius OR outer (corona) slab radius, for extended corona
+  theta_src, // polar angle of the source, for extended corona
+  x_in, // ONLY inner (corona) slab radius, no meaning for ring model, for extended corona
   beta,
   frac_pl_bb,
   ktbb,

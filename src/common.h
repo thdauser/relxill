@@ -65,7 +65,7 @@
 #define ION_GRAD_TYPE_ALPHA 2
 /***************************************/
 
-/** define Corona Geometry**/
+/** define Corona Geometry **/
 #define GEOMETRY_LP 0
 #define GEOMETRY_RING 1
 #define GEOMETRY_SLAB 2

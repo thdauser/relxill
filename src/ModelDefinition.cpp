@@ -351,7 +351,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->model_type = convertModelType(inp_param.get_model_name());
   param->emis_type = convertIrradType(inp_param.irradiation());
 
-  // default 0 - lp, 1 - ring, 2 - disk (or other - don't include in release):
+  // default 0 - lp, 1 - ring, 2 - slab (etc):
   param->prim_geometry_type = get_geometry_switch(inp_param); // new for extended geometry
 
   // these parameters have to be given for any relativistic parameter structure
@@ -374,12 +374,12 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   // NOTE: here height acts as a spherical radius and x is the polar angle in degrees
   // We fit r, theta directly from the table, but internally still call them height, x
   if (param->prim_geometry_type == GEOMETRY_RING || param->prim_geometry_type == GEOMETRY_SLAB) {
-    param->height = inp_param.get_otherwise_default(XPar::source_r, 0);
+    param->height = inp_param.get_otherwise_default(XPar::r_src, 0);
   } else { // NOTE: this line is intended to be used for LP only
     // TODO better switch of parameters for other extended geometries
     param->height = inp_param.get_otherwise_default(XPar::h, 0);
   }
-  param->x = inp_param.get_otherwise_default(XPar::source_theta, 0.0);
+  param->x = inp_param.get_otherwise_default(XPar::theta_src, 0.0);
 
   // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
 

@@ -682,16 +682,16 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
 
   const int num_rings = 100;
   std::array<double, num_rings> slab_grid{};
-  emisProfile *slab_emis_sum = nullptr;
+  emisProfile* slab_emis_sum = nullptr;
   double* rad_grid = nullptr;
 
-  // auto *param_tmp = const_cast<relParam *>(param); // it could work too
   double weight_i;
   double weight_sum = 0.0;
 
   for (int ii = 0; ii < num_rings; ii++) { // define grid of rings for slab
     slab_grid[ii] = param->x_in + (param->x - param->x_in) * ii / (num_rings - 1);
   }
+
   for (int ii = 0; ii < num_rings; ii++) {
 
     get_ipol_factors_a_h_x(param->a, param->height, slab_grid[ii], emissivity_table, ipol);
@@ -718,8 +718,7 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
     for (int nn = 0; nn < ring_emis_tmp->nr; nn++) {
       slab_emis_sum->emis[nn] += ring_emis_tmp->emis[nn] * weight_i;
     }
-    // free(ring_emis_tmp->re);
-    // free_emisProfile(ring_emis_tmp);  // TODO: why not?? I think you definitely need to free it [TD]
+    free_emisProfile(ring_emis_tmp);
   }
   for (int nn = 0; nn < slab_emis_sum->nr; nn++) {
     slab_emis_sum->emis[nn] /= weight_sum; // normalize final profile with weights (one could also divide by disk area)
@@ -731,6 +730,7 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
 
   CHECK_STATUS_VOID(*status);
 }
+
 
 /**
  * @brief Secondary main routine which gets g^Gamma from source to observer from the table (at relxill inclination)
@@ -781,6 +781,7 @@ double get_energyboost_ext_source_disk(const relParam* param, const double radiu
 extendedSourceTable* new_extended_source_table(const int n_h, const int n_r,
                                                const int n_a, const int n_bin, const int n_storage,
                                                int* status) {
+
   auto *tab = (extendedSourceTable*) malloc(sizeof(extendedSourceTable));
 
   CHECK_MALLOC_RET_STATUS(tab, status, nullptr)
