@@ -50,10 +50,10 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   // TODO is_ext_model? for a nicer swap of models
   // if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT || rel_param->model_type == MOD_TYPE_RELLINELPEXT) {
   if (rel_param->prim_geometry_type == GEOMETRY_RING) {
-    printf(" and ring polar angle = %.2f deg", rel_param->x);
+    printf(" and ring polar angle = %.2f deg", rel_param->theta);
   }
   if (rel_param->prim_geometry_type == GEOMETRY_SLAB) {
-    printf(" and disk inner radius, x_in = %.2f rg, outer radius, x = %.2f rg", rel_param->x_in, rel_param->x);
+    printf(" and disk inner radius, x_in = %.2f rg, outer radius, x = %.2f rg", rel_param->x_in, rel_param->theta);
   }
   printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
          m_lp_refl_frac->refl_frac,

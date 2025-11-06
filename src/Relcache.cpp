@@ -63,12 +63,14 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
     {par->rin, cpar->rin},
     {par->rbr, cpar->rbr},
     {par->rout, cpar->rout},
+    {par->r_src, cpar->r_src},
+    {par->theta, cpar->theta},
     {par->x, cpar->x},
     {par->x_in, cpar->x_in},
     {static_cast<double>(par->limb), static_cast<double>(cpar->limb)},
     {static_cast<double>(par->return_rad), static_cast<double>(cpar->return_rad)},
-    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}, // TD: do we really need this?
-    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)} // TD: do we really need this?
+    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)},
+    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
   };
 
 
@@ -143,6 +145,8 @@ void set_cached_rel_param(const relParam *par, relParam **ca_rel_param, int *sta
   (*ca_rel_param)->htop = par->htop;
   (*ca_rel_param)->incl = par->incl;
   (*ca_rel_param)->beta = par->beta;
+  (*ca_rel_param)->r_src = par->r_src;
+  (*ca_rel_param)->theta = par->theta;
   (*ca_rel_param)->x = par->x;
   (*ca_rel_param)->x_in = par->x_in;
 

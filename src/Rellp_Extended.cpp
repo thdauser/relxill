@@ -637,7 +637,7 @@ void calc_ring_fractions(emisProfile* emisProf, const relParam* param, extendedS
   CHECK_STATUS_VOID(*status);
 
   InterpFactors prim_ipol;
-  get_ipol_factors_a_h_x(param->a, param->height, param->x, prim_tab, prim_ipol);
+  get_ipol_factors_a_h_x(param->a, param->height, param->theta, prim_tab, prim_ipol);
   emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
   // input incl can be both in radian and in grads. The table has cos incl, so convert:
   double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
@@ -663,7 +663,7 @@ void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* st
   extendedSourceTable* emissivity_table = get_es_table(status);
   extendedSourceTable* prim_table = get_prim_table(status);
 
-  calc_ring_emis(emisProf, param->a, param->height, param->x, param->gamma, emissivity_table, status);
+  calc_ring_emis(emisProf, param->a, param->height, param->theta, param->gamma, emissivity_table, status);
   calc_ring_fractions(emisProf, param, prim_table, status);
 
   CHECK_STATUS_VOID(*status);
@@ -689,7 +689,7 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
   double weight_sum = 0.0;
 
   for (int ii = 0; ii < num_rings; ii++) { // define grid of rings for slab
-    slab_grid[ii] = param->x_in + (param->x - param->x_in) * ii / (num_rings - 1);
+    slab_grid[ii] = param->x_in + (param->theta - param->x_in) * ii / (num_rings - 1);
   }
 
   for (int ii = 0; ii < num_rings; ii++) {
@@ -741,7 +741,7 @@ double get_energyboost_ext_source_obs(const relParam* param, const double gamma)
   int status = EXIT_SUCCESS; // in case it is loaded from somewhere in the code
   extendedSourceTable* prim_table = get_prim_table(&status);
   InterpFactors prim_ipol;
-  get_ipol_factors_a_h_x(param->a, param->height, param->x, prim_table, prim_ipol);
+  get_ipol_factors_a_h_x(param->a, param->height, param->theta, prim_table, prim_ipol);
   // input incl can be both in radian and in grads. The table has cos incl, so convert it here to cos
   // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
   double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
@@ -760,7 +760,7 @@ double get_energyboost_ext_source_disk(const relParam* param, const double radiu
   int status = EXIT_SUCCESS;
   extendedSourceTable* table = get_es_table(&status);
   InterpFactors ipol;
-  get_ipol_factors_a_h_x(param->a, param->height, param->x, table, ipol);
+  get_ipol_factors_a_h_x(param->a, param->height, param->theta, table, ipol);
   double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
   return gshift;
 }

@@ -274,13 +274,13 @@ void check_parameter_bounds(relParam *param, int *status) {
 
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->prim_geometry_type == GEOMETRY_RING) {
-      if (param->x < 0.0) {
+      if (param->theta < 0.0) {
         if (not warned_ring_angle) {
-          printf(" *** Warning : Ring source cannot have negative angle (theta = %.1f deg) \n", param->x);
+          printf(" *** Warning : Ring source cannot have negative angle (theta = %.1f deg) \n", param->theta);
           printf("      Setting    theta = 0.0 deg \n");
           warned_ring_angle = 1;
         }
-        param->x = 0.0;
+        param->theta = 0.0;
       }
 
       // double r_spherical = calc_spherical_radius_primary_source(param->height, param->r_ring, param->a); // in rg
@@ -289,7 +289,7 @@ void check_parameter_bounds(relParam *param, int *status) {
         if (!warned_ring_radius) {
           printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
           // printf("      Height, eXtent = %.4f r_g, %.4f r_g \n", param->height, param->r_ring);
-          printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->height, param->x);
+          printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->height, param->theta);
           printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f r_g \n", param->height, r_fac * r_event);
           //r_spherical = r_fac * r_event * 1.001; // in rg + a bit of margin
           // keeping costheta constant and re-define radius
@@ -303,23 +303,23 @@ void check_parameter_bounds(relParam *param, int *status) {
       }
     }
     if (param->prim_geometry_type == GEOMETRY_SLAB) { // NOT YET IMPLEMENTED ON SPHERICAL BRANCH
-      if (param->x < 0.1) {
+      if (param->theta < 0.1) {
         if (not warned_slab_radius) {
-          printf(" *** Warning : Slab source cannot have too small size (x = %.1f r_g) \n", param->x);
+          printf(" *** Warning : Slab source cannot have too small size (x = %.1f r_g) \n", param->theta);
           printf("      Setting    x = 0.1 rg \n");
           warned_slab_radius = 1;
         }
-        param->x = 0.1;
+        param->theta = 0.1;
       }
       // new: for disk model we also check that inner edge is less than outer (x)
       // alternatively: we can reset geometry type to ring if x_in >= x
-      if (param->x <= param->x_in) {
+      if (param->theta <= param->x_in) {
         if (not warned_slab_bound) {
           printf(" *** Warning : x_in >= x outer edge cannot be smaller than inner edge \n");
           printf("      Setting    x_in = x - 0.1 rg \n");
           warned_slab_bound = 1;
         }
-        param->x_in = param->x - 0.1;
+        param->x_in = param->theta - 0.1;
       }
     } else { // lp is lp, so not mix it with ext
       if ((h_fac * r_event - param->height) > 1e-4) {
@@ -372,20 +372,12 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->lineE = inp_param.get_otherwise_default(XPar::linee, 0);
   param->gamma = inp_param.get_otherwise_default(XPar::gamma, 0);
   param->htop = inp_param.get_otherwise_default(XPar::htop, 0);
+  param->height = inp_param.get_otherwise_default(XPar::h, 0);
+  param->r_src = inp_param.get_otherwise_default(XPar::r_src, 0.0);
+  param->theta = inp_param.get_otherwise_default(XPar::theta_src, 0.0);
 
-  // NOTE: here height acts as a spherical radius and x is the polar angle in degrees
-  // We fit r, theta directly from the table, but internally still call them height, x
-  if (param->prim_geometry_type == GEOMETRY_RING || param->prim_geometry_type == GEOMETRY_SLAB) {
-    param->height = inp_param.get_otherwise_default(XPar::r_src, 0);
-  } else { // NOTE: this line is intended to be used for LP only
-    // TODO better switch of parameters for other extended geometries
-    param->height = inp_param.get_otherwise_default(XPar::h, 0);
-  }
-  param->x = inp_param.get_otherwise_default(XPar::theta_src, 0.0);
-
-  // printf("Check internal conversion of r*theta into h*ring, h = %.6e, x = %.6e\n", param->height, param->r_ring);
-
-  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0); // no meaning for ring and lp geometry
+  param->x = inp_param.get_otherwise_default(XPar::x, 0.1);
+  param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
 
   // important default values
   param->z = inp_param.get_otherwise_default(XPar::z, 0);

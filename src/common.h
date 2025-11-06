@@ -215,8 +215,10 @@ typedef struct {
   double lineE;
   double z;
   double height;
-  double x;
-  double x_in;
+  double r_src; // source radius in ring model
+  double theta; // source angle in ring model
+  double x;  // radius of slab in slab model
+  double x_in;  // inner radius of slab in slab model
   double htop;
   double gamma;
   double beta;
