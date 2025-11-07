@@ -302,6 +302,7 @@ TEST_CASE (
   REQUIRE(status == EXIT_SUCCESS);
 }
 
+
 TEST_CASE (
 "Setting input parameters for extended source outside of the allowed range "
 ,
@@ -329,3 +330,5 @@ TEST_CASE (
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
 
 }
+
+
