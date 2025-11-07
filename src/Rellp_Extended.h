@@ -40,9 +40,8 @@
 
 typedef struct {
 
-  double* height;
-  // std::vector<std::vector<double>> x;
-  double** x;
+  double* r_sph;
+  double** theta;
   double* bin; // either radius or inclination
   double*** val; // either flux or lensing_factor
   double*** gshift;
@@ -59,8 +58,8 @@ typedef struct {
 typedef struct {
   float* a;
   int n_a;
-  int n_h;
-  int n_x;
+  int n_r;
+  int n_th;
   int n_bin;
   int n_storage;
   extendedSourceData** dat;
@@ -69,10 +68,10 @@ typedef struct {
 typedef struct {
   int ind_a; // index of the spin
   double ifac_a; // interpolation factor between two spins
-  int ind_h[2]; // two values - 0 is for lower spin of interpolation, 1 for higher spin
-  double ifac_h[2];
-  int ind_x[2];
-  double ifac_x[2];
+  int ind_r[2]; // two values - 0 is for lower spin of interpolation, 1 for higher spin
+  double ifac_r[2];
+  int ind_th[2];
+  double ifac_th[2];
 } InterpFactors;
 
 // functions used only in Rellp_Extended:

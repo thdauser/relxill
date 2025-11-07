@@ -119,9 +119,9 @@ static extendedSourceData* load_single_extended_source_data(
 
   for (int ii = 0; ii < n_h; ii++) {
     fits_read_col(fptr, TDOUBLE, 2, 1 + ii * n_x, 1, 1, &doublenullptr,
-                  &(dat->height[ii]), &anynullptr, status);
+                  &(dat->r_sph[ii]), &anynullptr, status);
     fits_read_col(fptr, TDOUBLE, 3, 1 + ii * n_x, 1, n_x,
-                  &doublenullptr, dat->x[ii], &anynullptr, status);
+                  &doublenullptr, dat->theta[ii], &anynullptr, status);
   }
 
   for (int ii = 0; ii < n_h; ii++) {
@@ -222,7 +222,7 @@ void read_extended_source_table(const char* filename, extendedSourceTable** inp_
       }
 
       tab->dat[ii] = load_single_extended_source_data(
-          fptr, tab->n_h, tab->n_x, tab->n_bin, tab->n_storage, status,
+          fptr, tab->n_r, tab->n_th, tab->n_bin, tab->n_storage, status,
           tab->a[ii], is_lensing_table);
       if (*status != EXIT_SUCCESS) {
         RELXILL_ERROR("failed to load data from the extended source table into memory\n", status);
@@ -266,10 +266,10 @@ emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipo
 
   emisProfile* emis_profile_table = new_emisProfile(radial_grid, tab->n_bin, status);
 
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_h[0], ipol.ind_x[0],
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a], ipol.ind_r[0], ipol.ind_th[0],
                                     tab->dat[ipol.ind_a]->energy_data_storage,
                                     tab->n_bin, tab->n_storage, gamma);
-  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_h[1], ipol.ind_x[1],
+  calc_energy_shift_gamma_tabulated(*tab->dat[ipol.ind_a + 1], ipol.ind_r[1], ipol.ind_th[1],
                                     tab->dat[ipol.ind_a + 1]->energy_data_storage,
                                     tab->n_bin, tab->n_storage, gamma);
 
@@ -283,50 +283,50 @@ emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipo
     get_ipol_factor_double(radial_grid[ii], tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_rhi, &fac_rhi);
 
     // Interpolation of the flux
-    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
-    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo + 1]);
 
-    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
-    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi + 1]);
 
-    emis_profile_table->emis[ii] = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+    emis_profile_table->emis[ii] = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
                                                                 tab_lo_00, tab_lo_01,
                                                                 tab_lo_10, tab_lo_11,
                                                                 tab_hi_00, tab_hi_01,
                                                                 tab_hi_10, tab_hi_11);
 
     // Re-use temporary variables for both emis and g_gamma
-    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_rlo + 1]);
-    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_rlo + 1]);
-    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo],
-                              tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_rlo + 1]);
+    tab_lo_00 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo + 1]);
+    tab_lo_01 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo + 1]);
+    tab_lo_10 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo + 1]);
+    tab_lo_11 = interp_lin_1d(fac_rlo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo],
+                              tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo + 1]);
 
-    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_rhi + 1]);
-    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_rhi + 1]);
-    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi],
-                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_rhi + 1]);
+    tab_hi_00 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi + 1]);
+    tab_hi_01 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi + 1]);
+    tab_hi_10 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi + 1]);
+    tab_hi_11 = interp_lin_1d(fac_rhi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi],
+                              tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi + 1]);
 
-    double g_gamma = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+    double g_gamma = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
                                                   tab_lo_00, tab_lo_01,
                                                   tab_lo_10, tab_lo_11,
                                                   tab_hi_00, tab_hi_01,
@@ -368,21 +368,21 @@ void get_ipol_factors_a_h_x(const double a, const double h, const double x,
   }
   for (int ii = 0; ii < 2; ii++) {
     // get interpolation factors between heights
-    get_ipol_factor_double(h, tab->dat[ipol.ind_a + ii]->height, tab->n_h,
-                           &(ipol.ind_h[ii]),&(ipol.ifac_h[ii]));
-    if (ipol.ifac_h[ii] < 0.0 or ipol.ifac_h[ii] > 1.0){
-      printf(" *** Warning : height interpolation becomes extrapolation: ifac_h = %.1f \n", ipol.ifac_h[ii]);
+    get_ipol_factor_double(h, tab->dat[ipol.ind_a + ii]->r_sph, tab->n_r,
+                           &(ipol.ind_r[ii]), &(ipol.ifac_r[ii]));
+    if (ipol.ifac_r[ii] < 0.0 or ipol.ifac_r[ii] > 1.0){
+      printf(" *** Warning : height interpolation becomes extrapolation: ifac_h = %.1f \n", ipol.ifac_r[ii]);
       printf(" *** The values: a = %.3f, h = %.3f, x = %.3f \n", a, h, x);
       printf("Better limit a range of values within table limits \n");
     }
     // interpolation factors between extents
-    int index = (ipol.ifac_h[ii] > 0.999999) ? ipol.ind_h[ii] + 1 : ipol.ind_h[ii];
+    int index = (ipol.ifac_r[ii] > 0.999999) ? ipol.ind_r[ii] + 1 : ipol.ind_r[ii];
     // this additional index shift doesn't matter for the current table
     // but if tabulated extents will differ for different heights - it will matter
-    get_ipol_factor_double(x, tab->dat[ipol.ind_a + ii]->x[index], tab->n_x,
-                           &(ipol.ind_x[ii]), &(ipol.ifac_x[ii]));
-    if (ipol.ifac_x[ii] < 0.0 or ipol.ifac_x[ii] > 1.0){
-      printf(" *** Warning : radius interpolation becomes extrapolation: ifac_x = %.1f \n", ipol.ifac_x[ii]);
+    get_ipol_factor_double(x, tab->dat[ipol.ind_a + ii]->theta[index], tab->n_th,
+                           &(ipol.ind_th[ii]), &(ipol.ifac_th[ii]));
+    if (ipol.ifac_th[ii] < 0.0 or ipol.ifac_th[ii] > 1.0){
+      printf(" *** Warning : radius interpolation becomes extrapolation: ifac_x = %.1f \n", ipol.ifac_th[ii]);
       printf("Better limit a range of values within table limits \n");
     }
   }
@@ -421,8 +421,8 @@ double calc_energy_shift_gamma(extendedSourceTable* tab,
   get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin, tab->n_bin, &ind_bin_lo, &ifac_bin_lo);
   get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a + 1]->bin, tab->n_bin, &ind_bin_hi, &ifac_bin_hi);
 
-  for (int i_h : {ipol.ind_h[0], ipol.ind_h[0] + 1}) { // vertical bins
-    for (int j_x : {ipol.ind_x[0], ipol.ind_x[0] + 1}) { // radial extent bins
+  for (int i_h : {ipol.ind_r[0], ipol.ind_r[0] + 1}) { // vertical bins
+    for (int j_x : {ipol.ind_th[0], ipol.ind_th[0] + 1}) { // radial extent bins
       for (int k_b : {ind_bin_lo, ind_bin_lo + 1}) { // disk radial bins or lensing inclination bins
         double _sum = 0.0; // sum is zeroed every time
         for (int l_e = 0; l_e < tab->n_storage; l_e++) { // energy shift bins
@@ -433,8 +433,8 @@ double calc_energy_shift_gamma(extendedSourceTable* tab,
       }
     }
   }
-  for (int i_h : {ipol.ind_h[1], ipol.ind_h[1] + 1}) { // vertical bins
-    for (int j_x : {ipol.ind_x[1], ipol.ind_x[1] + 1}) { // radial extent bins
+  for (int i_h : {ipol.ind_r[1], ipol.ind_r[1] + 1}) { // vertical bins
+    for (int j_x : {ipol.ind_th[1], ipol.ind_th[1] + 1}) { // radial extent bins
       for (int k_b : {ind_bin_hi, ind_bin_hi + 1}) {
         double _sum = 0.0;
         for (int l_e = 0; l_e < tab->n_storage; l_e++) {
@@ -446,25 +446,25 @@ double calc_energy_shift_gamma(extendedSourceTable* tab,
     }
   }
 
-  double tab_lo_00 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo],
-                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0]][ind_bin_lo + 1]);
-  double tab_lo_01 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin_lo],
-                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0]][ipol.ind_x[0] + 1][ind_bin_lo + 1]);
-  double tab_lo_10 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin_lo],
-                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0]][ind_bin_lo + 1]);
-  double tab_lo_11 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo],
-                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][ind_bin_lo + 1]);
+  double tab_lo_00 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0]][ind_bin_lo],
+                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0]][ind_bin_lo + 1]);
+  double tab_lo_01 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_bin_lo],
+                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_bin_lo + 1]);
+  double tab_lo_10 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_bin_lo],
+                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_bin_lo + 1]);
+  double tab_lo_11 = interp_lin_1d(ifac_bin_lo, tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_bin_lo],
+                                   tab->dat[ipol.ind_a]->gshift[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_bin_lo + 1]);
 
-  double tab_hi_00 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi],
-                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1]][ind_bin_hi + 1]);
-  double tab_hi_01 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi],
-                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1]][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
-  double tab_hi_10 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi],
-                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1]][ind_bin_hi + 1]);
-  double tab_hi_11 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi],
-                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1][ind_bin_hi + 1]);
+  double tab_hi_00 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1]][ind_bin_hi],
+                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1]][ind_bin_hi + 1]);
+  double tab_hi_01 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_bin_hi],
+                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_bin_hi + 1]);
+  double tab_hi_10 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_bin_hi],
+                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_bin_hi + 1]);
+  double tab_hi_11 = interp_lin_1d(ifac_bin_hi, tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_bin_hi],
+                                   tab->dat[ipol.ind_a + 1]->gshift[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_bin_hi + 1]);
 
-  double g_gamma = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
+  double g_gamma = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
                                                 tab_lo_00, tab_lo_01, tab_lo_10, tab_lo_11,
                                                 tab_hi_00, tab_hi_01, tab_hi_10, tab_hi_11);
   assert (g_gamma >= 0.0 || !"g^Gamma negative, wrong interpolation!\n");
@@ -485,35 +485,35 @@ static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const Inte
   lpReflFrac *fractions = new_lpReflFrac(status);
   CHECK_STATUS_RET(*status, fractions);
 
-  fractions->f_ad = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0]][ipol.ind_x[0]],
-                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0]][ipol.ind_x[0] + 1],
-                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0] + 1][ipol.ind_x[0]],
-                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1],
-                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1]][ipol.ind_x[1]],
-                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1]][ipol.ind_x[1] + 1],
-                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1] + 1][ipol.ind_x[1]],
-                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1]);
+  fractions->f_ad = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
+                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_r[0]][ipol.ind_th[0]],
+                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_r[0]][ipol.ind_th[0] + 1],
+                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_r[0] + 1][ipol.ind_th[0]],
+                                                 tab->dat[ipol.ind_a]->f_ad[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1],
+                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_r[1]][ipol.ind_th[1]],
+                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_r[1]][ipol.ind_th[1] + 1],
+                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_r[1] + 1][ipol.ind_th[1]],
+                                                 tab->dat[ipol.ind_a + 1]->f_ad[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1]);
 
-  fractions->f_inf = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0]][ipol.ind_x[0]],
-                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0]][ipol.ind_x[0] + 1],
-                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0] + 1][ipol.ind_x[0]],
-                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1],
-                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1]][ipol.ind_x[1]],
-                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1]][ipol.ind_x[1] + 1],
-                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1] + 1][ipol.ind_x[1]],
-                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1]);
+  fractions->f_inf = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
+                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_r[0]][ipol.ind_th[0]],
+                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_r[0]][ipol.ind_th[0] + 1],
+                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_r[0] + 1][ipol.ind_th[0]],
+                                                  tab->dat[ipol.ind_a]->f_inf[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1],
+                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_r[1]][ipol.ind_th[1]],
+                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_r[1]][ipol.ind_th[1] + 1],
+                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_r[1] + 1][ipol.ind_th[1]],
+                                                  tab->dat[ipol.ind_a + 1]->f_inf[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1]);
 
-  fractions->f_bh = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0]][ipol.ind_x[0]],
-                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0]][ipol.ind_x[0] + 1],
-                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0] + 1][ipol.ind_x[0]],
-                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1],
-                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1]][ipol.ind_x[1]],
-                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1]][ipol.ind_x[1] + 1],
-                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1] + 1][ipol.ind_x[1]],
-                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_h[1] + 1][ipol.ind_x[1] + 1]);
+  fractions->f_bh = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
+                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_r[0]][ipol.ind_th[0]],
+                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_r[0]][ipol.ind_th[0] + 1],
+                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_r[0] + 1][ipol.ind_th[0]],
+                                                 tab->dat[ipol.ind_a]->f_bh[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1],
+                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_r[1]][ipol.ind_th[1]],
+                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_r[1]][ipol.ind_th[1] + 1],
+                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_r[1] + 1][ipol.ind_th[1]],
+                                                 tab->dat[ipol.ind_a + 1]->f_bh[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1]);
 
   fractions->refl_frac = fractions->f_ad / fractions->f_inf;
 
@@ -542,38 +542,38 @@ double calc_primary_lensing(const double incl, const extendedSourceTable* prim_t
     printf("Better limit a range of values within table limits, 0.05 < cos(incl) < 1.0 \n");
   }
 
-  double lens_low = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][ind_incl],
-                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] +
+  double lens_low = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
+                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][ind_incl],
+                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] +
                                                                                                1][ind_incl],
-                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] +
-                                                                                1][ipol.ind_x[0]][ind_incl],
-                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] +
+                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0] +
+                                                                                1][ipol.ind_th[0]][ind_incl],
+                                                 prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] +
                                                                                                    1][ind_incl],
                                                  prim_tab->dat[ipol.ind_a +
-                                                               1]->val[ipol.ind_h[1]][ipol.ind_x[1]][ind_incl],
-                                                 prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] +
+                                                               1]->val[ipol.ind_r[1]][ipol.ind_th[1]][ind_incl],
+                                                 prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] +
                                                                                                    1][ind_incl],
-                                                 prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] +
-                                                                                    1][ipol.ind_x[1]][ind_incl],
-                                                 prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] +
+                                                 prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] +
+                                                                                    1][ipol.ind_th[1]][ind_incl],
+                                                 prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] +
                                                                                                        1][ind_incl]);
-  double lens_high = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_h, ipol.ifac_x,
-                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0]][
+  double lens_high = get_interpolated_value_a_h_x(ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
+                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][
                                                       ind_incl + 1],
-                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0]][ipol.ind_x[0] + 1][
+                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] + 1][
                                                       ind_incl + 1],
-                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0]][
+                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0]][
                                                       ind_incl + 1],
-                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_h[0] + 1][ipol.ind_x[0] + 1][
+                                                  prim_tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][
                                                       ind_incl + 1],
-                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1]][
+                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1]][
                                                       ind_incl + 1],
-                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1]][ipol.ind_x[1] + 1][
+                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] + 1][
                                                       ind_incl + 1],
-                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1]][
+                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1]][
                                                       ind_incl + 1],
-                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_h[1] + 1][ipol.ind_x[1] +
+                                                  prim_tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] +
                                                                                                         1][ind_incl +
                                                                                                            1]);
   double lensing = interp_lin_1d(ifac_incl, lens_low, lens_high);
@@ -787,10 +787,10 @@ extendedSourceTable* new_extended_source_table(const int n_h, const int n_r,
   CHECK_MALLOC_RET_STATUS(tab, status, nullptr)
 
   tab->n_a = n_a;
-  tab->n_h = n_h;
+  tab->n_r = n_h;
   tab->n_bin = n_bin;
   tab->n_storage = n_storage;
-  tab->n_x = n_r;
+  tab->n_th = n_r;
 
   tab->a = nullptr;
 
@@ -828,12 +828,12 @@ extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_
   auto *dat = (extendedSourceData*) malloc(sizeof(extendedSourceData));
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
-  dat->height = (double*) malloc(sizeof(double) * n_h);
+  dat->r_sph = (double*) malloc(sizeof(double) * n_h);
 
-  CHECK_MALLOC_RET_STATUS(dat->height, status, nullptr)
+  CHECK_MALLOC_RET_STATUS(dat->r_sph, status, nullptr)
 
-  dat->x = (double**) malloc(sizeof(double) * n_h);
-  CHECK_MALLOC_RET_STATUS(dat->x, status, nullptr)
+  dat->theta = (double**) malloc(sizeof(double) * n_h);
+  CHECK_MALLOC_RET_STATUS(dat->theta, status, nullptr)
 
   dat->bin = (double*) malloc(sizeof(double) * n_bin);
   CHECK_MALLOC_RET_STATUS(dat->bin, status, nullptr)
@@ -864,8 +864,8 @@ extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_
     dat->refl_frac[i] = (double*) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-    dat->x[i] = (double*) malloc(sizeof(double) * n_x);
-    CHECK_MALLOC_RET_STATUS(dat->x, status, nullptr)
+    dat->theta[i] = (double*) malloc(sizeof(double) * n_x);
+    CHECK_MALLOC_RET_STATUS(dat->theta, status, nullptr)
 
     dat->f_ad[i] = (double*) malloc(sizeof(double) * n_x);
     CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
@@ -938,7 +938,7 @@ void free_extended_source_data(extendedSourceData* dat, const bool is_lensing_ta
   }
   if (dat != nullptr) {
     for (int ii=0; ii < n_h; ii++) {
-      if (dat->x != nullptr) free(dat->x[ii]);
+      if (dat->theta != nullptr) free(dat->theta[ii]);
       if (dat->val != nullptr) free(dat->val[ii]);
       if (dat->gshift != nullptr) free(dat->gshift[ii]);
       if (dat->refl_frac != nullptr) free(dat->refl_frac[ii]);
@@ -958,8 +958,8 @@ void free_extended_source_data(extendedSourceData* dat, const bool is_lensing_ta
     }
   }
     free(dat->bin);
-    free(dat->height);
-    free(dat->x);
+    free(dat->r_sph);
+    free(dat->theta);
     free(dat->val);
     free(dat->gshift);
     free(dat->energy_data_storage);
