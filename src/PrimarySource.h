@@ -90,7 +90,7 @@ class PrimarySourceParameters {
       prime_spec_factors_source_to_observer =
           lp_refl_frac.f_inf_rest / 0.5 * pow(m_energy_shift_source_observer, PrimarySourceParameters::gam());
       // TODO check boost for NTHCOMP
-      // for NTHCOMP: boost is not g^gamma but just g, update of Cp models required
+      // for NTHCOMP: boost is not g^gamma but just g, update of Cp models required (refer to Gullo & Adam)
     }
 
     // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)

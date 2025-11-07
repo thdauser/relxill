@@ -286,7 +286,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
 
   if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
     g_inf_0 = get_energyboost_ring_source_obs(rel_param, 1.0);
-  } else {
+  } else { // not ring geometry (update for slab!)
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
   }
 
