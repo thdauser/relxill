@@ -51,7 +51,7 @@ double calc_proper_area_ring(double rlo, double rhi, double a) {
 }
 
 // Black Body Spectrum (returns ph/s/cm²/keV)  (verified with Xspec bbody model)
-// ToDO: use a properly integrated model (?)x
+// ToDO: use a properly integrated model (?)
 void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac) {
   for (int ii = 0; ii < n; ii++) {
     double emean = 0.5 * (ener[ii] + ener[ii + 1]);
@@ -133,56 +133,6 @@ double calc_g_inf(double height, double a) {
   return sqrt(1.0 - (2 * height / (height * height + a * a)));
 }
 
-/**
-<<<<<<< HEAD
- * @brief calculates the energy shift from a ring source to infinity (NOT YET FULLY IMPLEMENTED)
-=======
- * @brief calculates the time-dilation component of energy shift from a ring source to infinity
->>>>>>> extended_source_emis
- * @details cosinetheta is the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
- * Theta is polar angle of the ring, between 0 and pi/2 (r_ring^2 + height^2 are always > a^2)
- * @param height height of the ring source
- * @param r_ring radius of the ring
- * @param a spin of the black hole
- * @return energy shift (only e^nu component in this function)
- */
-double calc_g_inf_ext(double height, double r_ring, double a) {
-  double g_inf;
-  if (r_ring <= 1.0e-6){ // lamp-post source
-    g_inf = calc_g_inf(height, a);
-  } else {
-    if (height == 0.0) { // the disk case, cosinetheta = 0
-      double r = sqrt(r_ring * r_ring + a * a);
-      double Sigma = r * r;
-      double Delta = r * r - 2.0 * r + a * a;
-      double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a;
-      g_inf = sqrt(Sigma * Delta / rho_squared);
-    } else {
-      if (a == 0.0){ // special case of zero spin. The block below would give inf
-        double cosine_theta = height / sqrt(height * height + r_ring * r_ring);
-        double r = height / cosine_theta;
-        g_inf = sqrt(1 - 2.0 / r);
-      } else { // general case
-        /// can be replaced with a function
-        double cosine_theta = sqrt((sqrt(4.0 * a * a * height * height + (height * height +
-            r_ring * r_ring - a * a) * (height * height + r_ring * r_ring - a * a)) +
-                a * a - height * height - r_ring * r_ring) / (2.0 * a * a));
-        double sine_theta = sqrt(1.0 - pow(cosine_theta, 2));
-        double r = height / cosine_theta; // spherical radius of the ring, not cylindrical!
-        double Sigma = r * r + a * a * cosine_theta * cosine_theta;
-        double Delta = r * r - 2.0 * r + a * a;
-        double rho_squared = (r * r + a * a) * (r * r + a * a) - Delta * a * a * sine_theta * sine_theta;
-        //double omega = 2.0 * a * r / rho_squared;
-        // previous version returned just the lamp-post shift, which led to stronger redshift of the ring primary source
-        //return sqrt(1.0 - (2 * height / (height * height + a * a)));
-        g_inf = sqrt(Sigma * Delta / rho_squared);
-      }
-    }
-  }
-  // printf("energy shift ring source - observer (ONLY e^-nu NOW): %e, h, r, a = %e, %e, %e\n", g_inf, height, r_ring, a);
-  return g_inf;
-}
-
 double calc_cos_theta_primary_source(double height, double r_ring, double a) {
   double cosine_theta;
   if (r_ring == 0.0) {
@@ -240,15 +190,6 @@ double kerr_rplus(double a) {
 /** calculate the doppler factor for a moving primary source **/
 double doppler_factor(double del, double bet) {
   return sqrt(1.0 - bet * bet) / (1.0 + bet * cos(del));
-}
-
-/** similar to gi_potential_lp below, but for ring source **/
-double gi_potential_ext(double r, double a, double h, double x) {
-  // as a temporary solution, exploit previously written function applicable to this case
-  // in general I need to take it from Rellp_Extended, as there we have proper g_sd source-disk
-  double g_inf_s = calc_g_inf_ext(h, x, a); // = E_inf / E_s
-  double g_inf_d = calc_g_inf_ext(0.0, r, a); // = E_inf / E_d
-  return g_inf_s / g_inf_d * gamma_correction(r, a); // = E_d / E_s
 }
 
 /** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
@@ -348,7 +289,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
     return g_inf_0;
   }
 
-  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+  if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
     // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);
     g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
   } else {
@@ -376,7 +317,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
   if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
     return 1;
   }
-  if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT) {
+  if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
     double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
     // return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
     return gshift;

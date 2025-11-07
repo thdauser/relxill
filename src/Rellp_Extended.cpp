@@ -182,11 +182,11 @@ void read_extended_source_table(const char* filename, extendedSourceTable** inp_
       break;
     }
     if (is_lensing_table) {
-      tab = new_extended_source_table(PRIM_TABLE_NHEIGHT, PRIM_TABLE_NDISTANCE, PRIM_TABLE_NA,
-                                      PRIM_TABLE_NINCL, PRIM_TABLE_NENERGYBINS, status);
+      tab = new_extended_source_table(PRIM_TABLE_NUM_RADII, PRIM_TABLE_NUM_ANGLES, PRIM_TABLE_NUM_SPINS,
+                                      PRIM_TABLE_NUM_INCLINATIONS, PRIM_TABLE_NUM_ENERGY_BINS, status);
     } else {
-      tab = new_extended_source_table(EXT_TABLE_NHEIGHT, EXT_TABLE_NDISTANCE, EXT_TABLE_NA,
-                                      EXT_TABLE_NRAD, EXT_TABLE_NENERGYBINS, status);
+      tab = new_extended_source_table(EXT_TABLE_NUM_RADII, EXT_TABLE_NUM_ANGLES, EXT_TABLE_NUM_SPINS,
+                                      EXT_TABLE_NUM_RAD_BINS, EXT_TABLE_NUM_ENERGY_BINS, status);
     }
 
     CHECK_STATUS_BREAK(*status);
@@ -815,15 +815,15 @@ extendedSourceTable* new_extended_source_table(const int n_h, const int n_r,
  * @return extendedSourceData, new extended source data
  */
 extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_table) {
-  int n_h = EXT_TABLE_NHEIGHT;
-  int n_x = EXT_TABLE_NDISTANCE;
-  int n_bin = EXT_TABLE_NRAD;
-  int n_shift = EXT_TABLE_NENERGYBINS;
+  int n_h = EXT_TABLE_NUM_RADII;
+  int n_x = EXT_TABLE_NUM_ANGLES;
+  int n_bin = EXT_TABLE_NUM_RAD_BINS;
+  int n_shift = EXT_TABLE_NUM_ENERGY_BINS;
   if (is_lensing_table) {
-    n_h = PRIM_TABLE_NHEIGHT;
-    n_x = PRIM_TABLE_NDISTANCE;
-    n_bin = PRIM_TABLE_NINCL;
-    n_shift = PRIM_TABLE_NENERGYBINS;
+    n_h = PRIM_TABLE_NUM_RADII;
+    n_x = PRIM_TABLE_NUM_ANGLES;
+    n_bin = PRIM_TABLE_NUM_INCLINATIONS;
+    n_shift = PRIM_TABLE_NUM_ENERGY_BINS;
   }
   auto *dat = (extendedSourceData*) malloc(sizeof(extendedSourceData));
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
@@ -928,13 +928,13 @@ void free_extended_source_table(extendedSourceTable* tab, const bool is_lensing_
  * @param dat; extendedSourceData, data to be freed
  */
 void free_extended_source_data(extendedSourceData* dat, const bool is_lensing_table) {
-  int n_h = EXT_TABLE_NHEIGHT;
-  int n_x = EXT_TABLE_NDISTANCE;
-  int n_r = EXT_TABLE_NRAD;
+  int n_h = EXT_TABLE_NUM_RADII;
+  int n_x = EXT_TABLE_NUM_ANGLES;
+  int n_r = EXT_TABLE_NUM_RAD_BINS;
   if (is_lensing_table) {
-    n_h = PRIM_TABLE_NHEIGHT; // re-define in case of lensing table, dimensions are different
-    n_x = PRIM_TABLE_NDISTANCE;
-    n_r = PRIM_TABLE_NINCL;
+    n_h = PRIM_TABLE_NUM_RADII; // re-define in case of lensing table, dimensions are different
+    n_x = PRIM_TABLE_NUM_ANGLES;
+    n_r = PRIM_TABLE_NUM_INCLINATIONS;
   }
   if (dat != nullptr) {
     for (int ii=0; ii < n_h; ii++) {

@@ -23,19 +23,19 @@
 #include "common.h"
 
 /** dimensions of the emissivity table */
-#define EXT_TABLE_NA 20 // number of spin values
-#define EXT_TABLE_NHEIGHT 50 // number of height values
-#define EXT_TABLE_NDISTANCE 17 // number of distance values
-#define EXT_TABLE_NRAD 99  // number of radial bin values
-#define EXT_TABLE_NENERGYBINS 20 // number of energy bin values
+#define EXT_TABLE_NUM_SPINS 20 // number of spin values
+#define EXT_TABLE_NUM_RADII 50 // number of height values
+#define EXT_TABLE_NUM_ANGLES 17 // number of distance values
+#define EXT_TABLE_NUM_RAD_BINS 99  // number of radial bin values
+#define EXT_TABLE_NUM_ENERGY_BINS 20 // number of energy bin values
 #define EXT_TABLE_FILENAME "rel_ext_table_disk_sph_v0.1.fits"
 
 /** dimensions of the primary table */
-#define PRIM_TABLE_NA 12 // number of spin values
-#define PRIM_TABLE_NHEIGHT 50 // number of height values
-#define PRIM_TABLE_NDISTANCE 17 // number of distance values
-#define PRIM_TABLE_NINCL 20  // number of inclination bins
-#define PRIM_TABLE_NENERGYBINS 20 // number of energy bin values
+#define PRIM_TABLE_NUM_SPINS 12 // number of spin values
+#define PRIM_TABLE_NUM_RADII 50 // number of height values
+#define PRIM_TABLE_NUM_ANGLES 17 // number of distance values
+#define PRIM_TABLE_NUM_INCLINATIONS 20  // number of inclination bins
+#define PRIM_TABLE_NUM_ENERGY_BINS 20 // number of energy bin values
 #define PRIM_TABLE_FILENAME "rel_ext_table_obs_sph_v0.1.fits"
 
 typedef struct {
