@@ -33,7 +33,7 @@ extern "C" {
 
 
 TEST_CASE (
-"Default line model call "
+"Default relline_ring model call "
 ,
 "[extended]"
 )
@@ -45,15 +45,15 @@ TEST_CASE (
 
   LocalModel local_model{ModelName::relline_ring};
 
-  double height = 3.0;
+  double r_src = 3.0;
 
-  double x = 1.0;
+  double theta = 1.0;
   double a = 0.9837;
   local_model.set_par(XPar::a, a);
   local_model.set_par(XPar::rin, -1);
   local_model.set_par(XPar::rout, 1000.0);
-  local_model.set_par(XPar::r_src, height);
-  local_model.set_par(XPar::theta_src, x);
+  local_model.set_par(XPar::r_src, r_src);
+  local_model.set_par(XPar::theta_src, theta);
   local_model.set_par(XPar::switch_switch_returnrad, 0);
   local_model.set_par(XPar::gamma, 2.0);
 
@@ -69,7 +69,7 @@ TEST_CASE (
 
 
 TEST_CASE (
-"Default call of relxill ext models for different geometries "
+"Default call of relxill ring models "
 ,
 "[extended]"
 )
@@ -82,27 +82,25 @@ TEST_CASE (
   // LocalModel local_model{ModelName::relxill_ext};
   // do some dummy param sets just to try that it works
   double spin = 0.99;
-  double height = 2.0;
-  double x = 10.0;
+  double r_src = 2.0;
+  double theta = 10.0;
   double incl = 45.0;
   for (ModelName model : {ModelName::relline_ring, ModelName::relxill_ring_ecut, ModelName::relxill_ring}) {
-    for (int type_geom : {1}) {
-      LocalModel local_model{model};
-      // local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
-      local_model.set_par(XPar::a, spin);
-      local_model.set_par(XPar::r_src, height);
-      local_model.set_par(XPar::theta_src, x);
-      local_model.set_par(XPar::incl, incl);
+    LocalModel local_model{model};
+    // local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
+    local_model.set_par(XPar::a, spin);
+    local_model.set_par(XPar::r_src, r_src);
+    local_model.set_par(XPar::theta_src, theta);
+    local_model.set_par(XPar::incl, incl);
 
-      REQUIRE_NOTHROW(local_model.eval_model(spec));
-    }
+    REQUIRE_NOTHROW(local_model.eval_model(spec));
   }
   //REQUIRE(status == EXIT_SUCCESS);
 }
 
 
 TEST_CASE (
-"Checking the reflection fraction in the lp limit"
+"Checking the reflection fraction of a ring in the lp limit "
 ,
 "[extended]"
 )
@@ -138,7 +136,7 @@ TEST_CASE (
   local_model_ext.set_par(XPar::rin, -1.0);
   local_model_ext.set_par(XPar::rout, 1000.0);
 
-  local_model_ext.set_par(XPar::r_src, h);
+  local_model_ext.set_par(XPar::r_src, h); // h == r_src when theta == 0
   local_model_ext.set_par(XPar::theta_src, 0.0);
   //local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
@@ -158,7 +156,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
-"Compare lp and ext emissivities for x = 0 or theta = 0"
+"Compare lp and ring emissivities for zero ring size "
 ,
 "[extended]"
 )
@@ -178,19 +176,19 @@ TEST_CASE (
   local_model_ext.set_par(XPar::theta_src, 0.0);
 
   double spins[3] = {0.8, 0.9, 0.998};
-  double heights[3] = {3.0, 5.0, 10.0};
+  double sph_radii[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
-    for(double height : heights){
+    for(double r_src : sph_radii){
 
       local_model.set_par(XPar::a, spin);
 
-      local_model.set_par(XPar::h, height);
+      local_model.set_par(XPar::h, r_src); // h == r_src when theta == 0
       local_model.set_par(XPar::rin, -1.0);
       local_model.eval_model(spec);
 
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::r_src, height);
+      local_model_ext.set_par(XPar::r_src, r_src);
       local_model_ext.set_par(XPar::rin, -1.0);
       local_model_ext.eval_model(spec_ext);
       auto sys_par = get_system_parameters(local_model.rel_params(), &status);
@@ -214,7 +212,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
-"Compare lp and ext line profiles for x = 0 for several spins and heights "
+"Compare lp and ring line profiles for zero ring size for several spins and heights "
 ,
 "[extended]"
 )
@@ -233,14 +231,14 @@ TEST_CASE (
   local_model_ext.set_par(XPar::theta_src, 0.0);
 
   double spins[3] = {0.8, 0.9, 0.998};
-  double heights[3] = {3.0, 5.0, 10.0};
+  double sph_radii[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
-    for (double height : heights){
+    for (double r_src : sph_radii){
       local_model.set_par(XPar::a, spin);
-      local_model.set_par(XPar::h, height);
+      local_model.set_par(XPar::h, r_src);
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::r_src, height);
+      local_model_ext.set_par(XPar::r_src, r_src);
 
       REQUIRE_NOTHROW(local_model.eval_model(spec));
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
@@ -260,7 +258,7 @@ TEST_CASE (
 
 
 TEST_CASE (
-"Compare lp and ext reflected fluxes for x = 0 for several spins and heights "
+"Compare lp and ring reflected fluxes for zero ring radius for several spins and heights "
 ,
 "[extended]"
 )
@@ -281,14 +279,14 @@ TEST_CASE (
   // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
   local_model.set_par(XPar::refl_frac, -1);
   double spins[3] = {0.8, 0.9, 0.998};
-  double heights[3] = {3.0, 5.0, 10.0};
+  double sph_radii[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
-    for (double height : heights){
+    for (double r_src : sph_radii){
       local_model.set_par(XPar::a, spin);
-      local_model.set_par(XPar::h, height);
+      local_model.set_par(XPar::h, r_src);
       local_model_ext.set_par(XPar::a, spin);
-      local_model_ext.set_par(XPar::r_src, height);
+      local_model_ext.set_par(XPar::r_src, r_src);
       REQUIRE_NOTHROW(local_model.eval_model(spec));
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 

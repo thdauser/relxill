@@ -241,12 +241,7 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
 
 /** similar to gi_potential_lp below, but for ring source **/
 double gi_potential_ext(const relParam *param, double r) {
-  // temporary older solution
-  // double g_inf_s = calc_g_inf_ext(param->height, param->r_ring, param->a); // = E_inf / E_s
-  // double g_inf_d = calc_g_inf_ext(0.0, r, param->a); // = E_inf / E_d
-  //return g_inf_s / g_inf_d * gamma_correction(r, param->a); // = E_d / E_s
-  double g_sd = get_energyboost_ext_source_disk(param, r, 1.0); // it is just energy shift here, so no Gamma
-  // printf("Do we agree at LP? g old: %.6f, new %.6f \n", g_inf_s / g_inf_d * gamma_correction(r, param->a), g_sd);
+  double g_sd = get_energyboost_ring_source_disk(param, r, 1.0); // it is just energy shift here
   return g_sd;
 }
 
@@ -290,8 +285,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
   }
 
   if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
-    // g_inf_0 = calc_g_inf_ext(rel_param->height, rel_param->r_ring, rel_param->a);
-    g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
+    g_inf_0 = get_energyboost_ring_source_obs(rel_param, 1.0);
   } else {
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
   }
@@ -318,8 +312,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
     return 1;
   }
   if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
-    double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
-    // return gi_potential_ext(radius_disk, rel_param->a, rel_param->height, rel_param->r_ring);
+    double gshift = get_energyboost_ring_source_disk(rel_param, radius_disk, 1.0);
     return gshift;
   }
   else{
