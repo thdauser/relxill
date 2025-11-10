@@ -373,11 +373,6 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->r_src = inp_param.get_otherwise_default(XPar::r_src, 0.0);
   param->theta = inp_param.get_otherwise_default(XPar::theta_src, 0.0);
 
-  // if (param->height == 0) { // temporary try to fix height misbehaving
-  //  printf("Resetting height from zero to actual value! \n");
-  //  param->height = param->r_src * cos(param->theta * M_PI / 180.0);
-  // }
-
   param->x = inp_param.get_otherwise_default(XPar::x, 0.1);
   param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
 

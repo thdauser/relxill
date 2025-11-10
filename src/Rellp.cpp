@@ -291,7 +291,6 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
 
 int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  // "if" now accounts also for EXT type models. Eventually this needs to be restructured
   if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) &&
         param->prim_geometry_type == GEOMETRY_LP) {
     return 1;
@@ -318,7 +317,8 @@ int modelSlabSource(const relParam *param) {
 
 int modelVertExtendSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  if ((fabs(param->htop) >= 1.0) || (param->htop - htopPrecLimit >= param->height)) {
+  if ((fabs(param->htop) >= 1.0) || (param->htop - htopPrecLimit >= param->height) &&
+  param->prim_geometry_type == GEOMETRY_LP) {
     return 1;
   } else {
     return 0;

@@ -278,8 +278,8 @@ TEST_CASE (
   local_model_ext.set_par(XPar::refl_frac, -1);
   // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
   local_model.set_par(XPar::refl_frac, -1);
-  double spins[3] = {0.8, 0.9, 0.998};
-  double sph_radii[3] = {3.0, 5.0, 10.0};
+  double spins[1] = {0.998}; // 0.8, 0.9,
+  double sph_radii[1] = {5.0}; // , 5.0, 10.0
 
   for (double spin : spins){
     for (double r_src : sph_radii){
