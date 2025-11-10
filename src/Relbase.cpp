@@ -414,6 +414,8 @@ int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
     // xillver needs to be re-computed, Ecut changes for the following parameters **/
     if (are_values_different(rel_param->a, ca_rel_param->a) ||
         are_values_different(rel_param->height, ca_rel_param->height) ||
+        are_values_different(rel_param->r_src, ca_rel_param->r_src) ||
+        are_values_different(rel_param->theta, ca_rel_param->theta) ||
         are_values_different(rel_param->beta, ca_rel_param->beta)) {
       redo = 1;
     }
