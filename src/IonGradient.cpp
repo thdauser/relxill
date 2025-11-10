@@ -210,11 +210,22 @@ xillTableParam **IonGradient::get_xill_param_zone(const xillTableParam *primary_
   return xill_param_zone;
 }
 
-double calc_flux_rin_cgs(double l_source, double height, double Rin, double mass) {
+double calc_flux_rin_cgs_lp(double l_source, double height, double Rin, double mass) {
 
   const double CONST_rgIncm = 1.4822e5;  // G / c^2 * (M/Msolar)
 
   const double dRay_rg = sqrt(pow(height, 2) + pow(Rin, 2));
+  const double dRay_cm = dRay_rg * CONST_rgIncm * mass;
+
+  return l_source / (4 * M_PI * pow(dRay_cm, 2));
+}
+
+/* calc_flux_rin_cgs_lp assumes a lp source, this one is for ring source */
+double calc_flux_rin_cgs_ring(double l_source, double r_src, double theta, double Rin, double mass) {
+
+  const double CONST_rgIncm = 1.4822e5;  // G / c^2 * (M/Msolar)
+
+  const double dRay_rg = sqrt(pow(r_src, 2) + pow(Rin, 2) - 2.0 * Rin * r_src * sin(theta * CONVERT_DEG2RAD));
   const double dRay_cm = dRay_rg * CONST_rgIncm * mass;
 
   return l_source / (4 * M_PI * pow(dRay_cm, 2));
@@ -240,8 +251,13 @@ double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
   double l_source_cgs = primary_source.luminosity_source_cgs();
   const double boost = primary_source.get_boost_parameter(photon_fate_fractions);
   l_source_cgs *= boost;
-
-  return calc_flux_rin_cgs(l_source_cgs, rel_param.height, rad, primary_source.mass_msolar());
+  if (rel_param.model_type == MOD_TYPE_RELXILLRING) {
+    // for ring sources we use different geometry parameters (r_src = h * cos theta)
+    printf("Using new switch for cgs flux \n");
+    return calc_flux_rin_cgs_ring(l_source_cgs, rel_param.r_src, rel_param.theta, rad, primary_source.mass_msolar());
+  } else {
+    return calc_flux_rin_cgs_lp(l_source_cgs, rel_param.height, rad, primary_source.mass_msolar());
+  }
 }
 
 /**
@@ -262,9 +278,18 @@ double calc_flux_disk_cgs(const lpReflFrac *photon_fate_fractions,
 
   // calculate the flux boost wrt to Newton from the given emissivity profile, as it is defined such that for large
   // radii (i.e., neglecting GR effects it coincides with the Newtonian version normalized as \int \emis dA = 1)
+
+  double emis_at_lxi_max;
+  if (rel_param.model_type == MOD_TYPE_RELXILLRING) {
+    printf("Using new switch for emissivity \n");
+    double h = rel_param.r_src * cos(rel_param.theta * CONVERT_DEG2RAD);
+    double x = rel_param.r_src * sin(rel_param.theta * CONVERT_DEG2RAD);
+    emis_at_lxi_max = calc_ring_emissivity_1d_newton(h, x, radius_lxi_max);
+  } else {
+    emis_at_lxi_max = calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
+  }
   double const boost_newton_to_gr =
-      photon_fate_fractions->refl_frac * emis_profile_lxi_max.emis[0]
-          / calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
+      photon_fate_fractions->refl_frac * emis_profile_lxi_max.emis[0] / emis_at_lxi_max;
 
   const double flux_rad_lxi_max_cgs =
       calc_flux_disk_newton_cgs(photon_fate_fractions, primary_source, radius_lxi_max)
@@ -450,7 +475,7 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
       throw std::exception();
     }
     if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
-      // todo better switcher ^
+      // todo better switcher ^ (need to include common.h to have proper geometry switcher)
       return ecut_primary * gi_potential_ext(rel_param, rzone);
     }
     else {

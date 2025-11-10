@@ -241,7 +241,7 @@ void read_extended_source_table(const char* filename, extendedSourceTable** inp_
 /**
  * @brief Interpolate the table between two spins
  * @details
- * @param tab; extendedSourceTable, pointer to the table as declared above
+ * @param tab extendedSourceTable, pointer to the table as declared above
  * @param ipol; structure with interpolation factors between a, r, theta
  * @param gamma; double, photon index
  * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile

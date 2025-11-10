@@ -182,6 +182,7 @@
 
 // useful constants
 #define CONVERT_KEV2ERG 1.6021773000008302e-09  // 1 keV in erg
+#define CONVERT_DEG2RAD 1.7453292519943295e-02 // = M_PI / 180.0 // 1 deg in rad
 
 enum xillTableIds {
   XILLTABLE_ID_STANDARD,

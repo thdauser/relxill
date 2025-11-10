@@ -323,7 +323,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
 /**
  * @brief calculate the geometric/Newtonian emissivity for the LP geometry
  * @details the emissivity profiles are normalized such that at large height and
- * radii the GR profiles converge towards this defintion
+ * radii the GR profiles converge towards this definition
  * @param h
  * @param r
  * @return
@@ -332,6 +332,25 @@ double calc_lp_emissivity_newton(double h, double r) {
 
   double emis = pow(1. / (pow((r / h), 2) + 1), (3. / 2));
   emis /= (2 * M_PI * h * h);
+
+  return emis;
+}
+
+/**
+ * @brief calculate the Newtonian 1d emissivity for the RING geometry
+ * @details This is only a proxy of the flux produced by the ring in newtonian limit,
+ * for proper flux we need a 3d raytracing in flat space
+ * However, this proxy is good enough for the current use in the code
+ * @param h Height of the ring
+ * @param x Radius of the ring (cylindrical)
+ * @param r
+ * @return
+ */
+double calc_ring_emissivity_1d_newton(double h, double x, double r) {
+
+  double emis = pow(1.0 / ((r - x) * (r - x) / h / h + 1.0), (3. / 2));
+  double bracket = sqrt(1.0 + x * x / h / h) + x / h;
+  emis /= (2.0 * M_PI * h * h * bracket);
 
   return emis;
 }
