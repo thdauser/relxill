@@ -599,14 +599,16 @@ void calculateAngleWeightedXillverSpectrum(VecD& o_xill_flux,
 
 
 /**
- * calculate a xillver spectrum and combine it according to the angle distribution
- * (stored in rel_cosne_dist)
- * @param [output] xill_flux  (needs to be allocated)
- * @param ener
- * @param n_ener
- * @param xill_param
- * @param rel_cosne_dist
- * @param status
+ * @brief Calculate a xillver spectrum and combine it according to the angle distribution
+ * @details This function retrieves xillver spectra for all inclination angles and combines them
+ *          using the provided angle distribution weights. The combined spectrum is rebinned to
+ *          the output energy grid.
+ * @param [out] xill_flux Vector to store the angle-weighted xillver spectrum (needs to be pre-allocated)
+ * @param [in] ener Energy bin boundaries array (size n_ener+1) in keV
+ * @param [in] n_ener Number of energy bins
+ * @param [in] xill_param Xillver parameters defining the ionization state, density, and primary spectrum
+ * @param [in] rel_cosne_dist Array of angle distribution weights for each inclination angle
+ * @param [in,out] status Error status flag; returns EXIT_SUCCESS on success
  */
 void getAnglecorrXillSpec(VecD& xill_flux, const double* ener, int n_ener, xillParam *xill_param,
                           double *rel_cosne_dist, int *status) {

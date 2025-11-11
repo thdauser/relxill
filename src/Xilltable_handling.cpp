@@ -19,6 +19,8 @@
 #include "Relxill_errorhandling.h"
 #include "Xilltable_handling.h"
 
+#include "Types.h"
+
 extern "C" {
 #include "xilltable_reading.h"
 #include "common.h"
@@ -190,8 +192,8 @@ void check_xilltab_cache(const char* fname, const xillTableParam* param, const x
   int max_dims = 6; // Maximum supported dimensions
 
   // Set up loop bounds for each dimension
-  std::vector<int> loop_start(max_dims);
-  std::vector<int> loop_end(max_dims);
+  VecI loop_start(max_dims);
+  VecI loop_end(max_dims);
 
   // Set up bounds for the all dimensions (not we count backwards, meaning first entries are zero for dim<max_dims)
   for (int iloop = 0; iloop < max_dims; iloop++)

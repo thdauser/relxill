@@ -28,13 +28,15 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
     return;
   } // will do nothing if the refl_frac structure is not set
 
+
   // energy grids need to be the same
   assert(refl_spec.num_flux_bins == primary_spec.num_flux_bins);
 
   const relParam *rel_param = source_parameters.rel_param();
+  assert(rel_param != nullptr);
 
-  int const imin = binary_search(refl_spec.energy(), refl_spec.num_flux_bins + 1, RSTRENGTH_EMIN);
-  int const imax = binary_search(refl_spec.energy(), refl_spec.num_flux_bins + 1, RSTRENGTH_EMAX);
+  int const imin = binary_search(refl_spec.energy(), static_cast<int>(refl_spec.num_flux_bins) + 1, RSTRENGTH_EMIN);
+  int const imax = binary_search(refl_spec.energy(), static_cast<int>(refl_spec.num_flux_bins) + 1, RSTRENGTH_EMAX);
 
   double sum_pl = 0.0;
   double sum = 0.0;

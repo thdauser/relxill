@@ -221,6 +221,7 @@ static void calc_rr_bbspec_ring(VecD& spec, double* ener, int nener, int irad, c
                                 returningFractions* dat, const int* status)
 {
     VecD spec_r(nener, 0.0);
+    spec.assign(spec.size(), 0.0);
 
     for (int ii = 0; ii < dat->nrad; ii++)
     {
@@ -573,15 +574,6 @@ void getZoneIncidentReturnFlux(xillParam* xill_param, const returnSpec2D* return
     }
 }
 
-/*
-void getZoneDirectPrimaryFlux(xillParam *xill_param, const returnSpec2D *returnSpec, double *returnFlux, int ii) {
-
-  for (int jj = 0; jj < returnSpec->n_ener; jj++) {
-    returnFlux[jj] =  returnSpec->specPri[ii][jj];
-  }
-
-}*/
-
 
 /**
  * @brief Generates a blackbody primary spectrum  of the given Xillver spectrum.
@@ -727,7 +719,6 @@ void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
  * 5. Convolve the resulting spectrum using relativistic effects for each reflection zone.
  * 6. Rebin the convolved spectrum onto the input energy grid and combine contributions from all zones.
  * 7. Apply corrections to clean and format the output spectrum.
- * 8. Optionally write diagnostic FITS files for debugging purposes based on the control flags.
  *
  * Memory allocation and deallocation are handled for intermediate spectra within the function, ensuring proper cleanup
  * of resources to prevent memory leaks.

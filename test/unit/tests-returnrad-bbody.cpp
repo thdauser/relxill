@@ -87,3 +87,12 @@ TEST_CASE(" Test relxillBB-xill Model ", "[relxillbbxill]")
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
     REQUIRE_NOTHROW(lmod.eval_model(spec));
 }
+
+TEST_CASE(" Test relxillBB Model ", "[relxillbb]")
+{
+    LocalModel lmod(ModelName::relxillBB);
+    setenv("RELXILL_BBRET_NOREFL", "1", 1);
+    DefaultSpec default_spec{};
+    XspecSpectrum spec = default_spec.get_xspec_spectrum();
+    REQUIRE_NOTHROW(lmod.eval_model(spec));
+}
