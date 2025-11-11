@@ -52,7 +52,7 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   }
   // other set of parameters for RING
   if (rel_param->prim_geometry_type == GEOMETRY_RING) {
-    printf("For a = %.3f, Rin = %.3f,ring spherical radius r_src = &.3f, and ring polar angle = %.2f deg",
+    printf("For a = %.3f, Rin = %.3f,ring spherical radius r_src = %.3f, and ring polar angle = %.2f deg",
            rel_param->a, rel_param->rin, rel_param->r_src, rel_param->theta);
   }
   if (rel_param->prim_geometry_type == GEOMETRY_SLAB) {
