@@ -484,6 +484,32 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
   }
 }
 
+
+/**
+ * @brief Calculate a radial grid for disk zones with adaptive spacing
+ *
+ * Creates a radial grid with nzones+1 boundary points between rmin and rmax.
+ * The grid spacing adapts based on the height parameter h:
+ * - For radii r < h (when h > rmin): Uses logarithmic spacing to better resolve
+ *   the inner disk region where the emissivity varies rapidly
+ * - For radii r >= h: Uses 1/r spacing which provides finer resolution at smaller
+ *   radii while extending efficiently to large radii
+ * - Special case nzones=1: Returns simple [rmin, rmax] boundaries
+ *
+ * This adaptive grid ensures adequate resolution near the inner disk edge and
+ * around the height of the primary X-ray source, where relativistic effects
+ * and irradiation geometry are most important.
+ *
+ * @param rmin Minimum radius of the grid (inner disk edge) [in gravitational radii]
+ * @param rmax Maximum radius of the grid (outer disk edge) [in gravitational radii]
+ * @param nzones Number of radial zones (grid will have nzones+1 boundary points)
+ * @param h Height parameter, typically the height of the primary source [in gravitational radii]
+ *
+ * @return Vector of size nzones+1 containing the radial grid boundaries in ascending order
+ *
+ * @note The returned vector contains zone boundaries. For nzones zones, there are
+ *       nzones+1 boundaries: [r_0, r_1, ..., r_nzones] where r_0=rmin and r_nzones=rmax
+ */
 std::vector<double> RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double h) {
 
   std::vector<double> rgrid(nzones + 1);
