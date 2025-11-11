@@ -26,8 +26,10 @@
 #include "PrimarySource.h"
 
 extern "C" {
-#include "relutility.h"
+#include "common.h"
 }
+
+
 
 class RadialGrid {
 
@@ -41,12 +43,13 @@ class RadialGrid {
     return radius.size() - 1;
   }
 
-  std::vector<double> radius{}; // has length num_zones+1
+  VecD radius{}; // has length num_zones+1
 
  private:
-  static std::vector<double> calculate_radial_grid(double rmin, double rmax, int nzones, double h);
+  static VecD calculate_radial_grid(double rmin, double rmax, int nzones, double r_transition_input);
 };
 
+RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param);
 
 
 class IonGradient{

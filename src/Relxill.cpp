@@ -349,9 +349,9 @@ void relxill_kernel(const XspecSpectrum& xspec_spectrum,
 
         // --- 1 --- calculate the accretion disk zones and set their parameters
         // ternary operator (? :) is a solution to have transition radius not only for LP geometry, but also for rings
+        auto radial_grid = get_standard_relxill_radial_grid(*rel_param);
         IonGradient ion_gradient{
-            RadialGrid(rel_param->rin, rel_param->rout, rel_param->num_zones,
-                       rel_param->prim_geometry_type == GEOMETRY_RING ? rel_param->r_src : rel_param->height),
+            radial_grid,
             rel_param->ion_grad_type, xill_param->iongrad_index
         };
         ion_gradient.calculate_gradient(*(sys_par->emis), primary_source.source_parameters);

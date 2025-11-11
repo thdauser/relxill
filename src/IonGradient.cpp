@@ -484,35 +484,48 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
   }
 }
 
+RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param)
+{
+  auto transition_radius =
+    is_ring_primary_source(rel_param.prim_geometry_type) ?
+      rel_param.r_src :
+      rel_param.height;
+
+  // radial grid assumed log-spacing for r<r_trans and 1/r spacing for r>r_trans
+  return {rel_param.rin, rel_param.rout, rel_param.num_zones, transition_radius};
+}
+
 
 /**
  * @brief Calculate a radial grid for disk zones with adaptive spacing
  *
  * Creates a radial grid with nzones+1 boundary points between rmin and rmax.
- * The grid spacing adapts based on the height parameter h:
- * - For radii r < h (when h > rmin): Uses logarithmic spacing to better resolve
- *   the inner disk region where the emissivity varies rapidly
- * - For radii r >= h: Uses 1/r spacing which provides finer resolution at smaller
- *   radii while extending efficiently to large radii
+ * The grid spacing adapts based on the transition radius parameter:
+ * - For radii r < r_transition (when r_transition > rmin): Uses logarithmic spacing
+ *   to better resolve the inner disk region where the emissivity varies rapidly
+ * - For radii r >= r_transition: Uses 1/r spacing which provides finer resolution at
+ *   smaller radii while extending efficiently to large radii
  * - Special case nzones=1: Returns simple [rmin, rmax] boundaries
  *
  * This adaptive grid ensures adequate resolution near the inner disk edge and
- * around the height of the primary X-ray source, where relativistic effects
- * and irradiation geometry are most important.
+ * around the transition radius (typically the height of the primary X-ray source),
+ * where relativistic effects and irradiation geometry are most important.
  *
  * @param rmin Minimum radius of the grid (inner disk edge) [in gravitational radii]
  * @param rmax Maximum radius of the grid (outer disk edge) [in gravitational radii]
  * @param nzones Number of radial zones (grid will have nzones+1 boundary points)
- * @param h Height parameter, typically the height of the primary source [in gravitational radii]
+ * @param r_transition_input Transition radius parameter, for the Lamp post typically the height of the
+ *                           primary source [in gravitational radii]
  *
  * @return Vector of size nzones+1 containing the radial grid boundaries in ascending order
  *
  * @note The returned vector contains zone boundaries. For nzones zones, there are
  *       nzones+1 boundaries: [r_0, r_1, ..., r_nzones] where r_0=rmin and r_nzones=rmax
+ * @note The return type is VecD, which is a vector of doubles
  */
-std::vector<double> RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double h) {
+VecD RadialGrid::calculate_radial_grid(double rmin, double rmax, const int nzones, double r_transition_input) {
 
-  std::vector<double> rgrid(nzones + 1);
+  VecD rgrid(nzones + 1);
 
   if (nzones == 1) {
     rgrid[0] = rmin;
@@ -522,8 +535,8 @@ std::vector<double> RadialGrid::calculate_radial_grid(double rmin, double rmax, 
     double r_transition = rmin;
     int indr = 0;
 
-    if (h > rmin) { // if h > rmin we choose a log grid for r<h
-      r_transition = h;
+    if (r_transition_input > rmin) {
+      r_transition = r_transition_input;
 
       get_log_grid(rgrid.data(), nzones + 1, rmin, rmax);
       indr = binary_search(rgrid.data(), nzones + 1, r_transition);
@@ -534,7 +547,6 @@ std::vector<double> RadialGrid::calculate_radial_grid(double rmin, double rmax, 
     if (indr < nzones) {
       double const rlo = r_transition;
       double const rhi = rmax; // radius[nzones];
-      // add 1/r for larger radii
       for (int ii = indr; ii < nzones + 1; ii++) {
         rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
         rgrid[ii] = fabs(1.0 / rgrid[ii]);

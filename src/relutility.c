@@ -109,6 +109,14 @@ int is_co_model(int model_type) {
   }
 }
 
+int is_ring_primary_source(int prim_geometry_type){
+  if (prim_geometry_type ==  GEOMETRY_RING) {
+    return 1;
+  }
+    return 0;
+}
+
+
 /** check and report FITS error   */
 void relxill_check_fits_error(const int *status) {
   if (*status != EXIT_SUCCESS) {
