@@ -484,14 +484,13 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
   }
 }
 
-RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param)
-{
+RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param) {
   auto transition_radius =
     is_ring_primary_source(rel_param.prim_geometry_type) ?
       rel_param.r_src :
       rel_param.height;
 
-  // radial grid assumed log-spacing for r<r_trans and 1/r spacing for r>r_trans
+  // radial grid assumes log-spacing for r<transition_radius and 1/r spacing for r>transition_radius
   return {rel_param.rin, rel_param.rout, rel_param.num_zones, transition_radius};
 }
 
@@ -507,15 +506,11 @@ RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param)
  *   smaller radii while extending efficiently to large radii
  * - Special case nzones=1: Returns simple [rmin, rmax] boundaries
  *
- * This adaptive grid ensures adequate resolution near the inner disk edge and
- * around the transition radius (typically the height of the primary X-ray source),
- * where relativistic effects and irradiation geometry are most important.
- *
  * @param rmin Minimum radius of the grid (inner disk edge) [in gravitational radii]
  * @param rmax Maximum radius of the grid (outer disk edge) [in gravitational radii]
  * @param nzones Number of radial zones (grid will have nzones+1 boundary points)
- * @param r_transition_input Transition radius parameter, for the Lamp post typically the height of the
- *                           primary source [in gravitational radii]
+ * @param r_transition_input Transition radius parameter, the height of the
+ *                           primary source [in gravitational radii] for the Lamp post
  *
  * @return Vector of size nzones+1 containing the radial grid boundaries in ascending order
  *
