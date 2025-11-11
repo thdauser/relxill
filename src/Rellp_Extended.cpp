@@ -685,66 +685,75 @@ void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* st
   CHECK_STATUS_VOID(*status);
 }
 
-void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* status) {
 
-  CHECK_STATUS_VOID(*status);
+/* Helper function that allocates slab parameters */
+slabParams* get_slab_geometry(const relParam* param, int* status) {
+  slabParams *slab_source = nullptr;
+  int number_rings = 100;
+  slab_source->num_rings = number_rings;
+  slab_source->slab_grid_radii.reserve(number_rings + 1);
+  for (int ii = 0; ii < number_rings + 1; ii++) { // define grid of rings for slab
+    slab_source->slab_grid_radii[ii] = param->x_in + (param->x - param->x_in) * ii / number_rings;
+  }
+  return slab_source;
+}
+
+
+void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* status) {
 
   extendedSourceTable* emissivity_table = get_es_table(status);
   extendedSourceTable* prim_table = get_prim_table(status);
   InterpFactors ipol;
   InterpFactors prim_ipol;
-  // TODO proper scheme for primary normalization, currently we assume just the values from the outermost ring:
-  calc_photon_fate_ring(emisProf, param, prim_table, status);
-
-  const int num_rings = 100;
-  std::array<double, num_rings> slab_grid{};
-  emisProfile* slab_emis_sum = nullptr;
   double* rad_grid = nullptr;
 
-  double weight_i;
-  double weight_sum = 0.0;
+  slabParams *slab_source = get_slab_geometry(param, status);
 
-  for (int ii = 0; ii < num_rings; ii++) { // define grid of rings for slab
-    slab_grid[ii] = param->x_in + (param->x - param->x_in) * ii / (num_rings - 1);
-  }
+  CHECK_STATUS_VOID(*status);
 
-  for (int ii = 0; ii < num_rings; ii++) {
+  emisProfile* ring_emis_tmp = new_emisProfile(emisProf->re, emisProf->nr, status);
+
+  setArrayToZero(emisProf->emis, emisProf->nr);
+  emisProf->photon_fate_fractions = new_lpReflFrac(status);
+  emisProf->normFactorPrimSpec = 0.0;
+
+  double weight_sum = 0.0; // need for normalization
+  for (int n_r = 0; n_r < slab_source->num_rings; n_r++) {
 
     /// !!! FIX for slab: either new function for interpolation in h,x plane, or convert slab rings to r, theta
-    get_ipol_factors_a_r_th(param->a, param->height, slab_grid[ii], emissivity_table, ipol);
-    get_ipol_factors_a_r_th(param->a, param->height, slab_grid[ii], prim_table, prim_ipol);
+    get_ipol_factors_a_r_th(param->a, param->height, slab_source->slab_grid_radii[n_r], emissivity_table, ipol);
+    get_ipol_factors_a_r_th(param->a, param->height, slab_source->slab_grid_radii[n_r], prim_table, prim_ipol);
 
-    emisProfile *ring_emis_tmp = interpol_extended_table(emissivity_table, ipol,
-                                                         param->gamma, rad_grid, status);
-
-    if (ii == 0) {
-      slab_emis_sum = new_emisProfile(ring_emis_tmp->re, ring_emis_tmp->nr, status);
-    }
-    assert(slab_emis_sum != nullptr);
-    assert(slab_emis_sum->emis != nullptr);
+    ring_emis_tmp = interpol_extended_table(emissivity_table, ipol, param->gamma, rad_grid, status);
 
     ring_emis_tmp->photon_fate_fractions = calc_refl_frac_ext(prim_table, prim_ipol, status);
 
-    if (ii == num_rings - 1) { // last bin
-      weight_i = slab_grid[num_rings - 1] * (slab_grid[num_rings - 1] -
-          slab_grid[num_rings - 2]) * ring_emis_tmp->photon_fate_fractions->refl_frac;
-    } else { // ordinary bin
-      weight_i = slab_grid[ii] * (slab_grid[ii + 1] - slab_grid[ii]) * ring_emis_tmp->photon_fate_fractions->refl_frac;
+    double weight_factor = slab_source->slab_grid_radii[n_r] * (slab_source->slab_grid_radii[n_r + 1] -
+        slab_source->slab_grid_radii[n_r]) * ring_emis_tmp->photon_fate_fractions->refl_frac;
+    weight_sum += weight_factor;
+
+    for (int j_r = 0; j_r < emisProf->nr; j_r++) {
+      emisProf->emis[j_r] += ring_emis_tmp->emis[j_r] * weight_factor;
+      // will be different for ext sources:
+      // emisProf->del_inc[j_r] += ring_emis_tmp->del_inc[j_r] * weight_factor;
+      // emisProf->del_emit[j_r] += ring_emis_tmp->del_emit[j_r] * weight_factor;
     }
-    weight_sum += weight_i;
-    for (int nn = 0; nn < ring_emis_tmp->nr; nn++) {
-      slab_emis_sum->emis[nn] += ring_emis_tmp->emis[nn] * weight_i;
-    }
-    // free(ring_emis_tmp->re);
-    free_emisProfile(ring_emis_tmp);
+    // addSingleReturnFractions(emisProf->photon_fate_fractions, ring_emis_tmp->photon_fate_fractions, heightIntegrationFactor);
+
+    // emisProf->normFactorPrimSpec += ring_emis_tmp->normFactorPrimSpec * heightIntegrationFactor;
+
+    free_lpReflFrac(&(ring_emis_tmp->photon_fate_fractions));
   }
-  for (int nn = 0; nn < slab_emis_sum->nr; nn++) {
-    slab_emis_sum->emis[nn] /= weight_sum; // normalize final profile with weights (one could also divide by disk area)
+
+  for (int n_r = 0; n_r < emisProf->nr; n_r++) {
+    emisProf->emis[n_r] /= weight_sum; // finally, normalize the profile
   }
-  rebin_emisprofile_on_radial_grid(emisProf, slab_emis_sum, status);
+  // TODO proper scheme for primary normalization, here we assume just the values from the outermost ring:
+  calc_photon_fate_ring(emisProf, param, prim_table, status);
+  // so photon fractions, reflfrac, lensing, and boost have to be calculated accounting for weights
 
   free(rad_grid);
-  free_emisProfile(slab_emis_sum);
+  free_emisProfile(ring_emis_tmp);
 
   CHECK_STATUS_VOID(*status);
 }
