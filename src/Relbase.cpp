@@ -577,9 +577,10 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
   CHECK_STATUS_RET(*status, nullptr);
   assert(sysPar != nullptr);
 
-  auto rgrid = get_rzone_grid(param->rin, param->rout,
-                              param->num_zones, param->prim_geometry_type == GEOMETRY_RING ? param->r_src : param->height, status);
-  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid, param->num_zones, status);
+  auto rgrid = RadialGrid(param->rin, param->rout, param->num_zones,
+                       param->prim_geometry_type == GEOMETRY_RING ? param->r_src : param->height);
+  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid.radius,
+                                                     param->num_zones, status);
 
   return rel_spec;
 }
