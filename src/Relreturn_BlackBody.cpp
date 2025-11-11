@@ -714,7 +714,7 @@ void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
  * @param specOutput Pointer to the output spectrum array to store the computed spectrum. Any values written to this
  *        array will be set to zero
  * @param n_ener_inp Number of energy bins in the input energy grid.
- * @param xill_param Struct pointer that holds parameters related to the XILLVER reflection model, blackbody
+ * @param xill_param_orig Struct pointer that holds parameters related to the XILLVER reflection model, blackbody
  *        parameters, and source properties.
  * @param rel_param Struct pointer that holds parameters for the relativistic disk, emission, and system properties.
  * @param status Pointer to the status flag. Will be checked and updated during execution for error handling.

@@ -47,7 +47,7 @@ TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbo
 
 
 // ------- //
-TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
+TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-xill]")
 {
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.get_xill_param_struct();

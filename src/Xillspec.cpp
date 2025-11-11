@@ -193,12 +193,13 @@ double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener
 }
 
 /**
- * @brief cutoff pl model in xpsec units
- * @param pl_flux_xill [return] photon flux in counts/bin
- * @param ener
- * @param n_ener
- * @param xill_param
- * @param ener_shift: spectrum shifted in energy by this value, normalization is kept constant (i.e, norm not shifted by g^Gamma)
+ * @brief cutoff power-law model in XSPEC units
+ * @param pl_flux_xill [output] photon flux in counts/bin
+ * @param ener [input] energy bin boundaries array (size n_ener+1)
+ * @param n_ener [input] number of energy bins
+ * @param ect [input] energy cutoff in keV (in the observer frame)
+ * @param gamma [input] photon index
+ * @param ener_shift [input] energy shift factor applied to spectrum; normalization remains constant (not shifted by g^Gamma). Default: 1.0
  */
 void spec_cutoffpl(double *pl_flux_xill,
                    const double *ener,
