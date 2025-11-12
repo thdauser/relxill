@@ -264,6 +264,6 @@ void delete_rel_params(relParam* rel_param);
 xillParam *get_xill_params(const ModelDefinition &inp_param);
 void delete_xill_params(xillParam* xill_param);
 
-int is_env_set(const char* envname, int default_value);
+int is_env_set(const char* envname, int default_switch);
 
 #endif //RELXILL_SRC_MODELDEFINITION_H_

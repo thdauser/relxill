@@ -126,7 +126,8 @@ const double *get_xspec_default_parameter_array(ModelName model_name) {
 }
 
 /*
- * returns 1 if the env is set to 1, otherwise return 0
+ * return 1 or 0 value of the env if the env is defined to be 1 or 0,
+ * return default_switch value otherwise (if env is not defined or defined but with another value)
  */
 int is_env_set(const char* envname, int default_switch = 0) {
 
@@ -135,7 +136,7 @@ int is_env_set(const char* envname, int default_switch = 0) {
   char *env = getenv(envname);
   if (env != nullptr) {
     int value_switch = atof(env);
-    if (value_switch == 1 ) {
+    if (value_switch == 1 || value_switch == 0) {
       value = value_switch;
     } else {
       value = default_switch;

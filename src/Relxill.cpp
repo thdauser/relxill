@@ -259,7 +259,8 @@ xillSpec** get_xillver_reflection_spectra(specCache* spec_cache,
 
 bool do_renorm_relxill()
 {
-    if (is_env_set("RELXILL_RENORMALIZE", 0) == 1)
+    // renorm if RELXILL_RENORMALIZE equals 1 or not set (in this case default_switch=1 is used)
+    if (is_env_set("RELXILL_RENORMALIZE", 1) == 1)
     {
         return true;
     }
@@ -290,7 +291,7 @@ void rebin_spectrum(const XspecSpectrum& spectrum, const RelxillSpec& relxill_sp
 // rebin to input energy grid (as given by Xspec)
 void rebin_and_normalize_relxill_for_xspec(const XspecSpectrum& spectrum, const RelxillSpec& relxill_spec)
 {
-    if (do_renorm_relxill())
+    if (do_renorm_relxill()) // renormalize by default from version >=2.7
     {
         auto relxill_renorm_spec = RelxillSpec(relxill_spec.flux);
         renorm_relxill_spectrum_1keV(relxill_renorm_spec);
