@@ -143,16 +143,16 @@ static void write_output_spec_zones(const RelxillSpec& spectrum, int ii, int* st
     {
         RELXILL_ERROR("failed to get filename", status);
     }
-    save_xillver_spectrum(spectrum.energy(), spectrum.flux, spectrum.num_flux_bins, vstr);
+    save_xillver_spectrum(spectrum.energy(), spectrum.flux, static_cast<int>(spectrum.num_flux_bins), vstr);
 }
 
-/*
-/** initialize the cached output spec array
+/**
+ * initialize the cached output spec array
  *  DEPRECATED: need to remove this part of the cache
  **/
 void copy_spectrum_to_cache(const Spectrum& spectrum,
                             specCache* spec_cache,
-                            int* status)
+                            const int* status)
 {
     CHECK_STATUS_VOID(*status);
 
@@ -164,7 +164,6 @@ void copy_spectrum_to_cache(const Spectrum& spectrum,
  * @brief calculate the correction factors for the given radial grid
  * @details only calculated if the return_rad!=0 is set, otherwise a nullptr
  *  is returned, which means no correction is calculated
- * @param rel_param
  * @param xill_spec
  * @param rgrid
  * @param xill_table_param
@@ -257,24 +256,32 @@ xillSpec** get_xillver_reflection_spectra(specCache* spec_cache,
 }
 
 
-bool do_renorm_relxill()
+bool do_renorm_relxill(const ModelName& model_name)
 {
-    // renorm if RELXILL_RENORMALIZE equals 1 or not set (in this case default_switch=1 is used)
-    if (is_env_set("RELXILL_RENORMALIZE", 1) == 1)
-    {
-        return true;
-    }
-    else
+    // default is the RELXILL is normalized, except (1) env variable is set
+    if ( is_env_set("RELXILL_RENORMALIZE", 1) == 0)
     {
         return false;
     }
+
+    // of (2) for the AlphaType model (using the actual normalization as input)
+    if ( model_name==ModelName::relxilllpAlpha)
+    {
+        if (is_env_set("RELXILL_RENORMALIZE", 0) == 1) // do not allow env to override
+        {
+            relxill_warning("RELXILL_RENORMALIZE=1 is not allowed for the AlphaType model");
+        }
+        return false;
+    }
+
+    return true;
 }
 
 void renorm_relxill_spectrum_1keV(const Spectrum& spectrum)
 {
     // normalize it to have 1 cts/sec/keV/cm2 at ref_value
     double ref_value = 3.0;
-    int ind = binary_search(spectrum.energy(), spectrum.num_flux_bins, ref_value);
+    int ind = binary_search(spectrum.energy(), static_cast<int>(spectrum.num_flux_bins), ref_value);
 
     double dE = spectrum.energy()[ind + 1] - spectrum.energy()[ind];
     double norm_factor = 1.0 / (spectrum.flux[ind] / dE); // flux is in cts/bin, need to convert it to cts/keV
@@ -285,13 +292,13 @@ void renorm_relxill_spectrum_1keV(const Spectrum& spectrum)
 void rebin_spectrum(const XspecSpectrum& spectrum, const RelxillSpec& relxill_spec)
 {
     _rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
-                    relxill_spec.energy(), relxill_spec.flux, relxill_spec.num_flux_bins);
+                    relxill_spec.energy(), relxill_spec.flux, static_cast<int>(relxill_spec.num_flux_bins));
 }
 
 // rebin to input energy grid (as given by Xspec)
-void rebin_and_normalize_relxill_for_xspec(const XspecSpectrum& spectrum, const RelxillSpec& relxill_spec)
+void rebin_and_normalize_relxill_for_xspec(const XspecSpectrum& spectrum, const RelxillSpec& relxill_spec, const ModelName& model_name)
 {
-    if (do_renorm_relxill()) // renormalize by default from version >=2.7
+    if (do_renorm_relxill(model_name))
     {
         auto relxill_renorm_spec = RelxillSpec(relxill_spec.flux);
         renorm_relxill_spectrum_1keV(relxill_renorm_spec);
@@ -379,7 +386,7 @@ void relxill_kernel(const XspecSpectrum& xspec_spectrum,
 
         // calculate the relline profile
         relline_spec_multizone* rel_profile =
-            relbase_profile(relxill_spec.energy(), relxill_spec.num_flux_bins, rel_param, sys_par, xill_tab,
+            relbase_profile(relxill_spec.energy(), static_cast<int>(relxill_spec.num_flux_bins), rel_param, sys_par, xill_tab,
                             ion_gradient.radial_grid.radius,
                             static_cast<int>(ion_gradient.radial_grid.num_zones()),
                             status);
@@ -434,7 +441,7 @@ void relxill_kernel(const XspecSpectrum& xspec_spectrum,
         delete_xill_params(xill_param);
     }
 
-    rebin_and_normalize_relxill_for_xspec(xspec_spectrum, relxill_spec);
+    rebin_and_normalize_relxill_for_xspec(xspec_spectrum, relxill_spec, params.get_model_name());
 
     if (is_debug_run())
     {
@@ -493,14 +500,14 @@ void relxill_convolution_multizone(const RelxillSpec& relxill_spec,
             continue;
         }
 
-        _rebin_spectrum(xill_rebinned_spec.energy(), xill_rebinned_spec.flux, xill_rebinned_spec.num_flux_bins,
+        _rebin_spectrum(xill_rebinned_spec.energy(), xill_rebinned_spec.flux, static_cast<int>(xill_rebinned_spec.num_flux_bins),
                         xill_spec_zones.energy(), xill_spec_zones.flux[izone], xill_spec_zones.num_flux_bins);
 
         // --2-- convolve the relxill_spec on the energy grid "ener_conv" **
         //       note, always recompute fft for xillver if any parameter changed, as m_cache_relat changes the angular distribution
         int recompute_xill = caching_status.any_parameter_changed();
         convolveSpectrumFFTNormalized(xill_rebinned_spec.energy(), xill_rebinned_spec.flux, rel_profile->flux[izone],
-                                      conv_out_spec.flux, conv_out_spec.num_flux_bins,
+                                      conv_out_spec.flux, static_cast<int>(conv_out_spec.num_flux_bins),
                                       caching_status.recomput_relat(), recompute_xill, izone, spec_cache, status);
         CHECK_STATUS_VOID(*status);
 

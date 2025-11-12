@@ -137,11 +137,7 @@ IonGradient get_ion_gradient(LocalModel const& lmod)
     return ion_gradient;
 }
 
-TEST_CASE (
-" Test Constant Density by Env Variable "
-,
-"[iongrad-const-density]"
-)
+TEST_CASE (" Test Constant Density by Env Variable ","[iongrad-density]")
  {
 
   DefaultSpec const default_spec{};
@@ -186,9 +182,7 @@ TEST_CASE (
 
   const double dens_param = 16;
   lmod.set_par(XPar::logn, dens_param);
-  // lmod.eval_model(spec);
   auto ion_grad = get_ion_gradient(lmod);
-  const int num_zones = ion_grad.radial_grid.num_zones();
 
   // require that the minimal density is given by the dens_param
   int index_dens_min = 0;

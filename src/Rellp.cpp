@@ -195,6 +195,7 @@ static void interpol_emisprofile_spin_height(emisProfile *emis_profile_table,
                                              const int *ind_h,
                                              lpDat *const *dat_a,
                                              const int nr) {
+  assert(emis_profile_table!=nullptr);
   for (int ii = 0; ii < nr; ii++) {
     emis_profile_table->emis[ii] =
         (1.0 - ifac_a) * interp_lin_1d(ifac_h[0],dat_a[0]->intens[ind_h[0]][ii],dat_a[0]->intens[ind_h[0] + 1][ii]  )
@@ -219,7 +220,7 @@ static void interpol_emisprofile_spin_height(emisProfile *emis_profile_table,
  *   - the "emis" here is the photon flux, as stored in the table
  *   - radial grid is the one of the table
  */
-emisProfile* interpol_lptable(double a, double height, lpTable* tab, double* jet_rad, int* status){
+emisProfile* interpol_lptable(double a, double height, lpTable* tab, double*& jet_rad, int* status){
 
   CHECK_STATUS_RET(*status, nullptr);
 
@@ -231,7 +232,7 @@ emisProfile* interpol_lptable(double a, double height, lpTable* tab, double* jet
   lpDat *dat_ind_a[2] = {tab->dat[ind_a], tab->dat[ind_a+1]};
 
   assert(jet_rad==nullptr);
-  jet_rad = (double*) malloc(sizeof(double)*tab->n_rad);
+  jet_rad = new double[tab->n_rad];
   CHECK_MALLOC_RET_STATUS(jet_rad,status,nullptr)
   for (int ii = 0; ii < tab->n_rad; ii++) {
     jet_rad[ii] = interp_lin_1d(ifac_a, dat_ind_a[0]->rad[ii], dat_ind_a[1]->rad[ii]);
@@ -271,6 +272,8 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
                                        lpTable *tab, int *status) {
   CHECK_STATUS_VOID(*status);
 
+  assert(emis_profile!=nullptr);
+
   double* jet_rad = nullptr;
   emisProfile *emis_profile_table = interpol_lptable(param->a, height, tab, jet_rad, status);
 
@@ -281,7 +284,7 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
   const double del_emit_ad_max = emis_profile_table->del_emit[tab->n_rad - 1];
   emis_profile->photon_fate_fractions =
       calc_refl_frac(emis_profile, param->rin, param->rout, del_emit_ad_max, param->beta, status);
-  free(jet_rad);
+  delete[] jet_rad;
   free_emisProfile(emis_profile_table);
 
   apply_emis_fluxboost_source_disk(emis_profile, param->a, height, param->gamma, beta);

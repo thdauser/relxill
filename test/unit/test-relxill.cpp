@@ -62,11 +62,11 @@ TEST_CASE(" test the relxill normalization", "[relxill-norm]") {
   lmod.eval_model(spec);
   REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1) < 1e-2);
 
-  // now the old normalization is used, so flux at 3 keV changes
+  // use integrated standard normalization (flux at 3 keV should change)
   setenv("RELXILL_RENORMALIZE","0",1);
   lmod.eval_model(spec);
   REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1 ) > 1e-2);
 
-  setenv("RELXILL_RENORMALIZE","1",1);
+  unsetenv("RELXILL_RENORMALIZE");
 }
 
