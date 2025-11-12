@@ -7,7 +7,8 @@ require("scripts/subs_filenames.sl");
 
 
 variable spin = 0.998;  %% currently only done for this value
-variable Tin = 0.7;
+variable Tin = 2.0;
+variable logxi = 2.0;
 
 define getDiagnoseRframePlot(){ %{{{
    
@@ -112,6 +113,8 @@ define getDiagnoseMirrorBbody(){ %{{{
 define createOutputFiles(){ %{{{
    load_xspec_local_models("build/");
    fit_fun("relxillBB");
+
+   list_par;
    
    putenv("RELXILL_WRITE_FILES=1");
 
@@ -126,9 +129,8 @@ define createOutputFiles(){ %{{{
    %% creating the "mirror" files
    putenv("RELXILL_BBRET_NOREFL=1");
 
-   set_par("*.Rout",400);
    set_par("*.Incl",40);
-   set_par("*.logxi",1.0);
+   set_par("*.logxi",2.0);
 
    set_par("*.boost",1.0);
    () = eval_fun(1,2);
