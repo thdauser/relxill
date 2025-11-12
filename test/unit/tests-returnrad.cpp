@@ -878,6 +878,7 @@ TEST_CASE (
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   // from v2.7 use renormalized relxill by default, here we need old normalization
+  // because renormalized version does not keep the true flux
   setenv("RELXILL_RENORMALIZE", "0",0);
 
   local_model.set_par(XPar::switch_switch_returnrad, 1);
