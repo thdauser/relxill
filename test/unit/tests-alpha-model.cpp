@@ -192,6 +192,9 @@ TEST_CASE (
   // Flux in the 0.01-1000keV band in erg/cm^2/s
   auto flux_direct_obs = primary_source_params.flux_observed_cgs(*(sys_par->emis->photon_fate_fractions));
 
+   // from v2.7 use renormalized relxill by default, we need old normalization here
+  setenv("RELXILL_RENORMALIZE", "0", 1);
+
   INFO(" calculate flux for only direct spectrum ");
   lmod_alpha.set_par(XPar::refl_frac, 0.0);
   lmod_alpha.eval_model(spec);
@@ -211,6 +214,8 @@ TEST_CASE (
   const double energy_flux_refl = spec.get_energy_flux();
   // combined has to be refl + direct (also for the alpha model)
   REQUIRE(fabs(energy_flux_combined - energy_flux_direct - energy_flux_refl) / energy_flux_combined < 0.005);
+
+   unsetenv("RELXILL_RENORMALIZE");
 }
 
 
@@ -265,6 +270,9 @@ TEST_CASE (
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
 
+  // from v2.7 use renormalized relxill by default, we need old normalization here
+  setenv("RELXILL_RENORMALIZE", "0", 1);
+
   auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::logn, 18);
 
@@ -300,16 +308,21 @@ TEST_CASE (
   const double prim_energy_flux_2 = refl_energy_flux_2 - refl_energy_flux_2_refl;
   REQUIRE(fabs(prim_energy_flux_1 / prim_energy_flux_2 - 1) < 1e-4);
 
+  unsetenv("RELXILL_RENORMALIZE");
 }
 
+
 TEST_CASE (
-" Test that the distance parameter"
+" Test the distance parameter"
 ,
 "[alpha]"
 )
  {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
+
+   // from v2.7 use renormalized relxill by default, we need old normalization here
+  setenv("RELXILL_RENORMALIZE", "0", 1);
 
   auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::refl_frac, -1.0);      // mass of 1e6 Msolar
@@ -327,7 +340,10 @@ TEST_CASE (
   REQUIRE(fabs(lxi_1 / lxi_2 - 1) < 0.001);
   REQUIRE(fabs(ener_flu_1 / ener_flu_2 - 1) > 0.01);
 
+   unsetenv("RELXILL_RENORMALIZE");
+
 }
+
 
 TEST_CASE (
 " Test the mass parameter"

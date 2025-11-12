@@ -877,6 +877,9 @@ TEST_CASE (
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
+  // from v2.7 use renormalized relxill by default, here we need old normalization
+  setenv("RELXILL_RENORMALIZE", "0",0);
+
   local_model.set_par(XPar::switch_switch_returnrad, 1);
   local_model.eval_model(spec);
   double model1 = sum_flux(spec.flux, spec.num_flux_bins());
@@ -887,5 +890,6 @@ TEST_CASE (
 
   REQUIRE( fabs(model1 - model2)/model1 > 1e-3 );
 
+  unsetenv("RELXILL_RENORMALIZE");
 
 }

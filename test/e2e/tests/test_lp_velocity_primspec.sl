@@ -3,6 +3,8 @@ require("load_test_setup.sl","Global");
 
 variable msg_log = "";
 
+putenv("RELXILL_RENORMALIZE=0");
+
 variable lo,hi;
 variable val0, val1;
 (lo,hi) = log_grid(1,700,4000);

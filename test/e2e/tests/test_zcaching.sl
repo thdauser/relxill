@@ -3,6 +3,8 @@ require("load_test_setup.sl","Global");
 
 variable msg_log = "";
 
+putenv("RELXILL_RENORMALIZE=0");
+
 
 define test_caching_spec(v,v0,inp,inp0){ %{{{
    variable ii, n = length(v);
@@ -52,12 +54,6 @@ define check_caching_single(ff,par){ %{{{
    if (ff == "relxilllpCp"){
       set_par("relxilllpCp(1).iongrad_type",2);
    }
-
-   %% AN: more bad hacks to test the slowest ext relxill geometry
-   %% (condemn bad cod coding but use it when no one suffers)
-      %if (ff == "relxill_ring"){
-      %   set_par("relxill_ring(1).switch_source_geometry", 2);
-      %}
    
    variable param0 = get_params("*."+par);
    if (length(param0)!=1){

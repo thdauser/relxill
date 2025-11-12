@@ -31,7 +31,7 @@ load_relxill_model_devel(modlib);
 _traceback=1;
 %putenv("RELXILL_WRITE_OUTFILES=1");
 %putenv("DEBUG_RELXILL=1");
-
+putenv("RELXILL_RENORMALIZE=0");
 
 define get_refdata_files(){ %{{{
    %% we can load any model

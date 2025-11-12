@@ -3,6 +3,8 @@ require("load_test_setup.sl","Global");
 
 variable msg_log = "";
 
+putenv("RELXILL_RENORMALIZE=0");
+
 
 define check_ns_single(ff){ %{{{
 

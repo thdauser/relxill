@@ -45,7 +45,7 @@ TEST_CASE(" test the relxill normalization", "[relxill-norm]") {
   auto spec = default_spec.get_xspec_spectrum();
 
 
-  double ref_value = 3.0; // normalized at 1keV to have 1 cts/sec/keV/cm2 at 1keV
+  double ref_value = 3.0; // normalized to have 1 cts/sec/keV/cm2 at 3keV
   int ind = binary_search(spec.energy, spec.num_flux_bins(), ref_value);
   double dE_ref = spec.energy[ind+1] - spec.energy[ind];
 
@@ -54,20 +54,19 @@ TEST_CASE(" test the relxill normalization", "[relxill-norm]") {
   lmod.set_par(XPar::h, 30);
   lmod.eval_model(spec);
 
-  // by default relxill should not be normalized
-  REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1 ) > 1e-2);
-
-  // now it is normalized
-  setenv("RELXILL_RENORMALIZE","1",1);
-  lmod.eval_model(spec);
-  REQUIRE(  fabs(spec.flux[ind]/dE_ref -1 ) < 1e-2);
+  // by default relxill should be renormalized
+  REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1 ) < 1e-2);
 
   // should stay the same even if we change a parameter like the height
   lmod.set_par(XPar::h, 20);
   lmod.eval_model(spec);
   REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1) < 1e-2);
 
-
+  // now the old normalization is used, so flux at 3 keV changes
   setenv("RELXILL_RENORMALIZE","0",1);
+  lmod.eval_model(spec);
+  REQUIRE(  fabs(spec.flux[ind]/dE_ref - 1 ) > 1e-2);
+
+  setenv("RELXILL_RENORMALIZE","1",1);
 }
 
