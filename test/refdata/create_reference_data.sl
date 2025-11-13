@@ -1,6 +1,8 @@
 #!/usr/bin/env isis-script
 % -*- mode: slang; mode: fold -*-
 
+add_to_isis_load_path("./");
+
 require("isisscripts");
 require("fits_model_struct");
 require("subs_fitfunctions.sl");
