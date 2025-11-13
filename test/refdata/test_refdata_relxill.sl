@@ -7,7 +7,7 @@
 % Usage: %  ./test_refdata_relxill.sl  [<model_name> [defparam|random] [update] ]
 % 
 % Note, that <model_name> can be a regular expression. For example, to
-% the defparm test for all models, it would be:
+% do the defparam test for all models, it would be:
 %
 %  ./test_refdata_relxill.sl '*' defparam
 % 
@@ -31,7 +31,7 @@ load_relxill_model_devel(modlib);
 _traceback=1;
 %putenv("RELXILL_WRITE_OUTFILES=1");
 %putenv("DEBUG_RELXILL=1");
-putenv("RELXILL_RENORMALIZE=0");
+%putenv("RELXILL_RENORMALIZE=0");
 
 define get_refdata_files(){ %{{{
    %% we can load any model
