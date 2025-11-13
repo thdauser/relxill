@@ -122,11 +122,7 @@ double calculate_lxi(const LocalModel& lmod)
     return lxi_max;
 }
 
-TEST_CASE (
-" Calculate lxi "
-,
-"[alpha]"
-)
+TEST_CASE (" Calculate lxi ","[alpha]")
  {
 
   int status = EXIT_SUCCESS;
@@ -192,9 +188,6 @@ TEST_CASE (
   // Flux in the 0.01-1000keV band in erg/cm^2/s
   auto flux_direct_obs = primary_source_params.flux_observed_cgs(*(sys_par->emis->photon_fate_fractions));
 
-   // from v2.7 use renormalized relxill by default, we need old normalization here
-  setenv("RELXILL_RENORMALIZE", "0", 1);
-
   INFO(" calculate flux for only direct spectrum ");
   lmod_alpha.set_par(XPar::refl_frac, 0.0);
   lmod_alpha.eval_model(spec);
@@ -214,8 +207,6 @@ TEST_CASE (
   const double energy_flux_refl = spec.get_energy_flux();
   // combined has to be refl + direct (also for the alpha model)
   REQUIRE(fabs(energy_flux_combined - energy_flux_direct - energy_flux_refl) / energy_flux_combined < 0.005);
-
-   unsetenv("RELXILL_RENORMALIZE");
 }
 
 
@@ -241,6 +232,9 @@ TEST_CASE (
   // (2) calculate relxillpCp flux ratio, with logxi from the
   //  alpha distance model and then use it as input to the relxilllpCp model
   const double lxi_max_alpha = calculate_lxi(lmod_alpha);
+
+ // need to switch to not renormalized relxill
+  setenv("RELXILL_RENORMALIZE", "0", 1);
   LocalModel lmod_std(ModelName::relxilllpCp);
   set_default_par(lmod_std);
   lmod_std.set_par(XPar::logxi, lxi_max_alpha);
@@ -256,22 +250,17 @@ TEST_CASE (
   const double flux_ratio_alpha = refl_energy_flux / primary_energy_flux;
   const double flux_ratio_std = std_refl_energy_flux / std_primary_energy_flux;
 
+  unsetenv("RELXILL_RENORMALIZE");
+
   // now test that the flux ratio to the reflection spectrum is the same as in
   REQUIRE(fabs(flux_ratio_alpha / flux_ratio_std - 1) < 0.01);
 }
 
 
-TEST_CASE (
-" Test the refl_frac parameter works with the alpha model as well"
-,
-"[alpha]"
-)
+TEST_CASE (" Test the refl_frac parameter works with the alpha model as well","[alpha]")
  {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
-
-  // from v2.7 use renormalized relxill by default, we need old normalization here
-  setenv("RELXILL_RENORMALIZE", "0", 1);
 
   auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::logn, 18);
@@ -307,22 +296,15 @@ TEST_CASE (
   const double prim_energy_flux_1 = refl_energy_flux_1 - refl_energy_flux_1_refl;
   const double prim_energy_flux_2 = refl_energy_flux_2 - refl_energy_flux_2_refl;
   REQUIRE(fabs(prim_energy_flux_1 / prim_energy_flux_2 - 1) < 1e-4);
-
-  unsetenv("RELXILL_RENORMALIZE");
 }
 
-
-TEST_CASE (
-" Test the distance parameter"
+TEST_CASE (" Test the distance parameter"
 ,
 "[alpha]"
 )
  {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
-
-   // from v2.7 use renormalized relxill by default, we need old normalization here
-  setenv("RELXILL_RENORMALIZE", "0", 1);
 
   auto lmod_alpha = get_std_lmod_alpha();
   lmod_alpha.set_par(XPar::refl_frac, -1.0);      // mass of 1e6 Msolar
@@ -340,16 +322,9 @@ TEST_CASE (
   REQUIRE(fabs(lxi_1 / lxi_2 - 1) < 0.001);
   REQUIRE(fabs(ener_flu_1 / ener_flu_2 - 1) > 0.01);
 
-   unsetenv("RELXILL_RENORMALIZE");
-
 }
 
-
-TEST_CASE (
-" Test the mass parameter"
-,
-"[alpha]"
-)
+TEST_CASE (" Test the mass parameter","[alpha]")
  {
   /*
    *  The mass influences the flux the disk sees from the primary source
@@ -390,11 +365,7 @@ TEST_CASE (
   REQUIRE(fabs(flux_direct_1 / flux_direct_2 - 1) < 1e-6);
 }
 
-TEST_CASE (
-" Test the density gradient"
-,
-"[alpha-test]"
-)
+TEST_CASE (" Test the density gradient","[alpha-test]")
  {
   auto default_spec = DefaultSpec(EMIN_XILLVER_NORMALIZATION, EMAX_XILLVER_NORMALIZATION, 3000);
   auto spec = default_spec.get_xspec_spectrum();
