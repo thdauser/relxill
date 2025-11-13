@@ -155,6 +155,63 @@ TEST_CASE (
   REQUIRE(status == EXIT_SUCCESS);
 }
 
+
+TEST_CASE (
+    "Compare lp and ring primary fluxes for zero ring radius for several parameter combinations "
+,
+    "[extended]"
+)
+{
+
+  int status = EXIT_SUCCESS;
+  double current_error = 0.01;
+
+  DefaultSpec default_spec{};
+  DefaultSpec default_spec_ext{};
+
+  LocalModel local_model{ModelName::relxilllp};
+  auto spec = default_spec.get_xspec_spectrum();
+  LocalModel local_model_ext{ModelName::relxill_ring_ecut};
+  auto spec_ext = default_spec_ext.get_xspec_spectrum();
+  local_model_ext.set_par(XPar::theta_src, 0.0);
+  local_model_ext.set_par(XPar::refl_frac, 0);
+  // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
+  local_model.set_par(XPar::refl_frac, 0);
+  double spins[3] = {0.8, 0.9, 0.998};
+  double sph_radii[3] = {3.0, 5.0, 10.0};
+
+  for (double spin : spins){
+    for (double r_src : sph_radii){
+      local_model.set_par(XPar::a, spin);
+      local_model.set_par(XPar::h, r_src);
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::r_src, r_src);
+      REQUIRE_NOTHROW(local_model.eval_model(spec));
+      REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+
+
+      auto rel_params = local_model.rel_params();
+      auto sys_params = get_system_parameters(rel_params, &status);
+      auto rel_params_ext = local_model_ext.rel_params();
+      auto sys_params_ext = get_system_parameters(rel_params_ext, &status);
+      double lensing = sys_params_ext->emis->photon_fate_fractions->lensing;
+      double reflfrac = sys_params->emis->photon_fate_fractions->refl_frac;
+      double reflfrac_ext = sys_params_ext->emis->photon_fate_fractions->refl_frac;
+
+      for (int i = 0; i < spec.num_flux_bins(); i++) {
+        assert(spec.energy[i] == spec_ext.energy[i]);
+        if (spec_ext.flux[i] != 0.0){
+          // as with emissivities and line profiles, we expect the difference up to current_error value now
+
+          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error);
+        }
+      }
+    }
+  }
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
+
 TEST_CASE (
 "Compare lp and ring emissivities for zero ring size "
 ,
@@ -212,7 +269,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
-"Compare lp and ring line profiles for zero ring size for several spins and heights "
+"Compare lp and ring line profiles for zero ring size for several parameter combinations "
 ,
 "[extended]"
 )
@@ -258,7 +315,7 @@ TEST_CASE (
 
 
 TEST_CASE (
-"Compare lp and ring reflected fluxes for zero ring radius for several spins and heights "
+"Compare lp and ring reflected fluxes for zero ring radius for several parameter combinations "
 ,
 "[extended]"
 )
@@ -279,7 +336,7 @@ TEST_CASE (
   // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
   local_model.set_par(XPar::refl_frac, -1);
   double spins[3] = {0.8, 0.9, 0.998};
-  double sph_radii[3] = {3.0, 5.0, 10.0}; //
+  double sph_radii[3] = {3.0, 5.0, 10.0};
 
   for (double spin : spins){
     for (double r_src : sph_radii){
