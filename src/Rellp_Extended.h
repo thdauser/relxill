@@ -95,7 +95,7 @@ static extendedSourceData* load_single_extended_source_data(
 void read_extended_source_table(const char* filename, extendedSourceTable** inp_tab, int* status,
                                 const bool is_lensing_table=false);
 
-emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipol,
+emisProfile* interpol_extended_table(const extendedSourceTable* tab, const InterpFactors &ipol,
                                      const double gamma, double* radial_grid, int* status);
 
 double get_interpolated_value_a_r_th(const double ifac_a, const double ifac_r[2], const double ifac_th[2],
@@ -104,22 +104,22 @@ double get_interpolated_value_a_r_th(const double ifac_a, const double ifac_r[2]
 
 void get_ipol_factors_a_r_th(const double a, const double r, const double th, const extendedSourceTable* tab, InterpFactors& ipol);
 
-void calc_energy_shift_gamma_tabulated(extendedSourceData& dat_ind_a, const int ind_r, const int ind_th,
+void calc_energy_shift_gamma_tabulated(const extendedSourceData& dat_ind_a, const int ind_r, const int ind_th,
                                        double**** energy_shift_bins, const int num_bins, const int num_shift_bins,
                                        const double gamma);
 
-double calc_energy_shift_gamma(extendedSourceTable* tab, const InterpFactors ipol,
+double calc_energy_shift_gamma(const extendedSourceTable* tab, const InterpFactors &ipol,
                                const double bin_val, const double gamma);
 
-static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors ipol, int* status);
+static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors &ipol, int* status);
 
-double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors ipol);
+double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors &ipol);
 
-void calc_ring_emis(emisProfile* emisProf, double a, double r_src, double theta, double gamma, extendedSourceTable* tab, int* status);
-void apply_flux_correction(extendedSourceData* dat, const double* r,
+void calc_ring_emis(emisProfile* emisProf, double a, double r_src, double theta, double gamma, const extendedSourceTable* tab, int* status);
+void apply_flux_correction(const extendedSourceData* dat, const double* r,
                            const double spin, const int n_r, const int n_th, const int n_rad);
 
-void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, extendedSourceTable* prim_tab, int* status);
+void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, const extendedSourceTable* prim_tab, int* status);
 
 slabParams get_slab_geometry(const relParam* param, int* status);
 
@@ -142,7 +142,7 @@ extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_
 
 void free_extended_source_table(extendedSourceTable* tab, const bool is_lensing_table);
 
-void free_extended_source_data(extendedSourceData* dat, const bool is_lensing_table);
+void free_extended_source_data(const extendedSourceData* dat, const bool is_lensing_table);
 
 
 #endif /* RELLP_EXTENDED_H_ */

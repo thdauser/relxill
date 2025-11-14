@@ -17,16 +17,16 @@
 */
 
 #include "cfitsio.h"
-#include "stdio.h"
+// #include "stdio.h"
 #include "catch2/catch_amalgamated.hpp"
 #include "LocalModel.h"
 #include "common-functions.h"
 #include "Rellp_Extended.h"
-#include "Rellp.h"
-#include "Relphysics.h"
+// #include "Rellp.h"
+// #include "Relphysics.h"
 
 extern "C" {
-#include "writeOutfiles.h"
+// #include "writeOutfiles.h"
 }
 
 #define PREC 1e-6
@@ -105,11 +105,11 @@ TEST_CASE (
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  double spin = 0.99;
-  double r_src = 2.0;
-  double theta = 10.0;
-  double incl = 45.0;
   for (ModelName model : {ModelName::relxill_ring_ecut, ModelName::relxill_ring}) {
+    double incl = 45.0;
+    double theta = 10.0;
+    double r_src = 2.0;
+    double spin = 0.99;
     LocalModel local_model{model};
     local_model.set_par(XPar::a, spin);
     local_model.set_par(XPar::r_src, r_src);
@@ -212,7 +212,6 @@ TEST_CASE (
 {
 
   int status = EXIT_SUCCESS;
-  double current_error = 0.01;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -238,17 +237,18 @@ TEST_CASE (
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 
 
-      auto rel_params = local_model.rel_params();
-      auto sys_params = get_system_parameters(rel_params, &status);
-      auto rel_params_ext = local_model_ext.rel_params();
-      auto sys_params_ext = get_system_parameters(rel_params_ext, &status);
-      double lensing = sys_params_ext->emis->photon_fate_fractions->lensing;
-      double reflfrac = sys_params->emis->photon_fate_fractions->refl_frac;
-      double reflfrac_ext = sys_params_ext->emis->photon_fate_fractions->refl_frac;
+      // auto rel_params = local_model.rel_params();
+      // auto sys_params = get_system_parameters(rel_params, &status);
+      // auto rel_params_ext = local_model_ext.rel_params();
+      // auto sys_params_ext = get_system_parameters(rel_params_ext, &status);
+      // double lensing = sys_params_ext->emis->photon_fate_fractions->lensing;
+      // double reflfrac = sys_params->emis->photon_fate_fractions->refl_frac;
+      // double reflfrac_ext = sys_params_ext->emis->photon_fate_fractions->refl_frac;
 
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         assert(spec.energy[i] == spec_ext.energy[i]);
-        if (spec_ext.flux[i] != 0.0){
+        if (spec_ext.flux[i] != 0.0) {
+          double current_error = 0.01;
           // as with emissivities and line profiles, we expect the difference up to current_error value now
 
           REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error);
@@ -268,7 +268,6 @@ TEST_CASE (
  {
 
   int status = EXIT_SUCCESS;
-  double current_error = 0.045; // this is the current level of agreement
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -305,6 +304,7 @@ TEST_CASE (
 
       assert(n_rad_ext == n_rad);
       for (int i = 0; i < n_rad; i++) {
+        double current_error = 0.045;
         assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids match
 
         REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < current_error);
@@ -324,8 +324,6 @@ TEST_CASE (
  {
 
   int status = EXIT_SUCCESS;
-  double current_error_peak = 0.002;
-  double current_error_tail = 0.042;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -349,9 +347,13 @@ TEST_CASE (
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
 
       for (int i = 0; i < spec.num_flux_bins(); i++) {
-        if (spec.flux[i] > 0.0) { // to remove zero division
+        if (spec.flux[i] > 0.0) {
+          double current_error_tail = 0.042;
+          // to remove zero division
           REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_tail);
-          if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) { // this is the most important range of energies
+          if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) {
+            double current_error_peak = 0.002;
+            // this is the most important range of energies
             REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_peak);
           }
         }
@@ -370,7 +372,6 @@ TEST_CASE (
  {
 
   int status = EXIT_SUCCESS;
-  double current_error = 0.047;
 
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
@@ -397,7 +398,8 @@ TEST_CASE (
 
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         assert(spec.energy[i] == spec_ext.energy[i]);
-        if (spec_ext.flux[i] != 0.0){
+        if (spec_ext.flux[i] != 0.0) {
+          double current_error = 0.047;
           // as with emissivities and line profiles, we expect the difference up to current_error value now
           REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error);
         }
@@ -423,7 +425,7 @@ TEST_CASE (
 
   double radius_below_horizon = 0.5;
   lmod.set_par(XPar::r_src, radius_below_horizon);
-  lmod.set_par(XPar::theta_src, 5.0); // the source is inside of BH and not on-axis
+  lmod.set_par(XPar::theta_src, 5.0); // the source is inside BH and not on-axis
 
   REQUIRE_NOTHROW(lmod.eval_model(spec));
   REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);

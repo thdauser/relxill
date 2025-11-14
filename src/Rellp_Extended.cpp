@@ -31,7 +31,7 @@
 
 extern "C"{
 #include "relutility.h"
-#include "writeOutfiles.h"
+// #include "writeOutfiles.h"
 }
 
 extendedSourceTable* cached_extendedSource_table = nullptr; // emissivity table
@@ -57,8 +57,8 @@ extendedSourceTable* get_es_table(int* status) {
 extendedSourceTable* get_prim_table(int* status) {
   CHECK_STATUS_RET(*status, nullptr);
 
-  bool is_lensing_table = true; // quick solution to have two tables instead of one
   if (cached_extendedSource_table_prim == nullptr) {
+    bool is_lensing_table = true;
     read_extended_source_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
                                is_lensing_table);
     CHECK_STATUS_RET(*status, nullptr);
@@ -76,14 +76,14 @@ extendedSourceTable* get_prim_table(int* status) {
  */
 static void get_spin_rows_extended_table(const int n_rows, float** val, fitsfile* fptr, int* status) {
 
-  *val = (float*)  malloc(n_rows * sizeof(float));
+  *val = static_cast<float *>(malloc(n_rows * sizeof(float)));
 
   for (int i_r = 0; i_r < n_rows; i_r++){
 
     int index = i_r + 2; // number of the row we read in the fits table
     fits_movabs_hdu(fptr, index, nullptr, status);
 
-    fits_read_key(fptr, TFLOAT, "SPIN", &((*val)[i_r]), nullptr, status);
+    fits_read_key(fptr, TFLOAT, "SPIN", &(*val)[i_r], nullptr, status);
     if (*status != EXIT_SUCCESS) {
       CHECK_RELXILL_ERROR("reading spin dimension in table failed,", status);
     }
@@ -100,7 +100,9 @@ static void get_spin_rows_extended_table(const int n_rows, float** val, fitsfile
  * @param n_th integer, number of polar angles simulated
  * @param n_bin integer, number of radial bins
  * @param n_storage integer, number of energyshift storage bins. Used only to read the fifth column with shift
+ * @param status
  * @param spin double, spin value of the source
+ * @param is_lensing_table
  * @return extendedSourceData, data from the table
  */
 static extendedSourceData* load_single_extended_source_data(
@@ -127,7 +129,7 @@ static extendedSourceData* load_single_extended_source_data(
   for (int i_r = 0; i_r < n_r; i_r++) {
     for (int j_th = 0; j_th < n_th; j_th++) {
 
-      int i_row = (i_r * n_th) + j_th + 1;
+      int i_row = i_r * n_th + j_th + 1;
 
       fits_read_col(fptr, TDOUBLE, 4, i_row, 1, n_bin, &doublenullptr,
                     dat->val[i_r][j_th], &anynullptr, status);
@@ -165,13 +167,15 @@ static extendedSourceData* load_single_extended_source_data(
 /**
  * @brief Reads extended source table
  * @details
- * @param filename; const char, pointer to the name of the file (declared in Rellp_Extended.h)
- * @param inp_tab; extendedSourceTable, two-fold pointer to the input table data
+ * @param filename const char, pointer to the name of the file (declared in Rellp_Extended.h)
+ * @param inp_tab extendedSourceTable, two-fold pointer to the input table data
+ * @param status
+ * @param is_lensing_table switcher between lensing and emissivity tables
  */
 void read_extended_source_table(const char* filename, extendedSourceTable** inp_tab, int* status,
                                 const bool is_lensing_table) {
 
-  extendedSourceTable *tab = (*inp_tab);
+  extendedSourceTable *tab = *inp_tab;
   fitsfile *fptr = nullptr;
 
   char fullfilename[999];
@@ -208,9 +212,8 @@ void read_extended_source_table(const char* filename, extendedSourceTable** inp_
     CHECK_RELXILL_ERROR("reading of spin axis failed\n", status);
 
     // now load the full table (need to go through all extensions)
-    int i_row;
     for (int i_a = 0; i_a < tab->n_a; i_a++) {
-      i_row = i_a + 2; // number of the row we read in the fits table
+      int i_row = i_a + 2; // number of the row we read in the fits table
       fits_movabs_hdu(fptr, i_row, nullptr, status);
 
       if (tab->dat[i_a] != nullptr) {
@@ -242,17 +245,19 @@ void read_extended_source_table(const char* filename, extendedSourceTable** inp_
  * @brief Interpolate the table between two spins
  * @details
  * @param tab extendedSourceTable, pointer to the table as declared above
- * @param ipol; structure with interpolation factors between a, r, theta
- * @param gamma; double, photon index
+ * @param ipol structure with interpolation factors between a, r, theta
+ * @param gamma double, photon index
+ * @param radial_grid
+ * @param status
  * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
  */
-emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipol,
+emisProfile* interpol_extended_table(const extendedSourceTable* tab, const InterpFactors &ipol,
                                      const double gamma, double* radial_grid, int* status) {
   CHECK_STATUS_RET(*status, nullptr);
 
   // The radial grid of the table is different for different spins (risco(a)), so we must interpolate it
   assert(radial_grid == nullptr);
-  radial_grid = (double*) malloc(sizeof(double)*tab->n_bin);
+  radial_grid = static_cast<double *>(malloc(sizeof(double) * tab->n_bin));
   CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
   for (int ii = 0; ii < tab->n_bin; ii++) {
     radial_grid[ii] = interp_lin_1d(ipol.ifac_a,
@@ -271,7 +276,6 @@ emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipo
       gamma);
 
   // pre-allocation of values shifted in radial grid before interpolation
-  double tab_lo_00, tab_lo_01, tab_lo_10, tab_lo_11, tab_hi_00, tab_hi_01, tab_hi_10, tab_hi_11;
   double fac_rlo, fac_rhi;
   int ind_rlo, ind_rhi;
   for (int ii = 0; ii < tab->n_bin; ii++) {
@@ -282,31 +286,39 @@ emisProfile* interpol_extended_table(extendedSourceTable* tab, InterpFactors ipo
                            tab->n_bin, &ind_rhi, &fac_rhi);
 
     // Interpolation of the flux
-    tab_lo_00 = interp_lin_1d(
-        fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo],
-        tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo + 1]);
-    tab_lo_01 = interp_lin_1d(
-        fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo],
-        tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo + 1]);
-    tab_lo_10 = interp_lin_1d(
-        fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo],
-        tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo + 1]);
-    tab_lo_11 = interp_lin_1d(
-        fac_rlo, tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo],
-        tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo + 1]);
+    double tab_lo_00 = interp_lin_1d(
+      fac_rlo,
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo],
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0]][ind_rlo + 1]);
+    double tab_lo_01 = interp_lin_1d(
+      fac_rlo,
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo],
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0]][ipol.ind_th[0] + 1][ind_rlo + 1]);
+    double tab_lo_10 = interp_lin_1d(
+      fac_rlo,
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo],
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0]][ind_rlo + 1]);
+    double tab_lo_11 = interp_lin_1d(
+      fac_rlo,
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo],
+      tab->dat[ipol.ind_a]->val[ipol.ind_r[0] + 1][ipol.ind_th[0] + 1][ind_rlo + 1]);
 
-    tab_hi_00 = interp_lin_1d(
-        fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi],
-        tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi + 1]);
-    tab_hi_01 = interp_lin_1d(
-        fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi],
-        tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi + 1]);
-    tab_hi_10 = interp_lin_1d(
-        fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi],
-        tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi + 1]);
-    tab_hi_11 = interp_lin_1d(
-        fac_rhi, tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi],
-        tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi + 1]);
+    double tab_hi_00 = interp_lin_1d(
+      fac_rhi,
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi],
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1]][ind_rhi + 1]);
+    double tab_hi_01 = interp_lin_1d(
+      fac_rhi,
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi],
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1]][ipol.ind_th[1] + 1][ind_rhi + 1]);
+    double tab_hi_10 = interp_lin_1d(
+      fac_rhi,
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi],
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1]][ind_rhi + 1]);
+    double tab_hi_11 = interp_lin_1d(
+      fac_rhi,
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi],
+      tab->dat[ipol.ind_a + 1]->val[ipol.ind_r[1] + 1][ipol.ind_th[1] + 1][ind_rhi + 1]);
 
     emis_profile_table->emis[ii] = get_interpolated_value_a_r_th(
         ipol.ifac_a, ipol.ifac_r, ipol.ifac_th,
@@ -377,7 +389,7 @@ double get_interpolated_value_a_r_th(
 void get_ipol_factors_a_r_th(const double a, const double r, const double th,
                              const extendedSourceTable* tab, InterpFactors& ipol) {
   // get interpolation factors between spins
-  get_ipol_factor((float) a, tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
+  get_ipol_factor(static_cast<float>(a), tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
   if (ipol.ifac_a < 0.0 or ipol.ifac_a > 1.0) {
   }
   for (int ii = 0; ii < 2; ii++) {
@@ -407,7 +419,7 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
 /**
  * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
  */
-void calc_energy_shift_gamma_tabulated(extendedSourceData& dat_ind_a, const int ind_r, const int ind_th,
+void calc_energy_shift_gamma_tabulated(const extendedSourceData& dat_ind_a, const int ind_r, const int ind_th,
                                        double**** energy_shift_bins, const int num_bins, const int num_shift_bins,
                                        const double gamma) {
   for (int i_r : {ind_r, ind_r + 1}) { // sph radial bins
@@ -432,7 +444,7 @@ void calc_energy_shift_gamma_tabulated(extendedSourceData& dat_ind_a, const int 
  * But obviously a bit slower too due to extra actions
  */
 double calc_energy_shift_gamma(
-    extendedSourceTable* tab, const InterpFactors ipol, const double bin_val, const double gamma) {
+    const extendedSourceTable* tab, const InterpFactors &ipol, const double bin_val, const double gamma) {
   int ind_bin_lo, ind_bin_hi;
   double ifac_bin_lo, ifac_bin_hi;
   get_ipol_factor_double(bin_val, tab->dat[ipol.ind_a]->bin,
@@ -505,7 +517,7 @@ double calc_energy_shift_gamma(
  * @details Can it be combined/restructured with interpol_extended_table ?
  * @return lpReflFrac, pointer to the structure containing interpolated reflection fraction and photon fractions
  */
-static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors ipol, int* status) {
+static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors &ipol, int* status) {
 
   lpReflFrac *fractions = new_lpReflFrac(status);
   CHECK_STATUS_RET(*status, fractions);
@@ -558,7 +570,7 @@ static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const Inte
 }
 
 
-double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors ipol) {
+double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors &ipol) {
   int ind_incl;
   double ifac_incl;
   get_ipol_factor_double(incl, prim_tab->dat[ipol.ind_a]->bin, prim_tab->n_bin,
@@ -597,12 +609,9 @@ double calc_primary_lensing(const double incl, const extendedSourceTable* prim_t
 /**
  * @brief Calculates ring emissivity
  * @details
- * @param emisProf; emisProfile, pointer to the structure with emissivity profile
- * @param param; relParam, pointer to the parameters structure
- * @param tab; extendedSourceTable, pointer to the table structure
  */
 void calc_ring_emis(emisProfile* emisProf, const double a, const double r_src,
-                    const double theta, const double gamma, extendedSourceTable* tab, int* status) {
+                    const double theta, const double gamma, const extendedSourceTable* tab, int* status) {
 
   CHECK_STATUS_VOID(*status);
 
@@ -629,7 +638,7 @@ void calc_ring_emis(emisProfile* emisProf, const double a, const double r_src,
  * @brief Divides flux by Kerr-to-flat area ratio and by Lorentz factor
  * TODO: cache these corrections in new table, so this function will be obsolete
  */
-void apply_flux_correction(extendedSourceData* dat, const double* r, const double spin,
+void apply_flux_correction(const extendedSourceData* dat, const double* r, const double spin,
                            const int n_r, const int n_th, const int n_rad) {
   for (int i_r = 0; i_r < n_r; i_r++) {
     for (int j_th = 0; j_th < n_th; j_th++) {
@@ -644,11 +653,12 @@ void apply_flux_correction(extendedSourceData* dat, const double* r, const doubl
 /**
  * @brief Calculates photon fractions (esc, bh, disk), lensing and boost of the primary emission for ring geometry
  * @details
- * @param emisProf; emisProfile, pointer to the structure with emissivity profile and necessary quantities
- * @param param; relParam, pointer to the parameters structure
- * @param prim_tab; extendedSourceTable, pointer to the primary table
+ * @param emisProf emisProfile, pointer to the structure with emissivity profile and necessary quantities
+ * @param param relParam, pointer to the parameters structure
+ * @param prim_tab extendedSourceTable, pointer to the primary table
+ * @param status
  */
-void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, extendedSourceTable* prim_tab, int* status) {
+void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, const extendedSourceTable* prim_tab, int* status) {
   CHECK_STATUS_VOID(*status);
 
   InterpFactors prim_ipol;
@@ -669,8 +679,9 @@ void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, extende
 /**
  * @brief Gets ring emissivities and normalization factors to emisProfile structure
  * @details Calculates emissivity for the extended source using calc_ring_emis function
- * @param emisProf, pointer to the structure containing emissivity profile
- * @param param, pointer to the structure containing the parameters used
+ * @param emisProf pointer to the structure containing emissivity profile
+ * @param param pointer to the structure containing the parameters used
+ * @param status
  */
 void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* status) {
 
@@ -713,7 +724,7 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
 
   extendedSourceTable* emissivity_table = get_es_table(status);
   extendedSourceTable* prim_table = get_prim_table(status);
-  InterpFactors ipol;
+  // InterpFactors ipol;
   InterpFactors prim_ipol;
   double* rad_grid = nullptr;
 
@@ -821,18 +832,19 @@ double get_energyboost_ring_source_disk(const relParam* param, const double radi
 /**
  * @brief Sets the memory for new extended source table
  * @details
- * @param n_r; int, number of spherical radii in the table
- * @param n_th; int, number of polar angles in the table
- * @param n_a; int, number of spins in the table
- * @param n_bin; int, number of bins in the table (radius or inclination)
- * @param n_storage; int, number of the energy shift bins in the table
+ * @param n_r int, number of spherical radii in the table
+ * @param n_th int, number of polar angles in the table
+ * @param n_a int, number of spins in the table
+ * @param n_bin int, number of bins in the table (radius or inclination)
+ * @param n_storage int, number of the energy shift bins in the table
+ * @param status
  * @return new_extended_source_table, new extended source table
  */
 extendedSourceTable* new_extended_source_table(const int n_r, const int n_th,
                                                const int n_a, const int n_bin, const int n_storage,
                                                int* status) {
 
-  auto *tab = (extendedSourceTable*) malloc(sizeof(extendedSourceTable));
+  auto *tab = static_cast<extendedSourceTable *>(malloc(sizeof(extendedSourceTable)));
 
   CHECK_MALLOC_RET_STATUS(tab, status, nullptr)
 
@@ -846,7 +858,7 @@ extendedSourceTable* new_extended_source_table(const int n_r, const int n_th,
 
   tab->dat = nullptr;
 
-  tab->dat = (extendedSourceData**) malloc(sizeof(extendedSourceData*) * tab->n_a);
+  tab->dat = static_cast<extendedSourceData **>(malloc(sizeof(extendedSourceData *) * tab->n_a));
 
   CHECK_MALLOC_RET_STATUS(tab->dat, status, tab)
 
@@ -874,73 +886,73 @@ extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_
     n_bin = PRIM_TABLE_NUM_INCLINATIONS;
     n_shift = PRIM_TABLE_NUM_ENERGY_BINS;
   }
-  auto *dat = (extendedSourceData*) malloc(sizeof(extendedSourceData));
+  auto *dat = static_cast<extendedSourceData *>(malloc(sizeof(extendedSourceData)));
   CHECK_MALLOC_RET_STATUS(dat, status, nullptr)
 
-  dat->r_sph = (double*) malloc(sizeof(double) * n_r);
+  dat->r_sph = static_cast<double *>(malloc(sizeof(double) * n_r));
 
   CHECK_MALLOC_RET_STATUS(dat->r_sph, status, nullptr)
 
-  dat->theta = (double**) malloc(sizeof(double) * n_r);
+  dat->theta = static_cast<double **>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->theta, status, nullptr)
 
-  dat->bin = (double*) malloc(sizeof(double) * n_bin);
+  dat->bin = static_cast<double *>(malloc(sizeof(double) * n_bin));
   CHECK_MALLOC_RET_STATUS(dat->bin, status, nullptr)
 
-  dat->refl_frac = (double**) malloc(sizeof(double) * n_r);
+  dat->refl_frac = static_cast<double **>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-  dat->f_ad = (double**) malloc(sizeof(double) * n_r);
+  dat->f_ad = static_cast<double **>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
 
-  dat->f_inf = (double**) malloc(sizeof(double) * n_r);
+  dat->f_inf = static_cast<double **>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->f_inf, status, nullptr)
 
-  dat->f_bh = (double**) malloc(sizeof(double) * n_r);
+  dat->f_bh = static_cast<double **>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->f_bh, status, nullptr)
 
-  dat->val = (double***) malloc(sizeof(double) * n_r);
+  dat->val = static_cast<double ***>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->val, status, nullptr)
 
-  dat->gshift = (double***) malloc(sizeof(double) * n_r);
+  dat->gshift = static_cast<double ***>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->gshift, status, nullptr)
 
-  dat->energy_data_storage = (double****) malloc(sizeof(double) * n_r);
+  dat->energy_data_storage = static_cast<double ****>(malloc(sizeof(double) * n_r));
   CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
   for (int i_r = 0; i_r < n_r; i_r++) {
 
-    dat->refl_frac[i_r] = (double*) malloc(sizeof(double) * n_th);
+    dat->refl_frac[i_r] = static_cast<double *>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->refl_frac, status, nullptr)
 
-    dat->theta[i_r] = (double*) malloc(sizeof(double) * n_th);
+    dat->theta[i_r] = static_cast<double *>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->theta, status, nullptr)
 
-    dat->f_ad[i_r] = (double*) malloc(sizeof(double) * n_th);
+    dat->f_ad[i_r] = static_cast<double *>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->f_ad, status, nullptr)
 
-    dat->f_inf[i_r] = (double*) malloc(sizeof(double) * n_th);
+    dat->f_inf[i_r] = static_cast<double *>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->f_inf, status, nullptr)
 
-    dat->f_bh[i_r] = (double*) malloc(sizeof(double) * n_th);
+    dat->f_bh[i_r] = static_cast<double *>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->f_bh, status, nullptr)
 
-    dat->gshift[i_r] = (double**) malloc(sizeof(double) * n_th);
+    dat->gshift[i_r] = static_cast<double **>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->gshift, status, nullptr)
 
-    dat->val[i_r] = (double**) malloc(sizeof(double) * n_th);
+    dat->val[i_r] = static_cast<double **>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->val, status, nullptr)
 
-    dat->energy_data_storage[i_r] = (double***) malloc(sizeof(double) * n_th);
+    dat->energy_data_storage[i_r] = static_cast<double ***>(malloc(sizeof(double) * n_th));
     CHECK_MALLOC_RET_STATUS(dat->energy_data_storage, status, nullptr)
 
     for(int j_th = 0; j_th < n_th; j_th++) {
-      dat->gshift[i_r][j_th] = (double*) malloc(sizeof(double) * n_bin);
-      dat->val[i_r][j_th] = (double*) malloc(sizeof(double) * n_bin);
-      dat->energy_data_storage[i_r][j_th] = (double**) malloc(sizeof(double) * n_bin);
+      dat->gshift[i_r][j_th] = static_cast<double *>(malloc(sizeof(double) * n_bin));
+      dat->val[i_r][j_th] = static_cast<double *>(malloc(sizeof(double) * n_bin));
+      dat->energy_data_storage[i_r][j_th] = static_cast<double **>(malloc(sizeof(double) * n_bin));
 
       for(int k_e = 0; k_e < n_bin; k_e++) {
-        dat->energy_data_storage[i_r][j_th][k_e] = (double*) malloc(sizeof(double) * n_shift);
+        dat->energy_data_storage[i_r][j_th][k_e] = static_cast<double *>(malloc(sizeof(double) * n_shift));
       }
     }
   }
@@ -952,7 +964,8 @@ extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_
 /**
  * @brief Frees the memory stored before for the data
  * @details
- * @param tab; extendedSourceTable, table to be freed from memory
+ * @param tab extendedSourceTable, table to be freed from memory
+ * @param is_lensing_table
  */
 void free_extended_source_table(extendedSourceTable* tab, const bool is_lensing_table) {
   if (tab != nullptr) {
@@ -974,9 +987,10 @@ void free_extended_source_table(extendedSourceTable* tab, const bool is_lensing_
 /**
  * @brief Frees the memory stored before for the data
  * @details
- * @param dat; extendedSourceData, data to be freed
+ * @param dat extendedSourceData, data to be freed
+ * @param is_lensing_table
  */
-void free_extended_source_data(extendedSourceData* dat, const bool is_lensing_table) {
+void free_extended_source_data(const extendedSourceData* dat, const bool is_lensing_table) {
   int n_r = EXT_TABLE_NUM_RADII;
   int n_th = EXT_TABLE_NUM_ANGLES;
   int n_bin = EXT_TABLE_NUM_RAD_BINS;
