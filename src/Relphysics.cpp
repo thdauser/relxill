@@ -133,38 +133,41 @@ double calc_g_inf(double height, double a) {
   return sqrt(1.0 - (2 * height / (height * height + a * a)));
 }
 
-double calc_cos_theta_primary_source(double height, double r_ring, double a) {
+double calc_cos_theta_ring_source(const double h, const double x, const double a) {
   double cosine_theta;
-  if (r_ring == 0.0) {
+  if (x == 0.0) {
     cosine_theta = 1.0; // on the rotational axis
   }
   else if (a == 0.0){ // special case of zero spin
-    cosine_theta = height / sqrt(height * height + r_ring * r_ring);
-  } else { // general case, the solution of equation r_ring = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
-    cosine_theta = sqrt((sqrt(4.0 * a * a * height * height + (height * height + r_ring * r_ring - a * a) *
-        (height * height + r_ring * r_ring - a * a)) + a * a - height * height - r_ring * r_ring) / (2.0 * a * a));
+    cosine_theta = h / sqrt(h * h + x * x);
+  } else { // general case, the solution of equation x = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
+    cosine_theta = sqrt((sqrt(4.0 * a * a * h * h + (h * h + x * x - a * a) *
+        (h * h + x * x - a * a)) + a * a - h * h - x * x) / (2.0 * a * a));
   }
   return cosine_theta;
 }
 
-double calc_spherical_radius_primary_source(double height, double r_ring, double a) {
-  double cosine_theta = calc_cos_theta_primary_source(height, r_ring, a);
-  double r = height / cosine_theta; // the spherical radius by definition
+double calc_spherical_radius_ring_source(const double h, const double x, const double a) {
+  double cos_theta = calc_cos_theta_ring_source(h, x, a);
+  double r = h / cos_theta; // spherical radius by definition
   return r;
 }
 
-// double convert_sph_radius_costheta_to_h_rring()
-
-double calc_extent_from_sph_radius_costheta(double sph_radius, double costheta, double a) {
-  return sqrt(1.0 - costheta * costheta) * sqrt(sph_radius * sph_radius + a * a);
+double calc_extent_from_sph_radius_costheta(const double r_sph, const double costheta, const double a) {
+  return sqrt(1.0 - costheta * costheta) * sqrt(r_sph * r_sph + a * a);
 }
 
-double calc_extent_from_sph_radius_primary_source(double height, double sph_radius, double a) {
-  if (abs(height - sph_radius) < 1e-4){
+double calc_extent_from_sph_radius_primary_source(const double height, const double r_sph, const double a) {
+  if (abs(height - r_sph) < 1e-4){
     return 0.0; // it is lamp post
   }
-  assert(height <= sph_radius && ("Height cannot be more than spherical radius"));
-  return sqrt((sph_radius * sph_radius - height * height) * (1.0 + a * a / (sph_radius * sph_radius)));
+  assert(height <= r_sph && ("Height cannot be more than spherical radius"));
+  return sqrt((r_sph * r_sph - height * height) * (1.0 + a * a / (r_sph * r_sph)));
+}
+
+void convert_hx_to_rtheta(const double h, const double x, const double a, double* r_sph, double* theta) {
+  *r_sph = calc_spherical_radius_ring_source(h, x, a);
+  *theta = acos(calc_cos_theta_ring_source(h, x, a));
 }
 
 

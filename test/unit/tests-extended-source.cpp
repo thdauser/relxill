@@ -57,12 +57,38 @@ TEST_CASE (
   local_model.set_par(XPar::switch_switch_returnrad, 0);
   local_model.set_par(XPar::gamma, 2.0);
 
-  // slab-specific
-  //local_model.set_par(XPar::x_in, 0.0);
-  //local_model.set_par(XPar::switch_switch_source_geometry, 2);
+  REQUIRE_NOTHROW(local_model.eval_model(spec));
+
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
+
+TEST_CASE (
+"Default relline_slab model call "
+,
+"[extended]"
+)
+{
+  int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  LocalModel local_model{ModelName::relline_slab};
+
+  double h = 3.0;
+
+  double x = 1.0;
+  double a = 0.998;
+  local_model.set_par(XPar::a, a);
+  local_model.set_par(XPar::rin, -1);
+  local_model.set_par(XPar::rout, 1000.0);
+  local_model.set_par(XPar::h, h);
+  local_model.set_par(XPar::x, x);
+  local_model.set_par(XPar::switch_switch_returnrad, 0);
+  local_model.set_par(XPar::gamma, 2.0);
 
   REQUIRE_NOTHROW(local_model.eval_model(spec));
-  // local_model.eval_model(spec);
 
   REQUIRE(status == EXIT_SUCCESS);
 }
@@ -73,21 +99,18 @@ TEST_CASE (
 ,
 "[extended]"
 )
- {
+{
 
-  //int status = EXIT_SUCCESS;
+  int status = EXIT_SUCCESS;
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  // LocalModel local_model{ModelName::relxill_ext};
-  // do some dummy param sets just to try that it works
   double spin = 0.99;
   double r_src = 2.0;
   double theta = 10.0;
   double incl = 45.0;
-  for (ModelName model : {ModelName::relline_ring, ModelName::relxill_ring_ecut, ModelName::relxill_ring}) {
+  for (ModelName model : {ModelName::relxill_ring_ecut, ModelName::relxill_ring}) {
     LocalModel local_model{model};
-    // local_model.set_par(XPar::switch_switch_source_geometry, type_geom);
     local_model.set_par(XPar::a, spin);
     local_model.set_par(XPar::r_src, r_src);
     local_model.set_par(XPar::theta_src, theta);
@@ -95,7 +118,32 @@ TEST_CASE (
 
     REQUIRE_NOTHROW(local_model.eval_model(spec));
   }
-  //REQUIRE(status == EXIT_SUCCESS);
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
+
+TEST_CASE (
+"Default call of relxill slab model "
+,
+"[extended]"
+)
+{
+
+  int status = EXIT_SUCCESS;
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+  double spin = 0.99;
+  double h = 2.0;
+  double x = 5.0;
+
+  LocalModel local_model{ModelName::relxill_slab};
+  local_model.set_par(XPar::a, spin);
+  local_model.set_par(XPar::h, h);
+  local_model.set_par(XPar::x, x);
+
+  REQUIRE_NOTHROW(local_model.eval_model(spec));
+  REQUIRE(status == EXIT_SUCCESS);
 }
 
 

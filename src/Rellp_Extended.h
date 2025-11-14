@@ -121,7 +121,7 @@ void apply_flux_correction(extendedSourceData* dat, const double* r,
 
 void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, extendedSourceTable* prim_tab, int* status);
 
-slabParams* get_slab_geometry(const relParam* param, int* status);
+slabParams get_slab_geometry(const relParam* param, int* status);
 
 // functions used globally:
 void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* status);
