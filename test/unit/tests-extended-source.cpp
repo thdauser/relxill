@@ -40,15 +40,15 @@ TEST_CASE (
  {
   int status = EXIT_SUCCESS;
 
-  DefaultSpec default_spec{};
+  const DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relline_ring};
 
-  double r_src = 3.0;
+  const double r_src = 3.0;
 
-  double theta = 1.0;
-  double a = 0.9837;
+  const double theta = 1.0;
+  const double a = 0.9837;
   local_model.set_par(XPar::a, a);
   local_model.set_par(XPar::rin, -1);
   local_model.set_par(XPar::rout, 1000.0);
@@ -71,15 +71,15 @@ TEST_CASE (
 {
   int status = EXIT_SUCCESS;
 
-  DefaultSpec default_spec{};
+  const DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   LocalModel local_model{ModelName::relline_slab};
 
-  double h = 3.0;
+  const double h = 2.0;
 
-  double x = 1.0;
-  double a = 0.998;
+  const double x = 0.1;
+  const double a = 0.998;
   local_model.set_par(XPar::a, a);
   local_model.set_par(XPar::rin, -1);
   local_model.set_par(XPar::rout, 1000.0);
@@ -89,6 +89,10 @@ TEST_CASE (
   local_model.set_par(XPar::gamma, 2.0);
 
   REQUIRE_NOTHROW(local_model.eval_model(spec));
+
+
+  //const auto spars = get_system_parameters(local_model.rel_params(), &status);
+  // save_emis_profiles(spars);
 
   REQUIRE(status == EXIT_SUCCESS);
 }
@@ -102,14 +106,14 @@ TEST_CASE (
 {
 
   int status = EXIT_SUCCESS;
-  DefaultSpec default_spec{};
+  const DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-  for (ModelName model : {ModelName::relxill_ring_ecut, ModelName::relxill_ring}) {
-    double incl = 45.0;
-    double theta = 10.0;
-    double r_src = 2.0;
-    double spin = 0.99;
+  for (const ModelName model : {ModelName::relxill_ring_ecut, ModelName::relxill_ring}) {
+    const double incl = 45.0;
+    const double theta = 10.0;
+    const double r_src = 2.0;
+    const double spin = 0.99;
     LocalModel local_model{model};
     local_model.set_par(XPar::a, spin);
     local_model.set_par(XPar::r_src, r_src);

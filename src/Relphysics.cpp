@@ -167,7 +167,7 @@ double calc_extent_from_sph_radius_primary_source(const double height, const dou
 
 void convert_hx_to_rtheta(const double h, const double x, const double a, double* r_sph, double* theta) {
   *r_sph = calc_spherical_radius_ring_source(h, x, a);
-  *theta = acos(calc_cos_theta_ring_source(h, x, a));
+  *theta = 180.0 / M_PI * acos(calc_cos_theta_ring_source(h, x, a)); //return in degrees!
 }
 
 

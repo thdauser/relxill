@@ -653,22 +653,27 @@ void apply_flux_correction(const extendedSourceData* dat, const double* r, const
  * @brief Calculates photon fractions (esc, bh, disk), lensing and boost of the primary emission for ring geometry
  * @details
  * @param emisProf emisProfile, pointer to the structure with emissivity profile and necessary quantities
- * @param param relParam, pointer to the parameters structure
  * @param prim_tab extendedSourceTable, pointer to the primary table
+ * @param spin
+ * @param r_src
+ * @param theta
+ * @param incl
+ * @param gamma
  * @param status
  */
-void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, const extendedSourceTable* prim_tab, int* status) {
+void calc_photon_fate_ring(emisProfile* emisProf, const extendedSourceTable* prim_tab, const double spin,
+  const double r_src, const double theta, const double incl, const double gamma, int* status) {
   CHECK_STATUS_VOID(*status);
 
   InterpFactors prim_ipol;
-  get_ipol_factors_a_r_th(param->a, param->r_src, param->theta, prim_tab, prim_ipol);
+  get_ipol_factors_a_r_th(spin, r_src, theta, prim_tab, prim_ipol);
   emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
   // input incl can be both in radian and in grads. The table has cos incl, so convert:
-  const double cos_incl = (param->incl < 0.5 * M_PI) ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  const double cos_incl = incl < 0.5 * M_PI ? cos(incl) : cos(incl * M_PI / 180.0);
 
   emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
-  emisProf->photon_fate_fractions->lensing_and_boost_factor = (emisProf->photon_fate_fractions->lensing *
-      calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, param->gamma));
+  emisProf->photon_fate_fractions->lensing_and_boost_factor = emisProf->photon_fate_fractions->lensing *
+     calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, gamma);
 }
 
 
@@ -690,7 +695,7 @@ void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* st
   const extendedSourceTable* prim_table = get_prim_table(status);
 
   calc_ring_emis(emisProf, param->a, param->r_src, param->theta, param->gamma, emissivity_table, status);
-  calc_photon_fate_ring(emisProf, param, prim_table, status);
+  calc_photon_fate_ring(emisProf, prim_table, param->a, param->r_src, param->theta, param->incl, param->gamma, status);
 
   CHECK_STATUS_VOID(*status);
 }
@@ -723,9 +728,6 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
 
   const extendedSourceTable* emissivity_table = get_es_table(status);
   const extendedSourceTable* prim_table = get_prim_table(status);
-  // InterpFactors ipol;
-  InterpFactors prim_ipol;
-  double* rad_grid = nullptr;
 
   const auto [num_rings, slab_grid_radii] = get_slab_geometry(param, status);
 
@@ -742,26 +744,21 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
     double r_ring_grid; double theta_ring_grid;
     convert_hx_to_rtheta(param->height, slab_grid_radii[n_r], param->a, &r_ring_grid, &theta_ring_grid);
 
-    // get_ipol_factors_a_r_th(param->a, r_ring_grid, theta_ring_grid, emissivity_table, ipol);
-    get_ipol_factors_a_r_th(param->a, r_ring_grid, theta_ring_grid, prim_table, prim_ipol);
-
-    // ring_emis_tmp = interpol_extended_table(emissivity_table, ipol, param->gamma, rad_grid, status);
-
     calc_ring_emis(ring_emis_tmp, param->a, r_ring_grid, theta_ring_grid, param->gamma, emissivity_table, status);
 
-    ring_emis_tmp->photon_fate_fractions = calc_refl_frac_ext(prim_table, prim_ipol, status);
+    calc_photon_fate_ring(ring_emis_tmp, prim_table, param->a, r_ring_grid, theta_ring_grid,
+      param->incl, param->gamma, status);
 
-    const double weight_factor = slab_grid_radii[n_r] * (slab_grid_radii[n_r + 1] -
+    const double weight_factor = 0.5 * (slab_grid_radii[n_r] + slab_grid_radii[n_r + 1]) * (slab_grid_radii[n_r + 1] -
         slab_grid_radii[n_r]) * ring_emis_tmp->photon_fate_fractions->refl_frac;
     weight_sum += weight_factor;
-
     for (int j_r = 0; j_r < emisProf->nr; j_r++) {
       emisProf->emis[j_r] += ring_emis_tmp->emis[j_r] * weight_factor;
     }
     // Note: weight factor has to be divided by the weight_sum once it is final
     update_photon_fractions(emisProf->photon_fate_fractions, ring_emis_tmp->photon_fate_fractions, weight_factor);
 
-    free_lpReflFrac(&(ring_emis_tmp->photon_fate_fractions));
+    free_lpReflFrac(&ring_emis_tmp->photon_fate_fractions);
   }
 
   for (int n_r = 0; n_r < emisProf->nr; n_r++) {
@@ -776,7 +773,6 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
   emisProf->photon_fate_fractions->f_inf /= weight_sum;
   emisProf->photon_fate_fractions->f_inf_rest /= weight_sum;
 
-  free(rad_grid);
   free_emisProfile(ring_emis_tmp);
 
   CHECK_STATUS_VOID(*status);

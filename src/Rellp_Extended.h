@@ -119,7 +119,8 @@ void calc_ring_emis(emisProfile* emisProf, double a, double r_src, double theta,
 void apply_flux_correction(const extendedSourceData* dat, const double* r,
                            const double spin, const int n_r, const int n_th, const int n_rad);
 
-void calc_photon_fate_ring(emisProfile* emisProf, const relParam* param, const extendedSourceTable* prim_tab, int* status);
+void calc_photon_fate_ring(emisProfile* emisProf, const extendedSourceTable* prim_tab, const double spin,
+  const double r_src, const double theta, const double incl, const double gamma, int* status);
 
 slabParams get_slab_geometry(const relParam* param, int* status);
 
