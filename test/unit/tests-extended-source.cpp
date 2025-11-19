@@ -152,7 +152,7 @@ TEST_CASE (
 
 
 TEST_CASE (
-"Checking the reflection fraction of a ring in the lp limit "
+"Comparing the reflection fraction of a ring in the lp limit "
 ,
 "[extended]"
 )
@@ -190,7 +190,6 @@ TEST_CASE (
 
   local_model_ext.set_par(XPar::r_src, h); // h == r_src when theta == 0
   local_model_ext.set_par(XPar::theta_src, 0.0);
-  //local_model_ext.set_par(XPar::switch_switch_source_geometry, 1);
 
   local_model_ext.eval_model(spec_ext);
   auto sys_par_ext = get_system_parameters(local_model_ext.rel_params(), &status);
@@ -199,8 +198,64 @@ TEST_CASE (
   double fraction_inf = sys_par_ext->emis->photon_fate_fractions->f_inf;
   double fraction_disk = sys_par_ext->emis->photon_fate_fractions->f_ad;
   double fraction_bhole = sys_par_ext->emis->photon_fate_fractions->f_bh;
-  //printf("%e \n", rel_param_ext->rout);
-  printf("test ext reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n",
+
+  printf("test ring reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n",
+         refl_ext, fraction_disk, fraction_inf, fraction_bhole, fraction_inf + fraction_disk + fraction_bhole,
+         fraction_disk / fraction_inf);
+
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
+
+TEST_CASE (
+"Comparing the reflection fraction of a slab in the lp limit "
+,
+"[extended]"
+)
+ {
+  int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+  LocalModel local_model{ModelName::relxilllp};
+
+  double spin = 0.998;
+  double h = 3.0;
+  local_model.set_par(XPar::a, spin);
+  local_model.set_par(XPar::rin, -1.0);
+  local_model.set_par(XPar::rout, 1000.0);
+  local_model.set_par(XPar::h, h);
+
+  local_model.eval_model(spec);
+  auto sys_par = get_system_parameters(local_model.rel_params(), &status);
+  double refl = sys_par->emis->photon_fate_fractions->refl_frac;
+  double frac_inf = sys_par->emis->photon_fate_fractions->f_inf;
+  double frac_disk = sys_par->emis->photon_fate_fractions->f_ad;
+  double frac_bhole = sys_par->emis->photon_fate_fractions->f_bh;
+  printf("test lp reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n", refl,
+         frac_disk, frac_inf, frac_bhole, frac_inf + frac_disk + frac_bhole, frac_disk / frac_inf);
+
+  DefaultSpec default_spec_ext{};
+  XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
+  LocalModel local_model_ext{ModelName::relxill_slab};
+
+
+  local_model_ext.set_par(XPar::a, spin);
+  local_model_ext.set_par(XPar::rin, -1.0);
+  local_model_ext.set_par(XPar::rout, 1000.0);
+
+  local_model_ext.set_par(XPar::h, h);
+  local_model_ext.set_par(XPar::x, 0.1);
+
+  local_model_ext.eval_model(spec_ext);
+  auto sys_par_ext = get_system_parameters(local_model_ext.rel_params(), &status);
+
+  double refl_ext = sys_par_ext->emis->photon_fate_fractions->refl_frac;
+  double fraction_inf = sys_par_ext->emis->photon_fate_fractions->f_inf;
+  double fraction_disk = sys_par_ext->emis->photon_fate_fractions->f_ad;
+  double fraction_bhole = sys_par_ext->emis->photon_fate_fractions->f_bh;
+
+  printf("test slab reflfrac=%e \t fr_disk=%e \t fr_inf=%e \t fr_bh=%e \t sum=%e \t fr_disk/fr_inf=%e \n",
          refl_ext, fraction_disk, fraction_inf, fraction_bhole, fraction_inf + fraction_disk + fraction_bhole,
          fraction_disk / fraction_inf);
 
@@ -239,15 +294,6 @@ TEST_CASE (
       local_model_ext.set_par(XPar::r_src, r_src);
       REQUIRE_NOTHROW(local_model.eval_model(spec));
       REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
-
-
-      // auto rel_params = local_model.rel_params();
-      // auto sys_params = get_system_parameters(rel_params, &status);
-      // auto rel_params_ext = local_model_ext.rel_params();
-      // auto sys_params_ext = get_system_parameters(rel_params_ext, &status);
-      // double lensing = sys_params_ext->emis->photon_fate_fractions->lensing;
-      // double reflfrac = sys_params->emis->photon_fate_fractions->refl_frac;
-      // double reflfrac_ext = sys_params_ext->emis->photon_fate_fractions->refl_frac;
 
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         assert(spec.energy[i] == spec_ext.energy[i]);
@@ -320,6 +366,61 @@ TEST_CASE (
   REQUIRE(status == EXIT_SUCCESS);
 }
 
+
+TEST_CASE (
+"Compare lp and slab emissivities in the lp limit "
+,
+"[extended]"
+)
+{
+
+  int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+  LocalModel local_model{ModelName::relxilllp};
+
+  DefaultSpec default_spec_ext{};
+  XspecSpectrum spec_ext = default_spec_ext.get_xspec_spectrum();
+  LocalModel local_model_ext{ModelName::relxill_slab};
+  local_model_ext.set_par(XPar::x, 0.1);
+
+  double spins[3] = {0.8, 0.9, 0.998};
+  double heights[3] = {3.0, 5.0, 10.0};
+
+  for (double spin : spins){
+    for(double h : heights){
+
+      local_model.set_par(XPar::a, spin);
+
+      local_model.set_par(XPar::h, h);
+      local_model.set_par(XPar::rin, -1.0);
+      local_model.eval_model(spec);
+
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::h, h);
+      local_model_ext.set_par(XPar::rin, -1.0);
+      local_model_ext.eval_model(spec_ext);
+      auto sys_par = get_system_parameters(local_model.rel_params(), &status);
+      auto sys_par_ext = get_system_parameters(local_model_ext.rel_params(), &status);
+      int n_rad = sys_par->nr;
+      double *intens = sys_par->emis->emis;
+      int n_rad_ext = sys_par_ext->nr;
+      double *intens_ext = sys_par_ext->emis->emis;
+
+      assert(n_rad_ext == n_rad);
+      for (int i = 0; i < n_rad; i++) {
+        double current_error = 0.06;
+        assert(sys_par_ext->re[i] == sys_par->re[i]); // check if the grids match
+
+        REQUIRE(abs(intens[i] / intens_ext[i] - 1.0) < current_error);
+      }
+    }
+  }
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
+
 TEST_CASE (
 "Compare lp and ring line profiles for zero ring size for several parameter combinations "
 ,
@@ -357,6 +458,53 @@ TEST_CASE (
           REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_tail);
           if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) {
             double current_error_peak = 0.002;
+            // this is the most important range of energies
+            REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_peak);
+          }
+        }
+      }
+    }
+  }
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
+TEST_CASE (
+"Compare lp and slab line profiles in the lp limit for several parameter combinations "
+,
+"[extended]"
+)
+{
+
+  int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  DefaultSpec default_spec_ext{};
+  auto spec = default_spec.get_xspec_spectrum();
+  auto spec_ext = default_spec_ext.get_xspec_spectrum();
+  LocalModel local_model{ModelName::relline_lp};
+  LocalModel local_model_ext{ModelName::relline_slab};
+  local_model_ext.set_par(XPar::x, 0.1);
+
+  double spins[3] = {0.8, 0.9, 0.998};
+  double heights[3] = {3.0, 5.0, 10.0};
+
+  for (double spin : spins){
+    for (double h : heights){
+      local_model.set_par(XPar::a, spin);
+      local_model.set_par(XPar::h, h);
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::h, h);
+
+      REQUIRE_NOTHROW(local_model.eval_model(spec));
+      REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+
+      for (int i = 0; i < spec.num_flux_bins(); i++) {
+        if (spec.flux[i] > 0.0) {
+          double current_error_tail = 0.06;
+          // to remove zero division
+          REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_tail);
+          if (spec.energy[i] >= 1.0 and spec.energy[i] <= 8.0) {
+            double current_error_peak = 0.003;
             // this is the most important range of energies
             REQUIRE(abs(spec.flux[i] - spec_ext.flux[i]) / spec.flux[i] < current_error_peak);
           }
@@ -415,7 +563,53 @@ TEST_CASE (
 
 
 TEST_CASE (
-"Setting input parameters for extended source outside of the allowed range "
+"Compare lp and slab reflected fluxes in the lp limit for several parameter combinations "
+,
+"[extended]"
+)
+{
+
+  int status = EXIT_SUCCESS;
+
+  DefaultSpec default_spec{};
+  DefaultSpec default_spec_ext{};
+
+  LocalModel local_model{ModelName::relxilllp};
+  auto spec = default_spec.get_xspec_spectrum();
+  LocalModel local_model_ext{ModelName::relxill_slab};
+  auto spec_ext = default_spec_ext.get_xspec_spectrum();
+  local_model_ext.set_par(XPar::x, 0.1);
+  local_model_ext.set_par(XPar::refl_frac, -1);
+  // with lensing it does not make sense to compare full fluxes, so we compare only reflected fluxes
+  local_model.set_par(XPar::refl_frac, -1);
+  double spins[3] = {0.8, 0.9, 0.998};
+  double heights[3] = {3.0, 5.0, 10.0};
+
+  for (double spin : spins){
+    for (double h : heights){
+      local_model.set_par(XPar::a, spin);
+      local_model.set_par(XPar::h, h);
+      local_model_ext.set_par(XPar::a, spin);
+      local_model_ext.set_par(XPar::h, h);
+      REQUIRE_NOTHROW(local_model.eval_model(spec));
+      REQUIRE_NOTHROW(local_model_ext.eval_model(spec_ext));
+
+      for (int i = 0; i < spec.num_flux_bins(); i++) {
+        assert(spec.energy[i] == spec_ext.energy[i]);
+        if (spec_ext.flux[i] != 0.0) {
+          double current_error = 0.047;
+          // as with emissivities and line profiles, we expect the difference up to current_error value now
+          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error);
+        }
+      }
+    }
+  }
+  REQUIRE(status == EXIT_SUCCESS);
+}
+
+
+TEST_CASE (
+"Setting input parameters for ring source outside of the allowed range "
 ,
 "[extended]"
 )
