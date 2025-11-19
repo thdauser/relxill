@@ -71,6 +71,7 @@ double doppler_factor_source_obs(const relParam *rel_param);
 double energy_shift_source_obs(const relParam *rel_param);
 double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit);
 
+double calc_emissivity_newton(const relParam* param, double radius);
 double calc_lp_emissivity_newton(double h, double r);
 double calc_ring_emissivity_1d_newton(double h, double x, double r);
 double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta);

@@ -111,7 +111,7 @@ void calc_energy_shift_gamma_tabulated(const extendedSourceData& dat_ind_a, cons
 double calc_energy_shift_gamma(const extendedSourceTable* tab, const InterpFactors &ipol,
                                const double bin_val, const double gamma);
 
-static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors &ipol, int* status);
+lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors &ipol, int* status);
 
 double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors &ipol);
 
@@ -119,7 +119,7 @@ void calc_ring_emis(emisProfile* emisProf, double a, double r_src, double theta,
 void apply_flux_correction(const extendedSourceData* dat, const double* r,
                            const double spin, const int n_r, const int n_th, const int n_rad);
 
-void calc_photon_fate_ring(emisProfile* emisProf, const extendedSourceTable* prim_tab, const double spin,
+void calc_photon_fate_ring(lpReflFrac* photon_fractions, const extendedSourceTable* prim_tab, const double spin,
   const double r_src, const double theta, const double incl, const double gamma, int* status);
 
 slabParams get_slab_geometry(const relParam* param, int* status);
@@ -129,10 +129,9 @@ void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* st
 
 void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* status);
 
-double get_energyboost_ring_source_obs(const relParam* param, const double gamma);
+double get_energyboost_ext_source_obs(const relParam* param, const double gamma);
 
-double get_energyboost_ring_source_disk(const relParam* param, const double radius, const double gamma);
-
+double get_energyboost_ext_source_disk(const relParam* param, const double radius, const double gamma);
 
 // constructors and destructors:
 extendedSourceTable* new_extended_source_table(const int n_r, const int n_th,

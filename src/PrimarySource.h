@@ -83,7 +83,7 @@ class PrimarySourceParameters {
    */
   double flux_boost_source_to_observer(const lpReflFrac &lp_refl_frac) const {
     double prime_spec_factors_source_to_observer;
-    if (m_rel_param->model_type == MOD_TYPE_RELXILLRING) {
+    if (m_rel_param->model_type == MOD_TYPE_RELXILLRING || m_rel_param->model_type == MOD_TYPE_RELXILLSLAB) {
       prime_spec_factors_source_to_observer = lp_refl_frac.lensing_and_boost_factor; // this is GR lensing * g^Gamma
       assert(prime_spec_factors_source_to_observer > 0.0);
     } else {

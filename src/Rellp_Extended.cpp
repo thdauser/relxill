@@ -517,7 +517,7 @@ double calc_energy_shift_gamma(
  * @details Can it be combined/restructured with interpol_extended_table ?
  * @return lpReflFrac, pointer to the structure containing interpolated reflection fraction and photon fractions
  */
-static lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors &ipol, int* status) {
+lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors &ipol, int* status) {
 
   lpReflFrac *fractions = new_lpReflFrac(status);
   CHECK_STATUS_RET(*status, fractions);
@@ -652,7 +652,7 @@ void apply_flux_correction(const extendedSourceData* dat, const double* r, const
 /**
  * @brief Calculates photon fractions (esc, bh, disk), lensing and boost of the primary emission for ring geometry
  * @details
- * @param emisProf emisProfile, pointer to the structure with emissivity profile and necessary quantities
+ * @param photon_fractions
  * @param prim_tab extendedSourceTable, pointer to the primary table
  * @param spin
  * @param r_src
@@ -661,25 +661,32 @@ void apply_flux_correction(const extendedSourceData* dat, const double* r, const
  * @param gamma
  * @param status
  */
-void calc_photon_fate_ring(emisProfile* emisProf, const extendedSourceTable* prim_tab, const double spin,
+void calc_photon_fate_ring(lpReflFrac* photon_fractions, const extendedSourceTable* prim_tab, const double spin,
   const double r_src, const double theta, const double incl, const double gamma, int* status) {
   CHECK_STATUS_VOID(*status);
 
   InterpFactors prim_ipol;
   get_ipol_factors_a_r_th(spin, r_src, theta, prim_tab, prim_ipol);
-  emisProf->photon_fate_fractions = calc_refl_frac_ext(prim_tab, prim_ipol, status);
+  auto photon_fractions_obt = calc_refl_frac_ext(prim_tab, prim_ipol, status);
+  photon_fractions->f_ad = photon_fractions_obt->f_ad;
+  photon_fractions->f_inf = photon_fractions_obt->f_inf;
+  photon_fractions->f_bh = photon_fractions_obt->f_bh;
+  photon_fractions->f_inf_rest = photon_fractions_obt->f_inf_rest;
+  photon_fractions->refl_frac = photon_fractions_obt->refl_frac;
+
   // input incl can be both in radian and in grads. The table has cos incl, so convert:
   const double cos_incl = incl < 0.5 * M_PI ? cos(incl) : cos(incl * M_PI / 180.0);
 
-  emisProf->photon_fate_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
-  emisProf->photon_fate_fractions->lensing_and_boost_factor = emisProf->photon_fate_fractions->lensing *
-     calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, gamma);
+  photon_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
+  photon_fractions->lensing_and_boost_factor =
+    photon_fractions->lensing * calc_energy_shift_gamma(prim_tab, prim_ipol, cos_incl, gamma);
 }
 
 
 /*
  * Main routines to be used in the project
- * */
+ */
+
 /**
  * @brief Gets ring emissivities and normalization factors to emisProfile structure
  * @details Calculates emissivity for the extended source using calc_ring_emis function
@@ -694,8 +701,9 @@ void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* st
   const extendedSourceTable* emissivity_table = get_es_table(status);
   const extendedSourceTable* prim_table = get_prim_table(status);
 
+  emisProf->photon_fate_fractions = new_lpReflFrac(status);
   calc_ring_emis(emisProf, param->a, param->r_src, param->theta, param->gamma, emissivity_table, status);
-  calc_photon_fate_ring(emisProf, prim_table, param->a, param->r_src, param->theta, param->incl, param->gamma, status);
+  calc_photon_fate_ring(emisProf->photon_fate_fractions, prim_table, param->a, param->r_src, param->theta, param->incl, param->gamma, status);
 
   CHECK_STATUS_VOID(*status);
 }
@@ -745,8 +753,8 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
     convert_hx_to_rtheta(param->height, slab_grid_radii[n_r], param->a, &r_ring_grid, &theta_ring_grid);
 
     calc_ring_emis(ring_emis_tmp, param->a, r_ring_grid, theta_ring_grid, param->gamma, emissivity_table, status);
-
-    calc_photon_fate_ring(ring_emis_tmp, prim_table, param->a, r_ring_grid, theta_ring_grid,
+    ring_emis_tmp->photon_fate_fractions = new_lpReflFrac(status);
+    calc_photon_fate_ring(ring_emis_tmp->photon_fate_fractions, prim_table, param->a, r_ring_grid, theta_ring_grid,
       param->incl, param->gamma, status);
 
     const double weight_factor = 0.5 * (slab_grid_radii[n_r] + slab_grid_radii[n_r + 1]) * (slab_grid_radii[n_r + 1] -
@@ -817,8 +825,86 @@ double get_energyboost_ring_source_disk(const relParam* param, const double radi
   if (r_sph == 0.0) { // if it is a default, then other pair of geometric parameters is used (h, x)
     convert_hx_to_rtheta(param->height, param->x, param->a, &r_sph, &theta);
   }
-  get_ipol_factors_a_r_th(param->a, param->r_src, param->theta, table, ipol);
+  get_ipol_factors_a_r_th(param->a, r_sph, theta, table, ipol);
   const double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
+  return gshift;
+}
+
+
+/**
+ * @brief Gets g^Gamma from slab source to disk for a given disk radius
+ * @param param relxill parameters and values
+ * @param radius Disk radius
+ * @param gamma Photon index
+ * @return The g^Gamma value
+ */
+double get_energyboost_slab_source_disk(const relParam* param, const double radius, const double gamma) {
+  int status = EXIT_SUCCESS;
+  const extendedSourceTable* table = get_es_table(&status);
+  const extendedSourceTable* prim_table = get_prim_table(&status);
+  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param, &status);
+
+  double gshift = 0.0;
+  double weight_sum = 0.0; // need for normalization
+  for (int n_r = 0; n_r < num_rings; n_r++) {
+    InterpFactors ipol;
+    double r_sph; double theta;
+    convert_hx_to_rtheta(param->height, slab_grid_radii[n_r], param->a, &r_sph, &theta);
+    get_ipol_factors_a_r_th(param->a, r_sph, theta, table, ipol);
+
+    const auto phot_frac_ring = new_lpReflFrac(&status);
+    calc_photon_fate_ring(phot_frac_ring, prim_table, param->a, r_sph, theta,
+        param->incl, param->gamma, &status);
+
+    const double weight_factor = 0.5 * (slab_grid_radii[n_r] + slab_grid_radii[n_r + 1]) * (slab_grid_radii[n_r + 1] -
+          slab_grid_radii[n_r]) * phot_frac_ring->refl_frac;
+    weight_sum += weight_factor;
+    const double gshift_ring = calc_energy_shift_gamma(table, ipol, radius, gamma);
+
+    gshift += gshift_ring * weight_factor;
+  }
+  gshift /= weight_sum;
+
+  return gshift;
+}
+
+
+/**
+ * @brief Gets g^Gamma from ring/slab source to observer
+ * @param param relxill parameters and values
+ * @param gamma Photon index
+ * @return The g^Gamma value
+ */
+double get_energyboost_ext_source_obs(const relParam* param, const double gamma) {
+  double gshift;
+  if (param->model_type == MOD_TYPE_RELXILLSLAB) {
+    // TODO update this function
+    // only tmp solution to assign g^Gamma of the outermost ring to the whole slab
+    gshift = get_energyboost_ring_source_obs(param, gamma);
+    // ideally, this will be get_energyboost_slab_source_obs
+  }
+  else { // assume ring source
+    gshift = get_energyboost_ring_source_obs(param, gamma);
+  }
+  return gshift;
+}
+
+
+/**
+ * @brief Gets g^Gamma from slab source to disk for a given disk radius
+ * @param param relxill parameters and values
+ * @param radius Disk radius
+ * @param gamma Photon index
+ * @return The g^Gamma value
+ */
+double get_energyboost_ext_source_disk(const relParam* param, const double radius, const double gamma) {
+  double gshift;
+  if (param->model_type == MOD_TYPE_RELXILLSLAB) {
+    gshift = get_energyboost_slab_source_disk(param, radius, gamma);
+  }
+  else { // assume ring source
+    gshift = get_energyboost_ring_source_disk(param, radius, gamma);
+  }
   return gshift;
 }
 

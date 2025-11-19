@@ -243,7 +243,6 @@ double calc_flux_rin_cgs_ring(double l_source, double r_src, double theta, doubl
 double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
                                  const PrimarySourceParameters &primary_source,
                                  double rad) {
-
   const auto &rel_param = (*primary_source.rel_param());
 
   // calculate the source luminosity for boost to get a higher/lower source luminosity
@@ -251,10 +250,18 @@ double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
   double l_source_cgs = primary_source.luminosity_source_cgs();
   const double boost = primary_source.get_boost_parameter(photon_fate_fractions);
   l_source_cgs *= boost;
-  if (rel_param.model_type == MOD_TYPE_RELXILLRING) {
-    // for ring sources we use different geometry parameters (r_src = h * cos theta)
-    printf("Using new switch for cgs flux \n");
-    return calc_flux_rin_cgs_ring(l_source_cgs, rel_param.r_src, rel_param.theta, rad, primary_source.mass_msolar());
+  if (rel_param.model_type == MOD_TYPE_RELXILLRING || rel_param.model_type == MOD_TYPE_RELXILLSLAB) {
+    // for ring/slab sources the flux at rin is different, but as far as I am aware, this function is used only for
+    // relxillAlpha which does not have extended geometry yet, so I leave a warning here
+    printf("calc_flux_disk_newton_cgs may not work properly for extended sources! Check IonGradient.cpp \n");
+    // Still try to make it work for rings and slabs
+    double r_sph = rel_param.r_src;
+    double theta = rel_param.theta;
+    if (rel_param.r_src == 0.0) {
+      // r_src, theta not defined for slab
+      convert_hx_to_rtheta(rel_param.height, rel_param.x, rel_param.a, &r_sph, &theta);
+    }
+    return calc_flux_rin_cgs_ring(l_source_cgs, r_sph, theta, rad, primary_source.mass_msolar());
   } else {
     return calc_flux_rin_cgs_lp(l_source_cgs, rel_param.height, rad, primary_source.mass_msolar());
   }
@@ -265,7 +272,7 @@ double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
  * (require the emissivity profile to be only of length=1!)
  * @param photon_fate_fractions
  * @param emis_profile_lxi_max  (is only allowed to contain one value)
- * @param rel_param
+ * @param primary_source
  * @return
  */
 double calc_flux_disk_cgs(const lpReflFrac *photon_fate_fractions,
@@ -279,15 +286,8 @@ double calc_flux_disk_cgs(const lpReflFrac *photon_fate_fractions,
   // calculate the flux boost wrt to Newton from the given emissivity profile, as it is defined such that for large
   // radii (i.e., neglecting GR effects it coincides with the Newtonian version normalized as \int \emis dA = 1)
 
-  double emis_at_lxi_max;
-  if (rel_param.model_type == MOD_TYPE_RELXILLRING) {
-    printf("Using new switch for emissivity \n");
-    double h = rel_param.r_src * cos(rel_param.theta * CONVERT_DEG2RAD);
-    double x = rel_param.r_src * sin(rel_param.theta * CONVERT_DEG2RAD);
-    emis_at_lxi_max = calc_ring_emissivity_1d_newton(h, x, radius_lxi_max);
-  } else {
-    emis_at_lxi_max = calc_lp_emissivity_newton(rel_param.height, radius_lxi_max);
-  }
+  double emis_at_lxi_max = calc_emissivity_newton(&rel_param, radius_lxi_max);
+
   double const boost_newton_to_gr =
       photon_fate_fractions->refl_frac * emis_profile_lxi_max.emis[0] / emis_at_lxi_max;
 
@@ -474,7 +474,7 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
       printf("       can not calculate Ecut/kTe on the disk \n\n");
       throw std::exception();
     }
-    if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
+    if (rel_param->model_type == MOD_TYPE_RELXILLRING || rel_param->model_type == MOD_TYPE_RELXILLSLAB) {
       // todo better switcher ^ (need to include common.h to have proper geometry switcher)
       return ecut_primary * gi_potential_ext(rel_param, rzone);
     }

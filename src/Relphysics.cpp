@@ -242,9 +242,9 @@ double gi_potential_lp(double r, double a, double h, double bet, double del) {
   return gi / beta_fac;
 }
 
-/** similar to gi_potential_lp below, but for ring source **/
-double gi_potential_ext(const relParam *param, double r) {
-  double g_sd = get_energyboost_ring_source_disk(param, r, 1.0); // it is just energy shift here
+/** similar to gi_potential_lp below, but for ring or slab source **/
+double gi_potential_ext(const relParam *param, const double r) {
+  const double g_sd = get_energyboost_ext_source_disk(param, r, 1.0); // gamma == 1.0
   return g_sd;
 }
 
@@ -287,9 +287,9 @@ double energy_shift_source_obs(const relParam *rel_param) {
     return g_inf_0;
   }
 
-  if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
-    g_inf_0 = get_energyboost_ring_source_obs(rel_param, 1.0);
-  } else { // not ring geometry (update for slab!)
+  if (rel_param->model_type == MOD_TYPE_RELXILLRING || rel_param->model_type == MOD_TYPE_RELXILLSLAB) {
+    g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
+  } else { // lamp post
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
   }
 
@@ -314,13 +314,36 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
   if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
     return 1;
   }
-  if (rel_param->model_type == MOD_TYPE_RELXILLRING) {
-    double gshift = get_energyboost_ring_source_disk(rel_param, radius_disk, 1.0);
+  if (rel_param->model_type == MOD_TYPE_RELXILLRING || rel_param->model_type == MOD_TYPE_RELXILLSLAB) {
+    double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
     return gshift;
   }
-  else{
+  else {
     return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
   }
+}
+
+/**
+ * @brief calculate the geometric/Newtonian emissivity at a given radius
+ * @details the emissivity profiles are normalized such that at large height and
+ * radii the GR profiles converge towards this definition
+ * @return
+ */
+double calc_emissivity_newton(const relParam* param, const double radius) {
+  double emis;
+  if (param->model_type == MOD_TYPE_RELXILLRING) {
+    double h = param->r_src * cos(param->theta * CONVERT_DEG2RAD);
+    double x = param->r_src * sin(param->theta * CONVERT_DEG2RAD);
+    emis = calc_ring_emissivity_1d_newton(h, x, radius);
+  } else if (param->model_type == MOD_TYPE_RELXILLSLAB) {
+    printf("calc_emissivity_newton: slab emissivity may be inaccurate! \n");
+    // AN: here I use the trick that slab emissivity at a given radius has the largest contribution from the ring
+    // with exactly this radius (no GR)
+    emis = calc_ring_emissivity_1d_newton(param->height, radius, radius);
+  } else {
+    emis = calc_lp_emissivity_newton(param->height, radius);
+  }
+  return emis;
 }
 
 /**
