@@ -638,6 +638,7 @@ lpReflFrac *new_lpReflFrac(int *status) {
   CHECK_MALLOC_RET_STATUS(str, status, nullptr)
   str->refl_frac = 0.0;
   str->f_inf_rest = 0.0;
+  str->f_inf = 0.0;
   str->f_ad = 0.0;
   str->f_bh = 0.0;
   str->lensing = 0.0;
