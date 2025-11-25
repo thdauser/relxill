@@ -574,7 +574,7 @@ TEST_CASE (
   DefaultSpec default_spec{};
   DefaultSpec default_spec_ext{};
 
-  LocalModel local_model{ModelName::relxilllp};
+  LocalModel local_model{ModelName::relxilllpCp};
   auto spec = default_spec.get_xspec_spectrum();
   LocalModel local_model_ext{ModelName::relxill_slab};
   auto spec_ext = default_spec_ext.get_xspec_spectrum();
@@ -597,9 +597,15 @@ TEST_CASE (
       for (int i = 0; i < spec.num_flux_bins(); i++) {
         assert(spec.energy[i] == spec_ext.energy[i]);
         if (spec_ext.flux[i] != 0.0) {
-          double current_error = 0.047;
-          // as with emissivities and line profiles, we expect the difference up to current_error value now
-          REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error);
+          double current_error_high_en = 0.07; // high energies (>100 keV)
+          double current_error_low_en = 0.01; // else
+          if (spec.energy[i] > 100.0) {
+            // a high energy tail is different for slab
+            REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error_high_en);
+          } else {
+            REQUIRE(abs(spec.flux[i] / spec_ext.flux[i] - 1.0) < current_error_low_en);
+          }
+
         }
       }
     }
