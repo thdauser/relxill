@@ -38,6 +38,8 @@
 #define PRIM_TABLE_NUM_ENERGY_BINS 20 // number of energy bin values
 #define PRIM_TABLE_FILENAME "rel_ext_table_obs_sph_v0.1.fits"
 
+#define SLAB_NUMBER_RINGS 100
+
 typedef struct {
 
   double* r_sph;

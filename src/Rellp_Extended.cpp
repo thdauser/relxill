@@ -262,7 +262,9 @@ extendedSourceTable* get_prim_table(int* status) {
 
 /**
  * @brief Interpolates a given tabulated value (between 4 base points) between spherical radii and polar angles,
- * and then between spins. In fact, this is 3d interpolation in (a,r,th)
+ * and then between spins.
+ * Note: this is NOT a linear 3d interpolation because
+ * interpolation factors ifac_r, ifac_th can have different values for different spins
  * @return interpolated value, double
  */
 double get_interpolated_value_a_r_th(
@@ -275,7 +277,7 @@ double get_interpolated_value_a_r_th(
   // does h-r interpolation for spin[ind_a+1]
   const double val_at_spin_hi = interp_lin_2d(ifac_th[1], ifac_r[1],
                                         vals_hi00, vals_hi01, vals_hi10, vals_hi11);
-  // grid points must be equal, no adjustment done here
+  // radial grid points must be equal, no adjustment done here
   return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
 }
 
@@ -432,25 +434,30 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
   // get interpolation factors between spins
   get_ipol_factor(static_cast<float>(a), tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
   if (ipol.ifac_a < 0.0 or ipol.ifac_a > 1.0) {
+    // should never happen with proper table limits
+    printf(" *** Warning : spin interpolation in extended becomes extrapolation: ifac_a = %.1f \n",
+             ipol.ifac_a);
+    printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
+    printf("Better limit a range of values within table limits \n");
   }
-  for (int ii = 0; ii < 2; ii++) {
+  for (const int i_r : {0, 1}) {
     // get interpolation factors between spherical radii
-    get_ipol_factor_double(r, tab->dat[ipol.ind_a + ii]->r_sph, tab->n_r,
-                           &(ipol.ind_r[ii]), &(ipol.ifac_r[ii]));
-    if (ipol.ifac_r[ii] < 0.0 or ipol.ifac_r[ii] > 1.0) {
+    get_ipol_factor_double(r, tab->dat[ipol.ind_a + i_r]->r_sph, tab->n_r,
+                           &ipol.ind_r[i_r], &ipol.ifac_r[i_r]);
+    if (ipol.ifac_r[i_r] < 0.0 or ipol.ifac_r[i_r] > 1.0) {
       printf(" *** Warning : spherical radius interpolation becomes extrapolation: ifac_r = %.1f \n",
-             ipol.ifac_r[ii]);
+             ipol.ifac_r[i_r]);
       printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
       printf("Better limit a range of values within table limits \n");
     }
     // interpolation factors between polar angles
-    const int index = ipol.ifac_r[ii] > 0.999999 ? ipol.ind_r[ii] + 1 : ipol.ind_r[ii];
+    const int index = ipol.ifac_r[i_r] > 0.999999 ? ipol.ind_r[i_r] + 1 : ipol.ind_r[i_r];
     // this additional index shift doesn't matter for the current table
-    // but if tabulated angles will differ for different radii - it would matter
-    get_ipol_factor_double(th, tab->dat[ipol.ind_a + ii]->theta[index], tab->n_th,
-                           &ipol.ind_th[ii], &ipol.ifac_th[ii]);
-    if (ipol.ifac_th[ii] < 0.0 or ipol.ifac_th[ii] > 1.0) {
-      printf(" *** Warning : angle interpolation becomes extrapolation: ifac_th = %.1f \n", ipol.ifac_th[ii]);
+    // but if tabulated angles will differ for different sph. radii - it would matter
+    get_ipol_factor_double(th, tab->dat[ipol.ind_a + i_r]->theta[index], tab->n_th,
+                           &ipol.ind_th[i_r], &ipol.ifac_th[i_r]);
+    if (ipol.ifac_th[i_r] < 0.0 or ipol.ifac_th[i_r] > 1.0) {
+      printf(" *** Warning : angle interpolation becomes extrapolation: ifac_th = %.1f \n", ipol.ifac_th[i_r]);
       printf("Better limit a range of values within table limits \n");
     }
   }
@@ -639,7 +646,7 @@ void calc_ring_emis(emisProfile* emisProf, const double a, const double r_src,
   get_ipol_factors_a_r_th(a, r_src, theta, tab, ipol);
 
   double* radial_grid = nullptr;
-  emisProfile *emis_profile_table = interpol_extended_table(tab, ipol, gamma, radial_grid, status);
+  emisProfile* emis_profile_table = interpol_extended_table(tab, ipol, gamma, radial_grid, status);
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
   free(radial_grid); // radial_grid is _not_ owned by emissivity profile structure
@@ -673,7 +680,7 @@ void calc_photon_fate_ring(lpReflFrac* photon_fractions, const extendedSourceTab
 
   InterpFactors prim_ipol;
   get_ipol_factors_a_r_th(spin, r_src, theta, prim_tab, prim_ipol);
-  auto photon_fractions_obt = calc_refl_frac_ext(prim_tab, prim_ipol, status);
+  const auto photon_fractions_obt = calc_refl_frac_ext(prim_tab, prim_ipol, status);
   photon_fractions->f_ad = photon_fractions_obt->f_ad;
   photon_fractions->f_inf = photon_fractions_obt->f_inf;
   photon_fractions->f_bh = photon_fractions_obt->f_bh;
@@ -689,9 +696,8 @@ void calc_photon_fate_ring(lpReflFrac* photon_fractions, const extendedSourceTab
 }
 
 
-/*
- * Main routines to be used in the project
- */
+/*** Main routines to be used in the project ***/
+
 
 /**
  * @brief Gets ring emissivities and normalization factors to emisProfile structure
@@ -709,20 +715,21 @@ void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* st
 
   emisProf->photon_fate_fractions = new_lpReflFrac(status);
   calc_ring_emis(emisProf, param->a, param->r_src, param->theta, param->gamma, emissivity_table, status);
-  calc_photon_fate_ring(emisProf->photon_fate_fractions, prim_table, param->a, param->r_src, param->theta, param->incl, param->gamma, status);
+  calc_photon_fate_ring(emisProf->photon_fate_fractions, prim_table,
+    param->a, param->r_src, param->theta, param->incl, param->gamma, status);
 
   CHECK_STATUS_VOID(*status);
 }
 
 
 /* Helper function that allocates slab parameters */
-slabParams get_slab_geometry(const relParam* param, int* status) {
+slabParams get_slab_geometry(const double x_out, const double x_in, int* status) {
   slabParams slab_source;
-  constexpr int number_rings = 100;
+  constexpr int number_rings = SLAB_NUMBER_RINGS;
   slab_source.num_rings = number_rings;
   slab_source.slab_grid_radii.resize(number_rings + 1);
-  for (int ii = 0; ii < number_rings + 1; ii++) { // define grid of rings for slab
-    slab_source.slab_grid_radii[ii] = param->x_in + (param->x - param->x_in) * ii / number_rings;
+  for (int i_x = 0; i_x < number_rings + 1; i_x++) { // define grid of rings for slab
+    slab_source.slab_grid_radii[i_x] = x_in + (x_out - x_in) * i_x / number_rings;
   }
   return slab_source;
 }
@@ -743,7 +750,7 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
   const extendedSourceTable* emissivity_table = get_es_table(status);
   const extendedSourceTable* prim_table = get_prim_table(status);
 
-  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param, status);
+  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param->x, param->x_in, status);
 
   CHECK_STATUS_VOID(*status);
 
@@ -848,7 +855,7 @@ double get_energyboost_slab_source_disk(const relParam* param, const double radi
   int status = EXIT_SUCCESS;
   const extendedSourceTable* table = get_es_table(&status);
   const extendedSourceTable* prim_table = get_prim_table(&status);
-  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param, &status);
+  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param->x, param->x_in, &status);
 
   double gshift = 0.0;
   double weight_sum = 0.0; // need for normalization
