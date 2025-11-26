@@ -80,69 +80,26 @@ typedef struct {
 } slabParams;
 
 
-// functions used only in Rellp_Extended:
-extendedSourceTable* get_es_table(int* status);
-
-extendedSourceTable* get_prim_table(int* status);
-
-
-static void get_spin_rows_extended_table(const int n_rows, float** val, fitsfile* fptr, int* status);
-
-static extendedSourceData* load_single_extended_source_data(
-          fitsfile* fptr, const int n_r, const int n_th, const int n_bin, const int n_storage,
-          int* status, const double spin, const bool is_lensing_table);
-
-void read_extended_source_table(const char* filename, extendedSourceTable** inp_tab, int* status,
-                                const bool is_lensing_table=false);
-
-emisProfile* interpol_extended_table(const extendedSourceTable* tab, const InterpFactors &ipol,
-                                     const double gamma, double* radial_grid, int* status);
-
-double get_interpolated_value_a_r_th(const double ifac_a, const double ifac_r[2], const double ifac_th[2],
-                                     const double vals_lo00, const double vals_lo01, const double vals_lo10, const double vals_lo11,
-                                     const double vals_hi00, const double vals_hi01, const double vals_hi10, const double vals_hi11);
-
-void get_ipol_factors_a_r_th(const double a, const double r, const double th, const extendedSourceTable* tab, InterpFactors& ipol);
-
-void calc_energy_shift_gamma_tabulated(const extendedSourceData& dat_ind_a, const int ind_r, const int ind_th,
-                                       double**** energy_shift_bins, const int num_bins, const int num_shift_bins,
-                                       const double gamma);
-
-double calc_energy_shift_gamma(const extendedSourceTable* tab, const InterpFactors &ipol,
-                               const double bin_val, const double gamma);
-
-lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFactors &ipol, int* status);
-
-double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors &ipol);
-
-void calc_ring_emis(emisProfile* emisProf, double a, double r_src, double theta, double gamma, const extendedSourceTable* tab, int* status);
-void apply_flux_correction(const extendedSourceData* dat, const double* r,
-                           const double spin, const int n_r, const int n_th, const int n_rad);
-
-void calc_photon_fate_ring(lpReflFrac* photon_fractions, const extendedSourceTable* prim_tab, const double spin,
-  const double r_src, const double theta, const double incl, const double gamma, int* status);
-
-slabParams get_slab_geometry(const relParam* param, int* status);
-
 // functions used globally:
 void calc_emis_ring_source(emisProfile* emisProf, const relParam* param, int* status);
 
 void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* status);
 
-double get_energyboost_ext_source_obs(const relParam* param, const double gamma);
+double get_energyboost_ext_source_obs(const relParam* param, double gamma);
 
-double get_energyboost_ext_source_disk(const relParam* param, const double radius, const double gamma);
+double get_energyboost_ext_source_disk(const relParam* param, double radius, double gamma);
+
 
 // constructors and destructors:
-extendedSourceTable* new_extended_source_table(const int n_r, const int n_th,
-                                               const int n_a, const int n_bin, const int n_storage,
+extendedSourceTable* new_extended_source_table(int n_r, int n_th,
+                                               int n_a, int n_bin, int n_storage,
                                                int* status);
 
-extendedSourceData* new_extended_source_data(int* status, const bool is_lensing_table);
+extendedSourceData* new_extended_source_data(int* status, bool is_lensing_table);
 
-void free_extended_source_table(extendedSourceTable* tab, const bool is_lensing_table);
+void free_extended_source_table(extendedSourceTable* tab, bool is_lensing_table);
 
-void free_extended_source_data(const extendedSourceData* dat, const bool is_lensing_table);
+void free_extended_source_data(const extendedSourceData* dat, bool is_lensing_table);
 
 
 #endif /* RELLP_EXTENDED_H_ */

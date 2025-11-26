@@ -34,37 +34,11 @@ extern "C"{
 // #include "writeOutfiles.h"
 }
 
-extendedSourceTable* cached_extendedSource_table = nullptr; // emissivity table
 
+// these pointers are defined in global scope because of caching, we don't reload (huge) tables every time
+extendedSourceTable* cached_extendedSource_table = nullptr; // emissivity table
 extendedSourceTable* cached_extendedSource_table_prim = nullptr; // lensing table
 
-/**
- * @brief Gets extended source table with a given name EXT_TABLE_FILENAME
- * @details
- * @param status pointer, status of the code for debugging
- * @return cached_extendedSource_table
- */
-extendedSourceTable* get_es_table(int* status) {
-  CHECK_STATUS_RET(*status, nullptr);
-
-  if (cached_extendedSource_table == nullptr) {
-    read_extended_source_table(EXT_TABLE_FILENAME, &cached_extendedSource_table, status);
-    CHECK_STATUS_RET(*status, nullptr);
-  }
-  return cached_extendedSource_table;
-}
-
-extendedSourceTable* get_prim_table(int* status) {
-  CHECK_STATUS_RET(*status, nullptr);
-
-  if (cached_extendedSource_table_prim == nullptr) {
-    constexpr bool is_lensing_table = true;
-    read_extended_source_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
-                               is_lensing_table);
-    CHECK_STATUS_RET(*status, nullptr);
-  }
-  return cached_extendedSource_table_prim;
-}
 
 /**
  * @brief Gets rows of the table corresponding to different spins
@@ -91,6 +65,21 @@ static void get_spin_rows_extended_table(const int n_rows, float** val, fitsfile
 
 }
 
+
+/**
+ * @brief Divides flux by Kerr-to-flat area ratio and by Lorentz factor
+ * TODO: cache these corrections in new table, so this function will be obsolete
+ */
+void apply_flux_correction(const extendedSourceData* dat, const double* r, const double spin,
+                           const int n_r, const int n_th, const int n_rad) {
+  for (int i_r = 0; i_r < n_r; i_r++) {
+    for (int j_th = 0; j_th < n_th; j_th++) {
+      for (int k_rad = 0; k_rad < n_rad; k_rad++){
+        dat->val[i_r][j_th][k_rad] /= kerr_to_flat_area_ratio(r[k_rad], spin) * gamma_correction(r[k_rad], spin);
+      }
+    }
+  }
+}
 
 /**
  * @brief Gets data for a single source from the table and then makes a relativistic correction of the flux
@@ -242,6 +231,77 @@ void read_extended_source_table(const char* filename, extendedSourceTable** inp_
 
 
 /**
+ * @brief Gets extended source table with a given name EXT_TABLE_FILENAME
+ * @details
+ * @param status pointer, status of the code for debugging
+ * @return cached_extendedSource_table
+ */
+extendedSourceTable* get_es_table(int* status) {
+  CHECK_STATUS_RET(*status, nullptr);
+
+  if (cached_extendedSource_table == nullptr) {
+    read_extended_source_table(EXT_TABLE_FILENAME, &cached_extendedSource_table, status, false);
+    CHECK_STATUS_RET(*status, nullptr);
+  }
+  return cached_extendedSource_table;
+}
+
+/** Same as get_es_table but for primary table */
+extendedSourceTable* get_prim_table(int* status) {
+  CHECK_STATUS_RET(*status, nullptr);
+
+  if (cached_extendedSource_table_prim == nullptr) {
+    constexpr bool is_lensing_table = true;
+    read_extended_source_table(PRIM_TABLE_FILENAME, &cached_extendedSource_table_prim, status,
+                               is_lensing_table);
+    CHECK_STATUS_RET(*status, nullptr);
+  }
+  return cached_extendedSource_table_prim;
+}
+
+
+/**
+ * @brief Interpolates a given tabulated value (between 4 base points) between spherical radii and polar angles,
+ * and then between spins. In fact, this is 3d interpolation in (a,r,th)
+ * @return interpolated value, double
+ */
+double get_interpolated_value_a_r_th(
+    const double ifac_a, const double ifac_r[2], const double ifac_th[2],
+    const double vals_lo00, const double vals_lo01, const double vals_lo10, const double vals_lo11,
+    const double vals_hi00, const double vals_hi01, const double vals_hi10, const double vals_hi11) {
+  // does h-r interpolation for spin[ind_a]
+  const double val_at_spin_lo = interp_lin_2d(ifac_th[0], ifac_r[0],
+                                        vals_lo00, vals_lo01, vals_lo10, vals_lo11);
+  // does h-r interpolation for spin[ind_a+1]
+  const double val_at_spin_hi = interp_lin_2d(ifac_th[1], ifac_r[1],
+                                        vals_hi00, vals_hi01, vals_hi10, vals_hi11);
+  // grid points must be equal, no adjustment done here
+  return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
+}
+
+
+/**
+ * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
+ */
+void calc_energy_shift_gamma_tabulated(const extendedSourceData& dat_ind_a, const int ind_r, const int ind_th,
+                                       double**** energy_shift_bins, const int num_bins, const int num_shift_bins,
+                                       const double gamma) {
+  for (const int i_r : {ind_r, ind_r + 1}) { // sph radial bins
+    for (const int j_th : {ind_th, ind_th + 1}) { // polar angle bins
+      for (int k_b = 0; k_b < num_bins; k_b++) { // disk radial bins or lensing inclination bins
+        double _sum = 0.0; // sum is zeroed every time
+        for (int l_e = 0; l_e < num_shift_bins; l_e++) { // energy shift bins
+          _sum += pow(energy_shift_bins[i_r][j_th][k_b][l_e], gamma);
+          assert(_sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
+        }
+        dat_ind_a.gshift[i_r][j_th][k_b] = _sum / num_shift_bins;
+      }
+    }
+  }
+}
+
+
+/**
  * @brief Interpolate the table between two spins
  * @details
  * @param tab extendedSourceTable, pointer to the table as declared above
@@ -366,25 +426,6 @@ emisProfile* interpol_extended_table(const extendedSourceTable* tab, const Inter
 }
 
 
-/**
- * @brief Interpolates a given tabulated value (between 4 base points) between spherical radii and polar angles,
- * and then between spins. In fact, this is 3d interpolation in (a,r,th)
- * @return interpolated value, double
- */
-double get_interpolated_value_a_r_th(
-    const double ifac_a, const double ifac_r[2], const double ifac_th[2],
-    const double vals_lo00, const double vals_lo01, const double vals_lo10, const double vals_lo11,
-    const double vals_hi00, const double vals_hi01, const double vals_hi10, const double vals_hi11) {
-  // does h-r interpolation for spin[ind_a]
-  const double val_at_spin_lo = interp_lin_2d(ifac_th[0], ifac_r[0],
-                                        vals_lo00, vals_lo01, vals_lo10, vals_lo11);
-  // does h-r interpolation for spin[ind_a+1]
-  const double val_at_spin_hi = interp_lin_2d(ifac_th[1], ifac_r[1],
-                                        vals_hi00, vals_hi01, vals_hi10, vals_hi11);
-  // grid points must be equal, no adjustment done here
-  return interp_lin_1d(ifac_a, val_at_spin_lo, val_at_spin_hi);
-}
-
 
 void get_ipol_factors_a_r_th(const double a, const double r, const double th,
                              const extendedSourceTable* tab, InterpFactors& ipol) {
@@ -411,27 +452,6 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
     if (ipol.ifac_th[ii] < 0.0 or ipol.ifac_th[ii] > 1.0) {
       printf(" *** Warning : angle interpolation becomes extrapolation: ifac_th = %.1f \n", ipol.ifac_th[ii]);
       printf("Better limit a range of values within table limits \n");
-    }
-  }
-}
-
-
-/**
- * @brief determine the gshift^Gamma for table grid values. Required for further interpolation
- */
-void calc_energy_shift_gamma_tabulated(const extendedSourceData& dat_ind_a, const int ind_r, const int ind_th,
-                                       double**** energy_shift_bins, const int num_bins, const int num_shift_bins,
-                                       const double gamma) {
-  for (const int i_r : {ind_r, ind_r + 1}) { // sph radial bins
-    for (const int j_th : {ind_th, ind_th + 1}) { // polar angle bins
-      for (int k_b = 0; k_b < num_bins; k_b++) { // disk radial bins or lensing inclination bins
-        double _sum = 0.0; // sum is zeroed every time
-        for (int l_e = 0; l_e < num_shift_bins; l_e++) { // energy shift bins
-          _sum += pow(energy_shift_bins[i_r][j_th][k_b][l_e], gamma);
-          assert(_sum >= 0.0 || !"summation of g is negative, wrong value in table\n");
-        }
-        dat_ind_a.gshift[i_r][j_th][k_b] = _sum / num_shift_bins;
-      }
     }
   }
 }
@@ -634,20 +654,6 @@ void calc_ring_emis(emisProfile* emisProf, const double a, const double r_src,
 //  }
 }
 
-/**
- * @brief Divides flux by Kerr-to-flat area ratio and by Lorentz factor
- * TODO: cache these corrections in new table, so this function will be obsolete
- */
-void apply_flux_correction(const extendedSourceData* dat, const double* r, const double spin,
-                           const int n_r, const int n_th, const int n_rad) {
-  for (int i_r = 0; i_r < n_r; i_r++) {
-    for (int j_th = 0; j_th < n_th; j_th++) {
-      for (int k_rad = 0; k_rad < n_rad; k_rad++){
-        dat->val[i_r][j_th][k_rad] /= kerr_to_flat_area_ratio(r[k_rad], spin) * gamma_correction(r[k_rad], spin);
-      }
-    }
-  }
-}
 
 /**
  * @brief Calculates photon fractions (esc, bh, disk), lensing and boost of the primary emission for ring geometry

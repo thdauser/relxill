@@ -666,7 +666,7 @@ TEST_CASE (
 
 
 TEST_CASE (
-"Setting radii for slab source inside of EH "
+"Setting slab source inside of EH "
 ,
 "[extended]"
 )
