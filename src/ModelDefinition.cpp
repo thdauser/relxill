@@ -278,7 +278,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     double r_fac = 1.2; // a bit more conservative limit for ring and slab corona
 
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
-    if (param->prim_geometry_type == GEOMETRY_RING) {
+    if (param->prim_geometry_type == GEOMETRY_RING) { // relutility.h not included
       if (param->theta < 0.0) {
         if (not warned_ring_angle) {
           printf(" *** Warning : ring source cannot have negative angle (theta = %.1f deg) \n", param->theta);
@@ -301,7 +301,7 @@ void check_parameter_bounds(relParam *param, int *status) {
         param->r_src = r_fac * r_event; // in rg
       }
     } else {
-      if (param->prim_geometry_type == GEOMETRY_SLAB) { // NOT YET FULLY IMPLEMENTED ON SPHERICAL BRANCH
+      if (param->prim_geometry_type == GEOMETRY_SLAB) {
         if (param->x < 0.1) {
           if (not warned_slab_radius) {
             printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);

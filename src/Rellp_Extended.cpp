@@ -919,7 +919,7 @@ double get_energyboost_slab_source_obs(const relParam* param, const double gamma
  */
 double get_energyboost_ext_source_obs(const relParam* param, const double gamma) {
   double gshift;
-  if (param->model_type == MOD_TYPE_RELXILLSLAB) {
+  if (is_slab_primary_source(param->prim_geometry_type)) {
     gshift = get_energyboost_slab_source_obs(param, gamma);
   }
   else { // assume ring source
@@ -938,7 +938,7 @@ double get_energyboost_ext_source_obs(const relParam* param, const double gamma)
  */
 double get_energyboost_ext_source_disk(const relParam* param, const double radius, const double gamma) {
   double gshift;
-  if (param->model_type == MOD_TYPE_RELXILLSLAB) {
+  if (is_slab_primary_source(param->prim_geometry_type)) {
     gshift = get_energyboost_slab_source_disk(param, radius, gamma);
   }
   else { // assume ring source

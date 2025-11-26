@@ -115,6 +115,13 @@ int is_co_model(int model_type) {
   }
 }
 
+int is_lp_primary_source(const int prim_geometry_type) {
+  if (prim_geometry_type == GEOMETRY_LP) {
+    return 1;
+  }
+  return 0;
+}
+
 int is_ring_primary_source(const int prim_geometry_type) {
   if (prim_geometry_type == GEOMETRY_RING) {
     return 1;

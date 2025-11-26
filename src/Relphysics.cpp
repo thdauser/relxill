@@ -287,7 +287,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
     return g_inf_0;
   }
 
-  if (rel_param->model_type == MOD_TYPE_RELXILLRING || rel_param->model_type == MOD_TYPE_RELXILLSLAB) {
+  if (is_ring_primary_source(rel_param->prim_geometry_type) || is_slab_primary_source(rel_param->prim_geometry_type)) {
     g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
   } else { // lamp post
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
@@ -314,7 +314,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
   if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
     return 1;
   }
-  if (rel_param->model_type == MOD_TYPE_RELXILLRING || rel_param->model_type == MOD_TYPE_RELXILLSLAB) {
+  if (is_ring_primary_source(rel_param->prim_geometry_type) || is_slab_primary_source(rel_param->prim_geometry_type)) {
     double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
     return gshift;
   }
@@ -331,11 +331,11 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
  */
 double calc_emissivity_newton(const relParam* param, const double radius) {
   double emis;
-  if (param->model_type == MOD_TYPE_RELXILLRING) {
+  if (is_ring_primary_source(param->prim_geometry_type)) {
     double h = param->r_src * cos(param->theta * CONVERT_DEG2RAD);
     double x = param->r_src * sin(param->theta * CONVERT_DEG2RAD);
     emis = calc_ring_emissivity_1d_newton(h, x, radius);
-  } else if (param->model_type == MOD_TYPE_RELXILLSLAB) {
+  } else if (is_slab_primary_source(param->prim_geometry_type)) {
     printf("calc_emissivity_newton: slab emissivity may be inaccurate! \n");
     // AN: here I use the trick that slab emissivity at a given radius has the largest contribution from the ring
     // with exactly this radius (no GR)
