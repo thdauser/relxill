@@ -643,3 +643,47 @@ TEST_CASE (
 }
 
 
+TEST_CASE (
+"Setting negative slab radius "
+,
+"[extended]"
+)
+{
+
+  DefaultSpec default_spec{};
+
+  LocalModel lmod(ModelName::relxill_slab);
+
+  auto spec = default_spec.get_xspec_spectrum();
+
+  double negative_x = -5.0;
+  lmod.set_par(XPar::x, negative_x);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
+
+}
+
+
+TEST_CASE (
+"Setting radii for slab source inside of EH "
+,
+"[extended]"
+)
+{
+
+  DefaultSpec default_spec{};
+
+  LocalModel lmod(ModelName::relxill_slab);
+
+  auto spec = default_spec.get_xspec_spectrum();
+
+  double h_below_horizon = 0.9;
+  lmod.set_par(XPar::x, 3.0);
+  lmod.set_par(XPar::h, h_below_horizon);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
+
+}
+

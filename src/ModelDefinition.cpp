@@ -171,13 +171,14 @@ static void setNegativeHeightToRplus(double *h, double a) {
   }
 }
 
-// why int and not bool btw?
+
 int warned_rms = 0;
 int warned_height = 0;
 int warned_ring_radius = 0;
 int warned_ring_angle = 0;
 int warned_slab_radius = 0;
 int warned_slab_bound = 0;
+bool warned_slab_radius_low_h = false;
 
 void check_parameter_bounds(relParam *param, int *status) {
 
@@ -266,15 +267,15 @@ void check_parameter_bounds(relParam *param, int *status) {
   }
   /** check geometric values (only applies to LP emissivity) **/
   if (param->emis_type == EMIS_TYPE_LP) {
-    setNegativeHeightToRplus(&(param->height), param->a); // after this h is in rg in either case
-    setNegativeHeightToRplus(&(param->htop), param->a);
-    setNegativeHeightToRplus(&(param->r_src), param->a); // r_src is just generalized height,
+    setNegativeHeightToRplus(&param->height, param->a); // after this h is in rg in either case
+    setNegativeHeightToRplus(&param->htop, param->a);
+    setNegativeHeightToRplus(&param->r_src, param->a); // r_src is just generalized height,
     // so we can reuse this function. Perhaps it is worth giving a better name to this function then?
     // e.g. setNegativeEventHorizonUnitsToRplus ?
     double r_event = kerr_rplus(param->a);
 
     double h_fac = 1.1;
-    double r_fac = (param->prim_geometry_type == GEOMETRY_LP) ? 1.1 : 1.2; // more conservative limit for ring corona
+    double r_fac = 1.2; // a bit more conservative limit for ring and slab corona
 
     /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
     if (param->prim_geometry_type == GEOMETRY_RING) {
@@ -287,11 +288,11 @@ void check_parameter_bounds(relParam *param, int *status) {
         param->theta = 0.0;
       }
 
-      if ((param->r_src - r_fac * r_event) < 1e-3) {
+      if (param->r_src - r_fac * r_event < 1e-3) {
         if (!warned_ring_radius) {
           printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
           printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->r_src, param->theta);
-          printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f r_g \n", param->r_src, r_fac * r_event);
+          printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
           printf("(too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
           //printf("(too close to BH) Setting eXtent to = %.4f*r_g, polar angle kept constant \n", param->r_ring);
           // always print while debug it (DONT FORGET)
@@ -303,24 +304,54 @@ void check_parameter_bounds(relParam *param, int *status) {
       if (param->prim_geometry_type == GEOMETRY_SLAB) { // NOT YET FULLY IMPLEMENTED ON SPHERICAL BRANCH
         if (param->x < 0.1) {
           if (not warned_slab_radius) {
-            printf(" *** Warning : Slab source cannot have too small size (x = %.1f r_g) \n", param->x);
+            printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);
             printf("      Setting    x = 0.1 rg \n");
             warned_slab_radius = 1;
           }
           param->x = 0.1;
         }
-        // new: for disk model we also check that inner edge is less than outer (x)
-        // alternatively: we can reset geometry type to ring if x_in >= x
+        // new: for slab model we also check that inner edge is less than outer (x)
+        // alternatively: we can reset geometry type to ring if x_in >= x and have a neat transition
         if (param->x <= param->x_in) {
           if (not warned_slab_bound) {
-            printf(" *** Warning : x_in >= x outer edge cannot be smaller than inner edge \n");
+            printf(" *** Warning : x_in >= x, outer slab edge cannot be smaller than inner slab edge \n");
             printf("      Setting    x_in = x - 0.1 rg \n");
             warned_slab_bound = 1;
           }
           param->x_in = param->x - 0.1;
         }
+
+        if (r_fac * r_event - param->height > 1e-4) { // this "if" just initiates checks
+          double r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
+          double r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
+
+          if (r_fac * r_event - r_slab_in > 1e-4) { //inner slab radius is inside EH
+            if (not warned_slab_radius_low_h) {
+              printf(" *** Warning : Inner radius of slab source is inside of (or very close to) the black hole \n"
+                     "Parameters: h = %.1f rg, x_in = %.1f rg, x = %.1f rg, %.1f * r_event = %.1f rg \n",
+                     param->height, param->x_in, param->x, r_fac, r_fac * r_event);
+            }
+            // reset x_in while h = const
+            param->x_in = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
+            if (not warned_slab_radius_low_h) {
+              printf("      Setting    x_in = %.3f rg outside of %.1f * r_event at a given height h = %.1f rg \n",  param->x_in, r_fac, param->height);
+            }
+            if (r_fac * r_event - r_slab_out > 1e-4) { // outer radius is inside too
+              // also reset x to smallest possible value greater than x_in
+              param->x = param->x_in + 0.1;
+              if (not warned_slab_radius_low_h) {
+                printf("      Setting outer radius accordingly to   x = x_in + 0.1 rg \n");
+              }
+            }
+            if (not warned_slab_radius_low_h) { warned_slab_radius_low_h = true; }
+
+            r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
+            r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
+          }
+        }
+
       } else { // Lamp post case
-        if ((h_fac * r_event - param->height) > 1e-4) {
+        if (h_fac * r_event - param->height > 1e-4) {
           if (!warned_height) {
             printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
             printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
@@ -374,7 +405,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->r_src = inp_param.get_otherwise_default(XPar::r_src, 0.0);
   param->theta = inp_param.get_otherwise_default(XPar::theta_src, 0.0);
 
-  param->x = inp_param.get_otherwise_default(XPar::x, 0.1);
+  param->x = inp_param.get_otherwise_default(XPar::x, 10);
   param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
 
   // important default values

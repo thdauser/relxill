@@ -43,12 +43,12 @@ double density_ss73_zone_a(double radius, double rms);
 // energy shift from the primary source to the observer
 double calc_g_inf(double height, double a);
 
-double calc_cos_theta_ring_source(double h, double x, double a);
-double calc_spherical_radius_ring_source(double h, double x, double a);
-double calc_extent_from_sph_radius_primary_source(double height, double r_sph, double a);
-double calc_extent_from_sph_radius_costheta(double r_sph, double costheta, double a);
+double calc_cos_theta_ring_source(double height, double ring_radius, double spin);
+double calc_spherical_radius_ring_source(double height, double ring_radius, double spin);
+double calc_extent_from_sph_radius_primary_source(double height, double r_sph, double spin);
+double calc_extent_from_sph_radius_costheta(double r_sph, double costheta, double spin);
 
-void convert_hx_to_rtheta(double h, double x, double a, double* r_sph, double* theta);
+void convert_hx_to_rtheta(double height, double ring_radius, double spin, double* r_sph, double* theta);
 
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);
