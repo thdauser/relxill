@@ -687,8 +687,7 @@ void calc_photon_fate_ring(lpReflFrac* photon_fractions, const extendedSourceTab
   photon_fractions->f_inf_rest = photon_fractions_obt->f_inf_rest;
   photon_fractions->refl_frac = photon_fractions_obt->refl_frac;
 
-  // input incl can be both in radian and in grads. The table has cos incl, so convert:
-  const double cos_incl = incl < 0.5 * M_PI ? cos(incl) : cos(incl * M_PI / 180.0);
+  const double cos_incl = calc_cos_incl(incl);
 
   photon_fractions->lensing = calc_primary_lensing(cos_incl, prim_tab, prim_ipol);
   photon_fractions->lensing_and_boost_factor =
@@ -811,9 +810,8 @@ double get_energyboost_ring_source_obs(const relParam* param, const double gamma
   InterpFactors prim_ipol;
   assert(param->r_src != 0.0 || !"r_src == 0 => wrong model type passed to the function \n");
   get_ipol_factors_a_r_th(param->a, param->r_src, param->theta, prim_table, prim_ipol);
-  // input incl can be both in radian and in grads. The table has cos incl, so convert it here to cos
-  // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
-  const double cos_incl = param->incl < 0.5 * M_PI ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+
+  const double cos_incl = calc_cos_incl(param->incl);
   const double gshift = calc_energy_shift_gamma(prim_table, prim_ipol, cos_incl, gamma);
   return gshift;
 }
@@ -889,7 +887,7 @@ double get_energyboost_slab_source_obs(const relParam* param, const double gamma
   double gshift = 0.0;
   double weight_sum = 0.0;
 
-  const double cos_incl = param->incl < 0.5 * M_PI ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  const double cos_incl = calc_cos_incl(param->incl);
   for (int n_r = 0; n_r < num_rings; n_r++) {
     InterpFactors prim_ipol;
     double r_sph; double theta;

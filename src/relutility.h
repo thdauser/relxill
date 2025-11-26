@@ -146,6 +146,9 @@ int is_alpha_model(int model_type);
 int is_returnrad_bb_model(int model_type);
 
 int is_ring_primary_source(int prim_geometry_type);
+int is_slab_primary_source(int prim_geometry_type);
+
+double calc_cos_incl(double incl);
 
 /** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
 void inv_rebin_mean(const double* x0, double* y0, int n0, const double* xn, double* yn, int nn, int* status);

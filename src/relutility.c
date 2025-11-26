@@ -66,6 +66,12 @@ void relxill_warning(const char *const msg) {
   printf(" *** warning from relxill: %s!\n", msg);
 }
 
+double calc_cos_incl(const double incl) {
+  // input inclination can be both in radian and in grads. Here is the trick to calculate cos of incl correctly
+  // using the fact that incl in degrees is between 3 and 87 and in radian is < pi/2 (~1.57)
+  return incl < 0.5 * M_PI ? cos(incl) : cos(incl * M_PI / 180.0);
+}
+
 int is_xill_model(int model_type) {
   if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)
       || (model_type == MOD_TYPE_XILLVERNS) || (model_type == MOD_TYPE_XILLVERCO)
@@ -109,13 +115,19 @@ int is_co_model(int model_type) {
   }
 }
 
-int is_ring_primary_source(int prim_geometry_type){
-  if (prim_geometry_type ==  GEOMETRY_RING) {
+int is_ring_primary_source(const int prim_geometry_type) {
+  if (prim_geometry_type == GEOMETRY_RING) {
     return 1;
   }
     return 0;
 }
 
+int is_slab_primary_source(const int prim_geometry_type) {
+  if (prim_geometry_type == GEOMETRY_SLAB) {
+    return 1;
+  }
+  return 0;
+}
 
 /** check and report FITS error   */
 void relxill_check_fits_error(const int *status) {
