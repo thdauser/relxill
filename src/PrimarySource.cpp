@@ -61,8 +61,8 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
          m_lp_refl_frac->refl_frac,
          sum / sum_pl);
-  printf(" - photons falling into the black hole or plunging region: %.2f%%\n", m_lp_refl_frac->f_bh * 100);
-  printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
+  printf(" - (avg) photons falling into the black hole or plunging region: %.2f%%\n", m_lp_refl_frac->f_bh * 100);
+  printf(" - (avg) energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
   // GR lensing is implemented only for EXT models
   if (rel_param->prim_geometry_type == GEOMETRY_RING) {
     printf(" - For inclination %.3f deg, GR lensing of ring is %.3f, ratio of GR and classical lensing is %.3f \n",
@@ -71,7 +71,7 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   }
   // will have to add average lensing/shift here:
   if (rel_param->prim_geometry_type == GEOMETRY_SLAB) {
-    printf(" - For inclination %.3f deg, (average) GR lensing of slab is %.3f, ratio of GR and classical lensing is %.3f \n",
+    printf(" - For inclination %.3f deg, (avg) GR lensing of slab is %.3f, (approx) ratio of GR and classical lensing is %.3f \n",
            rel_param->incl * 180.0 / M_PI, m_lp_refl_frac->lensing,
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
   }

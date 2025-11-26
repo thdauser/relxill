@@ -809,12 +809,8 @@ double get_energyboost_ring_source_obs(const relParam* param, const double gamma
   int status = EXIT_SUCCESS; // in case it is loaded from somewhere in the code
   const extendedSourceTable* prim_table = get_prim_table(&status);
   InterpFactors prim_ipol;
-  double r_sph = param->r_src;
-  double theta = param->theta;
-  if (r_sph == 0.0) { // if it is a default, then other pair of geometric parameters is used (h, x)
-    convert_hx_to_rtheta(param->height, param->x, param->a, &r_sph, &theta);
-  }
-  get_ipol_factors_a_r_th(param->a, r_sph, theta, prim_table, prim_ipol);
+  assert(param->r_src != 0.0 || !"r_src == 0 => wrong model type passed to the function \n");
+  get_ipol_factors_a_r_th(param->a, param->r_src, param->theta, prim_table, prim_ipol);
   // input incl can be both in radian and in grads. The table has cos incl, so convert it here to cos
   // (I use the fact that relxill limits are 3 and 87 deg, so if input incl is < 1.57 (~pi/2) - it is radian)
   const double cos_incl = param->incl < 0.5 * M_PI ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
@@ -833,12 +829,8 @@ double get_energyboost_ring_source_disk(const relParam* param, const double radi
   int status = EXIT_SUCCESS;
   const extendedSourceTable* table = get_es_table(&status);
   InterpFactors ipol;
-  double r_sph = param->r_src;
-  double theta = param->theta;
-  if (r_sph == 0.0) { // if it is a default, then other pair of geometric parameters is used (h, x)
-    convert_hx_to_rtheta(param->height, param->x, param->a, &r_sph, &theta);
-  }
-  get_ipol_factors_a_r_th(param->a, r_sph, theta, table, ipol);
+  assert(param->r_src != 0.0 || !"r_src == 0 => wrong model type passed to the function \n");
+  get_ipol_factors_a_r_th(param->a, param->r_src, param->theta, table, ipol);
   const double gshift = calc_energy_shift_gamma(table, ipol, radius, gamma);
   return gshift;
 }
@@ -883,6 +875,45 @@ double get_energyboost_slab_source_disk(const relParam* param, const double radi
 
 
 /**
+ * @brief Gets g^Gamma from slab source to source for a given inclination
+ * @param param relxill parameters and values
+ * @param gamma Photon index
+ * @return The g^Gamma value
+ */
+double get_energyboost_slab_source_obs(const relParam* param, const double gamma) {
+  int status = EXIT_SUCCESS;
+
+  const extendedSourceTable* prim_table = get_prim_table(&status);
+  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param->x, param->x_in, &status);
+
+  double gshift = 0.0;
+  double weight_sum = 0.0;
+
+  const double cos_incl = param->incl < 0.5 * M_PI ? cos(param->incl) : cos(param->incl * M_PI / 180.0);
+  for (int n_r = 0; n_r < num_rings; n_r++) {
+    InterpFactors prim_ipol;
+    double r_sph; double theta;
+    convert_hx_to_rtheta(param->height, slab_grid_radii[n_r], param->a, &r_sph, &theta);
+    get_ipol_factors_a_r_th(param->a, r_sph, theta, prim_table, prim_ipol);
+
+    const auto phot_frac_ring = new_lpReflFrac(&status);
+    calc_photon_fate_ring(phot_frac_ring, prim_table, param->a, r_sph, theta,
+        param->incl, param->gamma, &status);
+
+    const double weight_factor = 0.5 * (slab_grid_radii[n_r] + slab_grid_radii[n_r + 1]) * (slab_grid_radii[n_r + 1] -
+          slab_grid_radii[n_r]) * phot_frac_ring->refl_frac;
+    weight_sum += weight_factor;
+    const double gshift_ring = calc_energy_shift_gamma(prim_table, prim_ipol, cos_incl, gamma);
+
+    gshift += gshift_ring * weight_factor;
+  }
+  gshift /= weight_sum;
+
+  return gshift;
+}
+
+
+/**
  * @brief Gets g^Gamma from ring/slab source to observer
  * @param param relxill parameters and values
  * @param gamma Photon index
@@ -891,10 +922,7 @@ double get_energyboost_slab_source_disk(const relParam* param, const double radi
 double get_energyboost_ext_source_obs(const relParam* param, const double gamma) {
   double gshift;
   if (param->model_type == MOD_TYPE_RELXILLSLAB) {
-    // TODO update this function
-    // only tmp solution to assign g^Gamma of the outermost ring to the whole slab
-    gshift = get_energyboost_ring_source_obs(param, gamma);
-    // ideally, this will be get_energyboost_slab_source_obs
+    gshift = get_energyboost_slab_source_obs(param, gamma);
   }
   else { // assume ring source
     gshift = get_energyboost_ring_source_obs(param, gamma);
