@@ -66,13 +66,13 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   // GR lensing is implemented only for EXT models
   if (is_ring_primary_source(rel_param->prim_geometry_type)) {
     printf(" - For inclination %.3f deg, GR lensing of ring is %.3f, ratio of GR and classical lensing is %.3f \n",
-           rel_param->incl * 180.0 / M_PI, m_lp_refl_frac->lensing,
+           rel_param->incl / CONVERT_DEG2RAD, m_lp_refl_frac->lensing,
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
   }
 
   if (is_slab_primary_source(rel_param->prim_geometry_type)) {
     printf(" - For inclination %.3f deg, (avg) GR lensing of slab is %.3f, (approx) ratio of GR and classical lensing is %.3f \n",
-           rel_param->incl * 180.0 / M_PI, m_lp_refl_frac->lensing,
+           rel_param->incl / CONVERT_DEG2RAD, m_lp_refl_frac->lensing,
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
   }
 

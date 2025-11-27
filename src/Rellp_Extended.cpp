@@ -784,7 +784,6 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
   for (int n_r = 0; n_r < emisProf->nr; n_r++) {
     emisProf->emis[n_r] /= weight_sum; // finally, normalize the profile
   }
-  // TODO check this scheme for primary normalization
   emisProf->photon_fate_fractions->refl_frac /= weight_sum; // and normalize fractions
   emisProf->photon_fate_fractions->lensing_and_boost_factor /= weight_sum;
   emisProf->photon_fate_fractions->lensing /= weight_sum;

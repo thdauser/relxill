@@ -216,9 +216,9 @@ void check_parameter_bounds(relParam *param, int *status) {
     return;
   }
 
-  if (param->incl < 3 * M_PI / 180 || param->incl > 87 * M_PI / 180) {
+  if (param->incl < 3 * CONVERT_DEG2RAD || param->incl > 87 * CONVERT_DEG2RAD) {
     printf(" *** relxill error : incl %.3f  is not in the required range between 3-87 deg, model evaluation failed \n",
-           param->incl * 180 / M_PI);
+           param->incl / CONVERT_DEG2RAD);
     *status = EXIT_FAILURE;
     return;
   }
@@ -388,7 +388,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   // these parameters have to be given for any relativistic parameter structure
   try {
     param->a = inp_param.get_par(XPar::a);
-    param->incl = inp_param.get_par(XPar::incl) * M_PI / 180;  // conversion to rad is heritage from the old code
+    param->incl = inp_param.get_par(XPar::incl) * CONVERT_DEG2RAD;  // conversion to rad is heritage from the old code
     param->rin = inp_param.get_par(XPar::rin);
     param->rout = inp_param.get_par(XPar::rout);
   } catch (ParamInputException &e) {
@@ -405,7 +405,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   param->r_src = inp_param.get_otherwise_default(XPar::r_src, 0.0);
   param->theta = inp_param.get_otherwise_default(XPar::theta_src, 0.0);
 
-  param->x = inp_param.get_otherwise_default(XPar::x, 10);
+  param->x = inp_param.get_otherwise_default(XPar::x, 0.1);
   param->x_in = inp_param.get_otherwise_default(XPar::x_in, 0);
 
   // important default values

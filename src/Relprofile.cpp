@@ -443,7 +443,7 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
       (*spec)->rel_cosne = new_rel_cosne(nzones, xill_tab->n_incl, status);
     }
     for (int ii = 0; ii < (*spec)->rel_cosne->n_cosne; ii++) {
-      (*spec)->rel_cosne->cosne[ii] = cos(xill_tab->incl[ii] * M_PI / 180);
+      (*spec)->rel_cosne->cosne[ii] = cos(xill_tab->incl[ii] * CONVERT_DEG2RAD);
     }
   }
 

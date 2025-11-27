@@ -67,9 +67,12 @@ void relxill_warning(const char *const msg) {
 }
 
 double calc_cos_incl(const double incl) {
-  // input inclination can be both in radian and in grads. Here is the trick to calculate cos of incl correctly
-  // using the fact that incl in degrees is between 3 and 87 and in radian is < pi/2 (~1.57)
-  return incl < 0.5 * M_PI ? cos(incl) : cos(incl * M_PI / 180.0);
+  // input inclination can be both in radian and in grads. Here is the trick to calculate cos(incl) correctly
+  if (incl > 0.5 * M_PI) {
+    // incl in degrees is between 3 and 87 and in radian is < pi/2 (~1.57)
+    return cos(incl * CONVERT_DEG2RAD);
+  }
+  return cos(incl);
 }
 
 int is_xill_model(int model_type) {

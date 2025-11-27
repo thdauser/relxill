@@ -133,41 +133,39 @@ double calc_g_inf(double height, double a) {
   return sqrt(1.0 - (2 * height / (height * height + a * a)));
 }
 
-double calc_cos_theta_ring_source(const double h, const double x, const double a) {
-  double cosine_theta;
-  if (x == 0.0) {
-    cosine_theta = 1.0; // on the rotational axis
+double calc_cos_theta_ring_source(const double height, const double ring_radius, const double spin) {
+  if (ring_radius == 0.0) {
+    return 1.0; // cos_theta = 1 on the rotational axis
   }
-  else if (a == 0.0){ // special case of zero spin
-    cosine_theta = h / sqrt(h * h + x * x);
-  } else { // general case, the solution of equation x = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
-    cosine_theta = sqrt((sqrt(4.0 * a * a * h * h + (h * h + x * x - a * a) *
-        (h * h + x * x - a * a)) + a * a - h * h - x * x) / (2.0 * a * a));
-  }
-  return cosine_theta;
+  if (spin == 0.0) { // special case of zero spin
+    return height / sqrt(height * height + ring_radius * ring_radius);
+  } // general case, solution of equation x = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
+    return sqrt((sqrt(4.0 * spin * spin * height * height +
+        (height * height + ring_radius * ring_radius - spin * spin) *
+        (height * height + ring_radius * ring_radius - spin * spin)) +
+        spin * spin - height * height - ring_radius * ring_radius) / (2.0 * spin * spin));
 }
 
-double calc_spherical_radius_ring_source(const double h, const double x, const double a) {
-  double cos_theta = calc_cos_theta_ring_source(h, x, a);
-  double r = h / cos_theta; // spherical radius by definition
-  return r;
+double calc_spherical_radius_ring_source(const double height, const double ring_radius, const double spin) {
+  double cos_theta = calc_cos_theta_ring_source(height, ring_radius, spin);
+  return height / cos_theta; // spherical radius by definition
 }
 
-double calc_extent_from_sph_radius_costheta(const double r_sph, const double costheta, const double a) {
-  return sqrt(1.0 - costheta * costheta) * sqrt(r_sph * r_sph + a * a);
+double calc_extent_from_sph_radius_costheta(const double r_sph, const double costheta, const double spin) {
+  return sqrt(1.0 - costheta * costheta) * sqrt(r_sph * r_sph + spin * spin);
 }
 
-double calc_extent_from_sph_radius_primary_source(const double height, const double r_sph, const double a) {
+double calc_extent_from_sph_radius_primary_source(const double height, const double r_sph, const double spin) {
   if (abs(height - r_sph) < 1e-4){
     return 0.0; // it is lamp post
   }
   assert(height <= r_sph && ("Height cannot be more than spherical radius"));
-  return sqrt((r_sph * r_sph - height * height) * (1.0 + a * a / (r_sph * r_sph)));
+  return sqrt((r_sph * r_sph - height * height) * (1.0 + spin * spin / (r_sph * r_sph)));
 }
 
-void convert_hx_to_rtheta(const double h, const double x, const double a, double* r_sph, double* theta) {
-  *r_sph = calc_spherical_radius_ring_source(h, x, a);
-  *theta = 180.0 / M_PI * acos(calc_cos_theta_ring_source(h, x, a)); //return in degrees!
+void convert_hx_to_rtheta(const double height, const double ring_radius, const double spin, double* r_sph, double* theta) {
+  *r_sph = calc_spherical_radius_ring_source(height, ring_radius, spin);
+  *theta = acos(calc_cos_theta_ring_source(height, ring_radius, spin)) / CONVERT_DEG2RAD; //return in degrees!
 }
 
 
@@ -336,6 +334,8 @@ double calc_emissivity_newton(const relParam* param, const double radius) {
     double x = param->r_src * sin(param->theta * CONVERT_DEG2RAD);
     emis = calc_ring_emissivity_1d_newton(h, x, radius);
   } else if (is_slab_primary_source(param->prim_geometry_type)) {
+    // AN: this warning is here because this function is used only for relxillAlpha type models,
+    // so I do not expect to use this function yet
     printf("calc_emissivity_newton: slab emissivity may be inaccurate! \n");
     // AN: here I use the trick that slab emissivity at a given radius has the largest contribution from the ring
     // with exactly this radius (no GR)

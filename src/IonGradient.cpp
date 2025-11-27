@@ -251,7 +251,7 @@ double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
   const double boost = primary_source.get_boost_parameter(photon_fate_fractions);
   l_source_cgs *= boost;
   if (is_ring_primary_source(rel_param.prim_geometry_type) || is_slab_primary_source(rel_param.prim_geometry_type)) {
-    // for ring/slab sources the flux at rin is different, but as far as I am aware, this function is used only for
+    // AN: for ring/slab sources the flux at rin is different, but as far as I am aware, this function is used only for
     // relxillAlpha which does not have extended geometry yet, so I leave a warning here
     printf("calc_flux_disk_newton_cgs may not work properly for extended sources! Check IonGradient.cpp \n");
     // Still try to make it work for rings and slabs
@@ -475,7 +475,6 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
       throw std::exception();
     }
     if (is_ring_primary_source(rel_param->prim_geometry_type) || is_slab_primary_source(rel_param->prim_geometry_type)) {
-      // todo better switcher ^ (need to include common.h to have proper geometry switcher)
       return ecut_primary * gi_potential_ext(rel_param, rzone);
     }
     else {
