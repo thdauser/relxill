@@ -749,8 +749,7 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
   const extendedSourceTable* emissivity_table = get_es_table(status);
   const extendedSourceTable* prim_table = get_prim_table(status);
 
-  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param->x, param->x_in, status);
-
+  const auto slab = get_slab_geometry(param->x, param->x_in, status);
   CHECK_STATUS_VOID(*status);
 
   emisProfile* ring_emis_tmp = new_emisProfile(emisProf->re, emisProf->nr, status);
@@ -759,18 +758,18 @@ void calc_emis_slab_source(emisProfile* emisProf, const relParam* param, int* st
   emisProf->photon_fate_fractions = new_lpReflFrac(status);
 
   double weight_sum = 0.0; // need for normalization
-  for (int n_r = 0; n_r < num_rings; n_r++) {
+  for (int n_r = 0; n_r < slab.num_rings; n_r++) {
 
     double r_ring_grid; double theta_ring_grid;
-    convert_hx_to_rtheta(param->height, slab_grid_radii[n_r], param->a, &r_ring_grid, &theta_ring_grid);
+    convert_hx_to_rtheta(param->height, slab.slab_grid_radii[n_r], param->a, &r_ring_grid, &theta_ring_grid);
 
     calc_ring_emis(ring_emis_tmp, param->a, r_ring_grid, theta_ring_grid, param->gamma, emissivity_table, status);
     ring_emis_tmp->photon_fate_fractions = new_lpReflFrac(status);
     calc_photon_fate_ring(ring_emis_tmp->photon_fate_fractions, prim_table, param->a, r_ring_grid, theta_ring_grid,
       param->incl, param->gamma, status);
 
-    const double weight_factor = 0.5 * (slab_grid_radii[n_r] + slab_grid_radii[n_r + 1]) * (slab_grid_radii[n_r + 1] -
-        slab_grid_radii[n_r]) * ring_emis_tmp->photon_fate_fractions->refl_frac;
+    const double weight_factor = 0.5 * (slab.slab_grid_radii[n_r] + slab.slab_grid_radii[n_r + 1]) * (slab.slab_grid_radii[n_r + 1] -
+        slab.slab_grid_radii[n_r]) * ring_emis_tmp->photon_fate_fractions->refl_frac;
     weight_sum += weight_factor;
     for (int j_r = 0; j_r < emisProf->nr; j_r++) {
       emisProf->emis[j_r] += ring_emis_tmp->emis[j_r] * weight_factor;
