@@ -484,10 +484,15 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
 }
 
 RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param) {
-  auto transition_radius =
-    is_ring_primary_source(rel_param.prim_geometry_type) ?
-      rel_param.r_src :
-      rel_param.height;
+
+  double transition_radius;
+  if (is_ring_primary_source(rel_param.prim_geometry_type)) {
+    transition_radius = rel_param.r_src;
+  } else if (is_slab_primary_source(rel_param.prim_geometry_type)) {
+    transition_radius = sqrt(rel_param.height * rel_param.height + rel_param.x * rel_param.x);
+  } else {
+    transition_radius = rel_param.height;
+  }
 
   // radial grid assumes log-spacing for r<transition_radius and 1/r spacing for r>transition_radius
   return {rel_param.rin, rel_param.rout, rel_param.num_zones, transition_radius};
@@ -496,6 +501,8 @@ RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param) {
 
 /**
  * @brief Calculate a radial grid for disk zones with adaptive spacing
+ * The spacing is defined by the requirement: comparable flux in each radial zone
+ * Spacing 1/r is good for outer disk, where F ~ r^-3, otherwise log(r)
  *
  * Creates a radial grid with nzones+1 boundary points between rmin and rmax.
  * The grid spacing adapts based on the transition radius parameter:
@@ -510,6 +517,8 @@ RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param) {
  * @param nzones Number of radial zones (grid will have nzones+1 boundary points)
  * @param r_transition_input Transition radius parameter, the height of the
  *                           primary source [in gravitational radii] for the Lamp post
+ *                           spherical radius of the ring source
+ *                           or spherical radius of the outer edge of the slab
  *
  * @return Vector of size nzones+1 containing the radial grid boundaries in ascending order
  *
