@@ -285,7 +285,7 @@ double energy_shift_source_obs(const relParam *rel_param) {
     return g_inf_0;
   }
 
-  if (is_ring_primary_source(rel_param->prim_geometry_type) || is_slab_primary_source(rel_param->prim_geometry_type)) {
+  if (is_ring_primary_source(rel_param->emis_type) || is_slab_primary_source(rel_param->emis_type)) {
     g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
   } else { // lamp post
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
@@ -312,7 +312,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
   if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
     return 1;
   }
-  if (is_ring_primary_source(rel_param->prim_geometry_type) || is_slab_primary_source(rel_param->prim_geometry_type)) {
+  if (is_ring_primary_source(rel_param->emis_type) || is_slab_primary_source(rel_param->emis_type)) {
     double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
     return gshift;
   }
@@ -329,11 +329,11 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
  */
 double calc_emissivity_newton(const relParam* param, const double radius) {
   double emis;
-  if (is_ring_primary_source(param->prim_geometry_type)) {
+  if (is_ring_primary_source(param->emis_type)) {
     double h = param->r_src * cos(param->theta * CONVERT_DEG2RAD);
     double x = param->r_src * sin(param->theta * CONVERT_DEG2RAD);
     emis = calc_ring_emissivity_1d_newton(h, x, radius);
-  } else if (is_slab_primary_source(param->prim_geometry_type)) {
+  } else if (is_slab_primary_source(param->emis_type)) {
     // AN: this warning is here because this function is used only for relxillAlpha type models,
     // so I do not expect to use this function yet
     printf("calc_emissivity_newton: slab emissivity may be inaccurate! \n");

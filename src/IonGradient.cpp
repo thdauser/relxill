@@ -250,7 +250,7 @@ double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
   double l_source_cgs = primary_source.luminosity_source_cgs();
   const double boost = primary_source.get_boost_parameter(photon_fate_fractions);
   l_source_cgs *= boost;
-  if (is_ring_primary_source(rel_param.prim_geometry_type) || is_slab_primary_source(rel_param.prim_geometry_type)) {
+  if (is_ring_primary_source(rel_param.emis_type) || is_slab_primary_source(rel_param.emis_type)) {
     // AN: for ring/slab sources the flux at rin is different, but as far as I am aware, this function is used only for
     // relxillAlpha which does not have extended geometry yet, so I leave a warning here
     printf("calc_flux_disk_newton_cgs may not work properly for extended sources! Check IonGradient.cpp \n");
@@ -474,7 +474,7 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
       printf("       can not calculate Ecut/kTe on the disk \n\n");
       throw std::exception();
     }
-    if (is_ring_primary_source(rel_param->prim_geometry_type) || is_slab_primary_source(rel_param->prim_geometry_type)) {
+    if (is_ring_primary_source(rel_param->emis_type) || is_slab_primary_source(rel_param->emis_type)) {
       return ecut_primary * gi_potential_ext(rel_param, rzone);
     }
     else {
@@ -486,9 +486,9 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
 RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param) {
 
   double transition_radius;
-  if (is_ring_primary_source(rel_param.prim_geometry_type)) {
+  if (is_ring_primary_source(rel_param.emis_type)) {
     transition_radius = rel_param.r_src;
-  } else if (is_slab_primary_source(rel_param.prim_geometry_type)) {
+  } else if (is_slab_primary_source(rel_param.emis_type)) {
     transition_radius = sqrt(rel_param.height * rel_param.height + rel_param.x * rel_param.x);
   } else {
     transition_radius = rel_param.height;

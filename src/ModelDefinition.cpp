@@ -78,6 +78,8 @@ int convertIrradType(T_Irrad name) {
   switch (name) {
     case T_Irrad::BknPowerlaw: return EMIS_TYPE_BKN;
     case T_Irrad::LampPost: return EMIS_TYPE_LP;
+    case T_Irrad::RingSource: return EMIS_TYPE_RING;
+    case T_Irrad::SlabSource: return EMIS_TYPE_SLAB;
     case T_Irrad::BlackBody: return EMIS_TYPE_ALPHA;
     case T_Irrad::Const: return EMIS_TYPE_CONST;
     case T_Irrad::None:puts(" *** relxill-error: not possible to construct a model with Irradiation-Type <None> ");
@@ -147,8 +149,9 @@ int is_env_set(const char* envname, int default_switch = 0) {
 
 static int get_returnrad_switch(const ModelDefinition &model_params) {
 
-  // (1) by default activated for Lamp Post, otherwise not
-  int default_switch = ( model_params.irradiation()==T_Irrad::LampPost) ? 1 : 0;
+  // (1) by default activated for Lamp Post and extended geometries, otherwise not
+  int default_switch = (model_params.irradiation()==T_Irrad::LampPost ||
+    model_params.irradiation()==T_Irrad::RingSource || model_params.irradiation()==T_Irrad::SlabSource) ? 1 : 0;
 
   // (2) if env is set, we use the value given there, it takes precedence over default values
   int value_switch = is_env_set("RELXILL_RETURNRAD_SWITCH", default_switch);
@@ -186,7 +189,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   setNegativeRadiiToRisco(&(param->rin), param->a);
   setNegativeRadiiToRisco(&(param->rout), param->a);
   setNegativeRadiiToRisco(&(param->rbr), param->a);
-  // should we have the same negative units for x, x_in in relxill_ext?
+  // should we have the same negative units for x, x_in in relxill_slab?
 
   const double rout_max = 1000.0;
 
@@ -265,8 +268,9 @@ void check_parameter_bounds(relParam *param, int *status) {
       param->beta = 0.99;
     }
   }
-  /** check geometric values (only applies to LP emissivity) **/
-  if (param->emis_type == EMIS_TYPE_LP) {
+
+  /** check geometric values (only applies to LP and ext emissivities) **/
+  if (param->emis_type == EMIS_TYPE_LP || param->emis_type == EMIS_TYPE_RING || param->emis_type == EMIS_TYPE_SLAB) {
     setNegativeHeightToRplus(&param->height, param->a); // after this h is in rg in either case
     setNegativeHeightToRplus(&param->htop, param->a);
     setNegativeHeightToRplus(&param->r_src, param->a); // r_src is just generalized height,
@@ -277,89 +281,82 @@ void check_parameter_bounds(relParam *param, int *status) {
     double h_fac = 1.1;
     double r_fac = 1.2; // a bit more conservative limit for ring and slab corona
 
-    /** check height and ring size values (only applies to EXT emissivity) - for now inside of LP check **/
-    if (param->prim_geometry_type == GEOMETRY_RING) { // relutility.h not included
+    if (param->emis_type == EMIS_TYPE_RING) { // relutility.h not included
       if (param->theta < 0.0) {
-        if (not warned_ring_angle) {
-          printf(" *** Warning : ring source cannot have negative angle (theta = %.1f deg) \n", param->theta);
-          printf("     Setting theta = 0.0 deg \n");
-          warned_ring_angle = 1;
-        }
-        param->theta = 0.0;
-      }
-
-      if (param->r_src - r_fac * r_event < 1e-3) {
-        if (!warned_ring_radius) {
-          printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
-          printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->r_src, param->theta);
-          printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
-          printf("(too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
-          //printf("(too close to BH) Setting eXtent to = %.4f*r_g, polar angle kept constant \n", param->r_ring);
-          // always print while debug it (DONT FORGET)
-          warned_ring_radius = 1;
-        }
-        param->r_src = r_fac * r_event; // in rg
-      }
-    } else {
-      if (param->prim_geometry_type == GEOMETRY_SLAB) {
-        if (param->x < 0.1) {
-          if (not warned_slab_radius) {
-            printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);
-            printf("      Setting    x = 0.1 rg \n");
-            warned_slab_radius = 1;
+          if (not warned_ring_angle) {
+            printf(" *** Warning : ring source cannot have negative angle (theta = %.1f deg) \n", param->theta);
+            printf("     Setting theta = 0.0 deg \n");
+            warned_ring_angle = 1;
           }
-          param->x = 0.1;
+          param->theta = 0.0;
         }
-        // new: for slab model we also check that inner edge is less than outer (x)
-        // alternatively: we can reset geometry type to ring if x_in >= x and have a neat transition
-        if (param->x <= param->x_in) {
-          if (not warned_slab_bound) {
-            printf(" *** Warning : x_in >= x, outer slab edge cannot be smaller than inner slab edge \n");
-            printf("      Setting    x_in = x - 0.1 rg \n");
-            warned_slab_bound = 1;
+
+        if (param->r_src - r_fac * r_event < 1e-3) {
+          if (!warned_ring_radius) {
+            printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
+            printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->r_src, param->theta);
+            printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
+            printf("(too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
+            warned_ring_radius = 1;
           }
-          param->x_in = param->x - 0.1;
+          param->r_src = r_fac * r_event; // in rg
         }
-
-        if (r_fac * r_event - param->height > 1e-4) { // this "if" just initiates checks
-          double r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
-          double r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
-
-          if (r_fac * r_event - r_slab_in > 1e-4) { //inner slab radius is inside EH
-            if (not warned_slab_radius_low_h) {
-              printf(" *** Warning : Inner radius of slab source is inside of (or very close to) the black hole \n"
-                     "Parameters: h = %.1f rg, x_in = %.1f rg, x = %.1f rg, %.1f * r_event = %.1f rg \n",
-                     param->height, param->x_in, param->x, r_fac, r_fac * r_event);
+      } else {
+        if (param->emis_type == EMIS_TYPE_SLAB) {
+          if (param->x < 0.1) {
+            if (not warned_slab_radius) {
+              printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);
+              printf("      Setting    x = 0.1 rg \n");
+              warned_slab_radius = 1;
             }
-            // reset x_in while h = const
-            param->x_in = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
-            if (not warned_slab_radius_low_h) {
-              printf("      Setting    x_in = %.3f rg outside of %.1f * r_event at a given height h = %.1f rg \n",  param->x_in, r_fac, param->height);
+            param->x = 0.1;
+          }
+          // new: for slab model we also check that inner edge is less than outer (x)
+          // alternatively: we can reset emissivity type to ring if x_in >= x and have a neat transition
+          if (param->x <= param->x_in) {
+            if (not warned_slab_bound) {
+              printf(" *** Warning : x_in >= x, outer slab edge cannot be smaller than inner slab edge \n");
+              printf("      Setting    x_in = x - 0.1 rg \n");
+              warned_slab_bound = 1;
             }
-            if (r_fac * r_event - r_slab_out > 1e-4) { // outer radius is inside too
-              // also reset x to smallest possible value greater than x_in
-              param->x = param->x_in + 0.1;
+            param->x_in = param->x - 0.1;
+          }
+
+          if (r_fac * r_event - param->height > 1e-4) { // this "if" just initiates checks
+            double r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
+            double r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
+
+            if (r_fac * r_event - r_slab_in > 1e-4) { //inner slab radius is inside EH
               if (not warned_slab_radius_low_h) {
-                printf("      Setting outer radius accordingly to   x = x_in + 0.1 rg \n");
+                printf(" *** Warning : Inner radius of slab source is inside of (or very close to) the black hole \n"
+                       "Parameters: h = %.1f rg, x_in = %.1f rg, x = %.1f rg, %.1f * r_event = %.1f rg \n",
+                       param->height, param->x_in, param->x, r_fac, r_fac * r_event);
               }
+              // reset x_in while h = const
+              param->x_in = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
+              if (not warned_slab_radius_low_h) {
+                printf("      Setting    x_in = %.3f rg outside of %.1f * r_event at a given height h = %.1f rg \n",  param->x_in, r_fac, param->height);
+              }
+              if (r_fac * r_event - r_slab_out > 1e-4) { // outer radius is inside too
+                // also reset x to the smallest possible value greater than x_in
+                param->x = param->x_in + 0.1;
+                if (not warned_slab_radius_low_h) {
+                  printf("      Setting outer radius accordingly to   x = x_in + 0.1 rg \n");
+                }
+              }
+              if (not warned_slab_radius_low_h) { warned_slab_radius_low_h = true; }
             }
-            if (not warned_slab_radius_low_h) { warned_slab_radius_low_h = true; }
-
-            r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
-            r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
           }
-        }
-
-      } else { // Lamp post case
-        if (h_fac * r_event - param->height > 1e-4) {
-          if (!warned_height) {
-            printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
-            printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
-                   h_fac);
-            printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
-            printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
-            warned_height = 1;
-          }
+        } else { // Lamp post emissivity
+          if (h_fac * r_event - param->height > 1e-4) {
+            if (!warned_height) {
+              printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
+              printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
+                     h_fac);
+              printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
+              printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
+              warned_height = 1;
+            }
           param->height = r_event * h_fac;
         }
       }
@@ -381,9 +378,6 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
 
   param->model_type = convertModelType(inp_param.get_model_name());
   param->emis_type = convertIrradType(inp_param.irradiation());
-
-  // default 0 - lp, 1 - ring, 2 - slab (etc):
-  param->prim_geometry_type = get_geometry_switch(inp_param); // new for extended geometry
 
   // these parameters have to be given for any relativistic parameter structure
   try {
@@ -525,20 +519,5 @@ int get_iongrad_type(const ModelDefinition &params) {
     return ION_GRAD_TYPE_ALPHA;
   } else {
     return static_cast<int>(lround(params.get_otherwise_default(XPar::switch_iongrad_type, 0)));
-  }
-}
-
-/*
- * Perhaps a temporary solution with an internal "switch" of geometries. Better solution would be to define a separate
- * EMIS_TYPE for each corona geometry instead of using LP of extended geometries
- */
-int get_geometry_switch(const ModelDefinition &params) {
-  if (params.get_model_name() == ModelName::relxill_ring || params.get_model_name() == ModelName::relxill_ring_ecut
-      || params.get_model_name() == ModelName::relline_ring) { // REALLY need to define just new type of EMIS_TYPE
-      return GEOMETRY_RING;
-  } else if (params.get_model_name() == ModelName::relxill_slab || params.get_model_name() == ModelName::relline_slab) {
-    return GEOMETRY_SLAB;
-  } else {
-    return GEOMETRY_LP; // what about models with no geometry? This switcher is not used for those, though
   }
 }

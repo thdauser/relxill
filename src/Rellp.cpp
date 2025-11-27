@@ -295,7 +295,7 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
 int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
   if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) &&
-        is_lp_primary_source(param->prim_geometry_type)) {
+        is_lp_primary_source(param->emis_type)) {
     return 1;
   } else {
     return 0;
@@ -304,7 +304,7 @@ int modelLampPostPointSource(const relParam *param) {
 
 int modelRingSource(const relParam *param) {
   // Note: this can be obsolete because is_ring_primary_source does the same
-    if (is_ring_primary_source(param->prim_geometry_type)) {
+    if (is_ring_primary_source(param->emis_type)) {
     return 1;
   } else {
     return 0;
@@ -313,7 +313,7 @@ int modelRingSource(const relParam *param) {
 
 int modelSlabSource(const relParam *param) {
   // potentially obsolete as well as modelRingSource
-  if (is_slab_primary_source(param->prim_geometry_type)) {
+  if (is_slab_primary_source(param->emis_type)) {
     return 1;
   } else {
     return 0;
@@ -323,7 +323,7 @@ int modelSlabSource(const relParam *param) {
 int modelVertExtendSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
   if ((fabs(param->htop) >= 1.0) || (param->htop - htopPrecLimit >= param->height) &&
-  is_lp_primary_source(param->prim_geometry_type)) {
+  is_lp_primary_source(param->emis_type)) {
     return 1;
   } else {
     return 0;

@@ -69,8 +69,7 @@ static int comp_sys_param(const relParam *cpar, const relParam *par) {
     {par->x_in, cpar->x_in},
     {static_cast<double>(par->limb), static_cast<double>(cpar->limb)},
     {static_cast<double>(par->return_rad), static_cast<double>(cpar->return_rad)},
-    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)},
-    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
+    {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}
   };
 
 
@@ -116,7 +115,6 @@ int did_rel_param_change(const relParam *cpar, const relParam *par) {
     {static_cast<double>(par->do_renorm_relline), static_cast<double>(cpar->do_renorm_relline)},
     {static_cast<double>(par->ion_grad_type), static_cast<double>(cpar->ion_grad_type)},
     {static_cast<double>(par->num_zones), static_cast<double>(cpar->num_zones)},
-    {static_cast<double>(par->prim_geometry_type), static_cast<double>(cpar->prim_geometry_type)}
   };
 
   for (const auto& param : param_comparison) {
@@ -156,7 +154,6 @@ void set_cached_rel_param(const relParam *par, relParam **ca_rel_param, int *sta
 
   (*ca_rel_param)->emis_type = par->emis_type;
   (*ca_rel_param)->model_type = par->model_type;
-  (*ca_rel_param)->prim_geometry_type = par->prim_geometry_type;
 
   (*ca_rel_param)->rbr = par->rbr;
   (*ca_rel_param)->rin = par->rin;

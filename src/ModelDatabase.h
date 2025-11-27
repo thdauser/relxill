@@ -136,8 +136,9 @@ class ModelDatabase {
   const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
       {ModelName::relline, ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw)},
       {ModelName::relline_lp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
-      {ModelName::relline_ring, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
-      {ModelName::relline_slab, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
+
+      {ModelName::relline_ring, ModelInfo(T_Model::Line, T_Irrad::RingSource)},
+      {ModelName::relline_slab, ModelInfo(T_Model::Line, T_Irrad::SlabSource)},
 
       {ModelName::relconv_lp, ModelInfo(T_Model::Conv, T_Irrad::LampPost)},
       {ModelName::relconv, ModelInfo(T_Model::Conv, T_Irrad::BknPowerlaw)},
@@ -149,12 +150,13 @@ class ModelDatabase {
       {ModelName::relxillD, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
 
       {ModelName::relxilllp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
-      {ModelName::relxill_ring_ecut, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
+      {ModelName::relxill_ring_ecut, ModelInfo(T_Model::Relxill, T_Irrad::RingSource, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpion, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
-      {ModelName::relxill_ring, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
-      {ModelName::relxill_slab, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
-      // do define separate T_Irrad for extended geometries? It is not lamp post anymore
+
+      {ModelName::relxill_ring, ModelInfo(T_Model::Relxill, T_Irrad::RingSource, T_PrimSpec::Nthcomp)},
+      {ModelName::relxill_slab, ModelInfo(T_Model::Relxill, T_Irrad::SlabSource, T_PrimSpec::Nthcomp)},
+
       {ModelName::relxilllpD, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::CutoffPl)},
       {ModelName::relxilllpionCp, ModelInfo(T_Model::Relxill, T_Irrad::LampPost, T_PrimSpec::Nthcomp)},
 

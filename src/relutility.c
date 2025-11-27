@@ -118,22 +118,22 @@ int is_co_model(int model_type) {
   }
 }
 
-int is_lp_primary_source(const int prim_geometry_type) {
-  if (prim_geometry_type == GEOMETRY_LP) {
+int is_lp_primary_source(const int emis_type) {
+  if (emis_type == EMIS_TYPE_LP) {
     return 1;
   }
   return 0;
 }
 
-int is_ring_primary_source(const int prim_geometry_type) {
-  if (prim_geometry_type == GEOMETRY_RING) {
+int is_ring_primary_source(const int emis_type) {
+  if (emis_type == EMIS_TYPE_RING) {
     return 1;
   }
     return 0;
 }
 
-int is_slab_primary_source(const int prim_geometry_type) {
-  if (prim_geometry_type == GEOMETRY_SLAB) {
+int is_slab_primary_source(const int emis_type) {
+  if (emis_type == EMIS_TYPE_SLAB) {
     return 1;
   }
   return 0;
