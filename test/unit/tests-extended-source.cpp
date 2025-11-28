@@ -687,3 +687,25 @@ TEST_CASE (
 
 }
 
+
+TEST_CASE (
+"Setting outer edge of slab source outside table limits (extrapolation) "
+,
+"[extended]"
+)
+{
+
+  DefaultSpec default_spec{};
+
+  LocalModel lmod(ModelName::relxill_slab);
+
+  auto spec = default_spec.get_xspec_spectrum();
+
+  double low_height = 1.5;
+  lmod.set_par(XPar::x, 30.0);
+  lmod.set_par(XPar::h, low_height);
+
+  REQUIRE_NOTHROW(lmod.eval_model(spec));
+  REQUIRE(sum_flux(spec.flux, spec.num_flux_bins()) > 1e-8);
+
+}

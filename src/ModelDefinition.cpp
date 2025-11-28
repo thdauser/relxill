@@ -182,6 +182,117 @@ int warned_ring_angle = 0;
 int warned_slab_radius = 0;
 int warned_slab_bound = 0;
 bool warned_slab_radius_low_h = false;
+bool warned_slab_extrapolation = false;
+
+
+void check_lp_bounds(relParam *param) {
+  double r_event = kerr_rplus(param->a);
+  double h_fac = 1.1;
+
+  if (h_fac * r_event - param->height > 1e-4) {
+    if (!warned_height) {
+      printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
+      printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
+             h_fac);
+      printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
+      printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
+      warned_height = 1;
+    }
+    param->height = r_event * h_fac;
+  }
+}
+
+void check_ring_bounds(relParam *param) {
+  double r_event = kerr_rplus(param->a);
+  double r_fac = 1.2;
+
+  if (param->theta < 0.0) {
+    if (not warned_ring_angle) {
+      printf(
+        " *** Warning : ring source cannot have negative angle (theta = %.1f deg) \n"
+              "     Setting theta = 0.0 deg \n", param->theta);
+      warned_ring_angle = 1;
+    }
+    param->theta = 0.0;
+  }
+
+  if (param->r_src - r_fac * r_event < 1e-3) {
+    if (!warned_ring_radius) {
+      printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
+      printf("     Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->r_src, param->theta);
+      printf("     Spherical radius = %.4f r_g, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
+      printf("     (too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
+      warned_ring_radius = 1;
+    }
+    param->r_src = r_fac * r_event; // in rg
+  }
+}
+
+void check_slab_bounds(relParam *param) {
+
+  double r_event = kerr_rplus(param->a);
+  double r_fac = 1.2;
+
+  // check slab radius
+  if (param->x < 0.1) {
+    if (not warned_slab_radius) {
+      printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);
+      printf("     Setting    x = 0.1 rg \n");
+      warned_slab_radius = 1;
+    }
+    param->x = 0.1;
+  }
+
+  // check that inner edge is less than outer edge
+  if (param->x <= param->x_in) {
+    if (not warned_slab_bound) {
+      printf(" *** Warning : x_in >= x, outer slab edge cannot be smaller than inner slab edge \n");
+      printf("     Setting    x_in = x - 0.1 rg \n");
+      warned_slab_bound = 1;
+    }
+    param->x_in = param->x - 0.1;
+  }
+
+  // check that slab is not inside BH, even partially
+  if (r_fac * r_event - param->height > 1e-4) { // this "if" just initiates checks
+    double r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
+    double r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
+
+    if (r_fac * r_event - r_slab_in > 1e-4) { //inner slab radius is inside EH
+      if (not warned_slab_radius_low_h) {
+        printf(" *** Warning : Inner radius of slab source is inside of (or very close to) the black hole \n"
+                     "     Parameters: h = %.1f rg, x_in = %.1f rg, x = %.1f rg, %.1f * r_event = %.1f rg \n",
+                       param->height, param->x_in, param->x, r_fac, r_fac * r_event);
+      }
+
+      // reset x_in while h = const
+      param->x_in = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
+      if (not warned_slab_radius_low_h) {
+        printf("      Setting x_in = %.3f rg outside of %.1f * r_event at "
+               "a given height h = %.1f rg \n", param->x_in, r_fac, param->height);
+      }
+      if (r_fac * r_event - r_slab_out > 1e-4) { // outer radius is inside too
+        // also reset x to the smallest possible value greater than x_in
+        param->x = param->x_in + 0.1;
+        if (not warned_slab_radius_low_h) {
+          printf("      Setting outer radius accordingly to x = x_in + 0.1 rg \n");
+        }
+      }
+      if (not warned_slab_radius_low_h) { warned_slab_radius_low_h = true; }
+    }
+  }
+
+  double costheta_slab_out = calc_cos_theta_ring_source(param->height, param->x, param->a);
+  // check that slab is not outside table limits (causes only extrapolation warning)
+  if (not warned_slab_extrapolation and costheta_slab_out < cos(80.0 * CONVERT_DEG2RAD)) {
+    printf(
+      " *** Warning : Outer radius of slab source is outside table limits \n"
+            "     This will cause extrapolation of slab parameters \n"
+            "     Model predictions may be inaccurate! *** \n");
+      warned_slab_extrapolation = true;
+  }
+
+}
 
 void check_parameter_bounds(relParam *param, int *status) {
 
@@ -271,95 +382,21 @@ void check_parameter_bounds(relParam *param, int *status) {
 
   /** check geometric values (only applies to LP and ext emissivities) **/
   if (is_any_primary_source(param->emis_type)) {
+
     setNegativeHeightToRplus(&param->height, param->a); // after this h is in rg in either case
     setNegativeHeightToRplus(&param->htop, param->a);
     setNegativeHeightToRplus(&param->r_src, param->a); // r_src is just generalized height,
     // so we can reuse this function. Perhaps it is worth giving a better name to this function then?
     // e.g. setNegativeEventHorizonUnitsToRplus ?
-    double r_event = kerr_rplus(param->a);
 
-    double h_fac = 1.1;
-    double r_fac = 1.2; // a bit more conservative limit for ring and slab corona
-
-    if (param->emis_type == EMIS_TYPE_RING) { // relutility.h not included
-      if (param->theta < 0.0) {
-          if (not warned_ring_angle) {
-            printf(" *** Warning : ring source cannot have negative angle (theta = %.1f deg) \n", param->theta);
-            printf("     Setting theta = 0.0 deg \n");
-            warned_ring_angle = 1;
-          }
-          param->theta = 0.0;
-        }
-
-        if (param->r_src - r_fac * r_event < 1e-3) {
-          if (!warned_ring_radius) {
-            printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
-            printf("      Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->r_src, param->theta);
-            printf("      Spherical radius = %.4f r_g, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
-            printf("(too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
-            warned_ring_radius = 1;
-          }
-          param->r_src = r_fac * r_event; // in rg
-        }
-      } else {
-        if (param->emis_type == EMIS_TYPE_SLAB) {
-          if (param->x < 0.1) {
-            if (not warned_slab_radius) {
-              printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);
-              printf("      Setting    x = 0.1 rg \n");
-              warned_slab_radius = 1;
-            }
-            param->x = 0.1;
-          }
-          // new: for slab model we also check that inner edge is less than outer (x)
-          // alternatively: we can reset emissivity type to ring if x_in >= x and have a neat transition
-          if (param->x <= param->x_in) {
-            if (not warned_slab_bound) {
-              printf(" *** Warning : x_in >= x, outer slab edge cannot be smaller than inner slab edge \n");
-              printf("      Setting    x_in = x - 0.1 rg \n");
-              warned_slab_bound = 1;
-            }
-            param->x_in = param->x - 0.1;
-          }
-
-          if (r_fac * r_event - param->height > 1e-4) { // this "if" just initiates checks
-            double r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
-            double r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
-
-            if (r_fac * r_event - r_slab_in > 1e-4) { //inner slab radius is inside EH
-              if (not warned_slab_radius_low_h) {
-                printf(" *** Warning : Inner radius of slab source is inside of (or very close to) the black hole \n"
-                       "Parameters: h = %.1f rg, x_in = %.1f rg, x = %.1f rg, %.1f * r_event = %.1f rg \n",
-                       param->height, param->x_in, param->x, r_fac, r_fac * r_event);
-              }
-              // reset x_in while h = const
-              param->x_in = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
-              if (not warned_slab_radius_low_h) {
-                printf("      Setting    x_in = %.3f rg outside of %.1f * r_event at a given height h = %.1f rg \n",  param->x_in, r_fac, param->height);
-              }
-              if (r_fac * r_event - r_slab_out > 1e-4) { // outer radius is inside too
-                // also reset x to the smallest possible value greater than x_in
-                param->x = param->x_in + 0.1;
-                if (not warned_slab_radius_low_h) {
-                  printf("      Setting outer radius accordingly to   x = x_in + 0.1 rg \n");
-                }
-              }
-              if (not warned_slab_radius_low_h) { warned_slab_radius_low_h = true; }
-            }
-          }
-        } else { // Lamp post emissivity
-          if (h_fac * r_event - param->height > 1e-4) {
-            if (!warned_height) {
-              printf(" *** Warning : Lamp post source too close to the black hole (h < %.1f r_event) \n", h_fac);
-              printf("      Change to negative heights (h <= -%.1f), if you want to fit in units of the Event Horizon \n",
-                     h_fac);
-              printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
-              printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
-              warned_height = 1;
-            }
-          param->height = r_event * h_fac;
-        }
-      }
+    if (is_ring_primary_source(param->emis_type)) {
+      check_ring_bounds(param);
+    }
+    if (is_slab_primary_source(param->emis_type)) {
+      check_slab_bounds(param);
+    }
+    if (is_lp_primary_source(param->emis_type)) { // Lamp post emissivity
+      check_lp_bounds(param);
     }
   }
 }
