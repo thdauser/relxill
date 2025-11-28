@@ -585,8 +585,8 @@ emisProfile *calc_emis_profile(double *re, int nr, const relParam *param, int *s
   } else if (param->emis_type == EMIS_TYPE_CONST) {
     get_emis_constant(emis->emis, nr);
 
-    /**  *** Lamp Post Emissivity ***  **/
-  } else if (param->emis_type == EMIS_TYPE_LP) {
+    /**  *** Lamp Post or Ext Emissivity ***  **/
+  } else if (is_any_primary_source(param->emis_type)) {
 
     get_emis_jet(emis, param, status);
   } else {

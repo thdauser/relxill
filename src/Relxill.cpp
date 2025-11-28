@@ -207,9 +207,9 @@ void get_relxill_params(const ModelDefinition& params, relParam*& rel_param, xil
     rel_param = get_rel_params(params);
     xill_param = get_xill_params(params);
 
-    // special case, for the LP model and the Ecut model, the cutoff energy is given in the observer frame
+    // special case, for the LP or ext model and the Ecut model, the cutoff energy is given in the observer frame
     // -> change it such that the parameter "ect" is always given in the source frame
-    if (rel_param->emis_type == EMIS_TYPE_LP && xill_param->prim_type == PRIM_SPEC_ECUT)
+    if (is_any_primary_source(rel_param->emis_type) && xill_param->prim_type == PRIM_SPEC_ECUT)
     {
         xill_param->ect /= energy_shift_source_obs(rel_param);
     }

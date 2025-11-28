@@ -185,7 +185,7 @@ void IonGradient::calc_energy_shift_from_source_to_disk(const relParam *rel_para
   assert (del_emit != nullptr);
 
   for (int ii = 0; ii < m_nzones; ii++) {
-    if (rel_param->emis_type == EMIS_TYPE_LP) {
+    if (is_any_primary_source(rel_param->emis_type)) {
       m_energy_shift_source_disk[ii] = energy_shift_source_disk(rel_param, m_rmean[ii], del_emit[ii]);
     } else {
       m_energy_shift_source_disk[ii] = 1.0;
@@ -485,6 +485,7 @@ double IonGradient::get_ecut_disk_zone(const relParam *rel_param, double ecut_pr
 
 RadialGrid get_standard_relxill_radial_grid(const relParam& rel_param) {
 
+  // transition radius is chosen based on the radius where emissivity converges to classical r^-3 dpendence
   double transition_radius;
   if (is_ring_primary_source(rel_param.emis_type)) {
     transition_radius = rel_param.r_src;

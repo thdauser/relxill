@@ -139,6 +139,13 @@ int is_slab_primary_source(const int emis_type) {
   return 0;
 }
 
+int is_any_primary_source(const int emis_type) {
+  if (is_lp_primary_source(emis_type)|| is_ring_primary_source(emis_type) || is_slab_primary_source(emis_type)) {
+    return 1;
+  }
+  return 0;
+}
+
 /** check and report FITS error   */
 void relxill_check_fits_error(const int *status) {
   if (*status != EXIT_SUCCESS) {
@@ -444,7 +451,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
       }
     }
     return N_ZONES_IONGRAD;
-  } else if (is_relxill_model(model_type) && (emis_type == EMIS_TYPE_LP)) {
+  } else if (is_relxill_model(model_type) && is_any_primary_source(emis_type)) {
 
     if (env != NULL) {
       if ((env_n_zones > 0) && (env_n_zones <= N_ZONES_MAX)) {
@@ -526,7 +533,7 @@ int do_renorm_model(relParam *rel_param) {
 
   if (is_relxill_model(rel_param->model_type))
   {
-    if (rel_param->emis_type == EMIS_TYPE_LP || is_returnrad_bb_model(rel_param->model_type)
+    if (is_any_primary_source(rel_param->emis_type) || is_returnrad_bb_model(rel_param->model_type)
       || do_not_normalize_relline())
     {
       renorm = 0;

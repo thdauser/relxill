@@ -50,7 +50,7 @@ class PrimarySourceParameters {
       m_rel_param{get_rel_params(m_inp_param)},
       m_interpret_reflfrac_as_boost{
           static_cast<int>(lround(inp_param.get_otherwise_default(XPar::switch_switch_reflfrac_boost, 0)))},
-      m_energy_shift_source_observer{(m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
+      m_energy_shift_source_observer{(m_rel_param != nullptr && is_any_primary_source(m_rel_param->emis_type)) ?
                                      energy_shift_source_obs(m_rel_param) : 1.0},
       m_xilltab_param{m_get_xilltab_params_primary_source(m_rel_param, m_energy_shift_source_observer)} {
     //m_energy_shift_source_observer = (m_rel_param != nullptr && m_rel_param->emis_type == EMIS_TYPE_LP) ?
@@ -216,9 +216,9 @@ class PrimarySourceParameters {
     auto xilltab_param = get_xilltab_param(xill_param, &status);
     delete xill_param;
 
-    // special case, for the LP model with the Ecut spectrum: cutoff energy is given in the observer frame
+    // special case, for a geometric corona model with the Ecut spectrum: cutoff energy is given in the observer frame
     // -> convert it such that ecut is also given in the source frame
-    if (_rel_param != nullptr && _rel_param->emis_type == EMIS_TYPE_LP && xilltab_param->prim_type == PRIM_SPEC_ECUT) {
+    if (_rel_param != nullptr && is_any_primary_source(_rel_param->emis_type) && xilltab_param->prim_type == PRIM_SPEC_ECUT) {
       xilltab_param->ect /= _energy_shift_source_observer;
     }
 

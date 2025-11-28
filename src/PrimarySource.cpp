@@ -91,11 +91,11 @@ void PrimarySource::add_primary_spectrum(const RelxillSpec &relxill_spec) {
   // get the primary spectrum on the energy grid of the reflection spectrum
   auto primary_spectrum = get_observed_primary_spectrum(relxill_spec);
 
-  // For the non-relativistic model and if not the LP geometry, we simply multiply by the reflection fraction
-  if (is_xill_model(source_parameters.model_type()) || source_parameters.emis_type() != EMIS_TYPE_LP) {
+  // For the non-relativistic model and if not a corona geometry, we simply multiply by the reflection fraction
+  if (is_xill_model(source_parameters.model_type()) || not is_any_primary_source(source_parameters.emis_type())) {
     relxill_spec.multiply_flux_by(fabs(source_parameters.refl_frac()));
 
-  } else { // we are in the LP geometry
+  } else { // we are in the LP or ext geometry
 
     assert(m_lp_refl_frac != nullptr);
 

@@ -148,6 +148,7 @@ int is_returnrad_bb_model(int model_type);
 int is_lp_primary_source(int emis_type);
 int is_ring_primary_source(int emis_type);
 int is_slab_primary_source(int emis_type);
+int is_any_primary_source(int emis_type);
 
 double calc_cos_incl(double incl);
 

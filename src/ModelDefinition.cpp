@@ -270,7 +270,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   }
 
   /** check geometric values (only applies to LP and ext emissivities) **/
-  if (param->emis_type == EMIS_TYPE_LP || param->emis_type == EMIS_TYPE_RING || param->emis_type == EMIS_TYPE_SLAB) {
+  if (is_any_primary_source(param->emis_type)) {
     setNegativeHeightToRplus(&param->height, param->a); // after this h is in rg in either case
     setNegativeHeightToRplus(&param->htop, param->a);
     setNegativeHeightToRplus(&param->r_src, param->a); // r_src is just generalized height,

@@ -279,9 +279,9 @@ double doppler_factor_source_obs(const relParam *rel_param) { //update?
 double energy_shift_source_obs(const relParam *rel_param) {
 
   double g_inf_0 = 1;
-  // if we do NOT have the LP geometry, the energy shift is just 1
+  // if we do NOT have a geometry, the energy shift is just 1
   // (as without geometry we can not define an energy shift)
-  if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
+  if (rel_param == nullptr || !is_any_primary_source(rel_param->emis_type)) {
     return g_inf_0;
   }
 
@@ -307,9 +307,9 @@ double energy_shift_source_obs(const relParam *rel_param) {
  */
 double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit) {
 
-  // if we do NOT have the LP geometry, the energy shift is just 1
+  // if we do NOT have a geometry, the energy shift is just 1
   // (as without geometry we can not define an energy shift)
-  if (rel_param == nullptr || rel_param->emis_type != EMIS_TYPE_LP) {
+  if (rel_param == nullptr || not is_any_primary_source(rel_param->emis_type)) {
     return 1;
   }
   if (is_ring_primary_source(rel_param->emis_type) || is_slab_primary_source(rel_param->emis_type)) {

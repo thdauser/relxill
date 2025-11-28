@@ -302,8 +302,8 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
   free(xill_table_param);
   CHECK_STATUS_VOID(*status);
 
-  // For the non-relativistic model and if not the LP geometry, we simply multiply by the reflection fraction
-  if (is_xill_model(xill_input_param->model_type) || rel_param->emis_type != EMIS_TYPE_LP) {
+  // For the non-relativistic model and if not a geometric corona, we simply multiply by the reflection fraction
+  if (is_xill_model(xill_input_param->model_type) || !is_any_primary_source(rel_param->emis_type)) {
     for (int ii = 0; ii < n_ener; ii++) {
       flu[ii] *= fabs(xill_input_param->refl_frac);
     }
@@ -318,17 +318,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
       // if set, it is given as boost, wrt predicted refl_frac
       xill_input_param->refl_frac *= struct_refl_frac->refl_frac;
     }
-    /* I was wrong thinking that this function is used to calculate primary normalization
-    double prim_fac;
 
-    if (rel_param->model_type == MOD_TYPE_RELXILLLPEXT){
-      // normFactorPrimSpec was meaningful only for relxill extended. It defined lensing * g^Gamma to observer
-      // (the simplified "else" below takes classical lensing into account only)
-      prim_fac = sys_par->emis->normFactorPrimSpec;
-
-      double prim_fac_lp = struct_refl_frac->f_inf_rest / 0.5 * pow(energy_shift_source_obs(rel_param), xill_input_param->gam);
-    } else{
-     */
     double g_inf = energy_shift_source_obs(rel_param);
     double prim_fac = struct_refl_frac->f_inf_rest / 0.5 * pow(g_inf, xill_input_param->gam);
     //}

@@ -305,7 +305,7 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
   // if we have the LP geometry defined, the spectrum will be different between the primary source and the observer
   // due to energy shift: need to calculate the normalization for the source, but the spectrum at the observer
   double energy_shift = 1.0;
-  if (rel_param != nullptr && rel_param->emis_type == EMIS_TYPE_LP) {
+  if (rel_param != nullptr && is_any_primary_source(rel_param->emis_type)) {
     energy_shift = energy_shift_source_obs(rel_param);
   }
   // output flux
