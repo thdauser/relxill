@@ -39,6 +39,12 @@ extern "C"{
 extendedSourceTable* cached_extendedSource_table = nullptr; // emissivity table
 extendedSourceTable* cached_extendedSource_table_prim = nullptr; // lensing table
 
+// technical statements for debug
+bool warned_extrapolation_spin = false;
+bool warned_extrapolation_theta = false;
+bool warned_extrapolation_radius = false;
+bool warned_extrapolation_incl = false;
+bool warned_extrapolation_frac = false;
 
 /**
  * @brief Gets rows of the table corresponding to different spins
@@ -435,20 +441,26 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
   get_ipol_factor(static_cast<float>(a), tab->a, tab->n_a, &ipol.ind_a, &ipol.ifac_a);
   if (ipol.ifac_a < 0.0 or ipol.ifac_a > 1.0) {
     // should never happen with proper table limits
-    printf(" *** Warning : spin interpolation in extended becomes extrapolation: ifac_a = %.1f \n",
+    if (not warned_extrapolation_spin) {
+      printf(" *** Warning : spin interpolation in extended becomes extrapolation: ifac_a = %.1f \n",
              ipol.ifac_a);
-    printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
-    printf("Better limit a range of values within table limits \n");
+      printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
+      printf("Better limit a range of values within table limits \n");
+      warned_extrapolation_spin = true;
+    }
   }
   for (const int i_r : {0, 1}) {
     // get interpolation factors between spherical radii
     get_ipol_factor_double(r, tab->dat[ipol.ind_a + i_r]->r_sph, tab->n_r,
                            &ipol.ind_r[i_r], &ipol.ifac_r[i_r]);
     if (ipol.ifac_r[i_r] < 0.0 or ipol.ifac_r[i_r] > 1.0) {
-      printf(" *** Warning : spherical radius interpolation becomes extrapolation: ifac_r = %.1f \n",
-             ipol.ifac_r[i_r]);
-      printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
-      printf("Better limit a range of values within table limits \n");
+      if (not warned_extrapolation_radius) {
+        printf(" *** Warning : spherical radius interpolation becomes extrapolation: ifac_r = %.1f \n",
+               ipol.ifac_r[i_r]);
+        printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
+        printf("Better limit a range of values within table limits \n");
+        warned_extrapolation_radius = true;
+      }
     }
     // interpolation factors between polar angles
     const int index = ipol.ifac_r[i_r] > 0.999999 ? ipol.ind_r[i_r] + 1 : ipol.ind_r[i_r];
@@ -457,8 +469,11 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
     get_ipol_factor_double(th, tab->dat[ipol.ind_a + i_r]->theta[index], tab->n_th,
                            &ipol.ind_th[i_r], &ipol.ifac_th[i_r]);
     if (ipol.ifac_th[i_r] < 0.0 or ipol.ifac_th[i_r] > 1.0) {
-      printf(" *** Warning : angle interpolation becomes extrapolation: ifac_th = %.1f \n", ipol.ifac_th[i_r]);
-      printf("Better limit a range of values within table limits \n");
+      if (not warned_extrapolation_theta) {
+        printf(" *** Warning : angle interpolation becomes extrapolation: ifac_th = %.1f \n", ipol.ifac_th[i_r]);
+        printf("Better limit a range of values within table limits \n");
+        warned_extrapolation_theta = true;
+      }
     }
   }
 }
@@ -585,9 +600,12 @@ lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFacto
   fractions->refl_frac = fractions->f_ad / fractions->f_inf;
 
   if (fractions->f_inf > 0.5) { // photons are not allowed to cross the disk plane - should never be the case
+    if (not warned_extrapolation_frac) {
+      printf("Rellp_Extended: escaping photon fraction more than 0.5 (happens only for r_src > 40rg). \n");
+      printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
+    }
+    warned_extrapolation_frac = true;
     fractions->f_inf = 0.5;
-    printf("Rellp_Extended: escaping photon fraction more than 0.5 (happens only for r_src > 40rg). \n");
-    printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
   }
 
   // these are equal for now. f_inf_rest is used to calculate primary spectrum
@@ -604,8 +622,11 @@ double calc_primary_lensing(const double incl, const extendedSourceTable* prim_t
                          &ind_incl, &ifac_incl);
   if (ifac_incl < 0.0 or ifac_incl > 1.0) {
     // should not happen in the current table
-    printf(" *** Warning : inclination interpolation becomes extrapolation: ifac_i = %.1f \n", ifac_incl);
-    printf("Better limit a range of values within table limits, 0.05 < cos(incl) < 1.0 \n");
+    if (not warned_extrapolation_incl) {
+      printf(" *** Warning : inclination interpolation becomes extrapolation: ifac_i = %.1f \n", ifac_incl);
+      printf("Better limit a range of values within table limits, 0.05 < cos(incl) < 1.0 \n");
+      warned_extrapolation_incl = true;
+    }
   }
 
   const double lens_low = get_interpolated_value_a_r_th(
