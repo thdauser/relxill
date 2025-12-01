@@ -286,15 +286,16 @@ void check_slab_bounds(relParam *param) {
   const double cos_theta_lim = cos(80.0 * CONVERT_DEG2RAD); // max angle in the table
   // check that slab is not outside table limits (causes only extrapolation warning)
   if (costheta_slab_out < cos_theta_lim) {
-    // reset to the maximal allowed x for the given height and limiting angle
-    param->x = calc_extent_from_sph_radius_costheta(param->height / cos_theta_lim, cos_theta_lim, param->a);
+    const double x_max = calc_extent_from_sph_radius_costheta(param->height / cos_theta_lim, cos_theta_lim, param->a);
     if (not warned_slab_extrapolation) {
-      printf(" *** Warning : Outer radius of slab source is outside table limits (theta_max = 80.0 deg), "
-             "slab outer radius has angle = %.4f deg \n", acos(costheta_slab_out) / CONVERT_DEG2RAD);
-      printf("     Setting x to the maximal allowed value, x = %.4f rg, for a given height, h = %.4f rg \n",
-        param->x, param->height);
+      printf(" *** Warning : Outer radius of slab source is outside table limits (at a given h = %.4f rg, x_max = %.4f rg), "
+             "the actual slab outer radius  = %.4f rg \n", param->height, x_max, param->x);
+      printf("     Setting x to the maximal allowed value for a given height, h = %.4f rg, x = %.4f rg \n",
+        param->height, x_max);
       warned_slab_extrapolation = true;
     }
+    // reset to the maximal allowed x for the given height and limiting angle
+    param->x = x_max;
   }
 
 }
