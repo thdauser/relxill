@@ -701,7 +701,7 @@ TEST_CASE (
 
   auto spec = default_spec.get_xspec_spectrum();
 
-  double low_height = 1.5;
+  double low_height = 0.5;
   lmod.set_par(XPar::x, 30.0);
   lmod.set_par(XPar::h, low_height);
 

@@ -283,7 +283,7 @@ void check_slab_bounds(relParam *param) {
   }
 
   const double costheta_slab_out = calc_cos_theta_ring_source(param->height, param->x, param->a);
-  const double cos_theta_lim = cos(80.0 * CONVERT_DEG2RAD); // max angle in the table
+  const double cos_theta_lim = cos(85.0 * CONVERT_DEG2RAD); // max angle in the table
   // check that slab is not outside table limits (causes only extrapolation warning)
   if (costheta_slab_out < cos_theta_lim) {
     const double x_max = calc_extent_from_sph_radius_costheta(param->height / cos_theta_lim, cos_theta_lim, param->a);
