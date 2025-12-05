@@ -162,25 +162,25 @@ static int get_returnrad_switch(const ModelDefinition &model_params) {
 
 
 
-static void setNegativeRadiiToRisco(double *r, double a) {
+static void setNegativeRadiiToRisco(double *r, const double a) {
   if (*r < 0) {
     *r = -1.0 * (*r) * kerr_rms(a);
   }
 }
 
-static void setNegativeHeightToRplus(double *h, double a) {
-  if (*h < 0) {
-    *h = -1.0 * (*h) * kerr_rplus(a);
+static void setNegativeValToRplus(double *val, const double a) {
+  if (*val < 0) {
+    *val = -1.0 * (*val) * kerr_rplus(a);
   }
 }
 
 
-int warned_rms = 0;
-int warned_height = 0;
-int warned_ring_radius = 0;
-int warned_ring_angle = 0;
-int warned_slab_radius = 0;
-int warned_slab_bound = 0;
+bool warned_rms = false;
+bool warned_height = false;
+bool warned_ring_radius = false;
+bool warned_ring_angle = false;
+bool warned_slab_radius = false;
+bool warned_slab_bound = false;
 bool warned_slab_radius_low_h = false;
 bool warned_slab_extrapolation = false;
 
@@ -196,7 +196,7 @@ void check_lp_bounds(relParam *param) {
              h_fac);
       printf("      Height= %.3f  ;  r_event=%.3f \n", param->height, r_event);
       printf("      Setting    h =  %.1f*r_event  = %.3f \n", h_fac, r_event * h_fac);
-      warned_height = 1;
+      warned_height = true;
     }
     param->height = r_event * h_fac;
   }
@@ -211,7 +211,7 @@ void check_ring_bounds(relParam *param) {
       printf(
         " *** Warning : ring source cannot have negative angle (theta = %.1f deg) \n"
               "     Setting theta = 0.0 deg \n", param->theta);
-      warned_ring_angle = 1;
+      warned_ring_angle = true;
     }
     param->theta = 0.0;
   }
@@ -222,7 +222,7 @@ void check_ring_bounds(relParam *param) {
       printf("     Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->r_src, param->theta);
       printf("     Spherical radius = %.4f r_g, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
       printf("     (too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
-      warned_ring_radius = 1;
+      warned_ring_radius = true;
     }
     param->r_src = r_fac * r_event; // in rg
   }
@@ -238,7 +238,7 @@ void check_slab_bounds(relParam *param) {
     if (not warned_slab_radius) {
       printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);
       printf("     Setting    x = 0.1 rg \n");
-      warned_slab_radius = 1;
+      warned_slab_radius = true;
     }
     param->x = 0.1;
   }
@@ -248,7 +248,7 @@ void check_slab_bounds(relParam *param) {
     if (not warned_slab_bound) {
       printf(" *** Warning : x_in >= x, outer slab edge cannot be smaller than inner slab edge \n");
       printf("     Setting    x_in = x - 0.1 rg \n");
-      warned_slab_bound = 1;
+      warned_slab_bound = true;
     }
     param->x_in = param->x - 0.1;
   }
@@ -319,7 +319,7 @@ void check_parameter_bounds(relParam *param, int *status) {
   if (param->rin < rms) {
     if (!warned_rms) {
       printf(" *** relxill warning : Rin < ISCO, resetting Rin=ISCO; please set your limits properly \n");
-      warned_rms = 1;
+      warned_rms = true;
     }
     param->rin = rms;
   }
@@ -389,9 +389,9 @@ void check_parameter_bounds(relParam *param, int *status) {
   /** check geometric values (only applies to LP and ext emissivities) **/
   if (is_any_primary_source(param->emis_type)) {
 
-    setNegativeHeightToRplus(&param->height, param->a); // after this h is in rg in either case
-    setNegativeHeightToRplus(&param->htop, param->a);
-    setNegativeHeightToRplus(&param->r_src, param->a); // r_src is just generalized height,
+    setNegativeValToRplus(&param->height, param->a); // after this h is in rg in either case
+    setNegativeValToRplus(&param->htop, param->a);
+    setNegativeValToRplus(&param->r_src, param->a); // r_src is just generalized height,
     // so we can reuse this function. Perhaps it is worth giving a better name to this function then?
     // e.g. setNegativeEventHorizonUnitsToRplus ?
 
