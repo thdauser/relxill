@@ -327,6 +327,7 @@ RelSysPar *get_system_parameters(const relParam *param, int *status) {
   } else {
     // NOT CACHED, so we need to calculate the system parameters
     sysPar = interpol_relTable(param->a, param->incl, param->rin, param->rout, status); // no need for ext geometry!
+    // For ext geometry we can skip this step, lp table is not used in any ext model. However, it is only a small overhead
 
     CHECK_STATUS_RET(*status, nullptr);
 
@@ -765,7 +766,7 @@ void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, c
 
     double relline_norm = 1;
     if (is_relxill_model(rel_param->model_type) && rel_param->emis_type == EMIS_TYPE_BKN) {
-      relline_norm = norm_factor_semi_infinite_slab(rel_param->incl * 180.0 / M_PI);
+      relline_norm = norm_factor_semi_infinite_slab(rel_param->incl / CONVERT_DEG2RAD);
     }
 
     if (is_debug_run()) {

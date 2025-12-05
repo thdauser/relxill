@@ -456,7 +456,7 @@ void write_output_rel_param(relParam *pa) {
 relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *param,
                                        RelSysPar *sysPar,
                                        xillTable *xill_tab,
-                                       const VecD& radialZones,  // TODO: make this a vetor as well
+                                       const VecD& radialZones,  // TODO: make this a vector as well
                                        int nzones,
                                        int *status) {
 

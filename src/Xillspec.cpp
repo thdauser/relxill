@@ -519,7 +519,7 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
 }
 
 double norm_factor_semi_infinite_slab(double incl_deg) {
-  return 0.5 * cos(incl_deg * M_PI / 180);
+  return 0.5 * cos(incl_deg * CONVERT_DEG2RAD);
 }
 
 /**
