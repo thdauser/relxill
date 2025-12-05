@@ -325,8 +325,10 @@ emisProfile* interpol_extended_table(const extendedSourceTable* tab, const Inter
 
   // The radial grid of the table is different for different spins (risco(a)), so we must interpolate it
   assert(radial_grid == nullptr);
-  radial_grid = static_cast<double *>(malloc(sizeof(double) * tab->n_bin));
+  radial_grid = new double[tab->n_bin]; //eventually: change all static_casts to this
+  // static_cast<double *>(malloc(sizeof(double) * tab->n_bin));
   CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
+
   for (int ii = 0; ii < tab->n_bin; ii++) {
     radial_grid[ii] = interp_lin_1d(ipol.ifac_a,
                                     tab->dat[ipol.ind_a]->bin[ii],tab->dat[ipol.ind_a+1]->bin[ii]);
@@ -670,7 +672,8 @@ void calc_ring_emis(emisProfile* emisProf, const double a, const double r_src,
   emisProfile* emis_profile_table = interpol_extended_table(tab, ipol, gamma, radial_grid, status);
   rebin_emisprofile_on_radial_grid(emisProf, emis_profile_table, status);
 
-  free(radial_grid); // radial_grid is _not_ owned by emissivity profile structure
+  delete[] radial_grid;
+  // free(radial_grid); // radial_grid is _not_ owned by emissivity profile structure
   free_emisProfile(emis_profile_table);
 
 
