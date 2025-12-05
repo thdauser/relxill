@@ -444,10 +444,10 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
   if (ipol.ifac_a < 0.0 or ipol.ifac_a > 1.0) {
     // should never happen with proper table limits
     if (not warned_extrapolation_spin) {
-      printf(" *** Warning : spin interpolation in extended becomes extrapolation: ifac_a = %.1f \n",
+      printf(" *** Warning : spin interpolation in ring table becomes extrapolation: ifac_a = %.1f \n",
              ipol.ifac_a);
       printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
-      printf("Better limit a range of values within table limits \n");
+      printf("Make sure the range of values stays within table and model limits \n");
       warned_extrapolation_spin = true;
     }
   }
@@ -457,10 +457,10 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
                            &ipol.ind_r[i_r], &ipol.ifac_r[i_r]);
     if (ipol.ifac_r[i_r] < 0.0 or ipol.ifac_r[i_r] > 1.0) {
       if (not warned_extrapolation_radius) {
-        printf(" *** Warning : spherical radius interpolation becomes extrapolation: ifac_r = %.1f \n",
+        printf(" *** Warning : spherical radius interpolation in ring table becomes extrapolation: ifac_r = %.1f \n",
                ipol.ifac_r[i_r]);
         printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
-        printf("Better limit a range of values within table limits \n");
+        printf("Make sure the range of values stays within table and model limits \n");
         warned_extrapolation_radius = true;
       }
     }
@@ -472,8 +472,9 @@ void get_ipol_factors_a_r_th(const double a, const double r, const double th,
                            &ipol.ind_th[i_r], &ipol.ifac_th[i_r]);
     if (ipol.ifac_th[i_r] < 0.0 or ipol.ifac_th[i_r] > 1.0) {
       if (not warned_extrapolation_theta) {
-        printf(" *** Warning : angle interpolation becomes extrapolation: ifac_th = %.1f \n", ipol.ifac_th[i_r]);
-        printf("Better limit a range of values within table limits \n");
+        printf(" *** Warning : angle interpolation in ring table becomes extrapolation: ifac_th = %.1f \n", ipol.ifac_th[i_r]);
+        printf(" *** The values: a = %.3f, r_src = %.3f, theta_src = %.3f \n", a, r, th);
+        printf("Make sure the range of values stays within table and model limits \n");
         warned_extrapolation_theta = true;
       }
     }
@@ -603,8 +604,10 @@ lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFacto
 
   if (fractions->f_inf > 0.5) { // photons are not allowed to cross the disk plane - should never be the case
     if (not warned_extrapolation_frac) {
-      printf("Rellp_Extended: escaping photon fraction more than 0.5 (happens only for r_src > 40rg). \n");
-      printf("Replacing with 0.5. This will be fixed in the new extended table. \n");
+      // This cannot happen with the newest tables. Leave this warning here just in case
+      printf("Escaping photon fraction more than 0.5, f_inf = %.3f. \n", fractions->f_inf);
+      printf("This happens only for sources far away from the BH, r_sph >> 40 rg.\n");
+      printf("Replacing f_inf with 0.5. Make sure that the model stays within its limits. \n");
     }
     warned_extrapolation_frac = true;
     fractions->f_inf = 0.5;
@@ -617,16 +620,17 @@ lpReflFrac* calc_refl_frac_ext(const extendedSourceTable* tab, const InterpFacto
 }
 
 
-double calc_primary_lensing(const double incl, const extendedSourceTable* prim_tab, const InterpFactors &ipol) {
+double calc_primary_lensing(const double cosincl, const extendedSourceTable* prim_tab, const InterpFactors &ipol) {
   int ind_incl;
   double ifac_incl;
-  get_ipol_factor_double(incl, prim_tab->dat[ipol.ind_a]->bin, prim_tab->n_bin,
+  get_ipol_factor_double(cosincl, prim_tab->dat[ipol.ind_a]->bin, prim_tab->n_bin,
                          &ind_incl, &ifac_incl);
   if (ifac_incl < 0.0 or ifac_incl > 1.0) {
     // should not happen in the current table
     if (not warned_extrapolation_incl) {
       printf(" *** Warning : inclination interpolation becomes extrapolation: ifac_i = %.1f \n", ifac_incl);
-      printf("Better limit a range of values within table limits, 0.05 < cos(incl) < 1.0 \n");
+      printf(" *** The value: cos(incl) %.3f \n", cosincl);
+      printf("Make sure the range of values stays within table and model limits, 0.05 < cos(incl) < 1.0 \n");
       warned_extrapolation_incl = true;
     }
   }
