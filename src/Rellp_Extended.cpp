@@ -871,22 +871,22 @@ double get_energyboost_slab_source_disk(const relParam* param, const double radi
   int status = EXIT_SUCCESS;
   const extendedSourceTable* table = get_es_table(&status);
   const extendedSourceTable* prim_table = get_prim_table(&status);
-  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param->x, param->x_in, &status);
+  const auto slab = get_slab_geometry(param->x, param->x_in, &status);
 
   double gshift = 0.0;
   double weight_sum = 0.0; // need for normalization
-  for (int n_r = 0; n_r < num_rings; n_r++) {
+  for (int n_r = 0; n_r < slab.num_rings; n_r++) {
     InterpFactors ipol;
     double r_sph; double theta;
-    convert_hx_to_rtheta(param->height, slab_grid_radii[n_r], param->a, &r_sph, &theta);
+    convert_hx_to_rtheta(param->height, slab.slab_grid_radii[n_r], param->a, &r_sph, &theta);
     get_ipol_factors_a_r_th(param->a, r_sph, theta, table, ipol);
 
     const auto phot_frac_ring = new_lpReflFrac(&status);
     calc_photon_fate_ring(phot_frac_ring, prim_table, param->a, r_sph, theta,
         param->incl, param->gamma, &status);
 
-    const double weight_factor = 0.5 * (slab_grid_radii[n_r] + slab_grid_radii[n_r + 1]) * (slab_grid_radii[n_r + 1] -
-          slab_grid_radii[n_r]) * phot_frac_ring->refl_frac;
+    const double weight_factor = 0.5 * (slab.slab_grid_radii[n_r] + slab.slab_grid_radii[n_r + 1]) *
+      (slab.slab_grid_radii[n_r + 1] - slab.slab_grid_radii[n_r]) * phot_frac_ring->refl_frac;
     weight_sum += weight_factor;
     const double gshift_ring = calc_energy_shift_gamma(table, ipol, radius, gamma);
 
@@ -908,24 +908,24 @@ double get_energyboost_slab_source_obs(const relParam* param, const double gamma
   int status = EXIT_SUCCESS;
 
   const extendedSourceTable* prim_table = get_prim_table(&status);
-  const auto [num_rings, slab_grid_radii] = get_slab_geometry(param->x, param->x_in, &status);
+  const auto slab = get_slab_geometry(param->x, param->x_in, &status);
 
   double gshift = 0.0;
   double weight_sum = 0.0;
 
   const double cos_incl = cos(param->incl);
-  for (int n_r = 0; n_r < num_rings; n_r++) {
+  for (int n_r = 0; n_r < slab.num_rings; n_r++) {
     InterpFactors prim_ipol;
     double r_sph; double theta;
-    convert_hx_to_rtheta(param->height, slab_grid_radii[n_r], param->a, &r_sph, &theta);
+    convert_hx_to_rtheta(param->height, slab.slab_grid_radii[n_r], param->a, &r_sph, &theta);
     get_ipol_factors_a_r_th(param->a, r_sph, theta, prim_table, prim_ipol);
 
     const auto phot_frac_ring = new_lpReflFrac(&status);
     calc_photon_fate_ring(phot_frac_ring, prim_table, param->a, r_sph, theta,
         param->incl, param->gamma, &status);
 
-    const double weight_factor = 0.5 * (slab_grid_radii[n_r] + slab_grid_radii[n_r + 1]) * (slab_grid_radii[n_r + 1] -
-          slab_grid_radii[n_r]) * phot_frac_ring->refl_frac;
+    const double weight_factor = 0.5 * (slab.slab_grid_radii[n_r] + slab.slab_grid_radii[n_r + 1]) *
+      (slab.slab_grid_radii[n_r + 1] - slab.slab_grid_radii[n_r]) * phot_frac_ring->refl_frac;
     weight_sum += weight_factor;
     const double gshift_ring = calc_energy_shift_gamma(prim_table, prim_ipol, cos_incl, gamma);
 
