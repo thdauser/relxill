@@ -294,8 +294,8 @@ void calc_emis_jet_point_source(emisProfile *emis_profile, const relParam *param
 
 int modelLampPostPointSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  if (((fabs(param->htop) <= 1.0) || (param->htop - htopPrecLimit <= param->height)) &&
-        is_lp_primary_source(param->emis_type)) {
+  if ( is_lp_primary_source(param->emis_type) &&
+      (fabs(param->htop) <= 1.0 || param->htop - htopPrecLimit <= param->height) ) {
     return 1;
   } else {
     return 0;
@@ -322,8 +322,8 @@ int modelSlabSource(const relParam *param) {
 
 int modelVertExtendSource(const relParam *param) {
   const double htopPrecLimit = 1e-3;
-  if ((fabs(param->htop) >= 1.0) || (param->htop - htopPrecLimit >= param->height) &&
-  is_lp_primary_source(param->emis_type)) {
+  if ( is_lp_primary_source(param->emis_type) &&
+      (fabs(param->htop) >= 1.0 || param->htop - htopPrecLimit >= param->height) ) {
     return 1;
   } else {
     return 0;
