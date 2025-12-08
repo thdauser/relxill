@@ -163,6 +163,10 @@ double calc_extent_from_sph_radius_primary_source(const double height, const dou
   return sqrt((r_sph * r_sph - height * height) * (1.0 + spin * spin / (r_sph * r_sph)));
 }
 
+double calc_height_from_rcostheta(const double r_sph, const double costheta) {
+  return r_sph * costheta;
+}
+
 void convert_hx_to_rtheta(const double height, const double ring_radius, const double spin, double* r_sph, double* theta) {
   *r_sph = calc_spherical_radius_ring_source(height, ring_radius, spin);
   *theta = acos(calc_cos_theta_ring_source(height, ring_radius, spin)) / CONVERT_DEG2RAD; //return in degrees!

@@ -47,6 +47,7 @@ double calc_cos_theta_ring_source(double height, double ring_radius, double spin
 double calc_spherical_radius_ring_source(double height, double ring_radius, double spin);
 double calc_extent_from_sph_radius_primary_source(double height, double r_sph, double spin);
 double calc_extent_from_sph_radius_costheta(double r_sph, double costheta, double spin);
+double calc_height_from_rcostheta(double r_sph, double costheta);
 
 void convert_hx_to_rtheta(double height, double ring_radius, double spin, double* r_sph, double* theta);
 
