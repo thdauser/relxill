@@ -216,11 +216,11 @@ void check_ring_bounds(relParam *param) {
     param->theta = 0.0;
   }
 
-  if (param->r_src - r_fac * r_event < 1e-3) {
+  if (r_fac * r_event - param->r_src > 1e-3) {
     if (!warned_ring_radius) {
       printf(" *** Warning : Ring source too close to the BH (r_sph < %.1f r_event) \n", r_fac);
-      printf("     Spherical radius = %.4f r_g, polar angle = %.4f deg \n", param->r_src, param->theta);
-      printf("     Spherical radius = %.4f r_g, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
+      printf("     Spherical radius = %.4f rg, polar angle = %.4f deg \n", param->r_src, param->theta);
+      printf("     Spherical radius = %.4f rg, 1.2 EH = %.4f rg \n", param->r_src, r_fac * r_event);
       printf("     (too close to BH) Re-setting radius to 1.2 EH, polar angle kept constant \n");
       warned_ring_radius = true;
     }
@@ -236,7 +236,7 @@ void check_slab_bounds(relParam *param) {
   // check slab radius
   if (param->x < 0.1) {
     if (not warned_slab_radius) {
-      printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f r_g) \n", param->x);
+      printf(" *** Warning : slab source cannot have too small or negative size (x = %.1f rg) \n", param->x);
       printf("     Setting    x = 0.1 rg \n");
       warned_slab_radius = true;
     }
@@ -336,7 +336,7 @@ void check_parameter_bounds(relParam *param, int *status) {
     return;
   }
 
-  if (param->incl < 3 * CONVERT_DEG2RAD || param->incl > 87 * CONVERT_DEG2RAD) {
+  if (param->incl < 3.0 * CONVERT_DEG2RAD || param->incl > 87.0 * CONVERT_DEG2RAD) {
     printf(" *** relxill error : incl %.3f  is not in the required range between 3-87 deg, model evaluation failed \n",
            param->incl / CONVERT_DEG2RAD);
     *status = EXIT_FAILURE;
