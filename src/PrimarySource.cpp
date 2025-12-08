@@ -52,9 +52,10 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   }
   // other set of parameters for RING
   if (is_ring_primary_source(rel_param->emis_type)) {
-    printf("For a = %.3f, Rin = %.3f, ring spherical radius r_src = %.3f rg, and ring polar angle theta = %.2f deg \n",
+    // printf("For a = %.3f, Rin = %.3f, ring spherical radius r_src = %.3f rg, polar angle theta_src = %.2f deg \n",
+    printf("For a = %.3f, Rin = %.3f, r_src = %.3f rg, theta_src = %.2f deg \n",
            rel_param->a, rel_param->rin, rel_param->r_src, rel_param->theta);
-    printf("For given r_src, theta and spin: the height of the ring = %.3f rg, the radius = %.3f rg \n",
+    printf(" - Height of the ring h = %.3f rg, radius x = %.3f rg \n",
       calc_height_from_rcostheta(rel_param->r_src, cos(rel_param->theta * CONVERT_DEG2RAD)),
         calc_extent_from_sph_radius_costheta(rel_param->r_src,
           cos(rel_param->theta * CONVERT_DEG2RAD), rel_param->a));
@@ -62,20 +63,22 @@ void PrimarySource::print_reflection_strength(const Spectrum &refl_spec, const S
   if (is_slab_primary_source(rel_param->emis_type)) {
     printf(" and slab inner radius, x_in = %.2f rg, outer radius, x = %.2f rg", rel_param->x_in, rel_param->x);
   }
-  printf(" (using boost=1): \n - reflection fraction  %.3f \n - reflection strength is: %.3f \n",
+  printf(" (using boost=1): \n - reflection fraction:  %.3f \n - reflection strength: %.3f \n",
          m_lp_refl_frac->refl_frac,
          sum / sum_pl);
   printf(" - photons falling into the black hole or plunging region: %.2f%%\n", m_lp_refl_frac->f_bh * 100);
-  printf(" - energy shift from the primary source to the observer is %.3f\n", energy_shift_source_obs(rel_param));
+  printf(" - energy shift from the primary source to the observer: %.3f\n", energy_shift_source_obs(rel_param));
   // GR lensing is implemented only for EXT models
   if (is_ring_primary_source(rel_param->emis_type)) {
-    printf(" - For inclination %.3f deg, GR lensing of ring is %.3f, ratio of GR and classical lensing is %.3f \n",
+    printf(" - For inclination %.3f deg, GR lensing of ring: %.3f, \n"
+           "   ratio of GR and classical lensing: %.3f \n",
            rel_param->incl / CONVERT_DEG2RAD, m_lp_refl_frac->lensing,
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
   }
 
   if (is_slab_primary_source(rel_param->emis_type)) {
-    printf(" - For inclination %.3f deg, GR lensing of slab is %.3f, ratio of GR and classical lensing is %.3f \n",
+    printf(" - For inclination %.3f deg, (avg) GR lensing of slab: %.3f, \n"
+           "   (approx) ratio of GR and classical lensing: %.3f \n",
            rel_param->incl / CONVERT_DEG2RAD, m_lp_refl_frac->lensing,
            m_lp_refl_frac->lensing / (2.0 * m_lp_refl_frac->f_inf_rest));
   }
