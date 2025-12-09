@@ -101,13 +101,13 @@ clean-test:
 
 clean:
 	rm -f *~ gmon.out test*.dat *.log
-	rm -f relxill_model_v*.tgz
 	rm -f debug-*fits testrr-*.fits
 	rm -f build/*
 
 
 dist-clean:
 	make clean
+	rm -f relxill_model_v*.tgz
 	rm -rf cmake-*
 	rm -rf $(MODEL_DIR)
 	rm -rf $(MODEL_BUILD_DIR)
