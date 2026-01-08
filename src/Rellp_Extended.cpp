@@ -320,14 +320,14 @@ void calc_energy_shift_gamma_tabulated(const extendedSourceData& dat_ind_a, cons
  * @return emis_profile_table; emisProfile, pointer to the structure with emissivity profile
  */
 emisProfile* interpol_extended_table(const extendedSourceTable* tab, const InterpFactors &ipol,
-                                     const double gamma, double* radial_grid, int* status) {
+                                     const double gamma, double*& radial_grid, int* status) {
   CHECK_STATUS_RET(*status, nullptr);
 
   // The radial grid of the table is different for different spins (risco(a)), so we must interpolate it
   assert(radial_grid == nullptr);
-  radial_grid = new double[tab->n_bin]; //eventually: change all static_casts to this
-  // static_cast<double *>(malloc(sizeof(double) * tab->n_bin));
-  CHECK_MALLOC_RET_STATUS(radial_grid,status,nullptr)
+  radial_grid = new double[tab->n_bin]; //eventually: change all static_casts to new, or std vector (VecD)
+  // radial_grid = static_cast<double *>(malloc(sizeof(double) * tab->n_bin));
+  CHECK_MALLOC_RET_STATUS(radial_grid, status, nullptr)
 
   for (int ii = 0; ii < tab->n_bin; ii++) {
     radial_grid[ii] = interp_lin_1d(ipol.ifac_a,
@@ -708,12 +708,13 @@ void calc_photon_fate_ring(lpReflFrac* photon_fractions, const extendedSourceTab
 
   InterpFactors prim_ipol;
   get_ipol_factors_a_r_th(spin, r_src, theta, prim_tab, prim_ipol);
-  const auto photon_fractions_obt = calc_refl_frac_ext(prim_tab, prim_ipol, status);
+  auto photon_fractions_obt = calc_refl_frac_ext(prim_tab, prim_ipol, status);
   photon_fractions->f_ad = photon_fractions_obt->f_ad;
   photon_fractions->f_inf = photon_fractions_obt->f_inf;
   photon_fractions->f_bh = photon_fractions_obt->f_bh;
   photon_fractions->f_inf_rest = photon_fractions_obt->f_inf_rest;
   photon_fractions->refl_frac = photon_fractions_obt->refl_frac;
+  free_lpReflFrac(&photon_fractions_obt);
 
   const double cos_incl = cos(incl);
 
@@ -881,7 +882,7 @@ double get_energyboost_slab_source_disk(const relParam* param, const double radi
     convert_hx_to_rtheta(param->height, slab.slab_grid_radii[n_r], param->a, &r_sph, &theta);
     get_ipol_factors_a_r_th(param->a, r_sph, theta, table, ipol);
 
-    const auto phot_frac_ring = new_lpReflFrac(&status);
+    auto phot_frac_ring = new_lpReflFrac(&status);
     calc_photon_fate_ring(phot_frac_ring, prim_table, param->a, r_sph, theta,
         param->incl, param->gamma, &status);
 
@@ -891,6 +892,8 @@ double get_energyboost_slab_source_disk(const relParam* param, const double radi
     const double gshift_ring = calc_energy_shift_gamma(table, ipol, radius, gamma);
 
     gshift += gshift_ring * weight_factor;
+
+    free_lpReflFrac(&phot_frac_ring);
   }
   gshift /= weight_sum;
 
@@ -920,7 +923,7 @@ double get_energyboost_slab_source_obs(const relParam* param, const double gamma
     convert_hx_to_rtheta(param->height, slab.slab_grid_radii[n_r], param->a, &r_sph, &theta);
     get_ipol_factors_a_r_th(param->a, r_sph, theta, prim_table, prim_ipol);
 
-    const auto phot_frac_ring = new_lpReflFrac(&status);
+    auto phot_frac_ring = new_lpReflFrac(&status);
     calc_photon_fate_ring(phot_frac_ring, prim_table, param->a, r_sph, theta,
         param->incl, param->gamma, &status);
 
@@ -930,6 +933,8 @@ double get_energyboost_slab_source_obs(const relParam* param, const double gamma
     const double gshift_ring = calc_energy_shift_gamma(prim_table, prim_ipol, cos_incl, gamma);
 
     gshift += gshift_ring * weight_factor;
+
+    free_lpReflFrac(&phot_frac_ring);
   }
   gshift /= weight_sum;
 
