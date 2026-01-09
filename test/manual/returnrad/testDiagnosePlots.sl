@@ -7,8 +7,8 @@ require("scripts/subs_filenames.sl");
 
 
 variable spin = 0.998;  %% currently only done for this value
-variable Tin = 2.0;
-variable logxi = 2.0;
+variable Tin = 0.7;
+variable logxi = 1.0;
 
 define getDiagnoseRframePlot(){ %{{{
    
@@ -129,10 +129,10 @@ define createOutputFiles(){ %{{{
    %% creating the "mirror" files
    putenv("RELXILL_BBRET_NOREFL=1");
 
-   set_par("*.Incl",40);
-   set_par("*.logxi",2.0);
-
+   set_par("*.Rout",400.0);
    set_par("*.boost",1.0);
+   set_par("*.Incl",40);
+   set_par("*.logxi",1.0);
    () = eval_fun(1,2);
 
    set_par("*.boost",0);

@@ -93,7 +93,7 @@ define get_2d_plot(fdat,rframe,spin){
 
    pl.xlabel("Energy [keV]");
    pl.ylabel("Energy Flux $\nu\;F_\nu$"R);
-   pl.world(0.1,50,1e-4,7000;loglog);
+   pl.world(0.1,50,1e-4,700;loglog);
    
    fdat = [fdat];
    variable m = length(fdat);
