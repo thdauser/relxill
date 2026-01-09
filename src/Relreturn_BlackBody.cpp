@@ -205,7 +205,8 @@ static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec, double t
                                  double* gfac, int ng, const double* frac_g)
 {
     // loop over all gfac and calculate the spectrum for each
-    VecD spec_g(nener);
+    VecD spec_g(nener, 0.0);
+    setArrayToZero(spec, nener);
     for (int kk = 0; kk < ng; kk++)
     {
         bbody_spec(ener, nener, spec_g.data(), temp, gfac[kk]);
