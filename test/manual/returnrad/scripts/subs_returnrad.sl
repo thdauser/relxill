@@ -3,7 +3,8 @@ require("isisscripts");
 require("scripts/subs_basic_equations.sl");
 
 
-define get_2d_data(fname, spin){ %{{{
+define get_2d_data(fname, spin){
+%{{{
    
    vmessage(" Loading %s (assuming spin=%.3f)", fname, spin);
       
@@ -35,7 +36,6 @@ define get_2d_data(fname, spin){ %{{{
 %}}}
 
 
-
 define get_xillver_norm(en,flux){
    
 
@@ -62,8 +62,8 @@ define get_col(){
    return col;
 }
 
-
-define eval_kerrbb_model(lo,hi,spin){ %{{{
+define eval_kerrbb_model(lo,hi,spin){
+%{{{
    fit_fun("kerrbb");
    set_par("kerrbb(1).rflag",qualifier("refl_frac",0));
    set_par(10,0);
@@ -81,7 +81,6 @@ define eval_kerrbb_model(lo,hi,spin){ %{{{
 }
 %}}}
 
-
 define get_2d_plot(fdat,rframe,spin){
 
    if (length(rframe)!=length(fdat)){
@@ -93,7 +92,7 @@ define get_2d_plot(fdat,rframe,spin){
 
    pl.xlabel("Energy [keV]");
    pl.ylabel("Energy Flux $\nu\;F_\nu$"R);
-   pl.world(0.1,50,1e-4,700;loglog);
+   pl.world(0.1,50,1e-4,7000;loglog);
    
    fdat = [fdat];
    variable m = length(fdat);

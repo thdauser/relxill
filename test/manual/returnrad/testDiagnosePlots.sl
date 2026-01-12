@@ -5,10 +5,13 @@ require("scripts/subs_testSetup.sl");
 require("scripts/subs_returnrad.sl");
 require("scripts/subs_filenames.sl");
 
+variable ff_plots = "relxillBB";
+variable prefix = ff_plots+"_";
 
 variable spin = 0.998;  %% currently only done for this value
 variable Tin = 2.0;
 variable logxi = 2.0;
+variable logn = 18.0;
 
 define load_std_model(ff){
 %{{{
@@ -58,7 +61,7 @@ define getDiagnoseRframePlot(){
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle);
    
-   pl.render(dir_plots+"diagnosePlotRframe.pdf");
+   pl.render(dir_plots+prefix+"diagnosePlotRframe.pdf");
    
    return EXIT_SUCCESS;
 }
@@ -77,7 +80,7 @@ define getDiagnoseXillverPrimPlot(){
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec);
    
-   pl.render(dir_plots+"diagnosePlotXillverPrim.pdf");
+   pl.render(dir_plots+prefix+"diagnosePlotXillverPrim.pdf");
    
    return EXIT_SUCCESS;
 }
@@ -96,7 +99,7 @@ define getDiagnoseXillverPlot(){
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec);
    
-   pl.render(dir_plots+"diagnosePlotXillver.pdf");
+   pl.render(dir_plots+prefix+"diagnosePlotXillver.pdf");
    
    return EXIT_SUCCESS;
 }
@@ -115,7 +118,7 @@ define getDiagnoseRelxillBBPlot(){
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle);
    
-   pl.render(dir_plots+"diagnosePlotRelxillBB.pdf");
+   pl.render(dir_plots+prefix+"diagnosePlotRelxillBB.pdf");
    
    return EXIT_SUCCESS;
 }
@@ -134,7 +137,7 @@ define getDiagnoseMirrorBbody(){
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec, plot_kerrbb);
    
-   pl.render(dir_plots+"diagnosePlotMirrorBbody.pdf");
+   pl.render(dir_plots+prefix+"diagnosePlotMirrorBbody.pdf");
    
    return EXIT_SUCCESS;
 }
@@ -150,8 +153,11 @@ define createOutputFiles(){
    message("  Creating Output Files (calling relxillBB model) ");
 
 
-   load_std_model("relxillBB");
-   set_par("*.shiftTmaxRRad",1.0);
+   load_std_model(ff_plots);
+   if (ff_plots == "relxillBB"){
+      set_par("*.shiftTmaxRRad",1.0);
+      set_par("*.logN",logn);
+   }
    
    list_par;
    
@@ -173,12 +179,18 @@ define createOutputFiles(){
 
    set_par("*.boost",1);
    () = eval_fun(1,2);
-   
-   set_par("*.boost",-1.0,0,-10,10);
-   () = eval_fun(1,2);
 
+    set_par("*.boost",-1.0,0,-10,10);
+   () = eval_fun(1,2);
+   variable files = getFilenameStruct();
+   variable cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillRefl);
+   message(cmd);
+   () = system(cmd);
+   
    set_par("*.boost",0.0,0,-10,10);
    () = eval_fun(1,2);
+
+
 
    putenv("RELXILL_WRITE_FILES=0");
    putenv("RELXILL_BBRET_NOREFL=0");

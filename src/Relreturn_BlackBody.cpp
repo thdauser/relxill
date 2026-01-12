@@ -530,7 +530,7 @@ double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, const double* 
  * @param izone               Index of the zone for which the return flux is calculated.
  * @param status              Pointer to the status flag, used to report success or failure.
  */
-void getZoneReflectedReturnFluxDiskframe(xillParam* xill_param, relline_spec_multizone* rel_profile,
+void calcZoneDirectAndReflectedReturnFlux(xillParam* xill_param, relline_spec_multizone* rel_profile,
                                          const returnSpec2D* returnSpec,
                                          VecD& xill_flux_returnrad, int izone, int* status)
 {
@@ -563,15 +563,11 @@ void getZoneReflectedReturnFluxDiskframe(xillParam* xill_param, relline_spec_mul
     }
 }
 
-void getZoneIncidentReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, VecD& returnFlux, int ii)
+void calcZoneDirectAndReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, VecD& returnFlux, int ii)
 {
     for (int jj = 0; jj < returnSpec->n_ener; jj++)
     {
         returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->boost);
-        if (xill_param->boost >= 0)
-        {
-            returnFlux[jj] += returnSpec->specPri[ii][jj];
-        }
     }
 }
 
@@ -770,8 +766,8 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
 
     // ========== //
     VecD specSingleZone(n_ener_inp);
-    VecD_2D specConvOutputZones(returnSpec->nrad);
-    VecD_2D specXillverReflZones(returnSpec->nrad);
+    VecD_2D specZonesConvOutput(returnSpec->nrad);
+    VecD_2D specZonesEmittedCombined(returnSpec->nrad);
     VecD_2D specXillverPrimZones(returnSpec->nrad);
     // ========== //
 
@@ -785,11 +781,12 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     {
         assert(returnSpec->n_ener == n_ener);
 
-        specXillverReflZones[izone] = VecD(n_ener, 0.0);
+        specZonesEmittedCombined[izone] = VecD(n_ener, 0.0);
 
         if (should_noXillverRefl_calculated())
         {
-            getZoneIncidentReturnFlux(xill_param, returnSpec, specXillverReflZones[izone], izone);
+            // TODO: remove this once everything is working; only for testing
+            calcZoneDirectAndReturnFlux(xill_param, returnSpec, specZonesEmittedCombined[izone], izone);
         }
         else
         {
@@ -803,9 +800,10 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                 // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )
                 xill_param->radzone = (double)izone;
             }
-            getZoneReflectedReturnFluxDiskframe(xill_param, relProfile, returnSpec, specXillverReflZones[izone],
+            calcZoneDirectAndReflectedReturnFlux(xill_param, relProfile, returnSpec, specZonesEmittedCombined[izone],
                                                 izone, status);
         }
+
 
         // calculate xillver primary spectrum (only used for additional/debug output)
         if (shouldOutfilesBeWritten())
@@ -816,11 +814,11 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                                                           returnSpec->n_ener, status);
         }
 
-        specConvOutputZones[izone] = VecD(n_ener, 0.0);
+        specZonesConvOutput[izone] = VecD(n_ener, 0.0);
         convolveSpectrumFFTNormalized(ener,
-                                      specXillverReflZones[izone].data(),
+                                      specZonesEmittedCombined[izone].data(),
                                       relProfile->flux[izone],
-                                      specConvOutputZones[izone].data(),
+                                      specZonesConvOutput[izone].data(),
                                       n_ener,
                                       1,
                                       1,
@@ -829,7 +827,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                                       status);
 
 
-        _rebin_spectrum(ener_inp, specSingleZone.data(), n_ener_inp, ener, specConvOutputZones[izone].data(), n_ener);
+        _rebin_spectrum(ener_inp, specSingleZone.data(), n_ener_inp, ener, specZonesConvOutput[izone].data(), n_ener);
 
         // add spectra from the current zone to the output spectrum
         for (int jj = 0; jj < n_ener_inp; jj++)
@@ -882,11 +880,12 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
         }
         std::cout << " writing BBret diagnose outfile: " << fname.c_str() << std::endl;
 
-        fits_rr_write_2Dspec(fname.c_str(), specConvOutputZones, ener, n_ener,
+        fits_rr_write_2Dspec(fname.c_str(), specZonesConvOutput, ener, n_ener,
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-        fname = fbase + "rframe-xillverRefl.fits";
-        fits_rr_write_2Dspec(fname.c_str(), specXillverReflZones, ener, n_ener,
+
+        fname = fbase + "rframe-total.fits";
+        fits_rr_write_2Dspec(fname.c_str(), specZonesEmittedCombined, ener, n_ener,
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
         fname = fbase + "rframe-xillverPrim.fits";
