@@ -81,9 +81,9 @@ define eval_kerrbb_model(lo,hi,spin){
 }
 %}}}
 
-define get_2d_plot(fdat,rframe,spin){
+define get_2d_plot_data(dat,rframe,spin){
 
-   if (length(rframe)!=length(fdat)){
+   if (length(rframe)!=length(dat)){
       vmessage(" *** error : rframe array needs to be the same length as the number of files ");
       exit;
    }
@@ -94,18 +94,8 @@ define get_2d_plot(fdat,rframe,spin){
    pl.ylabel("Energy Flux $\nu\;F_\nu$"R);
    pl.world(0.1,50,1e-4,7000;loglog);
    
-   fdat = [fdat];
-   variable m = length(fdat);
-   
-   variable dat = Struct_Type[m];
-
    variable ii, jj;
-   _for jj(0,m-1){
-      dat[jj] = get_2d_data(fdat[jj],spin;diskarea=rframe[jj]);
-   }
-
-
-   
+   variable m = length(dat);
    _for jj(0,m-1){
 
       ccount=1; %% reset colour
@@ -171,3 +161,19 @@ define get_2d_plot(fdat,rframe,spin){
       
    return pl;
 }
+
+define get_2d_plot(fdat,rframe,spin){
+
+   fdat = [fdat];
+   variable m = length(fdat);
+   
+   variable dat = Struct_Type[m];
+
+   variable ii, jj;
+   _for jj(0,m-1){
+      dat[jj] = get_2d_data(fdat[jj],spin;diskarea=rframe[jj]);
+   }
+
+   return get_2d_plot_data(dat, rframe, spin);
+}
+

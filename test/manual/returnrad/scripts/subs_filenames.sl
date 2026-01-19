@@ -7,14 +7,13 @@ define getFilenameStruct(){
    variable f_rframe = struct{
       specRet  = sprintf(fbase, "rframe-bbodyRet" ),      %% returning spectrum on the disk (rest-frame)
       specPri  = sprintf(fbase, "rframe-bbodyEmit" ),      %% primary BBody spectrum (rest-frame)
-      xillCombined = sprintf(fbase, "rframe-total" ),  %% reflected+primary spectrum (rest-frame)
       xillRefl = sprintf(fbase, "rframe-xillverRefl" ),  %% reflected xillver spectrum (rest-frame)
-      xillPrim =  sprintf(fbase, "rframe-xillverPrim" )  %% primary spectrum producing reflected xillver spectrum (rest-frame)
+      xillPrim =  sprintf(fbase, "rframe-xillverPrim" ),  %% primary spectrum producing xillver spectrum (rest-frame)
+      xillCombined = sprintf(fbase, "rframe-total" )  %% reflected+primary spectrum (rest-frame)
    };
-   %% Note that rframe-xillPrim is ideally the same as rframe-specRet,
-   %% but here only trying to approximate this shape
-   %% 
-   variable f_obs = struct{    
+   %% Note that rframe-xillPrim is ideally the same as rframe-specRet (for relxillBBxill, but not relxillBB using xillverNS)
+
+      variable f_obs = struct{    
       reflect = sprintf(fbase, "obs-reflect" ),
       primary = sprintf(fbase, "obs-primary" ),
       total = sprintf(fbase, "obs-total" ),

@@ -1,11 +1,11 @@
-% -*- mode: slang; mode: folding -*-
+% -*- mode: slang-*-
 
 require("isisscripts");
 require("scripts/subs_testSetup.sl");
 require("scripts/subs_returnrad.sl");
 require("scripts/subs_filenames.sl");
 
-variable ff_plots = "relxillBB";
+variable ff_plots = "relxillBBxill";
 variable prefix = ff_plots+"_";
 
 variable spin = 0.998;  %% currently only done for this value
@@ -143,17 +143,16 @@ define getDiagnoseMirrorBbody(){
 }
 %}}}
 
-define createOutputFiles(){
+define createOutputFiles(_ff){
 %{{{
    
    putenv("RELXILL_WRITE_FILES=1");
 
-   () = system("rm -f debug-testrr-bbody*");
+   () = system("rm -vf __relxillOutput*");
    
-   message("  Creating Output Files (calling relxillBB model) ");
+   vmessage("  Creating Output Files: fit-functions: %s ", _ff);
 
-
-   load_std_model(ff_plots);
+   load_std_model(_ff);
    if (ff_plots == "relxillBB"){
       set_par("*.shiftTmaxRRad",1.0);
       set_par("*.logN",logn);
@@ -174,21 +173,26 @@ define createOutputFiles(){
    () = eval_fun(1,2);
    
 
-   %% creating the "reflection" files
+   %%% 2 creating the "reflection" files
    putenv("RELXILL_BBRET_NOREFL=0");
+   variable files = getFilenameStruct();
 
+   %%% 2a combined
    set_par("*.boost",1);
    () = eval_fun(1,2);
 
+   %%% 2b reflected   
     set_par("*.boost",-1.0,0,-10,10);
    () = eval_fun(1,2);
-   variable files = getFilenameStruct();
    variable cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillRefl);
    message(cmd);
    () = system(cmd);
    
    set_par("*.boost",0.0,0,-10,10);
    () = eval_fun(1,2);
+   cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillPrim);
+   message(cmd);
+   () = system(cmd);
 
 
 
@@ -225,7 +229,7 @@ define getCompareXillverTables(){
 
 define testDiagnosePlots(){
 
-   createOutputFiles();
+   createOutputFiles(ff_plots);
 
    if (getDiagnoseMirrorBbody() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;

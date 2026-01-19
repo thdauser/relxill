@@ -768,7 +768,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     VecD specSingleZone(n_ener_inp);
     VecD_2D specZonesConvOutput(returnSpec->nrad);
     VecD_2D specZonesEmittedCombined(returnSpec->nrad);
-    VecD_2D specXillverPrimZones(returnSpec->nrad);
+    VecD_2D specBbodyPrimZones(returnSpec->nrad);
     // ========== //
 
     double Tin = xill_param->kTbb;
@@ -808,7 +808,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
         // calculate xillver primary spectrum (only used for additional/debug output)
         if (shouldOutfilesBeWritten())
         {
-            specXillverPrimZones[izone] =
+            specBbodyPrimZones[izone] =
                 getXillverPimaryBBodyNormalizedAtHighener(xill_param->kTbb, returnSpec->specRet[izone],
                                                           returnSpec->ener,
                                                           returnSpec->n_ener, status);
@@ -882,14 +882,9 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
 
         fits_rr_write_2Dspec(fname.c_str(), specZonesConvOutput, ener, n_ener,
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
-
-
+        
         fname = fbase + "rframe-total.fits";
         fits_rr_write_2Dspec(fname.c_str(), specZonesEmittedCombined, ener, n_ener,
-                             returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
-
-        fname = fbase + "rframe-xillverPrim.fits";
-        fits_rr_write_2Dspec(fname.c_str(), specXillverPrimZones, ener, n_ener,
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
         fname = fbase + "rframe-bbodyRet.fits";

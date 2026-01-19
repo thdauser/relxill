@@ -20,6 +20,8 @@ define calc_proper_area_ring(rlo,rhi,a){
    return area_gr;
 }
 
+% relline is performing an integration over the whole disk, which
+% is defined as 1/4*sum(area_ring)
 define calc_proper_area_ring_relxill(rlo,rhi,a){
    variable factor_relxill = 1./4;
    return calc_proper_area_ring(rlo,rhi,a) * factor_relxill;

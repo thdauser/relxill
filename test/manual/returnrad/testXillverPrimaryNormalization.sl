@@ -12,43 +12,31 @@ define getRgridFromHeader(fname){
 
 
 variable spin = 0.998;
-variable Tin = 0.7;
+variable Tin = 2.0;
+variable logN = 18.0;
+variable logxi = 2.0
 
 
-variable global_files = getFilenameStruct();
-
-define fun(){
-    variable bla;
-    
+define loadOutputFilesRframe() {
+   variable rframe = getFilenameStruct().rframe;
+   return struct  {
+      xill_refl = get_2d_data(rframe.xillRefl,spin;diskarea=1),
+      xill_prim = get_2d_data(rframe.xillPrim,spin;diskarea=1),
+      spec_ret  = get_2d_data(rframe.specRet,spin;diskarea=1),
+      spec_prim = get_2d_data(rframe.specPri,spin;diskarea=1)
+   };
 }
 
-define testSingleXillverPrimaryNormalization(izone){
-    
-    variable noTshiftString  = "Tshift1.00";
-    variable hasTshiftString = "Tshift1.40";
-    
-    variable dir = "build/";
-    variable fname = dir+ "testrr-spec-rframe-bbody-" + sprintf("izone%02i",izone) + 
-    [
-    "-$noTshiftString-incident.fits"$,
-    "-$noTshiftString-reflect.fits"$,
-      "-$noTshiftString-reflectPrim.fits"$,
-    "-$hasTshiftString-reflect.fits"$,
-    "-$hasTshiftString-reflectPrim.fits"$,
-    "-$noTshiftString-direct.fits"$
-    ];
-    
-    print(fname);
+
+define testXillverPrimaryNormalization(dat){
     
     variable pl = xfig_plot_new(18,12);
     
     pl.world(0.1,50,1e-9,1;loglog);
     
-    pl.title("\noindent Red: Irradiating Returning Spectrum; Yellow: Direct Spectrum \\"R+
-    +"Blue Xillver Reflection (blue) with its Primary Irrad (dashed) \\"R
-    +"Green: Xillver for Tin*1.4 (green) and its primary spectrum (dashed) "R);
+    pl.title("\noindent Need new \\"R+
+    +"description \\"R);
     
-    variable ii, n = length(fname);
     variable dat = Struct_Type[n];
     
     
@@ -105,12 +93,10 @@ define createOutputFiles(){ %{{{
    
    putenv("RELXILL_WRITE_FILES=1");
 
-   () = system("rm -f debug-testrr-bbody*");
+   () = system("rm -f *");
    
    message("  Creating Output Files (calling relxillBB model) ");
    
-   %% creating the "mirror" files
-   putenv("RELXILL_BBRET_NOREFL=1");
    
    set_par("*.a",spin);
    set_par("*.kTbb", Tin);
@@ -119,9 +105,6 @@ define createOutputFiles(){ %{{{
    set_par("*.Incl",40);
    () = eval_fun(1,2);
 
-   %% creating the "reflection" files
-   putenv("RELXILL_BBRET_NOREFL=0");
-
    set_par("*.boost",-1);
    () = eval_fun(1,2);
    
@@ -129,57 +112,14 @@ define createOutputFiles(){ %{{{
 %}}}
 
 
-define loadOutputFilesRframe() {
-   variable rframe = global_files.rframe;
-   return struct  {
-      xill_refl = get_2d_data(rframe.xillRefl,spin;diskarea=1),
-      xill_prim = get_2d_data(rframe.xillPrim,spin;diskarea=1),
-      spec_ret  = get_2d_data(rframe.specRet,spin;diskarea=1),
-      spec_prim = get_2d_data(rframe.specPri,spin;diskarea=1)
-   };
-}
-
-
-
 define testXillverPrimaryNormalization(){
    
    variable izones = [10,20,30,40];
-   variable ii, n = length(izones);
-   
-   variable pl = Struct_Type[n];
-   variable retVal = Int_Type[n];
-   
-   _for ii(0,n-1){
-      (retVal[ii], pl[ii]) = testSingleXillverPrimaryNormalization(izones[ii]);
-   }
 
+   createOutputFiles();
+   (retVal, pl) = testSingleXillverPrimaryNormalization(izones);
 
-   xfig_multiplot(pl;cols=2).render(dir_plots+"testXillverPrimaryNormalization.pdf";Verbose=-1);
-   
-   
-   if (sum(retVal) == n*EXIT_SUCCESS){
-      return EXIT_SUCCESS;
-   } else {
-      return EXIT_FAILURE;
-   }
-
-}
-
-
-define testXillver(){
-   
-   variable izones = [10,20,30,40];
-   variable ii, n = length(izones);
-   
-   variable pl = Struct_Type[n];
-   variable retVal = Int_Type[n];
-   
-   _for ii(0,n-1){
-      (retVal[ii], pl[ii]) = testSingleXillverPrimaryNormalization(izones[ii]);
-   }
-
-
-   xfig_multiplot(pl;cols=2).render(dir_plots+"testXillverPrimaryNormalization.pdf";Verbose=-1);
+   pl.render(dir_plots+"testXillverPrimaryNormalization.pdf";Verbose=-1);
    
    
    if (sum(retVal) == n*EXIT_SUCCESS){
