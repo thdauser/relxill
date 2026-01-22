@@ -40,7 +40,7 @@ static double** get_returnrad_specs(double* ener_inp,
                                     int* status);
 static double** get_bbody_specs(double* ener, int nener, returningFractions* dat, double* temperature, int* status);
 
-void normalizeFluxRrad(int nrad, int nener, const double* ener, double** spec);
+void bin_integrate_flux(int nrad, int nener, const double* ener, double** spec);
 
 // Program Code
 
@@ -294,7 +294,7 @@ static double** get_returnrad_specs(double* ener_inp, int nener_inp, returningFr
         rebin_mean_flux(ener_inp, spec_zones[ii], nener_inp, ener, spec.data(), nener, status);
         assert_double_array_isnormal(spec_zones[ii],nener_inp);
     }
-    normalizeFluxRrad(dat->nrad, nener_inp, ener_inp, spec_zones);
+    bin_integrate_flux(dat->nrad, nener_inp, ener_inp, spec_zones);
 
     return spec_zones;
 }
@@ -341,13 +341,27 @@ static double** get_bbody_specs(double* ener, int nener, returningFractions* dat
         }
     }
 
-    normalizeFluxRrad(dat->nrad, nener, ener, spec_array);
+    bin_integrate_flux(dat->nrad, nener, ener, spec_array);
 
     return spec_array;
 }
 
 
-void normalizeFluxRrad(int nrad, int nener, const double* ener, double** spec)
+/**
+ * @brief Converts spectral values to counts per energy bin for multiple radial zones
+ *
+ * This function adjusts the spectral flux values for a given 2D spectra by integrating over
+ * energy bins. For each radial zone, the spectral values are multiplied by the energy
+ * bin width to produce counts per bin.
+ *
+ * @param nrad Number of radial zones in the spectrum
+ * @param nener Number of energy bins in the input energy array
+ * @param ener Pointer to an array containing the boundaries of the energy bins [keV]
+ *             (array size must be nener + 1)
+ * @param spec 2D array of spectral values, organized as spec[nrad][nener], containing
+ *             the flux values to be converted (e.g., photons/cm²/s/keV).
+ */
+void bin_integrate_flux(int nrad, int nener, const double* ener, double** spec)
 {
     for (int ii = 0; ii < nrad; ii++)
     {
@@ -805,7 +819,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
         }
 
 
-        // calculate xillver primary spectrum (only used for additional/debug output)
+        // calculate xillver primary spectrum (only used for additional/debug output),
         if (shouldOutfilesBeWritten())
         {
             specBbodyPrimZones[izone] =

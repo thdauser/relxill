@@ -68,14 +68,13 @@ define getDiagnoseRframePlot(){
 %}}}
 
 define getDiagnoseXillverPrimPlot(){
-%{{{
    
    variable plotTitle = sprintf("Plot of Real Primary  (solid) and Xillver Primary (dashed) used for the reflection -- spin=%.3f",
 				spin);
 
 
    variable files = getFilenameStruct();
-   variable fnames  = [files.rframe.specRet,files.rframe.xillPrim];
+   variable fnames  = [files.rframe.specRet,files.rframe.specPri];
    variable iRframe = [1,1];
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec);
@@ -84,18 +83,16 @@ define getDiagnoseXillverPrimPlot(){
    
    return EXIT_SUCCESS;
 }
-%}}}
 
 define getDiagnoseXillverPlot(){
-%{{{
    
    variable plotTitle = sprintf("Rest-frame: Xillver (solid), and Xillver Prim (dashed) -- spin=%.3f",
 				spin);
 
 
    variable files = getFilenameStruct();
-   variable fnames  = [files.rframe.xillRefl,files.rframe.xillPrim,files.rframe.specRet];
-   variable iRframe = [1,1,1];
+   variable fnames  = [files.rframe.xillRefl,files.rframe.specRet];
+   variable iRframe = [1,1];
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec);
    
@@ -103,7 +100,6 @@ define getDiagnoseXillverPlot(){
    
    return EXIT_SUCCESS;
 }
-%}}}
 
 define getDiagnoseRelxillBBPlot(){
 %{{{
@@ -188,11 +184,8 @@ define createOutputFiles(_ff){
    message(cmd);
    () = system(cmd);
    
-   set_par("*.boost",0.0,0,-10,10);
+    set_par("*.boost",0.0,0,-10,10);
    () = eval_fun(1,2);
-   cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillPrim);
-   message(cmd);
-   () = system(cmd);
 
 
 

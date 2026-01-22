@@ -31,6 +31,17 @@ typedef struct {
   const double* ener; // length is n_ener+1
   int n_ener;
 
+  /**
+   * @brief specRet and specPri are 2D matrix used to store the returning and primary emitted
+   * spectra for each radial zone given by the radial grid above
+   *
+   * The unit is bin integrated (Xspec standard) in photons/bin
+   *
+   * This double pointer represents an array of arrays, where each sub-array corresponds to
+   * the spectral data within a particular radial zone. The number of sub-arrays is equal to
+   * the number of radial divisions (`nrad`), and each sub-array's size corresponds to the
+   * number of energy bins (`n_ener`).
+   */
   double **specRet;
   double **specPri;
 
