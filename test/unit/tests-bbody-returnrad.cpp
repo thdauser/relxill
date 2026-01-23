@@ -473,30 +473,45 @@ TEST_CASE("Check if Second Evaluation returns the identical results", "[bbret]")
     REQUIRE(fabs(sum0 - sum1) < PREC);
 }
 
-TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret]") {
-
-  int status = EXIT_SUCCESS;
-  setenv("RELXILL_WRITE_OUTFILES","1",1);
-  setenv("RELXILL_BBRET_NOREFL","1",1);
-
-  LocalModel lmod(ModelName::relxillBB);
-
+void test_boost_parameter(LocalModel& lmod) {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
   lmod.set_par(XPar::boost,-1);
   lmod.eval_model(spec);
-  fits_write_spec("!testrr-spec-relxillbb-refl.fits", spec.energy, spec.flux, spec.num_flux_bins(), &status);
-  REQUIRE(calcSum(spec.flux, spec.num_flux_bins()) > 1e-8);
+  double sum_refl = calcSum(spec.flux, spec.num_flux_bins());
+  REQUIRE(sum_refl > 1e-8);
 
   lmod.set_par(XPar::boost, 0);
   lmod.eval_model(spec);
-  fits_write_spec("!testrr-spec-relxillbb-prim.fits", spec.energy, spec.flux, spec.num_flux_bins(), &status);
+  double sum_direct = calcSum(spec.flux, spec.num_flux_bins());
+  REQUIRE(sum_direct > 1e-8);
 
-  setenv("RELXILL_WRITE_OUTFILES", "0", 1);
+  lmod.set_par(XPar::boost, 1);
+  lmod.eval_model(spec);
+  double sum_total = calcSum(spec.flux, spec.num_flux_bins());
+  REQUIRE(sum_total > 1e-8);
+
+  // check that boost parmameter works: refl+direct has to give total flux
+  REQUIRE( fabs(sum_total - sum_direct - sum_refl)/sum_total < 1e-5);
+
+}
+
+
+TEST_CASE(" Evaluate RelxillBB (only black body)","[bbret]") {
+
+  int status = EXIT_SUCCESS;
+  setenv("RELXILL_WRITE_OUTFILES","1",1);
+
+  LocalModel lmod(ModelName::relxillBB);
+  setenv("RELXILL_BBRET_NOREFL","1",1);
+  test_boost_parameter(lmod);
   setenv("RELXILL_BBRET_NOREFL", "0", 1);
+  test_boost_parameter(lmod);
 
-  REQUIRE(calcSum(spec.flux, spec.num_flux_bins()) > 1e-8);
+  LocalModel lmod2(ModelName::relxillBBxill);
+  test_boost_parameter(lmod2);
+
 
 }
 

@@ -579,9 +579,12 @@ void calcZoneDirectAndReflectedReturnFlux(xillParam* xill_param, relline_spec_mu
 
 void calcZoneDirectAndReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, VecD& returnFlux, int ii)
 {
-    for (int jj = 0; jj < returnSpec->n_ener; jj++)
-    {
-        returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->boost) + returnSpec->specPri[ii][jj];
+    for (int jj = 0; jj < returnSpec->n_ener; jj++) {
+        returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->boost);
+        if (xill_param->boost >= 0)
+        {
+            returnFlux[jj] += returnSpec->specPri[ii][jj];
+        }
     }
 }
 
