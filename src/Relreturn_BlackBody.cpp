@@ -581,7 +581,7 @@ void calcZoneDirectAndReturnFlux(xillParam* xill_param, const returnSpec2D* retu
 {
     for (int jj = 0; jj < returnSpec->n_ener; jj++)
     {
-        returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->boost);
+        returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->boost) + returnSpec->specPri[ii][jj];
     }
 }
 

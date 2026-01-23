@@ -487,6 +487,7 @@ TEST_CASE(" Evaluate RelxillBBRet (only black body)","[bbret]") {
   lmod.set_par(XPar::boost,-1);
   lmod.eval_model(spec);
   fits_write_spec("!testrr-spec-relxillbb-refl.fits", spec.energy, spec.flux, spec.num_flux_bins(), &status);
+  REQUIRE(calcSum(spec.flux, spec.num_flux_bins()) > 1e-8);
 
   lmod.set_par(XPar::boost, 0);
   lmod.eval_model(spec);
