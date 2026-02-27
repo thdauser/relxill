@@ -183,7 +183,7 @@ bool warned_slab_radius = false;
 bool warned_slab_bound = false;
 bool warned_slab_radius_low_h = false;
 bool warned_slab_extrapolation = false;
-
+bool warned_iongrad = false;
 
 void check_lp_bounds(relParam *param) {
   double r_event = kerr_rplus(param->a);
@@ -465,8 +465,20 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
 
   param->ion_grad_type = get_iongrad_type(inp_param);
 
+  if ( param->ion_grad_type == ION_GRAD_TYPE_ALPHA &&
+    (is_ring_primary_source(param->emis_type) || is_slab_primary_source(param->emis_type)) ) {
+    if (not warned_iongrad) {
+      printf(" *** warning (relxill): iongrad_type=%d (alpha ionization)\n"
+                   "     is currently not implemented for the ring model. \n \n" // calculated using the default reflection angle of 45 deg, \n"
+                   "     Switching iongrad_type to 0 (constant ionization). \n"
+                   "     Powerlaw ionization (iongrad_type=1) is also possible. \n \n", param->ion_grad_type);
+      warned_iongrad = true;
+    }
+    param->ion_grad_type = ION_GRAD_TYPE_CONST; // reset to const for ring and slab
+  }
+
   // set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
-  param->num_zones = get_num_zones(param->model_type, param->emis_type, get_iongrad_type(inp_param));
+  param->num_zones = get_num_zones(param->model_type, param->emis_type, param->ion_grad_type); // why call this twice? get_iongrad_type(inp_param)
 
   return param;
 }

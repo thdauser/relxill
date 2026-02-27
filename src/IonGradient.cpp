@@ -252,7 +252,7 @@ double calc_flux_disk_newton_cgs(const lpReflFrac *photon_fate_fractions,
   l_source_cgs *= boost;
   if (is_ring_primary_source(rel_param.emis_type) || is_slab_primary_source(rel_param.emis_type)) {
     // AN: for ring/slab sources the flux at rin is different, but as far as I am aware, this function is used only for
-    // relxillAlpha which does not have extended geometry yet, so I leave a warning here
+    // relxillAlpha which does not have extended geometry yet, so I leave a warning here. TODO proper calculation?
     printf("calc_flux_disk_newton_cgs may not work properly for extended sources! Check IonGradient.cpp \n");
     // Still try to make it work for rings and slabs
     double r_sph = rel_param.r_src;
@@ -365,6 +365,7 @@ void IonGradient::calculate_physical_emissivity(const PrimarySourceParameters &p
 void IonGradient::calculate_gradient(const emisProfile &emis_profile,
                                      const PrimarySourceParameters &primary_source_params) {
 
+  // TODO proper angle calculation for extended sources (need extra raytracing to save angles)
   set_del_emit_for_each_zone(emis_profile);
 
   auto rel_param = primary_source_params.rel_param();
