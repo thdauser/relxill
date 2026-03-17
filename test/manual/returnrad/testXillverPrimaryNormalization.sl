@@ -13,12 +13,20 @@ variable logxi = 2.0;
 variable global_fit_fun = "relxillBBxill";
 %%%%%%%%%%%%%%%%%%
 
+require("create_output_files.sl");
 
-define getRgridFromHeader(fname){   
-   return fits_read_key(fname,"rlo","rhi");   
-}
+variable ff_plots = "relxillBBxill";
+variable prefix = ff_plots+"_";
 
-define testSingleXillverPrimaryNormalization(inp_struct, izones){
+%% =1= set parameters
+variable spin = 0.998;  %% currently only done for this value
+variable Tin = 2.0;
+variable logxi = 2.0;
+variable logn = 18.0;
+
+
+
+define testSingleXillverPrimaryNormalization(inp_struct, izone){
     
     variable pl = xfig_plot_new(18,12);
     
@@ -29,83 +37,44 @@ define testSingleXillverPrimaryNormalization(inp_struct, izones){
 
 %    variable ii, n = length(dat);  %% need to change that
 %    variable xillNorm = Double_Type[n];
-    
-   print(inp_struct);
+
+   variable en = inp_struct.xill_refl.dat.ener[0,*];
    
-    % variable col_ind = [0,1,1,3,3,6];
-    % variable line_arr = [0,0,1,0,1,0];
-    % variable line_width=[3,1,1,1,1,3];
-    
-    % _for ii(0,n-1){
-       
-    %   variable en = 0.5*(dat[ii].bin_lo+dat[ii].bin_hi);
-    % 	pl.plot(en, dat[ii].flux;width=line_width[ii], color=CB_COLOR_SCHEME_NB[col_ind[ii]], line=line_arr[ii]);
-	
-    % 	xillNorm[ii] = get_xillver_norm(en, dat[ii].flux);
-	
-    % 	vmessage(" norm flux wrt xillver %s: %e", fname[ii], xillNorm[ii]);
-    % }
-    
-    % pl.xlabel("Energy [keV]");
-    % pl.ylabel(" Counts / Bins ");
-    
-    % variable rlo, rhi;
-    % pl.add_object(
-    % xfig_new_text(sprintf("$T_\mathrm{in}=%.1f$\,keV;  Radial Zone #%i"R,Tin,izone)),
-    % 0.96,0.96,0.5,0.5;world0
-    % );
-        
-    variable retVal = EXIT_SUCCESS;
-    
-   %  if ( abs(xillNorm[0]-xillNorm[2]) > 1e-6){
-   % 	retVal = EXIT_SUCCESS;
-   % 	vmessage(" *** warning : incident and primary xillver spectrum do not have the same normaliztion [%e,%e]",
-   % 	xillNorm[0],xillNorm[2]);
-   % }
+   variable spec_prim = inp_struct.spec_ret.dat.spec[izone,*];
+   variable spec_prim_xill = inp_struct.xill_prim.dat.spec[izone,*];
+   variable spec_refl = inp_struct.xill_refl.dat.spec[izone,*];
    
-   % if ( xillNorm[1]>=xillNorm[2]){
-   %     retVal = EXIT_SUCCESS;
-   %     vmessage(" *** warning : reflected xillver norm is larger than primary xillver norm [%e,%e]",
-   %     xillNorm[1],xillNorm[2]);
-   % }      
+   variable xillNorm_prim = get_xillver_norm(en, spec_prim);
+   variable xillNorm_prim_xill = get_xillver_norm(en, spec_prim);
+   variable xillNorm_refl = get_xillver_norm(en, spec_refl);
+
+   if (qualifier_exists("verbose")){
+      vmessage(" prim: %.3e, prim_xill: %.3e, refl: %.3e, ratio:%.3e", 
+      xillNorm_prim, xillNorm_prim_xill, xillNorm_refl,xillNorm_prim_xill/xillNorm_refl);
+   }
+
+
+   variable retVal = EXIT_SUCCESS;
+   if ( abs(xillNorm_prim-xillNorm_prim_xill) > 1e-6){
+      retVal *= EXIT_FAILURE;  % as EXIT_FAILURE==0, this will make it fail overall
+      vmessage(" *** test failure : incident and primary xillver spectrum do not have the same normaliztion [%e,%e]",xillNorm_prim-xillNorm_prim_xill);
+   }
    
-   return (retVal,pl);
+   if ( xillNorm_refl>=xillNorm_prim){
+      retVal *= EXIT_FAILURE;
+      vmessage(" *** test failure : reflected xillver norm is larger than primary xillver norm [%e,%e]",
+      xillNorm_refl, xillNorm_prim);
+   }      
+   
+   return retVal;
 }
-
-
-
-define createOutputFiles(){ 
-   load_xspec_local_models("build/");
-   fit_fun(global_fit_fun);
-   
-   putenv("RELXILL_WRITE_FILES=1");
-
-   () = system("rm -f *");
-   
-   message("  Creating Output Files: ");
-
-   list_par;
-   
-   set_par("*.a",spin);
-   set_par("*.kTbb", Tin);
-   set_par("*.Rout",400);
-   set_par("*.boost",-1);
-   set_par("*.Incl",40);
-   () = eval_fun(1,2);
-
-   set_par("*.boost",-1);
-   () = eval_fun(1,2);
-   
-}
-%}}}
-
 
 
 define loadOutputFilesRframe() {
    variable rframe = getFilenameStruct().rframe;
    return struct  {
-      xill_refl = get_2d_data(rframe.xillRefl,spin;diskarea=1),
       xill_prim = get_2d_data(rframe.xillPrim,spin;diskarea=1),
+      xill_refl = get_2d_data(rframe.xillRefl,spin;diskarea=1),
       spec_ret  = get_2d_data(rframe.specRet,spin;diskarea=1),
       spec_prim = get_2d_data(rframe.specPri,spin;diskarea=1)
    };
@@ -113,24 +82,29 @@ define loadOutputFilesRframe() {
 
 
 define testXillverPrimaryNormalization(){
-   
-   variable izones = [10,20,30,40];
 
-   createOutputFiles();
+   
+   
+   %% =2= create the output files, pre-defined set of parameters
+   variable params = get_param_struct(spin, Tin, logxi, logn);
+   createOutputFiles(ff_plots,params);
+
+   
    variable dat = loadOutputFilesRframe();
 
-   variable retVal, pl;
-   (retVal, pl) = testSingleXillverPrimaryNormalization(dat,izones);
+   variable izones = [0,1,5,10,30];
+   variable ii, n = length(izones);
+   variable retVal = Int_Type[n];
 
-   pl.render(dir_plots+"testXillverPrimaryNormalization.pdf";Verbose=-1);
-   
-   
-   if (sum(retVal) == EXIT_SUCCESS){
-      return EXIT_SUCCESS;
-   } else {
-      return EXIT_FAILURE;
+   _for ii(0, n-1){
+      retVal[ii] = testSingleXillverPrimaryNormalization(dat,izones[ii];verbose);
    }
-
+   
+   if (sum(retVal) == EXIT_FAILURE){
+      return EXIT_FAILURE;
+   } else {
+      return EXIT_SUCCESS;
+   }
 }
 
 

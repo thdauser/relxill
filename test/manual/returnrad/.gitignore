@@ -1,1 +1,3 @@
 *.pdf
+plots/*.pdf
+__*

@@ -7,26 +7,22 @@ require("scripts/subs_testSetup.sl");
 require("scripts/subs_returnrad.sl");
 require("scripts/subs_filenames.sl");
 
+require("create_output_files.sl");
+
 variable ff_plots = "relxillBBxill";
 variable prefix = ff_plots+"_";
 
+%% =1= set parameters
 variable spin = 0.998;  %% currently only done for this value
 variable Tin = 2.0;
 variable logxi = 2.0;
 variable logn = 18.0;
+variable params = get_param_struct(spin, Tin, logxi, logn);
 
-define load_std_model(ff){
-%{{{
+%% =2= create the output files, pre-defined set of parameters
+createOutputFiles(ff_plots,params);
 
-   load_xspec_local_models("build/");
-   fit_fun(ff);
 
-   set_par("*.a",spin);
-   set_par("*.kTbb", Tin);
-   set_par("*.Incl",40);
-   set_par("*.logxi",logxi);     
-}
-%}}}
 
 define eval_std_model(){
 %{{{
@@ -138,61 +134,6 @@ define getDiagnoseMirrorBbody(){
    pl.render(dir_plots+prefix+"diagnosePlotMirrorBbody.pdf");
    
    return EXIT_SUCCESS;
-}
-%}}}
-
-define createOutputFiles(_ff){
-%{{{
-   
-   putenv("RELXILL_WRITE_FILES=1");
-
-   () = system("rm -vf __relxillOutput*");
-   
-   vmessage("  Creating Output Files: fit-functions: %s ", _ff);
-
-   load_std_model(_ff);
-   if (ff_plots == "relxillBB"){
-      set_par("*.shiftTmaxRRad",1.0);
-      set_par("*.logN",logn);
-   }
-   
-   list_par;
-   
-   %% creating the "mirror" files
-   putenv("RELXILL_BBRET_NOREFL=1");
-
-   set_par("*.boost",1.0);
-   () = eval_fun(1,2);
-
-   set_par("*.boost",0);
-   () = eval_fun(1,2);
-
-   set_par("*.boost",-1.0,0,-10,10);
-   () = eval_fun(1,2);
-   
-
-   %%% 2 creating the "reflection" files
-   putenv("RELXILL_BBRET_NOREFL=0");
-   variable files = getFilenameStruct();
-
-   %%% 2a combined
-   set_par("*.boost",1);
-   () = eval_fun(1,2);
-
-   %%% 2b reflected   
-    set_par("*.boost",-1.0,0,-10,10);
-   () = eval_fun(1,2);
-   variable cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillRefl);
-   message(cmd);
-   () = system(cmd);
-   
-    set_par("*.boost",0.0,0,-10,10);
-   () = eval_fun(1,2);
-
-
-
-   putenv("RELXILL_WRITE_FILES=0");
-   putenv("RELXILL_BBRET_NOREFL=0");
 }
 %}}}
 

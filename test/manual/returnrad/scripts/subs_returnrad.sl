@@ -4,8 +4,6 @@ require("scripts/subs_basic_equations.sl");
 
 
 define get_2d_data(fname, spin){
-%{{{
-   
    vmessage(" Loading %s (assuming spin=%.3f)", fname, spin);
       
    variable fd = fits_read_table(fname);
@@ -33,11 +31,10 @@ define get_2d_data(fname, spin){
    
    return struct{elo=elo, ehi=ehi, sumspec=sumspec, area_ring=area_ring, dat=fd};
 }
-%}}}
 
+variable global_norm_xillver = 1e15 / 4.0 / PI;  %% xillver norm, see Dauser+2016
 
 define get_xillver_norm(en,flux){
-   
 
    variable ind = where(0.1 < en < 1000);
    
@@ -48,9 +45,13 @@ define get_xillver_norm(en,flux){
    
    variable norm_flux = sum(reflux[ind]);
    
-   return norm_flux / norm_xill;
+   return norm_flux;
 }
 
+
+define get_param_struct(spin, Tin, logxi, logn){
+   return struct{spin=spin, Tin=Tin, logxi=logxi, logn=logn};
+}
 
 variable ccount=0;
 define get_col(){
