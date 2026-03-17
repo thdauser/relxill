@@ -158,7 +158,8 @@ VecD getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double 
  *         - Energy grid information
  *         Returns NULL on error
  *
- * @note The function assumes a standard temperature profile T(r) ∝ r^(-3/4) for the disk
+ * @note The function assumes a standard temperature profile for the alpha diks with zero torque boundary
+ * (see Poutanen+2007)
  * @note Memory for the returned structure must be freed by the caller
  * @note The spin parameter follows the convention where positive values indicate prograde rotation
  *

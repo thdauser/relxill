@@ -1,4 +1,6 @@
-% -*- mode: slang-*-
+#!/usr/bin/env isis-script
+
+_traceback=1;
 
 require("isisscripts");
 require("scripts/subs_testSetup.sl");
