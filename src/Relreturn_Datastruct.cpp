@@ -37,14 +37,25 @@ double *global_bbody_ener_std = nullptr;
 
 
 returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
-                                          double **spec_rr_zones,
-                                          double **spec_prim_zones,
+                                          const VecD_2D& spec_rr_zones,
+                                          const VecD_2D& spec_prim_zones,
                                           double *ener,
                                           int n_ener,
                                           int *status) {
   returnSpec2D *returnSpec = new_returnSpec2D(dat->rlo, dat->rhi, dat->nrad, ener, n_ener, status);
-  returnSpec->specRet = spec_rr_zones;
-  returnSpec->specPri = spec_prim_zones;
+
+  // Allocate memory for double** arrays
+  returnSpec->specRet = new_specZonesArr(n_ener, dat->nrad, status);
+  returnSpec->specPri = new_specZonesArr(n_ener, dat->nrad, status);
+
+  // Copy data from VecD_2D to double**
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    for (int jj = 0; jj < n_ener; jj++) {
+      returnSpec->specRet[ii][jj] = spec_rr_zones[ii][jj];
+      returnSpec->specPri[ii][jj] = spec_prim_zones[ii][jj];
+    }
+  }
+
   return returnSpec;
 }
 

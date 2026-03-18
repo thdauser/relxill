@@ -59,8 +59,8 @@ returnSpec2D *new_returnSpec2D(const VecD& rlo, const VecD& rhi, int nrad, const
 void delete_returnSpec2D(returnSpec2D** rspec);
 
 returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
-                                          double **spec_rr_zones,
-                                          double **spec_prim_zones,
+                                          const VecD_2D& spec_rr_zones,
+                                          const VecD_2D& spec_prim_zones,
                                           double* ener, int n_ener,
                                           int *status);
 
