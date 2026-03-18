@@ -6,10 +6,9 @@ _traceback=1;
 variable dir = "tests";
 require("$dir/testRframeReturnradRefdata.sl"$);
 require("$dir/testXillverPrimaryNormalization.sl"$);
-require("$dir/testXillverPrimaryNormalization.sl"$);
 
 variable status = EXIT_SUCCESS;
-if( testRframeReturnradRefdata() != EXIT_SUCCESS) {
+if( testRframeReturnradRefdata(;plot) != EXIT_SUCCESS) {
    vmessage(" *** error: test Restframe Returning Spectra failed \n\n");
    status = EXIT_FAILURE;
 }

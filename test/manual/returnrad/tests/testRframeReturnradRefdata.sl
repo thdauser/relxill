@@ -6,6 +6,7 @@ require("scripts/subs_filenames.sl");
 
 define model_eval(){
 
+   putenv("RELXILL_WRITE_FILES=1");
    load_xspec_local_models("./build/");
    variable ff = "relxillBBxill";
    variable spin = 0.998;
