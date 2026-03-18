@@ -34,11 +34,11 @@ extern "C" {
 
 // Function definitions
 static VecD_2D get_returnrad_specs(double* ener_inp,
-                                    int nener_inp,
-                                    returningFractions* dat,
-                                    const double* temperature,
-                                    int* status);
-static VecD_2D get_bbody_specs(double* ener, int nener, returningFractions* dat, double* temperature, int* status);
+                                   int nener_inp,
+                                   returningFractions* dat,
+                                   const VecD_2D& spec_pri,
+                                   int* status);
+static VecD_2D get_bbody_specs(double* ener, int nener, returningFractions* dat, double* temperature, const int* status);
 
 void bin_integrate_flux(int nrad, int nener, const double* ener, VecD_2D& spec);
 
@@ -177,9 +177,11 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     // 2 - temperature profile of the whole disk
     VecD temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
 
-    // 3 - get primary and returning 2D spectrum
+    // 3 - get primary and returning 2D spectrum (bin integrated spectra)
+    // TODO do not bin integrate in the functions, but use relative flux; only bin-intergrate later (and interpolate
+    // on larger energy gird) 
     VecD_2D spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature.data(), status);
-    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature.data(), status);
+    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, spec_prim_zones, status);
 
     if (is_debug_run())
     {
@@ -202,25 +204,114 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
  */
 
 
-static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec, double temp,
+static VecD rebin_flux_mean_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
+    // This function works like _rebin_spectrum, but instead of a second energy grid,
+    // the input flux is on a shifted energy grid: ener0_shifted[i] = ener[i] * shift
+    // The input flux0 is bin-integrated (photons/bin), and we redistribute it onto the output grid
+
+    // Pre-calculate shifted energy grid boundaries to avoid repeated multiplications
+    std::vector<double> ener_shifted(nener + 1);
+    for (int i = 0; i <= nener; i++) {
+        ener_shifted[i] = ener[i] * shift;
+    }
+
+    // Cache for shifted grid range check
+    const double ener_shift_min = ener_shifted[0];
+    const double ener_shift_max = ener_shifted[nener];
+
+    int imin = 0;
+    int imax = 0;
+
+    for (int ii = 0; ii < nener; ii++) {
+
+        flux_out[ii] = 0.0;
+
+        // Output bin boundaries
+        const double elo = ener[ii];
+        const double ehi = ener[ii + 1];
+
+        // Check if the bin is outside the shifted input energy range
+        if ((ener_shift_min > ehi) || (ener_shift_max < elo)) {
+            continue;  // Skip this bin entirely
+        }
+
+        // Find imin: first input bin that overlaps with output bin
+        // Start search from previous imin (bins are sequential)
+        while (imin <= nener && ener_shifted[imin] <= elo) {
+            imin++;
+        }
+        if (imin > 0) {
+            imin--;
+        }
+
+        // Find imax: last input bin that overlaps with output bin
+        // Start search from imin (imax >= imin)
+        imax = imin;
+        while (imax < nener && ener_shifted[imax] <= ehi) {
+            imax++;
+        }
+        if (imax > 0) {
+            imax--;
+        }
+
+        // Clip boundaries to the shifted input grid
+        const double elo_clipped = (elo < ener_shifted[imin]) ? ener_shifted[imin] : elo;
+        const double ehi_clipped = (ehi > ener_shifted[imax + 1]) ? ener_shifted[imax + 1] : ehi;
+
+        if (imax == imin) {
+            // Only one input bin overlaps - interpolate
+            const double bin_width_in = ener_shifted[imin + 1] - ener_shifted[imin];
+            flux_out[ii] = (ehi_clipped - elo_clipped) / bin_width_in * flux0[imin];
+        } else {
+            // Multiple input bins overlap
+
+            // Fraction of the first overlapping bin
+            const double bin_width_min = ener_shifted[imin + 1] - ener_shifted[imin];
+            const double dmin = (ener_shifted[imin + 1] - elo_clipped) / bin_width_min;
+
+            // Fraction of the last overlapping bin
+            const double bin_width_max = ener_shifted[imax + 1] - ener_shifted[imax];
+            const double dmax = (ehi_clipped - ener_shifted[imax]) / bin_width_max;
+
+            // Add contributions
+            flux_out[ii] = flux0[imin] * dmin + flux0[imax] * dmax;
+
+            // Add full bins in between
+            for (int jj = imin + 1; jj <= imax - 1; jj++) {
+                flux_out[ii] += flux0[jj];
+            }
+        }
+    }
+
+    return flux_out;
+}
+
+
+static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec_ret, const VecD& spec_pri,
                                  double* gfac, int ng, const double* frac_g)
 {
     // loop over all gfac and calculate the spectrum for each
-    VecD spec_g(nener, 0.0);
-    setArrayToZero(spec, nener);
+    VecD spec_ret_g(nener, 0.0);
+    setArrayToZero(spec_ret, nener);
     for (int kk = 0; kk < ng; kk++)
     {
-        bbody_spec(ener, nener, spec_g.data(), temp, gfac[kk]);
+        rebin_flux_mean_shifted(ener, nener, spec_ret_g, spec_pri, gfac[kk]);
         for (int jj = 0; jj < nener; jj++)
         {
-            spec[jj] += spec_g[jj] * frac_g[kk];
+            spec_ret[jj] += spec_ret_g[jj] * frac_g[kk];
         }
     }
 }
 
 
-static void calc_rr_bbspec_ring(VecD& spec, double* ener, int nener, int irad, const double* temperature,
-                                returningFractions* dat, const int* status)
+
+static void calc_rr_bbspec_ring(VecD& spec,
+                                double* ener,
+                                int nener,
+                                int irad,
+                                const VecD_2D& spec_pri,
+                                returningFractions* dat,
+                                const int* status)
 {
     VecD spec_r(nener, 0.0);
     spec.assign(spec.size(), 0.0);
@@ -232,11 +323,12 @@ static void calc_rr_bbspec_ring(VecD& spec, double* ener, int nener, int irad, c
         // only calculate it for a significant redshift, otherwise return BBODY without gshift
         if (fabs(dat->tabData->gmax[irad][ii] - dat->tabData->gmin[irad][ii]) > LIM_GFAC_RR_BBODY)
         {
-            calc_rr_bbspec_gzone(ener, nener, spec_r.data(), temperature[ii], gfac.data(), dat->tabData->ng, dat->tabData->frac_g[irad][ii]);
+            calc_rr_bbspec_gzone(ener, nener, spec_r.data(), spec_pri[ii], gfac.data(), dat->tabData->ng, dat->tabData->frac_g[irad][ii]);
         }
         else
         {
-            bbody_spec(ener, nener, spec_r.data(), temperature[ii], dat->tabData->gmin[irad][ii]); // caveat, gmean might not be 1.0
+            rebin_flux_mean_shifted(ener, nener, spec_r, spec_pri[ii], dat->tabData->gmin[irad][ii]);
+            //bbody_spec(ener, nener, spec_r.data(), spec_pri[ii], dat->tabData->gmin[irad][ii]); // caveat, gmean might not be 1.0
         }
 
         // apply the correct fractions and add it to the zone output spectrum
@@ -256,7 +348,7 @@ static void calc_rr_bbspec_ring(VecD& spec, double* ener, int nener, int irad, c
  * @param ener_inp Pointer to the array of input photon energies (in keV).
  * @param nener_inp Number of input energy bins corresponding to `ener_inp`.
  * @param dat Pointer to the `returningFractions` structure, which holds interpolated returning fractionsxs
- * @param temperature Pointer to the array of temperatures (in keV) defined per radial zone.
+ * @param spec_pri Pointer to the array of temperatures (in keV) defined per radial zone.
  * @param status Pointer to the status code variable. If non-zero, the function will return early with NULL.
  *
  * @return A 2D vector containing the computed spectra for all radial zones
@@ -275,28 +367,32 @@ static void calc_rr_bbspec_ring(VecD& spec, double* ener, int nener, int irad, c
  *
  * The caller is responsible for deallocating the returned 2D array to avoid memory leaks.
  */
-static VecD_2D get_returnrad_specs(double* ener_inp, int nener_inp, returningFractions* dat,
-                                    const double* temperature, int* status)
+static VecD_2D get_returnrad_specs(double* ener_inp,
+                                   int nener_inp,
+                                   returningFractions* dat,
+                                   const VecD_2D& spec_pri,
+                                   int* status)
 {
     CHECK_STATUS_RET(*status, VecD_2D());
 
-    int nener;
-    double* ener;
-    get_std_bbody_energy_grid(&nener, &ener, status);
+    // currently not used, calculated on the original grid (maybe need to change that)
+    //    int nener;
+    //    double* ener;
+    //    get_std_bbody_energy_grid(&nener, &ener, status);
 
     VecD_2D spec_zones(dat->nrad, VecD(nener_inp));
 
     assert(!dat->tf_r[0].empty());
 
-    VecD spec(nener,0.0);
+    // VecD spec(nener_inp,0.0);
     for (int ii = 0; ii < dat->nrad; ii++)
     {
-        calc_rr_bbspec_ring(spec, ener, nener, ii, temperature, dat, status); // return ph / cm²/s/keV ( not bin integ.)
-        rebin_mean_flux(ener_inp, spec_zones[ii].data(), nener_inp, ener, spec.data(), nener, status);
+        calc_rr_bbspec_ring(spec_zones[ii], ener_inp, nener_inp, ii, spec_pri, dat, status); // return ph / cm²/s/keV ( not bin integ.)
+     //   rebin_mean_flux(ener_inp, spec_zones[ii].data(), nener_inp, ener, spec.data(), nener, status);
         assert_double_array_isnormal(spec_zones[ii].data(),nener_inp);
     }
 
-    bin_integrate_flux(dat->nrad, nener_inp, ener_inp, spec_zones);
+   // bin_integrate_flux(dat->nrad, nener_inp, ener_inp, spec_zones);
 
     return spec_zones;
 }
@@ -324,7 +420,7 @@ static VecD_2D get_returnrad_specs(double* ener_inp, int nener_inp, returningFra
  * @note Memory for the 2D spectral array is allocated internally. The caller is
  *       responsible for releasing this memory using the appropriate deallocation function.
  */
-static VecD_2D get_bbody_specs(double* ener, int nener, returningFractions* dat, double* temperature, int* status)
+static VecD_2D get_bbody_specs(double* ener, int nener, returningFractions* dat, double* temperature, const int* status)
 {
     CHECK_STATUS_RET(*status, VecD_2D());
 
@@ -372,27 +468,6 @@ void bin_integrate_flux(int nrad, int nener, const double* ener, VecD_2D& spec)
         }
     }
 }
-
-
-/*
- *  Input: bin integrated spectrum  [cts /bin/cm^2]
-double getEmissivityNormFactor(returningFractions *dat, int nener, const double *ener, double **spec) {
-
-double sumRadius[dat->nrad];
-  double sumTotalSpec = 0.0;
-
-  for (int ii = 0; ii < dat->nrad; ii++) {
-    sumRadius[ii] = 0.0;
-    for (int jj = 0; jj < nener; jj++) {
-      sumRadius[ii] += spec[ii][jj] *  dat->proper_area_ring[ii]; // integrate spectrum over the whole disk
-    }
-
-    sumTotalSpec += sumRadius[ii];
-  }
-
-  return sumTotalSpec;
-}
- */
 
 /**
  * diskbb spectrum in Xspec units [cts/bin]
