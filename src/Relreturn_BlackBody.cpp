@@ -179,7 +179,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 
     // 3 - get primary and returning 2D spectrum (bin integrated spectra)
     // TODO do not bin integrate in the functions, but use relative flux; only bin-intergrate later (and interpolate
-    // on larger energy gird) 
+    // on larger energy gird)IbcanmI
     VecD_2D spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature.data(), status);
     VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, spec_prim_zones, status);
 
@@ -204,86 +204,41 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
  */
 
 
-static VecD rebin_flux_mean_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
-    // This function works like _rebin_spectrum, but instead of a second energy grid,
-    // the input flux is on a shifted energy grid: ener0_shifted[i] = ener[i] * shift
-    // The input flux0 is bin-integrated (photons/bin), and we redistribute it onto the output grid
+static void rebin_flux_mean_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
+    // Rebins flux0 (on grid ener[ii]) onto flux_out (on grid ener[ii]*shift).
+    // Analogous to rebin_mean_flux: for each output bin, interpolate from the input
+    // bin whose unshifted midpoint is closest.
+    //
+    // Performance: precompute the shifted output midpoint once per output bin,
+    // so the while-loop body only computes unshifted input midpoints (no per-iteration multiply).
 
-    // Pre-calculate shifted energy grid boundaries to avoid repeated multiplications
-    std::vector<double> ener_shifted(nener + 1);
-    for (int i = 0; i <= nener; i++) {
-        ener_shifted[i] = ener[i] * shift;
-    }
+    int ii = 1;
+    for (int in = 0; in < nener; in++) {
+        flux_out[in] = 0.0;
 
-    // Cache for shifted grid range check
-    const double ener_shift_min = ener_shifted[0];
-    const double ener_shift_max = ener_shifted[nener];
+        // midpoint of the output bin on the shifted grid (computed once per output bin)
+        const double xn_m = 0.5 * (ener[in] + ener[in + 1]) * shift;
 
-    int imin = 0;
-    int imax = 0;
-
-    for (int ii = 0; ii < nener; ii++) {
-
-        flux_out[ii] = 0.0;
-
-        // Output bin boundaries
-        const double elo = ener[ii];
-        const double ehi = ener[ii + 1];
-
-        // Check if the bin is outside the shifted input energy range
-        if ((ener_shift_min > ehi) || (ener_shift_max < elo)) {
-            continue;  // Skip this bin entirely
-        }
-
-        // Find imin: first input bin that overlaps with output bin
-        // Start search from previous imin (bins are sequential)
-        while (imin <= nener && ener_shifted[imin] <= elo) {
-            imin++;
-        }
-        if (imin > 0) {
-            imin--;
-        }
-
-        // Find imax: last input bin that overlaps with output bin
-        // Start search from imin (imax >= imin)
-        imax = imin;
-        while (imax < nener && ener_shifted[imax] <= ehi) {
-            imax++;
-        }
-        if (imax > 0) {
-            imax--;
-        }
-
-        // Clip boundaries to the shifted input grid
-        const double elo_clipped = (elo < ener_shifted[imin]) ? ener_shifted[imin] : elo;
-        const double ehi_clipped = (ehi > ener_shifted[imax + 1]) ? ener_shifted[imax + 1] : ehi;
-
-        if (imax == imin) {
-            // Only one input bin overlaps - interpolate
-            const double bin_width_in = ener_shifted[imin + 1] - ener_shifted[imin];
-            flux_out[ii] = (ehi_clipped - elo_clipped) / bin_width_in * flux0[imin];
-        } else {
-            // Multiple input bins overlap
-
-            // Fraction of the first overlapping bin
-            const double bin_width_min = ener_shifted[imin + 1] - ener_shifted[imin];
-            const double dmin = (ener_shifted[imin + 1] - elo_clipped) / bin_width_min;
-
-            // Fraction of the last overlapping bin
-            const double bin_width_max = ener_shifted[imax + 1] - ener_shifted[imax];
-            const double dmax = (ehi_clipped - ener_shifted[imax]) / bin_width_max;
-
-            // Add contributions
-            flux_out[ii] = flux0[imin] * dmin + flux0[imax] * dmax;
-
-            // Add full bins in between
-            for (int jj = imin + 1; jj <= imax - 1; jj++) {
-                flux_out[ii] += flux0[jj];
+        // advance ii until the unshifted input midpoint at ii >= xn_m
+        while (0.5 * (ener[ii - 1] + ener[ii]) < xn_m) {
+            ii++;
+            if (ii >= nener) {
+                // input grid exhausted; zero remaining output bins and return
+                std::fill(flux_out.begin() + in + 1, flux_out.end(), 0.0);
+                return;
             }
         }
-    }
+        ii--;
 
-    return flux_out;
+        if (ii == 0) { ii = 1; }
+
+        const double lo = 0.5 * (ener[ii - 1] + ener[ii]);
+        const double hi = 0.5 * (ener[ii]     + ener[ii + 1]);
+
+        if (xn_m > lo && xn_m <= hi) {
+            flux_out[in] = interp_lin_1d((xn_m - lo) / (hi - lo), flux0[ii - 1], flux0[ii]);
+        }
+    }
 }
 
 
