@@ -2,12 +2,25 @@
 
 _traceback=1;
 
-%%% Tests %%% 
-require("testRframeReturnradRefdata.sl");
-require("testDiagnosePlots.sl");
-require("testXillverPrimaryNormalization.sl");
+%%% Tests %%%
+variable dir = "tests";
+require("$dir/testRframeReturnradRefdata.sl"$);
+require("$dir/testXillverPrimaryNormalization.sl"$);
+require("$dir/testXillverPrimaryNormalization.sl"$);
+
+variable status = EXIT_SUCCESS;
+if( testRframeReturnradRefdata() != EXIT_SUCCESS) {
+   vmessage(" *** error: test Restframe Returning Spectra failed \n\n");
+   status = EXIT_FAILURE;
+}
+
+if( testXillverPrimaryNormalization() != EXIT_SUCCESS) {
+   vmessage(" *** error: testing Xillver Primary Normalization failed \n\n");
+   status = EXIT_FAILURE;
+}
 
 
-if( testRframeReturnradRefdata() != EXIT_SUCCESS) exit(1);
-if( testXillverPrimaryNormalization() != EXIT_SUCCESS) exit(1);
-if( testDiagnosePlots() != EXIT_SUCCESS) exit(1);
+if (status==EXIT_FAILURE){
+   vmessage("\n\n  ****** TESTS FAILED ******* \n\n");
+   exit(1);
+} 

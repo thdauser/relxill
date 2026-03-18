@@ -81,6 +81,9 @@ define loadOutputFilesRframe() {
 }
 
 
+
+
+
 define testXillverPrimaryNormalization(){
 
    
@@ -109,6 +112,6 @@ define testXillverPrimaryNormalization(){
 
 
 
-if (length(__argv)>0){
+if (length(__argv)>1){
    () = testXillverPrimaryNormalization();
 }

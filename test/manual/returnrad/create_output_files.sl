@@ -26,7 +26,7 @@ define load_std_model(_ff,_par){
 define createOutputFiles(_ff, _par){
    putenv("RELXILL_WRITE_FILES=1");
 
-   () = system("rm -vf __relxillOutput*");
+   () = system("rm -f __relxillOutput*");
    
    vmessage("  Creating Output Files: fit-functions: %s ", _ff);
 
@@ -61,14 +61,14 @@ define createOutputFiles(_ff, _par){
     set_par("*.boost",-1.0,0,-10,10);
    () = eval_fun(1,2);
    variable cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillRefl);
-   message(cmd);
+   %   message(cmd);
    () = system(cmd);
 
    %%% 2c primary   
     set_par("*.boost",0.0,0,-10,10);
    () = eval_fun(1,2);
    cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillPrim);
-   message(cmd);
+   % message(cmd);
    () = system(cmd);
 
    
