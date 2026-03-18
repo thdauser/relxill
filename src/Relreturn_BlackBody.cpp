@@ -204,7 +204,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
  */
 
 
-static void rebin_flux_mean_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
+void rebin_flux_mean_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
     // Rebins flux0 (on grid ener[ii]) onto flux_out (on grid ener[ii]*shift).
     // Analogous to rebin_mean_flux: for each output bin, interpolate from the input
     // bin whose unshifted midpoint is closest.
@@ -217,16 +217,13 @@ static void rebin_flux_mean_shifted(double* ener, int nener, VecD& flux_out, con
         flux_out[in] = 0.0;
 
         // midpoint of the output bin on the shifted grid (computed once per output bin)
-        const double xn_m = 0.5 * (ener[in] + ener[in + 1]) * shift;
+        const double xn_0 = 0.5 * (ener[in] + ener[in + 1]);
+        const double xn_m =  xn_0 * shift;
 
         // advance ii until the unshifted input midpoint at ii >= xn_m
         while (0.5 * (ener[ii - 1] + ener[ii]) < xn_m) {
             ii++;
-            if (ii >= nener) {
-                // input grid exhausted; zero remaining output bins and return
-                std::fill(flux_out.begin() + in + 1, flux_out.end(), 0.0);
-                return;
-            }
+            if (ii >= nener) { break; }
         }
         ii--;
 

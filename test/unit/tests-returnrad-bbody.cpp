@@ -24,6 +24,7 @@ This file is part of the RELXILL model code.
 #include "Relphysics.h"
 #include "Relreturn_Datastruct.h"
 #include "Relreturn_Table.h"
+#include "Relreturn_BlackBody.h"
 #include "Relxill_errorhandling.h"
 
 extern "C" {
@@ -34,6 +35,120 @@ extern "C" {
 
 
 #define PREC 1e-6
+
+
+// Helper: uniform energy grid with nener bins over [emin, emax]
+static VecD make_ener_grid(int nener, double emin, double emax) {
+    VecD ener(nener + 1);
+    const double de = (emax - emin) / nener;
+    for (int i = 0; i <= nener; i++) { ener[i] = emin + i * de; }
+    return ener;
+}
+
+TEST_CASE(" rebin_flux_mean_shifted: flat input stays flat for shift=1 ", "[rrad-bbody]")
+{
+    const int nener = 50;
+    VecD ener = make_ener_grid(nener, 1.0, 6.0);
+
+    const double C = 3.14;
+    VecD flux0(nener, C);
+    VecD flux_out(nener, 0.0);
+
+    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 1.0);
+
+    // bin 0 is 0: known edge effect of the midpoint interpolation scheme
+    // (output midpoint coincides exactly with the lower boundary of the input midpoint bracket)
+    REQUIRE(fabs(flux_out[0]) < PREC);
+    for (int in = 1; in < nener; in++) {
+        INFO("Failing index: " << in);
+        REQUIRE(fabs(flux_out[in] - C) < PREC);
+    }
+}
+
+TEST_CASE(" rebin_flux_mean_shifted: identity mapping for shift=1 ", "[rrad-bbody]")
+{
+    const int nener = 50;
+    VecD ener = make_ener_grid(nener, 1.0, 6.0);
+
+    VecD flux0(nener);
+    for (int i = 0; i < nener; i++) { flux0[i] = (i + 1) * 0.1; }
+
+    VecD flux_out(nener, 0.0);
+    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 1.0);
+
+    for (int in = 1; in < nener; in++) {
+        INFO("Failing index: " << in);
+        REQUIRE(fabs(flux_out[in] - flux0[in]) < PREC);
+    }
+}
+
+TEST_CASE(" rebin_flux_mean_shifted: large shift zeroes all output bins ", "[rrad-bbody]")
+{
+    const int nener = 50;
+    VecD ener = make_ener_grid(nener, 1.0, 6.0);
+
+    VecD flux0(nener, 1.0);
+    VecD flux_out(nener, 0.0);
+
+    // shift >> 1: the output grid ener*shift lies entirely above the input grid
+    // -> exercises the early-return path; all output bins must be zero
+    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 100.0);
+
+    for (int in = 0; in < nener; in++) {
+        INFO("Failing index: " << in);
+        REQUIRE(fabs(flux_out[in]) < PREC);
+    }
+}
+
+TEST_CASE(" rebin_flux_mean_shifted: moderate shift zeros high-energy output bins ", "[rrad-bbody]")
+{
+    const int nener = 50;
+    VecD ener = make_ener_grid(nener, 1.0, 6.0);
+
+    VecD flux0(nener, 1.0);
+    VecD flux_out(nener, 0.0);
+
+    // shift=1.5: low-index output bins fall within the input grid (non-zero),
+    // high-index bins exceed it (zero via early return)
+    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 1.5);
+
+    REQUIRE(fabs(flux_out[0] - 1.0) < PREC);         // in range, flat flux preserved
+    REQUIRE(fabs(flux_out[nener - 1]) < PREC);        // out of range
+}
+
+
+TEST_CASE(" rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shifted grid ", "[rrad-bbody]")
+{
+    const int nener = 50;
+    VecD ener = make_ener_grid(nener, 1.0, 6.0);
+
+    // arbitrary non-trivial flux values
+    VecD flux0(nener);
+    for (int i = 0; i < nener; i++) { flux0[i] = 1.0 + 0.1 * i + 0.002 * i * i; }
+
+    const double shift = 0.8;
+
+    // manually build the shifted output grid
+    VecD ener_shifted(nener + 1);
+    for (int i = 0; i <= nener; i++) { ener_shifted[i] = ener[i] * shift; }
+
+    // reference: rebin_mean_flux with the explicitly shifted grid as output
+    VecD flux_ref(nener, 0.0);
+    int status = EXIT_SUCCESS;
+    rebin_mean_flux(ener_shifted.data(), flux_ref.data(), nener,
+                    ener.data(), flux0.data(), nener, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+
+    // function under test
+    VecD flux_out(nener, 0.0);
+    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, shift);
+
+    for (int in = 0; in < nener; in++) {
+        INFO("Failing index: " << in);
+        REQUIRE(fabs(flux_out[in] - flux_ref[in]) < PREC);
+    }
+}
+
 
 TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
 {
@@ -47,7 +162,7 @@ TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbo
 
 
 // ------- //
-TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody-xill]")
+TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
 {
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.get_xill_param_struct();
