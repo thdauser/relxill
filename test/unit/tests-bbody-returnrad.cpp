@@ -32,7 +32,7 @@ extern "C" {
 
 #define PREC 1e-6
 #define PREC_REFDATA 1e-3
-#define REFDATA_DIR "test/manual/returnrad/refdata/"  // relativ to RELXILL_SOURCE_DIR (set when compiling)
+#define REFDATA_DIR "test/unit/refdata/"  // relativ to RELXILL_SOURCE_DIR (set when compiling)
 
 
 
