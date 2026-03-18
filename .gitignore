@@ -18,3 +18,5 @@ cmake-*
 model
 model-build
 bin
+.idea/editor.xml
+.idea/shelf/
