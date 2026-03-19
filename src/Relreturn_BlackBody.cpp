@@ -204,7 +204,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
  */
 
 
-void rebin_flux_mean_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
+void rebin_mean_flux_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
     // Rebins flux0 (on grid ener[ii]) onto flux_out (on grid ener[ii]*shift).
     // Analogous to rebin_mean_flux: for each output bin, interpolate from the input
     // bin whose unshifted midpoint is closest.
@@ -247,7 +247,7 @@ static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec_ret, cons
     setArrayToZero(spec_ret, nener);
     for (int kk = 0; kk < ng; kk++)
     {
-        rebin_flux_mean_shifted(ener, nener, spec_ret_g, spec_pri, gfac[kk]);
+        rebin_mean_flux_shifted(ener, nener, spec_ret_g, spec_pri, gfac[kk]);
         for (int jj = 0; jj < nener; jj++)
         {
             spec_ret[jj] += spec_ret_g[jj] * frac_g[kk];
@@ -279,7 +279,7 @@ static void calc_rr_bbspec_ring(VecD& spec,
         }
         else
         {
-            rebin_flux_mean_shifted(ener, nener, spec_r, spec_pri[ii], dat->tabData->gmin[irad][ii]);
+            rebin_mean_flux_shifted(ener, nener, spec_r, spec_pri[ii], dat->tabData->gmin[irad][ii]);
             //bbody_spec(ener, nener, spec_r.data(), spec_pri[ii], dat->tabData->gmin[irad][ii]); // caveat, gmean might not be 1.0
         }
 

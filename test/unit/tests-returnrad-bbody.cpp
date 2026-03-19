@@ -54,7 +54,7 @@ TEST_CASE(" rebin_flux_mean_shifted: flat input stays flat for shift=1 ", "[rrad
     VecD flux0(nener, C);
     VecD flux_out(nener, 0.0);
 
-    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 1.0);
+    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 1.0);
 
     // bin 0 is 0: known edge effect of the midpoint interpolation scheme
     // (output midpoint coincides exactly with the lower boundary of the input midpoint bracket)
@@ -74,7 +74,7 @@ TEST_CASE(" rebin_flux_mean_shifted: identity mapping for shift=1 ", "[rrad-bbod
     for (int i = 0; i < nener; i++) { flux0[i] = (i + 1) * 0.1; }
 
     VecD flux_out(nener, 0.0);
-    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 1.0);
+    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 1.0);
 
     for (int in = 1; in < nener; in++) {
         INFO("Failing index: " << in);
@@ -92,7 +92,7 @@ TEST_CASE(" rebin_flux_mean_shifted: large shift zeroes all output bins ", "[rra
 
     // shift >> 1: the output grid ener*shift lies entirely above the input grid
     // -> exercises the early-return path; all output bins must be zero
-    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 100.0);
+    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 100.0);
 
     for (int in = 0; in < nener; in++) {
         INFO("Failing index: " << in);
@@ -110,7 +110,7 @@ TEST_CASE(" rebin_flux_mean_shifted: moderate shift zeros high-energy output bin
 
     // shift=1.5: low-index output bins fall within the input grid (non-zero),
     // high-index bins exceed it (zero via early return)
-    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, 1.5);
+    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 1.5);
 
     REQUIRE(fabs(flux_out[0] - 1.0) < PREC);         // in range, flat flux preserved
     REQUIRE(fabs(flux_out[nener - 1]) < PREC);        // out of range
@@ -141,7 +141,7 @@ TEST_CASE(" rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shift
 
     // function under test
     VecD flux_out(nener, 0.0);
-    rebin_flux_mean_shifted(ener.data(), nener, flux_out, flux0, shift);
+    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, shift);
 
     for (int in = 0; in < nener; in++) {
         INFO("Failing index: " << in);
