@@ -150,6 +150,40 @@ TEST_CASE(" rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shift
     }
 }
 
+static double integ_flux(const double* ener, int nener, const double* flux) {
+    double sum = 0.0;
+    for (int ii = 0; ii < nener; ii++) {
+        sum += flux[ii] * (ener[ii + 1] - ener[ii]);
+    }
+    return sum;
+}
+
+TEST_CASE(" check of manually shfting the bbody spectrum gives the same result as if shifting the energy grid ", "[rrad-bbody]") {
+    const int nener = 5000;
+
+    double ener[nener + 1];
+    get_log_grid(ener, nener, 0.01, 150.0);
+
+    double gfac = 1.5;
+    double temperature = 1.0;
+    VecD spec(nener);
+    bbody_spec(ener,  nener, spec.data(), temperature, gfac);
+
+    VecD spec0(nener);
+    bbody_spec(ener,  nener, spec0.data(), temperature, 1.0);
+    VecD spec0_shift(nener);
+    // as we shift the energy grid and not the spectrum, we need to shift it backwards with 1/gfac
+    rebin_mean_flux_shifted(ener, nener, spec0_shift, spec0, 1./gfac);
+
+    auto pho_flux = integ_flux(ener, nener, spec.data());
+    auto pho_flux0 = integ_flux(ener, nener, spec0_shift.data());
+
+    printf("pho_flux=%.3e,  pho_flux0=%.3e \n", pho_flux, pho_flux0);
+
+    REQUIRE(fabs(pho_flux-pho_flux0) < 1e-3);
+
+}
+
 
 TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
 {

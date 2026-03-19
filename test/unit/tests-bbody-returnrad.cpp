@@ -242,69 +242,6 @@ void fitsAddKeyRadialZone(char* fname, const returnSpec2D* returnSpec, int izone
 }
 
 
-/*
-void writeZoneXillverAllIncidentReturnSpec(double Tshift, int indZone, int n_ener, double *ener, xillParam *xill_param,
-                                           const returnSpec2D *returnSpec, relline_spec_multizone *rel_profile, int *status) {
-
-
-  char fname_base[] = "testrr-spec-rframe-bbody";
-  char fname_zone[200];
-  char fnameSingleBuffer[200];
-
-  sprintf(fname_zone,"%s-izone%02i-Tshift%.2f-%%s.fits",fname_base, indZone, Tshift);
-
-
-  double Tin = xill_param->kTbb;
-  xill_param->kTbb *= Tshift;
-
-
-  // -0- direct radiation
-  sprintf(fnameSingleBuffer,fname_zone, "direct");
-
-  double out_direct_flux[n_ener];
-  getZoneDirectPrimaryFlux(xill_param, returnSpec, out_direct_flux, indZone);
-  fits_write_spec(fnameSingleBuffer,ener, out_direct_flux, n_ener, status);
-
-  fitsAddKeyRadialZone(fnameSingleBuffer, returnSpec, indZone, status);
-  CHECK_STATUS_VOID(*status);
-
-  // -1- incident radiation
-  sprintf(fnameSingleBuffer,fname_zone, "incident");
-
-  double out_return_flux[n_ener];
-  getZoneIncidentReturnFlux(xill_param, returnSpec, out_return_flux, indZone);
-  fits_write_spec(fnameSingleBuffer,ener, out_return_flux, n_ener, status);
-
-  fitsAddKeyRadialZone(fnameSingleBuffer, returnSpec, indZone, status);
-  CHECK_STATUS_VOID(*status);
-
-  // -2- reflected radiation
-  sprintf(fnameSingleBuffer,fname_zone, "reflect");
-
-  double xillver_out[n_ener];
-  getZoneReflectedReturnFluxDiskframe(xill_param, rel_profile, returnSpec, xillver_out, indZone, status);
-  fits_write_spec(fnameSingleBuffer,ener, xillver_out, n_ener, status);
-  fitsAddKeyRadialZone(fnameSingleBuffer, returnSpec, indZone, status);
-  CHECK_STATUS_VOID(*status);
-
-
-  // -3- primary radiation causing the reflection
-  sprintf(fnameSingleBuffer,fname_zone, "reflectPrim");
-
-  double* xillver_prim_out = getXillverPimaryBBodyNormalizedAtHighener(xill_param->kTbb, returnSpec->specRet[indZone],
-                                                               returnSpec->ener, returnSpec->n_ener, status);
-  fits_write_spec(fnameSingleBuffer,ener, xillver_prim_out, n_ener, status);
-  fitsAddKeyRadialZone(fnameSingleBuffer, returnSpec, indZone, status);
-  CHECK_STATUS_VOID(*status);
-  free(xillver_prim_out);
-
-  // reset temperature
-  xill_param->kTbb = Tin;
-}
-*/
-
-
-
 //  ======= TEST FUNCTIONS ========   //
 
 // ========== //

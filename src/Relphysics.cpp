@@ -51,7 +51,6 @@ double calc_proper_area_ring(double rlo, double rhi, double a) {
 }
 
 // Black Body Spectrum (returns ph/s/cm²/keV)  (verified with Xspec bbody model)
-// ToDO: use a properly integrated model (?)
 void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac) {
   for (int ii = 0; ii < n; ii++) {
     double emean = 0.5 * (ener[ii] + ener[ii + 1]);

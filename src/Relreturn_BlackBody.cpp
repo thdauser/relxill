@@ -243,8 +243,6 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     VecD temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
 
     // 3 - get primary and returning 2D spectrum (bin integrated spectra)
-    // TODO do not bin integrate in the functions, but use relative flux; only bin-intergrate later (and interpolate
-    // on larger energy gird)IbcanmI
     VecD_2D spec_prim_zones = get_bbody_specs_binned(ener, nener, temperature, status);
     VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status);
 
@@ -278,7 +276,9 @@ static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec_ret, cons
     setArrayToZero(spec_ret, nener);
     for (int kk = 0; kk < ng; kk++)
     {
-        rebin_mean_flux_shifted(ener, nener, spec_ret_g, spec_pri, gfac[kk]);
+        // we have to shift 1/gfac, as gfac=E_i/E_e and do not shift the spectrum, but shift the energy grid "backwards"
+        // N_i(E_i) = N_e(E_e) = N_e(E_i / gfac)
+        rebin_mean_flux_shifted(ener, nener, spec_ret_g, spec_pri, 1./gfac[kk]);
         for (int jj = 0; jj < nener; jj++)
         {
             spec_ret[jj] += spec_ret_g[jj] * frac_g[kk];
@@ -311,7 +311,9 @@ static void calc_rr_bbspec_ring(VecD& spec,
         }
         else
         {
-            rebin_mean_flux_shifted(ener, nener, spec_r, spec_pri[ii], dat->tabData->gmin[irad][ii]);
+            // we have to shift 1/gfac, as gfac=E_i/E_e and do not shift the spectrum, but shift the energy grid "backwards"
+            // N_i(E_i) = N_e(E_e) = N_e(E_i / gfac)
+            rebin_mean_flux_shifted(ener, nener, spec_r, spec_pri[ii], 1./dat->tabData->gmin[irad][ii]);
             //bbody_spec(ener, nener, spec_r.data(), spec_pri[ii], dat->tabData->gmin[irad][ii]); // caveat, gmean might not be 1.0
         }
 
