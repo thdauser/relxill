@@ -35,10 +35,11 @@ extern "C" {
 
 // Function definitions
 static VecD_2D get_returnrad_specs(double* ener_inp,
-                                int nener_inp,
-                                returningFractions* dat,
-                                const VecD& temperature,
-                                int* status);
+                                   int nener_inp,
+                                   returningFractions* dat,
+                                   const VecD& temperature,
+                                   int* status,
+                                   int norder = 1);
 static VecD_2D get_bbody_specs_binned(double* ener, int nener, const VecD &temperature, const int* status);
 
 void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec);
@@ -244,7 +245,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 
     // 3 - get primary and returning 2D spectrum (bin integrated spectra)
     VecD_2D spec_prim_zones = get_bbody_specs_binned(ener, nener, temperature, status);
-    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status);
+    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status, 1);
 
 
     if (is_debug_run())
@@ -287,7 +288,21 @@ static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec_ret, cons
 }
 
 
-
+/**
+ * @brief Compute the returning radiation blackbody spectrum for a single radial zone.
+ *
+ * Sums contributions from all radial zones that return photons to zone `irad`,
+ * applying the appropriate energy shift (g-factor) and returning fractions.
+ * The result is a spectrum in ph/s/keV/cm² (not bin-integrated).
+ *
+ * @param[out] spec     Output spectrum array (size nener), zeroed and filled on return.
+ * @param      ener     Energy grid boundaries (size nener+1) [keV].
+ * @param      nener    Number of energy bins.
+ * @param      irad     Index of the receiving radial zone.
+ * @param      spec_pri Primary blackbody spectra per zone (ph/s/keV/cm²).
+ * @param      dat      Returning fractions data (g-factors, transfer fractions, f_ret).
+ * @param      status   Error status flag.
+ */
 static void calc_rr_bbspec_ring(VecD& spec,
                                 double* ener,
                                 int nener,
@@ -328,60 +343,74 @@ static void calc_rr_bbspec_ring(VecD& spec,
 
 
 /**
- * @brief Computes the returning radiation spectra for a given set of input photon energy grid,
- * considering the radial distribution of returning fractions and the provided temperature profile.
+ * @brief Compute returning radiation spectra from given primary spectra for all zones.
  *
- * @param ener_inp Pointer to the array of input photon energies (in keV).
- * @param nener_inp Number of input energy bins corresponding to `ener_inp`.
- * @param dat Pointer to the `returningFractions` structure, which holds interpolated returning fractionsxs
- * @param spec_pri Pointer to the array of temperatures (in keV) defined per radial zone.
- * @param status Pointer to the status code variable. If non-zero, the function will return early with NULL.
+ * Loops over all radial zones and calls `calc_rr_bbspec_ring` to apply the
+ * returning fractions and energy shifts. Result is not bin-integrated.
  *
- * @return A 2D vector containing the computed spectra for all radial zones
- *         (units: photons(s/keV/cm^2, NOT bin integrated). Each row in the array corresponds to a different
- *         radial zone, and each column represents a rebinned photon energy point. The function
- *         normalizes the flux over the radial zones after computation.
+ * @param      dat      Returning fractions data (g-factors, transfer fractions, f_ret).
+ * @param      status   Error status flag.
+ * @param      nener    Number of energy bins.
+ * @param      ener     Energy grid boundaries (size nener+1) [keV].
+ * @param      spec_pri Primary spectra per zone (ph/s/keV/cm²).
  *
- * The function operates as follows:
- * - Calls `get_std_bbody_energy_grid` to retrieve the standard blackbody energy grid configuration,
- *   which is used as the base energy grid.
- * - Allocates memory for the output 2D spectra array via `new_specZonesArr`.
- * - Iteratively calculates the returning radiation spectra for each radial zone using `calc_rr_bbspec_ring`.
- * - Rebinned spectra are computed for input energy bins using `rebin_mean_flux`.
- * - After iterating through all radial zones, the spectra data is normalized using `normalizeFluxRrad`
- *   to produce a final output in the desired format.
+ * @return 2D spectrum [nrad][nener] in ph/s/keV/cm² (not bin-integrated).
+ */
+static VecD_2D calc_returnrad_from_input_spectra(returningFractions *dat, int *status, int nener, double *ener, const VecD_2D& spec_pri) {
+    VecD_2D spec_zones(dat->nrad, VecD(nener));
+    for (int ii = 0; ii < dat->nrad; ii++) {
+        calc_rr_bbspec_ring(spec_zones[ii], ener, nener, ii, spec_pri, dat, status); // return ph / cm²/s/keV ( not bin integ.)
+    }
+    return spec_zones;
+}
+
+
+/**
+ * @brief Compute bin-integrated returning radiation spectra for all radial zones.
  *
- * The caller is responsible for deallocating the returned 2D array to avoid memory leaks.
+ * Builds blackbody primary spectra from the temperature profile on the internal
+ * bbody energy grid, computes returning radiation via `calc_returnrad_from_input_spectra`,
+ * then rebins onto the output grid and bin-integrates.
+ *
+ * @param      ener_inp    Output energy grid boundaries (size nener_inp+1) [keV].
+ * @param      nener_inp   Number of output energy bins.
+ * @param      dat         Returning fractions data (g-factors, transfer fractions, f_ret).
+ * @param      temperature Disk temperature profile per radial zone [keV].
+ * @param      status      Error status flag.
+ * @param      norder     Number of returning radiation calculations
+ *
+ * @return 2D spectrum [nrad][nener_inp] in cts/bin, or empty on error.
  */
 static VecD_2D get_returnrad_specs(double* ener_inp,
                                    int nener_inp,
                                    returningFractions* dat,
                                    const VecD& temperature,
-                                   int* status)
+                                   int* status,
+                                   int norder)
 {
     CHECK_STATUS_RET(*status, VecD_2D());
+    assert(!dat->tf_r[0].empty());
 
-    // currently not used, calculated on the original grid (maybe need to change that)
     int nener;
     double* ener;
     get_std_bbody_energy_grid(&nener, &ener, status);
     auto spec_pri = get_bbody_specs(ener, nener, temperature, status);
 
-    VecD_2D spec_zones(dat->nrad, VecD(nener_inp));
+    for (int iorder = 0; iorder< norder; iorder++) {
+       spec_pri = calc_returnrad_from_input_spectra(dat, status, nener, ener, spec_pri);
+   }
 
-    assert(!dat->tf_r[0].empty());
 
-    VecD spec(nener,0.0);
+    // match the spectra to the output grid
+    VecD_2D spec_zones_rebinned(dat->nrad, VecD(nener_inp));
     for (int ii = 0; ii < dat->nrad; ii++)
     {
-        calc_rr_bbspec_ring(spec, ener, nener, ii, spec_pri, dat, status); // return ph / cm²/s/keV ( not bin integ.)
-        rebin_mean_flux(ener_inp, spec_zones[ii].data(), nener_inp, ener, spec.data(), nener, status);
-        assert_double_array_isnormal(spec_zones[ii].data(),nener_inp);
+        rebin_mean_flux(ener_inp, spec_zones_rebinned[ii].data(), nener_inp, ener, spec_pri[ii].data(), nener, status);
+        assert_double_array_isnormal(spec_zones_rebinned[ii].data(),nener_inp);
     }
+    bin_integrate_flux(nener_inp, ener_inp, spec_zones_rebinned);
 
-    bin_integrate_flux(nener_inp, ener_inp, spec_zones);
-
-    return spec_zones;
+    return spec_zones_rebinned;
 }
 
 
