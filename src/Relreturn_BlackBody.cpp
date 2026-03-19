@@ -35,13 +35,13 @@ extern "C" {
 
 // Function definitions
 static VecD_2D get_returnrad_specs(double* ener_inp,
-                                   int nener_inp,
-                                   returningFractions* dat,
-                                   const VecD_2D& spec_pri,
-                                   int* status);
-static VecD_2D get_bbody_specs(double* ener, int nener, returningFractions* dat, double* temperature, const int* status);
+                                int nener_inp,
+                                returningFractions* dat,
+                                const VecD& temperature,
+                                int* status);
+static VecD_2D get_bbody_specs_binned(double* ener, int nener, const VecD &temperature, const int* status);
 
-void bin_integrate_flux(int nrad, int nener, const double* ener, VecD_2D& spec);
+void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec);
 
 // Program Code
 
@@ -139,6 +139,70 @@ VecD getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double 
 
 
 /**
+ * Computes a 2D spectral array based on a given blackbody temperature profile
+ * and energy bins, normalizing the flux for radial zones.
+ *
+ * @param ener Pointer to an array containing the energy grid in keV.
+ * @param nener The number of energy grid points, including boundaries.
+ * @param temperature Pointer to an array of temperatures (in keV) for each radial zone.
+ * @param status Pointer to an integer representing the status, used to handle errors.
+ *               If the status is non-zero, the computation is not performed.
+ *
+ * @return A 2D vector with dimensions [dat->nrad][nener],
+ *         where each row corresponds to an energy spectrum for a radial zone.
+ *         The spectra are normalized to photons/s/keV/cm^2 using the provided energy grid.
+ *         Returns empty VecD_2D if an error is encountered (status becomes non-zero).
+ *
+ * @note For the bin-intergrated version (as needed, e.g., by Xspec, see "get_bbody_spec_binned()")
+ * @note The spectral values are set to zero outside the predefined energy band
+ *       [EMIN_XILLVER, EMAX_XILLVER].
+ * @note Memory for the 2D spectral array is allocated internally. The caller is
+ *       responsible for releasing this memory using the appropriate deallocation function.
+ */
+static VecD_2D get_bbody_specs(double* ener, int nener, const VecD &temperature, const int* status)
+{
+    CHECK_STATUS_RET(*status, VecD_2D());
+
+    const int nrad = static_cast<int>(temperature.size());
+    VecD_2D spec_array(nrad, VecD(nener));
+
+    for (int ii = 0; ii < nrad; ii++)
+    {
+        bbody_spec(ener, nener, spec_array[ii].data(), temperature[ii], 1.0);
+        for (int jj = 0; jj < nener; jj++)
+        {
+            if (ener[jj] < EMIN_XILLVER || ener[jj + 1] > EMAX_XILLVER)
+            {
+                spec_array[ii][jj] = 0.0;
+            }
+        }
+    }
+
+    return spec_array;
+}
+
+/**
+ * @brief Compute the binned blackbody return spectrum.
+ *
+ * Wrapper around `get_bbody_specs()` that additionally bin-integrates the
+ * result on the provided energy grid.
+ *
+ * @param ener Energy bin boundaries.
+ * @param nener Number of energy bins.
+ * @param temperature Disk temperature profile.
+ * @param status Status flag.
+ *
+ * @return Bin-integrated 2D spectrum, one row per radial zone.
+ */
+static VecD_2D get_bbody_specs_binned(double* ener, int nener, const VecD& temperature, const int* status) {
+
+    auto spec_array =  get_bbody_specs(ener, nener, temperature, status);
+    bin_integrate_flux(nener, ener, spec_array);
+    return spec_array;
+}
+
+
+/**
  * @brief Calculates a 2D blackbody return radiation spectrum for relativistic disk models
  *
  * This function computes the returning radiation spectrum from a relativistic accretion disk
@@ -181,8 +245,9 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     // 3 - get primary and returning 2D spectrum (bin integrated spectra)
     // TODO do not bin integrate in the functions, but use relative flux; only bin-intergrate later (and interpolate
     // on larger energy gird)IbcanmI
-    VecD_2D spec_prim_zones = get_bbody_specs(ener, nener, dat, temperature.data(), status);
-    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, spec_prim_zones, status);
+    VecD_2D spec_prim_zones = get_bbody_specs_binned(ener, nener, temperature, status);
+    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status);
+
 
     if (is_debug_run())
     {
@@ -232,6 +297,7 @@ static void calc_rr_bbspec_ring(VecD& spec,
                                 const int* status)
 {
     VecD spec_r(nener, 0.0);
+    assert(spec.size() == nener);
     spec.assign(spec.size(), 0.0);
 
     for (int ii = 0; ii < dat->nrad; ii++)
@@ -270,7 +336,7 @@ static void calc_rr_bbspec_ring(VecD& spec,
  * @param status Pointer to the status code variable. If non-zero, the function will return early with NULL.
  *
  * @return A 2D vector containing the computed spectra for all radial zones
- *         (units: cts/bin, standard for xspec). Each row in the array corresponds to a different
+ *         (units: photons(s/keV/cm^2, NOT bin integrated). Each row in the array corresponds to a different
  *         radial zone, and each column represents a rebinned photon energy point. The function
  *         normalizes the flux over the radial zones after computation.
  *
@@ -288,78 +354,35 @@ static void calc_rr_bbspec_ring(VecD& spec,
 static VecD_2D get_returnrad_specs(double* ener_inp,
                                    int nener_inp,
                                    returningFractions* dat,
-                                   const VecD_2D& spec_pri,
+                                   const VecD& temperature,
                                    int* status)
 {
     CHECK_STATUS_RET(*status, VecD_2D());
 
     // currently not used, calculated on the original grid (maybe need to change that)
-    //    int nener;
-    //    double* ener;
-    //    get_std_bbody_energy_grid(&nener, &ener, status);
+    int nener;
+    double* ener;
+    get_std_bbody_energy_grid(&nener, &ener, status);
+    auto spec_pri = get_bbody_specs(ener, nener, temperature, status);
 
     VecD_2D spec_zones(dat->nrad, VecD(nener_inp));
 
     assert(!dat->tf_r[0].empty());
 
-    // VecD spec(nener_inp,0.0);
+    VecD spec(nener,0.0);
     for (int ii = 0; ii < dat->nrad; ii++)
     {
-        calc_rr_bbspec_ring(spec_zones[ii], ener_inp, nener_inp, ii, spec_pri, dat, status); // return ph / cm²/s/keV ( not bin integ.)
-     //   rebin_mean_flux(ener_inp, spec_zones[ii].data(), nener_inp, ener, spec.data(), nener, status);
+        calc_rr_bbspec_ring(spec, ener, nener, ii, spec_pri, dat, status); // return ph / cm²/s/keV ( not bin integ.)
+        rebin_mean_flux(ener_inp, spec_zones[ii].data(), nener_inp, ener, spec.data(), nener, status);
         assert_double_array_isnormal(spec_zones[ii].data(),nener_inp);
     }
 
-   // bin_integrate_flux(dat->nrad, nener_inp, ener_inp, spec_zones);
+    bin_integrate_flux(nener_inp, ener_inp, spec_zones);
 
     return spec_zones;
 }
 
 
-/**
- * Computes a 2D spectral array based on a given blackbody temperature profile
- * and energy bins, normalizing the flux for radial zones.
- *
- * @param ener Pointer to an array containing the energy grid in keV.
- * @param nener The number of energy grid points, including boundaries.
- * @param dat Pointer to a returningFractions structure containing radial data
- *            and fractional photon information.
- * @param temperature Pointer to an array of temperatures (in keV) for each radial zone.
- * @param status Pointer to an integer representing the status, used to handle errors.
- *               If the status is non-zero, the computation is not performed.
- *
- * @return A 2D vector with dimensions [dat->nrad][nener],
- *         where each row corresponds to an energy spectrum for a radial zone.
- *         The spectra are normalized to counts/bin using the provided energy grid.
- *         Returns empty VecD_2D if an error is encountered (status becomes non-zero).
- *
- * @note The spectral values are set to zero outside the predefined energy band
- *       [EMIN_XILLVER, EMAX_XILLVER].
- * @note Memory for the 2D spectral array is allocated internally. The caller is
- *       responsible for releasing this memory using the appropriate deallocation function.
- */
-static VecD_2D get_bbody_specs(double* ener, int nener, returningFractions* dat, double* temperature, const int* status)
-{
-    CHECK_STATUS_RET(*status, VecD_2D());
-
-    VecD_2D spec_array(dat->nrad, VecD(nener));
-
-    for (int ii = 0; ii < dat->nrad; ii++)
-    {
-        bbody_spec(ener, nener, spec_array[ii].data(), temperature[ii], 1.0);
-        for (int jj = 0; jj < nener; jj++)
-        {
-            if (ener[jj] < EMIN_XILLVER || ener[jj + 1] > EMAX_XILLVER)
-            {
-                spec_array[ii][jj] = 0.0;
-            }
-        }
-    }
-
-    bin_integrate_flux(dat->nrad, nener, ener, spec_array);
-
-    return spec_array;
-}
 
 
 /**
@@ -369,16 +392,17 @@ static VecD_2D get_bbody_specs(double* ener, int nener, returningFractions* dat,
  * energy bins. For each radial zone, the spectral values are multiplied by the energy
  * bin width to produce counts per bin.
  *
- * @param nrad Number of radial zones in the spectrum
  * @param nener Number of energy bins in the input energy array
  * @param ener Pointer to an array containing the boundaries of the energy bins [keV]
  *             (array size must be nener + 1)
  * @param spec 2D vector of spectral values, organized as spec[nrad][nener], containing
  *             the flux values to be converted (e.g., photons/cm²/s/keV).
  */
-void bin_integrate_flux(int nrad, int nener, const double* ener, VecD_2D& spec)
+void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec)
 {
-    for (int ii = 0; ii < nrad; ii++)
+     const int nrad_spec = static_cast<int>(spec.size());
+    assert(nrad_spec == 50);
+    for (int ii = 0; ii < nrad_spec; ii++)
     {
         for (int jj = 0; jj < nener; jj++)
         {
@@ -403,7 +427,7 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin, double spin, int
     VecD temperature =
         get_tprofile(dat->rlo, dat->rhi, dat->nrad, 0.5 * (dat->rlo[0] + dat->rhi[0]), Tin, TPROFILE_DISKBB, status);
 
-    VecD_2D spec_arr = get_bbody_specs(ener, n, dat, temperature.data(), status);
+    VecD_2D spec_arr = get_bbody_specs_binned(ener, n, temperature, status);
 
     // need to multiply by the normal ring area to mimick a diskbb spectrum
     assert(dat->rhi[0] > dat->rlo[0]);

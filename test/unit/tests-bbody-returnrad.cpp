@@ -396,43 +396,9 @@ TEST_CASE(" Return Radiation Black Body Spectrum", "[bbret]"){
   free(photar_areaInteg);
   free(photar0_areaInteg);
 
+  delete_returnSpec2D(&returnSpec);
 
 }
-
-/*
-static void testSingleZoneRframeReflectSpectrum(int* status){
-
-  CHECK_STATUS_VOID(*status);
-
-  // get a standard grid for the convolution (is rebinned later to the input grid)
-  int n_ener;
-  double *ener;
-  auto ener_grid  = get_relxill_conv_energy_grid();
-
-  // set the standard parameters
-  xillParam *xill_param = nullptr;
-  relParam *rel_param = nullptr;
-
-  xillTable *xill_tab = nullptr;
-  get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
-
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, nullptr, nullptr, n_ener, xill_param->kTbb, rel_param->rin,
-                                                      rel_param->rout, rel_param->a, status);
-
-  double *radialGrid = getRadialGridFromReturntab(returnSpec, status);
-  relline_spec_multizone *rel_profile = relbase_multizone(ener, n_ener, rel_param, xill_tab, radialGrid, returnSpec->nrad, status);
-
-  enum{ nzones = 4};
-  enum{ nshift = 2};
-  int indZone[nzones] = {10,20,30,40};
-  double Tshift[nshift] = {1.0,1.4};
-
-  for (int ii=0; ii<nzones; ii++) {
-    for (int jj=0; jj<nshift; jj++) {
-      writeZoneXillverAllIncidentReturnSpec(Tshift[jj], indZone[ii], n_ener, ener, xill_param, returnSpec, rel_profile, status);
-    }
-  }
-}*/
 
 TEST_CASE(" Check loading of relxillBB table","[bbret]")
 {
@@ -477,6 +443,11 @@ void test_boost_parameter(LocalModel& lmod) {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
+  lmod.set_par(XPar::boost, 1);
+  lmod.eval_model(spec);
+  double sum_total = calcSum(spec.flux, spec.num_flux_bins());
+  REQUIRE(sum_total > 1e-8);
+
   lmod.set_par(XPar::boost,-1);
   lmod.eval_model(spec);
   double sum_refl = calcSum(spec.flux, spec.num_flux_bins());
@@ -487,10 +458,6 @@ void test_boost_parameter(LocalModel& lmod) {
   double sum_direct = calcSum(spec.flux, spec.num_flux_bins());
   REQUIRE(sum_direct > 1e-8);
 
-  lmod.set_par(XPar::boost, 1);
-  lmod.eval_model(spec);
-  double sum_total = calcSum(spec.flux, spec.num_flux_bins());
-  REQUIRE(sum_total > 1e-8);
 
   // check that boost parmameter works: refl+direct has to give total flux
   REQUIRE( fabs(sum_total - sum_direct - sum_refl)/sum_total < 1e-5);
@@ -515,7 +482,7 @@ TEST_CASE(" Evaluate RelxillBB (only black body)","[bbret]") {
 
 }
 
-TEST_CASE("Test different spin values", "[bbret]"){
+TEST_CASE("Test different spin values", "[bbret-speed]"){
 
  std::vector<double> spinArray{0.35,0.71,0.801,0.99,0.998};
   LocalModel lmod(ModelName::relxillBB);
