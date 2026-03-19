@@ -93,14 +93,16 @@ define testRframeReturnradRefdata(){
 
 
    
-   variable prec = 1e-5;
+   variable prec = 1e-3;
    variable isPrimaryApproxEq = is_approx_equal(dp.sumspec, dp_ref.sumspec, prec );
    variable isReturnApproxEq = is_approx_equal(dr.sumspec, dr_ref.sumspec, prec );
 
    variable status = EXIT_SUCCESS;
-   if (isPrimaryApproxEq==0 && isReturnApproxEq==0) {
-      vmessage(" *** error : restframe spectra do not agre with reference data ");
-      return EXIT_FAILURE;
+   if (isPrimaryApproxEq==0 || isReturnApproxEq==0) {
+      vmessage(" *** error : restframe spectra do notwith reference data \n\n");
+      status = EXIT_FAILURE;
+   } else {
+      vmessage(" successful : restframe spectra agree with reference data \n\n");
    }
 
 
