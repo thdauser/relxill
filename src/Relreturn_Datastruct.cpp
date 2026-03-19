@@ -141,7 +141,7 @@ void delete_returnSpec2D(returnSpec2D** rspec)
     {
       free_2d(&(*rspec)->specPri,(*rspec)->nrad);
     }
-    if ((*rspec)->specPri != nullptr)
+    if ((*rspec)->specRet != nullptr)
     {
       free_2d(&(*rspec)->specRet,(*rspec)->nrad);
     }
