@@ -6,6 +6,8 @@ set(SOURCE_FILES
         Relcache.cpp Relcache.h
         Rellp.cpp Rellp.h
         reltable.c reltable.h
+        Rebin.cpp Rebin.h
+        error.c error.h
         relutility.c relutility.h
         xilltable_reading.c xilltable_reading.h
         Relphysics.cpp Relphysics.h

@@ -17,6 +17,7 @@
 */
 
 #include "Xillspec.h"
+#include "Rebin.h"
 #include "Relphysics.h"
 #include "Relxill_errorhandling.h"
 

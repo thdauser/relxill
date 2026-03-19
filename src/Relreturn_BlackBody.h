@@ -47,8 +47,6 @@ typedef struct {
 } spec2D;
 
 
-void rebin_mean_flux_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift);
-
 void fits_rr_write_2Dspec(const char *fname, double **spec_arr, const double* ener, int nener,
                           const VecD& rlo, const VecD& rhi, int nrad,
                           returningFractions *dat, int *status);

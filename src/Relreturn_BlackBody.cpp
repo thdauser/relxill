@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include "Relreturn_BlackBody.h"
+#include "Rebin.h"
 #include "Relbase.h"
 #include "Relphysics.h"
 #include "Relreturn_Datastruct.h"
@@ -202,41 +203,6 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 /*
  * Helper Routines for Black Body returning radiation calculations
  */
-
-
-void rebin_mean_flux_shifted(double* ener, int nener, VecD& flux_out, const VecD& flux0, double shift) {
-    // Rebins flux0 (on grid ener[ii]) onto flux_out (on grid ener[ii]*shift).
-    // Analogous to rebin_mean_flux: for each output bin, interpolate from the input
-    // bin whose unshifted midpoint is closest.
-    //
-    // Performance: precompute the shifted output midpoint once per output bin,
-    // so the while-loop body only computes unshifted input midpoints (no per-iteration multiply).
-
-    int ii = 1;
-    for (int in = 0; in < nener; in++) {
-        flux_out[in] = 0.0;
-
-        // midpoint of the output bin on the shifted grid (computed once per output bin)
-        const double xn_0 = 0.5 * (ener[in] + ener[in + 1]);
-        const double xn_m =  xn_0 * shift;
-
-        // advance ii until the unshifted input midpoint at ii >= xn_m
-        while (0.5 * (ener[ii - 1] + ener[ii]) < xn_m) {
-            ii++;
-            if (ii >= nener) { break; }
-        }
-        ii--;
-
-        if (ii == 0) { ii = 1; }
-
-        const double lo = 0.5 * (ener[ii - 1] + ener[ii]);
-        const double hi = 0.5 * (ener[ii]     + ener[ii + 1]);
-
-        if (xn_m > lo && xn_m <= hi) {
-            flux_out[in] = interp_lin_1d((xn_m - lo) / (hi - lo), flux0[ii - 1], flux0[ii]);
-        }
-    }
-}
 
 
 static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec_ret, const VecD& spec_pri,
@@ -437,15 +403,15 @@ void spec_diskbb(double* ener, double* spec, int n, double Tin, double spin, int
     VecD temperature =
         get_tprofile(dat->rlo, dat->rhi, dat->nrad, 0.5 * (dat->rlo[0] + dat->rhi[0]), Tin, TPROFILE_DISKBB, status);
 
-    VecD_2D spec_arr = get_bbody_specs(ener, n, dat, temperature.data(), status); // spectra integrated over the ring area
+    VecD_2D spec_arr = get_bbody_specs(ener, n, dat, temperature.data(), status);
 
-    /* need area correction for diskbb */
+    // need to multiply by the normal ring area to mimick a diskbb spectrum
     assert(dat->rhi[0] > dat->rlo[0]);
-    for (int jj = 0; jj < n; jj++)
+for (int jj = 0; jj < n; jj++)
     {
         for (int ii = 0; ii < dat->nrad; ii++)
         {
-            // need to multiply by the normal ring area to mimick a diskbb spectrum
+
             spec_arr[ii][jj] *=
                 (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2)));
         }
@@ -488,20 +454,6 @@ std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
 
     return rgrid;
 }
-
-/*std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
-{
-    VecD rgrid(spec->nrad + 1);
-
-    for (int ii = 0; ii < spec->nrad; ii++)
-    {
-        rgrid[ii] = spec->rlo[ii];
-    }
-    rgrid[spec->nrad] = spec->rhi[spec->nrad - 1];
-
-    return rgrid;
-}*/
-
 
 static double getXillverNormFactorFromPrimarySpectrum(double* spec_in, const double* ener, int n_ener, int* status)
 {

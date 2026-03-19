@@ -36,6 +36,44 @@
 
 
 
+/*********** ERROR HANDLING *********/
+#include "error.h"
+
+#define RELXILL_ERROR(msg, status) (relxill_error(__func__, msg,status))
+
+#define CHECK_RELXILL_ERROR(msg, status) (check_relxill_error(__func__, msg,status))
+
+#define CHECK_RELXILL_DEFAULT_ERROR(status) (check_relxill_error(__func__, "function evaluation failed",status))
+
+#define CHECK_STATUS_RET(status, retval) \
+ if (EXIT_SUCCESS!=status) return(retval)
+
+#define CHECK_STATUS_VOID(status)  \
+ if (EXIT_SUCCESS!=status) return
+
+#define CHECK_STATUS_BREAK(status) \
+ if (EXIT_SUCCESS!=status) break
+
+#define CHECK_MALLOC_VOID_STATUS(a, status) \
+    if (NULL==a) { \
+        RELXILL_ERROR("memory allocation failed",status); \
+        return;\
+    }
+
+#define CHECK_MALLOC_BREAK_STATUS(a, status) \
+if (NULL==a) { \
+RELXILL_ERROR("memory allocation failed",status); \
+break;\
+}
+
+#define CHECK_MALLOC_RET_STATUS(a, status, retval) \
+    if (NULL==a) { \
+        RELXILL_ERROR("memory allocation failed",status); \
+        return retval;\
+    }
+
+#define PRINT_RELXILL_TEST_MSG(msg) (print_relxill_test_msg(__func__,msg))
+
 /*********** DEFINE STATEMENTS *********/
 
 // make sure M_PI is defined, also with old/strange compiler options

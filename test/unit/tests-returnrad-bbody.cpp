@@ -24,6 +24,7 @@ This file is part of the RELXILL model code.
 #include "Relphysics.h"
 #include "Relreturn_Datastruct.h"
 #include "Relreturn_Table.h"
+#include "Rebin.h"
 #include "Relreturn_BlackBody.h"
 #include "Relxill_errorhandling.h"
 

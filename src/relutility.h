@@ -21,78 +21,16 @@
 #include "common.h"
 
 
-/****** DEFINE FUNCTION DEFINITIONS ******/
-
-#define RELXILL_ERROR(msg, status) (relxill_error(__func__, msg,status))
-
-#define CHECK_RELXILL_ERROR(msg, status) (check_relxill_error(__func__, msg,status))
-
-#define CHECK_RELXILL_DEFAULT_ERROR(status) (check_relxill_error(__func__, "function evaluation failed",status))
-
-#define CHECK_STATUS_RET(status, retval) \
- if (EXIT_SUCCESS!=status) return(retval)
-
-#define CHECK_STATUS_VOID(status)  \
- if (EXIT_SUCCESS!=status) return
-
-#define CHECK_STATUS_BREAK(status) \
- if (EXIT_SUCCESS!=status) break
-
-#define CHECK_MALLOC_VOID_STATUS(a, status) \
-    if (NULL==a) { \
-        RELXILL_ERROR("memory allocation failed",status); \
-        return;\
-    }
-
-#define CHECK_MALLOC_BREAK_STATUS(a, status) \
-if (NULL==a) { \
-RELXILL_ERROR("memory allocation failed",status); \
-break;\
-}
-
-
-#define CHECK_MALLOC_RET_STATUS(a, status, retval) \
-    if (NULL==a) { \
-        RELXILL_ERROR("memory allocation failed",status); \
-        return retval;\
-    }
-
-#define PRINT_RELXILL_TEST_MSG(msg) (print_relxill_test_msg(__func__,msg))
-
 /**************************/
 /** Function Definitions **/
 /**************************/
 
-/** linear interpolation in 1 dimension **/
-double interp_lin_1d(double ifac_r, double rlo, double rhi);
-double interp_lin_1d_float(double ifac_r, float rlo, float rhi);
-
-/** log interpolation in 1 dimension **/
-double interp_log_1d(double ifac_r, double rlo, double rhi);
-
-/** linear interpolation in 2 dimensions **/
-double interp_lin_2d(double ifac1, double ifac2, double r11, double r12, double r21, double r22);
-double interp_lin_2d_float(double ifac1, double ifac2, float r11, float r12, float r21, float r22);
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double* ener, int n_ener, double emin, double emax);
 
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_lin_grid(double* ener, int n_ener, double emin, double emax);
-
-/* print relxill error message */
-void relxill_error(const char* const func, const char* const msg, int* status);
-
-/* print a standardized warning message */
-void relxill_warning(const char* const msg);
-
-/* check and print relxill error message */
-void check_relxill_error(const char* const func, const char* const msg, int* status);
-
-/** check and report FITS error   */
-void relxill_check_fits_error(const int* status);
-
-void print_relxill_test_msg(const char* const func, const char* const msg);
 
 /* inverse binary search */
 int inv_binary_search(const double* arr, int n, double val);
@@ -121,8 +59,6 @@ void getLogGrid(double* ener, int n_ener, double emin, double emax);
 /** convert gstar to energy */
 double gstar2ener(double g, double gmin, double gmax, double ener);
 
-/** rebin spectrum to a given energy grid length of ener is num_flux_bins+1       **/
-void _rebin_spectrum(const double* ener, double* flu, int nbins, const double* ener0, const double* flu0, int nbins0);
 
 /** get the relxill table path (dynamically from env variable)  **/
 char* get_relxill_table_path(void);
@@ -150,10 +86,6 @@ int is_ring_primary_source(int emis_type);
 int is_slab_primary_source(int emis_type);
 int is_any_primary_source(int emis_type);
 
-/** for x0 descending and xn ascending, calculate the mean at xn from y0 **/
-void inv_rebin_mean(const double* x0, double* y0, int n0, const double* xn, double* yn, int nn, int* status);
-
-void rebin_mean_flux(double* x0, double* y0, int n0, double* xn, double* yn, int nn, int* status);
 
 double calcSum(const double* array, int n_array);
 double calcSumInEnergyBand(const double* array, int n_array, const double* ener, double valLo, double valHi);

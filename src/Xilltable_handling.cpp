@@ -18,6 +18,7 @@
 
 #include "Relxill_errorhandling.h"
 #include "Xilltable_handling.h"
+#include "Rebin.h"
 
 #include "Types.h"
 

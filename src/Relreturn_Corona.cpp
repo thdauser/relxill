@@ -17,6 +17,7 @@
 */
 
 #include "Relreturn_Corona.h"
+#include "Rebin.h"
 #include "Relbase.h"
 #include "Relreturn_Datastruct.h"
 #include "Relreturn_Table.h"

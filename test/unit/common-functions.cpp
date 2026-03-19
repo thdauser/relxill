@@ -17,6 +17,7 @@
 */
 
 #include "common-functions.h"
+#include "Rebin.h"
 
 double sum_flux(const double *flux, int nbins) {
 

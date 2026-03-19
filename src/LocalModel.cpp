@@ -17,6 +17,7 @@
 */
 
 #include "LocalModel.h"
+#include "Rebin.h"
 #include "XspecSpectrum.h"
 #include "JedSad.h"
 

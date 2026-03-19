@@ -20,16 +20,6 @@
 #include "common.h"
 #include "config.h"
 
-/** linear interpolation in 1 dimension **/
-double interp_lin_1d(double ifac_r, double rlo, double rhi) {
-  return ifac_r * rhi + (1.0 - ifac_r) * rlo;
-}
-
-/** linear interpolation in 1 dimension **/
-double interp_lin_1d_float(double ifac_r, float rlo, float rhi) {
-  return ifac_r * rhi + (1.0 - ifac_r) * rlo;
-}
-
 int version_number_printed = 0;
 void print_version_number(void) {
   if (version_number_printed == 0) {
@@ -38,33 +28,6 @@ void print_version_number(void) {
   }
 }
 
-double interp_log_1d(double ifac_r, double rlo, double rhi) {
-  return exp(ifac_r * log(rhi) + (1.0 - ifac_r) * log(rlo));
-}
-
-/** linear interpolation in 2 dimensions **/
-double interp_lin_2d(double ifac1, double ifac2, double r11, double r12, double r21, double r22) {
-  return (1.0 - ifac1) * (1.0 - ifac2) * r11 +
-      (ifac1) * (1.0 - ifac2) * r12 +
-      (1.0 - ifac1) * (ifac2) * r21 +
-      (ifac1) * (ifac2) * r22;
-}
-
-double interp_lin_2d_float(double ifac1, double ifac2, float r11, float r12, float r21, float r22) {
-  return (1.0 - ifac1) * (1.0 - ifac2) * r11 +
-      (ifac1) * (1.0 - ifac2) * r12 +
-      (1.0 - ifac1) * (ifac2) * r21 +
-      (ifac1) * (ifac2) * r22;
-}
-
-void relxill_error(const char *const func, const char *const msg, int *status) {
-  *status = EXIT_FAILURE;
-  printf(" *** error in relxill (%s): %s!\n", func, msg);
-}
-
-void relxill_warning(const char *const msg) {
-  printf(" *** warning from relxill: %s!\n", msg);
-}
 
 int is_xill_model(int model_type) {
   if ((model_type == MOD_TYPE_XILLVERDENS) || (model_type == MOD_TYPE_XILLVER)
@@ -138,25 +101,6 @@ int is_any_primary_source(const int emis_type) {
 }
 
 /** check and report FITS error   */
-void relxill_check_fits_error(const int *status) {
-  if (*status != EXIT_SUCCESS) {
-    char errtext[30];
-    fits_get_errstatus(*status, errtext);
-    printf("   cfitsio error: %s \n", errtext);
-  }
-}
-
-
-void check_relxill_error(const char *const func, const char *const msg, int *status) {
-  if (*status != EXIT_SUCCESS) {
-    *status = EXIT_FAILURE;
-    printf(" *** error in relxill (%s): %s!\n", func, msg);
-  }
-}
-
-void print_relxill_test_msg(const char *const func, const char *const msg) {
-  printf(" TEST: %s %s", func, msg);
-}
 
 
 /** @brief FLOAT search for value "val" in array "arr" (sorted ASCENDING!) with length n and
@@ -462,62 +406,6 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
 
 /** rebin spectrum to a given energy grid
  *  length of ener is num_flux_bins+1       **/
-void _rebin_spectrum(const double *ener, double *flu, int nbins, const double *ener0, const double *flu0, int nbins0) {
-
-  int ii;
-  int jj;
-  int imin = 0;
-  int imax = 0;
-
-  for (ii = 0; ii < nbins; ii++) {
-
-    flu[ii] = 0.0;
-
-    /* check of the bin is outside the given energy range */
-    if ((ener0[0] <= ener[ii + 1]) && (ener0[nbins0] >= ener[ii])) {
-
-      /* need to make sure we are in the correct bin */
-      while (ener0[imin] <= ener[ii] && imin <= nbins0) {
-        imin++;
-      }
-      // need to set it back, as we just crossed to the next bin
-      if (imin > 0) {
-        imin--;
-      }
-      while ((ener0[imax] <= ener[ii + 1] && imax < nbins0)) {
-        imax++;
-      }
-      if (imax > 0) {
-        imax--;
-      }
-
-      double elo = ener[ii];
-      double ehi = ener[ii + 1];
-      if (elo < ener0[imin]) elo = ener0[imin];
-      if (ehi > ener0[imax + 1]) ehi = ener0[imax + 1];
-
-      if (imax == imin) {
-        // flu0 needs to be interpolated
-        flu[ii] = (ehi - elo) / (ener0[imin + 1] - ener0[imin]) * flu0[imin];
-      } else {
-
-        double dmin = (ener0[imin + 1] - elo) / (ener0[imin + 1] - ener0[imin]);
-        double dmax = (ehi - ener0[imax]) / (ener0[imax + 1] - ener0[imax]);
-
-        // same here in principle
-        flu[ii] += flu0[imin] * dmin + flu0[imax] * dmax;
-
-        for (jj = imin + 1; jj <= imax - 1; jj++) {
-          flu[ii] += flu0[jj];
-        }
-
-      }
-
-    }
-
-  }
-}
-
 int do_renorm_model(relParam *rel_param) {
 
   int renorm;
@@ -552,36 +440,6 @@ void get_nthcomp_param(double *nthcomp_param, double gam, double kte, double z) 
 }
 
 
-// for x0 descending and xn ascending, calculate the mean at xn
-void inv_rebin_mean(const double *x0, double *y0, int n0, const double *xn, double *yn, int nn, int *status) {
-  if (xn[0] > xn[nn - 1] || x0[nn - 1] > x0[0]) {
-    RELXILL_ERROR(" *** grid in wrong order", status);
-    return;
-  }
-  if (xn[0] < x0[n0 - 1] || xn[nn - 1] > x0[0]) {
-    RELXILL_ERROR(" *** new grid is larger than the input grid", status);
-    return;
-  }
-
-  int in = nn - 1; // traverse new array backwards
-  int ii;
-  for (ii = 0; ii < n0 - 1; ii++) {  // only go to the second to last bin
-
-    if (x0[ii] > xn[in] && x0[ii + 1] <= xn[in]) {
-
-      double ifac_r = (xn[in] - x0[ii + 1]) / (x0[ii] - x0[ii + 1]);
-      yn[in] = interp_lin_1d(ifac_r, y0[ii + 1], y0[ii]);
-
-      in--;
-      if (in < 0) { // we can stop if once we are below zero as the array is filled
-        break;
-      }
-    }
-
-  }
-
-}
-
 /*  get the fine radial grid */
 void get_fine_radial_grid(double rin, double rout, double *re, int nr) {
 
@@ -602,48 +460,6 @@ void setArrayToZero(double *arr, int n) {
     arr[jj] = 0.0;
   }
 }
-
-// for x0 and xn ascending, calculate the mean at xn  (x0 has n0+1 bins and xn has nn+1 bins)
-void rebin_mean_flux(double *xn, double *yn, int nn, double *x0, double *y0, int n0, int *status) {
-  if (xn[0] > xn[nn] || x0[0] > x0[n0]) {
-    RELXILL_ERROR(" *** grid in wrong order", status);
-    return;
-  }
-  /* if (xn[0]<x0[n0-1] || xn[nn-1]>x0[0]){
-     RELXILL_ERROR(" *** new grid is larger than the input grid",status);
-     return;
-   } */
-
-  int ii = 1; // we start at one, as we always need one bin lower than the xn[0] bin
-  for (int in = 0; in < nn; in++) {  // only go to the second to last bin
-
-    yn[in] = 0.0; // set it zero by default
-
-    double xn_m = 0.5 * (xn[in] + xn[in + 1]);
-    while (0.5 * (x0[ii - 1] + x0[ii]) < xn_m) {
-      ii++;
-      if (ii >= n0) {
-        break;
-      }
-    }
-    ii--;
-
-    if (ii == 0) {  // at the lowest bin, we need to extrapolate
-      ii = 1;
-    }
-
-    double x0_m_lo = 0.5 * (x0[ii - 1] + x0[ii]);
-    double x0_m_hi = 0.5 * (x0[ii] + x0[ii + 1]);
-
-    if (xn_m > x0_m_lo && xn_m <= x0_m_hi) {
-      double ifac_r = (xn_m - x0_m_lo) / (x0_m_hi - x0_m_lo);
-      yn[in] = interp_lin_1d(ifac_r, y0[ii - 1], y0[ii]);
-    }
-
-  }
-
-}
-
 
 /* Function: calculate the sum of an array
  *

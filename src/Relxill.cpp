@@ -16,6 +16,7 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "Relxill.h"
+#include "Rebin.h"
 
 #include "IonGradient.h"
 #include "XspecSpectrum.h"

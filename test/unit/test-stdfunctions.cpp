@@ -19,6 +19,7 @@
 #include "catch2/catch_amalgamated.hpp"
 
 #include "common-functions.h"
+#include "Rebin.h"
 #include "Relbase.h"
 #include "Relphysics.h"
 #include "ModelDefinition.h"

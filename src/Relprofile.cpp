@@ -16,6 +16,7 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 #include "Relprofile.h"
+#include "Rebin.h"
 #include "Relcache.h"
 #include "Rellp.h"
 #include "Relphysics.h"

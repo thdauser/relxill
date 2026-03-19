@@ -26,6 +26,7 @@
 
 #include "cfitsio.h"
 #include "Rellp_Extended.h"
+#include "Rebin.h"
 #include "Rellp.h"
 #include "Relphysics.h"
 
