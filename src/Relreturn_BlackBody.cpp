@@ -400,8 +400,7 @@ static VecD_2D get_returnrad_specs(double* ener_inp,
  */
 void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec)
 {
-     const int nrad_spec = static_cast<int>(spec.size());
-    assert(nrad_spec == 50);
+    const int nrad_spec = static_cast<int>(spec.size());
     for (int ii = 0; ii < nrad_spec; ii++)
     {
         for (int jj = 0; jj < nener; jj++)
