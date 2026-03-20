@@ -240,118 +240,6 @@ double gstar2ener(double g, double gmin, double gmax, double ener) {
 }
 
 
-double get_env_otherwise_default(const char *env, double def_value) {
-  char *value_string = getenv(env);
-  if (value_string != NULL) {
-    return strtod(value_string, NULL);
-  } else {
-    return def_value;
-  }
-}
-
-/** get the relxill table path (dynamically from env variable)  **/
-char *get_relxill_table_path(void) {
-  char *path;
-  path = getenv("RELXILL_TABLE_PATH");
-  if (path != NULL) {
-    return path;
-  } else {
-    return RELXILL_TABLE_PATH;
-  }
-}
-
-/** check if we are currently debugging the model **/
-int is_debug_run(void) {
-  char *env;
-  env = getenv("DEBUG_RELXILL");
-  if (env != NULL) {
-    int debug = (int) atof(env);
-    if (debug == 1) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-
-/** check if we are currently debugging the model **/
-int shouldAuxInfoGetPrinted(void) {
-
-  char *env = getenv("RELXILL_PRINT_DETAILS");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval == 1) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-/** check if we are currently debugging the model **/
-int shouldOutfilesBeWritten(void) {
-  char *env;
-  env = getenv("RELXILL_WRITE_FILES");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval == 1) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-
-int get_from_env_rrad_bbody_order(void) {
-  char *env = getenv("RELXILL_RRAD_BBODY_ORDER");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval >= 0 && envval <= 3) {
-      return envval;
-    }
-    relxill_warning("only values between 0 and 3 are allowed for RELXILL_RRAD_BBODY_ORDER");
-  }
-  return 1;
-}
-
-int get_from_env_rrad_bbody_tprofile(void) {
-  char *env = getenv("RELXILL_RRAD_BBODY_TPROFILE");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval >= 1 && envval <= 2) {
-    return envval;
-    }
-    relxill_warning("only values between 1 and 2 are allowed for RELXILL_RRAD_BBODY_TPROFILE");
-  }
-  return 1;
-}
-
-/** check if we are currently debugging the model **/
-int constantDiskDensity(void) {
-  char *env;
-  env = getenv("RELXILL_CONSTANT_DENSITY");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval == 1) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-
-/** check if we should return the relline/relconv physical norm from ENV **/
-int do_not_normalize_relline(void) {
-  char *env;
-  env = getenv("RELLINE_PHYSICAL_NORM");
-  if (env != NULL) {
-    int phys_norm = (int) strtod(env, NULL);
-    if (phys_norm == 1) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double *ener, int n_ener, double emin, double emax) {
   int ii;
@@ -389,18 +277,11 @@ void get_ipol_factor_double(const double value, const double* arr, const int n_a
 
 /** get the number of zones on which we calculate the relline-spectrum **/
 int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
-
-  char *env;
-  env = getenv("RELXILL_NUM_RZONES");
-  int env_n_zones = 0;
-  if (env != NULL) {
-    env_n_zones = atof(env);
-  }
-
+  int env_n_zones = get_from_env_relline_num_zones();
 
   // set the number of zones in radial direction (1 for relline/conv model, N_ZONES for m_cache_xill models)
   if (is_iongrad_model(ion_grad_type)) {
-    if (env != NULL) {
+    if (env_n_zones > 0) {
       if ((env_n_zones > 9) && (env_n_zones <= N_ZONES_MAX)) {
         return env_n_zones;
       } else {
@@ -411,8 +292,7 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
     }
     return N_ZONES_IONGRAD;
   } else if (is_relxill_model(model_type) && is_any_primary_source(emis_type)) {
-
-    if (env != NULL) {
+    if (env_n_zones > 0) {
       if ((env_n_zones > 0) && (env_n_zones <= N_ZONES_MAX)) {
         return env_n_zones;
       } else {

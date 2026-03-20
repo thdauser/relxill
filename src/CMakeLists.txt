@@ -9,6 +9,7 @@ set(SOURCE_FILES
         Rebin.cpp Rebin.h
         error.c error.h
         relutility.c relutility.h
+        envoptions.c envoptions.h
         xilltable_reading.c xilltable_reading.h
         Relphysics.cpp Relphysics.h
         writeOutfiles.c writeOutfiles.h
