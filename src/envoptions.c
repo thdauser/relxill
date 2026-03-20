@@ -39,102 +39,47 @@ char *get_relxill_table_path(void) {
   }
 }
 
-/** check if we are currently debugging the model **/
 int is_debug_run(void) {
-  char *env;
-  env = getenv("DEBUG_RELXILL");
-  if (env != NULL) {
-    int debug = (int) atof(env);
-    if (debug == 1) {
-      return 1;
-    }
-  }
-  return 0;
+  return (int) get_env_otherwise_default("DEBUG_RELXILL", 0);
 }
 
-
-/** check if we are currently debugging the model **/
 int shouldAuxInfoGetPrinted(void) {
-  char *env = getenv("RELXILL_PRINT_DETAILS");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval == 1) {
-      return 1;
-    }
-  }
-  return 0;
+  return (int) get_env_otherwise_default("RELXILL_PRINT_DETAILS", 0);
 }
 
-/** check if we are currently debugging the model **/
 int shouldOutfilesBeWritten(void) {
-  char *env;
-  env = getenv("RELXILL_WRITE_FILES");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval == 1) {
-      return 1;
-    }
-  }
-  return 0;
+  return (int) get_env_otherwise_default("RELXILL_WRITE_FILES", 0);
 }
 
 
 int get_from_env_rrad_bbody_order(void) {
-  char *env = getenv("RELXILL_RRAD_BBODY_ORDER");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval >= 0 && envval <= 3) {
-      return envval;
-    }
+  int def = 1;
+  int val = (int) get_env_otherwise_default("RELXILL_RRAD_BBODY_ORDER", def);
+  if (val < 0 || val > 3) {
     relxill_warning("only values between 0 and 3 are allowed for RELXILL_RRAD_BBODY_ORDER");
+    return def;
   }
-  return 1;
+  return val;
 }
 
 int get_from_env_rrad_bbody_tprofile(void) {
-  char *env = getenv("RELXILL_RRAD_BBODY_TPROFILE");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval >= 1 && envval <= 2) {
-      return envval;
-    }
+  int def = 1;
+  int val = (int) get_env_otherwise_default("RELXILL_RRAD_BBODY_TPROFILE", def);
+  if (val < 1 || val > 2) {
     relxill_warning("only values between 1 and 2 are allowed for RELXILL_RRAD_BBODY_TPROFILE");
+    return def;
   }
-  return 1;
+  return val;
 }
 
-/** check if we are currently debugging the model **/
 int constantDiskDensity(void) {
-  char *env;
-  env = getenv("RELXILL_CONSTANT_DENSITY");
-  if (env != NULL) {
-    int envval = (int) strtod(env, NULL);
-    if (envval == 1) {
-      return 1;
-    }
-  }
-  return 0;
+  return (int) get_env_otherwise_default("RELXILL_CONSTANT_DENSITY", 0);
 }
 
-
-/** check if we should return the relline/relconv physical norm from ENV **/
 int do_not_normalize_relline(void) {
-  char *env;
-  env = getenv("RELLINE_PHYSICAL_NORM");
-  if (env != NULL) {
-    int phys_norm = (int) strtod(env, NULL);
-    if (phys_norm == 1) {
-      return 1;
-    }
-  }
-  return 0;
+  return (int) get_env_otherwise_default("RELLINE_PHYSICAL_NORM", 0);
 }
 
 int get_from_env_relline_num_zones(void) {
-  char *env;
-  env = getenv("RELXILL_NUM_RZONES");
-  if (env != NULL) {
-    return (int) atof(env);
-  }
-  return 0;
+  return (int) get_env_otherwise_default("RELXILL_NUM_RZONES", 0);
 }
