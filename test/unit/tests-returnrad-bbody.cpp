@@ -182,6 +182,25 @@ TEST_CASE(" check of manually shfting the bbody spectrum gives the same result a
 
 }
 
+TEST_CASE(" Check that 1st and 2nd order returning radiation (mirrored) spectra are different ", "[rrad-bbody-norder]") {
+
+    LocalModel lmod(ModelName::relxillBBxill);
+    DefaultSpec default_spec{};
+    XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+    setenv("RELXILL_BBRET_NOREFL","1",1);
+    setenv("RELXILL_RRAD_BBODY_ORDER","1",1);
+
+    lmod.eval_model(spec);
+    double sum_1st = calcSum(spec.flux, spec.num_flux_bins());
+
+    setenv("RELXILL_RRAD_BBODY_ORDER","2",1);
+    lmod.eval_model(spec);
+    double sum_2nd = calcSum(spec.flux, spec.num_flux_bins());
+
+    REQUIRE((sum_2nd - sum_1st) > 1e-3);
+
+}
 
 TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
 {

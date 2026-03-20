@@ -30,6 +30,7 @@ extern "C" {
 }
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
+const std::string fbase_rrad_bbody = "!__relxillOutput-rrad-bbody-";  // filename base for output files
 
 
 
@@ -135,7 +136,14 @@ void fits_rr_write_2Dspec(const char* fname, const std::vector<std::vector<doubl
 
 VecD getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double Tin, int* status)
 {
-    return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, TPROFILE_ALPHA, status);
+    int t_profile = [&]() -> int {
+        switch (get_from_env_rrad_bbody_tprofile()) {
+            case 2: return TPROFILE_DISKBB;
+            default: return TPROFILE_ALPHA;  // this is for a value of 1 as well
+        }
+    }();
+
+    return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, t_profile, status);
 }
 
 
@@ -241,14 +249,15 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     returningFractions* dat = get_rrad_fractions(spin, Rin, Rout, status);
 
 
-
     // 2 - temperature profile of the whole disk
     VecD temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
 
     // 3 - get primary and returning 2D spectrum (bin integrated spectra)
     VecD_2D spec_prim_zones = get_bbody_specs_binned(ener, nener, temperature, status);
-    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status, 1);
-    VecD_2D spec_rr_zones_2ndOrder = get_returnrad_specs(ener, nener, dat, temperature, status, 2);
+
+    int num_rrad_order = get_from_env_rrad_bbody_order();
+  //  VecD_2D spec_rr_zones_primary = get_returnrad_specs(ener, nener, dat, temperature, status, 1);
+    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status, num_rrad_order);
 
     if (is_debug_run())
     {
@@ -260,7 +269,21 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     }
 
     returnSpec2D* returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
+
+    if (shouldOutfilesBeWritten())
+    {std::string fname = "!undefined.fits";
+        fname = fbase_rrad_bbody + "rframe-bbodyEmit.fits";
+        fits_rr_write_2Dspec(fname.c_str(), returnSpec->specPri, ener, nener,
+                             returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
+
+        fname = fbase_rrad_bbody + "rframe-bbodyRet.fits";
+        fits_rr_write_2Dspec(fname.c_str(), returnSpec->specRet, ener, nener,
+                             returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
+
+    }
+
     delete_returningFractions(&dat);
+
 
     return returnSpec;
 }
@@ -378,7 +401,7 @@ static VecD_2D calc_returnrad_from_input_spectra(returningFractions *dat, int *s
  * @param      dat         Returning fractions data (g-factors, transfer fractions, f_ret).
  * @param      temperature Disk temperature profile per radial zone [keV].
  * @param      status      Error status flag.
- * @param      norder     Number of returning radiation calculations (only this order is returned!)
+ * @param      norder     Number of returning radiation calculations (combined orders are returned!)
  *
  * @return 2D spectrum [nrad][nener_inp] in cts/bin, or empty on error.
  */
@@ -406,9 +429,7 @@ static VecD_2D get_returnrad_specs(double* ener_inp,
         if (iorder == 0) {
             spec_sum_out = spec_out[iorder];
         } else {
-            // Current implementation: do not add spectra, but give the last order only
-            // add_2d(spec_sum_out, spec_out[iorder]);
-            spec_sum_out =  spec_out[iorder];
+            add_2d(spec_sum_out, spec_out[iorder]);
         }
     }
 
@@ -911,36 +932,35 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     if (shouldOutfilesBeWritten())
     {
         std::string fname = "!undefined.fits";
-        std::string fbase = "!__relxillOutput-rrad-bbody-";
 
         if (should_noXillverRefl_calculated())
         {
             if (fabs(xill_param->boost) < 1e-8)
             {
-                fname = fbase + "obs-mirror-primary.fits";
+                fname = fbase_rrad_bbody + "obs-mirror-primary.fits";
             }
             else if (xill_param->boost < 0)
             {
-                fname = fbase + "obs-mirror-refl.fits";
+                fname = fbase_rrad_bbody + "obs-mirror-refl.fits";
             }
             else
             {
-                fname = fbase + "obs-mirror.fits";
+                fname = fbase_rrad_bbody + "obs-mirror.fits";
             }
         }
         else
         {
             if (fabs(xill_param->boost) < 1e-8)
             {
-                fname = fbase + "obs-primary.fits";
+                fname = fbase_rrad_bbody + "obs-primary.fits";
             }
             else if (xill_param->boost < 1)
             {
-                fname = fbase + "obs-reflect.fits";
+                fname = fbase_rrad_bbody + "obs-reflect.fits";
             }
             else
             {
-                fname = fbase + "obs-total.fits";
+                fname = fbase_rrad_bbody + "obs-total.fits";
             }
         }
         std::cout << " writing BBret diagnose outfile: " << fname.c_str() << std::endl;
@@ -948,17 +968,10 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
         fits_rr_write_2Dspec(fname.c_str(), specZonesConvOutput, ener, n_ener,
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
         
-        fname = fbase + "rframe-total.fits";
+        fname = fbase_rrad_bbody + "rframe-total.fits";
         fits_rr_write_2Dspec(fname.c_str(), specZonesEmittedCombined, ener, n_ener,
                              returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
-        fname = fbase + "rframe-bbodyRet.fits";
-        fits_rr_write_2Dspec(fname.c_str(), returnSpec->specRet, ener, n_ener,
-                             returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
-
-        fname = fbase + "rframe-bbodyEmit.fits";
-        fits_rr_write_2Dspec(fname.c_str(), returnSpec->specPri, ener, n_ener,
-                             returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, status);
 
     }
 

@@ -301,6 +301,30 @@ int shouldOutfilesBeWritten(void) {
 }
 
 
+int get_from_env_rrad_bbody_order(void) {
+  char *env = getenv("RELXILL_RRAD_BBODY_ORDER");
+  if (env != NULL) {
+    int envval = (int) strtod(env, NULL);
+    if (envval >= 0 && envval <= 3) {
+      return envval;
+    }
+    relxill_warning("only values between 0 and 3 are allowed for RELXILL_RRAD_BBODY_ORDER");
+  }
+  return 1;
+}
+
+int get_from_env_rrad_bbody_tprofile(void) {
+  char *env = getenv("RELXILL_RRAD_BBODY_TPROFILE");
+  if (env != NULL) {
+    int envval = (int) strtod(env, NULL);
+    if (envval >= 1 && envval <= 2) {
+    return envval;
+    }
+    relxill_warning("only values between 1 and 2 are allowed for RELXILL_RRAD_BBODY_TPROFILE");
+  }
+  return 1;
+}
+
 /** check if we are currently debugging the model **/
 int constantDiskDensity(void) {
   char *env;

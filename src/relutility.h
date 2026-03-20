@@ -104,6 +104,9 @@ int shouldOutfilesBeWritten(void);
 
 int constantDiskDensity(void);
 
+int get_from_env_rrad_bbody_order(void);
+int get_from_env_rrad_bbody_tprofile(void);
+
 void invertArray(double* vals, int n);
 
 double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double radius);

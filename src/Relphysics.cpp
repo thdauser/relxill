@@ -98,8 +98,10 @@ VecD get_tprofile(const VecD& rlo, const VecD& rhi, const int nrad, double Rin, 
 
   if (type == TPROFILE_ALPHA) {
     disk_Tprofile_alpha(rlo.data(), rhi.data(), tprofile.data(), nrad, Rin, Tin);
+    if (is_debug_run() ) { printf(" using temperature profile ALPHA\n");}
   } else if (type == TPROFILE_DISKBB) {
     disk_Tprofile_diskbb(rlo.data(), rhi.data(), tprofile.data(), nrad, Tin);
+    if (is_debug_run() ) { printf(" using temperature profile DISKBB\n");}
   } else {
     RELXILL_ERROR(" failed getting the temperature profile ", status);
     printf("    reason: type=%i is unknown\n", type);
