@@ -28,4 +28,10 @@ using VecU_D = std::vector<std::unique_ptr<double[]>>;
 
 using VecI = std::vector<int>;
 
+inline void add_2d(VecD_2D& a, const VecD_2D& b) {
+    for (size_t i = 0; i < a.size(); i++)
+        for (size_t j = 0; j < a[i].size(); j++)
+            a[i][j] += b[i][j];
+}
+
 #endif //RELXILL_TYPES_H

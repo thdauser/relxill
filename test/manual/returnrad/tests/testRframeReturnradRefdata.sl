@@ -31,13 +31,14 @@ define plot_single_ref_data(dp, dp_ref){
 %%%%%
    variable pl = xfig_plot_new(17,10);
    
-   pl.world(0.01,150,1e-1,400;loglog);
+   pl.world(0.01,250,1e-2,400;loglog);
    
    pl.xlabel("Energy [keV]");
    pl.ylabel("Energy Flux $F_\nu$"R);
 
 
    % make life easier
+   variable de = dp.ehi-dp.elo;
    variable emn = 0.5*(dp.elo+dp.ehi);
    variable emn_ref = 0.5*(dp_ref.elo+dp_ref.ehi);
 
@@ -59,6 +60,7 @@ define plot_single_ref_data(dp, dp_ref){
 
    variable ii, n = length(dp.dat.spec[*,0]);
    variable mod_fac=8;
+   variable flu;
    ccount = 0;
    _for ii(0,n-1){
       
@@ -66,6 +68,10 @@ define plot_single_ref_data(dp, dp_ref){
 	 if (ii mod mod_fac == 0) {
 	    pl.plot(emn,dp_ref.dat.spec[ii,*]*efac_ref;color="black",line=1);
 	    pl.plot(emn,dp.dat.spec[ii,*]*efac;color=get_col(),line=0);
+%	    flu = sum(dp.dat.spec[ii,*]*emn);
+%	    pl.add_object(xfig_new_text(sprintf("$r = %.2f\,r_\mathrm{g} - F=%.2e$"R,
+%						0.5*(dp.dat.rlo[ii]+dp.dat.rhi[ii]),flu);
+%					color=get_col(;same)),
 	    pl.add_object(xfig_new_text(sprintf("$r = %.2f\,r_\mathrm{g}$"R,
 						0.5*(dp.dat.rlo[ii]+dp.dat.rhi[ii]));
 					color=get_col(;same)),

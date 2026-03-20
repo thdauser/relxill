@@ -240,13 +240,15 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     // 1 - get the fractions from the table (plus interpolation to current parameters)
     returningFractions* dat = get_rrad_fractions(spin, Rin, Rout, status);
 
+
+
     // 2 - temperature profile of the whole disk
     VecD temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
 
     // 3 - get primary and returning 2D spectrum (bin integrated spectra)
     VecD_2D spec_prim_zones = get_bbody_specs_binned(ener, nener, temperature, status);
     VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status, 1);
-
+    VecD_2D spec_rr_zones_2ndOrder = get_returnrad_specs(ener, nener, dat, temperature, status, 2);
 
     if (is_debug_run())
     {
@@ -329,7 +331,6 @@ static void calc_rr_bbspec_ring(VecD& spec,
             // we have to shift 1/gfac, as gfac=E_i/E_e and do not shift the spectrum, but shift the energy grid "backwards"
             // N_i(E_i) = N_e(E_e) = N_e(E_i / gfac)
             rebin_mean_flux_shifted(ener, nener, spec_r, spec_pri[ii], 1./dat->tabData->gmin[irad][ii]);
-            //bbody_spec(ener, nener, spec_r.data(), spec_pri[ii], dat->tabData->gmin[irad][ii]); // caveat, gmean might not be 1.0
         }
 
         // apply the correct fractions and add it to the zone output spectrum
@@ -377,7 +378,7 @@ static VecD_2D calc_returnrad_from_input_spectra(returningFractions *dat, int *s
  * @param      dat         Returning fractions data (g-factors, transfer fractions, f_ret).
  * @param      temperature Disk temperature profile per radial zone [keV].
  * @param      status      Error status flag.
- * @param      norder     Number of returning radiation calculations
+ * @param      norder     Number of returning radiation calculations (only this order is returned!)
  *
  * @return 2D spectrum [nrad][nener_inp] in cts/bin, or empty on error.
  */
@@ -396,16 +397,25 @@ static VecD_2D get_returnrad_specs(double* ener_inp,
     get_std_bbody_energy_grid(&nener, &ener, status);
     auto spec_pri = get_bbody_specs(ener, nener, temperature, status);
 
-    for (int iorder = 0; iorder< norder; iorder++) {
-       spec_pri = calc_returnrad_from_input_spectra(dat, status, nener, ener, spec_pri);
-   }
-
-
+    std::vector<VecD_2D> spec_out(norder);
     // match the spectra to the output grid
+    VecD_2D spec_sum_out(dat->nrad, VecD(nener));
+    for (int iorder = 0; iorder < norder; iorder++) {
+        spec_out[iorder] = calc_returnrad_from_input_spectra(dat, status, nener, ener,
+            iorder == 0 ? spec_pri : spec_out[iorder - 1]);
+        if (iorder == 0) {
+            spec_sum_out = spec_out[iorder];
+        } else {
+            // Current implementation: do not add spectra, but give the last order only
+            // add_2d(spec_sum_out, spec_out[iorder]);
+            spec_sum_out =  spec_out[iorder];
+        }
+    }
+
     VecD_2D spec_zones_rebinned(dat->nrad, VecD(nener_inp));
     for (int ii = 0; ii < dat->nrad; ii++)
     {
-        rebin_mean_flux(ener_inp, spec_zones_rebinned[ii].data(), nener_inp, ener, spec_pri[ii].data(), nener, status);
+        rebin_mean_flux(ener_inp, spec_zones_rebinned[ii].data(), nener_inp, ener, spec_sum_out[ii].data(), nener, status);
         assert_double_array_isnormal(spec_zones_rebinned[ii].data(),nener_inp);
     }
     bin_integrate_flux(nener_inp, ener_inp, spec_zones_rebinned);

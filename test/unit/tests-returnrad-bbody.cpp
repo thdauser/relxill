@@ -178,8 +178,6 @@ TEST_CASE(" check of manually shfting the bbody spectrum gives the same result a
     auto pho_flux = integ_flux(ener, nener, spec.data());
     auto pho_flux0 = integ_flux(ener, nener, spec0_shift.data());
 
-    printf("pho_flux=%.3e,  pho_flux0=%.3e \n", pho_flux, pho_flux0);
-
     REQUIRE(fabs(pho_flux-pho_flux0) < 1e-3);
 
 }
