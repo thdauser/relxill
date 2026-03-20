@@ -199,8 +199,36 @@ TEST_CASE(" Check that 1st and 2nd order returning radiation (mirrored) spectra 
     double sum_2nd = calcSum(spec.flux, spec.num_flux_bins());
 
     REQUIRE((sum_2nd - sum_1st) > 1e-3);
-
 }
+
+
+TEST_CASE(" Check if changing the Temperature Profile give different results", "[rrad-bbody-tprofile]") {
+
+    LocalModel lmod(ModelName::relxillBBxill);
+    DefaultSpec default_spec{};
+    XspecSpectrum spec = default_spec.get_xspec_spectrum();
+
+    setenv("RELXILL_BBRET_NOREFL","1",1);
+
+    lmod.eval_model(spec);
+    double sum_default = calcSum(spec.flux, spec.num_flux_bins());
+
+    setenv("RELXILL_RRAD_BBODY_TPROFILE","1",1);
+    lmod.eval_model(spec);
+    double sum_1 = calcSum(spec.flux, spec.num_flux_bins());
+
+    // check of setting it to 1 is the default
+    REQUIRE(fabs(sum_default - sum_1) < 1e-6);
+
+
+    setenv("RELXILL_RRAD_BBODY_TPROFILE","2",1);
+    lmod.eval_model(spec);
+    double sum_2 = calcSum(spec.flux, spec.num_flux_bins());
+
+    // check that 1 and 2 are different
+    REQUIRE(fabs(sum_2 - sum_1) > 1e-6);
+}
+
 
 TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
 {
