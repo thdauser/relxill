@@ -67,7 +67,7 @@ void relxill_bb_kernel(double *ener_inp,
                        relParam *rel_param,
                        int *status);
 
-std::vector<double> getRadialGridFromReturntab(returnSpec2D *spec);
+std::vector<double> getRadialGridFromReturntab(const returnSpec2D *spec);
 
 VecD getXillverPrimaryBBody(double kTbb, double *spec_in, const double* ener, int n_ener, int *status);
 

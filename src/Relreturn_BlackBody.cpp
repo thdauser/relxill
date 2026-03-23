@@ -518,7 +518,7 @@ for (int jj = 0; jj < n; jj++)
 }
 
 
-std::vector<double> getRadialGridFromReturntab(returnSpec2D* spec)
+VecD getRadialGridFromReturntab(const returnSpec2D* spec)
 {
     assert(spec != nullptr);
     assert(spec->nrad > 0);
@@ -850,6 +850,14 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                                        nrad_grid,
                                        status);
 
+
+    // ==== calculate the ionization gradient ==== 
+    // IonGradient ion_gradient{ radialGrid,ION_GRAD_TYPE_ALPHA,0 };
+    // define: emis_simple = calculate_emissivity_profile_from_spectra(returnSpec->specRet)
+    // emis_simple is a struct of radialGrid and emissivity
+    // ion_gradient.calculate_gradient(*(systemParameters->emis), primary_source.source_parameters);
+
+
     // ========== //
     VecD specSingleZone(n_ener_inp);
     VecD_2D specZonesConvOutput(returnSpec->nrad);
@@ -857,12 +865,6 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     VecD_2D specBbodyPrimZones(returnSpec->nrad);
     // ========== //
 
-    // --- 1 --- calculate the accretion disk zones and set their parameters
-    IonGradient ion_gradient{
-        radialGrid,
-        rel_param->ion_grad_type, xill_param->iongrad_index
-    };
-    ion_gradient.calculate_gradient(*(systemParameters->emis), primary_source.source_parameters);
 
 
     double Tin = xill_param->kTbb;
