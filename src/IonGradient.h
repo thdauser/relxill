@@ -21,6 +21,7 @@
 #include "vector"
 #include <memory>
 #include <array>
+#include <utility>
 
 #include "Relphysics.h"
 #include "PrimarySource.h"
@@ -38,6 +39,8 @@ class RadialGrid {
       : radius{calculate_radial_grid(rmin, rmax, nzones, h)} {
     assert(nzones == static_cast<int>( num_zones() ) );
   }
+
+  RadialGrid(VecD _radius) : radius{std::move(_radius)} {};
 
   [[nodiscard]] size_t num_zones() const {
     return radius.size() - 1;

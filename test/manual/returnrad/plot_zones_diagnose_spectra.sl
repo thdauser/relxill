@@ -47,8 +47,6 @@ define eval_std_model(){
 %}}}
 
 define getDiagnoseRframePlot(){
-%{{{
-   
    variable plotTitle = sprintf("Restframe Plot of Return (solid) and Primary (dashed) -- spin=%.3f",
 				spin);
 
@@ -63,7 +61,6 @@ define getDiagnoseRframePlot(){
    
    return EXIT_SUCCESS;
 }
-%}}}
 
 define getDiagnoseXillverPrimPlot(){
    

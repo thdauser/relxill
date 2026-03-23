@@ -857,6 +857,14 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     VecD_2D specBbodyPrimZones(returnSpec->nrad);
     // ========== //
 
+    // --- 1 --- calculate the accretion disk zones and set their parameters
+    IonGradient ion_gradient{
+        radialGrid,
+        rel_param->ion_grad_type, xill_param->iongrad_index
+    };
+    ion_gradient.calculate_gradient(*(systemParameters->emis), primary_source.source_parameters);
+
+
     double Tin = xill_param->kTbb;
 
     specCache* spec_cache = init_global_specCache(status);

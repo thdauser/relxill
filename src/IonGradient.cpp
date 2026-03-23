@@ -146,7 +146,7 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
   // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
   const double lxi_max = cal_lxi_max_ss73(emis_profile, rin);
 
-  // the maximal ionization is given as input parameter, so we need to normalize our calculation by this value
+  // the maximal ionization is given as an input parameter, so we need to normalize our calculation by this value
   const double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
 
   /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
@@ -158,7 +158,7 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
       density_normed = density_ss73_zone_a(m_rmean[ii], rin) / density_min;
     }
 
-    dens[ii] = log10(density_normed) + param_density;  //addition as quantity is logarithm
+    dens[ii] = log10(density_normed) + param_density;
 
     // now we can use the emissivity to calculate the ionization
     // (note we need a density which is normalized to dens(rin)=1 )
@@ -371,6 +371,8 @@ void IonGradient::calculate_gradient(const emisProfile &emis_profile,
 
   auto rel_param = primary_source_params.rel_param();
   auto xill_param = primary_source_params.xilltab_param();
+  //assert(rel_param != nullptr);
+ // assert(xill_param != nullptr);
 
   calc_energy_shift_from_source_to_disk(rel_param);
 
@@ -379,13 +381,13 @@ void IonGradient::calculate_gradient(const emisProfile &emis_profile,
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_ALPHA) {
 
-    const double lxi_rin = (is_alpha_model(rel_param->model_type))
+    const double lxi_max = (is_alpha_model(rel_param->model_type))
                            ? IonGradient::calculate_lxi_max_from_distance(emis_profile,
                                                                           primary_source_params,
                                                                           xill_param->dens)
                            : xill_param->lxi;
 
-    calc_ion_grad_alpha(emis_profile, lxi_rin, xill_param->dens);
+    calc_ion_grad_alpha(emis_profile, lxi_max, xill_param->dens);
 
   } else if (m_ion_grad_type == ION_GRAD_TYPE_CONST) {
     for (int ii = 0; ii < m_nzones; ii++) {
