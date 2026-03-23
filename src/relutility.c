@@ -293,13 +293,12 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
     return N_ZONES_IONGRAD;
   } else if (is_relxill_model(model_type) && is_any_primary_source(emis_type)) {
     if (env_n_zones > 0) {
-      if ((env_n_zones > 0) && (env_n_zones <= N_ZONES_MAX)) {
+      if (env_n_zones <= N_ZONES_MAX) {
         return env_n_zones;
-      } else {
-        printf(" *** warning: value of %i for RELXILL_NUM_RZONES not within required interval of [1,%i] \n",
-               env_n_zones,
-               N_ZONES_MAX);
       }
+      printf(" *** warning: value of %i for RELXILL_NUM_RZONES not within required interval of [1,%i] \n",
+             env_n_zones,
+             N_ZONES_MAX);
     }
     return N_ZONES;
   } else {
@@ -360,8 +359,10 @@ void get_fine_radial_grid(double rin, double rout, double *re, int nr) {
 
 
 void setArrayToZero(double *arr, int n) {
-  for (int jj = 0; jj < n; jj++) {
-    arr[jj] = 0.0;
+  if (arr!=NULL) {
+    for (int jj = 0; jj < n; jj++) {
+      arr[jj] = 0.0;
+    }
   }
 }
 

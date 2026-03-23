@@ -17,7 +17,6 @@
 */
 
 #include "envoptions.h"
-#include "config.h"
 
 double get_env_otherwise_default(const char *env, double def_value) {
   char *value_string = getenv(env);
