@@ -682,7 +682,7 @@ static double f_spp__(double *y, double *xnonth, int *nnonth,
 
 void c_donthcomp(const double *ear, int ne, double *param, double *photar) {
   /* Initialized data */
-  double prim[ne];
+  double prim[ne + 1];
 
   static double pa0[5] = {9999., 9999., 9999., 9999., 9999.};
 
