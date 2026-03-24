@@ -18,6 +18,7 @@
 
 #include "common-functions.h"
 #include "Rebin.h"
+#include "Xilltable_handling.h"
 
 double sum_flux(const double *flux, int nbins) {
 
@@ -118,6 +119,7 @@ void init_std_relXill_spec(relline_spec_multizone **rel_profile, double **xill_s
                   xill_spec_table->n_ener);
   *xill_spec_output = xill_flux;
 
+  free_xill_spec(xill_spec_table);
 }
 
 double calc_FluxInStdBand(const double *flux, double *ener, int n) {

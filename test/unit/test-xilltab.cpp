@@ -87,6 +87,7 @@ TEST_CASE (
   REQUIRE(tab->num_param > 0);
   test_tab_num_param(lmod.xill_params(), &status, tab);
 
+  free_xillTable(&tab);
 }
 
 static void test_spec_norm(xillSpec* spec)
@@ -273,6 +274,8 @@ TEST_CASE (
   const double prec = 0.01;
   REQUIRE(  ( flux_in_band_stdparam/flux_in_band_logn_changed - 1 ) < prec  );
 
+  free_xill_spec(spec[0]);
+  free_xill_spec(spec[1]);
 }
 
 
@@ -318,6 +321,7 @@ TEST_CASE (
   REQUIRE(fabs(sum_orig / norm_xillver_table - 1) < 1e-6);
 
   delete[] pl_flux_xill;
+  free(xill_param);
 
   REQUIRE(status == EXIT_SUCCESS);
 

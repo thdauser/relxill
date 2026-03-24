@@ -357,6 +357,7 @@ TEST_CASE (
 
   REQUIRE(status == EXIT_SUCCESS);
 
+  free_emisProfile(emis_profile);
 }
 
 

@@ -249,7 +249,7 @@ TEST_CASE("Relline Normalization Convergence", "[basic]"){
   REQUIRE(fabs(averageRatio - referenceRatio) < PREC);
   INFO("failed comparing the calculated ratio of the relline flux to the expectation");
 
-
+  delete_rel_params(rel_param);
 }
 
 TEST_CASE(" Normlization of the FFT Convolution", "[bbasic]") {
@@ -297,6 +297,7 @@ TEST_CASE(" Normlization of the FFT Convolution", "[bbasic]") {
   INFO(" the relativistic convolution is not normalized to 1 \n ");
   INFO(" but still the convoluation is normalized, which should not be the case\n ");
 
+  delete[] xill_spec;
 }
 
 TEST_CASE("Adding input parameter", "[param]") {

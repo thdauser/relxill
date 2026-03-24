@@ -262,6 +262,7 @@ TEST_CASE(" Check Temperature Profile", "[bbret]"){
 
     REQUIRE( checkTemperatureProfile(temperature.data(), dat->nrad) == EXIT_SUCCESS);
 
+    delete_returningFractions(&dat);
   }
 
 }

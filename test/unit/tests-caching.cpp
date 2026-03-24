@@ -20,6 +20,7 @@
 #include "LocalModel.h"
 #include "XspecSpectrum.h"
 #include "Relcache.h"
+#include "ModelDefinition.h"
 
 #include <chrono>
 
@@ -89,6 +90,9 @@ TEST_CASE(" caching of model parameters", "[cache]")
   auto cpar = lmod.get_rel_params_struct();
 
   REQUIRE( did_rel_param_change(cpar, par));
+
+  delete_rel_params(par);
+  delete_rel_params(cpar);
 }
 
 TEST_CASE(" caching of energy grid", "[cache]") {

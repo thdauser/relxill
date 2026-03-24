@@ -516,6 +516,8 @@ for (int jj = 0; jj < n; jj++)
         ptrs[ii] = spec_arr[ii].data();
     }
     sum_2Dspec(spec, ptrs.data(), n, dat->nrad, status);
+
+    delete_returningFractions(&dat);
 }
 
 

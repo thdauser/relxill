@@ -116,6 +116,8 @@ TEST_CASE (
 
   // printf(" norm1=%e   norm2=%e\n", norm_fac1, norm_fac2);
 
+  delete[] prim_spec_source;
+  free(xill_param);
 }
 
 TEST_CASE (
