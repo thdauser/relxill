@@ -291,8 +291,7 @@ TEST_CASE(" DiskBB Spectrum ", "[bbret]"){
   REQUIRE( compareWithRefdata("refvalues_diskbb.fits", ener, photar, n_ener, &status) == EXIT_SUCCESS );
   REQUIRE( status == EXIT_SUCCESS );
 
-  setenv("DEBUG_RELXILL","0",1);
-
+  unsetenv("DEBUG_RELXILL");
 }
 
 // ========== //
@@ -398,12 +397,16 @@ void test_boost_parameter(LocalModel& lmod) {
 
 
   // check that boost parmameter works: refl+direct has to give total flux
+  printf(" total:%.3e direct:%.3e refl:%.3e (diff:%.3e) \n",
+         sum_total,
+         sum_direct,
+         sum_refl,
+         fabs(sum_total - sum_direct - sum_refl) / sum_total);
   REQUIRE( fabs(sum_total - sum_direct - sum_refl)/sum_total < 1e-5);
-
 }
 
 
-TEST_CASE(" Evaluate RelxillBB (only black body)","[bbret]") {
+TEST_CASE(" Evaluate RelxillBB (only black body)","[bbret-fail]") {
 
   int status = EXIT_SUCCESS;
   setenv("RELXILL_WRITE_OUTFILES","1",1);
@@ -417,7 +420,8 @@ TEST_CASE(" Evaluate RelxillBB (only black body)","[bbret]") {
   LocalModel lmod2(ModelName::relxillBBxill);
   test_boost_parameter(lmod2);
 
-
+  unsetenv("RELXILL_WRITE_OUTFILES");
+  unsetenv("RELXILL_BBRET_NOREFL");
 }
 
 TEST_CASE("Test different spin values", "[bbret-speed]"){

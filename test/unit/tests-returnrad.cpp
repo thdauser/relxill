@@ -316,7 +316,7 @@ TEST_CASE (
   setenv(env_name_outfiles, "1", 1);
   rel_param->return_rad = 1;
   relline_spec_multizone *rel_profile = relbase(spec->ener, spec->nbins, rel_param, &status);
-  setenv(env_name_outfiles, "0", 1);
+  unsetenv(env_name_outfiles);
 
   REQUIRE(status==EXIT_SUCCESS);
   REQUIRE(rel_profile->n_zones == 1);
@@ -473,7 +473,8 @@ TEST_CASE (
   REQUIRE(sum1 > 1e-6);
   REQUIRE(abs(sum1 - sum2) > 1e-3);
 
-}
+  unsetenv(env_outfiles);
+ }
 
 TEST_CASE (
 

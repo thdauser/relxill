@@ -25,6 +25,7 @@
 
 
 TEST_CASE (
+
 " Ion Grad PL Index "
 ,
 "[iongrad]"
@@ -60,6 +61,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 " Test Alpha Model (writing output) "
 ,
 "[output]"
@@ -85,9 +87,11 @@ TEST_CASE (
   local_model.eval_model(spec);
 
   unsetenv(env_outfiles);
+  unsetenv("RELXILL_NUM_RZONES");
 }
 
 TEST_CASE (
+
 " Exec single iongrad model, should change with xindex"
 ,
 "[iongrad]"
@@ -120,24 +124,27 @@ TEST_CASE (
 }
 
 
-IonGradient get_ion_gradient(LocalModel const& lmod)
-{
-    const xillParam* xill_param = lmod.xill_params();
-    const relParam* rel_param = lmod.rel_params();
+IonGradient get_ion_gradient(LocalModel const &lmod) {
+  const xillParam *xill_param = lmod.xill_params();
+  const relParam *rel_param = lmod.rel_params();
 
-    // relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, &status);
-    int status = EXIT_SUCCESS;
-    RelSysPar* sys_par = get_system_parameters(rel_param, &status);
+  // relline_spec_multizone *rel_profile = relbase(spec.energy, spec.num_flux_bins(), rel_param, &status);
+  int status = EXIT_SUCCESS;
+  RelSysPar *sys_par = get_system_parameters(rel_param, &status);
 
-    RadialGrid const radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
+  RadialGrid const radial_grid{rel_param->rin, rel_param->rout, rel_param->num_zones, rel_param->height};
 
-    IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
-    ion_gradient.calculate_gradient(*(sys_par->emis), PrimarySourceParameters{lmod.get_model_params()});
+  IonGradient ion_gradient{radial_grid, rel_param->ion_grad_type, xill_param->iongrad_index};
+  ion_gradient.calculate_gradient(*(sys_par->emis), PrimarySourceParameters{lmod.get_model_params()});
 
-    return ion_gradient;
+  return ion_gradient;
 }
 
-TEST_CASE (" Test Constant Density by Env Variable ","[iongrad-density]")
+TEST_CASE (
+" Test Constant Density by Env Variable "
+,
+"[iongrad-density]"
+)
  {
 
   DefaultSpec const default_spec{};
@@ -155,6 +162,7 @@ TEST_CASE (" Test Constant Density by Env Variable ","[iongrad-density]")
   const int num_zones = ion_grad.radial_grid.num_zones();
 
   unsetenv(env_density);
+  unsetenv("RELXILL_NUM_RZONES");
 
   lmod.set_par(XPar::logn, dens_param*1.1);
   lmod.eval_model(spec);
@@ -168,6 +176,7 @@ TEST_CASE (" Test Constant Density by Env Variable ","[iongrad-density]")
 }
 
 TEST_CASE (
+
 " Test Density Gradient "
 ,
 "[iongrad-density]"
@@ -204,9 +213,12 @@ TEST_CASE (
   // value of the minimal density as expected?
   REQUIRE(fabs(dens_param - dens_min) < 1e-2);
   REQUIRE(fabs(dens_param - ion_grad.dens[0]) > 1e-2);  // for the given parameters the inner zone should be larger
+
+  unsetenv("RELXILL_NUM_RZONES");
 }
 
 TEST_CASE (
+
 " Test Density Gradient "
 ,
 "[iongrad-valgrind]"
@@ -234,4 +246,5 @@ TEST_CASE (
   }
 
   unsetenv(env_density);
+  unsetenv("RELXILL_NUM_RZONES");
 }

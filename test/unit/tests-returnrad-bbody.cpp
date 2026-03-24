@@ -199,6 +199,9 @@ TEST_CASE(" Check that 1st and 2nd order returning radiation (mirrored) spectra 
     double sum_2nd = calcSum(spec.flux, spec.num_flux_bins());
 
     REQUIRE((sum_2nd - sum_1st) > 1e-3);
+
+    unsetenv("RELXILL_BBRET_NOREFL");
+    unsetenv("RELXILL_RRAD_BBODY_ORDER");
 }
 
 
@@ -293,4 +296,5 @@ TEST_CASE(" Test relxillBB Model ", "[relxillbb]")
     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
     REQUIRE_NOTHROW(lmod.eval_model(spec));
+    unsetenv("RELXILL_BBRET_NOREFL");
 }
