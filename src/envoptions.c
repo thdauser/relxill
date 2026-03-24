@@ -82,3 +82,20 @@ int do_not_normalize_relline(void) {
 int get_from_env_relline_num_zones(void) {
   return (int) get_env_otherwise_default("RELXILL_NUM_RZONES", 0);
 }
+
+void print_env_options(void) {
+  printf("\n === RELXILL Environment Variables ===\n\n");
+
+  char *path = getenv("RELXILL_TABLE_PATH");
+  printf("  RELXILL_TABLE_PATH          = %s\n", path != NULL ? path : RELXILL_TABLE_PATH);
+  printf("  DEBUG_RELXILL               = %d\n", is_debug_run());
+  printf("  RELXILL_PRINT_DETAILS       = %d\n", shouldAuxInfoGetPrinted());
+  printf("  RELXILL_WRITE_FILES         = %d\n", shouldOutfilesBeWritten());
+  printf("  RELXILL_RRAD_BBODY_ORDER    = %d\n", get_from_env_rrad_bbody_order());
+  printf("  RELXILL_RRAD_BBODY_TPROFILE = %d\n", get_from_env_rrad_bbody_tprofile());
+  printf("  RELXILL_CONSTANT_DENSITY    = %d\n", constantDiskDensity());
+  printf("  RELLINE_PHYSICAL_NORM       = %d\n", do_not_normalize_relline());
+  printf("  RELXILL_NUM_RZONES          = %d\n", get_from_env_relline_num_zones());
+
+  printf("\n");
+}

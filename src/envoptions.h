@@ -43,4 +43,6 @@ int do_not_normalize_relline(void);
 
 int get_from_env_relline_num_zones(void);
 
+void print_env_options(void);
+
 #endif /* ENVOPTIONS_H_ */
