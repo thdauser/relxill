@@ -2,6 +2,7 @@ define getFilenameStruct(){
    
    variable outdir = "./";
    variable fbase = outdir + "__relxillOutput-rrad-bbody-%s.fits";
+   variable fbase_dat = outdir + "__relxillOutput-rrad-bbody-%s.dat";
 
    variable f_rframe = struct{
       specRet  = sprintf(fbase, "rframe-bbodyRet" ),      %% returning spectrum on the disk (rest-frame)
@@ -20,11 +21,16 @@ define getFilenameStruct(){
       mirrorRefl  = sprintf(fbase, "obs-mirror-refl" )
    };
    
-   
-   variable files = struct{
-      rframe = f_rframe,
-      fobs   = f_obs
-   };
-   
-   return files;
+	 
+	 variable f_emis = struct{
+	    rrad = sprintf(fbase_dat,"emis_profile.dat")
+	 };
+	 
+	 variable files = struct{
+	    rframe = f_rframe,
+	    fobs   = f_obs,
+	    emis   = f_emis
+	 };
+	    
+	    return files;
 }
