@@ -83,6 +83,15 @@ test:
 	make test-e2e
 
 
+test-asan:
+	mkdir -p $(BUILD_DIR)
+	cd $(BUILD_DIR) && cmake ../ -DENABLE_ASAN=ON
+	cd $(BUILD_DIR) && cmake --build .
+	cd $(BUILD_DIR) && cmake --install .
+	make clean-test
+	bin/tests
+	make clean-test
+
 test-unit:
 	make install
 	make clean-test
