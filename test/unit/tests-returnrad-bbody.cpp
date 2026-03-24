@@ -225,6 +225,9 @@ TEST_CASE(" Check if changing the Temperature Profile give different results", "
     lmod.eval_model(spec);
     double sum_2 = calcSum(spec.flux, spec.num_flux_bins());
 
+    unsetenv("RELXILL_BBRET_NOREFL");
+    unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+
     // check that 1 and 2 are different
     REQUIRE(fabs(sum_2 - sum_1) > 1e-6);
 }
