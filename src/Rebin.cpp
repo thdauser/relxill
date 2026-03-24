@@ -129,15 +129,14 @@ void inv_rebin_mean(const double *x0, double *y0, int n0, const double *xn, doub
   int ii;
   for (ii = 0; ii < n0 - 1; ii++) {  // only go to the second to last bin
 
-    if (x0[ii] > xn[in] && x0[ii + 1] <= xn[in]) {
-
+    while (in >= 0 && x0[ii] > xn[in] && x0[ii + 1] <= xn[in]) {
       double ifac_r = (xn[in] - x0[ii + 1]) / (x0[ii] - x0[ii + 1]);
       yn[in] = interp_lin_1d(ifac_r, y0[ii + 1], y0[ii]);
 
       in--;
-      if (in < 0) { // we can stop if once we are below zero as the array is filled
-        break;
-      }
+    }
+    if (in < 0) {
+      break;
     }
 
   }
