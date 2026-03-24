@@ -26,6 +26,7 @@
 #include "Relreturn_Corona.h"
 #include "Relcache.h"
 #include "Relprofile.h"
+#include "Types.h"
 #include "Xillspec.h"
 
 extern "C" {

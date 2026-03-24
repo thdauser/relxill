@@ -105,10 +105,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   if (m_model_params.get_model_name() == ModelName::relxillBB || m_model_params.get_model_name() ==
     ModelName::relxillBBxill)
   {
-    auto rel_param = get_rel_params(m_model_params);
-    relxill_bb_kernel(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(),
-                      xill_params(), rel_param, &status);
-    delete_rel_params(rel_param);
+    relxill_bb_kernel(spectrum, m_model_params, &status);
   }
   else
   {

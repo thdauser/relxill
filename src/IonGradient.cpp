@@ -128,13 +128,11 @@ static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
  */
 void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density) {
 
-  const double rin = radial_grid.radius[0];
 
   irradiating_flux = new double[m_nzones];
   auto del_inc = new double[m_nzones];
 
   int status = EXIT_SUCCESS;
-
   assert(emis_profile.del_inc != nullptr);
   inv_rebin_mean(emis_profile.re, emis_profile.emis, emis_profile.nr, m_rmean, irradiating_flux, m_nzones, &status);
   inv_rebin_mean(emis_profile.re, emis_profile.del_inc, emis_profile.nr, m_rmean, del_inc, m_nzones, &status);
@@ -143,6 +141,7 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
     throw std::exception();
   }
 
+  const double rin = radial_grid.radius[0];
   // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
   const double lxi_max = cal_lxi_max_ss73(emis_profile, rin);
 

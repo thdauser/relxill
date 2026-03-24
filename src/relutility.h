@@ -90,6 +90,8 @@ double calcSum(const double *array, int n_array);
 
 double calcSumInEnergyBand(const double *array, int n_array, const double *ener, double valLo, double valHi);
 
+double calc_ener_flux_from_spectrum(const double *spec_binned, int n_ener, const double *ener);
+
 void setArrayToZero(double *arr, int n);
 
 EnerGrid *new_EnerGrid(int *status);

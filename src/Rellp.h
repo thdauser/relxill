@@ -19,6 +19,7 @@
 #define RELLP_H_
 
 #include "Relbase.h"
+#include "Types.h"
 
 extern "C" {
 #include "relutility.h"
@@ -39,6 +40,14 @@ typedef struct {
 
 
 emisProfile *calc_emis_profile(double *r, int nr, const relParam *param, int *status);
+
+emisProfile *calculate_emis_profile_from_spectra(double **spec_2d,
+                                                 VecD rlo,
+                                                 VecD rhi,
+                                                 int n_rad,
+                                                 const double *ener,
+                                                 int n_ener,
+                                                 int *status);
 
 void get_emis_bkn(double *emis, const double *re, int nr,
                   double index1, double index2, double rbr);

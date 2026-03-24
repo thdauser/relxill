@@ -524,6 +524,54 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
 }
 
 
+/**
+ * Calculate the emissivity profile by integrating 2D spectra over energy.
+ *
+ * Input radial grid (rlo, rhi) is expected in ascending order (inner to outer).
+ * The returned emisProfile is in descending order (outer to inner),
+ * as required by the relbase convolution routines.
+ *
+ * The emissivity is normalized by the integrated radial area (2*pi*r*dr).
+ * Incident angle (del_inc) is set to 45 degrees (default for xillver tables).
+ */
+emisProfile *calculate_emis_profile_from_spectra(double **spec_2d,
+                                                 VecD rlo,
+                                                 VecD rhi,
+                                                 int n_rad,
+                                                 const double *ener,
+                                                 int n_ener,
+                                                 int *status) {
+  CHECK_STATUS_RET(*status, nullptr);
+  // actually, it should be rmean instead of rlo, but we do not need it later any more
+  double rmean[n_rad];
+  for (int ii = 0; ii < n_rad; ii++) {
+    rmean[ii] = 0.5 * (rlo[ii] + rhi[ii]);
+  }
+  auto emis_profile = new_emisProfile(rmean, n_rad, status);
+  CHECK_STATUS_RET(*status, nullptr);
+
+  double integ_profile = 0.0;
+  for (int ii = 0; ii < n_rad; ii++) {
+    emis_profile->emis[ii] = calc_ener_flux_from_spectrum(spec_2d[ii], n_ener, ener);
+    emis_profile->del_inc[ii] = M_PI / 4.; // default value for the xillver table
+    integ_profile += rmean[ii] * (rhi[ii] - rlo[ii]) * M_PI * 2;
+  }
+
+  // normalize emis_profile, similar to the function norm_emis_profile();
+  for (int ii = 0; ii < n_rad; ii++) {
+    emis_profile->emis[ii] /= integ_profile;
+  }
+
+  // important (and dangerous!) emissivity is defined as descending
+  assert(rlo[1] > rlo[0]); // first we make sure that our inital grid is actually ascending
+  invertArray(rmean, n_rad);
+  invertArray(emis_profile->emis, n_rad);
+  invertArray(emis_profile->del_inc, n_rad);
+  assert(emis_profile->re[0] > emis_profile->re[1]); // now check if it is descending
+  return emis_profile;
+}
+
+
 static void add_returnrad_emis(const relParam* param, emisProfile* emis0, int* status) {
 
   assert(emis0 != nullptr);

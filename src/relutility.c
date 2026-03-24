@@ -21,6 +21,7 @@
 #include "config.h"
 
 int version_number_printed = 0;
+
 void print_version_number(void) {
   if (version_number_printed == 0) {
     printf(" *** loading RELXILL model (version %s) *** \n", PROJECT_VER);
@@ -56,8 +57,7 @@ int is_alpha_model(int model_type) {
 }
 
 int is_ns_model(int model_type) {
-  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS))
-  {
+  if ((model_type == MOD_TYPE_RELXILLNS) || (model_type == MOD_TYPE_XILLVERNS)) {
     return 1;
   } else {
     return 0;
@@ -83,7 +83,7 @@ int is_ring_primary_source(const int emis_type) {
   if (emis_type == EMIS_TYPE_RING) {
     return 1;
   }
-    return 0;
+  return 0;
 }
 
 int is_slab_primary_source(const int emis_type) {
@@ -94,7 +94,7 @@ int is_slab_primary_source(const int emis_type) {
 }
 
 int is_any_primary_source(const int emis_type) {
-  if (is_lp_primary_source(emis_type)|| is_ring_primary_source(emis_type) || is_slab_primary_source(emis_type)) {
+  if (is_lp_primary_source(emis_type) || is_ring_primary_source(emis_type) || is_slab_primary_source(emis_type)) {
     return 1;
   }
   return 0;
@@ -110,7 +110,6 @@ int is_any_primary_source(const int emis_type) {
  	 be within the given length of the array, meaning 0 also for val<arr[0] or n-1 for val>arr[n-1]
  	 */
 int binary_search_float(const float *arr, int n, float val) {
-
   if (n <= 1) return -1;
 
   int klo = 0;
@@ -130,7 +129,6 @@ int binary_search_float(const float *arr, int n, float val) {
 /**  search for value "val" in array "arr" (sorted ASCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
 int binary_search(const double *arr, int n, double val) {
-
   if (n <= 1) return -1;
 
   int klo = 0;
@@ -150,7 +148,6 @@ int binary_search(const double *arr, int n, double val) {
 /**  FLOAT search for value "val" in array "arr" (sorted DESCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
 int inv_binary_search_float(const float *arr, int n, float val) {
-
   if (n <= 1) return -1;
 
   int klo = 0;
@@ -170,7 +167,6 @@ int inv_binary_search_float(const float *arr, int n, float val) {
 /**  search for value "val" in array "arr" (sorted DESCENDING!) with length n and
  	 return bin k for which arr[k]<=val<arr[k+1] **/
 int inv_binary_search(const double *arr, int n, double val) {
-
   if (n <= 1) return -1;
 
   int klo = 0;
@@ -196,10 +192,8 @@ int is_relxill_model(int model_type) {
   }
 }
 
-int is_returnrad_bb_model(int model_type)
-{
-  if (model_type == MOD_TYPE_RELXILLBBRET || model_type == MOD_TYPE_RELXILLBBRETXILL)
-  {
+int is_returnrad_bb_model(int model_type) {
+  if (model_type == MOD_TYPE_RELXILLBBRET || model_type == MOD_TYPE_RELXILLBBRETXILL) {
     return 1;
   }
   return 0;
@@ -243,7 +237,7 @@ double gstar2ener(double g, double gmin, double gmax, double ener) {
 /* get a logarithmic grid from emin to emax with n_ener bins  */
 void get_log_grid(double *ener, int n_ener, double emin, double emax) {
   int ii;
-  assert(ener!=NULL);
+  assert(ener != NULL);
   for (ii = 0; ii < n_ener; ii++) {
     ener[ii] = 1.0 * ii / (n_ener - 1) * (log(emax) - log(emin)) + log(emin);
     ener[ii] = exp(ener[ii]);
@@ -257,21 +251,21 @@ double get_ipol_factor_radius(double rlo, double rhi, double del_inci, double ra
     inter_r = (radius - rlo) / (rhi - rlo);
   } else {
     inter_r = (log(radius) - log(rlo)) /
-        (log(rhi) - log(rlo));
+              (log(rhi) - log(rlo));
   }
   return inter_r;
 }
 
-void get_ipol_factor(const float value, const float* arr, const int n_arr, int *ind, double *ifac) {
+void get_ipol_factor(const float value, const float *arr, const int n_arr, int *ind, double *ifac) {
   (*ind) = binary_search_float(arr, n_arr, (float) value);
   (*ifac) = (value - arr[*ind]) /
-      (arr[*ind + 1] - arr[*ind]);
+            (arr[*ind + 1] - arr[*ind]);
 }
 
-void get_ipol_factor_double(const double value, const double* arr, const int n_arr, int *ind, double *ifac) {
+void get_ipol_factor_double(const double value, const double *arr, const int n_arr, int *ind, double *ifac) {
   (*ind) = binary_search(arr, n_arr, value);
   (*ifac) = (value - arr[*ind]) /
-      (arr[*ind + 1] - arr[*ind]);
+            (arr[*ind + 1] - arr[*ind]);
 }
 
 
@@ -304,20 +298,16 @@ int get_num_zones(int model_type, int emis_type, int ion_grad_type) {
   } else {
     return 1;
   }
-
 }
 
 /** rebin spectrum to a given energy grid
  *  length of ener is num_flux_bins+1       **/
 int do_renorm_model(relParam *rel_param) {
-
   int renorm;
 
-  if (is_relxill_model(rel_param->model_type))
-  {
+  if (is_relxill_model(rel_param->model_type)) {
     if (is_any_primary_source(rel_param->emis_type) || is_returnrad_bb_model(rel_param->model_type)
-      || do_not_normalize_relline())
-    {
+        || do_not_normalize_relline()) {
       renorm = 0;
     } else {
       renorm = 1;
@@ -337,15 +327,13 @@ void get_nthcomp_param(double *nthcomp_param, double gam, double kte, double z) 
   nthcomp_param[0] = gam;
   nthcomp_param[1] = kte;
   nthcomp_param[2] = 0.05; // ktbb
-  nthcomp_param[3] = 1.0;  // inp_type
+  nthcomp_param[3] = 1.0; // inp_type
   nthcomp_param[4] = z;
-
 }
 
 
 /*  get the fine radial grid */
 void get_fine_radial_grid(double rin, double rout, double *re, int nr) {
-
   double r1 = 1.0 / sqrt(rout);
   double r2 = 1.0 / sqrt(rin);
   int ii;
@@ -354,12 +342,11 @@ void get_fine_radial_grid(double rin, double rout, double *re, int nr) {
     re[ii] = pow(1.0 / (re[ii]), 2);
     assert(re[ii] > 1.0);
   }
-
 }
 
 
 void setArrayToZero(double *arr, int n) {
-  if (arr!=NULL) {
+  if (arr != NULL) {
     for (int jj = 0; jj < n; jj++) {
       arr[jj] = 0.0;
     }
@@ -380,7 +367,7 @@ double calcSum(const double *array, int n_array) {
 /*
  * ener has n_array+1 bins
  */
-double calcSumInEnergyBand(const double *array, int n_array, const double* ener, double valLo, double valHi) {
+double calcSumInEnergyBand(const double *array, int n_array, const double *ener, double valLo, double valHi) {
   double testSum = 0.0;
   for (int jj = 0; jj < n_array; jj++) {
     if (ener[jj] >= valLo && ener[jj + 1] <= valHi) {
@@ -390,8 +377,20 @@ double calcSumInEnergyBand(const double *array, int n_array, const double* ener,
   return testSum;
 }
 
-void normSpec(double *spec, int n_ener) {
+/*
+ * @brief calculate the energy flux (keV/cm^2/s) for an Xspec spectrum (photons/bin)
+ * @note ener has n_ener+1 bins
+ */
+double calc_ener_flux_from_spectrum(const double *spec_binned, int n_ener, const double *ener) {
+  double ener_flu = 0.0;
+  for (int jj = 0; jj < n_ener; jj++) {
+    ener_flu += spec_binned[jj] * 0.5 * (ener[jj] + ener[jj + 1]);
+  }
+  return ener_flu;
+}
 
+
+void normSpec(double *spec, int n_ener) {
   double sumSpec = 0.0;
 
   for (int ii = 0; ii < n_ener; ii++) {
@@ -404,24 +403,20 @@ void normSpec(double *spec, int n_ener) {
 
 
 TestSpectrum *new_Spectrum(int *status) {
-
   TestSpectrum *spec = malloc(sizeof(TestSpectrum));
   CHECK_MALLOC_RET_STATUS(spec, status, spec)
   return spec;
 }
 
 void free_Spectrum(TestSpectrum **spec) {
-
   if (*spec != NULL) {
     free((*spec)->ener);
     free((*spec)->flux);
     free(*spec);
   }
-
 }
 
 TestSpectrum *getNewSpec(double emin, double emax, int nbins, int *status) {
-
   double *ener = malloc(sizeof(double) * (nbins + 1));
   double *flux = malloc(sizeof(double) * nbins);
 
@@ -439,7 +434,6 @@ TestSpectrum *getNewSpec(double emin, double emax, int nbins, int *status) {
 }
 
 void invertArray(double *vals, int n) {
-
   double storage[n];
   for (int ii = 0; ii < n; ii++) {
     storage[n - ii - 1] = vals[ii];
@@ -448,17 +442,13 @@ void invertArray(double *vals, int n) {
   for (int ii = 0; ii < n; ii++) {
     vals[ii] = storage[ii];
   }
-
 }
 
 
-void fits_movenam_hdu_cpp(fitsfile* fptr, int type, const char* extname, int extver, int* status){
-  fits_movnam_hdu(fptr, type, (char*) extname, extver, status);
+void fits_movenam_hdu_cpp(fitsfile *fptr, int type, const char *extname, int extver, int *status) {
+  fits_movnam_hdu(fptr, type, (char *) extname, extver, status);
 }
 
 double convert_to_isco(double rin_relxill, double a) {
-
-
   return 0;
 }
-

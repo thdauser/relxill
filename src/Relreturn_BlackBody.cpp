@@ -18,6 +18,7 @@
 
 #include <iostream>
 #include "Relreturn_BlackBody.h"
+#include "ModelDefinition.h"
 #include "Rebin.h"
 #include "Relbase.h"
 #include "Relphysics.h"
@@ -812,11 +813,16 @@ void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
  *   to its original value upon completion.
  * - Diagnostic FITS files are written if diagnostic flags are set via shouldOutfilesBeWritten().
  */
-void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, const xillParam* xill_param_orig, relParam* rel_param,
+void relxill_bb_kernel(const XspecSpectrum &spectrum,
+                       const ModelDefinition &params,
                        int* status)
 {
-    xillParam xill_param_struct = *xill_param_orig; // make a copy of the input parameters
-    xillParam* xill_param = &xill_param_struct; // make a pointer to the copy
+    double *ener_inp = spectrum.energy;
+    double *specOutput = spectrum.flux;
+    int n_ener_inp = spectrum.num_flux_bins();
+
+    auto rel_param = get_rel_params(params);
+    auto xill_param = get_xill_params(params);
 
     check_parameter_bounds_relxillBB(xill_param, rel_param);
 
@@ -851,12 +857,19 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
                                        status);
 
 
-    // ==== calculate the ionization gradient ==== 
-    // IonGradient ion_gradient{ radialGrid,ION_GRAD_TYPE_ALPHA,0 };
-    // define: emis_simple = calculate_emissivity_profile_from_spectra(returnSpec->specRet)
-    // emis_simple is a struct of radialGrid and emissivity
-    // ion_gradient.calculate_gradient(*(systemParameters->emis), primary_source.source_parameters);
-
+    // ==== calculate the ionization gradient ====
+    IonGradient ion_gradient{radialGrid,ION_GRAD_TYPE_ALPHA, 0};
+    auto primary_source_params = PrimarySourceParameters{params};
+    auto emis_profile =
+            calculate_emis_profile_from_spectra(returnSpec->specRet,
+                                                returnSpec->rlo,
+                                                returnSpec->rhi,
+                                                returnSpec->nrad,
+                                                returnSpec->ener,
+                                                n_ener,
+                                                status);
+    ion_gradient.calculate_gradient(*emis_profile, primary_source_params);
+    free_emisProfile(emis_profile);
 
     // ========== //
     VecD specSingleZone(n_ener_inp);
@@ -986,5 +999,7 @@ void relxill_bb_kernel(double* ener_inp, double* specOutput, int n_ener_inp, con
     }
 
     delete_returnSpec2D(&returnSpec);
+    delete_rel_params(rel_param);
+    delete xill_param;
 }
 
