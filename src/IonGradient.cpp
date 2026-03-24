@@ -65,6 +65,7 @@ static emisProfile *get_emis_at_rad(double rad, const emisProfile &emis_profile)
   auto radial_grid = new double[nbins];
   radial_grid[ibin] = rad;
   auto emis_struct = new_emisProfile(radial_grid, nbins, &status);
+  delete[] radial_grid;
 
   // radial AD grid is sorted descending (!)
   const int kk = inv_binary_search(emis_profile.re, emis_profile.nr, rad);
@@ -98,11 +99,7 @@ static emisProfile *get_emis_profile_lxi_max(const relParam &rel_param, const em
  * @param emis_profile
  */
 void free_emis_profile_rad(emisProfile *emis_profile) {
-  if (emis_profile != nullptr) {
-    delete[] emis_profile->re;
-    free_emisProfile(emis_profile);
-  }
-
+  free_emisProfile(emis_profile);
 }
 
 // determine the maximal ionization

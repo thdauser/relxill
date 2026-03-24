@@ -345,7 +345,7 @@ typedef struct {
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
 typedef struct {
 
-  const double *re;  // radial grid
+  double *re;  // radial grid (owned, allocated copy)
   int nr;
   double *emis;       // intensity on the surface of the accretion disc
   double *del_emit;   // angle under which the photon is emitted from the primary source

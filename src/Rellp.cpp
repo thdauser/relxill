@@ -563,8 +563,8 @@ emisProfile *calculate_emis_profile_from_spectra(double **spec_2d,
   }
 
   // important (and dangerous!) emissivity is defined as descending
-  assert(rlo[1] > rlo[0]); // first we make sure that our inital grid is actually ascending
-  invertArray(rmean, n_rad);
+  assert(rlo[1] > rlo[0]); // first we make sure that our initial grid is actually ascending
+  invertArray(emis_profile->re, n_rad);
   invertArray(emis_profile->emis, n_rad);
   invertArray(emis_profile->del_inc, n_rad);
   assert(emis_profile->re[0] > emis_profile->re[1]); // now check if it is descending
@@ -709,7 +709,9 @@ emisProfile *new_emisProfile(const double* re, int nr, int *status) {
   auto *emis = (emisProfile *) malloc(sizeof(emisProfile));
   CHECK_MALLOC_RET_STATUS(emis, status, nullptr)
 
-  emis->re = re;
+  emis->re = (double *) malloc(nr * sizeof(double));
+  CHECK_MALLOC_RET_STATUS(emis->re, status, emis)
+  memcpy(emis->re, re, nr * sizeof(double));
   emis->nr = nr;
 
   emis->emis = (double *) malloc(nr * sizeof(double));
@@ -734,6 +736,7 @@ emisProfile *new_emisProfile(const double* re, int nr, int *status) {
 
 void free_emisProfile(emisProfile *emis_profile) {
   if (emis_profile != nullptr) {
+    free(emis_profile->re);
     free(emis_profile->emis);
     free(emis_profile->del_emit);
     free(emis_profile->del_inc);

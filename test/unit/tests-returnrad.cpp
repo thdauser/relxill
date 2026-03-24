@@ -157,9 +157,9 @@ TEST_CASE (
 
 
 
-static void invert_emis_profile(emisProfile* emis, double* rad)
+static void invert_emis_profile(emisProfile* emis)
 {
-    invertArray(rad, emis->nr);
+    invertArray(emis->re, emis->nr);
     invertArray(emis->emis, emis->nr);
 
     if (emis->del_inc != nullptr)
@@ -260,7 +260,7 @@ TEST_CASE (
 
  invertArray(rad, nrad);
  emisProfile *emisCoarse = calc_emis_profile(rad, nrad, rel_param, &status);
- invert_emis_profile(emisCoarse,rad);  // be careful, rad is used in emisCoarse and needs to be inverted as well
+ invert_emis_profile(emisCoarse);
 
   emisProfile *emisFineReference = calc_emis_profile(sysPar->re, sysPar->nr, rel_param, &status);
   emisProfile *emisRebin = new_emisProfile(sysPar->re, sysPar->nr, &status);
