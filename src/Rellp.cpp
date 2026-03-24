@@ -553,9 +553,10 @@ emisProfile *calculate_emis_profile_from_spectra(double **spec_2d,
   double integ_profile = 0.0;
   for (int ii = 0; ii < n_rad; ii++) {
     emis_profile->emis[ii] = calc_ener_flux_from_spectrum(spec_2d[ii], n_ener, ener);
-    emis_profile->del_inc[ii] = M_PI / 4.; // default value for the xillver table
     integ_profile += rmean[ii] * (rhi[ii] - rlo[ii]) * M_PI * 2;
   }
+  // we leave del_emit and del_inc at 1 so that cos(del_emit) and cos(del_inc) = 1 and not corrections from
+  // the angles are added
 
   // normalize emis_profile, similar to the function norm_emis_profile();
   for (int ii = 0; ii < n_rad; ii++) {
