@@ -17,10 +17,6 @@ variable spin = 0.998;  %% currently only done for this value
 variable Tin = 2.0;
 variable logxi = 2.0;
 variable logn = 18.0;
-variable params = get_param_struct(spin, Tin, logxi, logn);
-
-%% =2= create the output files, pre-defined set of parameters
-createOutputFiles(ff_plots,params);
 
 
 
@@ -137,10 +133,12 @@ define getDiagnoseMirrorBbody(){
 
 define getCompareXillverTables(){
 
-   load_std_model("relxillBBxill");
+   variable params = get_param_struct(spin, Tin, logxi, logn);
+   
+   load_std_model("relxillBBxill",params);
    variable rtr = eval_std_model();
    
-   load_std_model("relxillBB");
+   load_std_model("relxillBB",params);
    variable xillns = eval_std_model();
 
    variable pl = xfig_plot_new();
@@ -162,7 +160,8 @@ define getCompareXillverTables(){
 
 define testDiagnosePlots(){
 
-   createOutputFiles(ff_plots);
+   variable params = get_param_struct(spin, Tin, logxi, logn);
+   createOutputFiles(ff_plots,params);
 
    if (getDiagnoseMirrorBbody() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
