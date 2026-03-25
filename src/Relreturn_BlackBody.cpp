@@ -863,23 +863,19 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
  * blackbody source and the relativistic disk. It combines contributions from multiple zones to produce the
  * full output spectrum.
  *
- * @param ener_inp Pointer to the input energy grid where the final output spectrum will be calculated.
- * @param specOutput Pointer to the output spectrum array to store the computed spectrum. Any values written to this
- *        array will be set to zero
- * @param n_ener_inp Number of energy bins in the input energy grid.
- * @param xill_param_orig Struct pointer that holds parameters related to the XILLVER reflection model, blackbody
- *        parameters, and source properties.
- * @param rel_param Struct pointer that holds parameters for the relativistic disk, emission, and system properties.
+ * @param spectrum The input/output XspecSpectrum containing the energy grid and flux array.
+ * @param params Model definition holding all model parameters (rel + xill are extracted internally).
  * @param status Pointer to the status flag. Will be checked and updated during execution for error handling.
  *
  * The function performs the following major operations:
  * 1. Initialize and assert various parameters required for the computation.
  * 2. Generate a standard energy grid used for convolution.
  * 3. Load the XILLVER table data based on the model and primary source type.
- * 4. Compute the incident and reflected spectrum for each zone in the relativistic disk.
- * 5. Convolve the resulting spectrum using relativistic effects for each reflection zone.
- * 6. Rebin the convolved spectrum onto the input energy grid and combine contributions from all zones.
- * 7. Apply corrections to clean and format the output spectrum.
+ * 4. Calculate the ionization gradient from the return radiation emissivity profile.
+ * 5. Compute the incident and reflected spectrum for each zone in the relativistic disk.
+ * 6. Convolve the resulting spectrum using relativistic effects for each reflection zone.
+ * 7. Rebin the convolved spectrum onto the input energy grid and combine contributions from all zones.
+ * 8. Apply corrections to clean and format the output spectrum.
  *
  * Memory allocation and deallocation are handled for intermediate spectra within the function, ensuring proper cleanup
  * of resources to prevent memory leaks.
@@ -890,8 +886,6 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
  *   to its original value upon completion.
  * - Diagnostic FITS files are written if diagnostic flags are set via shouldOutfilesBeWritten().
  */
-
-
 void relxill_bb_kernel(const XspecSpectrum &spectrum,
                        const ModelDefinition &params,
                        int* status)
