@@ -454,14 +454,14 @@ void write_output_rel_param(relParam *pa) {
  * optional input: xillver grid
  * output: photar(n_ener)  [photons/bin]
 **/
-relline_spec_multizone* relbase_profile(double *ener, int n_ener, relParam *param,
-                                       RelSysPar *sysPar,
-                                       xillTable *xill_tab,
-                                       const VecD& radialZones,  // TODO: make this a vector as well
-                                       int nzones,
-                                       int *status) {
-
-  assert(radialZones.size() == nzones +1 );
+relline_spec_multizone *relbase_profile(double *ener,
+                                        int n_ener,
+                                        relParam *param,
+                                        RelSysPar *sysPar,
+                                        xillTable *xill_tab,
+                                        const VecD &radialZones,
+                                        int *status) {
+  const int nzones = radialZones.size() - 1; // we store rlo and rhi in one grid, so we have nzones=nrad-1
 
   inpar* inp = get_inputvals_struct(ener, n_ener, param, status);
   cache_info *ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
@@ -572,7 +572,7 @@ relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param,
 
   auto rgrid = get_standard_relxill_radial_grid(*param);
   relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid.radius,
-                                                     param->num_zones, status);
+                                                     status);
 
   return rel_spec;
 }

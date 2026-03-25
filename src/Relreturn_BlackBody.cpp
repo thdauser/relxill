@@ -874,8 +874,6 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
 
 
     auto radialGrid = getRadialGridFromReturntab(returnSpec);
-    auto nrad_grid = returnSpec->nrad;
-    assert(radialGrid.size()-1 == nrad_grid); // uses upper and lower bounds of the bins so nrad+1
     RelSysPar* systemParameters = get_system_parameters(rel_param, status);
     relline_spec_multizone
         * relProfile = relbase_profile(ener,
@@ -884,7 +882,6 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
                                        systemParameters,
                                        xill_tab,
                                        radialGrid,
-                                       nrad_grid,
                                        status);
 
 

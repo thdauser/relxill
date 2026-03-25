@@ -389,7 +389,6 @@ void relxill_kernel(const XspecSpectrum& xspec_spectrum,
         relline_spec_multizone* rel_profile =
             relbase_profile(relxill_spec.energy(), static_cast<int>(relxill_spec.num_flux_bins), rel_param, sys_par, xill_tab,
                             ion_gradient.radial_grid.radius,
-                            static_cast<int>(ion_gradient.radial_grid.num_zones()),
                             status);
         // --- 5 --- calculate the xillver spectra depending on the angular distribution (stored in the rel_profile)
         auto xillver_spectra_zones =
