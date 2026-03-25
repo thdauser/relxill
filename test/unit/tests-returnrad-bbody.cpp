@@ -26,6 +26,7 @@ This file is part of the RELXILL model code.
 #include "Relreturn_Table.h"
 #include "Rebin.h"
 #include "Relreturn_BlackBody.h"
+#include "Rellp.h"
 #include "Relxill_errorhandling.h"
 
 extern "C" {
@@ -297,4 +298,42 @@ TEST_CASE(" Test relxillBB Model ", "[relxillbb]")
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
     REQUIRE_NOTHROW(lmod.eval_model(spec));
     unsetenv("RELXILL_BBRET_NOREFL");
+}
+
+TEST_CASE(" Emissivity profile from return radiation spectra ", "[rrad-bbody-emisprofile]")
+{
+    int status = EXIT_SUCCESS;
+
+    double spin = 0.998;
+    double Rin = kerr_rms(spin);
+    double Rout = RMAX_RELRET;
+    double Tin = 2.0;
+
+    int n_ener = 500;
+    double ener[n_ener + 1];
+    get_log_grid(ener, n_ener + 1, 0.01, 50.0);
+
+    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, Tin, Rin, Rout, spin, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    REQUIRE(returnSpec != nullptr);
+
+    emisProfile *emis_profile =
+        calculate_emis_profile_from_spectra(returnSpec->specRet,
+                                            returnSpec->rlo,
+                                            returnSpec->rhi,
+                                            returnSpec->nrad,
+                                            returnSpec->ener,
+                                            returnSpec->n_ener,
+                                            &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    REQUIRE(emis_profile != nullptr);
+    REQUIRE(emis_profile->nr == returnSpec->nrad);
+
+    // emissivity should be positive and non-zero for all radial zones
+    for (int ii = 0; ii < emis_profile->nr; ii++) {
+        REQUIRE(emis_profile->emis[ii] > 0.0);
+    }
+
+    free_emisProfile(emis_profile);
+    delete_returnSpec2D(&returnSpec);
 }
