@@ -14,10 +14,12 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g -ansi -std=c99 -Wall -Wstrict-prototypes 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_FLAGS "-std=c++17 ${PROJECT_ROOT_DIR}")
 
+add_compile_options(-Wuninitialized -Werror)
+
 option(ENABLE_ASAN "Enable AddressSanitizer for memory leak and error detection" OFF)
 if(ENABLE_ASAN)
-    add_compile_options(-fsanitize=address -fno-omit-frame-pointer)
-    add_link_options(-fsanitize=address)
+    add_compile_options(-fsanitize=address,undefined -fno-omit-frame-pointer)
+    add_link_options(-fsanitize=address,undefined)
 endif()
 
 # Add this to ensure the executable looks in the HEADAS lib directory at runtime
