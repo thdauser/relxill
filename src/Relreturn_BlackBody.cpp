@@ -784,6 +784,7 @@ static IonGradient calc_ion_gradient_from_returnrad(
     const returnSpec2D *returnSpec,
     const ModelDefinition &params,
     int *status) {
+    auto radialGrid = getRadialGridFromReturntab(returnSpec);
     IonGradient ion_gradient{radialGrid, ION_GRAD_TYPE_ALPHA, 0};
     auto primary_source_params = PrimarySourceParameters{params};
     auto emis_profile =
