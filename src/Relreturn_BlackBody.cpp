@@ -32,7 +32,7 @@ extern "C" {
 
 #define LIM_GFAC_RR_BBODY 0.001 // difference between gmin and gmax, above which the energy shift is taken into account
 const std::string fbase_rrad_bbody = "!__relxillOutput-rrad-bbody-";  // filename base for output files
-
+const std::string fbase_rrad_bbody_dat = "__relxillOutput-rrad-bbody-"; // filename base for output files
 
 
 // Function definitions
@@ -780,6 +780,30 @@ void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
     }
 }
 
+static IonGradient calc_ion_gradient_from_returnrad(
+    const returnSpec2D *returnSpec,
+    const ModelDefinition &params,
+    int *status) {
+    IonGradient ion_gradient{radialGrid, ION_GRAD_TYPE_ALPHA, 0};
+    auto primary_source_params = PrimarySourceParameters{params};
+    auto emis_profile =
+            calculate_emis_profile_from_spectra(returnSpec->specRet,
+                                                returnSpec->rlo,
+                                                returnSpec->rhi,
+                                                returnSpec->nrad,
+                                                returnSpec->ener,
+                                                returnSpec->n_ener,
+                                                status);
+    ion_gradient.calculate_gradient(*emis_profile, primary_source_params);
+    free_emisProfile(emis_profile);
+
+    if (shouldOutfilesBeWritten()) {
+        ion_gradient.write_to_file((fbase_rrad_bbody_dat + "emis_profile.dat").c_str());
+    }
+
+    return ion_gradient;
+}
+
 
 /**
  * @brief Computes the relativistic reflection spectrum using a blackbody as the primary radiation source.
@@ -815,6 +839,8 @@ void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
  *   to its original value upon completion.
  * - Diagnostic FITS files are written if diagnostic flags are set via shouldOutfilesBeWritten().
  */
+
+
 void relxill_bb_kernel(const XspecSpectrum &spectrum,
                        const ModelDefinition &params,
                        int* status)
@@ -842,7 +868,9 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     returnSpec2D* returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
                                                         rel_param->rin, rel_param->rout, rel_param->a,
                                                         status);
-   CHECK_RELXILL_ERROR("calculating return rad spec, failed", status);
+    CHECK_RELXILL_ERROR("calculating return rad spec, failed", status);
+    auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, params, status);
+
 
     auto radialGrid = getRadialGridFromReturntab(returnSpec);
     auto nrad_grid = returnSpec->nrad;
@@ -859,19 +887,6 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
                                        status);
 
 
-    // ==== calculate the ionization gradient ====
-    IonGradient ion_gradient{radialGrid,ION_GRAD_TYPE_ALPHA, 0};
-    auto primary_source_params = PrimarySourceParameters{params};
-    auto emis_profile =
-            calculate_emis_profile_from_spectra(returnSpec->specRet,
-                                                returnSpec->rlo,
-                                                returnSpec->rhi,
-                                                returnSpec->nrad,
-                                                returnSpec->ener,
-                                                n_ener,
-                                                status);
-    ion_gradient.calculate_gradient(*emis_profile, primary_source_params);
-    free_emisProfile(emis_profile);
 
     // ========== //
     VecD specSingleZone(n_ener_inp);

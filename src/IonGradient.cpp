@@ -117,17 +117,11 @@ static double cal_lxi_max_ss73(const emisProfile &emis_profile, double rin) {
   return lxi_max;
 }
 
-/**
- * @brief: calculate the ionization gradient for the alpha type models
- * @param emis_profile
- * @param param_xlxi0
- * @param param_density
- */
-void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density) {
-
-
+double *IonGradient::rebin_emis_to_zones(const emisProfile &emis_profile) {
   irradiating_flux = new double[m_nzones];
   auto del_inc = new double[m_nzones];
+  setArrayToZero(irradiating_flux, m_nzones);
+  setArrayToZero(del_inc, m_nzones);
 
   int status = EXIT_SUCCESS;
   assert(emis_profile.del_inc != nullptr);
@@ -138,14 +132,23 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
     throw std::exception();
   }
 
+  return del_inc;
+}
+
+void IonGradient::set_irradiating_flux_from_emis(const emisProfile &emis_profile) {
+  assert(emis_profile.nr == m_nzones);
+  assert(emis_profile.del_inc != nullptr);
+
+  irradiating_flux = new double[m_nzones];
+  for (int ii = 0; ii < m_nzones; ii++) {
+    irradiating_flux[ii] = emis_profile.emis[ii];
+  }
+}
+
+void IonGradient::calc_lxi_and_density(const double *del_inc, double fac_lxi_norm, double param_density) {
   const double rin = radial_grid.radius[0];
-  // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
-  const double lxi_max = cal_lxi_max_ss73(emis_profile, rin);
 
-  // the maximal ionization is given as an input parameter, so we need to normalize our calculation by this value
-  const double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
-
-  /** calculate the density for a  stress-free inner boundary condition, i.e., R0=rin in SS73)  **/
+  /** calculate the density for a stress-free inner boundary condition, i.e., R0=rin in SS73) **/
   const double rad_density_min = (25. / 9.) * rin;
   const double density_min = density_ss73_zone_a(rad_density_min, rin);
   for (int ii = 0; ii < m_nzones; ii++) {
@@ -160,11 +163,28 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
     // (note we need a density which is normalized to dens(rin)=1 )
     lxi[ii] = cal_lxi(density_normed, irradiating_flux[ii], del_inc[ii]);
     lxi[ii] += fac_lxi_norm;
-
   }
+}
+
+/**
+ * @brief: calculate the ionization gradient for the alpha type models
+ * @param emis_profile
+ * @param param_xlxi0
+ * @param param_density
+ */
+void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density) {
+  double *del_inc = rebin_emis_to_zones(emis_profile);
+
+  const double rin = radial_grid.radius[0];
+  // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
+  const double lxi_max = cal_lxi_max_ss73(emis_profile, rin);
+
+  // the maximal ionization is given as an input parameter, so we need to normalize our calculation by this value
+  const double fac_lxi_norm = param_xlxi0 - lxi_max; // subtraction instead of division because of the log
+
+  calc_lxi_and_density(del_inc, fac_lxi_norm, param_density);
 
   delete[] del_inc;
-
 }
 
 

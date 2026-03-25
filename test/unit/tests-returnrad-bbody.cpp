@@ -300,8 +300,7 @@ TEST_CASE(" Test relxillBB Model ", "[relxillbb]")
     unsetenv("RELXILL_BBRET_NOREFL");
 }
 
-TEST_CASE(" Emissivity profile from return radiation spectra ", "[rrad-bbody-emisprofile]")
-{
+TEST_CASE(" Emissivity profile from return radiation spectra ", "[rrad-bbody-emisprofile]") {
     int status = EXIT_SUCCESS;
 
     double spin = 0.998;
@@ -318,13 +317,13 @@ TEST_CASE(" Emissivity profile from return radiation spectra ", "[rrad-bbody-emi
     REQUIRE(returnSpec != nullptr);
 
     emisProfile *emis_profile =
-        calculate_emis_profile_from_spectra(returnSpec->specRet,
-                                            returnSpec->rlo,
-                                            returnSpec->rhi,
-                                            returnSpec->nrad,
-                                            returnSpec->ener,
-                                            returnSpec->n_ener,
-                                            &status);
+            calculate_emis_profile_from_spectra(returnSpec->specRet,
+                                                returnSpec->rlo,
+                                                returnSpec->rhi,
+                                                returnSpec->nrad,
+                                                returnSpec->ener,
+                                                returnSpec->n_ener,
+                                                &status);
     REQUIRE(status == EXIT_SUCCESS);
     REQUIRE(emis_profile != nullptr);
     REQUIRE(emis_profile->nr == returnSpec->nrad);

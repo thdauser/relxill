@@ -106,6 +106,8 @@ class IonGradient{
 
   void calculate_gradient(const emisProfile &emis_profile, const PrimarySourceParameters &primary_source_params);
 
+  void set_irradiating_flux_from_emis(const emisProfile &emis_profile);
+
   [[nodiscard]] xillTableParam **get_xill_param_zone(const xillTableParam *primary_source_xilltab_params) const;
 
   double get_ecut_disk_zone(const relParam *rel_param, double ecut_primary, int izone) const;
@@ -125,6 +127,10 @@ class IonGradient{
   double *m_physical_irrad_flux{nullptr};
 
   void calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density);
+
+  double *rebin_emis_to_zones(const emisProfile &emis_profile);
+
+  void calc_lxi_and_density(const double *del_inc, double fac_lxi_norm, double param_density);
 
   void calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens);
 
