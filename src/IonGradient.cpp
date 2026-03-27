@@ -18,6 +18,7 @@
 #include "IonGradient.h"
 #include "Rebin.h"
 #include "Relbase.h"
+#include <cstring>
 
 extern "C"{
 #include "writeOutfiles.h"
@@ -166,6 +167,19 @@ void IonGradient::calc_lxi_and_density(const double *del_inc, double fac_lxi_nor
   }
 }
 
+static bool is_emis_on_zone_grid(const emisProfile &emis_profile, const double *rmean, int nzones) {
+  if (emis_profile.nr != nzones) {
+    return false;
+  }
+  const double prec = 1e-6;
+  for (int ii = 0; ii < nzones; ii++) {
+    if (fabs(emis_profile.re[ii] - rmean[ii]) / rmean[ii] > prec) {
+      return false;
+    }
+  }
+  return true;
+}
+
 /**
  * @brief: calculate the ionization gradient for the alpha type models
  * @param emis_profile
@@ -173,7 +187,14 @@ void IonGradient::calc_lxi_and_density(const double *del_inc, double fac_lxi_nor
  * @param param_density
  */
 void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double param_xlxi0, double param_density) {
-  double *del_inc = rebin_emis_to_zones(emis_profile);
+  double *del_inc;
+  if (is_emis_on_zone_grid(emis_profile, m_rmean, m_nzones)) {
+    set_irradiating_flux_from_emis(emis_profile);
+    del_inc = new double[m_nzones];
+    std::memcpy(del_inc, emis_profile.del_inc, m_nzones * sizeof(double));
+  } else {
+    del_inc = rebin_emis_to_zones(emis_profile);
+  }
 
   const double rin = radial_grid.radius[0];
   // calculate the maximal ionization assuming r^-3 and SS73 alpha disk (see Ingram+19)
@@ -464,13 +485,17 @@ void IonGradient::write_to_file(const char *fout) const {
 }
 
 void IonGradient::set_del_emit_for_each_zone(const emisProfile &emis_profile) {
-  int status = EXIT_SUCCESS;
   if (del_emit == nullptr) {
     del_emit = new double[m_nzones];
   }
-  inv_rebin_mean(emis_profile.re, emis_profile.del_emit, emis_profile.nr, m_rmean, del_emit, m_nzones, &status);
-  if (status != EXIT_SUCCESS) {
-    throw std::exception();
+  if (is_emis_on_zone_grid(emis_profile, m_rmean, m_nzones)) {
+    std::memcpy(del_emit, emis_profile.del_emit, m_nzones * sizeof(double));
+  } else {
+    int status = EXIT_SUCCESS;
+    inv_rebin_mean(emis_profile.re, emis_profile.del_emit, emis_profile.nr, m_rmean, del_emit, m_nzones, &status);
+    if (status != EXIT_SUCCESS) {
+      throw std::exception();
+    }
   }
 }
 

@@ -41,13 +41,17 @@ extern "C" {
 
 // Helper: uniform energy grid with nener bins over [emin, emax]
 static VecD make_ener_grid(int nener, double emin, double emax) {
-    VecD ener(nener + 1);
-    const double de = (emax - emin) / nener;
-    for (int i = 0; i <= nener; i++) { ener[i] = emin + i * de; }
-    return ener;
+  VecD ener(nener + 1);
+  const double de = (emax - emin) / nener;
+  for (int i = 0; i <= nener; i++) { ener[i] = emin + i * de; }
+  return ener;
 }
 
-TEST_CASE(" rebin_flux_mean_shifted: flat input stays flat for shift=1 ", "[rrad-bbody]")
+TEST_CASE (
+" rebin_flux_mean_shifted: flat input stays flat for shift=1 "
+,
+"[rrad-bbody]"
+)
 {
     const int nener = 50;
     VecD ener = make_ener_grid(nener, 1.0, 6.0);
@@ -67,7 +71,11 @@ TEST_CASE(" rebin_flux_mean_shifted: flat input stays flat for shift=1 ", "[rrad
     }
 }
 
-TEST_CASE(" rebin_flux_mean_shifted: identity mapping for shift=1 ", "[rrad-bbody]")
+TEST_CASE (
+" rebin_flux_mean_shifted: identity mapping for shift=1 "
+,
+"[rrad-bbody]"
+)
 {
     const int nener = 50;
     VecD ener = make_ener_grid(nener, 1.0, 6.0);
@@ -84,7 +92,11 @@ TEST_CASE(" rebin_flux_mean_shifted: identity mapping for shift=1 ", "[rrad-bbod
     }
 }
 
-TEST_CASE(" rebin_flux_mean_shifted: large shift zeroes all output bins ", "[rrad-bbody]")
+TEST_CASE (
+" rebin_flux_mean_shifted: large shift zeroes all output bins "
+,
+"[rrad-bbody]"
+)
 {
     const int nener = 50;
     VecD ener = make_ener_grid(nener, 1.0, 6.0);
@@ -102,7 +114,11 @@ TEST_CASE(" rebin_flux_mean_shifted: large shift zeroes all output bins ", "[rra
     }
 }
 
-TEST_CASE(" rebin_flux_mean_shifted: moderate shift zeros high-energy output bins ", "[rrad-bbody]")
+TEST_CASE (
+" rebin_flux_mean_shifted: moderate shift zeros high-energy output bins "
+,
+"[rrad-bbody]"
+)
 {
     const int nener = 50;
     VecD ener = make_ener_grid(nener, 1.0, 6.0);
@@ -119,7 +135,11 @@ TEST_CASE(" rebin_flux_mean_shifted: moderate shift zeros high-energy output bin
 }
 
 
-TEST_CASE(" rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shifted grid ", "[rrad-bbody]")
+TEST_CASE (
+" rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shifted grid "
+,
+"[rrad-bbody]"
+)
 {
     const int nener = 50;
     VecD ener = make_ener_grid(nener, 1.0, 6.0);
@@ -151,15 +171,20 @@ TEST_CASE(" rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shift
     }
 }
 
-static double integ_flux(const double* ener, int nener, const double* flux) {
-    double sum = 0.0;
-    for (int ii = 0; ii < nener; ii++) {
-        sum += flux[ii] * (ener[ii + 1] - ener[ii]);
-    }
-    return sum;
+static double integ_flux(const double *ener, int nener, const double *flux) {
+  double sum = 0.0;
+  for (int ii = 0; ii < nener; ii++) {
+    sum += flux[ii] * (ener[ii + 1] - ener[ii]);
+  }
+  return sum;
 }
 
-TEST_CASE(" check of manually shfting the bbody spectrum gives the same result as if shifting the energy grid ", "[rrad-bbody]") {
+TEST_CASE (
+" check of manually shfting the bbody spectrum gives the same result as if shifting the energy grid "
+,
+"[rrad-bbody]"
+)
+ {
     const int nener = 5000;
 
     double ener[nener + 1];
@@ -183,7 +208,12 @@ TEST_CASE(" check of manually shfting the bbody spectrum gives the same result a
 
 }
 
-TEST_CASE(" Check that 1st and 2nd order returning radiation (mirrored) spectra are different ", "[rrad-bbody-norder]") {
+TEST_CASE (
+" Check that 1st and 2nd order returning radiation (mirrored) spectra are different "
+,
+"[rrad-bbody-norder]"
+)
+ {
 
     LocalModel lmod(ModelName::relxillBBxill);
     DefaultSpec default_spec{};
@@ -206,7 +236,12 @@ TEST_CASE(" Check that 1st and 2nd order returning radiation (mirrored) spectra 
 }
 
 
-TEST_CASE(" Check if changing the Temperature Profile give different results", "[rrad-bbody-tprofile]") {
+TEST_CASE (
+" Check if changing the Temperature Profile give different results"
+,
+"[rrad-bbody-tprofile]"
+)
+ {
 
     LocalModel lmod(ModelName::relxillBBxill);
     DefaultSpec default_spec{};
@@ -237,7 +272,11 @@ TEST_CASE(" Check if changing the Temperature Profile give different results", "
 }
 
 
-TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbody]")
+TEST_CASE (
+" Test Loading Single Xillver from RTR Table should fail "
+,
+"[rrad-bbody]"
+)
 {
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);
@@ -249,7 +288,11 @@ TEST_CASE(" Test Loading Single Xillver from RTR Table should fail ", "[rrad-bbo
 
 
 // ------- //
-TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
+TEST_CASE (
+" Test Loading Xillver RTR Table "
+,
+"[rrad-bbody]"
+)
 {
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.get_xill_param_struct();
@@ -282,7 +325,11 @@ TEST_CASE(" Test Loading Xillver RTR Table ", "[rrad-bbody]")
 }
 
 
-TEST_CASE(" Test relxillBB-xill Model ", "[relxillbbxill]")
+TEST_CASE (
+" Test relxillBB-xill Model "
+,
+"[relxillbbxill]"
+)
 {
     LocalModel lmod(ModelName::relxillBBxill);
     DefaultSpec default_spec{};
@@ -290,7 +337,11 @@ TEST_CASE(" Test relxillBB-xill Model ", "[relxillbbxill]")
     REQUIRE_NOTHROW(lmod.eval_model(spec));
 }
 
-TEST_CASE(" Test relxillBB Model ", "[relxillbb]")
+TEST_CASE (
+" Test relxillBB Model "
+,
+"[relxillbb]"
+)
 {
     LocalModel lmod(ModelName::relxillBB);
     setenv("RELXILL_BBRET_NOREFL", "1", 1);
@@ -300,7 +351,12 @@ TEST_CASE(" Test relxillBB Model ", "[relxillbb]")
     unsetenv("RELXILL_BBRET_NOREFL");
 }
 
-TEST_CASE(" Emissivity profile from return radiation spectra ", "[rrad-bbody-emisprofile]") {
+TEST_CASE (
+" Emissivity profile from return radiation spectra "
+,
+"[rrad-bbody-emisprofile]"
+)
+ {
     int status = EXIT_SUCCESS;
 
     double spin = 0.998;
@@ -327,6 +383,9 @@ TEST_CASE(" Emissivity profile from return radiation spectra ", "[rrad-bbody-emi
     REQUIRE(status == EXIT_SUCCESS);
     REQUIRE(emis_profile != nullptr);
     REQUIRE(emis_profile->nr == returnSpec->nrad);
+
+    // profile should be in ascending radial order
+    REQUIRE(emis_profile->re[0] < emis_profile->re[1]);
 
     // emissivity should be positive and non-zero for all radial zones
     for (int ii = 0; ii < emis_profile->nr; ii++) {

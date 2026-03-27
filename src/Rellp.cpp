@@ -528,8 +528,7 @@ void get_emis_jet(emisProfile *emis_profile, const relParam *param, int *status)
  * Calculate the emissivity profile by integrating 2D spectra over energy.
  *
  * Input radial grid (rlo, rhi) is expected in ascending order (inner to outer).
- * The returned emisProfile is in descending order (outer to inner),
- * as required by the relbase convolution routines.
+ * The returned emisProfile is in ascending order (inner to outer).
  *
  * The emissivity is normalized by the integrated radial area (2*pi*r*dr).
  * Incident angle (del_inc) is set to 45 degrees (default for xillver tables).
@@ -563,12 +562,8 @@ emisProfile *calculate_emis_profile_from_spectra(double **spec_2d,
     emis_profile->emis[ii] /= integ_profile;
   }
 
-  // important (and dangerous!) emissivity is defined as descending
-  assert(rlo[1] > rlo[0]); // first we make sure that our initial grid is actually ascending
-  invertArray(emis_profile->re, n_rad);
-  invertArray(emis_profile->emis, n_rad);
-  invertArray(emis_profile->del_inc, n_rad);
-  assert(emis_profile->re[0] > emis_profile->re[1]); // now check if it is descending
+  assert(rlo[1] > rlo[0]); // make sure the grid is ascending
+  assert(emis_profile->re[0] < emis_profile->re[1]); // profile is ascending (inner to outer)
   return emis_profile;
 }
 

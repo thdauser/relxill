@@ -914,6 +914,7 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
                                                         rel_param->rin, rel_param->rout, rel_param->a,
                                                         status);
     CHECK_RELXILL_ERROR("calculating return rad spec, failed", status);
+    // TODO: still untested and probably not yet working
     auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, params, status);
 
 
