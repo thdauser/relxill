@@ -68,14 +68,29 @@ static emisProfile *get_emis_at_rad(double rad, const emisProfile &emis_profile)
   auto emis_struct = new_emisProfile(radial_grid, nbins, &status);
   delete[] radial_grid;
 
-  // radial AD grid is sorted descending (!)
-  assert(emis_profile.re[0] > emis_profile.re[1]);
-  const int kk = inv_binary_search(emis_profile.re, emis_profile.nr, rad);
-  const double interp = (rad - emis_profile.re[kk + 1]) / (emis_profile.re[kk] - emis_profile.re[kk + 1]);
+  int kk;
+  double interp;
+  if (emis_profile.re[0] > emis_profile.re[1]) {
+    // descending radial grid (standard AD grid)
+    kk = inv_binary_search(emis_profile.re, emis_profile.nr, rad);
+    interp = (rad - emis_profile.re[kk + 1]) / (emis_profile.re[kk] - emis_profile.re[kk + 1]);
+  } else {
+    // ascending radial grid (return radiation grid)
+    kk = binary_search(emis_profile.re, emis_profile.nr, rad);
+    interp = (rad - emis_profile.re[kk]) / (emis_profile.re[kk + 1] - emis_profile.re[kk]);
+  }
 
-  emis_struct->emis[ibin] = interp_lin_1d(interp, emis_profile.emis[kk + 1], emis_profile.emis[kk]);
-  emis_struct->del_inc[ibin] = interp_lin_1d(interp, emis_profile.del_inc[kk + 1], emis_profile.del_inc[kk]);
-  emis_struct->del_emit[ibin] = interp_lin_1d(interp, emis_profile.del_emit[kk + 1], emis_profile.del_emit[kk]);
+  if (emis_profile.re[0] > emis_profile.re[1]) {
+    // descending: interp=0 -> kk+1 (small r), interp=1 -> kk (large r)
+    emis_struct->emis[ibin] = interp_lin_1d(interp, emis_profile.emis[kk + 1], emis_profile.emis[kk]);
+    emis_struct->del_inc[ibin] = interp_lin_1d(interp, emis_profile.del_inc[kk + 1], emis_profile.del_inc[kk]);
+    emis_struct->del_emit[ibin] = interp_lin_1d(interp, emis_profile.del_emit[kk + 1], emis_profile.del_emit[kk]);
+  } else {
+    // ascending: interp=0 -> kk, interp=1 -> kk+1
+    emis_struct->emis[ibin] = interp_lin_1d(interp, emis_profile.emis[kk], emis_profile.emis[kk + 1]);
+    emis_struct->del_inc[ibin] = interp_lin_1d(interp, emis_profile.del_inc[kk], emis_profile.del_inc[kk + 1]);
+    emis_struct->del_emit[ibin] = interp_lin_1d(interp, emis_profile.del_emit[kk], emis_profile.del_emit[kk + 1]);
+  }
 
   assert(emis_struct->re[0] > 1.0);
 
