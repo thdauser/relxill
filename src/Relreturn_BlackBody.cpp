@@ -285,7 +285,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 
         fname = fbase_rrad_bbody_dat + "rframe-bbodyTemp.dat";
         FILE *fp = fopen(fname.c_str(), "w+");
-        fprintf(fp, "#zone \t rlo \t rhi \t T_col \n" );
+        fprintf(fp, "#zone \t rlo \t rhi \t T_col \n");
         for (int ii = 0; ii < returnSpec->nrad; ii++) {
             fprintf(fp,
                     "%i \t %e \t %e \t %e \n",
@@ -794,7 +794,7 @@ void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
     }
 }
 
-static IonGradient calc_ion_gradient_from_returnrad(
+IonGradient calc_ion_gradient_from_returnrad(
     const returnSpec2D *returnSpec,
     const ModelDefinition &params,
     int *status) {

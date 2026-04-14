@@ -387,11 +387,55 @@ TEST_CASE (
     // profile should be in ascending radial order
     REQUIRE(emis_profile->re[0] < emis_profile->re[1]);
 
-    // emissivity should be positive and non-zero for all radial zones
+    // emissivity should be
+    // (1) positive and non-zero for all radial zones
+    // (2) decreasing as due to returning radiation
     for (int ii = 0; ii < emis_profile->nr; ii++) {
         REQUIRE(emis_profile->emis[ii] > 0.0);
+        if (ii > 0) {
+            REQUIRE(emis_profile->emis[ii] >= emis_profile->emis[ii-1]);
+        }
     }
 
     free_emisProfile(emis_profile);
+    delete_returnSpec2D(&returnSpec);
+ }
+
+
+TEST_CASE(
+    " Ionization gradient from return radiation has max equal to input logxi ",
+    "[rrad-bbody-iongradient]"
+) {
+    int status = EXIT_SUCCESS;
+
+    double spin = 0.998;
+    double Rin = kerr_rms(spin);
+    double Rout = RMAX_RELRET;
+    double Tin = 2.0;
+
+    int n_ener = 500;
+    double ener[n_ener + 1];
+    get_log_grid(ener, n_ener + 1, 0.01, 50.0);
+
+    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, Tin, Rin, Rout, spin, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    REQUIRE(returnSpec != nullptr);
+
+    const double input_logxi = 3.0;
+    LocalModel lmod(ModelName::relxillBB);
+    lmod.set_par(XPar::logxi, input_logxi);
+
+    auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, lmod.get_model_params(), &status);
+    REQUIRE(status == EXIT_SUCCESS);
+
+    double lxi_max = ion_gradient.lxi[0];
+    for (int ii = 1; ii < ion_gradient.nzones(); ii++) {
+        if (ion_gradient.lxi[ii] > lxi_max) {
+            lxi_max = ion_gradient.lxi[ii];
+        }
+    }
+
+    REQUIRE(lxi_max == Catch::Approx(input_logxi).epsilon(1e-4));
+
     delete_returnSpec2D(&returnSpec);
 }

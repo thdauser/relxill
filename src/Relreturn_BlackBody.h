@@ -25,6 +25,7 @@
 #include "Relbase.h"
 #include "XspecSpectrum.h"
 #include "ModelDefinition.h"
+#include "IonGradient.h"
 
 
 extern "C" {
@@ -97,5 +98,9 @@ void calcZoneDirectAndReflectedReturnFlux(xillParam *xill_param,
 void calcZoneDirectAndReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, VecD &returnFlux, int ii);
 
 VecD getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
+
+IonGradient calc_ion_gradient_from_returnrad(const returnSpec2D *returnSpec,
+                                             const ModelDefinition &params,
+                                             int *status);
 
 #endif //RELXILL__RELRETURN_H_

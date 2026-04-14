@@ -69,6 +69,7 @@ static emisProfile *get_emis_at_rad(double rad, const emisProfile &emis_profile)
   delete[] radial_grid;
 
   // radial AD grid is sorted descending (!)
+  assert(emis_profile.re[0] > emis_profile.re[1]);
   const int kk = inv_binary_search(emis_profile.re, emis_profile.nr, rad);
   const double interp = (rad - emis_profile.re[kk + 1]) / (emis_profile.re[kk] - emis_profile.re[kk + 1]);
 
