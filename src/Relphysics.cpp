@@ -123,6 +123,21 @@ double density_ss73_zone_a(double radius, double rms) {
   return pow( (radius/rms) , (3. / 2)) * pow((1 - sqrt(rms  / radius)), -2);
 }
 
+/**
+ * @brief wrapper around density_ss73_zone_a, to ensure the value of the function (meaning the density) is
+ * dens=1 at where it is minimal (at 25/9*rin)
+ * @param radius
+ * @param rms
+ * @return
+ */
+double density_ss73_zone_a_normalized(double radius, double rms) {
+  const double rad_density_min = (25. / 9.) * rms;
+  const double density_min = density_ss73_zone_a(rad_density_min, rms);
+
+  return density_ss73_zone_a(radius, rms) / density_min;
+}
+
+
 double relat_abberation(double del, double beta) {
   return acos((cos(del) - beta) / (1 - beta * cos(del)));
 }

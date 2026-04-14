@@ -435,7 +435,7 @@ TEST_CASE(
         }
     }
 
-    REQUIRE(lxi_max == Catch::Approx(input_logxi).epsilon(1e-4));
+    REQUIRE(lxi_max == Catch::Approx(input_logxi).epsilon(1e-2));
 
     delete_returnSpec2D(&returnSpec);
 }

@@ -39,6 +39,7 @@ VecD get_tprofile(const VecD& rlo, const VecD& rhi, int nrad, double Rin, double
 void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac);
 
 double density_ss73_zone_a(double radius, double rms);
+double density_ss73_zone_a_normalized(double radius, double rms);
 
 // energy shift from the primary source to the observer
 double calc_g_inf(double height, double a);
