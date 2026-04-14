@@ -272,8 +272,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 
     returnSpec2D* returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
 
-    if (shouldOutfilesBeWritten())
-    {
+    if (shouldOutfilesBeWritten()) {
         std::string fname = "!undefined.fits";
         fname = fbase_rrad_bbody + "rframe-bbodyEmit.fits";
         fits_rr_write_2Dspec(fname.c_str(), returnSpec->specPri, ener, nener,
@@ -286,9 +285,15 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 
         fname = fbase_rrad_bbody_dat + "rframe-bbodyTemp.dat";
         FILE *fp = fopen(fname.c_str(), "w+");
+        fprintf(fp, "#zone \t rlo \t rhi \t T_col \n" );
         for (int ii = 0; ii < returnSpec->nrad; ii++) {
-            fprintf(fp, "%i \t %e \t %e \t %e \n", ii, returnSpec->rlo[ii], returnSpec->rhi[
-                        +ii], temperature[ii]);
+            fprintf(fp,
+                    "%i \t %e \t %e \t %e \n",
+                    ii,
+                    returnSpec->rlo[ii],
+                    returnSpec->rhi[
+                        +ii],
+                    temperature[ii]);
         }
         fclose_errormsg(fp, fname.c_str());
     }
