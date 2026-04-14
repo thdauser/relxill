@@ -393,7 +393,7 @@ TEST_CASE (
     for (int ii = 0; ii < emis_profile->nr; ii++) {
         REQUIRE(emis_profile->emis[ii] > 0.0);
         if (ii > 0) {
-            REQUIRE(emis_profile->emis[ii] >= emis_profile->emis[ii-1]);
+            REQUIRE(emis_profile->emis[ii] <= emis_profile->emis[ii-1]);
         }
     }
 
