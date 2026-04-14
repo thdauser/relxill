@@ -3,6 +3,7 @@ This readme describes the manual tests and plots for returning thermal radiation
 
 # Tests
 - the test scripts are in the subfolder tests/ and the functions in there are called by `master_test_driver.sl`
+- single tests can be run with `ìsis-scripts tests/example.sl 1`
 - reference data is given in `refdata/`
 
 # Plots
