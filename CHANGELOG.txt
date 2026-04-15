@@ -1,4 +1,17 @@
-[2.6] New model implemented: relxill_ext, which implements a ring-like corona (Nekrasov et al, 2025 A&A)
+[2.9] fixes a bug in calculation of the alpha-disk ionization gradient for the relxilllpCp model, i.e., when setting switch_iongrad_type=2. Due to the bug, the logxi parameter may have been overestimated in some cases. Or more specifically, the quoted value was given closer to Rin of the accretion disk instead of at its maximal value at a radius of (11/9)^2*Rin as intended. A simple re-fit with this version and only logxi free will result in the correct value.  - 2026-04-15
+
+[2.8.1] does not allow setting iongrad_type = 2 for relxill_ring - 2026-02-27
+
+[2.8] fix a small memory leak for ring primary source models - 2026-01-21
+
+[2.7]
+ - re-define default normalization of all relxill models: the normalization parameter is now defined in units of cts/sec/keV/cm2 at 3 keV (same as setting RELXILL_RENORMALIZE=1 since v2.4). Standard integrated normalization, used in earlier versions, can be restored by setting environment variable RELXILL_RENORMALIZE=0.
+ - Ring-like corona model renamed to relxill_ring, and changed parameter names to r_src and theta_src.
+ - Tables for relxill_ring are updated to v0.2 to the maximal value of theta_src from 80 to 85 degrees (rel_ext_table_disk_sph_v0.2.fits.gz, rel_ext_table_obs_sph_v0.2.fits.gz).
+
+  - 2025-12-12
+
+[2.6] New model implemented: relxill_ext, which implements a ring-like corona (Nekrasov et al., 2025 A&A). It requires downloading two new tables (rel_ext_table_disk_sph_v0.1.fits, rel_ext_table_obs_sph_v0.1.fits), which are also included in the full table tar ball. - 2025-09-15
 
 [2.5] Fixes a bug in the general relativistic weighting of the angle distribution in all relxill models. The details are described in Huang et al. (2025, arXiv:2506.00946). The main effect is for a flat emissivity and large inclination angles (70-80deg). Comparing v2.4 to v2.5 for NuSTAR data of EXO 1846–031 did not show any differences in the resulting parameters.
 
