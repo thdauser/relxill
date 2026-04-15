@@ -140,9 +140,41 @@ IonGradient get_ion_gradient(LocalModel const &lmod) {
   return ion_gradient;
 }
 
+
+TEST_CASE(
+  "Test the maximal ionization for the alpha-type ionization gradient ",
+  "[iongrad-lxi-max]") {
+  DefaultSpec const default_spec{};
+  XspecSpectrum spec = default_spec.get_xspec_spectrum();
+  LocalModel lmod{ModelName::relxilllpCp};
+
+  setenv("RELXILL_NUM_RZONES", "50", 1);
+
+  const double lxi_param = 3;
+  lmod.set_par(XPar::logxi, lxi_param);
+  lmod.set_par(XPar::switch_iongrad_type, 2);
+  auto ion_grad = get_ion_gradient(lmod);
+
+  double max_lxi = -1.0;
+  for (int ii = 0; ii < ion_grad.nzones(); ii++) {
+    max_lxi = std::max(max_lxi, ion_grad.lxi[ii]);
+  }
+
+  // (1) test that the maximal ionization is given by the logxi parameter (not strictly true due to the assumptions made, see Ingram+2019)
+  REQUIRE(fabs(max_lxi-lxi_param) < 2e-2); // need at least 0.02, as due to the binning the value is not very precise
+
+  // (2) test that for the given radius of (roughly) maximial ionization we are very close to the parameter value
+  // (see also Ingram+2019 for the definition of this radius)
+  double rad_lxi_max = pow(11.0 / 9.0, 2) * ion_grad.radial_grid.radius[0];
+  int k = binary_search(ion_grad.radial_grid.radius.data(),
+                        static_cast<int>(ion_grad.radial_grid.radius.size()),
+                        rad_lxi_max);
+  REQUIRE(fabs(ion_grad.lxi[k]-lxi_param) < 5e-3);
+  // need at least 0.02, as due to the binning the value is not very precise
+}
+
 TEST_CASE (
-" Test Constant Density by Env Variable "
-,
+" Test Constant Density by Env Variable ",
 "[iongrad-density]"
 )
  {
