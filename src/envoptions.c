@@ -83,6 +83,11 @@ int get_from_env_relline_num_zones(void) {
   return (int) get_env_otherwise_default("RELXILL_NUM_RZONES", 0);
 }
 
+int use_iongrad_relxillbb(void) {
+  return (int) get_env_otherwise_default("RELXILL_RRAD__BBODY_IONGRAD", 0);
+}
+
+
 void print_env_options(void) {
   printf("\n === RELXILL Environment Variables ===\n\n");
 
@@ -93,6 +98,7 @@ void print_env_options(void) {
   printf("  RELXILL_WRITE_FILES         = %d\n", shouldOutfilesBeWritten());
   printf("  RELXILL_RRAD_BBODY_ORDER    = %d\n", get_from_env_rrad_bbody_order());
   printf("  RELXILL_RRAD_BBODY_TPROFILE = %d\n", get_from_env_rrad_bbody_tprofile());
+  printf("  RELXILL_RRAD_BBODY_IONGRAD  = %d\n", use_iongrad_relxillbb());
   printf("  RELXILL_CONSTANT_DENSITY    = %d\n", constantDiskDensity());
   printf("  RELLINE_PHYSICAL_NORM       = %d\n", do_not_normalize_relline());
   printf("  RELXILL_NUM_RZONES          = %d\n", get_from_env_relline_num_zones());

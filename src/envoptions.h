@@ -36,6 +36,8 @@ int get_from_env_rrad_bbody_order(void);
 
 int get_from_env_rrad_bbody_tprofile(void);
 
+int use_iongrad_relxillbb(void);
+
 int constantDiskDensity(void);
 
 /** check if we should return the relline/relconv physical norm from ENV **/

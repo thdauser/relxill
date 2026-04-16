@@ -611,9 +611,12 @@ void calculateAngleWeightedXillverSpectrum(VecD& o_xill_flux,
  * @param [in] rel_cosne_dist Array of angle distribution weights for each inclination angle
  * @param [in,out] status Error status flag; returns EXIT_SUCCESS on success
  */
-void getAnglecorrXillSpec(VecD& xill_flux, const double* ener, int n_ener, xillParam *xill_param,
-                          double *rel_cosne_dist, int *status) {
-
+void getAnglecorrXillSpec(VecD &xill_flux,
+                          const double *ener,
+                          int n_ener,
+                          const xillParam *xill_param,
+                          double *rel_cosne_dist,
+                          int *status) {
   CHECK_STATUS_VOID(*status);
 
   xillSpec *xillSpecAngles = get_xillver_spectra(xill_param, status);

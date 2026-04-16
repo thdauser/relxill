@@ -88,14 +88,14 @@ VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb,
                                                int n_ener,
                                                int *status);
 
-void calcZoneDirectAndReflectedReturnFlux(xillParam *xill_param,
-                                          relline_spec_multizone *rel_profile,
-                                          const returnSpec2D *returnSpec,
-                                          VecD &xill_flux_returnrad,
-                                          int izone,
-                                          int *status);
+void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
+                                                  relline_spec_multizone *rel_profile,
+                                                  const returnSpec2D *returnSpec,
+                                                  VecD &xill_flux_returnrad,
+                                                  int izone,
+                                                  int *status);
 
-void calcZoneDirectAndReturnFlux(xillParam *xill_param, const returnSpec2D *returnSpec, VecD &returnFlux, int ii);
+void calc_zone_direct_and_return_flux(const xillParam &xill_param, const returnSpec2D *returnSpec, VecD &returnFlux, int ii);
 
 VecD getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
 

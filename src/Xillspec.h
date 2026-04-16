@@ -48,10 +48,11 @@ EnerGrid *get_relxill_conv_energy_grid();
 
 
 double norm_factor_semi_infinite_slab(double incl_deg);
+
 void norm_xillver_spec(xillSpec *spec, double incl);
 
 
-xillSpec* get_xillver_spectra(const xillParam* param, int* status);
+xillSpec *get_xillver_spectra(const xillParam *param, int *status);
 
 
 xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
@@ -59,15 +60,19 @@ xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
 
 void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status);
 
-void calculateAngleWeightedXillverSpectrum(VecD& o_xill_flux,
+void calculateAngleWeightedXillverSpectrum(VecD &o_xill_flux,
                                            const double *ener,
                                            int n_ener,
                                            double *rel_dist,
                                            xillSpec *xill_spec,
                                            int *status);
 
-void getAnglecorrXillSpec(VecD& xill_flux, const double* ener, int n_ener, xillParam *xill_param,
-                          double *rel_cosne_dist, int *status);
+void getAnglecorrXillSpec(VecD &xill_flux,
+                          const double *ener,
+                          int n_ener,
+                          const xillParam *xill_param,
+                          double *rel_cosne_dist,
+                          int *status);
 
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         double *fac_fluxcorr,
@@ -75,27 +80,38 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         xillTableParam *xill_table_param,
                                         int *status);
 
-void calc_primary_spectrum(double *pl_flux_xill, const double *ener, int n_ener,
-                           const xillTableParam *xill_param, int *status,
+void calc_primary_spectrum(double *pl_flux_xill,
+                           const double *ener,
+                           int n_ener,
+                           const xillTableParam *xill_param,
+                           int *status,
                            double ener_shift_source_obs = 1.0);
 
-double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
-                                         const relParam *rel_param, const xillTableParam *xill_param, int *status);
+double *calc_normalized_primary_spectrum(const double *ener,
+                                         int n_ener,
+                                         const relParam *rel_param,
+                                         const xillTableParam *xill_param,
+                                         int *status);
 
 double calc_xillver_normalization_change(double energy_shift, const xillTableParam *xill_param_0);
+
 double *calc_xillver_normalization_change_source_to_disk(const double *energy_shift,
                                                          int n_zones,
                                                          const xillTableParam *xill_param_0);
 
 double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, int n, int *status);
+
 EnerGrid *get_coarse_xillver_energrid();
 
-std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam* param, const xillTable* tab, int* status);
+std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam *param, const xillTable *tab, int *status);
 
-void check_xilltab_cache(const char* fname, const xillTableParam* param, const xillTable* tab, std::vector<int> ind,
-                         int* status);
+void check_xilltab_cache(const char *fname,
+                         const xillTableParam *param,
+                         const xillTable *tab,
+                         std::vector<int> ind,
+                         int *status);
 
-xillSpec* interp_xill_table(const xillTable* tab, const xillTableParam* param, std::vector<int> ind, int* status);
+xillSpec *interp_xill_table(const xillTable *tab, const xillTableParam *param, std::vector<int> ind, int *status);
 
 
 #endif //XILLSPEC_H_

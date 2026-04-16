@@ -631,11 +631,15 @@ double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, const double* 
  * @param izone               Index of the zone for which the return flux is calculated.
  * @param status              Pointer to the status flag, used to report success or failure.
  */
-void calcZoneDirectAndReflectedReturnFlux(xillParam* xill_param, relline_spec_multizone* rel_profile,
-                                         const returnSpec2D* returnSpec,
-                                         VecD& xill_flux_returnrad, int izone, int* status)
-{
-    getAnglecorrXillSpec(xill_flux_returnrad, returnSpec->ener, returnSpec->n_ener, xill_param,
+void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
+                                                  relline_spec_multizone *rel_profile,
+                                                  const returnSpec2D *returnSpec,
+                                                  VecD &xill_flux_returnrad,
+                                                  int izone,
+                                                  int *status) {
+    getAnglecorrXillSpec(xill_flux_returnrad,
+                         returnSpec->ener,
+                         returnSpec->n_ener, &xill_param,
                          rel_profile->rel_cosne->dist[izone], status);
 
     double xillverReflectionNormFactor
@@ -644,31 +648,45 @@ void calcZoneDirectAndReflectedReturnFlux(xillParam* xill_param, relline_spec_mu
     CHECK_STATUS_VOID(*status);
 
     double normfacMatchAtHighEnergies
-        = calcNormfacBBodyAtHighenergy(xill_param->kTbb,
-                                       returnSpec->specRet[izone],
-                                       returnSpec->ener,
-                                       returnSpec->n_ener,
-                                       status);
+            = calcNormfacBBodyAtHighenergy(xill_param.kTbb,
+                                           returnSpec->specRet[izone],
+                                           returnSpec->ener,
+                                           returnSpec->n_ener,
+                                           status);
     assert(std::isnormal(normfacMatchAtHighEnergies));
     CHECK_STATUS_VOID(*status);
 
     for (int jj = 0; jj < returnSpec->n_ener; jj++)
     {
-        xill_flux_returnrad[jj] *= fabs(xill_param->boost);
+        xill_flux_returnrad[jj] *= fabs(xill_param.boost);
         xill_flux_returnrad[jj] *= xillverReflectionNormFactor * normfacMatchAtHighEnergies;
 
-        if (xill_param->boost >= 0)
-        {
+        if (xill_param.boost >= 0) {
             xill_flux_returnrad[jj] += returnSpec->specPri[izone][jj];
         }
     }
 }
 
-void calcZoneDirectAndReturnFlux(xillParam* xill_param, const returnSpec2D* returnSpec, VecD& returnFlux, int ii)
-{
+/**
+   * @brief Compute the per-zone flux combining returning radiation and (optionally)
+   the direct primary.
+   *
+   * When @c xill_param.boost is non-negative, the direct and
+   * primary spectrum is added on top; a negative boost selects a "return-only"
+   * output, matching the sign convention used elsewhere
+   * in the relxill models for reflection fractions.
+   *
+   * @param xill_param   Xillver parameters; only @c boost is read here.
+   * @param returnSpec   Precomputed return-radiation spectra
+   * @param returnFlux   Output flux for zone ii, sized in returnSpec.
+   * @param ii           Radial zone index.
+   */
+void calc_zone_direct_and_return_flux(const xillParam &xill_param, const returnSpec2D *returnSpec,
+                                      VecD &returnFlux,
+                                      int ii) {
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
-        returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param->boost);
-        if (xill_param->boost >= 0)
+        returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param.boost);
+        if (xill_param.boost >= 0)
         {
             returnFlux[jj] += returnSpec->specPri[ii][jj];
         }
@@ -871,6 +889,12 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                          status);
 }
 
+static void set_xill_param_from_iongrad(xillParam &xill_param_zone, const IonGradient & ion_gradient, int izone) {
+    xill_param_zone.dens = ion_gradient.dens[izone];
+    xill_param_zone.lxi = ion_gradient.lxi[izone];
+    xill_param_zone.radzone = (int) izone;
+}
+
 /**
  * @brief Computes the relativistic reflection spectrum using a blackbody as the primary radiation source.
  *
@@ -929,7 +953,6 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
                                                         rel_param->rin, rel_param->rout, rel_param->a,
                                                         status);
     CHECK_RELXILL_ERROR("calculating return rad spec, failed", status);
-    // TODO: still untested and probably not yet working
     auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, params, status);
 
 
@@ -953,10 +976,6 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     VecD_2D specBbodyPrimZones(returnSpec->nrad);
     // ========== //
 
-
-
-    double Tin = xill_param->kTbb;
-
     specCache* spec_cache = init_global_specCache(status);
     CHECK_STATUS_VOID(*status);
     setArrayToZero(specOutput, n_ener_inp);
@@ -965,37 +984,31 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     {
         assert(returnSpec->n_ener == n_ener);
 
+        xillParam xill_param_zone = *xill_param;  // flat copy works, as no arrays contained
+
         specZonesEmittedCombined[izone] = VecD(n_ener, 0.0);
 
-        if (should_noXillverRefl_calculated())
-        {
+        if (should_noXillverRefl_calculated()) {
             // TODO: remove this once everything is working; only for testing
-            calcZoneDirectAndReturnFlux(xill_param, returnSpec, specZonesEmittedCombined[izone], izone);
-        }
-        else
-        {
-            if (xill_param->model_type == MOD_TYPE_RELXILLBBRET)
-            {
-                xill_param->kTbb = Tin * xill_param->shiftTmaxRRet; // currently set for testing the xillverNS table
+            calc_zone_direct_and_return_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
+        } else {
+            // very dangerous; need to check that it is within the table boundaries as well
+            // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )
+            xill_param_zone.radzone = (double) izone;
+            if (use_iongrad_relxillbb()) {
+                set_xill_param_from_iongrad(xill_param_zone, ion_gradient, izone);
             }
-            if (xill_param->model_type == MOD_TYPE_RELXILLBBRETXILL)
-            {
-                // very dangerous; need to check that it is within the table boundaries as well
-                // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )
-                xill_param->radzone = (double)izone;
-            }
-            calcZoneDirectAndReflectedReturnFlux(xill_param, relProfile, returnSpec, specZonesEmittedCombined[izone],
-                                                izone, status);
+            calc_zone_direct_plus_xillver_reflected_flux(xill_param_zone, relProfile, returnSpec, specZonesEmittedCombined[izone],
+                                                         izone, status);
         }
 
 
         // calculate xillver primary spectrum (only used for additional/debug output),
-        if (shouldOutfilesBeWritten())
-        {
+        if (shouldOutfilesBeWritten()) {
             specBbodyPrimZones[izone] =
-                getXillverPimaryBBodyNormalizedAtHighener(xill_param->kTbb, returnSpec->specRet[izone],
-                                                          returnSpec->ener,
-                                                          returnSpec->n_ener, status);
+                    getXillverPimaryBBodyNormalizedAtHighener(xill_param_zone.kTbb, returnSpec->specRet[izone],
+                                                              returnSpec->ener,
+                                                              returnSpec->n_ener, status);
         }
 
         specZonesConvOutput[izone] = VecD(n_ener, 0.0);
@@ -1022,9 +1035,6 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     // clean spectrum
     setLowValuesToZero(specOutput, n_ener_inp);
     setValuesOutsideToZero(specOutput, ener_inp, n_ener_inp);
-
-    // reset Tin parameter to be safe
-    xill_param->kTbb = Tin;
 
     if (shouldOutfilesBeWritten()) {
         write_bbret_diagnose_outfiles(xill_param, specZonesConvOutput, specZonesEmittedCombined,
