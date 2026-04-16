@@ -4,7 +4,7 @@ require("isisscripts");
 require("scripts/subs_returnrad.sl");
 load_xspec_local_models("build/");
 
-putenv("RELXILL_BBRET_NOREFL=1");
+putenv("RELXILL_RRAD_BBODY_MIRRORED=1");
 
 fit_fun("relxillBB");
 variable spin = 0.0;

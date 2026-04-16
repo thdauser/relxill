@@ -37,7 +37,7 @@ define createOutputFiles(_ff, _par){
    }
    
    %% creating the "mirror" files
-   putenv("RELXILL_BBRET_NOREFL=1");
+   putenv("RELXILL_RRAD_BBODY_MIRRORED=1");
 
    set_par("*.boost",1.0);
    () = eval_fun(1,2);
@@ -50,7 +50,7 @@ define createOutputFiles(_ff, _par){
    
 
    %%% 2 creating the "reflection" files
-   putenv("RELXILL_BBRET_NOREFL=0");
+   putenv("RELXILL_RRAD_BBODY_MIRRORED=0");
    variable files = getFilenameStruct();
 
    %%% 2a combined
@@ -78,5 +78,5 @@ define createOutputFiles(_ff, _par){
 
 
    putenv("RELXILL_WRITE_FILES=0");
-   putenv("RELXILL_BBRET_NOREFL=0");
+   putenv("RELXILL_RRAD_BBODY_MIRRORED=0");
 }
