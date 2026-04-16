@@ -84,7 +84,11 @@ int get_from_env_relline_num_zones(void) {
 }
 
 int use_iongrad_relxillbb(void) {
-  return (int) get_env_otherwise_default("RELXILL_RRAD__BBODY_IONGRAD", 0);
+  return (int) get_env_otherwise_default("RELXILL_RRAD_BBODY_IONGRAD", 0);
+}
+
+int mirrored_reflection_instead_of_xillver(void) {
+  return (int) get_env_otherwise_default("RELXILL_RRAD_BBODY_MIRRORED", 0);
 }
 
 
@@ -99,6 +103,7 @@ void print_env_options(void) {
   printf("  RELXILL_RRAD_BBODY_ORDER    = %d\n", get_from_env_rrad_bbody_order());
   printf("  RELXILL_RRAD_BBODY_TPROFILE = %d\n", get_from_env_rrad_bbody_tprofile());
   printf("  RELXILL_RRAD_BBODY_IONGRAD  = %d\n", use_iongrad_relxillbb());
+  printf("  RELXILL_RRAD_BBODY_MIRRORED = %d\n", mirrored_reflection_instead_of_xillver());
   printf("  RELXILL_CONSTANT_DENSITY    = %d\n", constantDiskDensity());
   printf("  RELLINE_PHYSICAL_NORM       = %d\n", do_not_normalize_relline());
   printf("  RELXILL_NUM_RZONES          = %d\n", get_from_env_relline_num_zones());

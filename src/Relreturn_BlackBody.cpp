@@ -436,7 +436,6 @@ static VecD_2D get_returnrad_specs(double* ener_inp,
     auto spec_pri = get_bbody_specs(ener, nener, temperature, status);
 
     std::vector<VecD_2D> spec_out(norder);
-    // match the spectra to the output grid
     VecD_2D spec_sum_out(dat->nrad, VecD(nener));
     for (int iorder = 0; iorder < norder; iorder++) {
         spec_out[iorder] = calc_returnrad_from_input_spectra(dat, status, nener, ener,
@@ -448,6 +447,7 @@ static VecD_2D get_returnrad_specs(double* ener_inp,
         }
     }
 
+    // match the spectra to the output grid
     VecD_2D spec_zones_rebinned(dat->nrad, VecD(nener_inp));
     for (int ii = 0; ii < dat->nrad; ii++)
     {
@@ -686,9 +686,10 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
    * @param returnFlux   Output flux for zone ii, sized in returnSpec.
    * @param ii           Radial zone index.
    */
-void calc_zone_direct_and_return_flux(const xillParam &xill_param, const returnSpec2D *returnSpec,
-                                      VecD &returnFlux,
-                                      int ii) {
+void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param,
+                                         const returnSpec2D *returnSpec,
+                                         VecD &returnFlux,
+                                         int ii) {
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
         returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param.boost);
         if (xill_param.boost >= 0)
@@ -784,18 +785,6 @@ static void set_values_outside_to_zero(double* spec, const double* ener, int n)
 }
 
 
-static int should_no_xillver_refl_calculated()
-{
-    char* env = getenv("RELXILL_BBRET_NOREFL");
-
-    if (env != nullptr && env[0] == '1')
-    {
-        return 1;
-    }
-    return 0;
-}
-
-
 void check_and_reset_value(double* ptr_val, double val_ref, const char* param_name)
 {
     const double prec = 1e-6;
@@ -851,7 +840,7 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                                           int *status) {
     std::string fname;
 
-    if (should_no_xillver_refl_calculated()) {
+    if (mirrored_reflection_instead_of_xillver()) {
         if (fabs(xill_param->boost) < 1e-8) {
             fname = fbase_rrad_bbody + "obs-mirror-primary.fits";
         } else if (xill_param->boost < 0) {
@@ -928,9 +917,9 @@ static void set_xill_param_from_iongrad(xillParam &xill_param_zone, const IonGra
  *   to its original value upon completion.
  * - Diagnostic FITS files are written if diagnostic flags are set via shouldOutfilesBeWritten().
  */
-void relxill_bb_kernel(const XspecSpectrum &spectrum,
-                       const ModelDefinition &params,
-                       int* status)
+void relxillbb_kernel(const XspecSpectrum &spectrum,
+                      const ModelDefinition &params,
+                      int* status)
 {
     double *ener_inp = spectrum.energy;
     double *specOutput = spectrum.flux;
@@ -991,9 +980,9 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
 
         specZonesEmittedCombined[izone] = VecD(n_ener, 0.0);
 
-        if (should_no_xillver_refl_calculated()) {
+        if (mirrored_reflection_instead_of_xillver()) {
             // TODO: remove this once everything is working; only for testing
-            calc_zone_direct_and_return_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
+            calc_zone_direct_plus_mirrored_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
         } else {
             // very dangerous; need to check that it is within the table boundaries as well
             // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )

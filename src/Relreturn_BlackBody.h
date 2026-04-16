@@ -72,7 +72,7 @@ returnSpec2D *spec_returnrad_blackbody(double *ener,
                                        int *status);
 
 
-void relxill_bb_kernel(const XspecSpectrum &spectrum,
+void relxillbb_kernel(const XspecSpectrum &spectrum,
                        const ModelDefinition &params,
                        int *status);
 
@@ -95,7 +95,7 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                                   int izone,
                                                   int *status);
 
-void calc_zone_direct_and_return_flux(const xillParam &xill_param, const returnSpec2D *returnSpec, VecD &returnFlux,
+void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param, const returnSpec2D *returnSpec, VecD &returnFlux,
                                       int ii);
 
 VecD get_temperature_profile_disk_zones(returningFractions *dat, double Rin, double Tin, int *status);

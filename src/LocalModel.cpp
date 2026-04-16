@@ -25,7 +25,6 @@
 #include <iostream>
 
 
-
 /*
  * @brief: calculate line model
  * @description: simply shift the energy grid by the line energy and call to the relbase function, which calculates
@@ -48,11 +47,9 @@ void LocalModel::line_model(const XspecSpectrum &spectrum) {
   if (status != EXIT_SUCCESS) {
     throw std::exception();
   }
-
 }
 
-void LocalModel::add_jedsad_parameters_to_model_params()
-{
+void LocalModel::add_jedsad_parameters_to_model_params() {
   // convert jedsad parameters to Gamma/Ecut
   auto primespec_params = convert_jedsad_to_primaryspec_params(m_model_params);
 
@@ -60,16 +57,13 @@ void LocalModel::add_jedsad_parameters_to_model_params()
   m_model_params.insert_par(XPar::gamma, primespec_params.gamma);
   m_model_params.insert_par(XPar::ecut, primespec_params.ecut);
 
-  if (is_debug_run())
-  {
+  if (is_debug_run()) {
     printf(" *** debug: jedsad parameters: gamma=%f, ecut=%f\n", primespec_params.gamma, primespec_params.ecut);
   }
 }
 
-bool LocalModel::handle_zero_jedsad_parameters(const XspecSpectrum& spectrum)
-{
-  if (m_model_params.get_par(XPar::gamma) < 1e-8 || m_model_params.get_par(XPar::ecut) < 1e-8)
-  {
+bool LocalModel::handle_zero_jedsad_parameters(const XspecSpectrum &spectrum) {
+  if (m_model_params.get_par(XPar::gamma) < 1e-8 || m_model_params.get_par(XPar::ecut) < 1e-8) {
     printf(" *** warning: jedsad parameters are 0, no reflection calculated\n");
     setArrayToZero(spectrum.flux, spectrum.num_flux_bins());
     return true;
@@ -77,10 +71,8 @@ bool LocalModel::handle_zero_jedsad_parameters(const XspecSpectrum& spectrum)
   return false;
 }
 
-void LocalModel::check_relxill_error_default(int status)
-{
-  if (status != EXIT_SUCCESS)
-  {
+void LocalModel::check_relxill_error_default(int status) {
+  if (status != EXIT_SUCCESS) {
     throw std::exception();
   }
 }
@@ -99,18 +91,13 @@ void LocalModel::check_relxill_error_default(int status)
  * @note Modifies spectrum.flux array; may add parameters for JedSad models
  */
 void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
-
   int status = EXIT_SUCCESS;
 
   if (m_model_params.get_model_name() == ModelName::relxillBB || m_model_params.get_model_name() ==
-    ModelName::relxillBBxill)
-  {
-    relxill_bb_kernel(spectrum, m_model_params, &status);
-  }
-  else
-  {
-    if (m_model_params.get_model_name() == ModelName::relxill_jedsad)
-    {
+      ModelName::relxillBBxill) {
+    relxillbb_kernel(spectrum, m_model_params, &status);
+  } else {
+    if (m_model_params.get_model_name() == ModelName::relxill_jedsad) {
       add_jedsad_parameters_to_model_params();
       if (handle_zero_jedsad_parameters(spectrum)) return;
     }
@@ -126,8 +113,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
  * @description note the model is only defined in the 0.01-1000 keV energy range and will
  * return 0 outside this range (see function relconv_kernel for more details)
  */
-void LocalModel::conv_model(const XspecSpectrum& spectrum) const
-{
+void LocalModel::conv_model(const XspecSpectrum &spectrum) const {
   if (calcSum(spectrum.flux, spectrum.num_flux_bins()) <= 0.0) {
     throw ModelEvalFailed("input flux for convolution model needs to be >0");
   }
@@ -146,11 +132,10 @@ void LocalModel::conv_model(const XspecSpectrum& spectrum) const
 /**
  * @brief calculate xillver model
  */
-void LocalModel::xillver_model(const XspecSpectrum& spectrum) const
-{
+void LocalModel::xillver_model(const XspecSpectrum &spectrum) const {
   int status = EXIT_SUCCESS;
 
-  xillParam* xill_param = get_xill_params(m_model_params);
+  xillParam *xill_param = get_xill_params(m_model_params);
   xillSpec *spec = get_xillver_spectra(xill_param, &status);
 
   // add the dependence on incl, assuming a semi-infinite slab
@@ -190,13 +175,11 @@ void xspec_C_wrapper_eval_model(ModelName model_name,
                                 double *xspec_flux,
                                 int num_flux_bins,
                                 const double *xspec_energy) {
-
   try {
     LocalModel local_model{parameter_values, model_name};
 
     XspecSpectrum spectrum{xspec_energy, xspec_flux, static_cast<size_t>(num_flux_bins)};
     local_model.eval_model(spectrum);
-
   } catch (ModelNotFound &e) {
     std::cout << e.what();
   }

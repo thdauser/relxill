@@ -38,6 +38,8 @@ int get_from_env_rrad_bbody_tprofile(void);
 
 int use_iongrad_relxillbb(void);
 
+int mirrored_reflection_instead_of_xillver(void);
+
 int constantDiskDensity(void);
 
 /** check if we should return the relline/relconv physical norm from ENV **/
