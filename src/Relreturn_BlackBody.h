@@ -73,8 +73,8 @@ returnSpec2D *spec_returnrad_blackbody(double *ener,
 
 
 void relxillbb_kernel(const XspecSpectrum &spectrum,
-                       const ModelDefinition &params,
-                       int *status);
+                      const ModelDefinition &params,
+                      int *status);
 
 std::vector<double> get_radial_grid_from_returntab(const returnSpec2D *spec);
 
@@ -95,8 +95,10 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                                   int izone,
                                                   int *status);
 
-void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param, const returnSpec2D *returnSpec, VecD &returnFlux,
-                                      int ii);
+void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param,
+                                         const returnSpec2D *returnSpec,
+                                         VecD &returnFlux,
+                                         int ii);
 
 VecD get_temperature_profile_disk_zones(returningFractions *dat, double Rin, double Tin, int *status);
 
