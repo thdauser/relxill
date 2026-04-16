@@ -29,8 +29,7 @@ double get_env_otherwise_default(const char *env, double def_value) {
 
 /** get the relxill table path (dynamically from env variable)  **/
 char *get_relxill_table_path(void) {
-  char *path;
-  path = getenv("RELXILL_TABLE_PATH");
+  char *path = getenv("RELXILL_TABLE_PATH");
   if (path != NULL) {
     return path;
   } else {

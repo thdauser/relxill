@@ -806,10 +806,10 @@ void check_parameter_bounds_relxillbb(xillParam* xill_param,relParam* rel_param)
 {
     if (rel_param->model_type == MOD_TYPE_RELXILLBBRETXILL)
     {
-        check_and_reset_value( &(rel_param->a), 0.998, "a");
-        check_and_reset_value(&(rel_param->rin), kerr_rms(0.998), "Rin");
-        check_and_reset_value( &(rel_param->rout), 1000, "Rout");
-        check_and_reset_value( &(xill_param->lxi), 2, "logxi");
+        check_and_reset_value(&rel_param->a, 0.998, "a");
+        check_and_reset_value(&rel_param->rin, kerr_rms(0.998), "Rin");
+        check_and_reset_value(&rel_param->rout, 1000, "Rout");
+        check_and_reset_value(&xill_param->lxi, 2, "logxi");
     }
 }
 
@@ -817,9 +817,9 @@ IonGradient calc_ion_gradient_from_returnrad(
     const returnSpec2D *returnSpec,
     const ModelDefinition &params,
     int *status) {
-    auto radialGrid = get_radial_grid_from_returntab(returnSpec);
+    const auto radialGrid = get_radial_grid_from_returntab(returnSpec);
     IonGradient ion_gradient{radialGrid, ION_GRAD_TYPE_ALPHA, 0};
-    auto primary_source_params = PrimarySourceParameters{params};
+    const auto primary_source_params = PrimarySourceParameters{params};
     auto emis_profile =
             calculate_emis_profile_from_spectra(returnSpec->specRet,
                                                 returnSpec->rlo,
