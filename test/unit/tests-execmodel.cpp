@@ -265,3 +265,7 @@ TEST_CASE(" Testing caching an change of parameters for memory leaks", "[valgrin
   REQUIRE_NOTHROW(lmod.eval_model(spec2));
 
 }
+
+TEST_CASE(" print environment variables and defaults") {
+  print_env_options();
+}
