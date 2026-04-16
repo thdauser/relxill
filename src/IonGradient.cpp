@@ -476,7 +476,7 @@ void IonGradient::write_to_file(const char *fout) const {
   FILE *fp = fopen(fout, "w+");
 
   if (irradiating_flux != nullptr) {
-    fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \n F_x\n");
+    fprintf(fp, "# rlo [R_g]\t rhi [R_g] \t log(xi) \t log(N) \t delta_emit \t F_x\n");
 
     // if we calculated the physical flux, use this for the output
     const double *irrad_flux = (m_physical_irrad_flux != nullptr) ? m_physical_irrad_flux : irradiating_flux;
