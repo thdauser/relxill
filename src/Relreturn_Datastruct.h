@@ -23,12 +23,11 @@
 #include "Types.h"
 
 typedef struct {
-
   VecD rlo;
   VecD rhi;
   int nrad;
 
-  const double* ener; // length is n_ener+1
+  const double *ener; // length is n_ener+1
   int n_ener;
 
   /**
@@ -44,26 +43,30 @@ typedef struct {
    */
   double **specRet;
   double **specPri;
-
 } returnSpec2D;
 
 
 VecD get_gfac_grid(double gmin, double gmax, int ng);
+
 void get_std_bbody_energy_grid(int *n_ener, double **ener, int *status);
 
-double **new_specZonesArr(int nener_inp, int nrad, int *status);
-VecU_D new_specZonesArrVec(int nener_inp, int nrad);
+double **new_spec_zones_arr(int nener_inp, int nrad, int *status);
+
+VecU_D new_spec_zones_arr_vec(int nener_inp, int nrad);
+
 void sum_2Dspec(double *spec, double **spec_arr, int nener, int nrad, const int *status);
 
-returnSpec2D *new_returnSpec2D(const VecD& rlo, const VecD& rhi, int nrad, const double* ener, int n_ener, int *status);
-void delete_returnSpec2D(returnSpec2D** rspec);
+returnSpec2D *new_returnSpec2D(const VecD &rlo, const VecD &rhi, int nrad, const double *ener, int n_ener, int *status);
 
-returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
-                                          const VecD_2D& spec_rr_zones,
-                                          const VecD_2D& spec_prim_zones,
-                                          double* ener, int n_ener,
-                                          int *status);
+void delete_returnSpec2D(returnSpec2D **rspec);
 
-void assert_double_array_isnormal(double* spec, int n);
+returnSpec2D *get_returnrad_output_structure(const returningFractions *dat,
+                                             const VecD_2D &spec_rr_zones,
+                                             const VecD_2D &spec_prim_zones,
+                                             double *ener,
+                                             int n_ener,
+                                             int *status);
+
+void assert_double_array_isnormal(double *spec, int n);
 
 #endif //RELXILL_RELRETURN_C_RELRETURN_GRIDS_H_

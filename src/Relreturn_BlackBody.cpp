@@ -273,7 +273,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
         }
     }
 
-    returnSpec2D* returnSpec = getReturnradOutputStructure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
+    returnSpec2D *returnSpec = get_returnrad_output_structure(dat, spec_rr_zones, spec_prim_zones, ener, nener, status);
 
     if (shouldOutfilesBeWritten()) {
         std::string fname = "!undefined.fits";

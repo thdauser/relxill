@@ -36,17 +36,17 @@ extern "C" {
 double *global_bbody_ener_std = nullptr;
 
 
-returnSpec2D *getReturnradOutputStructure(const returningFractions *dat,
-                                          const VecD_2D& spec_rr_zones,
-                                          const VecD_2D& spec_prim_zones,
-                                          double *ener,
-                                          int n_ener,
-                                          int *status) {
+returnSpec2D *get_returnrad_output_structure(const returningFractions *dat,
+                                             const VecD_2D &spec_rr_zones,
+                                             const VecD_2D &spec_prim_zones,
+                                             double *ener,
+                                             int n_ener,
+                                             int *status) {
   returnSpec2D *returnSpec = new_returnSpec2D(dat->rlo, dat->rhi, dat->nrad, ener, n_ener, status);
 
   // Allocate memory for double** arrays
-  returnSpec->specRet = new_specZonesArr(n_ener, dat->nrad, status);
-  returnSpec->specPri = new_specZonesArr(n_ener, dat->nrad, status);
+  returnSpec->specRet = new_spec_zones_arr(n_ener, dat->nrad, status);
+  returnSpec->specPri = new_spec_zones_arr(n_ener, dat->nrad, status);
 
   // Copy data from VecD_2D to double**
   for (int ii = 0; ii < dat->nrad; ii++) {
@@ -67,8 +67,8 @@ static double gstar2gfac(double gmin, double gmax, double gstar) {
 
 VecD get_gfac_grid(double gmin, double gmax, int ng) {
   VecD gfac(ng);
-  for (int ii=0; ii<ng; ii++){
-    gfac[ii] =  gstar2gfac(gmin,gmax, (ii+0.5)/ng);
+  for (int ii = 0; ii < ng; ii++) {
+    gfac[ii] = gstar2gfac(gmin, gmax, (ii + 0.5) / ng);
   }
   return gfac;
 }
@@ -96,7 +96,7 @@ void sum_2Dspec(double *spec, double **spec_arr, int nener, int nrad, const int 
   }
 }
 
-double **new_specZonesArr(int nener_inp, int nrad, int *status) {
+double **new_spec_zones_arr(int nener_inp, int nrad, int *status) {
   auto **spec_zones = (double **) malloc(sizeof(double *) * nrad);
   CHECK_MALLOC_RET_STATUS(spec_zones, status, spec_zones);
   for (int ii = 0; ii < nrad; ii++) {
@@ -106,7 +106,7 @@ double **new_specZonesArr(int nener_inp, int nrad, int *status) {
   return spec_zones;
 }
 
-VecU_D new_specZonesArrVec(int nener_inp, int nrad) {
+VecU_D new_spec_zones_arr_vec(int nener_inp, int nrad) {
   VecU_D spec_zones(nrad);
   for (int ii = 0; ii < nrad; ii++) {
     spec_zones[ii] = std::make_unique<double[]>(nener_inp);
@@ -115,8 +115,12 @@ VecU_D new_specZonesArrVec(int nener_inp, int nrad) {
 }
 
 
-returnSpec2D *new_returnSpec2D(const VecD& rlo, const VecD& rhi, int nrad, const double* ener, int n_ener, int *status) {
-
+returnSpec2D *new_returnSpec2D(const VecD &rlo,
+                               const VecD &rhi,
+                               int nrad,
+                               const double *ener,
+                               int n_ener,
+                               int *status) {
   auto rspec = new returnSpec2D;
   CHECK_MALLOC_RET_STATUS(rspec, status, rspec)
 
@@ -133,17 +137,13 @@ returnSpec2D *new_returnSpec2D(const VecD& rlo, const VecD& rhi, int nrad, const
   return rspec;
 }
 
-void delete_returnSpec2D(returnSpec2D** rspec)
-{
-  if (*rspec != nullptr)
-  {
-    if ((*rspec)->specPri != nullptr)
-    {
-      free_2d(&(*rspec)->specPri,(*rspec)->nrad);
+void delete_returnSpec2D(returnSpec2D **rspec) {
+  if (*rspec != nullptr) {
+    if ((*rspec)->specPri != nullptr) {
+      free_2d(&(*rspec)->specPri, (*rspec)->nrad);
     }
-    if ((*rspec)->specRet != nullptr)
-    {
-      free_2d(&(*rspec)->specRet,(*rspec)->nrad);
+    if ((*rspec)->specRet != nullptr) {
+      free_2d(&(*rspec)->specRet, (*rspec)->nrad);
     }
     delete *rspec;
     *rspec = nullptr;
@@ -151,8 +151,7 @@ void delete_returnSpec2D(returnSpec2D** rspec)
 }
 
 
-void assert_double_array_isnormal(double* spec, int n)
-{
-  double sum = calcSum(spec,n);
+void assert_double_array_isnormal(double *spec, int n) {
+  double sum = calcSum(spec, n);
   assert(std::isnormal(sum) == true);
 }
