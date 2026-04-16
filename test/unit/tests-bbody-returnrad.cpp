@@ -35,19 +35,17 @@ extern "C" {
 #define REFDATA_DIR "test/unit/refdata/"  // relativ to RELXILL_SOURCE_DIR (set when compiling)
 
 
-
 // Function definitions
-static double* integSpecArea(double** spec, int n_ener, double spin, const returnSpec2D *returnSpec, int* status);
+static double *integSpecArea(double **spec, int n_ener, double spin, const returnSpec2D *returnSpec, int *status);
 
-static void fits_write_spec(const char* fname, const double* ener, double* spec, int n_ener, int* status){
-
+static void fits_write_spec(const char *fname, const double *ener, double *spec, int n_ener, int *status) {
   CHECK_STATUS_VOID(*status);
 
   char filename[300];
-  if (fname[0]!='!'){
-    sprintf(filename,"!%s", fname);
+  if (fname[0] != '!') {
+    sprintf(filename, "!%s", fname);
   } else {
-    sprintf(filename,"%s",fname);
+    sprintf(filename, "%s", fname);
   }
 
   // open the fits file
@@ -64,7 +62,7 @@ static void fits_write_spec(const char* fname, const double* ener, double* spec,
   char f3[10] = "flux";
 
   const int tfields = 3;
-  char *ttype[] = { f1, f2, f3 };
+  char *ttype[] = {f1, f2, f3};
   char *tform[] = {tf1, tf1, tf1};
 
   if (fits_create_tbl(fptr, BINARY_TBL, 0, tfields, ttype, tform, nullptr, "spec", status)) {
@@ -74,13 +72,13 @@ static void fits_write_spec(const char* fname, const double* ener, double* spec,
   double bin_lo[n_ener];
   double bin_hi[n_ener];
 
-  for (int ii=0; ii<n_ener; ii++){
+  for (int ii = 0; ii < n_ener; ii++) {
     bin_lo[ii] = ener[ii];
-    bin_hi[ii] = ener[ii+1];
+    bin_hi[ii] = ener[ii + 1];
   }
 
-  int firstrow = 1;  /* first row in table to write   */
-  int firstelem = 1;  /* first element in row  */
+  int firstrow = 1; /* first row in table to write   */
+  int firstelem = 1; /* first element in row  */
 
   fits_write_col(fptr, TDOUBLE, 1, firstrow, firstelem, n_ener, bin_lo, status);
   fits_write_col(fptr, TDOUBLE, 2, firstrow, firstelem, n_ener, bin_hi, status);
@@ -89,15 +87,10 @@ static void fits_write_spec(const char* fname, const double* ener, double* spec,
   relxill_check_fits_error(status);
 
   if (fptr != nullptr) { fits_close_file(fptr, status); }
-
-
-
 }
 
 
-
 static refSpecData *new_refSpecData(int nener, int *status) {
-
   CHECK_STATUS_RET(*status, nullptr);
 
   auto *spec = new refSpecData;
@@ -120,7 +113,6 @@ static void free_refSpecData(refSpecData *spec) {
 }
 
 static refSpecData *fits_read_refdata_spec(char *fname, int *status) {
-
   // open the reference data
   fitsfile *fptr = nullptr;
   (fits_open_table(&fptr, fname, READONLY, status));
@@ -155,7 +147,6 @@ static refSpecData *fits_read_refdata_spec(char *fname, int *status) {
 }
 
 static int compare_refSpecDat(const refSpecData *spec, const double *ener0, const double *flux0, int nener0) {
-
   int status = EXIT_SUCCESS;
 
   if (spec->nener != nener0) {
@@ -165,27 +156,31 @@ static int compare_refSpecDat(const refSpecData *spec, const double *ener0, cons
   }
 
   for (int ii = 0; ii < nener0; ii++) {
-
     if ((spec->flux[ii] / flux0[ii]) > PREC_REFDATA && (fabs(spec->flux[ii] - flux0[ii]) > PREC_REFDATA)) {
       status = EXIT_FAILURE;
       printf(" *** error : spectrum flux in bin [%.3f, %.3f] is %e, but expected to be %e \n",
-             ener0[ii], ener0[ii + 1], flux0[ii], spec->flux[ii]);
+             ener0[ii],
+             ener0[ii + 1],
+             flux0[ii],
+             spec->flux[ii]);
     }
-
   }
 
   return status;
 }
 
-static int compareWithRefdata(const char *fname_ref, const double *ener0, const double *flux0, int nener0, int *status) {
-
+static int compareWithRefdata(const char *fname_ref,
+                              const double *ener0,
+                              const double *flux0,
+                              int nener0,
+                              int *status) {
   PRINT_RELXILL_TEST_MSG(fname_ref);
 
   char fullname_ref[1000];
   sprintf(fullname_ref, "%s/%s/%s", RELXILL_SOURCE_DIR, REFDATA_DIR, fname_ref);
   refSpecData *spec = fits_read_refdata_spec(fullname_ref, status);
 
-  if (spec == nullptr){
+  if (spec == nullptr) {
     return -1;
   }
 
@@ -195,18 +190,16 @@ static int compareWithRefdata(const char *fname_ref, const double *ener0, const 
 }
 
 
-
-static double* integSpecArea(double** spec, int n_ener, double spin, const returnSpec2D *returnSpec, int* status) {
-
-  auto *areaIntegSpec = (double*) malloc(sizeof(double)*n_ener);
+static double *integSpecArea(double **spec, int n_ener, double spin, const returnSpec2D *returnSpec, int *status) {
+  auto *areaIntegSpec = (double *) malloc(sizeof(double) * n_ener);
   CHECK_MALLOC_RET_STATUS(areaIntegSpec, status, areaIntegSpec)
 
-  for (int jj=0; jj<n_ener; jj++) {
+  for (int jj = 0; jj < n_ener; jj++) {
     areaIntegSpec[jj] = 0.0;
   }
-  for (int ii=0; ii<returnSpec->nrad; ii++){
-    double prop_area = calc_proper_area_ring(returnSpec->rlo[ii],returnSpec->rhi[ii],spin);
-    for (int jj=0; jj<n_ener; jj++) {
+  for (int ii = 0; ii < returnSpec->nrad; ii++) {
+    double prop_area = calc_proper_area_ring(returnSpec->rlo[ii], returnSpec->rhi[ii], spin);
+    for (int jj = 0; jj < n_ener; jj++) {
       areaIntegSpec[jj] += spec[ii][jj] * prop_area;
     }
   }
@@ -214,8 +207,7 @@ static double* integSpecArea(double** spec, int n_ener, double spin, const retur
 }
 
 
-static int checkTemperatureProfile(double* temperature, int n){
-
+static int checkTemperatureProfile(double *temperature, int n) {
   if (temperature[0] < 0.0) {
     printf("\n *** error: lowest bin of temperature profile is %f  and NOT >=0 as expected \n",
            temperature[0]);
@@ -224,16 +216,15 @@ static int checkTemperatureProfile(double* temperature, int n){
   return EXIT_SUCCESS;
 }
 
-void fitsAddKeyRadialZone(char* fname, const returnSpec2D* returnSpec, int izone, int* status){
-
-  fitsfile* fptr = nullptr;
+void fitsAddKeyRadialZone(char *fname, const returnSpec2D *returnSpec, int izone, int *status) {
+  fitsfile *fptr = nullptr;
   fits_open_table(&fptr, fname, READWRITE, status);
 
   double rlo = returnSpec->rlo[izone];
   double rhi = returnSpec->rhi[izone];
-  fits_update_key(fptr, TDOUBLE, "rlo",&(rlo),"radial zone grid", status);
-  fits_update_key(fptr, TDOUBLE, "rhi",&(rhi),"radial zone grid", status);
-  fits_update_key(fptr, TINT, "izone",&izone,"radial zone grid", status);
+  fits_update_key(fptr, TDOUBLE, "rlo", &(rlo), "radial zone grid", status);
+  fits_update_key(fptr, TDOUBLE, "rhi", &(rhi), "radial zone grid", status);
+  fits_update_key(fptr, TINT, "izone", &izone, "radial zone grid", status);
 
   fits_close_file(fptr, status);
 
@@ -245,7 +236,12 @@ void fitsAddKeyRadialZone(char* fname, const returnSpec2D* returnSpec, int izone
 //  ======= TEST FUNCTIONS ========   //
 
 // ========== //
-TEST_CASE(" Check Temperature Profile", "[bbret]"){
+TEST_CASE (
+" Check Temperature Profile"
+,
+"[bbret]"
+)
+{
 
   int status = EXIT_SUCCESS;
 
@@ -258,7 +254,7 @@ TEST_CASE(" Check Temperature Profile", "[bbret]"){
     double Rin = kerr_rms(spin);
     dat = get_rrad_fractions(spin, Rin, Rout, &status);
 
-   VecD temperature = getTemperatureProfileDiskZones(dat, Rin, 1.0, &status);
+   VecD temperature = get_temperature_profile_disk_zones(dat, Rin, 1.0, &status);
 
     REQUIRE( checkTemperatureProfile(temperature.data(), dat->nrad) == EXIT_SUCCESS);
 
@@ -268,7 +264,12 @@ TEST_CASE(" Check Temperature Profile", "[bbret]"){
 }
 
 // ========== //
-TEST_CASE(" DiskBB Spectrum ", "[bbret]"){
+TEST_CASE (
+" DiskBB Spectrum "
+,
+"[bbret]"
+)
+{
 
   int status = EXIT_SUCCESS;
   setenv("DEBUG_RELXILL","1",1);
@@ -295,7 +296,12 @@ TEST_CASE(" DiskBB Spectrum ", "[bbret]"){
 }
 
 // ========== //
-TEST_CASE(" Return Radiation Black Body Spectrum", "[bbret]"){
+TEST_CASE (
+" Return Radiation Black Body Spectrum"
+,
+"[bbret]"
+)
+{
 
   int status = EXIT_SUCCESS;
 
@@ -337,7 +343,11 @@ TEST_CASE(" Return Radiation Black Body Spectrum", "[bbret]"){
 
 }
 
-TEST_CASE(" Check loading of relxillBB table","[bbret]")
+TEST_CASE (
+" Check loading of relxillBB table"
+,
+"[bbret]"
+)
 {
   int status = EXIT_SUCCESS;
 
@@ -358,7 +368,12 @@ TEST_CASE(" Check loading of relxillBB table","[bbret]")
 
 
 
-TEST_CASE("Check if Second Evaluation returns the identical results", "[bbret]"){
+TEST_CASE (
+"Check if Second Evaluation returns the identical results"
+,
+"[bbret]"
+)
+{
 
   LocalModel lmod(ModelName::relxillBB);
 
@@ -376,7 +391,7 @@ TEST_CASE("Check if Second Evaluation returns the identical results", "[bbret]")
     REQUIRE(fabs(sum0 - sum1) < PREC);
 }
 
-void test_boost_parameter(LocalModel& lmod) {
+void test_boost_parameter(LocalModel &lmod) {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
@@ -385,7 +400,7 @@ void test_boost_parameter(LocalModel& lmod) {
   double sum_total = calcSum(spec.flux, spec.num_flux_bins());
   REQUIRE(sum_total > 1e-8);
 
-  lmod.set_par(XPar::boost,-1);
+  lmod.set_par(XPar::boost, -1);
   lmod.eval_model(spec);
   double sum_refl = calcSum(spec.flux, spec.num_flux_bins());
   REQUIRE(sum_refl > 1e-8);
@@ -402,11 +417,16 @@ void test_boost_parameter(LocalModel& lmod) {
          sum_direct,
          sum_refl,
          fabs(sum_total - sum_direct - sum_refl) / sum_total);
-  REQUIRE( fabs(sum_total - sum_direct - sum_refl)/sum_total < 1e-5);
+  REQUIRE(fabs(sum_total - sum_direct - sum_refl) / sum_total < 1e-5);
 }
 
 
-TEST_CASE(" Evaluate RelxillBB (only black body)","[bbret-fail]") {
+TEST_CASE (
+" Evaluate RelxillBB (only black body)"
+,
+"[bbret-fail]"
+)
+ {
 
   int status = EXIT_SUCCESS;
   setenv("RELXILL_WRITE_OUTFILES","1",1);
@@ -424,7 +444,12 @@ TEST_CASE(" Evaluate RelxillBB (only black body)","[bbret-fail]") {
   unsetenv("RELXILL_BBRET_NOREFL");
 }
 
-TEST_CASE("Test different spin values", "[bbret-speed]"){
+TEST_CASE (
+"Test different spin values"
+,
+"[bbret-speed]"
+)
+{
 
  std::vector<double> spinArray{0.35,0.71,0.801,0.99,0.998};
   LocalModel lmod(ModelName::relxillBB);

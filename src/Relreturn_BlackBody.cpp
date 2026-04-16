@@ -137,8 +137,7 @@ void fits_rr_write_2Dspec(const char* fname, const std::vector<std::vector<doubl
     fits_rr_write_2Dspec(fname, ptrs.data(), ener, nener, rlo, rhi, nrad, dat, status);
 }
 
-VecD getTemperatureProfileDiskZones(returningFractions* dat, double Rin, double Tin, int* status)
-{
+VecD get_temperature_profile_disk_zones(returningFractions *dat, double Rin, double Tin, int *status) {
     int t_profile = [&]() -> int {
         switch (get_from_env_rrad_bbody_tprofile()) {
             case 2: return TPROFILE_DISKBB;
@@ -253,7 +252,7 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
 
 
     // 2 - temperature profile of the whole disk
-    VecD temperature = getTemperatureProfileDiskZones(dat, Rin, Tin, status);
+    VecD temperature = get_temperature_profile_disk_zones(dat, Rin, Tin, status);
 
     // 3 - get primary and returning 2D spectrum (bin integrated spectra)
     VecD_2D spec_prim_zones = get_bbody_specs_binned(ener, nener, temperature, status);
@@ -383,10 +382,10 @@ static void calc_rr_bbspec_ring(VecD& spec,
 
 
 /**
- * @brief Compute returning radiation spectra from given primary spectra for all zones.
+ * @brief Compute returning radiation spectra from the given primary spectra for all zones.
  *
  * Loops over all radial zones and calls `calc_rr_bbspec_ring` to apply the
- * returning fractions and energy shifts. Result is not bin-integrated.
+ * returning fractions and energy shifts. The result is not bin-integrated.
  *
  * @param      dat      Returning fractions data (g-factors, transfer fractions, f_ret).
  * @param      status   Error status flag.
@@ -536,8 +535,7 @@ for (int jj = 0; jj < n; jj++)
 }
 
 
-VecD getRadialGridFromReturntab(const returnSpec2D* spec)
-{
+VecD get_radial_grid_from_returntab(const returnSpec2D *spec) {
     assert(spec != nullptr);
     assert(spec->nrad > 0);
     assert(!spec->rlo.empty());
@@ -558,8 +556,10 @@ VecD getRadialGridFromReturntab(const returnSpec2D* spec)
     return rgrid;
 }
 
-static double getXillverNormFactorFromPrimarySpectrum(double* spec_in, const double* ener, int n_ener, int* status)
-{
+static double get_xillver_norm_factor_from_primary_spectrum(double *spec_in,
+                                                            const double *ener,
+                                                            int n_ener,
+                                                            int *status) {
     CHECK_STATUS_RET(*status, 0.0);
 
     EnerGrid* egrid = get_coarse_xillver_energrid();
@@ -578,7 +578,7 @@ static double getXillverNormFactorFromPrimarySpectrum(double* spec_in, const dou
 }
 
 
-double normalizationFactorBBodyAtHighener(double kTbb, const double* spec1, const VecD& spec_bb, const double* ener, int n_ener)
+double normalization_factor_bbody_at_highener(double kTbb, const double* spec1, const VecD& spec_bb, const double* ener, int n_ener)
 {
     assert(spec1 != nullptr);
     assert(spec_bb.size() == n_ener);
@@ -586,23 +586,27 @@ double normalizationFactorBBodyAtHighener(double kTbb, const double* spec1, cons
     const double ELO_LIMIT_HIGHENER = 4 * kTbb;
 
     double normSpecIn = calcSumInEnergyBand(spec1, n_ener, ener, ELO_LIMIT_HIGHENER, EMAX_XILLVER_NORMALIZATION);
-    double normBbodySpec = calcSumInEnergyBand(spec_bb.data(), n_ener, ener, ELO_LIMIT_HIGHENER, EMAX_XILLVER_NORMALIZATION);
+    double normBbodySpec = calcSumInEnergyBand(spec_bb.data(),
+                                               n_ener,
+                                               ener,
+                                               ELO_LIMIT_HIGHENER,
+                                               EMAX_XILLVER_NORMALIZATION);
 
     return normSpecIn / normBbodySpec;
 }
 
 
-double calcNormfacBBodyAtHighenergy(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
+double calc_normfac_bbody_at_highenergy(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
 {
     assert(spec_in != nullptr);
 
-    VecD spec_bb = getXillverPrimaryBBody(kTbb, spec_in, ener, n_ener, status);
+    VecD spec_bb = get_xillver_primary_bbody(kTbb, spec_in, ener, n_ener, status);
     if (*status != EXIT_SUCCESS)
     {
         return 0.0;
     }
 
-    double norm_fac = normalizationFactorBBodyAtHighener(kTbb, spec_in, spec_bb, ener, n_ener);
+    double norm_fac = normalization_factor_bbody_at_highener(kTbb, spec_in, spec_bb, ener, n_ener);
 
     assert( std::isnormal(norm_fac));
 
@@ -640,15 +644,16 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
     getAnglecorrXillSpec(xill_flux_returnrad,
                          returnSpec->ener,
                          returnSpec->n_ener, &xill_param,
-                         rel_profile->rel_cosne->dist[izone], status);
+                         rel_profile->rel_cosne->dist[izone],
+                         status);
 
     double xillverReflectionNormFactor
-        = getXillverNormFactorFromPrimarySpectrum(returnSpec->specRet[izone], returnSpec->ener, returnSpec->n_ener,
+        = get_xillver_norm_factor_from_primary_spectrum(returnSpec->specRet[izone], returnSpec->ener, returnSpec->n_ener,
                                                   status);
     CHECK_STATUS_VOID(*status);
 
     double normfacMatchAtHighEnergies
-            = calcNormfacBBodyAtHighenergy(xill_param.kTbb,
+            = calc_normfac_bbody_at_highenergy(xill_param.kTbb,
                                            returnSpec->specRet[izone],
                                            returnSpec->ener,
                                            returnSpec->n_ener,
@@ -712,22 +717,19 @@ void calc_zone_direct_and_return_flux(const xillParam &xill_param, const returnS
  *         to the Xillver primary spectrum. The caller assumes responsibility for deallocating
  *         the memory using delete[] when no longer needed. Returns nullptr if an error occurs.
  */
-VecD getXillverPrimaryBBody(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
-{
+VecD get_xillver_primary_bbody(double kTbb, double *spec_in, const double *ener, int n_ener, int *status) {
     VecD spec_bb(n_ener);
 
-    double xillverReflectionNormFactor = getXillverNormFactorFromPrimarySpectrum(spec_in, ener, n_ener, status);
+    double xillverReflectionNormFactor = get_xillver_norm_factor_from_primary_spectrum(spec_in, ener, n_ener, status);
 
     bbody_spec(ener, n_ener, spec_bb.data(), kTbb, 1.0);
-    for (int jj = 0; jj < n_ener; jj++)
-    {
+    for (int jj = 0; jj < n_ener; jj++) {
         spec_bb[jj] *= (ener[jj + 1] - ener[jj]);
     }
 
-    double bbodyNormFactor = getXillverNormFactorFromPrimarySpectrum(spec_bb.data(), ener, n_ener, status);
+    double bbodyNormFactor = get_xillver_norm_factor_from_primary_spectrum(spec_bb.data(), ener, n_ener, status);
 
-    for (int jj = 0; jj < n_ener; jj++)
-    {
+    for (int jj = 0; jj < n_ener; jj++) {
         spec_bb[jj] *= xillverReflectionNormFactor / bbodyNormFactor;
     }
 
@@ -735,11 +737,13 @@ VecD getXillverPrimaryBBody(double kTbb, double* spec_in, const double* ener, in
 }
 
 
-VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
-{
-    VecD spec_bbody_xillver = getXillverPrimaryBBody(kTbb, spec_in, ener, n_ener, status);
+VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb, double* spec_in,
+                                                      const double *ener,
+                                                      int n_ener,
+                                                      int *status) {
+    VecD spec_bbody_xillver = get_xillver_primary_bbody(kTbb, spec_in, ener, n_ener, status);
 
-    double normFac = normalizationFactorBBodyAtHighener(kTbb, spec_in, spec_bbody_xillver, ener, n_ener);
+    double normFac = normalization_factor_bbody_at_highener(kTbb, spec_in, spec_bbody_xillver, ener, n_ener);
 
     for (int jj = 0; jj < n_ener; jj++)
     {
@@ -750,7 +754,7 @@ VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb, double* spec_in, con
 }
 
 
-static void setLowValuesToZero(double* spec, int n)
+static void set_low_values_to_zero(double* spec, int n)
 {
     double maxVal = 0.0;
     const double lowestModelValue = 1e-8;
@@ -769,19 +773,18 @@ static void setLowValuesToZero(double* spec, int n)
     }
 }
 
-static void setValuesOutsideToZero(double* spec, const double* ener, int n)
+static void set_values_outside_to_zero(double* spec, const double* ener, int n)
 {
     for (int ii = 0; ii < n; ii++)
     {
-        if (ener[ii] < EMIN_XILLVER || ener[ii + 1] > EMAX_XILLVER)
-        {
+        if (ener[ii] < EMIN_XILLVER || ener[ii + 1] > EMAX_XILLVER) {
             spec[ii] = 0.0;
         }
     }
 }
 
 
-static int should_noXillverRefl_calculated()
+static int should_no_xillver_refl_calculated()
 {
     char* env = getenv("RELXILL_BBRET_NOREFL");
 
@@ -799,11 +802,11 @@ void check_and_reset_value(double* ptr_val, double val_ref, const char* param_na
     if (fabs(*ptr_val-val_ref) > prec)
     {
         *ptr_val = val_ref;
-        printf(" re-setting parameter %s to %.3e (only this value allowed)\n", param_name , val_ref);
+        printf(" re-setting parameter %s to %.3e (only this value allowed)\n", param_name, val_ref);
     }
 }
 
-void check_parameter_bounds_relxillBB(xillParam* xill_param,relParam* rel_param)
+void check_parameter_bounds_relxillbb(xillParam* xill_param,relParam* rel_param)
 {
     if (rel_param->model_type == MOD_TYPE_RELXILLBBRETXILL)
     {
@@ -817,7 +820,7 @@ IonGradient calc_ion_gradient_from_returnrad(
     const returnSpec2D *returnSpec,
     const ModelDefinition &params,
     int *status) {
-    auto radialGrid = getRadialGridFromReturntab(returnSpec);
+    auto radialGrid = get_radial_grid_from_returntab(returnSpec);
     IonGradient ion_gradient{radialGrid, ION_GRAD_TYPE_ALPHA, 0};
     auto primary_source_params = PrimarySourceParameters{params};
     auto emis_profile =
@@ -848,7 +851,7 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                                           int *status) {
     std::string fname;
 
-    if (should_noXillverRefl_calculated()) {
+    if (should_no_xillver_refl_calculated()) {
         if (fabs(xill_param->boost) < 1e-8) {
             fname = fbase_rrad_bbody + "obs-mirror-primary.fits";
         } else if (xill_param->boost < 0) {
@@ -936,7 +939,7 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     auto rel_param = get_rel_params(params);
     auto xill_param = get_xill_params(params);
 
-    check_parameter_bounds_relxillBB(xill_param, rel_param);
+    check_parameter_bounds_relxillbb(xill_param, rel_param);
 
     CHECK_STATUS_VOID(*status);
     assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET || xill_param->model_type == MOD_TYPE_RELXILLBBRETXILL);
@@ -946,7 +949,7 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     int n_ener = ener_grid->nbins;
     double* ener = ener_grid->ener;
 
-    xillTable* xill_tab = nullptr;
+    xillTable *xill_tab = nullptr;
     get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, status);
 
     returnSpec2D* returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
@@ -956,7 +959,7 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, params, status);
 
 
-    auto radialGrid = getRadialGridFromReturntab(returnSpec);
+    auto radialGrid = get_radial_grid_from_returntab(returnSpec);
     RelSysPar* systemParameters = get_system_parameters(rel_param, status);
     relline_spec_multizone
         * relProfile = relbase_profile(ener,
@@ -988,7 +991,7 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
 
         specZonesEmittedCombined[izone] = VecD(n_ener, 0.0);
 
-        if (should_noXillverRefl_calculated()) {
+        if (should_no_xillver_refl_calculated()) {
             // TODO: remove this once everything is working; only for testing
             calc_zone_direct_and_return_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
         } else {
@@ -1006,7 +1009,7 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
         // calculate xillver primary spectrum (only used for additional/debug output),
         if (shouldOutfilesBeWritten()) {
             specBbodyPrimZones[izone] =
-                    getXillverPimaryBBodyNormalizedAtHighener(xill_param_zone.kTbb, returnSpec->specRet[izone],
+                    get_xillver_primary_bbody_normalized_at_highener(xill_param_zone.kTbb, returnSpec->specRet[izone],
                                                               returnSpec->ener,
                                                               returnSpec->n_ener, status);
         }
@@ -1033,8 +1036,8 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
     }
 
     // clean spectrum
-    setLowValuesToZero(specOutput, n_ener_inp);
-    setValuesOutsideToZero(specOutput, ener_inp, n_ener_inp);
+    set_low_values_to_zero(specOutput, n_ener_inp);
+    set_values_outside_to_zero(specOutput, ener_inp, n_ener_inp);
 
     if (shouldOutfilesBeWritten()) {
         write_bbret_diagnose_outfiles(xill_param, specZonesConvOutput, specZonesEmittedCombined,

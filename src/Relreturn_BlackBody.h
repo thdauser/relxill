@@ -76,17 +76,17 @@ void relxill_bb_kernel(const XspecSpectrum &spectrum,
                        const ModelDefinition &params,
                        int *status);
 
-std::vector<double> getRadialGridFromReturntab(const returnSpec2D *spec);
+std::vector<double> get_radial_grid_from_returntab(const returnSpec2D *spec);
 
-VecD getXillverPrimaryBBody(double kTbb, double *spec_in, const double *ener, int n_ener, int *status);
+VecD get_xillver_primary_bbody(double kTbb, double *spec_in, const double *ener, int n_ener, int *status);
 
-double calcNormfacBBodyAtHighenergy(double kTbb, double *spec_bb, const double *ener, int n_ener, int *status);
+double calc_normfac_bbody_at_highenergy(double kTbb, double *spec_bb, const double *ener, int n_ener, int *status);
 
-VecD getXillverPimaryBBodyNormalizedAtHighener(double kTbb,
-                                               double *spec_in,
-                                               const double *ener,
-                                               int n_ener,
-                                               int *status);
+VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb,
+                                                      double *spec_in,
+                                                      const double *ener,
+                                                      int n_ener,
+                                                      int *status);
 
 void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                                   relline_spec_multizone *rel_profile,
@@ -95,9 +95,10 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                                   int izone,
                                                   int *status);
 
-void calc_zone_direct_and_return_flux(const xillParam &xill_param, const returnSpec2D *returnSpec, VecD &returnFlux, int ii);
+void calc_zone_direct_and_return_flux(const xillParam &xill_param, const returnSpec2D *returnSpec, VecD &returnFlux,
+                                      int ii);
 
-VecD getTemperatureProfileDiskZones(returningFractions *dat, double Rin, double Tin, int *status);
+VecD get_temperature_profile_disk_zones(returningFractions *dat, double Rin, double Tin, int *status);
 
 IonGradient calc_ion_gradient_from_returnrad(const returnSpec2D *returnSpec,
                                              const ModelDefinition &params,
