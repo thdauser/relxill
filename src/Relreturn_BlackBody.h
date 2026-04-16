@@ -59,7 +59,7 @@ void fits_rr_write_2Dspec(const char *fname,
                           int *status);
 
 /**  return the diskbb spectrum for the radial grid given by the table for this spin value **/
-void spec_diskbb(double *ener, double *spec, int n, double Tin, double spin, int *status);
+void spec_diskbb(const double *ener, double *spec, int n, double Tin, double spin, int *status);
 
 
 // spec_prim can be NULL
@@ -78,18 +78,22 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
 
 std::vector<double> get_radial_grid_from_returntab(const returnSpec2D *spec);
 
-VecD get_xillver_primary_bbody(double kTbb, double *spec_in, const double *ener, int n_ener, int *status);
+VecD get_xillver_primary_bbody(double kTbb, const double *spec_in, const double *ener, int n_ener, int *status);
 
-double calc_normfac_bbody_at_highenergy(double kTbb, double *spec_bb, const double *ener, int n_ener, int *status);
+double calc_normfac_bbody_at_highenergy(double kTbb,
+                                        const double *spec_bb,
+                                        const double *ener,
+                                        int n_ener,
+                                        int *status);
 
 VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb,
-                                                      double *spec_in,
+                                                      const double *spec_in,
                                                       const double *ener,
                                                       int n_ener,
                                                       int *status);
 
 void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
-                                                  relline_spec_multizone *rel_profile,
+                                                  const relline_spec_multizone *rel_profile,
                                                   const returnSpec2D *returnSpec,
                                                   VecD &xill_flux_returnrad,
                                                   int izone,
@@ -100,7 +104,7 @@ void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param,
                                          VecD &returnFlux,
                                          int ii);
 
-VecD get_temperature_profile_disk_zones(returningFractions *dat, double Rin, double Tin, int *status);
+VecD get_temperature_profile_disk_zones(const returningFractions *dat, double Rin, double Tin, int *status);
 
 IonGradient calc_ion_gradient_from_returnrad(const returnSpec2D *returnSpec,
                                              const ModelDefinition &params,

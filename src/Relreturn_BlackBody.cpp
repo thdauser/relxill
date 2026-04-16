@@ -40,11 +40,11 @@ const std::string fbase_rrad_bbody_dat = "__relxillOutput-rrad-bbody-"; // filen
 // Function definitions
 static VecD_2D get_returnrad_specs(double* ener_inp,
                                    int nener_inp,
-                                   returningFractions* dat,
+                                   const returningFractions *dat,
                                    const VecD& temperature,
                                    int* status,
                                    int norder = 1);
-static VecD_2D get_bbody_specs_binned(double* ener, int nener, const VecD &temperature, const int* status);
+static VecD_2D get_bbody_specs_binned(const double *ener, int nener, const VecD &temperature, const int *status);
 
 void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec);
 
@@ -70,20 +70,23 @@ void fits_rr_write_2Dspec(const char* fname, double** spec_arr, const double* en
     int n2 = nener;
     char dim1[10];
     char dim2[10];
-    sprintf(dim1, "%iD", (int)1);
-    sprintf(dim2, "%iD", (int)n2);
+    sprintf(dim1, "%iD", 1);
+    sprintf(dim2, "%iD", n2);
 
     if (dat != nullptr)
     {
-        const int tfields = 6;
-        char* ttype[] = {(char*)"rlo", (char*)"rhi", (char*)"ener", (char*)"spec", (char*)"fraci", (char*)"fret"};
-        char* tform[] = {dim1, dim1, dim2, dim2, (char*)"50D", dim1};
+        constexpr int tfields = 6;
+        char *ttype[] = {
+            const_cast<char *>("rlo"), const_cast<char *>("rhi"), const_cast<char *>("ener"),
+            const_cast<char *>("spec"), const_cast<char *>("fraci"), const_cast<char *>("fret")
+        };
+        char *tform[] = {dim1, dim1, dim2, dim2, const_cast<char *>("50D"), dim1};
         fits_create_tbl(fptr, BINARY_TBL, 0, tfields, ttype, tform, nullptr, "2Dspec", status);
-    }
-    else
-    {
-        const int tfields = 4;
-        char* ttype[] = {(char*)"rlo", (char*)"rhi", (char*)"ener", (char*)"spec"};
+    } else {
+        constexpr int tfields = 4;
+        char *ttype[] = {
+            const_cast<char *>("rlo"), const_cast<char *>("rhi"),
+            const_cast<char *>("ener"), const_cast<char *>("spec")};
         char* tform[] = {dim1, dim1, dim2, dim2};
         fits_create_tbl(fptr, BINARY_TBL, 0, tfields, ttype, tform, nullptr, "2Dspec", status);
     }
@@ -92,7 +95,7 @@ void fits_rr_write_2Dspec(const char* fname, double** spec_arr, const double* en
     CHECK_STATUS_VOID(*status);
 
     int firstrow = 1; /* first row in table to write   */
-    int firstelem = 1; /* first element in row  */
+    int firstelem = 1; /* first element in a row */
 
     // we use "const_cast" as with legacy cfitsio this is the only way (and assume those values are never changed)
     fits_write_col(fptr, TDOUBLE, 1, firstrow, firstelem, n1, const_cast<double*>(rlo.data()), status);
@@ -137,7 +140,7 @@ void fits_rr_write_2Dspec(const char* fname, const std::vector<std::vector<doubl
     fits_rr_write_2Dspec(fname, ptrs.data(), ener, nener, rlo, rhi, nrad, dat, status);
 }
 
-VecD get_temperature_profile_disk_zones(returningFractions *dat, double Rin, double Tin, int *status) {
+VecD get_temperature_profile_disk_zones(const returningFractions *dat, double Rin, double Tin, int *status) {
     int t_profile = [&]() -> int {
         switch (get_from_env_rrad_bbody_tprofile()) {
             case 2: return TPROFILE_DISKBB;
@@ -164,13 +167,13 @@ VecD get_temperature_profile_disk_zones(returningFractions *dat, double Rin, dou
  *         The spectra are normalized to photons/s/keV/cm^2 using the provided energy grid.
  *         Returns empty VecD_2D if an error is encountered (status becomes non-zero).
  *
- * @note For the bin-intergrated version (as needed, e.g., by Xspec, see "get_bbody_spec_binned()")
+ * @note For the bin-integrated version (as needed, e.g., by Xspec, see "get_bbody_spec_binned()")
  * @note The spectral values are set to zero outside the predefined energy band
  *       [EMIN_XILLVER, EMAX_XILLVER].
  * @note Memory for the 2D spectral array is allocated internally. The caller is
  *       responsible for releasing this memory using the appropriate deallocation function.
  */
-static VecD_2D get_bbody_specs(double* ener, int nener, const VecD &temperature, const int* status)
+static VecD_2D get_bbody_specs(const double *ener, int nener, const VecD &temperature, const int* status)
 {
     CHECK_STATUS_RET(*status, VecD_2D());
 
@@ -205,7 +208,7 @@ static VecD_2D get_bbody_specs(double* ener, int nener, const VecD &temperature,
  *
  * @return Bin-integrated 2D spectrum, one row per radial zone.
  */
-static VecD_2D get_bbody_specs_binned(double* ener, int nener, const VecD& temperature, const int* status) {
+static VecD_2D get_bbody_specs_binned(const double *ener, int nener, const VecD &temperature, const int *status) {
 
     auto spec_array =  get_bbody_specs(ener, nener, temperature, status);
     bin_integrate_flux(nener, ener, spec_array);
@@ -309,8 +312,13 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
  */
 
 
-static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec_ret, const VecD& spec_pri,
-                                 double* gfac, int ng, const double* frac_g)
+static void calc_rr_bbspec_gzone(double *ener,
+                                 int nener,
+                                 double *spec_ret,
+                                 const VecD &spec_pri,
+                                 const double *gfac,
+                                 int ng,
+                                 const double* frac_g)
 {
     // loop over all gfac and calculate the spectrum for each
     VecD spec_ret_g(nener, 0.0);
@@ -341,15 +349,13 @@ static void calc_rr_bbspec_gzone(double* ener, int nener, double* spec_ret, cons
  * @param      irad     Index of the receiving radial zone.
  * @param      spec_pri Primary blackbody spectra per zone (ph/s/keV/cm²).
  * @param      dat      Returning fractions data (g-factors, transfer fractions, f_ret).
- * @param      status   Error status flag.
  */
 static void calc_rr_bbspec_ring(VecD& spec,
                                 double* ener,
                                 int nener,
                                 int irad,
-                                const VecD_2D& spec_pri,
-                                returningFractions* dat,
-                                const int* status)
+                                const VecD_2D &spec_pri,
+                                const returningFractions* dat)
 {
     VecD spec_r(nener, 0.0);
     assert(spec.size() == nener);
@@ -388,17 +394,19 @@ static void calc_rr_bbspec_ring(VecD& spec,
  * returning fractions and energy shifts. The result is not bin-integrated.
  *
  * @param      dat      Returning fractions data (g-factors, transfer fractions, f_ret).
- * @param      status   Error status flag.
  * @param      nener    Number of energy bins.
  * @param      ener     Energy grid boundaries (size nener+1) [keV].
  * @param      spec_pri Primary spectra per zone (ph/s/keV/cm²).
  *
  * @return 2D spectrum [nrad][nener] in ph/s/keV/cm² (not bin-integrated).
  */
-static VecD_2D calc_returnrad_from_input_spectra(returningFractions *dat, int *status, int nener, double *ener, const VecD_2D& spec_pri) {
+static VecD_2D calc_returnrad_from_input_spectra(const returningFractions *dat,
+                                                 int nener,
+                                                 double *ener,
+                                                 const VecD_2D &spec_pri) {
     VecD_2D spec_zones(dat->nrad, VecD(nener));
     for (int ii = 0; ii < dat->nrad; ii++) {
-        calc_rr_bbspec_ring(spec_zones[ii], ener, nener, ii, spec_pri, dat, status); // return ph / cm²/s/keV ( not bin integ.)
+        calc_rr_bbspec_ring(spec_zones[ii], ener, nener, ii, spec_pri, dat); // return ph / cm²/s/keV ( not bin integ.)
     }
     return spec_zones;
 }
@@ -420,9 +428,9 @@ static VecD_2D calc_returnrad_from_input_spectra(returningFractions *dat, int *s
  *
  * @return 2D spectrum [nrad][nener_inp] in cts/bin, or empty on error.
  */
-static VecD_2D get_returnrad_specs(double* ener_inp,
+static VecD_2D get_returnrad_specs(double *ener_inp,
                                    int nener_inp,
-                                   returningFractions* dat,
+                                   const returningFractions* dat,
                                    const VecD& temperature,
                                    int* status,
                                    int norder)
@@ -438,8 +446,7 @@ static VecD_2D get_returnrad_specs(double* ener_inp,
     std::vector<VecD_2D> spec_out(norder);
     VecD_2D spec_sum_out(dat->nrad, VecD(nener));
     for (int iorder = 0; iorder < norder; iorder++) {
-        spec_out[iorder] = calc_returnrad_from_input_spectra(dat, status, nener, ener,
-            iorder == 0 ? spec_pri : spec_out[iorder - 1]);
+        spec_out[iorder] = calc_returnrad_from_input_spectra(dat, nener, ener, iorder == 0 ? spec_pri : spec_out[iorder - 1]);
         if (iorder == 0) {
             spec_sum_out = spec_out[iorder];
         } else {
@@ -493,7 +500,7 @@ void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec)
  * tested to give identical results to the Xspec implementation of diskbb
  * (deviation at <0.1keV are expected due to our outer radius only being 1000Rg)
  */
-void spec_diskbb(double* ener, double* spec, int n, double Tin, double spin, int* status)
+void spec_diskbb(const double* ener, double* spec, int n, double Tin, double spin, int* status)
 {
     CHECK_STATUS_VOID(*status);
 
@@ -556,7 +563,7 @@ VecD get_radial_grid_from_returntab(const returnSpec2D *spec) {
     return rgrid;
 }
 
-static double get_xillver_norm_factor_from_primary_spectrum(double *spec_in,
+static double get_xillver_norm_factor_from_primary_spectrum(const double *spec_in,
                                                             const double *ener,
                                                             int n_ener,
                                                             int *status) {
@@ -596,7 +603,7 @@ double normalization_factor_bbody_at_highener(double kTbb, const double* spec1, 
 }
 
 
-double calc_normfac_bbody_at_highenergy(double kTbb, double* spec_in, const double* ener, int n_ener, int* status)
+double calc_normfac_bbody_at_highenergy(double kTbb, const double* spec_in, const double* ener, int n_ener, int* status)
 {
     assert(spec_in != nullptr);
 
@@ -636,7 +643,7 @@ double calc_normfac_bbody_at_highenergy(double kTbb, double* spec_in, const doub
  * @param status              Pointer to the status flag, used to report success or failure.
  */
 void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
-                                                  relline_spec_multizone *rel_profile,
+                                                  const relline_spec_multizone *rel_profile,
                                                   const returnSpec2D *returnSpec,
                                                   VecD &xill_flux_returnrad,
                                                   int izone,
@@ -758,7 +765,7 @@ VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb, double* spec_
 static void set_low_values_to_zero(double* spec, int n)
 {
     double maxVal = 0.0;
-    const double lowestModelValue = 1e-8;
+    constexpr double lowestModelValue = 1e-8;
 
     for (int ii = 0; ii < n; ii++)
     {
@@ -787,7 +794,7 @@ static void set_values_outside_to_zero(double* spec, const double* ener, int n)
 
 void check_and_reset_value(double* ptr_val, double val_ref, const char* param_name)
 {
-    const double prec = 1e-6;
+    constexpr double prec = 1e-6;
     if (fabs(*ptr_val-val_ref) > prec)
     {
         *ptr_val = val_ref;
@@ -800,8 +807,9 @@ void check_parameter_bounds_relxillbb(xillParam* xill_param,relParam* rel_param)
     if (rel_param->model_type == MOD_TYPE_RELXILLBBRETXILL)
     {
         check_and_reset_value( &(rel_param->a), 0.998, "a");
-        check_and_reset_value( &(rel_param->rin), kerr_rms(0.998), "Rin");
+        check_and_reset_value(&(rel_param->rin), kerr_rms(0.998), "Rin");
         check_and_reset_value( &(rel_param->rout), 1000, "Rout");
+        check_and_reset_value( &(xill_param->lxi), 2, "logxi");
     }
 }
 
@@ -881,10 +889,10 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                          status);
 }
 
-static void set_xill_param_from_iongrad(xillParam &xill_param_zone, const IonGradient & ion_gradient, int izone) {
+static void set_xill_param_from_iongrad(xillParam &xill_param_zone, const IonGradient &ion_gradient, int izone) {
     xill_param_zone.dens = ion_gradient.dens[izone];
     xill_param_zone.lxi = ion_gradient.lxi[izone];
-    xill_param_zone.radzone = (int) izone;
+    xill_param_zone.radzone = static_cast<double>(izone);
 }
 
 /**
@@ -985,8 +993,8 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
             calc_zone_direct_plus_mirrored_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
         } else {
             // very dangerous; need to check that it is within the table boundaries as well
-            // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL) )
-            xill_param_zone.radzone = (double) izone;
+            // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL))
+            xill_param_zone.radzone = static_cast<double>(izone);
             if (use_iongrad_relxillbb()) {
                 set_xill_param_from_iongrad(xill_param_zone, ion_gradient, izone);
             }
