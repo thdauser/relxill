@@ -50,7 +50,7 @@ define get_xillver_norm(en,flux){
 
 
 define get_param_struct(spin, Tin, logxi, logn){
-   return struct{spin=spin, Tin=Tin, logxi=logxi, logn=logn};
+   return struct{spin=spin, Tin=Tin, logxi=logxi, logn=logn, incl=qualifier("incl",40.0)};
 }
 
 variable ccount=0;

@@ -17,7 +17,7 @@ define load_std_model(_ff,_par){
 
    set_par("*.a",_par.spin);
    set_par("*.kTbb", _par.Tin);
-   set_par("*.Incl",40);
+   set_par("*.Incl",_par.incl);
    set_par("*.logxi",_par.logxi);     
 }
 %}}}
@@ -26,7 +26,7 @@ define load_std_model(_ff,_par){
 define createOutputFiles(_ff, _par){
    putenv("RELXILL_WRITE_FILES=1");
 
-   () = system("rm -f __relxillOutput*");
+   clean_output_files();
    
    vmessage("  Creating Output Files: fit-functions: %s ", _ff);
 
@@ -49,32 +49,34 @@ define createOutputFiles(_ff, _par){
    () = eval_fun(1,2);
    
 
-   %%% 2 creating the "reflection" files
-   putenv("RELXILL_RRAD_BBODY_MIRRORED=0");
-   variable files = getFilenameStruct();
-
-   %%% 2a combined
-   set_par("*.boost",1);
-   () = eval_fun(1,2);
-
-   %%% 2b reflected   
-    set_par("*.boost",-1.0,0,-10,10);
-   () = eval_fun(1,2);
-   variable cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillRefl);
-   %   message(cmd);
-   () = system(cmd);
-
-   %%% 2c primary   
-    set_par("*.boost",0.0,0,-10,10);
-   () = eval_fun(1,2);
-   cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillPrim);
-   % message(cmd);
-   () = system(cmd);
-
-   
-    set_par("*.boost",0.0,0,-10,10);
-   () = eval_fun(1,2);
-
+   if (not qualifier_exists("only_mirrored")){
+      
+      %%% 2 creating the "reflection" files
+      putenv("RELXILL_RRAD_BBODY_MIRRORED=0");
+      variable files = getFilenameStruct();
+      
+      %%% 2a combined
+      set_par("*.boost",1);
+      () = eval_fun(1,2);
+      
+      %%% 2b reflected   
+      set_par("*.boost",-1.0,0,-10,10);
+      () = eval_fun(1,2);
+      variable cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillRefl);
+      %   message(cmd);
+      () = system(cmd);
+      
+      %%% 2c primary   
+      set_par("*.boost",0.0,0,-10,10);
+      () = eval_fun(1,2);
+      cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillPrim);
+      % message(cmd);
+      () = system(cmd);
+      
+      
+      set_par("*.boost",0.0,0,-10,10);
+      () = eval_fun(1,2);
+   }
 
 
    putenv("RELXILL_WRITE_FILES=0");

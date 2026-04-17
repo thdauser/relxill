@@ -1,3 +1,7 @@
+define clean_output_files(){
+   () = system("rm -f __relxillOutput*");
+}
+
 define getFilenameStruct(){
    
    variable outdir = "./";

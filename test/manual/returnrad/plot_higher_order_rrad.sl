@@ -1,121 +1,189 @@
 require("isisscripts");
-require("scripts/subs_testSetup.sl");
+require("create_output_files.sl");
 require("scripts/subs_returnrad.sl");
 require("scripts/subs_filenames.sl");
 
-
-define get_spec_order(norder){
-
-   putenv("RELXILL_WRITE_FILES=1");
-   putenv("");
-   putenv("RELXILL_RRAD_BBODY_ORDER=$norder"$);
-
-   load_xspec_local_models("./build/");
-   variable ff = "relxillBBxill";
-   variable spin = 0.998;
-
-   fit_fun(ff);
-   set_par("*.a",spin);
-
-   () = eval_fun(1,2);
-
-   return spin;
-}
-
-define get_fnames(){
-
-   variable f = getFilenameStruct();
-
-   return struct{prim=f.rframe.specPri , refl=f.rframe.specRet};
-}
-
-
-define plot_single_ref_data(dp, dp_ref){
 %%%%%
-   variable pl = xfig_plot_new(17,10);
+variable Tin = 1.0;
+variable _ff = "relxillBB";
+%%%%
+variable PL_W = 17;
+variable PL_H = 10;
+%%%
+
+variable fstruct = getFilenameStruct();
+
+define eval_model_all(){
+   variable elo, ehi;
+   (elo, ehi) = log_grid(0.3,150,500);
+   variable fac = (0.5*(elo+ehi))^2/(ehi-elo);
+
+   set_par("*.boost",0);
+   variable val_prim = eval_fun_keV(elo,ehi)*fac;
+
+   set_par("*.boost",-1,0,-1,10);
+   variable val_refl = eval_fun_keV(elo,ehi)*fac;
+
+   vmessage(" sum prim: %g  \t sum refl: %g ",sum(val_prim*(ehi-elo)),sum(val_refl*(ehi-elo)));
+
+   variable emis = read_ion_gradient(fstruct.disk.rrad);
    
-   pl.world(0.01,250,1e-2,400;loglog);
+   return struct{elo=elo, ehi=ehi, flux_prim=val_prim, flux_refl=val_refl, emis=emis};
+}
+
+define get_spec_order(spin, _incl, norder){
+
+   variable tprofile = qualifier("tprofile",1);
+   
+   %% does not matter for the mirrored reflection
+   variable logxi = 2.0;
+   variable logn = 17;
+
+   
+   variable params = get_param_struct(spin, Tin, logxi, logn; incl=_incl);
+   clean_output_files();
+   load_std_model(_ff, params);
+
+   putenv("RELXILL_RRAD_BBODY_TPROFILE=$tprofile"$);
+   putenv("RELXILL_RRAD_BBODY_MIRRORED=1");
+   putenv("RELXILL_RRAD_BBODY_ORDER=$norder"$);
+   putenv("RELXILL_WRITE_FILES=1");
+   variable d = eval_model_all();
+
+   return struct_combine(d, struct{order=norder, spin=spin, incl=_incl});
+}
+
+define get_dat_higher_order(spin, _incl, norder){
+
+   variable d = Struct_Type[norder];
+   variable order = [1:norder];
+   variable ii;
+   _for ii(0, norder-1){
+      d[ii] = get_spec_order(spin, _incl, order[ii];;__qualifiers());
+   }
+
+   return d;
+}
+
+define plot_higher_order_spec(d){
+   %%%%%
+   variable pl = xfig_plot_new(PL_W, PL_H);
+
+   variable norder = length(d);
+   
+   pl.world(d[0].elo[0], d[0].ehi[-1],1e-2,200;loglog);
    
    pl.xlabel("Energy [keV]");
-   pl.ylabel("Energy Flux $F_\nu$"R);
+   pl.ylabel("Energy Flux $\nu F_\nu$  [keV$^2$/ cm$^2$\,s\,keV]"R);
 
 
    % make life easier
-   variable de = dp.ehi-dp.elo;
-   variable emn = 0.5*(dp.elo+dp.ehi);
-   variable emn_ref = 0.5*(dp_ref.elo+dp_ref.ehi);
+   variable emn = 0.5*(d[0].elo+d[0].ehi);
 
-   variable efac = emn/(dp.ehi-dp.elo);
-   variable efac_ref = emn_ref/(dp_ref.ehi-dp_ref.elo);
+   pl.plot(emn,d[0].flux_prim; color="black",width=2,line=0);
 
-   variable pcol = "blue";
-   variable rcol = "red";
-   pl.plot(emn_ref,dp_ref.sumspec*efac_ref; color="black",width=3,line=1);
-   pl.plot(emn,dp.sumspec*efac_ref; color="red",width=3);
-
-   variable ii, n = length(dp.dat.spec[*,0]);
-   variable mod_fac=8;
-   variable flu;
-   ccount = 0;
-   _for ii(0,n-1){
-      
-      if (pl!=NULL){
-	 if (ii mod mod_fac == 0) {
-	    pl.plot(emn,dp_ref.dat.spec[ii,*]*efac_ref;color="black",line=1);
-	    pl.plot(emn,dp.dat.spec[ii,*]*efac;color=get_col(),line=0);
-	    pl.add_object(xfig_new_text(sprintf("$r = %.2f\,r_\mathrm{g}$"R,
-						0.5*(dp.dat.rlo[ii]+dp.dat.rhi[ii]));
-					color=get_col(;same)),
-			  .78,0.95,-0.5,-0.5+1.1*ccount;world0);
-	 }            	    
+   variable ii;
+   variable lab = String_Type[norder];
+   _for ii(0, norder-1){
+      if (qualifier_exists("order")){
+	 lab[ii] = sprintf("order = %d",d[ii].order);
+      } else {
+	 lab[ii] = sprintf("a = %.3f, incl=%.0f",d[ii].spin, d[ii].incl);
       }
+
+      if (not qualifier_exists("nodiff")){
+	 variable diff;
+	 if (ii==0){
+	    diff = d[ii].flux_refl;
+	 } else {
+	    diff = d[ii].flux_refl-d[ii-1].flux_refl;
+	 }
+	 pl.plot(emn,diff; color=CB_COLOR_SCHEME2_NB[ii],width=2,line=1);
+      }
+      pl.plot(emn,d[ii].flux_refl; color=CB_COLOR_SCHEME2_NB[ii],width=2,line=0);
    }
+
+   pl.add_object(xfig_new_legend(lab,CB_COLOR_SCHEME_NB, 0,2,0.5; labelsize="\small"R),
+   0.96,0.96,0.5,0.5;world0);
+
 
    return pl;
 }
 
+define plot_higher_order_emis(d){
+   %%%%%
+   variable pl = xfig_plot_new(PL_W, PL_H);
 
-define testRframeReturnradRefdata(){
-%%%%%
-   variable spin = model_eval();
-
-   variable fnames = get_fnames();
-
-   variable dp = get_2d_data(fnames.prim,spin;diskarea=1);
-   variable dr = get_2d_data(fnames.refl,spin;diskarea=1);
-
-   variable dir_ref = "refdata/";
-   variable dp_ref = get_2d_data(dir_ref+fnames.prim,spin;diskarea=1);
-   variable dr_ref = get_2d_data(dir_ref+fnames.refl,spin;diskarea=1);
-
-
+   pl.world(1,50,1e-7,6e-6;loglog);
    
-   variable prec = 1e-3;
-   variable isPrimaryApproxEq = is_approx_equal(dp.sumspec, dp_ref.sumspec, prec );
-   variable isReturnApproxEq = is_approx_equal(dr.sumspec, dr_ref.sumspec, prec );
+   variable norder = length(d);
 
-   variable status = EXIT_SUCCESS;
-   if (isPrimaryApproxEq==0 || isReturnApproxEq==0) {
-      vmessage(" *** error : restframe spectra do notwith reference data \n\n");
-      status = EXIT_FAILURE;
-   } else {
-      vmessage(" successful : restframe spectra agree with reference data \n\n");
+   print(d[0].emis);
+   
+   variable ii;
+   variable emis = Array_Type[norder];
+   _for ii(0, norder-1){
+      variable rad = 0.5*(d[ii].emis.rlo+d[ii].emis.rhi);
+      emis[ii] = d[ii].emis.emis*rad^3;
+
+      variable diff;
+      if (ii==0){
+	 diff = emis[ii];
+      } else {
+	 diff = emis[ii] - emis[ii-1];
+      }
+
+      pl.plot(rad, emis[ii]; color=CB_COLOR_SCHEME2_NB[ii],width=2);
+      pl.plot(rad, diff; color=CB_COLOR_SCHEME2_NB[ii],width=2,line=1);
+
    }
 
-
-   %%% PLOT: Only in case of an error, or if qualifier ist given %%% 
-   if (status==EXIT_FAILURE || qualifier_exists("plot")){
-      
-      variable testTitle = "\noindent Comparing Rest-Frame Prim (dashed, black) and Ret (solid, color) with Refdata"R;      
-      
-      variable pl_pri = plot_single_ref_data(dp, dp_ref);   
-      variable pl_ret = plot_single_ref_data(dr, dr_ref);   
-      
-      mkdir(dir_plots);
-      pl_pri.title(testTitle);
-      xfig_multiplot(pl_pri, pl_ret).render(dir_plots+"testRframeReturnradRefvalues.pdf");
-   }
-
-   return status;
+   pl.xlabel("Radius $[R_\mathrm{g}]$"R);
+   pl.ylabel("Emissivity * Radius$^3$");
+   
+   return pl;
 }
 
+define get_plot_spin(spin, incl){
+
+   variable norder = qualifier("norder",3); 
+   variable tprofile = qualifier("tprofile",1);
+
+   variable n = length(spin);
+   variable darr = Struct_Type[n];
+   variable ii;
+   _for ii(0,n-1){
+      variable d = get_dat_higher_order(spin[ii], incl, norder; tprofile=tprofile );
+      darr[ii] = d[-1]; %% only pick the highest order
+   }
+   
+   return plot_higher_order_spec(darr ;nodiff);
+}
+
+define get_full_plot(spin, incl){
+
+   variable norder = qualifier("norder",3); 
+   variable tprofile = qualifier("tprofile",1);
+   
+   variable d = get_dat_higher_order(spin, incl, norder; tprofile=tprofile );
+   
+   variable pl_spec = plot_higher_order_spec(d; order);
+   variable pl_emis = plot_higher_order_emis(d);
+   
+   pl_spec.title(sprintf("spin=%.3f, incl=%.0f, Tin=%.1f, Temp-Profile: %s",
+     spin, incl, Tin, (tprofile==1? "zero-torque" : "diskbb" )));
+
+   return  xfig_new_vbox_compound(pl_spec, pl_emis, 0.5);
+}
+
+
+variable spin = 0.998;
+variable incl = 40.0;
+variable tprofile = 1;
+get_full_plot(spin, incl; tprofile=tprofile).render("plots/higher_order_mirrored_spec_emis_zero.pdf");
+
+variable tprofile = 2;
+get_full_plot(spin, incl; tprofile=tprofile).render("plots/higher_order_mirrored_spec_emis_diskbb.pdf");
+
+variable spin_arr = [0.998,0.99,0.95,0.9];
+get_plot_spin(spin_arr, incl).render("plots/higher_order_mirrored_spec_spin.pdf");
