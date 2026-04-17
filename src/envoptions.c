@@ -18,10 +18,53 @@
 
 #include "envoptions.h"
 
+#include <stdarg.h>
+
+#define MAX_REPORTED_ENVS 32
+static const char *reported_envs[MAX_REPORTED_ENVS];
+static char *reported_values[MAX_REPORTED_ENVS];
+static int num_reported_envs = 0;
+static int suppress_env_reporting = 0;
+
+/* Returns 1 if the stored value for env differs from value_str (or env is
+ * newly tracked), and updates the stored value in either case. Returns 0 if
+ * unchanged, or if the tracking capacity is exhausted. */
+static int env_value_changed(const char *env, const char *value_str) {
+  for (int i = 0; i < num_reported_envs; i++) {
+    if (strcmp(reported_envs[i], env) == 0) {
+      if (strcmp(reported_values[i], value_str) == 0) return 0;
+      free(reported_values[i]);
+      reported_values[i] = strdup(value_str);
+      return 1;
+    }
+  }
+  if (num_reported_envs >= MAX_REPORTED_ENVS) return 0;
+  reported_envs[num_reported_envs] = env;
+  reported_values[num_reported_envs] = strdup(value_str);
+  num_reported_envs++;
+  return 1;
+}
+
+static void report_env_if_changed(const char *env, const char *value_str, const char *fmt, ...) {
+  if (suppress_env_reporting) return;
+  if (!env_value_changed(env, value_str)) return;
+
+  va_list ap;
+  va_start(ap, fmt);
+  printf(" *** RELXILL: env %s ", env);
+  vprintf(fmt, ap);
+  printf("\n");
+  va_end(ap);
+}
+
 double get_env_otherwise_default(const char *env, double def_value) {
   char *value_string = getenv(env);
   if (value_string != NULL) {
-    return strtod(value_string, NULL);
+    double val = strtod(value_string, NULL);
+    if (val != def_value) {
+      report_env_if_changed(env, value_string, "= %g (default %g)", val, def_value);
+    }
+    return val;
   } else {
     return def_value;
   }
@@ -32,9 +75,8 @@ char *get_relxill_table_path(void) {
   char *path = getenv("RELXILL_TABLE_PATH");
   if (path != NULL) {
     return path;
-  } else {
-    return RELXILL_TABLE_PATH;
   }
+  return RELXILL_TABLE_PATH;
 }
 
 int is_debug_run(void) {
@@ -92,6 +134,7 @@ int mirrored_reflection_instead_of_xillver(void) {
 
 
 void print_env_options(void) {
+  suppress_env_reporting = 1;
   printf("\n === RELXILL Environment Variables ===\n\n");
 
   char *path = getenv("RELXILL_TABLE_PATH");
@@ -108,4 +151,5 @@ void print_env_options(void) {
   printf("  RELXILL_NUM_RZONES          = %d\n", get_from_env_relline_num_zones());
 
   printf("\n");
+  suppress_env_reporting = 0;
 }

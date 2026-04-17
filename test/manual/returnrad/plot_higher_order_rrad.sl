@@ -7,7 +7,7 @@ require("scripts/subs_filenames.sl");
 define get_spec_order(norder){
 
    putenv("RELXILL_WRITE_FILES=1");
-   putenv("
+   putenv("");
    putenv("RELXILL_RRAD_BBODY_ORDER=$norder"$);
 
    load_xspec_local_models("./build/");
