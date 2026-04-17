@@ -725,7 +725,7 @@ void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param,
  *         to the Xillver primary spectrum. The caller assumes responsibility for deallocating
  *         the memory using delete[] when no longer needed. Returns nullptr if an error occurs.
  */
-VecD get_xillver_primary_bbody(double kTbb, double *spec_in, const double *ener, int n_ener, int *status) {
+VecD get_xillver_primary_bbody(double kTbb, const double *spec_in, const double *ener, int n_ener, int *status) {
     VecD spec_bb(n_ener);
 
     double xillverReflectionNormFactor = get_xillver_norm_factor_from_primary_spectrum(spec_in, ener, n_ener, status);
@@ -745,7 +745,8 @@ VecD get_xillver_primary_bbody(double kTbb, double *spec_in, const double *ener,
 }
 
 
-VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb, double* spec_in,
+VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb,
+                                                      const double *spec_in,
                                                       const double *ener,
                                                       int n_ener,
                                                       int *status) {
