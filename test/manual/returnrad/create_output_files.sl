@@ -7,12 +7,11 @@ require("scripts/subs_testSetup.sl");
 require("scripts/subs_returnrad.sl");
 require("scripts/subs_filenames.sl");
 
-
+load_xspec_local_models("build/");
 
 define load_std_model(_ff,_par){
 %{{{
 
-   load_xspec_local_models("build/");
    fit_fun(_ff);
 
    set_par("*.a",_par.spin);
@@ -28,7 +27,7 @@ define createOutputFiles(_ff, _par){
 
    clean_output_files();
    
-   vmessage("  Creating Output Files: fit-functions: %s ", _ff);
+%   vmessage("  Creating Output Files: fit-functions: %s ", _ff);
 
    load_std_model(_ff, _par);
    if (_ff == "relxillBB"){

@@ -9,6 +9,7 @@ variable _ff = "relxillBB";
 %%%%
 variable PL_W = 17;
 variable PL_H = 10;
+variable cols = CB_COLOR_SCHEME2_NB;
 %%%
 
 variable fstruct = getFilenameStruct();
@@ -24,11 +25,13 @@ define eval_model_all(){
    set_par("*.boost",-1,0,-1,10);
    variable val_refl = eval_fun_keV(elo,ehi)*fac;
 
-   vmessage(" sum prim: %g  \t sum refl: %g ",sum(val_prim*(ehi-elo)),sum(val_refl*(ehi-elo)));
-
+   variable integ_eflu_prim = sum(val_prim*(ehi-elo)/(0.5*elo+ehi));
+   variable integ_eflu_refl = sum(val_refl*(ehi-elo)/(0.5*elo+ehi));;
+   
    variable emis = read_ion_gradient(fstruct.disk.rrad);
    
-   return struct{elo=elo, ehi=ehi, flux_prim=val_prim, flux_refl=val_refl, emis=emis};
+   return struct{elo=elo, ehi=ehi, flux_prim=val_prim, flux_refl=val_refl, emis=emis,
+   integ_flu=struct{prim=integ_eflu_prim, refl=integ_eflu_refl}};
 }
 
 define get_spec_order(spin, _incl, norder){
@@ -54,7 +57,7 @@ define get_spec_order(spin, _incl, norder){
 }
 
 define get_dat_higher_order(spin, _incl, norder){
-
+   
    variable d = Struct_Type[norder];
    variable order = [1:norder];
    variable ii;
@@ -64,6 +67,24 @@ define get_dat_higher_order(spin, _incl, norder){
 
    return d;
 }
+
+define print_integ_flu(d){
+   variable ii, n = length(d);
+
+   vmessage(" Order #0 energy flux [keV/cm^2/s] : %.2e ", d[0].integ_flu.prim/d[0].integ_flu.prim);
+   variable diff;
+   _for ii(0, n-1){
+      if (ii>0){
+	 diff = (d[ii].integ_flu.refl-d[ii-1].integ_flu.refl)/d[ii-1].integ_flu.refl;
+      } else {
+	 diff = d[ii].integ_flu.refl/d[ii].integ_flu.prim;
+      }
+      vmessage(" Order #%d energy_flux [keV/cm^2/s] : %.2e (relativ to last order %.1f%%) ",
+      ii+1, d[ii].integ_flu.refl/d[0].integ_flu.prim, diff*100);
+   }
+}
+
+
 
 define plot_higher_order_spec(d){
    %%%%%
@@ -84,6 +105,7 @@ define plot_higher_order_spec(d){
 
    variable ii;
    variable lab = String_Type[norder];
+   variable ener_flu_relative = Double_Type[norder];
    _for ii(0, norder-1){
       if (qualifier_exists("order")){
 	 lab[ii] = sprintf("order = %d",d[ii].order);
@@ -91,19 +113,24 @@ define plot_higher_order_spec(d){
 	 lab[ii] = sprintf("a = %.3f, incl=%.0f",d[ii].spin, d[ii].incl);
       }
 
-      if (not qualifier_exists("nodiff")){
+      if (qualifier_exists("order")){
 	 variable diff;
 	 if (ii==0){
 	    diff = d[ii].flux_refl;
 	 } else {
 	    diff = d[ii].flux_refl-d[ii-1].flux_refl;
 	 }
-	 pl.plot(emn,diff; color=CB_COLOR_SCHEME2_NB[ii],width=2,line=1);
+	 
+	 pl.plot(emn,diff; color=cols[ii],width=2,line=1);
       }
-      pl.plot(emn,d[ii].flux_refl; color=CB_COLOR_SCHEME2_NB[ii],width=2,line=0);
+      pl.plot(emn,d[ii].flux_refl; color=cols[ii],width=2,line=0);
    }
 
-   pl.add_object(xfig_new_legend(lab,CB_COLOR_SCHEME_NB, 0,2,0.5; labelsize="\small"R),
+   if (qualifier_exists("order")){
+      print_integ_flu(d);
+   }
+
+   pl.add_object(xfig_new_legend(lab,cols, 0,2,0.5; labelsize="\small"R),
    0.96,0.96,0.5,0.5;world0);
 
 
@@ -118,8 +145,6 @@ define plot_higher_order_emis(d){
    
    variable norder = length(d);
 
-   print(d[0].emis);
-   
    variable ii;
    variable emis = Array_Type[norder];
    _for ii(0, norder-1){
@@ -133,8 +158,8 @@ define plot_higher_order_emis(d){
 	 diff = emis[ii] - emis[ii-1];
       }
 
-      pl.plot(rad, emis[ii]; color=CB_COLOR_SCHEME2_NB[ii],width=2);
-      pl.plot(rad, diff; color=CB_COLOR_SCHEME2_NB[ii],width=2,line=1);
+      pl.plot(rad, emis[ii]; color=cols[ii],width=2);
+      pl.plot(rad, diff; color=cols[ii],width=2,line=1);
 
    }
 
@@ -144,16 +169,29 @@ define plot_higher_order_emis(d){
    return pl;
 }
 
-define get_plot_spin(spin, incl){
+%% decide which parameter to plot by checking its length
+define get_plot_param(spin, incl){
 
    variable norder = qualifier("norder",3); 
    variable tprofile = qualifier("tprofile",1);
 
-   variable n = length(spin);
+   variable n;
+   if (length(spin)>1){
+      n = length(spin);
+   } else {
+      n = length(incl);
+   }
    variable darr = Struct_Type[n];
    variable ii;
+   variable d;
    _for ii(0,n-1){
-      variable d = get_dat_higher_order(spin[ii], incl, norder; tprofile=tprofile );
+      d =  (
+      (length(spin)>1) ?
+      get_dat_higher_order(spin[ii], incl, norder; tprofile=tprofile )
+      :
+      get_dat_higher_order(spin, incl[ii], norder; tprofile=tprofile )
+      );
+
       darr[ii] = d[-1]; %% only pick the highest order
    }
    
@@ -180,10 +218,37 @@ define get_full_plot(spin, incl){
 variable spin = 0.998;
 variable incl = 40.0;
 variable tprofile = 1;
-get_full_plot(spin, incl; tprofile=tprofile).render("plots/higher_order_mirrored_spec_emis_zero.pdf");
+
+variable pl = get_full_plot(spin, incl);
+render_with_png(pl, "plots/higher_order_mirrored_zero.pdf");
+
+%% param plots
+variable spin_arr = [0.998,0.99,0.95,0.9,0.5,0.0];
+variable pl_spin = get_plot_param(spin_arr, incl);
+render_with_png(pl_spin, "plots/higher_order_mirrored_spec_spin.pdf");
+
+variable incl_arr = [20.,40.,60.,75.];
+render_with_png(
+get_plot_param(0.998, incl_arr),
+"plots/higher_order_mirrored_spec_incl_a0998.pdf"
+);
+
+variable incl_arr = [20.,40.,60.,75.];
+render_with_png(
+get_plot_param(0.9, incl_arr),
+"plots/higher_order_mirrored_spec_incl_a0900.pdf"
+);
+
+%% order plots
+render_with_png(
+get_full_plot(spin, incl;tprofile=tprofile),
+"plots/higher_order_mirrored_spec_emis_zero.pdf"
+);
 
 variable tprofile = 2;
-get_full_plot(spin, incl; tprofile=tprofile).render("plots/higher_order_mirrored_spec_emis_diskbb.pdf");
+render_with_png(
+get_full_plot(spin, incl; tprofile=tprofile),
+"plots/higher_order_mirrored_spec_emis_diskbb.pdf"
+);
 
-variable spin_arr = [0.998,0.99,0.95,0.9];
-get_plot_spin(spin_arr, incl).render("plots/higher_order_mirrored_spec_spin.pdf");
+

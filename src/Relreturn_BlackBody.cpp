@@ -866,7 +866,7 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
             fname = fbase_rrad_bbody + "obs-total.fits";
         }
     }
-    std::cout << " writing BBret diagnose outfile: " << fname.c_str() << std::endl;
+  //  std::cout << " writing BBret diagnose outfile: " << fname.c_str() << std::endl;
 
     fits_rr_write_2Dspec(fname.c_str(),
                          specZonesConvOutput,

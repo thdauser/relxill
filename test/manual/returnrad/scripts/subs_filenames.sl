@@ -51,3 +51,20 @@ define read_ion_gradient(_fname){
 
    return struct{rlo=rlo, rhi=rhi, logxi=logxi, logn=logn, del_emit=del_emit, emis=emis};
 }
+
+define convert_plot_png(fname){
+   () = system(sprintf("convert -density 200 %s %s",
+   fname,
+   strreplace(fname, ".pdf", ".png") )
+   );
+}
+
+define render_with_png(pl, fname){
+   pl.render(fname);
+   () = system(sprintf("convert -density 200 %s %s",
+   fname,
+   strreplace(fname, ".pdf", ".png") )
+   );
+}
+
+
