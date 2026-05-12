@@ -287,6 +287,41 @@ TEST_CASE (
     REQUIRE(get_xillver_spectra(xill_param, &status) == nullptr);
 }
 
+TEST_CASE(
+    " Verify that the number of radial zones from the xillver RTR table matches the radial grid in relxill ",
+    "[relxillbbxill]"
+) {
+    int status = EXIT_SUCCESS;
+    LocalModel lmod(ModelName::relxillBBxill);
+    auto xill_param = lmod.xill_params();
+    auto rel_param = lmod.rel_params();
+
+    xillTable *tab = nullptr;
+    const char *fname = get_init_xillver_table(&tab, xill_param->model_type, xill_param->prim_type, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+
+    // get a standard grid for the convolution (is rebinned later to the input grid)
+    auto ener_grid = get_relxill_conv_energy_grid();
+    int n_ener = ener_grid->nbins;
+    double *ener = ener_grid->ener;
+    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener,
+                                                        n_ener,
+                                                        xill_param->kTbb,
+                                                        rel_param->rin,
+                                                        rel_param->rout,
+                                                        rel_param->a,
+                                                        &status);
+    int nrad = returnSpec->nrad;
+
+
+    // test the number of radial zones the model wants is identical to the xillver table parameter values
+    for (int ii = 0; ii < tab->num_param; ii++) {
+        if (tab->param_index[ii] == PARAM_RID) {
+            REQUIRE(tab->num_param_vals[ii] == nrad);
+        }
+    }
+}
+
 
 // ------- //
 TEST_CASE (
