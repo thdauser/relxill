@@ -12,10 +12,10 @@ require("create_output_files.sl");
 variable ff_plots = "relxillBBxill";
 variable prefix = ff_plots+"_";
 
-%% =1= set parameters
-variable spin = 0.998;  %% currently only done for this value
+%% =1= set parameters (currently the only ones for RTR table v0.3)
+variable spin = 0.998; 
 variable Tin = 2.0;
-variable logxi = 2.0;
+variable logxi = 3.0; %% TBC with Javier
 variable logn = 18.0;
 
 

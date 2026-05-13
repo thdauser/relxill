@@ -289,7 +289,7 @@ TEST_CASE (
 
 TEST_CASE(
     " Verify that the number of radial zones from the xillver RTR table matches the radial grid in relxill ",
-    "[relxillbbxill]"
+    "[rrad-bbody]"
 ) {
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);

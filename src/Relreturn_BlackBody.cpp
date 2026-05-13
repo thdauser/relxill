@@ -813,7 +813,8 @@ void check_parameter_bounds_relxillbb(xillParam* xill_param,relParam* rel_param)
         check_and_reset_value(&rel_param->a, 0.998, "a");
         check_and_reset_value(&rel_param->rin, kerr_rms(0.998), "Rin");
         check_and_reset_value(&rel_param->rout, 1000, "Rout");
-        check_and_reset_value(&xill_param->lxi, 2, "logxi");
+        check_and_reset_value(&xill_param->lxi, 3, "logxi");
+        check_and_reset_value(&xill_param->dens, 18, "logN");
     }
 }
 

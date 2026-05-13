@@ -18,6 +18,7 @@ define load_std_model(_ff,_par){
    set_par("*.kTbb", _par.Tin);
    set_par("*.Incl",_par.incl);
    set_par("*.logxi",_par.logxi);     
+   set_par("*.logN",_par.logn);     
 }
 %}}}
 
