@@ -119,7 +119,7 @@ doc-clean:
 clean:
 	rm -f *~ gmon.out test*.dat *.log
 	rm -f debug-*fits testrr-*.fits
-	rm -f build/*
+	rm -rf build/*
 
 
 dist-clean:
