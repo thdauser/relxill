@@ -150,7 +150,16 @@ static double get_photon_flux_band(const double *ener,
   return sum;
 }
 
+double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status) {
+  CHECK_STATUS_RET(*status, 0.0);
+  double norm_factor = 0.0;
 
+  double *angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
+
+  double norm_fac = calcXillverNormFromPrimarySpectrum(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, status);
+
+  return norm_fac;
+}
 
 EnerGrid *get_coarse_xillver_energrid() {
 

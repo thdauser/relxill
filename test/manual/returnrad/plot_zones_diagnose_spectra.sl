@@ -80,6 +80,7 @@ define getDiagnoseXillverPlot(){
    variable plotTitle = sprintf("Rest-frame: Xillver (solid), and Xillver Prim (dashed) -- spin=%.3f",
 				spin);
 
+   message("\n"+plotTitle);
 
    variable files = getFilenameStruct();
    variable fnames  = [files.rframe.xillRefl,files.rframe.specRet];

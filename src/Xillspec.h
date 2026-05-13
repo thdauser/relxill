@@ -113,5 +113,7 @@ void check_xilltab_cache(const char *fname,
 
 xillSpec *interp_xill_table(const xillTable *tab, const xillTableParam *param, std::vector<int> ind, int *status);
 
+double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status);
+
 
 #endif //XILLSPEC_H_

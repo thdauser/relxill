@@ -93,7 +93,7 @@ define get_2d_plot_data(dat,rframe,spin){
 
    pl.xlabel("Energy [keV]");
    pl.ylabel("Energy Flux $\nu\;F_\nu$"R);
-   pl.world(0.3,150,1e-4,7000;loglog);
+   pl.world(0.1,250,1e-4,7000;loglog);
    
    variable ii, jj;
    variable m = length(dat);
@@ -109,7 +109,9 @@ define get_2d_plot_data(dat,rframe,spin){
       variable efac = emn^2/(ehi-elo);
       
 
-      pl.plot(emn,dat[jj].sumspec*efac; color="black",width=3,line=jj);
+      if (not qualifier_exists("noSumSpec")){
+	 pl.plot(emn,dat[jj].sumspec*efac; color="black",width=3,line=jj);
+      }
 
       pl.add_object(xfig_new_text(sprintf("\fbox{$a = %.3f$}"R,spin);
 					     size="\footnotesize"R),
@@ -133,8 +135,6 @@ define get_2d_plot_data(dat,rframe,spin){
 	    }            	    
 	 }
       }
-      vmessage(" summed photon flux: %.4e (frac: %.3f) ", sum(dat[jj].sumspec), 
-	       sum(dat[jj].sumspec)/sum(dat[0].sumspec) );
       vmessage(" summed energy flux: %.4e (frac: %.3f)", sum(dat[jj].sumspec*elo), 
 	      sum(dat[jj].sumspec*elo)/sum(dat[0].sumspec*elo));
    }
@@ -175,6 +175,6 @@ define get_2d_plot(fdat,rframe,spin){
       dat[jj] = get_2d_data(fdat[jj],spin;diskarea=rframe[jj]);
    }
 
-   return get_2d_plot_data(dat, rframe, spin);
+   return get_2d_plot_data(dat, rframe, spin;;__qualifiers());
 }
 

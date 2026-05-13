@@ -374,6 +374,31 @@ TEST_CASE (
 }
 
 TEST_CASE (
+" Test xillver_RTR spectra normalization "
+,
+"[xillverRTR]"
+)
+{
+    int status = EXIT_SUCCESS;
+    LocalModel lmod(ModelName::relxillBBxill);
+    auto xill_param = lmod.xill_params();
+
+    const int nzone = 50;
+    xillParam xpar = *xill_param;
+    for (int ii=0; ii<nzone; ii++) {
+        xpar.radzone = ii;
+        auto spec =  get_xillver_spectra(&xpar, &status) ;
+        double norm_fac = get_avg_xillver_spec_normalization(spec, &status);
+
+        printf(" %i: %.3e \n", ii, norm_fac);
+
+    }
+
+}
+
+
+
+TEST_CASE (
 " Test relxillBB Model "
 ,
 "[relxillbb]"
