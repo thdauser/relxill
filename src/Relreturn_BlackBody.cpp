@@ -634,6 +634,9 @@ double calc_normfac_bbody_at_highenergy(double kTbb, const double* spec_in, cons
  * Assumptions:
  * - A single blackbody temperature (kTbb) is assumed for the reflection of all zones.
  *
+ * @see @ref returnrad_normalizations for a derivation of the normalization
+ *      factors applied below and the rationale for splitting them this way.
+ *
  * Parameters:
  * @param xill_param          Pointer to the structure containing xillver model parameters (e.g., spectral parameters and disk settings).
  * @param rel_profile         Pointer to the multi-zone diskline profile, including relativistic correction data for all zones.

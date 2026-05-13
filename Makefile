@@ -108,6 +108,14 @@ test-stable:
 clean-test:
 	rm -f __*dat test*dat
 
+.PHONY: doc doc-clean
+doc:
+	doxygen doxy.config
+	@echo "\n  --> Doxygen HTML written to build/doc/html/index.html\n"
+
+doc-clean:
+	rm -rf build/doc
+
 clean:
 	rm -f *~ gmon.out test*.dat *.log
 	rm -f debug-*fits testrr-*.fits
