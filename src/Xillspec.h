@@ -62,13 +62,6 @@ void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *d
 
 VecD get_semi_infinite_slab_flux_weights(const xillSpec *xill_spec);
 
-void calc_angle_weighted_xillver_spec(VecD &weighted_xill_spec,
-                                      const double *ener,
-                                      int n_ener,
-                                      double *rel_dist,
-                                      xillSpec *xill_spec,
-                                      int *status);
-
 void get_angle_weighted_xill_spec(VecD &xill_spec_angle_weighted,
                                   const double *ener,
                                   int n_ener,

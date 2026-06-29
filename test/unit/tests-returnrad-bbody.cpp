@@ -454,19 +454,19 @@ TEST_CASE(
         REQUIRE(fabs(spec_weighted[jj] - spec_avg[jj]) <= 1e-12 * fabs(spec_avg[jj]));
     }
 
-    // (2b) full public path: calculateAngleWeightedXillverSpectrum rebinned back onto
+    // (2b) full public path: get_angle_weighted_xill_spec rebinned back onto
     //      the native grid (identity rebin) must also reproduce the averaged spectrum
     VecD spec_weighted_rebinned(spec->n_ener, 0.0);
-    calc_angle_weighted_xillver_spec(spec_weighted_rebinned,
-                                     spec->ener,
-                                     spec->n_ener,
-                                     dist.data(),
-                                     spec,
-                                     &status);
+    get_angle_weighted_xill_spec(spec_weighted_rebinned,
+                                 spec->ener,
+                                 spec->n_ener,
+                                 lmod.xill_params(),
+                                 dist.data(),
+                                 &status);
     REQUIRE(status == EXIT_SUCCESS);
 
     for (int jj = 0; jj < spec->n_ener; jj++) {
-        INFO("calculateAngleWeightedXillverSpectrum mismatch at bin " << jj);
+        INFO("get_angle_weighted_xill_spec mismatch at bin " << jj);
         REQUIRE(fabs(spec_weighted_rebinned[jj] - spec_avg[jj]) <= 1e-9 * fabs(spec_avg[jj]));
     }
 

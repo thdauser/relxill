@@ -627,44 +627,15 @@ void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *d
 
 
 /**
- * @Function: calc_angle_weighted_xillver_spec
- * @Synopsis: Calculate the Angle Weighted Xillver Spectrum on the Standard Relxill Spectrum
- * @Input: ener[n_ener]
- *         rel_dist[n_incl]
- *         xill_spec
- * @Output: weighted_xill_spec  (needs to be allocated, will be overwritten)
- *  [reason for the required allocation is that this will be called in a large
- *   loop and otherwise we would need to allocate a 3000 bin array very often]
- **/
-void calc_angle_weighted_xillver_spec(VecD &weighted_xill_spec,
-                                      const double *ener,
-                                      int n_ener,
-                                      double *rel_dist,
-                                      xillSpec *xill_spec,
-                                      int *status) {
-  CHECK_STATUS_VOID(*status);
-
-  auto xill_angdist_inp = new double[xill_spec->n_ener];
-
-  calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
-
-  _rebin_spectrum(ener,
-                  weighted_xill_spec.data(),
-                  n_ener,
-                  xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
-
-  delete[] xill_angdist_inp;
-
-}
-
-
-
-/**
- * @brief Calculate a xillver spectrum and combine it according to the angle distribution
- * @details This function retrieves xillver spectra for all inclination angles and combines them
- *          using the provided angle distribution weights. The combined spectrum is rebinned to
- *          the output energy grid.
- * @param [out] xill_spec_angle_weighted Vector to store the angle-weighted xillver spectrum (needs to be pre-allocated)
+ * @brief Compute the angle-weighted xillver spectrum for the given parameters on the output grid.
+ * @details Retrieves the xillver spectra for all table inclinations, angle-weights the intrinsic
+ *          intensities with @c rel_cosne_dist (via calc_xillver_angdep(), which leaves the
+ *          intensity->flux conversion to the GR convolution in the relxill kernel), and rebins
+ *          the result onto the output energy grid. The internally fetched xillver spectra are
+ *          released before returning.
+ * @param [out] xill_spec_angle_weighted Vector to store the angle-weighted xillver spectrum.
+ *              Must be pre-allocated (the caller owns it); it is reused in the per-zone loop so we
+ *              avoid reallocating a ~3000-bin array on every call.
  * @param [in] ener Energy bin boundaries array (size n_ener+1) in keV
  * @param [in] n_ener Number of energy bins
  * @param [in] xill_param Xillver parameters defining the ionization state, density, and primary spectrum
@@ -679,8 +650,19 @@ void get_angle_weighted_xill_spec(VecD &xill_spec_angle_weighted,
                                   int *status) {
   CHECK_STATUS_VOID(*status);
 
-  xillSpec *xillSpecAngles = get_xillver_spectra(xill_param, status);
-  calc_angle_weighted_xillver_spec(xill_spec_angle_weighted, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
-  free_xill_spec(xillSpecAngles);
+  xillSpec *xill_spec = get_xillver_spectra(xill_param, status);
+  CHECK_STATUS_VOID(*status);
 
+  // angle-weight the intrinsic intensities into a temporary buffer, then rebin onto the output grid
+  auto xill_angdist_inp = new double[xill_spec->n_ener];
+  calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_cosne_dist, status);
+  _rebin_spectrum(ener,
+                  xill_spec_angle_weighted.data(),
+                  n_ener,
+                  xill_spec->ener,
+                  xill_angdist_inp,
+                  xill_spec->n_ener);
+  delete[] xill_angdist_inp;
+
+  free_xill_spec(xill_spec);
 }
