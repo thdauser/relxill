@@ -150,7 +150,7 @@ void convolveSpectrumFFTNormalized(double *ener,
                                    int *status);
 
 
-double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, const int n, int *status);
+double calc_xillver_norm_from_primary_spectrum(const double *flux, const double *ener, const int n, int *status);
 
 void set_stdNormXillverEnerygrid(int *status);
 

@@ -314,7 +314,7 @@ class PrimarySource {
 
       // calculate the normalization at the primary source (i.e., not shifted by the energy shift)
       double const norm_factor_prim_spec =
-          1. / calcXillverNormFromPrimarySpectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
+          1. / calc_xillver_norm_from_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
       delete[] prim_spec_source;
       return norm_factor_prim_spec;
     }

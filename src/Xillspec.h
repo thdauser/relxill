@@ -60,12 +60,14 @@ xillSpec *new_xill_spec(int n_incl, int n_ener, int *status);
 
 void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status);
 
-void calculateAngleWeightedXillverSpectrum(VecD &o_xill_flux,
-                                           const double *ener,
-                                           int n_ener,
-                                           double *rel_dist,
-                                           xillSpec *xill_spec,
-                                           int *status);
+VecD get_semi_infinite_slab_flux_weights(const xillSpec *xill_spec);
+
+void calc_angle_weighted_xillver_spec(VecD &weighted_xill_spec,
+                                      const double *ener,
+                                      int n_ener,
+                                      double *rel_dist,
+                                      xillSpec *xill_spec,
+                                      int *status);
 
 void getAnglecorrXillSpec(VecD &xill_flux,
                           const double *ener,
@@ -99,7 +101,7 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
                                                          int n_zones,
                                                          const xillTableParam *xill_param_0);
 
-double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, int n, int *status);
+double calc_xillver_norm_from_primary_spectrum(const double *flux, const double *ener, int n, int *status);
 
 EnerGrid *get_coarse_xillver_energrid();
 

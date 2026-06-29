@@ -90,26 +90,68 @@ xillSpec* get_xillver_spectra(const xillParam* param, int* status)
 }
 
 /**
- * @brief calculates the angle averaged xillver spectrum from a xillSpec structure
- * @param xill_spec
- * @param status
- * @return (double*) spectrum
+ * @brief low-level weighted combination of the per-inclination xillver spectra:
+ *        out[j] = sum_i weight_i * flu[i][j].
+ *
+ * This is the shared kernel behind both calc_xillver_angdep() and
+ * calc_angle_averaged_xillver_flux(). The meaning (and normalization) of the weights is
+ * entirely the caller's responsibility: a normalized emission-angle distribution (sum = 1)
+ * returns the angle-mixed intrinsic intensity, whereas the semi-infinite-slab flux weights
+ * (sum != 1) return the angle-averaged observed flux.
  */
-double *calc_angle_averaged_xill_spec(const xillSpec *xill_spec, int *status) {
+static void sum_xillver_spectra_over_incl(double *out, const xillSpec *xill_spec, const double *weights) {
+  for (int jj = 0; jj < xill_spec->n_ener; jj++) {
+    out[jj] = 0.0;
+  }
+  for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+    for (int jj = 0; jj < xill_spec->n_ener; jj++) {
+      out[jj] += weights[ii] * xill_spec->flu[ii][jj];
+    }
+  }
+}
 
+/**
+ * @brief per-inclination weights that convert the intrinsic xillver intensity into the
+ *        observed flux of a semi-infinite slab, averaged over the table inclinations.
+ *
+ * The emergent flux of a semi-infinite slab seen under inclination i is
+ *   F(i) = 0.5 * cos(i) * I(i)
+ * (norm_factor_semi_infinite_slab(); see Garcia+10,11,13), so the weight of each table
+ * inclination is 0.5*cos(incl)/n_incl.
+ */
+VecD get_semi_infinite_slab_flux_weights(const xillSpec *xill_spec) {
+  VecD weights(xill_spec->n_incl);
+  for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+    weights[ii] = norm_factor_semi_infinite_slab(xill_spec->incl[ii] * 180 / M_PI) / xill_spec->n_incl;
+  }
+  return weights;
+}
+
+/**
+ * @brief converts the intrinsic xillver intensities into the angle-averaged observed flux
+ *        of a semi-infinite slab.
+ *
+ * This applies the intrinsic-intensity -> observed-flux conversion (the 0.5*cos(incl)
+ * semi-infinite-slab factor, see get_semi_infinite_slab_flux_weights()) and is used
+ * wherever the result is NOT subsequently convolved with the relativistic relline kernel
+ * (e.g. for the xillver normalization and flux-correction factors).
+ *
+ * This is in deliberate contrast to calc_xillver_angdep(), which only angle-weights the
+ * intrinsic intensities and leaves the conversion to observed flux to the GR convolution
+ * performed in the relxill kernel.
+ *
+ * @param xill_spec  xillver spectra for all table inclinations (intrinsic intensities)
+ * @param status
+ * @return (double*) angle-averaged observed-flux spectrum (caller owns the memory)
+ */
+double *calc_angle_averaged_xillver_flux(const xillSpec *xill_spec, int *status) {
   CHECK_STATUS_RET(*status, nullptr);
 
   auto *output_spec = new double[xill_spec->n_ener];
   CHECK_MALLOC_RET_STATUS(output_spec, status, nullptr)
 
-  memset(output_spec, 0, xill_spec->n_ener * sizeof(output_spec[0]));
-  for (int ii = 0; ii < xill_spec->n_incl; ii++) {
-
-    double incl_factor = norm_factor_semi_infinite_slab(xill_spec->incl[ii] * 180 / M_PI) / xill_spec->n_incl;
-    for (int jj = 0; jj < xill_spec->n_ener; jj++) {
-      output_spec[jj] += incl_factor * xill_spec->flu[ii][jj];
-    }
-  }
+  VecD weights = get_semi_infinite_slab_flux_weights(xill_spec);
+  sum_xillver_spectra_over_incl(output_spec, xill_spec, weights.data());
 
   return output_spec;
 }
@@ -150,13 +192,21 @@ static double get_photon_flux_band(const double *ener,
   return sum;
 }
 
+/*
+ *  note that "xillver_flux" is the observed flux defined as F = 0.5* \int_0^1 I^+(mu,E) mu dmu,
+ *  where I^+(mu,E) is what is typically referred to as "xill_spec" (as tabulated in the xillver table)
+ *
+ */
 double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status) {
   CHECK_STATUS_RET(*status, 0.0);
-  double norm_factor = 0.0;
 
-  double *angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
+  double *angle_averaged_xillver_flux = calc_angle_averaged_xillver_flux(xill_spec, status);
 
-  double norm_fac = calcXillverNormFromPrimarySpectrum(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, status);
+  // TODO: fix this: warning, actually this should be for the primary spectrum and not the xillver spectrum
+  double norm_fac = calc_xillver_norm_from_primary_spectrum(angle_averaged_xillver_flux,
+                                                            xill_spec->ener,
+                                                            xill_spec->n_ener,
+                                                            status);
 
   return norm_fac;
 }
@@ -174,7 +224,7 @@ EnerGrid *get_coarse_xillver_energrid() {
   return global_xill_egrid_coarse;
 }
 
-double calcXillverNormFromPrimarySpectrum(const double *flux, const double *ener, const int n, int *status) {
+double calc_xillver_norm_from_primary_spectrum(const double *flux, const double *ener, const int n, int *status) {
   /* get the normalization of the spectrum with respect to xillver
  *  - everything is normalized using dens=10^15 cm^3
  *  - normalization defined, e.g., in Appendix of Dauser+2016
@@ -310,7 +360,7 @@ double *calc_normalized_primary_spectrum(const double *ener, int n_ener,
   // calculate the normalization at the primary source (i.e., not shifted by the energy shift)
   double const
       norm_factor_prim_spec = 1. /
-                              calcXillverNormFromPrimarySpectrum(prim_spec_source, egrid->ener, egrid->nbins, status);
+                              calc_xillver_norm_from_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, status);
   delete[] prim_spec_source;
 
   // if we have the LP geometry defined, the spectrum will be different between the primary source and the observer
@@ -378,7 +428,7 @@ double calc_xillver_normalization_change(double energy_shift, const xillTablePar
 
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
   double source_spec_norm_factor = 1. /
-                                   calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
+                                   calc_xillver_norm_from_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, &status);
   // normalized source spec: prime_source_source*source_spec_norm_factor
 
   // get parameters for the source spectrum (ecut shifted in energy)
@@ -389,7 +439,7 @@ double calc_xillver_normalization_change(double energy_shift, const xillTablePar
   // calculate the primary spectrum at the source
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_source, &status);
   double disk_spec_norm_factor =
-      1. / calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
+      1. / calc_xillver_norm_from_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, &status);
   // normalized prime spec: prime_spec_disk*disk_spec_norm_factor
 
   delete xill_param_source;
@@ -417,7 +467,7 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
 
   calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_0, &status);
   double source_spec_norm_factor = 1. /
-                                   calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
+                                   calc_xillver_norm_from_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, &status);
   // normalized disk spec: prime_spec_source*source_spec_norm_factor
 
   auto norm_factors = new double[n_zones];
@@ -431,7 +481,7 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
     // calculate the primary spectrum at the source
     calc_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, xill_param_disk, &status);
     double disk_spec_norm_factor = 1. /
-                                   calcXillverNormFromPrimarySpectrum(prime_spec, egrid->ener, egrid->nbins, &status);
+                                   calc_xillver_norm_from_primary_spectrum(prime_spec, egrid->ener, egrid->nbins, &status);
     // normalized prime spec: prime_spec_source*source_spec_norm_factor
 
     norm_factors[ii] = disk_spec_norm_factor / source_spec_norm_factor;
@@ -508,20 +558,20 @@ void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         int *status) {
   CHECK_STATUS_VOID(*status);
 
-  double *angle_averaged_xill_spec = calc_angle_averaged_xill_spec(xill_spec, status);
+  double *angle_averaged_flux = calc_angle_averaged_xillver_flux(xill_spec, status);
   CHECK_STATUS_VOID(*status);
 
   if (fac_fluxcorr != nullptr) {
     *fac_fluxcorr =
-        get_xillver_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_table_param, status);
+        get_xillver_fluxcorr(angle_averaged_flux, xill_spec->ener, xill_spec->n_ener, xill_table_param, status);
   }
 
   if (fac_gshift_fluxcorr != nullptr) {
     *fac_gshift_fluxcorr =
-        get_xillver_gshift_fluxcorr(angle_averaged_xill_spec, xill_spec->ener, xill_spec->n_ener, xill_table_param->gam);
+        get_xillver_gshift_fluxcorr(angle_averaged_flux, xill_spec->ener, xill_spec->n_ener, xill_table_param->gam);
   }
 
-  delete[] angle_averaged_xill_spec;
+  delete[] angle_averaged_flux;
 
   if (*status != EXIT_SUCCESS) {
     RELXILL_ERROR("failed to calculate the flux correction factor", status);
@@ -545,61 +595,60 @@ void norm_xillver_spec(xillSpec *spec, double incl) {
   for (int ii = 0; ii < spec->n_ener; ii++) {
     spec->flu[0][ii] *= norm_factor;
   }
-
 }
-
-
 
 
 /**
  * @Function: calc_xillver_angdep
- * @Synopsis: Calculate the Angle Weighted Xillver Spectrum on the Standard Relxill Spectrum
+ * @Synopsis: angle-weight the intrinsic xillver intensities with the given distribution.
+ *
+ * This only re-mixes the intrinsic intensities of the table inclinations using the weights
+ * in @c dist (typically the relativistic emission-angle distribution rel_cosne->dist, which
+ * is normalized to sum = 1). It does NOT convert intensity to observed flux -- that
+ * conversion is performed afterwards by the relativistic convolution in the relxill kernel.
+ * (Contrast with calc_angle_averaged_xillver_flux(), which applies the intensity->flux
+ * conversion itself for the no-GR-convolution case.)
+ *
  * @Input: xill_spec
- *         rel_dist[n_incl]
+ *         dist[n_incl]
  * @Output: xill_flux  (needs to be allocated, will be overwritten)
  **/
 void calc_xillver_angdep(double *xill_flux, xillSpec *xill_spec, const double *dist, const int *status) {
 
   CHECK_STATUS_VOID(*status);
 
-  int ii;
-  int jj;
-  for (ii = 0; ii < xill_spec->n_ener; ii++) {
-    xill_flux[ii] = 0.0;
-  }
-
-  for (ii = 0; ii < xill_spec->n_incl; ii++) {
-    for (jj = 0; jj < xill_spec->n_ener; jj++) {
-      xill_flux[jj] += dist[ii] * xill_spec->flu[ii][jj];
-    }
-  }
-
+  // dist is expected to be a normalized emission-angle distribution (sum = 1); the output
+  // is the angle-mixed intrinsic intensity (the intensity->flux conversion is left to the
+  // GR convolution in the relxill kernel).
+  sum_xillver_spectra_over_incl(xill_flux, xill_spec, dist);
 }
 
 
 /**
- * @Function: calculateAngleWeightedXillverSpectrum
+ * @Function: calc_angle_weighted_xillver_spec
  * @Synopsis: Calculate the Angle Weighted Xillver Spectrum on the Standard Relxill Spectrum
- * @Input:  ener[n_ener]
+ * @Input: ener[n_ener]
  *         rel_dist[n_incl]
  *         xill_spec
- * @Output: o_xill_flux  (needs to be allocated, will be overwritten)
+ * @Output: weighted_xill_spec  (needs to be allocated, will be overwritten)
  *  [reason for the required allocation is that this will be called in a large
  *   loop and otherwise we would need to allocate a 3000 bin array very often]
  **/
-void calculateAngleWeightedXillverSpectrum(VecD& o_xill_flux,
-                                           const double *ener,
-                                           int n_ener,
-                                           double *rel_dist,
-                                           xillSpec *xill_spec,
-                                           int *status) {
+void calc_angle_weighted_xillver_spec(VecD &weighted_xill_spec,
+                                      const double *ener,
+                                      int n_ener,
+                                      double *rel_dist,
+                                      xillSpec *xill_spec,
+                                      int *status) {
   CHECK_STATUS_VOID(*status);
 
   auto xill_angdist_inp = new double[xill_spec->n_ener];
 
   calc_xillver_angdep(xill_angdist_inp, xill_spec, rel_dist, status);
 
-  _rebin_spectrum(ener, o_xill_flux.data(), n_ener,
+  _rebin_spectrum(ener,
+                  weighted_xill_spec.data(),
+                  n_ener,
                   xill_spec->ener, xill_angdist_inp, xill_spec->n_ener);
 
   delete[] xill_angdist_inp;
@@ -629,7 +678,7 @@ void getAnglecorrXillSpec(VecD &xill_flux,
   CHECK_STATUS_VOID(*status);
 
   xillSpec *xillSpecAngles = get_xillver_spectra(xill_param, status);
-  calculateAngleWeightedXillverSpectrum(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
+  calc_angle_weighted_xillver_spec(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
   free_xill_spec(xillSpecAngles);
 
 }

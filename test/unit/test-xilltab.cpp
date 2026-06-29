@@ -29,6 +29,7 @@ extern "C" {
 
 TEST_CASE (
 
+
 " creating of new xillver table "
 ,
 "[xilltab]"
@@ -49,18 +50,17 @@ TEST_CASE (
 }
 
 
-static void test_tab_num_param(const xillParam* param, int* status, const xillTable* tab)
-{
-    int dim_expect = 5;
-    if (is_6dim_table(param->model_type))
-    {
-        dim_expect = 6;
-    }
-    REQUIRE(tab->num_param == dim_expect);
+static void test_tab_num_param(const xillParam *param, int *status, const xillTable *tab) {
+  int dim_expect = 5;
+  if (is_6dim_table(param->model_type)) {
+    dim_expect = 6;
+  }
+  REQUIRE(tab->num_param == dim_expect);
 }
 
 
 TEST_CASE (
+
 
 " initialize Xillver table "
 ,
@@ -90,53 +90,49 @@ TEST_CASE (
   free_xillTable(&tab);
 }
 
-static void test_spec_norm(xillSpec* spec)
-{
-    int ii;
-    int jj;
+static void test_spec_norm(xillSpec *spec) {
+  int ii;
+  int jj;
 
-    double norm_spectrum = 0.0;
+  double norm_spectrum = 0.0;
 
-    for (jj = 0; jj < spec->n_incl; jj++)
-    {
-        for (ii = 0; ii < spec->n_ener; ii++)
-        {
-            REQUIRE(spec->flu[jj][ii] >= 0);
-            norm_spectrum += spec->flu[jj][ii];
-        }
+  for (jj = 0; jj < spec->n_incl; jj++) {
+    for (ii = 0; ii < spec->n_ener; ii++) {
+      REQUIRE(spec->flu[jj][ii] >= 0);
+      norm_spectrum += spec->flu[jj][ii];
     }
-    REQUIRE(norm_spectrum > 1e-8);
+  }
+  REQUIRE(norm_spectrum > 1e-8);
 }
 
-static void testAutomaticLoadingTable(const xillParam* param)
-{
-    xillTable* tab = nullptr;
+static void testAutomaticLoadingTable(const xillParam *param) {
+  xillTable *tab = nullptr;
 
-    int status = EXIT_SUCCESS;
-    const char* fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, &status);
-    REQUIRE(fname != nullptr);
-    REQUIRE(status == EXIT_SUCCESS);
-    INFO("  -> loading table for model type = %i: " << fname);
-    REQUIRE(tab != nullptr);
+  int status = EXIT_SUCCESS;
+  const char *fname = get_init_xillver_table(&tab, param->model_type, param->prim_type, &status);
+  REQUIRE(fname != nullptr);
+  REQUIRE(status == EXIT_SUCCESS);
+  INFO("  -> loading table for model type = %i: " << fname);
+  REQUIRE(tab != nullptr);
 }
 
-static void test_get_spec(const std::string& specName, const xillParam* param)
-{
-    INFO(" loading spec for model %s (type = %i): " << specName);
+static void test_get_spec(const std::string &specName, const xillParam *param) {
+  INFO(" loading spec for model %s (type = %i): " << specName);
 
-    int status = EXIT_SUCCESS;
+  int status = EXIT_SUCCESS;
 
-    xillSpec* spec = get_xillver_spectra(param, &status);
-    REQUIRE(status == EXIT_SUCCESS);
+  xillSpec *spec = get_xillver_spectra(param, &status);
+  REQUIRE(status == EXIT_SUCCESS);
 
-    REQUIRE(spec->n_ener > 0);
-    REQUIRE(spec->n_incl > 0);
+  REQUIRE(spec->n_ener > 0);
+  REQUIRE(spec->n_incl > 0);
 
-    test_spec_norm(spec);
-    free_xill_spec(spec);
+  test_spec_norm(spec);
+  free_xill_spec(spec);
 }
 
 TEST_CASE (
+
 
 " xillver spectra evaluation "
 ,
@@ -178,6 +174,7 @@ TEST_CASE (
 
 TEST_CASE (
 
+
 " automated loading of the xillver tables "
 ,
 "[xilltab]"
@@ -202,6 +199,7 @@ TEST_CASE (
 
 TEST_CASE (
 
+
 " loading table which does not exist "
 ,
 "[xilltab]"
@@ -221,6 +219,7 @@ TEST_CASE (
 
 TEST_CASE (
 
+
 " check for existing table "
 ,
 "[xilltab]"
@@ -239,17 +238,17 @@ TEST_CASE (
 }
 
 
-static void testNormfacBand(xillSpec** spec, double elo, double ehi, double prec)
-{
-    double sum0 = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, elo, ehi);
-    double sum1 = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, elo, ehi);
+static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec) {
+  double sum0 = calcSumInEnergyBand(spec[0]->flu[0], spec[0]->n_ener, spec[0]->ener, elo, ehi);
+  double sum1 = calcSumInEnergyBand(spec[1]->flu[0], spec[1]->n_ener, spec[0]->ener, elo, ehi);
 
-    double fraction = sum0 / sum1 - 1;
+  double fraction = sum0 / sum1 - 1;
 
-    REQUIRE(fabs(fraction) < prec);
+  REQUIRE(fabs(fraction) < prec);
 }
 
 TEST_CASE (
+
 
 " renorm xilltable with density and logxi "
 )
@@ -281,6 +280,7 @@ TEST_CASE (
 
 TEST_CASE (
 
+
 " normalization of the primary continuum"
 ,
 "[prim]"
@@ -302,7 +302,7 @@ TEST_CASE (
   calc_primary_spectrum(pl_flux_xill, egrid->ener, egrid->nbins, xill_param, &status);
 
   double primarySpecNormFactor = 1. /
-                                 calcXillverNormFromPrimarySpectrum(pl_flux_xill, egrid->ener, egrid->nbins, &status);
+                                 calc_xillver_norm_from_primary_spectrum(pl_flux_xill, egrid->ener, egrid->nbins, &status);
 
   for (int ii = 0; ii < egrid->nbins; ii++) {
     pl_flux_xill[ii] *= primarySpecNormFactor;
@@ -328,6 +328,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 
 " test normalization factor when shifting ecut/kTe"
 ,

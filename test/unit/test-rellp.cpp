@@ -27,6 +27,7 @@
 #define PREC 1e-6
 
 TEST_CASE (
+
 " test printing of reflection strength"
 ,
 "[rellp]"
@@ -53,6 +54,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " beta>0 of a lamp post changes the primary spectrum"
 ,
 "[beta]"
@@ -84,6 +86,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " normalization of LP primary spectrum"
 ,
 "[beta]"
@@ -106,11 +109,11 @@ TEST_CASE (
   auto prim_spec_source = new double[egrid->nbins];
   xill_param->ect = 100;
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, &status);
-  double norm_fac1 = 1. / calcXillverNormFromPrimarySpectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
+  double norm_fac1 = 1. / calc_xillver_norm_from_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
 
   xill_param->ect = 100;
   calc_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, xill_param, &status, 0.3);
-  double norm_fac2 = 1. / calcXillverNormFromPrimarySpectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
+  double norm_fac2 = 1. / calc_xillver_norm_from_primary_spectrum(prim_spec_source, egrid->ener, egrid->nbins, &status);
 
   REQUIRE(norm_fac1 < norm_fac2);
 
@@ -121,6 +124,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 " Change of Ecut on the disk with beta>0  "
 ,
 "[beta]"

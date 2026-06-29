@@ -577,7 +577,8 @@ static double get_xillver_norm_factor_from_primary_spectrum(const double *spec_i
     _rebin_spectrum(egrid->ener, xillverInputSpec, egrid->nbins, ener, spec_in, n_ener);
 
     // divide by the primary normalization factor to get the scaling of the xillver reflection spectrum
-    double normFactorXill = calcXillverNormFromPrimarySpectrum(xillverInputSpec, egrid->ener, egrid->nbins, status);
+    double normFactorXill =
+            calc_xillver_norm_from_primary_spectrum(xillverInputSpec, egrid->ener, egrid->nbins, status);
 
     delete[] xillverInputSpec;
 
@@ -813,7 +814,7 @@ void check_parameter_bounds_relxillbb(xillParam* xill_param,relParam* rel_param)
         check_and_reset_value(&rel_param->a, 0.998, "a");
         check_and_reset_value(&rel_param->rin, kerr_rms(0.998), "Rin");
         check_and_reset_value(&rel_param->rout, 1000, "Rout");
-        check_and_reset_value(&xill_param->lxi, 3, "logxi");
+        check_and_reset_value(&xill_param->lxi, 2, "logxi");
         check_and_reset_value(&xill_param->dens, 18, "logN");
     }
 }

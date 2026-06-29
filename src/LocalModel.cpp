@@ -139,6 +139,7 @@ void LocalModel::xillver_model(const XspecSpectrum &spectrum) const {
   xillSpec *spec = get_xillver_spectra(xill_param, &status);
 
   // add the dependence on incl, assuming a semi-infinite slab
+  // (identical to the behavior of relline/relxill for radius -> infinity)
   norm_xillver_spec(spec, xill_param->incl);
 
   _rebin_spectrum(spectrum.energy, spectrum.flux, spectrum.num_flux_bins(), spec->ener, spec->flu[0], spec->n_ener);

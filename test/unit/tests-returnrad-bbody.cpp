@@ -373,29 +373,102 @@ TEST_CASE (
     REQUIRE_NOTHROW(lmod.eval_model(spec));
 }
 
-TEST_CASE (
-" Test xillver_RTR spectra normalization "
-,
-"[xillverRTR]"
-)
-{
+TEST_CASE(
+    " Test xillver_RTR spectra normalization ",
+    "[xillverRTR]"
+) {
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.xill_params();
 
     const int nzone = 50;
     xillParam xpar = *xill_param;
-    for (int ii=0; ii<nzone; ii++) {
+    for (int ii = 0; ii < nzone; ii++) {
         xpar.radzone = ii;
-        auto spec =  get_xillver_spectra(&xpar, &status) ;
+        auto spec = get_xillver_spectra(&xpar, &status);
         double norm_fac = get_avg_xillver_spec_normalization(spec, &status);
 
         printf(" %i: %.3e \n", ii, norm_fac);
-
     }
-
 }
 
+
+// calc_angle_averaged_xillver_flux() has external linkage but is not exposed in
+// Xillspec.h; forward-declare it here so the equivalence test can call it.
+double *calc_angle_averaged_xillver_flux(const xillSpec *xill_spec, int *status);
+
+TEST_CASE(
+    " angle-averaged xillver flux equals angle-weighted intensity with slab flux weights ",
+    "[xillverRTR][angledist]"
+) {
+    // Purpose: prove that calc_angle_averaged_xillver_flux() is exactly the special
+    // case of the angle-weighting machinery (calc_xillver_angdep /
+    // calculateAngleWeightedXillverSpectrum) when the weights are set to the
+    // semi-infinite-slab flux weights  w_i = 0.5*cos(incl_i) / n_incl, which carry
+    // the intrinsic-intensity -> observed-flux conversion.
+    //
+    // It also pins down the (intentional) fact that these slab flux weights do NOT
+    // sum to 1 -- unlike rel_cosne->dist, which is a normalized probability distribution.
+    int status = EXIT_SUCCESS;
+
+    // a relxill-type model => get_xillver_spectra returns spectra for ALL table inclinations
+    // use large inner radius to check for the convergence at large radii, in this case the transfer function
+    // should converge towards F=0.5*cos(incl) (see Speith Diploma Thesis, Relxill Internal Docu)
+    LocalModel lmod(ModelName::relxill);
+    lmod.set_par(XPar::rin, 200);
+    lmod.set_par(XPar::rout, 1000);
+    xillSpec *spec = get_xillver_spectra(lmod.xill_params(), &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    REQUIRE(spec != nullptr);
+    REQUIRE(spec->n_incl > 1); // averaging is non-trivial only with several inclinations
+
+    // (1) reference: the dedicated angle-averaged-flux routine
+    double *spec_avg = calc_angle_averaged_xillver_flux(spec, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    REQUIRE(spec_avg != nullptr);
+
+    // build the slab flux weights that reproduce calc_angle_averaged_xillver_flux:
+    //   w_i = norm_factor_semi_infinite_slab(incl_i[deg]) / n_incl
+    VecD dist(spec->n_incl);
+    double dist_sum = 0.0;
+    for (int ii = 0; ii < spec->n_incl; ii++) {
+        dist[ii] = norm_factor_semi_infinite_slab(spec->incl[ii] * 180.0 / M_PI) / spec->n_incl;
+        dist_sum += dist[ii];
+    }
+
+    // these slab weights are deliberately NOT a normalized probability distribution
+    REQUIRE(fabs(dist_sum - 1.0) > 0.1);
+
+    // (2a) core summation: calc_xillver_angdep with the slab flux weights must reproduce
+    //      calc_angle_averaged_xillver_flux bin-by-bin (identical operations => exact)
+    VecD spec_weighted(spec->n_ener, 0.0);
+    calc_xillver_angdep(spec_weighted.data(), spec, dist.data(), &status);
+    REQUIRE(status == EXIT_SUCCESS);
+
+    for (int jj = 0; jj < spec->n_ener; jj++) {
+        INFO("calc_xillver_angdep mismatch at bin " << jj);
+        REQUIRE(fabs(spec_weighted[jj] - spec_avg[jj]) <= 1e-12 * fabs(spec_avg[jj]));
+    }
+
+    // (2b) full public path: calculateAngleWeightedXillverSpectrum rebinned back onto
+    //      the native grid (identity rebin) must also reproduce the averaged spectrum
+    VecD spec_weighted_rebinned(spec->n_ener, 0.0);
+    calc_angle_weighted_xillver_spec(spec_weighted_rebinned,
+                                     spec->ener,
+                                     spec->n_ener,
+                                     dist.data(),
+                                     spec,
+                                     &status);
+    REQUIRE(status == EXIT_SUCCESS);
+
+    for (int jj = 0; jj < spec->n_ener; jj++) {
+        INFO("calculateAngleWeightedXillverSpectrum mismatch at bin " << jj);
+        REQUIRE(fabs(spec_weighted_rebinned[jj] - spec_avg[jj]) <= 1e-9 * fabs(spec_avg[jj]));
+    }
+
+    delete[] spec_avg;
+    free_xill_spec(spec);
+}
 
 
 TEST_CASE (
