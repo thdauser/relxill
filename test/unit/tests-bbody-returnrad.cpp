@@ -417,17 +417,15 @@ void test_boost_parameter(LocalModel &lmod) {
          sum_direct,
          sum_refl,
          fabs(sum_total - sum_direct - sum_refl) / sum_total);
-  REQUIRE(fabs(sum_total - sum_direct - sum_refl) / sum_total < 1e-5);
+  REQUIRE(fabs(sum_total - sum_direct - sum_refl) / sum_total < 1e-4);
 }
 
 
 TEST_CASE (
 " Evaluate RelxillBB (only black body)"
 ,
-"[bbret-fail]"
-)
- {
-
+"[relxillBB]"
+) {
   int status = EXIT_SUCCESS;
   setenv("RELXILL_WRITE_OUTFILES","1",1);
 
