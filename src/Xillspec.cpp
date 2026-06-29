@@ -208,6 +208,8 @@ double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status
                                                             xill_spec->n_ener,
                                                             status);
 
+  delete[] angle_averaged_xillver_flux;
+
   return norm_fac;
 }
 
@@ -662,23 +664,23 @@ void calc_angle_weighted_xillver_spec(VecD &weighted_xill_spec,
  * @details This function retrieves xillver spectra for all inclination angles and combines them
  *          using the provided angle distribution weights. The combined spectrum is rebinned to
  *          the output energy grid.
- * @param [out] xill_flux Vector to store the angle-weighted xillver spectrum (needs to be pre-allocated)
+ * @param [out] xill_spec_angle_weighted Vector to store the angle-weighted xillver spectrum (needs to be pre-allocated)
  * @param [in] ener Energy bin boundaries array (size n_ener+1) in keV
  * @param [in] n_ener Number of energy bins
  * @param [in] xill_param Xillver parameters defining the ionization state, density, and primary spectrum
  * @param [in] rel_cosne_dist Array of angle distribution weights for each inclination angle
  * @param [in,out] status Error status flag; returns EXIT_SUCCESS on success
  */
-void getAnglecorrXillSpec(VecD &xill_flux,
-                          const double *ener,
-                          int n_ener,
-                          const xillParam *xill_param,
-                          double *rel_cosne_dist,
-                          int *status) {
+void get_angle_weighted_xill_spec(VecD &xill_spec_angle_weighted,
+                                  const double *ener,
+                                  int n_ener,
+                                  const xillParam *xill_param,
+                                  double *rel_cosne_dist,
+                                  int *status) {
   CHECK_STATUS_VOID(*status);
 
   xillSpec *xillSpecAngles = get_xillver_spectra(xill_param, status);
-  calc_angle_weighted_xillver_spec(xill_flux, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
+  calc_angle_weighted_xillver_spec(xill_spec_angle_weighted, ener, n_ener, rel_cosne_dist, xillSpecAngles, status);
   free_xill_spec(xillSpecAngles);
 
 }

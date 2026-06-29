@@ -320,6 +320,8 @@ TEST_CASE(
             REQUIRE(tab->num_param_vals[ii] == nrad);
         }
     }
+
+    delete_returnSpec2D(&returnSpec);
 }
 
 
@@ -389,6 +391,8 @@ TEST_CASE(
         double norm_fac = get_avg_xillver_spec_normalization(spec, &status);
 
         printf(" %i: %.3e \n", ii, norm_fac);
+
+        free_xill_spec(spec);
     }
 }
 

@@ -69,12 +69,12 @@ void calc_angle_weighted_xillver_spec(VecD &weighted_xill_spec,
                                       xillSpec *xill_spec,
                                       int *status);
 
-void getAnglecorrXillSpec(VecD &xill_flux,
-                          const double *ener,
-                          int n_ener,
-                          const xillParam *xill_param,
-                          double *rel_cosne_dist,
-                          int *status);
+void get_angle_weighted_xill_spec(VecD &xill_spec_angle_weighted,
+                                  const double *ener,
+                                  int n_ener,
+                                  const xillParam *xill_param,
+                                  double *rel_cosne_dist,
+                                  int *status);
 
 void get_xillver_fluxcorrection_factors(const xillSpec *xill_spec,
                                         double *fac_fluxcorr,

@@ -652,11 +652,11 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                                   VecD &xill_flux_returnrad,
                                                   int izone,
                                                   int *status) {
-    getAnglecorrXillSpec(xill_flux_returnrad,
-                         returnSpec->ener,
-                         returnSpec->n_ener, &xill_param,
-                         rel_profile->rel_cosne->dist[izone],
-                         status);
+    get_angle_weighted_xill_spec(xill_flux_returnrad,
+                                 returnSpec->ener,
+                                 returnSpec->n_ener, &xill_param,
+                                 rel_profile->rel_cosne->dist[izone],
+                                 status);
 
     double xillverReflectionNormFactor
         = get_xillver_norm_factor_from_primary_spectrum(returnSpec->specRet[izone], returnSpec->ener, returnSpec->n_ener,
@@ -672,8 +672,7 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
     assert(std::isnormal(normfacMatchAtHighEnergies));
     CHECK_STATUS_VOID(*status);
 
-    for (int jj = 0; jj < returnSpec->n_ener; jj++)
-    {
+    for (int jj = 0; jj < returnSpec->n_ener; jj++) {
         xill_flux_returnrad[jj] *= fabs(xill_param.boost);
         xill_flux_returnrad[jj] *= xillverReflectionNormFactor * normfacMatchAtHighEnergies;
 
