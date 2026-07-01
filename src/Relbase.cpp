@@ -36,7 +36,6 @@ specCache *global_spec_cache = nullptr;
 
 
 static specCache *new_specCache(int n_cache, int *status) {
-
   auto *spec = new specCache;
 
   spec->n_cache = n_cache;
@@ -45,30 +44,30 @@ static specCache *new_specCache(int n_cache, int *status) {
 
   spec->conversion_factor_energyflux = nullptr;
 
-  spec->fft_xill = new double**[n_cache];
-  spec->fft_rel = new double**[n_cache];
+  spec->fft_xill = new double **[n_cache];
+  spec->fft_rel = new double **[n_cache];
 
-  spec->fftw_xill = new fftw_complex*[n_cache];
-  spec->fftw_rel = new fftw_complex*[n_cache];
+  spec->fftw_xill = new fftw_complex *[n_cache];
+  spec->fftw_rel = new fftw_complex *[n_cache];
 
   spec->fftw_backwards_input = new fftw_complex[spec->n_ener];
   spec->fftw_output = new double[spec->n_ener];
 
-  spec->plan_c2r = fftw_plan_dft_c2r_1d(spec->n_ener, spec->fftw_backwards_input, spec->fftw_output,FFTW_ESTIMATE);
+  spec->plan_c2r = fftw_plan_dft_c2r_1d(spec->n_ener, spec->fftw_backwards_input, spec->fftw_output, FFTW_ESTIMATE);
 
-  spec->xill_spec = new xillSpec*[n_cache];
+  spec->xill_spec = new xillSpec *[n_cache];
 
   int ii;
   int jj;
   int m = 2;
   for (ii = 0; ii < n_cache; ii++) {
-    spec->fft_xill[ii] = new double*[m];
-    spec->fft_rel[ii] = new double*[m];
+    spec->fft_xill[ii] = new double *[m];
+    spec->fft_rel[ii] = new double *[m];
 
     spec->fftw_xill[ii] = new fftw_complex[spec->n_ener];
     spec->fftw_rel[ii] = new fftw_complex[spec->n_ener];
 
-   for (jj = 0; jj < m; jj++) {
+    for (jj = 0; jj < m; jj++) {
       spec->fft_xill[ii][jj] = new double[spec->n_ener];
       spec->fft_rel[ii][jj] = new double[spec->n_ener];
     }
@@ -92,23 +91,16 @@ specCache *init_global_specCache(int *status) {
   return global_spec_cache;
 }
 
-static double* calculate_energyflux_conversion(const double* ener, int n_ener, int* status){
-
-  auto* factor = new double[n_ener];
+static double *calculate_energyflux_conversion(const double *ener, int n_ener, int *status) {
+  auto *factor = new double[n_ener];
   CHECK_MALLOC_RET_STATUS(factor, status, nullptr)
 
-  for(int ii=0; ii<n_ener; ii++){
-    factor[ii] = 0.5*(ener[ii]+ener[ii+1]) / (ener[ii+1] - ener[ii]);
+  for (int ii = 0; ii < n_ener; ii++) {
+    factor[ii] = 0.5 * (ener[ii] + ener[ii + 1]) / (ener[ii + 1] - ener[ii]);
   }
 
   return factor;
 }
-
-
-
-
-
-
 
 
 /** @brief FFTW VERSION: convolve the (bin-integrated) spectra f1 and f2 (which need to have a certain binning)
@@ -118,15 +110,22 @@ static double* calculate_energyflux_conversion(const double* ener, int n_ener, i
  *  ener has length n+1 and is the energy array
  *  requirements: needs "specCache" to be set up
  * **/
-void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, double *fout, int n,
-                       int re_rel, int re_xill, int izone, specCache *cache, int *status) {
-
+void fftw_conv_spectrum(double *ener,
+                        const double *fxill,
+                        const double *frel,
+                        double *fout,
+                        int n,
+                        int re_rel,
+                        int re_xill,
+                        int izone,
+                        specCache *cache,
+                        int *status) {
   CHECK_STATUS_VOID(*status);
 
   // needs spec cache to be set up
   assert(cache != nullptr);
 
-  if (cache->conversion_factor_energyflux == nullptr){
+  if (cache->conversion_factor_energyflux == nullptr) {
     cache->conversion_factor_energyflux = calculate_energyflux_conversion(ener, n, status);
   }
 
@@ -134,7 +133,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   /* need to find out where the 1keV for the filter is, which defines if energies are blue or redshifted*/
   if (save_1eV_pos == 0 ||
       (!((ener[save_1eV_pos] <= 1.0) &&
-          (ener[save_1eV_pos + 1] > 1.0)))) {
+         (ener[save_1eV_pos + 1] > 1.0)))) {
     save_1eV_pos = binary_search(ener, n + 1, 1.0);
   }
 
@@ -149,10 +148,10 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
   /** #1: for the xillver part **/
   if (re_xill != 0) {
     for (ii = 0; ii < n; ii++) {
-      cache->fft_xill[izone][0][ii] = fxill[ii] * cache->conversion_factor_energyflux[ii] ;
+      cache->fft_xill[izone][0][ii] = fxill[ii] * cache->conversion_factor_energyflux[ii];
     }
 
-    fftw_plan plan_xill = fftw_plan_dft_r2c_1d(n, cache->fft_xill[izone][0], cache->fftw_xill[izone],FFTW_ESTIMATE);
+    fftw_plan plan_xill = fftw_plan_dft_r2c_1d(n, cache->fft_xill[izone][0], cache->fftw_xill[izone], FFTW_ESTIMATE);
     fftw_execute(plan_xill);
     fftw_destroy_plan(plan_xill);
   }
@@ -164,7 +163,7 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
       cache->fft_rel[izone][0][irot] = frel[ii] * cache->conversion_factor_energyflux[ii];
     }
 
-    fftw_plan plan_rel = fftw_plan_dft_r2c_1d(n, cache->fft_rel[izone][0], cache->fftw_rel[izone],FFTW_ESTIMATE);
+    fftw_plan plan_rel = fftw_plan_dft_r2c_1d(n, cache->fft_rel[izone][0], cache->fftw_rel[izone], FFTW_ESTIMATE);
     fftw_execute(plan_rel);
     fftw_destroy_plan(plan_rel);
   }
@@ -177,18 +176,15 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
 
     cache->fftw_backwards_input[ii][1] =
         cache->fftw_xill[izone][ii][0] * cache->fftw_rel[izone][ii][1] +
-            cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][0];
-
+        cache->fftw_xill[izone][ii][1] * cache->fftw_rel[izone][ii][0];
   }
 
   fftw_execute(cache->plan_c2r);
 
   for (ii = 0; ii < n; ii++) {
-    fout[ii] = cache->fftw_output[ii] /  cache->conversion_factor_energyflux[ii]; 
+    fout[ii] = cache->fftw_output[ii] / cache->conversion_factor_energyflux[ii];
   }
-
 }
-
 
 
 /**
@@ -199,7 +195,6 @@ void fftw_conv_spectrum(double *ener, const double *fxill, const double *frel, d
  * convolution.
  */
 double calcFFTNormFactor(const double *ener, const double *fxill, const double *frel, const double *fout, int n) {
-
   double sum_relline = 0.0;
   double sum_xillver = 0.0;
   double sum_conv = 0.0;
@@ -220,27 +215,34 @@ void normalizeFFTOutput(const double *ener, const double *fxill, const double *f
   for (int ii = 0; ii < n; ii++) {
     fout[ii] *= norm_fac;
   }
-
 }
-void convolveSpectrumFFTNormalized(double *ener, const double *fxill, const double *frel, double *fout, int n,
-                                   int re_rel, int re_xill, int izone, specCache *spec_cache_ptr, int *status) {
 
+void convolveSpectrumFFTNormalized(double *ener,
+                                   const double *fxill,
+                                   const double *frel,
+                                   double *fout,
+                                   int n,
+                                   int re_rel,
+                                   int re_xill,
+                                   int izone,
+                                   specCache *spec_cache_ptr,
+                                   int *status) {
   fftw_conv_spectrum(ener, fxill, frel, fout, n, re_rel, re_xill, izone, spec_cache_ptr, status);
 
   normalizeFFTOutput(ener, fxill, frel, fout, n);
-
 }
 
 
-void set_flux_outside_defined_range_to_zero(const double* ener, double* spec, int n_ener, double emin, double emax){
+void set_flux_outside_defined_range_to_zero(const double *ener, double *spec, int n_ener, double emin, double emax) {
   int warned = 0;
-  for (int ii=0; ii<n_ener; ii++){
-    if (ener[ii+1]<emin || ener[ii]>emax){
-      if (is_debug_run() && warned==0){
+  for (int ii = 0; ii < n_ener; ii++) {
+    if (ener[ii + 1] < emin || ener[ii] > emax) {
+      if (is_debug_run() && warned == 0) {
         printf(" *** warning: relconv applied outside the allowed energy range %.2f-%.0f\n",
-               RELCONV_EMIN, RELCONV_EMAX);
+               RELCONV_EMIN,
+               RELCONV_EMAX);
         printf("     -> values outside are set to zero\n\n");
-        warned=1;
+        warned = 1;
       }
       spec[ii] = 0;
     }
@@ -257,7 +259,6 @@ void set_flux_outside_defined_range_to_zero(const double* ener, double* spec, in
  * @param double[n_ener_inp] spec_ener_inp
  *  **/
 void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam *rel_param, int *status) {
-
   // get the (fixed!) energy grid for a RELLINE for a convolution
   // -> as we do a simple FFT, we can now take into account that we
   // need it to be number = 2^N */
@@ -273,11 +274,19 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
   auto rebin_flux = new double[ener_grid->nbins];
   _rebin_spectrum(ener_grid->ener, rebin_flux, ener_grid->nbins, ener_inp, spec_inp, n_ener_inp);
 
-  specCache* spec_cache = init_global_specCache(status);
+  specCache *spec_cache = init_global_specCache(status);
   CHECK_STATUS_VOID(*status);
   auto conv_out = new double[ener_grid->nbins];
-  convolveSpectrumFFTNormalized(ener_grid->ener, rebin_flux, rel_profile->flux[0], conv_out, ener_grid->nbins,
-                    1, 1, 0, spec_cache, status);
+  convolveSpectrumFFTNormalized(ener_grid->ener,
+                                rebin_flux,
+                                rel_profile->flux[0],
+                                conv_out,
+                                ener_grid->nbins,
+                                1,
+                                1,
+                                0,
+                                spec_cache,
+                                status);
   CHECK_STATUS_VOID(*status);
 
   // rebin to the output grid
@@ -287,15 +296,16 @@ void relconv_kernel(double *ener_inp, double *spec_inp, int n_ener_inp, relParam
 
   delete[] rebin_flux;
   delete[] conv_out;
-
 }
 
 
-
-
-void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_param, xillParam *xill_input_param,
-                           RelSysPar *sys_par, int *status) {
-
+void add_primary_component(double *ener,
+                           int n_ener,
+                           double *flu,
+                           relParam *rel_param,
+                           xillParam *xill_input_param,
+                           RelSysPar *sys_par,
+                           int *status) {
   xillTableParam *xill_table_param = get_xilltab_param(xill_input_param, status);
   double *pl_flux = calc_normalized_primary_spectrum(ener, n_ener, rel_param, xill_table_param, status);
   free(xill_table_param);
@@ -306,8 +316,8 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     for (int ii = 0; ii < n_ener; ii++) {
       flu[ii] *= fabs(xill_input_param->refl_frac);
     }
-
-  } else { // we are in the LP geometry
+  } else {
+    // we are in the LP geometry
 
     assert(rel_param != nullptr);
 
@@ -323,7 +333,8 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
     //}
 
     if (rel_param->beta
-        > 1e-4) { // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
+        > 1e-4) {
+      // flux boost of primary radiation taking into account here (therefore we need f_inf_rest above)
       prim_fac *= pow(doppler_factor_source_obs(rel_param), 2);
     }
 
@@ -338,9 +349,8 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
 
     /** 5 ** if desired, we ouput the reflection fraction and strength (as defined in Dauser+2016) **/
     if (shouldAuxInfoGetPrinted()) {
-     // print_reflection_strength(ener, n_ener, flu, rel_param, xill_input_param, pl_flux, struct_refl_frac);
+      // print_reflection_strength(ener, n_ener, flu, rel_param, xill_input_param, pl_flux, struct_refl_frac);
     }
-
   }
 
   // Finally, add the power law component if refl_frac >= 0
@@ -351,7 +361,6 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
   }
 
   delete[] pl_flux;
-
 }
 
 
@@ -362,7 +371,7 @@ void add_primary_component(double *ener, int n_ener, double *flu, relParam *rel_
  * @return 1 if any parameter changed, 0 if all are the same
  */
 int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
-  std::vector<std::pair<double, double>> param_comparison = {
+  std::vector<std::pair<double, double> > param_comparison = {
     {par->afe, cpar->afe},
     {par->dens, cpar->dens},
     {par->ect, cpar->ect},
@@ -380,10 +389,8 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
     {static_cast<double>(par->model_type), static_cast<double>(cpar->model_type)}
   };
 
-  for (const auto& param : param_comparison)
-  {
-    if (are_values_different(param.first, param.second))
-    {
+  for (const auto &param: param_comparison) {
+    if (are_values_different(param.first, param.second)) {
       return 1;
     }
   }
@@ -393,13 +400,13 @@ int did_xill_param_change(const xillParam *cpar, const xillParam *par) {
 
 
 /* check if values, which need a re-computation of the relline profile, have changed */
-int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
-                      const relParam *ca_rel_param, const xillParam *ca_xill_param) {
-
+int redo_xillver_calc(const relParam *rel_param,
+                      const xillParam *xill_param,
+                      const relParam *ca_rel_param,
+                      const xillParam *ca_xill_param) {
   int redo = 1;
 
   if ((ca_rel_param != nullptr) && (ca_xill_param != nullptr)) {
-
     redo = did_xill_param_change(ca_xill_param, xill_param);
 
     // xillver needs to be re-computed, Ecut changes for the following parameters **/
@@ -417,20 +424,17 @@ int redo_xillver_calc(const relParam *rel_param, const xillParam *xill_param,
         && are_values_different(xill_param->refl_frac, ca_xill_param->refl_frac)) {
       redo = 1;
     }
-
   }
 
   return redo;
 }
 
 int redo_relbase_calc(const relParam *rel_param, const relParam *ca_rel_param) {
-
   if (did_rel_param_change(ca_rel_param, rel_param)) {
     return 1;
   } else {
     return 0;
   }
-
 }
 
 void write_output_rel_param(relParam *pa) {
@@ -461,13 +465,12 @@ relline_spec_multizone *relbase_profile(double *ener,
                                         int *status) {
   const int nzones = radialZones.size() - 1; // we store rlo and rhi in one grid, so we have nzones=nrad-1
 
-  inpar* inp = get_inputvals_struct(ener, n_ener, param, status);
+  inpar *inp = get_inputvals_struct(ener, n_ener, param, status);
   cache_info *ca_info = cli_check_cache(cache_relbase, inp, check_cache_relpar, status);
   relline_spec_multizone *spec = nullptr;
 
   // set a pointer to the spectrum
   if (is_relbase_cached((ca_info)) == 0) {
-
     // init the spectra where we store the flux
     param->num_zones = nzones;
     init_relline_spec_multizone(&spec, param, xill_tab, radialZones, &ener, n_ener, status);
@@ -509,31 +512,26 @@ relline_spec_multizone *relbase_profile(double *ener,
 
 /** get a radial grid on the accretion disk in order to calculate a relline for each zone **/
 std::vector<double> get_rzone_grid(double rmin, double rmax, int nzones, double h, int *status) {
-
-  std::vector<double> rgrid( nzones + 1);
+  std::vector<double> rgrid(nzones + 1);
 
   if (nzones == 1) {
     rgrid[0] = rmin;
     rgrid[1] = rmax;
   } else {
-
     double r_transition = rmin;
     int indr = 0;
 
     // if h > rmin we choose a log grid for r<h
     if (h > rmin) {
-
       r_transition = h;
 
       get_log_grid(rgrid.data(), rgrid.size(), rmin, rmax);
       indr = binary_search(rgrid.data(), rgrid.size(), r_transition);
 
       r_transition = rgrid[indr];
-
     }
 
     if (indr < nzones) {
-
       double rlo = r_transition;
       double rhi = rmax; // radius[nzones];
       // add 1/r for larger radii
@@ -542,14 +540,11 @@ std::vector<double> get_rzone_grid(double rmin, double rmax, int nzones, double 
         rgrid[ii] = 1.0 * (ii - indr) / (nzones - indr) * (1.0 / rhi - 1.0 / rlo) + 1.0 / rlo;
         rgrid[ii] = fabs(1.0 / rgrid[ii]);
       }
-
     }
-
   }
 
   return rgrid;
 }
-
 
 
 /** @brief relbase wrapper function, calculating the m_cache_relat system params plus the relbase profile
@@ -562,49 +557,52 @@ std::vector<double> get_rzone_grid(double rmin, double rmax, int nzones, double 
  * output: photar(n_ener)  [photons/bin]
 **/
 relline_spec_multizone *relbase(double *ener, const int n_ener, relParam *param, int *status) {
-
   // initialize parameter values (has an internal cache)
   RelSysPar *sysPar = get_system_parameters(param, status);
   CHECK_STATUS_RET(*status, nullptr);
   assert(sysPar != nullptr);
 
   auto rgrid = get_standard_relxill_radial_grid(*param);
-  relline_spec_multizone* rel_spec = relbase_profile(ener, n_ener, param, sysPar, nullptr, rgrid.radius,
+  relline_spec_multizone *rel_spec = relbase_profile(ener,
+                                                     n_ener,
+                                                     param,
+                                                     sysPar,
+                                                     nullptr,
+                                                     rgrid.radius,
                                                      status);
 
   return rel_spec;
 }
 
 
-
 void free_rel_cosne(RelCosne *spec) {
   if (spec != nullptr) {
-    //	free(spec->ener);  we do not need this, as only a pointer for ener is assigned
-    free(spec->cosne);
+    //	delete[] spec->ener;  we do not need this, as only a pointer for ener is assigned
+    delete[] spec->cosne;
     if (spec->dist != nullptr) {
       int ii;
       for (ii = 0; ii < spec->n_zones; ii++) {
-        free(spec->dist[ii]);
+        delete[] spec->dist[ii];
       }
     }
-    free(spec->dist);
-    free(spec);
+    delete[] spec->dist;
+    delete spec;
   }
 }
 
 void free_rel_spec(relline_spec_multizone *spec) {
   if (spec != nullptr) {
-    free(spec->ener);
+    delete[] spec->ener;
     delete[] spec->rgrid;
     if (spec->flux != nullptr) {
       int ii;
       for (ii = 0; ii < spec->n_zones; ii++) {
         if (spec->flux[ii] != nullptr) {
-          free(spec->flux[ii]);
+          delete[] spec->flux[ii];
         }
       }
     }
-    free(spec->flux);
+    delete[] spec->flux;
     if (spec->rel_cosne != nullptr) {
       free_rel_cosne(spec->rel_cosne);
     }
@@ -622,19 +620,17 @@ void free_cached_tables() {
   //free_extendedSourceTable
 
   // TODO: implement cache in a general way
- // free(cached_rel_param);
- // free(cached_xill_param);
+  // free(cached_rel_param);
+  // free(cached_xill_param);
 
   free_specCache(global_spec_cache);
 
   // TODO, implement free of this global energy grid
   //free(global_energy_grid_relxill);
   // free(global_ener_xill);
-
 }
 
 void free_fft_cache(double ***sp, int n1, int n2) {
-
   int ii;
   int jj;
   if (sp != nullptr) {
@@ -648,11 +644,9 @@ void free_fft_cache(double ***sp, int n1, int n2) {
     }
     free(sp);
   }
-
 }
 
 spectrum *new_spectrum(int n_ener, const double *ener, int *status) {
-
   auto *spec = new spectrum;
   spec->n_ener = n_ener;
   spec->ener = new double[n_ener];
@@ -675,14 +669,13 @@ void free_spectrum(spectrum *spec) {
   }
 }
 
-void free_fftw_complex_cache(fftw_complex** val, int n){
-  for(int ii=0; ii<n; ii++){
+void free_fftw_complex_cache(fftw_complex **val, int n) {
+  for (int ii = 0; ii < n; ii++) {
     fftw_free(val[ii]);
   }
 }
 
-void free_specCache(specCache* spec_cache) {
-
+void free_specCache(specCache *spec_cache) {
   int ii;
   int m = 2;
   if (spec_cache != nullptr) {
@@ -709,16 +702,14 @@ void free_specCache(specCache* spec_cache) {
     fftw_destroy_plan(spec_cache->plan_c2r);
     free(spec_cache->fftw_output);
 
-    if (spec_cache->conversion_factor_energyflux != nullptr){
+    if (spec_cache->conversion_factor_energyflux != nullptr) {
       free(spec_cache->conversion_factor_energyflux);
     }
 
     free_spectrum(spec_cache->out_spec);
-
   }
 
   free(spec_cache);
-
 }
 
 /** free the CLI cache **/
@@ -727,5 +718,3 @@ void free_cache() {
   free_cache_syspar();
   cli_delete_list(&cache_relbase);
 }
-
-

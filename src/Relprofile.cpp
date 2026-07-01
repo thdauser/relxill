@@ -35,11 +35,13 @@ relTable *ptr_rellineTable = nullptr;
 RelSysPar *cached_tab_sysPar = nullptr;
 
 // precision to calculate gstar from [H:1-H] instead of [0:1]
-const double GFAC_H = 5e-3;
+constexpr double GFAC_H = 5e-3;
 
 // interpolate the table in the A-MU0 plane (for one value of radius)
 static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
-                           int ind_mu0, RelSysPar *sysPar, relTable *reltab) {
+                           int ind_mu0,
+                           const RelSysPar *sysPar,
+                           const relTable *reltab) {
   sysPar->gmin[ii] = interp_lin_2d_float(ifac_a, ifac_mu0,
                                          reltab->arr[ind_a][ind_mu0]->gmin[ii],
                                          reltab->arr[ind_a + 1][ind_mu0]->gmin[ii],
@@ -52,8 +54,7 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
                                          reltab->arr[ind_a][ind_mu0 + 1]->gmax[ii],
                                          reltab->arr[ind_a + 1][ind_mu0 + 1]->gmax[ii]);
 
-  int jj;
-  for (jj = 0; jj < reltab->n_g; jj++) {
+  for (int jj = 0; jj < reltab->n_g; jj++) {
     sysPar->trff[ii][jj][0] = interp_lin_2d_float(ifac_a, ifac_mu0,
                                                   reltab->arr[ind_a][ind_mu0]->trff1[ii][jj],
                                                   reltab->arr[ind_a + 1][ind_mu0]->trff1[ii][jj],
@@ -82,32 +83,31 @@ static void interpol_a_mu0(int ii, double ifac_a, double ifac_mu0, int ind_a,
 }
 
 RelSysPar *new_relSysPar(int nr, int ng, int *status) {
-  auto *sysPar = (RelSysPar *) malloc(sizeof(RelSysPar));
+  auto *sysPar = new RelSysPar;
   CHECK_MALLOC_RET_STATUS(sysPar, status, nullptr)
 
   sysPar->ng = ng;
   sysPar->nr = nr;
 
-  sysPar->re = (double *) malloc(nr * sizeof(double));
+  sysPar->re = new double[nr];
   CHECK_MALLOC_RET_STATUS(sysPar->re, status, sysPar)
-  sysPar->gmin = (double *) malloc(nr * sizeof(double));
+  sysPar->gmin = new double[nr];
   CHECK_MALLOC_RET_STATUS(sysPar->gmin, status, sysPar)
-  sysPar->gmax = (double *) malloc(nr * sizeof(double));
+  sysPar->gmax = new double[nr];
   CHECK_MALLOC_RET_STATUS(sysPar->gmax, status, sysPar)
 
   sysPar->emis = nullptr;
 
-  sysPar->gstar = (double *) malloc(ng * sizeof(double));
+  sysPar->gstar = new double[ng];
   CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
 
   // we already set the values as they are fixed
   int ii;
-  int jj;
   for (ii = 0; ii < ng; ii++) {
-    sysPar->gstar[ii] = GFAC_H + (1.0 - 2 * GFAC_H) / (ng - 1) * ((float) (ii));
+    sysPar->gstar[ii] = GFAC_H + (1.0 - 2 * GFAC_H) / (ng - 1) * (static_cast<float>(ii));
   }
 
-  sysPar->d_gstar = (double *) malloc(ng * sizeof(double));
+  sysPar->d_gstar = new double[ng];
   CHECK_MALLOC_RET_STATUS(sysPar->gstar, status, sysPar)
   for (ii = 0; ii < ng; ii++) {
     if ((ii == 0) || (ii == (ng - 1))) {
@@ -117,19 +117,19 @@ RelSysPar *new_relSysPar(int nr, int ng, int *status) {
     }
   }
 
-  sysPar->trff = (double ***) malloc(nr * sizeof(double **));
+  sysPar->trff = new double **[nr];
   CHECK_MALLOC_RET_STATUS(sysPar->trff, status, sysPar)
-  sysPar->cosne = (double ***) malloc(nr * sizeof(double **));
+  sysPar->cosne = new double **[nr];
   CHECK_MALLOC_RET_STATUS(sysPar->cosne, status, sysPar)
   for (ii = 0; ii < nr; ii++) {
-    sysPar->trff[ii] = (double **) malloc(ng * sizeof(double *));
+    sysPar->trff[ii] = new double *[ng];
     CHECK_MALLOC_RET_STATUS(sysPar->trff[ii], status, sysPar)
-    sysPar->cosne[ii] = (double **) malloc(ng * sizeof(double *));
+    sysPar->cosne[ii] = new double *[ng];
     CHECK_MALLOC_RET_STATUS(sysPar->cosne[ii], status, sysPar)
-    for (jj = 0; jj < ng; jj++) {
-      sysPar->trff[ii][jj] = (double *) malloc(2 * sizeof(double));
+    for (int jj = 0; jj < ng; jj++) {
+      sysPar->trff[ii][jj] = new double[2];
       CHECK_MALLOC_RET_STATUS(sysPar->trff[ii][jj], status, sysPar)
-      sysPar->cosne[ii][jj] = (double *) malloc(2 * sizeof(double));
+      sysPar->cosne[ii][jj] = new double[2];
       CHECK_MALLOC_RET_STATUS(sysPar->cosne[ii][jj], status, sysPar)
     }
   }
@@ -170,13 +170,13 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
     CHECK_STATUS_RET(*status, nullptr);
   }
 
-  int ind_a = binary_search_float(tab->a, tab->n_a, (float) a);
-  int ind_mu0 = binary_search_float(tab->mu0, tab->n_mu0, (float) mu0);
+  int ind_a = binary_search_float(tab->a, tab->n_a, static_cast<float>(a));
+  int ind_mu0 = binary_search_float(tab->mu0, tab->n_mu0, static_cast<float>(mu0));
 
-  float ifac_a = ((float) a - tab->a[ind_a]) /
-      (tab->a[ind_a + 1] - tab->a[ind_a]);
-  float ifac_mu0 = ((float) mu0 - tab->mu0[ind_mu0]) /
-      (tab->mu0[ind_mu0 + 1] - tab->mu0[ind_mu0]);
+  float ifac_a = (static_cast<float>(a) - tab->a[ind_a]) /
+                 (tab->a[ind_a + 1] - tab->a[ind_a]);
+  float ifac_mu0 = (static_cast<float>(mu0) - tab->mu0[ind_mu0]) /
+                   (tab->mu0[ind_mu0 + 1] - tab->mu0[ind_mu0]);
 
   // we perform tests that the input values are consistent when loading the parameters
   // this is just to double check (otherwise bad things happen, like an interpol. mu0>1!)
@@ -248,7 +248,6 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
   assert(ind_rmax <= ind_rmin);
   assert(rout <= 1000.0);
 
-  double ifac_r;
   int ind_tabr = ind_rmin;
 
   for (ii = sysPar->nr - 1; ii >= 0; ii--) {
@@ -267,8 +266,8 @@ static RelSysPar *interpol_relTable(double a, double incl, double rin, double ro
       }
     }
 
-    ifac_r = (sysPar->re[ii] - cached_tab_sysPar->re[ind_tabr + 1])
-        / (cached_tab_sysPar->re[ind_tabr] - cached_tab_sysPar->re[ind_tabr + 1]);
+    double ifac_r = (sysPar->re[ii] - cached_tab_sysPar->re[ind_tabr + 1])
+                    / (cached_tab_sysPar->re[ind_tabr] - cached_tab_sysPar->re[ind_tabr + 1]);
     // assert(ifac_r>=0.0);
 
     // we only allow extrapolation (i.e. ifac_r < 0) for the last bin
@@ -370,17 +369,15 @@ relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status) 
   spec->n_zones = nzones;
   spec->n_ener = n_ener;
 
-  spec->flux = (double **) malloc(spec->n_zones * sizeof(double *));
+  spec->flux = new double *[spec->n_zones];
   CHECK_MALLOC_RET_STATUS(spec->flux, status, spec)
 
-  int ii;
-
-  for (ii = 0; ii < spec->n_zones; ii++) {
-    spec->flux[ii] = (double *) malloc(n_ener * sizeof(double));
+  for (int ii = 0; ii < spec->n_zones; ii++) {
+    spec->flux[ii] = new double[n_ener];
     CHECK_MALLOC_RET_STATUS(spec->flux[ii], status, spec)
   }
 
-  spec->ener = (double *) malloc((spec->n_ener + 1) * sizeof(double));
+  spec->ener = new double[spec->n_ener + 1];
   CHECK_MALLOC_RET_STATUS(spec->ener, status, spec)
 
   spec->rgrid = nullptr; // will be allocated later
@@ -392,16 +389,16 @@ relline_spec_multizone *new_rel_spec(int nzones, const int n_ener, int *status) 
 /** get new structure to store the cosne distribution spectrum (possibly for several zones) **/
 RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 
-  RelCosne *spec = (RelCosne *) malloc(sizeof(RelCosne));
+  auto *spec = new RelCosne;
   CHECK_MALLOC_RET_STATUS(spec, status, nullptr)
 
   spec->n_zones = nzones;
   spec->n_cosne = n_incl;
 
-  spec->cosne = (double *) malloc(spec->n_cosne * sizeof(double));
+  spec->cosne = new double[spec->n_cosne];
   CHECK_MALLOC_RET_STATUS(spec->cosne, status, spec)
 
-  spec->dist = (double **) malloc(spec->n_zones * sizeof(double *));
+  spec->dist = new double *[spec->n_zones];
   CHECK_MALLOC_RET_STATUS(spec->dist, status, spec)
 
   int ii;
@@ -413,7 +410,7 @@ RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
   }
 
   for (ii = 0; ii < spec->n_zones; ii++) {
-    spec->dist[ii] = (double *) malloc(spec->n_cosne * sizeof(double));
+    spec->dist[ii] = new double[spec->n_cosne];
     CHECK_MALLOC_RET_STATUS(spec->dist[ii], status, spec)
     // initialize on allocation so dist is never read uninitialized (portable 0.0)
     for (int jj = 0; jj < spec->n_cosne; jj++) {
@@ -427,7 +424,10 @@ RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 /**
   * Initialize the structure to store the relline spectra for multiple radial zones
   **/
-void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param, xillTable *xill_tab, const VecD& radial_zones,
+void init_relline_spec_multizone(relline_spec_multizone **spec,
+                                 const relParam *param,
+                                 const xillTable *xill_tab,
+                                 const VecD &radial_zones,
                                  double **pt_ener, const int n_ener, int *status) {
 
   CHECK_STATUS_VOID(*status);
@@ -470,18 +470,15 @@ void init_relline_spec_multizone(relline_spec_multizone **spec, relParam *param,
   }
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
-
 }
 
 static void zero_rel_spec_flux(relline_spec_multizone *spec) {
-  int ii;
-  int jj;
-  for (ii = 0; ii < spec->n_zones; ii++) {
-    for (jj = 0; jj < spec->n_ener; jj++) {
+  for (int ii = 0; ii < spec->n_zones; ii++) {
+    for (int jj = 0; jj < spec->n_ener; jj++) {
       spec->flux[ii][jj] = 0.0;
     }
     if (spec->rel_cosne != nullptr) {
-      for (jj = 0; jj < spec->rel_cosne->n_cosne; jj++) {
+      for (int jj = 0; jj < spec->rel_cosne->n_cosne; jj++) {
         spec->rel_cosne->dist[ii][jj] = 0.0;
       }
     }
@@ -489,8 +486,8 @@ static void zero_rel_spec_flux(relline_spec_multizone *spec) {
 }
 
 /** m_cache_relat. transfer function, which we will need to integrate over the energy bin then **/
-static str_relb_func *new_str_relb_func(RelSysPar *sysPar, int *status) {
-  str_relb_func *str = (str_relb_func *) malloc(sizeof(str_relb_func));
+static str_relb_func *new_str_relb_func(const RelSysPar *sysPar, int *status) {
+  auto *str = new str_relb_func;
   CHECK_MALLOC_RET_STATUS(str, status, nullptr)
 
   str->gstar = sysPar->gstar;
@@ -508,11 +505,10 @@ static double relb_func(double eg, int k, str_relb_func *str) {
   double egstar = (eg - str->gmin) * str->del_g;
 
   // find the indices in the original g-grid, but check first if they have already been calculated
-  int ind;
   if (!((egstar >= str->gstar[str->save_g_ind]) && (egstar < str->gstar[str->save_g_ind + 1]))) {
     str->save_g_ind = binary_search(str->gstar, str->ng, egstar);
   }
-  ind = str->save_g_ind;
+  int ind = str->save_g_ind;
 
   double inte = (egstar - str->gstar[ind]) / (str->gstar[ind + 1] - str->gstar[ind]);
   double inte1 = 1.0 - inte;
@@ -537,10 +533,10 @@ static double relb_func(double eg, int k, str_relb_func *str) {
 
 /** Romberg Integration Routine **/
 static double romberg_integration(double a, double b, int k, str_relb_func *str) {
-  const double prec = 0.02;
+  constexpr double prec = 0.02;
   double obtprec = 1.0;
-  const int itermin = 0;
-  const int itermax = 5;
+  constexpr int itermin = 0;
+  constexpr int itermax = 5;
   enum {
     maxiter = 6
   };
@@ -566,13 +562,12 @@ static double romberg_integration(double a, double b, int k, str_relb_func *str)
   double ta = (r + str->cache_val_relb_func[k]) / 2.0;
   double pas = b - a;
   double pasm = 1.0;
-  double s;
   t[0][0] = ta * pas;
   while ((niter < itermin) || ((obtprec > prec) && (niter <= itermax))) {
     niter++;
     pas = pas / 2.0;
     pasm = pasm / 2.0;
-    s = ta;
+    double s = ta;
     for (ii = 1; ii <= pow(2, niter) - 1; ii++) {
       s += relb_func(a + pas * ii, k, str);
     }
@@ -807,14 +802,14 @@ void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, c
 }
 
 /** get the bin for a certain emission angle (between [0,n_incl-1] **/
-int static get_cosne_bin(double mu, RelCosne *dat) {
-  return ((int) (dat->n_cosne * (1 - mu) + 1)) - 1;
+int static get_cosne_bin(double mu, const RelCosne *dat) {
+  return static_cast<int>(dat->n_cosne * (1 - mu) + 1) - 1;
 }
 
 /** calculate the relline profile(s) for all given zones **/
 str_relb_func *cached_str_relb_func = nullptr;
 
-static double calculate_radiallyResolvedFluxObs(str_relb_func *lb_func, relline_spec_multizone *spec, double weight) {
+static double calculate_radiallyResolvedFluxObs(str_relb_func *lb_func, const relline_spec_multizone *spec, double weight) {
 
   double integRadialFlux = 0.0;
   for (int jj = 0; jj <= spec->n_ener; jj++) {
@@ -829,7 +824,7 @@ static double calculate_radiallyResolvedFluxObs(str_relb_func *lb_func, relline_
 
 static void free_str_relb_func(str_relb_func **str) {
   if (*str != nullptr) {
-    free(*str);
+    delete *str;
     *str = nullptr;
   }
 }
@@ -847,8 +842,6 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
 
   CHECK_STATUS_VOID(*status);
 
-  double line_ener = 1.0;
-
   // very important: set all fluxes to zero
   zero_rel_spec_flux(spec);
 
@@ -859,13 +852,13 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
   // store the (energy)-integrated flux in an array for debugging
   double *radialFlux = nullptr;
   if (write_outfile_radial_flux(spec->n_zones)) {
-    radialFlux = (double *) malloc(sizeof(double) * sysPar->nr);
+    radialFlux = new double[sysPar->nr];
     CHECK_MALLOC_VOID_STATUS(radialFlux, status)
   }
 
-  int ii;
   int jj;
-  for (ii = 0; ii < sysPar->nr; ii++) {
+  for (int ii = 0; ii < sysPar->nr; ii++) {
+    double line_ener = 1.0;
     // gstar in [0,1] + corresponding energies (see gstar2ener for full formula)
     double egmin = sysPar->gmin[ii] * line_ener;
     double egmax = sysPar->gmax[ii] * line_ener;
@@ -910,20 +903,17 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
         spec->flux[izone][jj] += tmp_var * weight;
       }
 
-      if (write_outfile_radial_flux(spec->n_zones)) {
-        assert(radialFlux != nullptr);
+      if (write_outfile_radial_flux(spec->n_zones) && radialFlux != nullptr) {
         radialFlux[ii] = calculate_radiallyResolvedFluxObs(cached_str_relb_func, spec, weight);
       }
 
       /** only calculate the distribution if we need it here  **/
       if (spec->rel_cosne != nullptr) {
-        int kk;
-        int imu;
         str_relb_func *da = cached_str_relb_func; // define a shortcut
         for (jj = 0; jj < sysPar->ng; jj++) {
           double g = da->gstar[jj] * (da->gmax - da->gmin) + da->gmin;
-          for (kk = 0; kk < 2; kk++) {
-            imu = get_cosne_bin(da->cosne[jj][kk], spec->rel_cosne);
+          for (int kk = 0; kk < 2; kk++) {
+            int imu = get_cosne_bin(da->cosne[jj][kk], spec->rel_cosne);
 
             double tmp =
                 pow(2 * M_PI * g, 2) /
@@ -952,10 +942,7 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
   if (write_outfile_radial_flux(spec->n_zones)) {
     save_relline_radial_flux_profile(sysPar->re, radialFlux, sysPar->nr);
   }
-  if (radialFlux != nullptr) {
-    free(radialFlux);
-    radialFlux = nullptr;
-  }
+  delete[] radialFlux;
 
   CHECK_RELXILL_DEFAULT_ERROR(status);
 
@@ -968,42 +955,38 @@ void free_cached_relTable() {
 // should not be called manually as it is automatically freed in the cache
 void free_relSysPar(RelSysPar *sysPar) {
   if (sysPar != nullptr) {
-    free(sysPar->re);
-    free(sysPar->gmin);
-    free(sysPar->gmax);
-    free(sysPar->gstar);
-    free(sysPar->d_gstar);
+    delete[] sysPar->re;
+    delete[] sysPar->gmin;
+    delete[] sysPar->gmax;
+    delete[] sysPar->gstar;
+    delete[] sysPar->d_gstar;
 
     free_emisProfile(sysPar->emis);
 
     if (sysPar->trff != nullptr) {
-      int ii;
-      for (ii = 0; ii < sysPar->nr; ii++) {
+      for (int ii = 0; ii < sysPar->nr; ii++) {
         if (sysPar->trff[ii] != nullptr) {
-          int jj;
-          for (jj = 0; jj < sysPar->ng; jj++) {
-            free(sysPar->trff[ii][jj]);
+          for (int jj = 0; jj < sysPar->ng; jj++) {
+            delete[] sysPar->trff[ii][jj];
           }
-          free(sysPar->trff[ii]);
+          delete[] sysPar->trff[ii];
         }
       }
-      free(sysPar->trff);
+      delete[] sysPar->trff;
     }
 
     if (sysPar->cosne != nullptr) {
-      int ii;
-      for (ii = 0; ii < sysPar->nr; ii++) {
+      for (int ii = 0; ii < sysPar->nr; ii++) {
         if (sysPar->cosne[ii] != nullptr) {
-          int jj;
-          for (jj = 0; jj < sysPar->ng; jj++) {
-            free(sysPar->cosne[ii][jj]);
+          for (int jj = 0; jj < sysPar->ng; jj++) {
+            delete[] sysPar->cosne[ii][jj];
           }
-          free(sysPar->cosne[ii]);
+          delete[] sysPar->cosne[ii];
         }
       }
-      free(sysPar->cosne);
+      delete[] sysPar->cosne;
     }
-    free(sysPar);
+    delete sysPar;
   }
 }
 

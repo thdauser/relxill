@@ -32,8 +32,8 @@ RelSysPar *get_system_parameters(const relParam *param, int *status);
 void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, const int *status);
 
 void init_relline_spec_multizone(relline_spec_multizone **spec,
-                                 relParam *param,
-                                 xillTable *xill_tab,
+                                 const relParam *param,
+                                 const xillTable *xill_tab,
                                  const VecD& radial_zones,
                                  double **pt_ener,
                                  int n_ener,
