@@ -406,9 +406,19 @@ RelCosne *new_rel_cosne(int nzones, int n_incl, int *status) {
 
   int ii;
 
+  // NULL the row pointers first, so the free path (free_rel_cosne) stays safe
+  // if a row allocation below fails partway through the loop
+  for (ii = 0; ii < spec->n_zones; ii++) {
+    spec->dist[ii] = nullptr;
+  }
+
   for (ii = 0; ii < spec->n_zones; ii++) {
     spec->dist[ii] = (double *) malloc(spec->n_cosne * sizeof(double));
     CHECK_MALLOC_RET_STATUS(spec->dist[ii], status, spec)
+    // initialize on allocation so dist is never read uninitialized (portable 0.0)
+    for (int jj = 0; jj < spec->n_cosne; jj++) {
+      spec->dist[ii][jj] = 0.0;
+    }
   }
 
   return spec;
