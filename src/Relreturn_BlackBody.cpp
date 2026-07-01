@@ -663,18 +663,9 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                                   status);
     CHECK_STATUS_VOID(*status);
 
-    double normfacMatchAtHighEnergies
-            = calc_normfac_bbody_at_highenergy(xill_param.kTbb,
-                                           returnSpec->specRet[izone],
-                                           returnSpec->ener,
-                                           returnSpec->n_ener,
-                                           status);
-    assert(std::isnormal(normfacMatchAtHighEnergies));
-    CHECK_STATUS_VOID(*status);
-
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
         xill_flux_returnrad[jj] *= fabs(xill_param.boost);
-        xill_flux_returnrad[jj] *= xillverReflectionNormFactor * normfacMatchAtHighEnergies;
+        xill_flux_returnrad[jj] *= xillverReflectionNormFactor;
 
         if (xill_param.boost >= 0) {
             xill_flux_returnrad[jj] += returnSpec->specPri[izone][jj];
