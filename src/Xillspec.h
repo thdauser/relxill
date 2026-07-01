@@ -96,6 +96,8 @@ double *calc_xillver_normalization_change_source_to_disk(const double *energy_sh
 
 double calc_xillver_norm_from_primary_spectrum(const double *flux, const double *ener, int n, int *status);
 
+double *calc_angle_averaged_xillver_flux(const xillSpec *xill_spec, int *status);
+
 EnerGrid *get_coarse_xillver_energrid();
 
 std::vector<int> get_xilltab_indices_for_paramvals(const xillTableParam *param, const xillTable *tab, int *status);
@@ -107,8 +109,6 @@ void check_xilltab_cache(const char *fname,
                          int *status);
 
 xillSpec *interp_xill_table(const xillTable *tab, const xillTableParam *param, std::vector<int> ind, int *status);
-
-double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status);
 
 
 #endif //XILLSPEC_H_

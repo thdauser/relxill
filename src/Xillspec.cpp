@@ -192,27 +192,6 @@ static double get_photon_flux_band(const double *ener,
   return sum;
 }
 
-/*
- *  note that "xillver_flux" is the observed flux defined as F = 0.5* \int_0^1 I^+(mu,E) mu dmu,
- *  where I^+(mu,E) is what is typically referred to as "xill_spec" (as tabulated in the xillver table)
- *
- */
-double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status) {
-  CHECK_STATUS_RET(*status, 0.0);
-
-  double *angle_averaged_xillver_flux = calc_angle_averaged_xillver_flux(xill_spec, status);
-
-  // TODO: fix this: warning, actually this should be for the primary spectrum and not the xillver spectrum
-  double norm_fac = calc_xillver_norm_from_primary_spectrum(angle_averaged_xillver_flux,
-                                                            xill_spec->ener,
-                                                            xill_spec->n_ener,
-                                                            status);
-
-  delete[] angle_averaged_xillver_flux;
-
-  return norm_fac;
-}
-
 EnerGrid *get_coarse_xillver_energrid() {
 
   if (global_xill_egrid_coarse == nullptr) {
@@ -604,12 +583,10 @@ void norm_xillver_spec(xillSpec *spec, double incl) {
  * @Function: calc_xillver_angdep
  * @Synopsis: angle-weight the intrinsic xillver intensities with the given distribution.
  *
- * This only re-mixes the intrinsic intensities of the table inclinations using the weights
+ * This only weights the intrinsic intensities of the table inclinations using the weights
  * in @c dist (typically the relativistic emission-angle distribution rel_cosne->dist, which
  * is normalized to sum = 1). It does NOT convert intensity to observed flux -- that
  * conversion is performed afterwards by the relativistic convolution in the relxill kernel.
- * (Contrast with calc_angle_averaged_xillver_flux(), which applies the intensity->flux
- * conversion itself for the no-GR-convolution case.)
  *
  * @Input: xill_spec
  *         dist[n_incl]

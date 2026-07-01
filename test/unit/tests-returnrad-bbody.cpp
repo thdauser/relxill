@@ -48,6 +48,19 @@ static VecD make_ener_grid(int nener, double emin, double emax) {
   return ener;
 }
 
+// Helper: angle-averaged xillver flux F = 0.5*\int_0^1 I^+(mu,E) mu dmu, then its
+// normalization relative to the primary spectrum.
+static double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status) {
+    double *angle_averaged_xillver_flux = calc_angle_averaged_xillver_flux(xill_spec, status);
+    double norm_fac = calc_xillver_norm_from_primary_spectrum(
+        angle_averaged_xillver_flux,
+        xill_spec->ener,
+        xill_spec->n_ener,
+        status);
+    delete[] angle_averaged_xillver_flux;
+    return norm_fac;
+}
+
 TEST_CASE (
 " rebin_flux_mean_shifted: flat input stays flat for shift=1 "
 ,
@@ -396,10 +409,6 @@ TEST_CASE(
     }
 }
 
-
-// calc_angle_averaged_xillver_flux() has external linkage but is not exposed in
-// Xillspec.h; forward-declare it here so the equivalence test can call it.
-double *calc_angle_averaged_xillver_flux(const xillSpec *xill_spec, int *status);
 
 TEST_CASE(
     " angle-averaged xillver flux equals angle-weighted intensity with slab flux weights ",
