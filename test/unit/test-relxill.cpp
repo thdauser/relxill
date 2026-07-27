@@ -20,9 +20,7 @@
 #include "LocalModel.h"
 #include "common-functions.h"
 
-extern "C" {
 #include "writeOutfiles.h"
-}
 
 
 

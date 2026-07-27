@@ -27,9 +27,10 @@
 #include "Relreturn_Datastruct.h"
 #include "Relreturn_Table.h"
 
+#include "writeOutfiles.h"
+
 extern "C" {
 #include "relutility.h"
-#include "writeOutfiles.h"
 #include "xilltable_reading.h"
 }
 

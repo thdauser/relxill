@@ -24,8 +24,9 @@
 #include "IonGradient.h"
 #include "ModelDefinition.h"
 
-extern "C" {
 #include "writeOutfiles.h"
+
+extern "C" {
 #include "relutility.h"
 }
 

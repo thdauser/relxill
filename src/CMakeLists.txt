@@ -12,7 +12,7 @@ set(SOURCE_FILES
         envoptions.c envoptions.h
         xilltable_reading.c xilltable_reading.h
         Relphysics.cpp Relphysics.h
-        writeOutfiles.c writeOutfiles.h
+        writeOutfiles.cpp writeOutfiles.h
         Relprofile.cpp Relprofile.h
         Relxill.cpp Relxill.h
         ModelDatabase.h

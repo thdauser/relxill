@@ -20,9 +20,7 @@
 #include "Rebin.h"
 #include "Relphysics.h"
 #include "Rellp_Extended.h"
-extern "C" {
 #include "writeOutfiles.h"
-}
 
 lpTable *cached_lp_table = nullptr;
 

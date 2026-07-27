@@ -21,9 +21,7 @@
 #include "IonGradient.h"
 
 
-extern "C" {
 #include "writeOutfiles.h"
-}
 
 #include <utility>
 

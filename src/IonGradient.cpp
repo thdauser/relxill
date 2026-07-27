@@ -20,9 +20,7 @@
 #include "Relbase.h"
 #include <cstring>
 
-extern "C"{
 #include "writeOutfiles.h"
-}
 
 // calculate the log(xi) for given density and emissivity
 // note: delta_inc is taking the correction into account that xillver

@@ -21,9 +21,10 @@
 #include "Rellp.h"
 #include "Relphysics.h"
 
+#include "writeOutfiles.h"
+
 extern "C" {
 #include "relutility.h"
-#include "writeOutfiles.h"
 #include "reltable.h"
 }
 

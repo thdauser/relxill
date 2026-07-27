@@ -29,9 +29,10 @@ This file is part of the RELXILL model code.
 #include "Rellp.h"
 #include "Relxill_errorhandling.h"
 
+#include "writeOutfiles.h"
+
 extern "C" {
 #include "relutility.h"
-#include "writeOutfiles.h"
 #include "xilltable_reading.h"
 }
 

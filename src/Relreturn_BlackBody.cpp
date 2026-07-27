@@ -24,8 +24,9 @@
 #include "Relphysics.h"
 #include "Relreturn_Datastruct.h"
 
-extern "C" {
 #include "writeOutfiles.h"
+
+extern "C" {
 #include "xilltable_reading.h"
 #include "common.h"
 #include "relutility.h"

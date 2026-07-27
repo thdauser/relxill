@@ -15,7 +15,10 @@
 
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
-#include <stdio.h>
+#include <cstdio>
+#include <cstdlib>
+#include <cassert>
+
 #include "writeOutfiles.h"
 
 void fclose_errormsg(FILE *fp, const char *foutName) {
@@ -62,13 +65,13 @@ void write_data_to_file(const char *foutName, const double* rad, const double* i
 }
 
 void save_relline_radial_flux_profile(double *rad, double *intens, int n_rad) {
-  char *fname = "__relxillOutput_radialFluxProfile.dat";
+  const char *fname = "__relxillOutput_radialFluxProfile.dat";
   assert(intens != NULL);
   write_data_to_file(fname, rad, intens, n_rad);
 }
 
 void save_relline_profile(relline_spec_multizone *spec) {
-  char *fname = "__relxillOutput_rellineProfile.dat";
+  const char *fname = "__relxillOutput_rellineProfile.dat";
   assert(spec != NULL);
   write_binned_data_to_file(fname, spec->ener, spec->flux[0], spec->n_ener);
 }
