@@ -5,7 +5,7 @@ This page documents the normalization factors applied inside
 `src/Relreturn_BlackBody.cpp`, which builds the per-zone emitted and reflected spectrum for
 `relxillBB` before it is handed to the relativistic convolution. The important part is that the correct normalization is
 applied to the reflected spectrum, following the normalization criterion for the direct **returning** spectrum of
-xillver and the fraction of returning flux (see Dauser et al. 2026).
+xillver and the fraction of returning flux (see Dauser et al. 2016).
 
 ## Context
 
@@ -14,7 +14,7 @@ For each zone `izone` it combines two contributions in the **disk frame**:
 
 1. The **direct** primary thermal emission of the disk surface,
    `returnSpec->specPri[izone]`.
-2. The **reflected** compenent (by the xillver table) for the given returning thermal
+2. The **reflected** component (by the xillver table) for the given returning thermal
    radiation, whose illuminating spectrum is `returnSpec->specRet[izone]`.
 
 The result is written into `xill_flux_returnrad` and only afterwards folded with
@@ -48,7 +48,7 @@ cnorm  [label="calc_xillver_norm_from_primary_spectrum\n(Xillspec.cpp:208)", fil
 
 comb   [label="per-bin combine loop", fillcolor="#dbe7f3"];
 
-entry -> angw   [label="  I_xill(E)"];
+entry -> angw   [label="  F_xill(E)"];
 entry -> nfac   [label="  specRet[izone]"];
 angw -> spec;
 angw -> angdep [label="  rel_cosne->dist[izone]"];
@@ -61,46 +61,100 @@ comb -> comb   [label="  x |boost| ; + specPri if boost >= 0"];
 }
 \enddot
 
-## The combination
+## Calculating the Normalized Reflection Spectrum per Zone
+
+Two separate things set the reflected flux, and keeping them apart is what
+makes the scheme correct.
+
+### The table fixes the *relative* normalization between the primary and the reflected spectrum
+
+The xillver tables are computed and normalized according to the integral over
+the primary (illuminating) spectrum defined in the Appendix of
+Dauser et al. (2016). **This relative normalization between primary and reflected spectrum
+is a property of the table and must not be altered by any other means.**
+
+The normalization is defined as the integral over the *illuminating* energy flux
+over the xillver normalization band (`EMIN_XILLVER_NORMALIZATION` = 0.1 keV to `EMAX_XILLVER_NORMALIZATION` = 1000 keV,
+`Xillspec.h:35`) and defined to match \f$ \int_{0.1\,\mathrm{keV}}^{1000\,\mathrm{keV}} F_\mathrm{illum}(E)\, dE
+= 10^{-20}\, \frac{n \xi}{4 \pi} = 10^{-20}\, \frac{10^{15}}{4 \pi} \f$. The last part follows as internally in
+relxill the xillver spectra are re-normalized to a density of \f$n=10^{15}\f$ and ionization \f$\xi=1\f$.
+
+### The returning radiation sets the *absolute* normalization of the reflected spectrum
+
+To calculate the absolute flux of the reflected spectrum, the xillver spectra (from the table)
+must be scaled by the returning radiation flux (`returnSpec->specRet[izone]`).
+
+For this purpose we define the **xillver normalization factor** as the relative normalization of the given illuminating
+(returning) spectrum \f$F_\mathrm{ret}(E) \f$ to the intrinsic xillver spectrum normalization  (see above):
 
 \f[
-F_\mathrm{zone}(E) \;=\;
-|b|\; N_\mathrm{xill}\; I_\mathrm{xill}(E)
-\;+\;
-\Theta(b)\, F_\mathrm{pri}(E)
+N_\mathrm{xill}\bigl(F_\mathrm{ret}\bigr)\; \;=\;
+\frac{\sum_i F_{\mathrm{ret},i} \,\bar{E}_i \, 10^{20}\, c_\mathrm{keV \to erg}}{10^{15}/4\pi}
 \f]
 
-with \f$b\f$ = `xill_param.boost`, \f$\Theta\f$ the Heaviside step
-(\f$\Theta = 1\f$ for \f$b \ge 0\f$, else 0),
-\f$I_\mathrm{xill}\f$ the angle-weighted xillver spectrum and
-\f$F_\mathrm{pri}\f$ = `returnSpec->specPri[izone]`.
+\f$c_\mathrm{keV \to erg} = 1.602177 \times 10^{-9}\f$ and
+\f$\bar{E}_i = \frac{1}{2}(E_i + E_{i+1})\f$. \f$N_\mathrm{xill}\f$ is therefore
+dimensionless: *actual returning illumination / table reference illumination*.
+
+Therefore, the reflected spectrum per zone, before the boost \f$|b|\f$ is applied, is given by:
+
+\f[
+F_\mathrm{refl}(E) \;=\; N_\mathrm{xill}\bigl(F_\mathrm{ret}\bigr)\; F_\mathrm{xill}(E)
+\f]
+
+### Combined spectrum
+
+The combined spectrum is the sum of the direct and reflected terms. As the direct term `specPri[izone]` is
+already an absolute flux from the same calculation, and the reflected term is scaled correctly by taking the
+absolute flux of `specRet[izone]` into account, it is simply given by
+
+\f[
+F_\mathrm{combined}(E) \;=\; \Theta(b)\, F_\mathrm{prim}(E) \;+\; |b|\; N_\mathrm{xill}\bigl(F_\mathrm{ret}\bigr)\; F_\mathrm{xill}(E)
+\f]
+
+where \f$F_\mathrm{prim}(E) = \f$ `specPri[izone]` and \f$F_\mathrm{ret}(E) = \f$ `specRet[izone]`, where
+the latter only sets the correct absolute normalization of the reflected xillver spectrum \f$F_\mathrm{xill}(E)\f$.
+Furthermore, \f$b\f$ = `xill_param.boost`, and \f$\Theta\f$ is the Heaviside step function
+(\f$\Theta(b) = 1\f$ for \f$b \ge 0\f$, else 0), i.e. the direct term is only added for a non-negative boost,
+while the reflected term is always scaled by \f$|b|\f$.
 
 **The direct term carries no normalization factor of its own.** It is added
 exactly as `spec_returnrad_blackbody()` produced it. There is no \f$N_\mathrm{dir}\f$;
 only the reflected term is scaled.
 
+### What follows from this
+
+- \f$N_\mathrm{xill}\f$ is **not** a tunable factor and **not** a correction.
+  It is the absolute flux of the returning primary, expressed in table units.
+  Its value is whatever the returning radiation is; it is never chosen to make
+  a spectrum look right.
+- **Nothing else may change the reflection-to-primary ratio.** Matching the
+  continuum in some band, re-anchoring to a differently-weighted
+  normalization, or forcing agreement with an assumed primary shape all
+  override the table's own calibration. These are the operations that are
+  forbidden.
+- \f$|\mathrm{boost}|\f$ is not an exception to that. It is an explicit
+  physical model parameter -- the reflection fraction the user sets -- applied
+  on top of a correctly normalized spectrum, and deliberately *does* change
+  the reflected-to-direct ratio. That is its purpose, and it is a model
+  parameter rather than a normalization.
+
+If the tabulated reflection does not suit the illumination at hand -- most
+often because the incident *shape* differs from what the table assumed -- the
+remedy is a table computed for the correct incident spectrum, never a
+rescaling of the existing one. The `radindex` dimension of
+`xillverRTR_v0.3.fits` exists for exactly this reason: it tabulates the
+per-radial-zone returning-radiation illumination instead of correcting for it
+after the fact.
+
+Both normalization factors that were removed from this path in 2026 changed
+the relative normalization; see \ref returnrad_norm_removed "Pitfalls (2)".
+
 ## The factors
 
-### `N_xill` — illumination relative to the xillver table
+### calculating N_xill: two things to get right
 
-\ref calc_xillver_norm_from_primary_spectrum integrates the *illuminating*
-spectrum over the xillver normalization band
-(`EMIN_XILLVER_NORMALIZATION` = 0.1 keV to `EMAX_XILLVER_NORMALIZATION` = 1000 keV,
-`Xillspec.h:35`) and divides by the reference illumination the tables were
-computed for:
-
-\f[
-N_\mathrm{xill} \;=\;
-\frac{\sum_i F_i \,\bar{E}_i \, 10^{20}\, c_\mathrm{keV \to erg}}{10^{15}/4\pi}
-\f]
-
-\f$c_\mathrm{keV \to erg} = 1.602177 \times 10^{-9}\f$ and
-\f$\bar{E}_i = \tfrac{1}{2}(E_i + E_{i+1})\f$. The denominator is the
-\f$n = 10^{15}\,\mathrm{cm^{-3}}\f$ reference normalization of the xillver
-tables (Appendix of Dauser et al. 2016). \f$N_\mathrm{xill}\f$ is therefore
-dimensionless: *actual returning illumination / table reference illumination*.
-
-Two details that are easy to get wrong:
+When calling \ref calc_xillver_norm_from_primary_spectrum two details are easy to get wrong:
 
 - The sum runs over the **coarse global xillver grid**
   (`get_coarse_xillver_energrid()`), not the model grid (for a faster model evaluation, as the normalization does not
@@ -114,7 +168,7 @@ Two details that are easy to get wrong:
 \ref calc_xillver_angdep weights the table inclinations with
 `rel_profile->rel_cosne->dist[izone]` (normalized to sum = 1) and returns the
 **angle-mixed intrinsic intensity**. It deliberately does *not* apply the
-semi-infinite-slab conversion \f$F(i) = \tfrac{1}{2}\cos i \; I(i)\f$
+semi-infinite-slab conversion \f$F(i) = \frac{1}{2}\cos i \; I(i)\f$
 (`norm_factor_semi_infinite_slab()`), because for relxill-type models the
 intensity-to-flux conversion is carried by the GR convolution in the kernel.
 
@@ -122,18 +176,18 @@ Applying the slab factor here as well would double-count it. The separate path
 \ref get_semi_infinite_slab_flux_weights exists only for the angle-averaging the
 non-relativistic case and must not be mixed into this one (see comment in Garcia+14, Eq. 19).
 
-### `boost`
+### boost
 
 `|boost|` scales the reflected component only. A **negative** boost selects
 return-radiation-only output by suppressing the direct term (identical to the
-convention used for reflection fraction / boost elsewhere in relxill.
+convention used for reflection fraction / boost elsewhere in relxill).
 
 ## Why the split
 
 The angle-weighted xillver spectrum and the normalization are kept apart
 because they vary on different parameter axes:
 
-- \f$I_\mathrm{xill}\f$ depends on the xillver parameters (\f$\xi\f$, density,
+- \f$F_\mathrm{xill}\f$ depends on the xillver parameters (\f$\xi\f$, density,
   \f$kT_\mathrm{bb}\f$) and on the emission-angle distribution, and comes
   from a cached table read.
 - \f$N_\mathrm{xill}\f$ depends only on the returning illumination of the zone,
@@ -145,7 +199,7 @@ returning-radiation geometry. It also mirrors
 
 When \ref use_iongrad_relxillbb is active, `set_xill_param_from_iongrad()`
 overwrites the zone's ionization *before* this function runs, so the
-ionization gradient enters through \f$I_\mathrm{xill}\f$, not through
+ionization gradient enters through \f$F_\mathrm{xill}\f$, not through
 \f$N_\mathrm{xill}\f$.
 
 ## Not part of the model calculation
@@ -159,9 +213,6 @@ and feed diagnostic output:
 - \ref normalization_factor_bbody_at_highener and
   \ref calc_normfac_bbody_at_highenergy
 
-A high-energy matching factor of this kind *was* once applied in the real path
-and was removed in commit 6f07241 as incorrect. Do not reintroduce it here.
-
 \ref calc_zone_direct_plus_mirrored_flux is likewise not a physics path: it is
 a test shortcut selected by \ref mirrored_reflection_instead_of_xillver that
 mirrors `specRet` instead of reflecting it, and it applies `|boost|` and the
@@ -169,6 +220,23 @@ direct term but no `N_xill`.
 
 ## Pitfalls
 
-- Omitting \f$N_\mathrm{xill}\f$ does not produce a correct spectral shape, even not for only reflection (boost<0). The
+(1) Omitting \f$N_\mathrm{xill}\f$ does not produce a correct spectral shape, even not for only reflection (boost<0).
+The
   reason for this is that reflect spectrum of relxillBB is a sum contribution of different radii. And the combined
   reflection spectrum is only correct, if the spectra of these single radii are correctly normalized.
+
+(2) \anchor returnrad_norm_removed
+Two factors were applied in this path and have been removed. Both changed the
+**relative** normalization -- the reflection-to-primary ratio that the table
+alone defines -- which is why both were wrong. Neither was about the absolute
+scale; that was already correctly set by \f$N_\mathrm{xill}\f$:
+
+- **`normfacMatchAtHighEnergies`** (removed in `6f07241`) forced the reflected
+  continuum to match a blackbody built from the returning spectrum above
+  \f$4\,kT_\mathrm{bb}\f$. Matching a band overrides the table's own
+  reflection-to-primary calibration with an unrelated criterion. It was a fudge
+  parameter trying to make xillverNS work as returning radiation model, but should
+  not be used for the final model and proper xillverRTR table.
+- **`xill_norm_avg / xill_norm`** (removed in `df34569`) re-anchored the angle-weighted spectrum to
+  the angle-*averaged* table normalization. That is a second, different
+  normalization criterion layered on top of the first.
