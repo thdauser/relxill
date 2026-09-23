@@ -208,7 +208,7 @@ EnerGrid *get_coarse_xillver_energrid() {
 double calc_xillver_norm_from_primary_spectrum(const double *flux, const double *ener, const int n, int *status) {
   /* get the normalization of the spectrum with respect to xillver
  *  - everything is normalized using dens=10^15 cm^3
- *  - normalization defined, e.g., in Appendix of Dauser+2016
+ *  - normalization defined, e.g., in Appendix of Dauser+2016 (note typo in the original version, 1e20 -> 1e-20)
  *  - needs to be calculated on the specific energy grid (defined globally)
  */
   double keV2erg = 1.602177e-09;
@@ -226,9 +226,10 @@ double calc_xillver_norm_from_primary_spectrum(const double *flux, const double 
   double sum_pl = 0.0;
   for (int ii = 0; ii < n; ii++) {
     if (ener[ii] >= EMIN_XILLVER_NORMALIZATION && ener[ii] <= EMAX_XILLVER_NORMALIZATION) {
-      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) * 1e20 * keV2erg; // * 1e20 * kev... can be out of for loop to save a bit of computation
+      sum_pl += flux[ii] * 0.5 * (ener[ii] + ener[ii + 1]) ;
     }
   }
+  sum_pl *= 1e20 * keV2erg;
   double norm_xillver_table = 1e15 / 4.0 / M_PI;
   return sum_pl / norm_xillver_table;
 }
