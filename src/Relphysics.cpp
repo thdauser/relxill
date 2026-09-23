@@ -28,17 +28,16 @@ extern "C" {
 // (see Bardeen, Press, Teukolsky; 1972)
 double ut_disk(double r, double a) {
   return ((r * sqrt(r) + a) /
-      (sqrt(r) * sqrt(r * r - 3 * r + 2 * a * sqrt(r))));
+          (sqrt(r) * sqrt(r * r - 3 * r + 2 * a * sqrt(r))));
 }
 
 double calc_proper_area_ring(double rlo, double rhi, double a) {
-
   double rmean = 0.5 * (rlo + rhi);
 
   assert(a < 1);
   assert(a >= -1);
 
-  double rho2 = rmean * rmean + a * a;  // this is rho^2
+  double rho2 = rmean * rmean + a * a; // this is rho^2
   double del = rmean * rmean - 2 * rmean + a * a;
 
   double area_gr = 2 * M_PI / sqrt(del);
@@ -50,8 +49,24 @@ double calc_proper_area_ring(double rlo, double rhi, double a) {
   return area_gr;
 }
 
-// Black Body Spectrum (returns ph/s/cm²/keV)  (verified with Xspec bbody model)
-void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac) {
+/**
+ * @brief Blackbody photon spectrum per unit energy (NOT bin-integrated)
+ *
+ * Evaluates spec[i] = (E/gfac)^2 / (exp(E/(gfac*kT)) - 1) at the bin center E.
+ *
+ * @details Unit: photon flux density, proportional to [photons/s/cm^2/keV] emitted per unit
+ * area. The constant prefactor 2*pi/(h^3 c^2) is omitted, but the temperature dependence is
+ * kept (photon flux ~ T^3, energy flux ~ T^4), so spectra of different temperatures can be
+ * compared/summed directly (as needed for the multi-zone disk in relxillBB).
+ * To get counts/bin (Xspec convention), multiply by the bin width (e.g., via bin_integrate_flux).
+ *
+ * @param ener [input] energy bin boundaries in keV (size n+1)
+ * @param n [input] number of bins
+ * @param spec [output] photon flux density per keV (size n)
+ * @param temperature [input] blackbody temperature kT in keV
+ * @param gfac [input] energy shift factor; spectrum is evaluated at E/gfac (1.0 for no shift)
+ */
+void bbody_photon_flux_per_keV(const double *ener, int n, double *spec, double temperature, double gfac) {
   for (int ii = 0; ii < n; ii++) {
     double emean = 0.5 * (ener[ii] + ener[ii + 1]);
     spec[ii] = pow((emean / gfac), 2) / (exp(emean / gfac / temperature) - 1);
@@ -65,14 +80,13 @@ static double disk_temperature_alpha(double r, double Rin) {
 
 // temperature of a disk as used by diskbb (equal to alpha disk for large radii)
 static double disk_temperature_diskbb(double r, double Rin, double Tin) {
-  return pow(Tin * (r / Rin), (-3. / 4));  // if we use Rin, we don't get T=Tin at the inner edge
+  return pow(Tin * (r / Rin), (-3. / 4)); // if we use Rin, we don't get T=Tin at the inner edge
 }
 
 // temperature profile for the given radii; use Tmax at Rmax following Poutanan+2007
 void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int n, double Rin, double Tin) {
-
   // use Tin as Tmax
-  double Rmax = pow((1.5), (4. / 5)) * Rin;  // Poutanen+2007
+  double Rmax = pow((1.5), (4. / 5)) * Rin; // Poutanen+2007
   double K = Tin / disk_temperature_alpha(Rmax, Rin);
 
   double RminGrid = 0.5 * (rlo[0] + rhi[0]);
@@ -85,23 +99,21 @@ void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int
 
 // temperature profile for the given radii; use Tmax at Rmax following Poutanan+2007
 void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, int n, double Tin) {
-
   double Rin = 0.5 * (rlo[0] + rhi[0]); // needs to be rmean, such that we really get Tin at the inner zone
   for (int ii = 0; ii < n; ii++) {
     temp[ii] = disk_temperature_diskbb(0.5 * (rlo[ii] + rhi[ii]), Rin, Tin);
   }
 }
 
-VecD get_tprofile(const VecD& rlo, const VecD& rhi, const int nrad, double Rin, double Tin, int type, int *status) {
-
+VecD get_tprofile(const VecD &rlo, const VecD &rhi, const int nrad, double Rin, double Tin, int type, int *status) {
   VecD tprofile(nrad);
 
   if (type == TPROFILE_ALPHA) {
     disk_Tprofile_alpha(rlo.data(), rhi.data(), tprofile.data(), nrad, Rin, Tin);
-    if (is_debug_run() ) { printf(" using temperature profile ALPHA\n");}
+    if (is_debug_run()) { printf(" using temperature profile ALPHA\n"); }
   } else if (type == TPROFILE_DISKBB) {
     disk_Tprofile_diskbb(rlo.data(), rhi.data(), tprofile.data(), nrad, Tin);
-    if (is_debug_run() ) { printf(" using temperature profile DISKBB\n");}
+    if (is_debug_run()) { printf(" using temperature profile DISKBB\n"); }
   } else {
     RELXILL_ERROR(" failed getting the temperature profile ", status);
     printf("    reason: type=%i is unknown\n", type);
@@ -111,8 +123,6 @@ VecD get_tprofile(const VecD& rlo, const VecD& rhi, const int nrad, double Rin, 
 }
 
 
-
-
 /*** we calculate the disk density from  Shakura & Sunyaev (1973)
  *    - for zone A as describe in their publication,  formula (Eq 2.11)
  *    - only the radial dependence is picked up here  (viscosity alpha=const.)
@@ -120,7 +130,7 @@ VecD get_tprofile(const VecD& rlo, const VecD& rhi, const int nrad, double Rin, 
  *    - rms is given in units of Rg
  *                                                               ***/
 double density_ss73_zone_a(double radius, double rms) {
-  return pow( (radius/rms) , (3. / 2)) * pow((1 - sqrt(rms  / radius)), -2);
+  return pow((radius / rms), (3. / 2)) * pow((1 - sqrt(rms / radius)), -2);
 }
 
 /**
@@ -153,13 +163,14 @@ double calc_cos_theta_ring_source(const double height, const double ring_radius,
   if (ring_radius == 0.0) {
     return 1.0; // cos_theta = 1 on the rotational axis
   }
-  if (spin == 0.0) { // special case of zero spin
+  if (spin == 0.0) {
+    // special case of zero spin
     return height / sqrt(height * height + ring_radius * ring_radius);
   } // general case, solution of equation x = sqrt(h^2 * tan(theta)^2 + a^2 * sin(theta)^2) for cos(theta)
-    return sqrt((sqrt(4.0 * spin * spin * height * height +
-        (height * height + ring_radius * ring_radius - spin * spin) *
-        (height * height + ring_radius * ring_radius - spin * spin)) +
-        spin * spin - height * height - ring_radius * ring_radius) / (2.0 * spin * spin));
+  return sqrt((sqrt(4.0 * spin * spin * height * height +
+                    (height * height + ring_radius * ring_radius - spin * spin) *
+                    (height * height + ring_radius * ring_radius - spin * spin)) +
+               spin * spin - height * height - ring_radius * ring_radius) / (2.0 * spin * spin));
 }
 
 double calc_spherical_radius_ring_source(const double height, const double ring_radius, const double spin) {
@@ -172,7 +183,7 @@ double calc_extent_from_sph_radius_costheta(const double r_sph, const double cos
 }
 
 double calc_extent_from_sph_radius_primary_source(const double height, const double r_sph, const double spin) {
-  if (abs(height - r_sph) < 1e-4){
+  if (abs(height - r_sph) < 1e-4) {
     return 0.0; // it is lamp post
   }
   assert(height <= r_sph && ("Height cannot be more than spherical radius"));
@@ -183,7 +194,11 @@ double calc_height_from_rcostheta(const double r_sph, const double costheta) {
   return r_sph * costheta;
 }
 
-void convert_hx_to_rtheta(const double height, const double ring_radius, const double spin, double* r_sph, double* theta) {
+void convert_hx_to_rtheta(const double height,
+                          const double ring_radius,
+                          const double spin,
+                          double *r_sph,
+                          double *theta) {
   *r_sph = calc_spherical_radius_ring_source(height, ring_radius, spin);
   *theta = acos(calc_cos_theta_ring_source(height, ring_radius, spin)) / CONVERT_DEG2RAD; //return in degrees!
 }
@@ -215,7 +230,6 @@ double doppler_factor(double del, double bet) {
 
 /** calculates g = E/E_i in the lamp post geometry (see, e.g., 27 in Dauser et al., 2013, MNRAS) **/
 double gi_potential_lp(double r, double a, double h, double bet, double del) {
-
   /** ! calculates g = E/E_i in the lamp post geometry
     ! (see, e.g., page 48, Diploma Thesis, Thomas Dauser) **/
   double ut_d = ((r * sqrt(r) + a) / (sqrt(r) * sqrt(r * r - 3 * r + 2 * a * sqrt(r))));
@@ -274,7 +288,8 @@ double gi_potential_ext(const relParam *param, const double r) {
  * @param beta [in v/c]
  * @return
  */
-double doppler_factor_source_obs(const relParam *rel_param) { //update?
+double doppler_factor_source_obs(const relParam *rel_param) {
+  //update?
   // note that the angles incl and delta_obs are defined the opposite way
   double delta_obs = M_PI - rel_param->incl;
   assert(delta_obs > M_PI / 2);
@@ -297,7 +312,6 @@ double doppler_factor_source_obs(const relParam *rel_param) { //update?
  * sets δ_obs = incl, which is not fully true in GR, however, within 1% accuracy
  */
 double energy_shift_source_obs(const relParam *rel_param) {
-
   double g_inf_0 = 1;
   // if we do NOT have a geometry, the energy shift is just 1
   // (as without geometry we can not define an energy shift)
@@ -307,7 +321,8 @@ double energy_shift_source_obs(const relParam *rel_param) {
 
   if (is_ring_primary_source(rel_param->emis_type) || is_slab_primary_source(rel_param->emis_type)) {
     g_inf_0 = get_energyboost_ext_source_obs(rel_param, 1.0);
-  } else { // lamp post
+  } else {
+    // lamp post
     g_inf_0 = calc_g_inf(rel_param->height, rel_param->a);
   }
 
@@ -316,7 +331,6 @@ double energy_shift_source_obs(const relParam *rel_param) {
   } else {
     return g_inf_0 * doppler_factor_source_obs(rel_param);
   }
-
 }
 
 /**
@@ -326,17 +340,17 @@ double energy_shift_source_obs(const relParam *rel_param) {
  * The connection for which del_emit which radius radius_disk is hit, is stored in the LP table structure
  */
 double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit) {
-
   // if we do NOT have a geometry, the energy shift is just 1
   // (as without geometry we can not define an energy shift)
-  if (rel_param == nullptr || not is_any_primary_source(rel_param->emis_type)) {
+  if (rel_param == nullptr || not is_any_primary_source(rel_param->emis_type)
+  )
+  {
     return 1;
   }
   if (is_ring_primary_source(rel_param->emis_type) || is_slab_primary_source(rel_param->emis_type)) {
     double gshift = get_energyboost_ext_source_disk(rel_param, radius_disk, 1.0);
     return gshift;
-  }
-  else {
+  } else {
     return gi_potential_lp(radius_disk, rel_param->a, rel_param->height, rel_param->beta, del_emit);
   }
 }
@@ -347,7 +361,7 @@ double energy_shift_source_disk(const relParam *rel_param, double radius_disk, d
  * radii the GR profiles converge towards this definition
  * @return
  */
-double calc_emissivity_newton(const relParam* param, const double radius) {
+double calc_emissivity_newton(const relParam *param, const double radius) {
   double emis;
   if (is_ring_primary_source(param->emis_type)) {
     double h = param->r_src * cos(param->theta * CONVERT_DEG2RAD);
@@ -375,7 +389,6 @@ double calc_emissivity_newton(const relParam* param, const double radius) {
  * @return
  */
 double calc_lp_emissivity_newton(double h, double r) {
-
   double emis = pow(1. / (pow((r / h), 2) + 1), (3. / 2));
   emis /= (2 * M_PI * h * h);
 
@@ -393,7 +406,6 @@ double calc_lp_emissivity_newton(double h, double r) {
  * @return
  */
 double calc_ring_emissivity_1d_newton(double h, double x, double r) {
-
   double emis = pow(1.0 / ((r - x) * (r - x) / h / h + 1.0), (3. / 2));
   double bracket = sqrt(1.0 + x * x / h / h) + x / h;
   emis /= (2.0 * M_PI * h * h * bracket);
@@ -415,7 +427,6 @@ double calc_ring_emissivity_1d_newton(double h, double x, double r) {
  * @return
  */
 double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta) {
-
   // then energy shift factor gi^gamma (see Dauser et al., 2013)
   double boost = pow(gi_potential_lp(rad, a, height, beta, del_emit), gamma);
 
@@ -428,12 +439,13 @@ double calc_fluxboost_source_disk(double rad, double del_emit, double a, double 
 
 double kerr_to_flat_area_ratio(double r, double a) {
   // the value below is obtained directly from ratio A_Kerr / A_flat by all possible simplifications
-  return sqrt( (r * r * r + a * a * r + 2.0 * a * a) /
-                  (r * r * r + a * a * r - 2.0 * r * r) );
+  return sqrt((r * r * r + a * a * r + 2.0 * a * a) /
+              (r * r * r + a * a * r - 2.0 * r * r));
 }
 
-double gamma_correction(double r, double a){
+double gamma_correction(double r, double a) {
   // the value is obtained from the "Bardeen"-like form of the Lorentz factor by a few simplifications
-  return (r * sqrt(r) + abs(a)) * sqrt( (r * r - 2.0 * r + a * a) / (r * r +
-              2.0 * a * sqrt(r) - 3.0 * r) / (r * r * r + a * a * r + 2.0 * a * a) );
+  return (r * sqrt(r) + abs(a)) * sqrt((r * r - 2.0 * r + a * a) / (r * r +
+                                                                    2.0 * a * sqrt(r) - 3.0 * r) / (
+                                         r * r * r + a * a * r + 2.0 * a * a));
 }

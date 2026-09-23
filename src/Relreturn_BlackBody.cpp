@@ -182,7 +182,7 @@ static VecD_2D get_bbody_specs(const double *ener, int nener, const VecD &temper
 
     for (int ii = 0; ii < nrad; ii++)
     {
-        bbody_spec(ener, nener, spec_array[ii].data(), temperature[ii], 1.0);
+        bbody_photon_flux_per_keV(ener, nener, spec_array[ii].data(), temperature[ii], 1.0);
         for (int jj = 0; jj < nener; jj++)
         {
             if (ener[jj] < EMIN_XILLVER || ener[jj + 1] > EMAX_XILLVER)
@@ -586,49 +586,12 @@ static double get_xillver_norm_factor_from_primary_spectrum(const double *spec_i
 }
 
 
-double normalization_factor_bbody_at_highener(double kTbb, const double* spec1, const VecD& spec_bb, const double* ener, int n_ener)
-{
-    assert(spec1 != nullptr);
-    assert(spec_bb.size() == n_ener);
-
-    const double ELO_LIMIT_HIGHENER = 4 * kTbb;
-
-    double normSpecIn = calcSumInEnergyBand(spec1, n_ener, ener, ELO_LIMIT_HIGHENER, EMAX_XILLVER_NORMALIZATION);
-    double normBbodySpec = calcSumInEnergyBand(spec_bb.data(),
-                                               n_ener,
-                                               ener,
-                                               ELO_LIMIT_HIGHENER,
-                                               EMAX_XILLVER_NORMALIZATION);
-
-    return normSpecIn / normBbodySpec;
-}
-
-
-double calc_normfac_bbody_at_highenergy(double kTbb, const double* spec_in, const double* ener, int n_ener, int* status)
-{
-    assert(spec_in != nullptr);
-
-    VecD spec_bb = get_xillver_primary_bbody(kTbb, spec_in, ener, n_ener, status);
-    if (*status != EXIT_SUCCESS)
-    {
-        return 0.0;
-    }
-
-    double norm_fac = normalization_factor_bbody_at_highener(kTbb, spec_in, spec_bb, ener, n_ener);
-
-    assert( std::isnormal(norm_fac));
-
-    return norm_fac;
-}
-
-
 /**
  * Computes the reflected return flux for a specific zone of a multi-zone accretion disk model.
  *
  * This function calculates the zone-specific reflected return flux in the disk frame
  * by calculating the xillver reflection spectrum, which is normalized by a normalization
- * factor derived from the primary spectrum, which is then adjusted by another factor at high energies
- * according to the black body which was actually used to calculate the tabulated xillver spectrum.
+ * factor derived from the primary (returning) spectrum.
  * The final flux is multiplied with the value of the of boost parameter (optionally add direct spectrum
  * if boost >=0).
  *
@@ -698,62 +661,6 @@ void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param,
             returnFlux[jj] += returnSpec->specPri[ii][jj];
         }
     }
-}
-
-
-/**
- * @brief Generates a blackbody primary spectrum  of the given Xillver spectrum.
- *
- * This function calculates a blackbody spectrum and applies appropriate scaling
- * to normalize it based on the Xillver reflection normalization factor. It adjusts
- * the computed blackbody spectrum to match the normalization derived from the original
- * input spectrum. The resultant spectrum is scaled and returned to the caller.
- *
- * @param kTbb Temperature of the blackbody spectrum in keV.
- * @param spec_in Pointer to the array containing the input spectrum.
- * @param ener Pointer to the array containing the energy grid for the spectrum.
- * @param n_ener Number of elements in the energy grid and the spectrum arrays.
- * @param status Pointer to an integer used to track the success or failure of the operation.
- *
- * @return Pointer to an array containing the generated blackbody spectrum normalized
- *         to the Xillver primary spectrum. The caller assumes responsibility for deallocating
- *         the memory using delete[] when no longer needed. Returns nullptr if an error occurs.
- */
-VecD get_xillver_primary_bbody(double kTbb, const double *spec_in, const double *ener, int n_ener, int *status) {
-    VecD spec_bb(n_ener);
-
-    double xillverReflectionNormFactor = get_xillver_norm_factor_from_primary_spectrum(spec_in, ener, n_ener, status);
-
-    bbody_spec(ener, n_ener, spec_bb.data(), kTbb, 1.0);
-    for (int jj = 0; jj < n_ener; jj++) {
-        spec_bb[jj] *= (ener[jj + 1] - ener[jj]);
-    }
-
-    double bbodyNormFactor = get_xillver_norm_factor_from_primary_spectrum(spec_bb.data(), ener, n_ener, status);
-
-    for (int jj = 0; jj < n_ener; jj++) {
-        spec_bb[jj] *= xillverReflectionNormFactor / bbodyNormFactor;
-    }
-
-    return spec_bb;
-}
-
-
-VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb,
-                                                      const double *spec_in,
-                                                      const double *ener,
-                                                      int n_ener,
-                                                      int *status) {
-    VecD spec_bbody_xillver = get_xillver_primary_bbody(kTbb, spec_in, ener, n_ener, status);
-
-    double normFac = normalization_factor_bbody_at_highener(kTbb, spec_in, spec_bbody_xillver, ener, n_ener);
-
-    for (int jj = 0; jj < n_ener; jj++)
-    {
-        spec_bbody_xillver[jj] *= normFac;
-    }
-
-    return spec_bbody_xillver;
 }
 
 
@@ -969,7 +876,6 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
     VecD specSingleZone(n_ener_inp);
     VecD_2D specZonesConvOutput(returnSpec->nrad);
     VecD_2D specZonesEmittedCombined(returnSpec->nrad);
-    VecD_2D specBbodyPrimZones(returnSpec->nrad);
     // ========== //
 
     specCache* spec_cache = init_global_specCache(status);
@@ -999,14 +905,6 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
                                                          izone, status);
         }
 
-
-        // calculate xillver primary spectrum (only used for additional/debug output),
-        if (shouldOutfilesBeWritten()) {
-            specBbodyPrimZones[izone] =
-                    get_xillver_primary_bbody_normalized_at_highener(xill_param_zone.kTbb, returnSpec->specRet[izone],
-                                                              returnSpec->ener,
-                                                              returnSpec->n_ener, status);
-        }
 
         specZonesConvOutput[izone] = VecD(n_ener, 0.0);
         convolveSpectrumFFTNormalized(ener,

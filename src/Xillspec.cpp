@@ -284,13 +284,23 @@ void spec_nthcomp(double *pl_flux_xill,
 }
 
 /**
-* @brief blackbody model in xpsec units
-* @param pl_flux_xill [return] photon flux in counts/bin
-* @param ener
-* @param n_ener
-* @param xill_param
+* @brief blackbody primary spectrum, bin-integrated (Xspec convention), arbitrary normalization
+*
+* Evaluates E^2 / (kT^4 (exp(E/kT) - 1)) * dE, i.e., the shape of the Xspec "bbody" model
+* (without its constant 8.0525).
+*
+* @details Unit: photons per bin [counts/bin], in arbitrary normalization. Due to the 1/kT^4
+* factor, the total energy flux is independent of kT, i.e., the relative normalization between
+* different temperatures is NOT physical. The spectrum is only meant to be used after applying
+* the xillver normalization (see calc_xillver_norm_from_primary_spectrum).
+* For a blackbody with physical temperature scaling, use bbody_photon_flux_per_keV().
+*
+* @param pl_flux_xill [output] photon flux in counts/bin (size n_ener)
+* @param ener [input] energy bin boundaries in keV (size n_ener+1)
+* @param n_ener [input] number of bins
+* @param xill_param [input] only kTbb (in keV) is used
 */
-void spec_blackbody(double *pl_flux_xill, const double *ener, int n_ener, const xillTableParam *xill_param) {
+void spec_blackbody_binned(double *pl_flux_xill, const double *ener, int n_ener, const xillTableParam *xill_param) {
   double en;
   for (int ii = 0; ii < n_ener; ii++) {
     en = 0.5 * (ener[ii] + ener[ii + 1]);
@@ -322,8 +332,7 @@ void calc_primary_spectrum(double *pl_flux_xill,
     spec_nthcomp(pl_flux_xill, ener, n_ener, xill_param, ener_shift_source_obs);
 
   } else if (xill_param->prim_type == PRIM_SPEC_BB) {
-    spec_blackbody(pl_flux_xill, ener, n_ener, xill_param);
-
+    spec_blackbody_binned(pl_flux_xill, ener, n_ener, xill_param);
   } else {
     RELXILL_ERROR("trying to calculate a primary continuum for an undefined primary spectral type (should not happen!)",
                   status);

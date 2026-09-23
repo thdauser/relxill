@@ -78,20 +78,6 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
 
 std::vector<double> get_radial_grid_from_returntab(const returnSpec2D *spec);
 
-VecD get_xillver_primary_bbody(double kTbb, const double *spec_in, const double *ener, int n_ener, int *status);
-
-double calc_normfac_bbody_at_highenergy(double kTbb,
-                                        const double *spec_bb,
-                                        const double *ener,
-                                        int n_ener,
-                                        int *status);
-
-VecD get_xillver_primary_bbody_normalized_at_highener(double kTbb,
-                                                      const double *spec_in,
-                                                      const double *ener,
-                                                      int n_ener,
-                                                      int *status);
-
 void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                                   const relline_spec_multizone *rel_profile,
                                                   const returnSpec2D *returnSpec,

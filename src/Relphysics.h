@@ -30,27 +30,35 @@ extern "C" {
 #define TPROFILE_DISKBB 2
 
 double ut_disk(double r, double a);
+
 double calc_proper_area_ring(double rlo, double rhi, double spin);
 
 void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int n, double Rin, double Tin);
-void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, int n, double Tin);
-VecD get_tprofile(const VecD& rlo, const VecD& rhi, int nrad, double Rin, double Tin, int type, int *status);
 
-void bbody_spec(const double *ener, int n, double *spec, double temperature, double gfac);
+void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, int n, double Tin);
+
+VecD get_tprofile(const VecD &rlo, const VecD &rhi, int nrad, double Rin, double Tin, int type, int *status);
+
+void bbody_photon_flux_per_keV(const double *ener, int n, double *spec, double temperature, double gfac);
 
 double density_ss73_zone_a(double radius, double rms);
+
 double density_ss73_zone_a_normalized(double radius, double rms);
 
 // energy shift from the primary source to the observer
 double calc_g_inf(double height, double a);
 
 double calc_cos_theta_ring_source(double height, double ring_radius, double spin);
+
 double calc_spherical_radius_ring_source(double height, double ring_radius, double spin);
+
 double calc_extent_from_sph_radius_primary_source(double height, double r_sph, double spin);
+
 double calc_extent_from_sph_radius_costheta(double r_sph, double costheta, double spin);
+
 double calc_height_from_rcostheta(double r_sph, double costheta);
 
-void convert_hx_to_rtheta(double height, double ring_radius, double spin, double* r_sph, double* theta);
+void convert_hx_to_rtheta(double height, double ring_radius, double spin, double *r_sph, double *theta);
 
 /* calculate the radius of marginal stability */
 double kerr_rms(double a);
@@ -70,15 +78,21 @@ double gi_potential_ext(const relParam *param, double r);
 double relat_abberation(double del, double beta);
 
 double doppler_factor_source_obs(const relParam *rel_param);
+
 double energy_shift_source_obs(const relParam *rel_param);
+
 double energy_shift_source_disk(const relParam *rel_param, double radius_disk, double del_emit);
 
-double calc_emissivity_newton(const relParam* param, double radius);
+double calc_emissivity_newton(const relParam *param, double radius);
+
 double calc_lp_emissivity_newton(double h, double r);
+
 double calc_ring_emissivity_1d_newton(double h, double x, double r);
+
 double calc_fluxboost_source_disk(double rad, double del_emit, double a, double height, double gamma, double beta);
 
 double kerr_to_flat_area_ratio(double r, double a);
+
 double gamma_correction(double r, double a);
 
-#endif //RELXILL_RELPHYSICS_H_
+#endif //RELXILL__RELPHYSICS_H_

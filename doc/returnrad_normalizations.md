@@ -204,16 +204,7 @@ ionization gradient enters through \f$F_\mathrm{xill}\f$, not through
 
 ## Not part of the model calculation
 
-`Relreturn_BlackBody.cpp` contains more normalizations than are actually
-applied to the model spectra. These run **only** under `shouldOutfilesBeWritten()`
-and feed diagnostic output:
-
-- \ref get_xillver_primary_bbody and
-  \ref get_xillver_primary_bbody_normalized_at_highener
-- \ref normalization_factor_bbody_at_highener and
-  \ref calc_normfac_bbody_at_highenergy
-
-\ref calc_zone_direct_plus_mirrored_flux is likewise not a physics path: it is
+\ref calc_zone_direct_plus_mirrored_flux is not a physics path: it is
 a test shortcut selected by \ref mirrored_reflection_instead_of_xillver that
 mirrors `specRet` instead of reflecting it, and it applies `|boost|` and the
 direct term but no `N_xill`.

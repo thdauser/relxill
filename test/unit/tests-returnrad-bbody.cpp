@@ -51,17 +51,20 @@ static VecD make_ener_grid(int nener, double emin, double emax) {
 // Helper: angle-averaged xillver flux F = 0.5*\int_0^1 I^+(mu,E) mu dmu, then its
 // normalization relative to the primary spectrum.
 static double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status) {
-    double *angle_averaged_xillver_flux = calc_angle_averaged_xillver_flux(xill_spec, status);
-    double norm_fac = calc_xillver_norm_from_primary_spectrum(
-        angle_averaged_xillver_flux,
-        xill_spec->ener,
-        xill_spec->n_ener,
-        status);
-    delete[] angle_averaged_xillver_flux;
-    return norm_fac;
+  double *angle_averaged_xillver_flux = calc_angle_averaged_xillver_flux(xill_spec, status);
+  double norm_fac = calc_xillver_norm_from_primary_spectrum(
+    angle_averaged_xillver_flux,
+    xill_spec->ener,
+    xill_spec->n_ener,
+    status);
+  delete[] angle_averaged_xillver_flux;
+  return norm_fac;
 }
 
 TEST_CASE (
+
+
+
 " rebin_flux_mean_shifted: flat input stays flat for shift=1 "
 ,
 "[rrad-bbody]"
@@ -86,6 +89,9 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
+
+
 " rebin_flux_mean_shifted: identity mapping for shift=1 "
 ,
 "[rrad-bbody]"
@@ -107,6 +113,9 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
+
+
 " rebin_flux_mean_shifted: large shift zeroes all output bins "
 ,
 "[rrad-bbody]"
@@ -129,6 +138,9 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
+
+
 " rebin_flux_mean_shifted: moderate shift zeros high-energy output bins "
 ,
 "[rrad-bbody]"
@@ -150,6 +162,9 @@ TEST_CASE (
 
 
 TEST_CASE (
+
+
+
 " rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shifted grid "
 ,
 "[rrad-bbody]"
@@ -194,6 +209,9 @@ static double integ_flux(const double *ener, int nener, const double *flux) {
 }
 
 TEST_CASE (
+
+
+
 " check of manually shfting the bbody spectrum gives the same result as if shifting the energy grid "
 ,
 "[rrad-bbody]"
@@ -207,10 +225,10 @@ TEST_CASE (
     double gfac = 1.5;
     double temperature = 1.0;
     VecD spec(nener);
-    bbody_spec(ener,  nener, spec.data(), temperature, gfac);
+    bbody_photon_flux_per_keV(ener,  nener, spec.data(), temperature, gfac);
 
     VecD spec0(nener);
-    bbody_spec(ener,  nener, spec0.data(), temperature, 1.0);
+    bbody_photon_flux_per_keV(ener,  nener, spec0.data(), temperature, 1.0);
     VecD spec0_shift(nener);
     // as we shift the energy grid and not the spectrum, we need to shift it backwards with 1/gfac
     rebin_mean_flux_shifted(ener, nener, spec0_shift, spec0, 1./gfac);
@@ -223,6 +241,9 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
+
+
 " Check that 1st and 2nd order returning radiation (mirrored) spectra are different "
 ,
 "[rrad-bbody-norder]"
@@ -251,6 +272,9 @@ TEST_CASE (
 
 
 TEST_CASE (
+
+
+
 " Check if changing the Temperature Profile give different results"
 ,
 "[rrad-bbody-tprofile]"
@@ -287,6 +311,9 @@ TEST_CASE (
 
 
 TEST_CASE (
+
+
+
 " Test Loading Single Xillver from RTR Table should fail "
 ,
 "[rrad-bbody]"
@@ -300,10 +327,15 @@ TEST_CASE (
     REQUIRE(get_xillver_spectra(xill_param, &status) == nullptr);
 }
 
-TEST_CASE(
-    " Verify that the number of radial zones from the xillver RTR table matches the radial grid in relxill ",
-    "[rrad-bbody]"
-) {
+TEST_CASE (
+
+
+
+" Verify that the number of radial zones from the xillver RTR table matches the radial grid in relxill "
+,
+"[rrad-bbody]"
+)
+ {
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.xill_params();
@@ -340,6 +372,9 @@ TEST_CASE(
 
 // ------- //
 TEST_CASE (
+
+
+
 " Test Loading Xillver RTR Table "
 ,
 "[rrad-bbody]"
@@ -377,6 +412,9 @@ TEST_CASE (
 
 
 TEST_CASE (
+
+
+
 " Test relxillBB-xill Model "
 ,
 "[relxillbbxill]"
@@ -388,10 +426,15 @@ TEST_CASE (
     REQUIRE_NOTHROW(lmod.eval_model(spec));
 }
 
-TEST_CASE(
-    " Test xillver_RTR spectra normalization ",
-    "[xillverRTR]"
-) {
+TEST_CASE (
+
+
+
+" Test xillver_RTR spectra normalization "
+,
+"[xillverRTR]"
+)
+ {
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);
     auto xill_param = lmod.xill_params();
@@ -410,10 +453,15 @@ TEST_CASE(
 }
 
 
-TEST_CASE(
-    " angle-averaged xillver flux equals angle-weighted intensity with slab flux weights ",
-    "[xillverRTR][angledist]"
-) {
+TEST_CASE (
+
+
+
+" angle-averaged xillver flux equals angle-weighted intensity with slab flux weights "
+,
+"[xillverRTR][angledist]"
+)
+ {
     // Purpose: prove that calc_angle_averaged_xillver_flux() is exactly the special
     // case of the angle-weighting machinery (calc_xillver_angdep /
     // calculateAngleWeightedXillverSpectrum) when the weights are set to the
@@ -485,6 +533,9 @@ TEST_CASE(
 
 
 TEST_CASE (
+
+
+
 " Test relxillBB Model "
 ,
 "[relxillbb]"
@@ -499,6 +550,9 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
+
+
 " Emissivity profile from return radiation spectra "
 ,
 "[rrad-bbody-emisprofile]"
@@ -549,10 +603,15 @@ TEST_CASE (
  }
 
 
-TEST_CASE(
-    " Ionization gradient from return radiation has max equal to input logxi ",
-    "[rrad-bbody-iongradient]"
-) {
+TEST_CASE (
+
+
+
+" Ionization gradient from return radiation has max equal to input logxi "
+,
+"[rrad-bbody-iongradient]"
+)
+ {
     int status = EXIT_SUCCESS;
 
     double spin = 0.998;
