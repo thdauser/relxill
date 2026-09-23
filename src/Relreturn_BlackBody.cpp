@@ -980,6 +980,7 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
     {
         assert(returnSpec->n_ener == n_ener);
 
+        // copy parameters for bug safety to not make changes to the global xill_param
         xillParam xill_param_zone = *xill_param;  // flat copy works, as no arrays contained
 
         specZonesEmittedCombined[izone] = VecD(n_ener, 0.0);
