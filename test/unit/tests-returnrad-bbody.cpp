@@ -48,17 +48,14 @@ static VecD make_ener_grid(int nener, double emin, double emax) {
   return ener;
 }
 
-// Helper: angle-averaged xillver flux F = 0.5*\int_0^1 I^+(mu,E) mu dmu, then its
-// normalization relative to the primary spectrum.
-static double get_avg_xillver_spec_normalization(const xillSpec *xill_spec, int *status) {
-  double *angle_averaged_xillver_flux = calc_angle_averaged_xillver_flux(xill_spec, status);
-  double norm_fac = calc_xillver_norm_from_primary_spectrum(
-    angle_averaged_xillver_flux,
-    xill_spec->ener,
-    xill_spec->n_ener,
-    status);
-  delete[] angle_averaged_xillver_flux;
-  return norm_fac;
+// Helper: xillver normalization of a spectrum, computed as for N_xill in
+// calc_zone_direct_plus_xillver_reflected_flux(): rebin onto the coarse xillver grid,
+// then calc_xillver_norm_from_primary_spectrum().
+static double get_xillver_norm_on_coarse_grid(const double *spec, const double *ener, int n_ener, int *status) {
+    EnerGrid *egrid = get_coarse_xillver_energrid();
+    VecD spec_coarse(egrid->nbins, 0.0);
+    _rebin_spectrum(egrid->ener, spec_coarse.data(), egrid->nbins, ener, spec, n_ener);
+    return calc_xillver_norm_from_primary_spectrum(spec_coarse.data(), egrid->ener, egrid->nbins, status);
 }
 
 TEST_CASE (
@@ -430,26 +427,69 @@ TEST_CASE (
 
 
 
-" Test xillver_RTR spectra normalization "
+" Test xillver_RTR spectra normalization: reflected vs. returning flux per zone "
 ,
-"[xillverRTR]"
+"[xillverRTR][norm]"
 )
  {
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);
-    auto xill_param = lmod.xill_params();
+    relParam *rel_param = lmod.get_rel_params_struct();
+    xillParam *xill_param = lmod.get_xill_param_struct();
 
-    const int nzone = 50;
-    xillParam xpar = *xill_param;
-    for (int ii = 0; ii < nzone; ii++) {
-        xpar.radzone = ii;
-        auto spec = get_xillver_spectra(&xpar, &status);
-        double norm_fac = get_avg_xillver_spec_normalization(spec, &status);
+    // same set-up as in relxillbb_kernel()
+    auto ener_grid = get_relxill_conv_energy_grid();
+    int n_ener = ener_grid->nbins;
+    double *ener = ener_grid->ener;
 
-        printf(" %i: %.3e \n", ii, norm_fac);
+    xillTable *xill_tab = nullptr;
+    get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
+    REQUIRE(status == EXIT_SUCCESS);
 
-        free_xill_spec(spec);
+    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
+                                                        rel_param->rin, rel_param->rout, rel_param->a,
+                                                        &status);
+    REQUIRE(status == EXIT_SUCCESS);
+
+    xillParam xill_param_zone = *xill_param;
+
+    printf("\n %5s  %12s  %12s  %12s\n", "izone", "N(return)", "N(reflect)", "refl/return");
+    for (int izone = 0; izone < returnSpec->nrad; izone++) {
+        xill_param_zone.radzone = static_cast<double>(izone);
+
+        // as in calc_zone_direct_plus_xillver_reflected_flux(), but with the angle-averaged
+        // xillver flux instead of the angle-weighted intensity, and without boost
+        //  => xill_flux_returnrad = N_xill(specRet) * F_xill_avg
+        xillSpec *xill_spec = get_xillver_spectra(&xill_param_zone, &status);
+        double *xill_flux_avg = calc_angle_averaged_xillver_flux(xill_spec, &status);
+        REQUIRE(status == EXIT_SUCCESS);
+
+        VecD xill_flux_returnrad(n_ener, 0.0);
+        _rebin_spectrum(ener, xill_flux_returnrad.data(), n_ener, xill_spec->ener, xill_flux_avg, xill_spec->n_ener);
+        delete[] xill_flux_avg;
+        free_xill_spec(xill_spec);
+
+        double xillverReflectionNormFactor =
+            get_xillver_norm_on_coarse_grid(returnSpec->specRet[izone], ener, n_ener, &status);
+        for (int jj = 0; jj < n_ener; jj++) {
+            xill_flux_returnrad[jj] *= xillverReflectionNormFactor;
+        }
+
+        double norm_reflect = get_xillver_norm_on_coarse_grid(xill_flux_returnrad.data(), ener, n_ener, &status);
+        REQUIRE(status == EXIT_SUCCESS);
+
+        double ratio_refl_return = norm_reflect / xillverReflectionNormFactor;
+        printf(" %5i  %12.4e  %12.4e  %12.4e\n", izone, xillverReflectionNormFactor, norm_reflect, ratio_refl_return);
+
+        // energy conservation: the reflected flux is below the returning (illuminating) flux
+        INFO("zone " << izone);
+        CHECK(ratio_refl_return > 0.0);
+        CHECK(ratio_refl_return < 1.0);
     }
+
+    delete_returnSpec2D(&returnSpec);
+    delete_rel_params(rel_param);
+    delete_xill_params(xill_param);
 }
 
 
