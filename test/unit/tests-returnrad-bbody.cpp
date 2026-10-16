@@ -27,6 +27,8 @@ This file is part of the RELXILL model code.
 #include "Rebin.h"
 #include "Relreturn_BlackBody.h"
 #include "Rellp.h"
+#include "Relbase.h"
+#include "Relprofile.h"
 #include "Relxill_errorhandling.h"
 
 #include "writeOutfiles.h"
@@ -57,6 +59,77 @@ static double get_xillver_norm_on_coarse_grid(const double *spec, const double *
     _rebin_spectrum(egrid->ener, spec_coarse.data(), egrid->nbins, ener, spec, n_ener);
     return calc_xillver_norm_from_primary_spectrum(spec_coarse.data(), egrid->ener, egrid->nbins, status);
 }
+
+// Helper: per-zone ratio N(reflect)/N(return) of the output of calc_zone_direct_plus_xillver_reflected_flux().
+// boost=-1: |boost|=1 does not scale the reflection, and the direct spectrum is not added
+//  => xill_flux_returnrad = N_xill(specRet) * F_xill, with the angle weighting given by rel_profile->rel_cosne
+static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
+                                                   const relline_spec_multizone *rel_profile,
+                                                   const returnSpec2D *returnSpec,
+                                                   int *status) {
+    xillParam xill_param_zone = xill_param;
+    xill_param_zone.boost = -1.0;
+
+    VecD ratio(returnSpec->nrad, 0.0);
+    VecD xill_flux_returnrad(returnSpec->n_ener, 0.0);
+
+    printf("\n %5s  %12s  %12s  %12s\n", "izone", "N(return)", "N(reflect)", "refl/return");
+    for (int izone = 0; izone < returnSpec->nrad; izone++) {
+        xill_param_zone.radzone = static_cast<double>(izone);
+        calc_zone_direct_plus_xillver_reflected_flux(xill_param_zone,
+                                                     rel_profile,
+                                                     returnSpec,
+                                                     xill_flux_returnrad,
+                                                     izone,
+                                                     status);
+
+        double norm_return =
+                get_xillver_norm_on_coarse_grid(returnSpec->specRet[izone],
+                                                returnSpec->ener,
+                                                returnSpec->n_ener,
+                                                status);
+        double norm_reflect =
+                get_xillver_norm_on_coarse_grid(xill_flux_returnrad.data(),
+                                                returnSpec->ener,
+                                                returnSpec->n_ener,
+                                                status);
+        if (*status != EXIT_SUCCESS) {
+            break;
+        }
+
+        ratio[izone] = norm_reflect / norm_return;
+        printf(" %5i  %12.4e  %12.4e  %12.4e\n", izone, norm_return, norm_reflect, ratio[izone]);
+    }
+    return ratio;
+}
+
+// Helper: relline_spec_multizone with only the emission-angle distribution rel_cosne set (the only part
+// used by calc_zone_direct_plus_xillver_reflected_flux()), owning the memory of dist [n_zones][n_cosne]
+struct AngleDistProfile {
+    VecD cosne;
+    VecD_2D dist;
+    std::vector<double *> dist_rows;
+    RelCosne rel_cosne{};
+    relline_spec_multizone profile{};
+
+    AngleDistProfile(const VecD &cosne_in, int n_zones)
+        : cosne(cosne_in), dist(n_zones, VecD(cosne_in.size(), 0.0)), dist_rows(n_zones) {
+        for (int ii = 0; ii < n_zones; ii++) {
+            dist_rows[ii] = dist[ii].data();
+        }
+        rel_cosne.n_cosne = static_cast<int>(cosne.size());
+        rel_cosne.n_zones = n_zones;
+        rel_cosne.cosne = cosne.data();
+        rel_cosne.dist = dist_rows.data();
+        profile.n_zones = n_zones;
+        profile.rel_cosne = &rel_cosne;
+    }
+
+    // holds pointers to its own members
+    AngleDistProfile(const AngleDistProfile &) = delete;
+
+    AngleDistProfile &operator=(const AngleDistProfile &) = delete;
+};
 
 TEST_CASE (
 
@@ -393,14 +466,15 @@ TEST_CASE (
     xillspec = get_xillver_spectra(xill_param, &status);
     REQUIRE(xillspec != nullptr);
 
-     for (int ii = 0; ii < xillspec->n_incl; ii++)
-    {
+    for (int ii = 0; ii < xillspec->n_incl; ii++) {
         INFO("Failing index: " << ii);
         REQUIRE(sum_flux(xillspec->flu[ii], xillspec->n_ener) > 1e-10);
     }
 
-      write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
-                         xillspec->ener, xillspec->flu[1], xillspec->n_ener);
+    write_data_to_file("__relxill_unit_returnrad-bbody-xillspec.dat",
+                       xillspec->ener,
+                       xillspec->flu[1],
+                       xillspec->n_ener);
 
     delete_xill_params(xill_param);
     free_xill_spec(xillspec);
@@ -423,15 +497,12 @@ TEST_CASE (
     REQUIRE_NOTHROW(lmod.eval_model(spec));
 }
 
-TEST_CASE (
+TEST_CASE(
 
 
-
-" Test xillver_RTR spectra normalization: reflected vs. returning flux per zone "
-,
-"[xillverRTR][norm]"
-)
- {
+    " Test xillver_RTR spectra normalization: reflected vs. returning flux per zone ",
+    "[xillverRTR][norm]"
+) {
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBBxill);
     relParam *rel_param = lmod.get_rel_params_struct();
@@ -446,45 +517,104 @@ TEST_CASE (
     get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
     REQUIRE(status == EXIT_SUCCESS);
 
-    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, xill_param->kTbb,
-                                                        rel_param->rin, rel_param->rout, rel_param->a,
+    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener,
+                                                        n_ener,
+                                                        xill_param->kTbb,
+                                                        rel_param->rin,
+                                                        rel_param->rout,
+                                                        rel_param->a,
                                                         &status);
     REQUIRE(status == EXIT_SUCCESS);
 
-    xillParam xill_param_zone = *xill_param;
-
-    printf("\n %5s  %12s  %12s  %12s\n", "izone", "N(return)", "N(reflect)", "refl/return");
-    for (int izone = 0; izone < returnSpec->nrad; izone++) {
-        xill_param_zone.radzone = static_cast<double>(izone);
-
-        // as in calc_zone_direct_plus_xillver_reflected_flux(), but with the angle-averaged
-        // xillver flux instead of the angle-weighted intensity, and without boost
-        //  => xill_flux_returnrad = N_xill(specRet) * F_xill_avg
-        xillSpec *xill_spec = get_xillver_spectra(&xill_param_zone, &status);
-        double *xill_flux_avg = calc_angle_averaged_xillver_flux(xill_spec, &status);
+    SECTION("angle-averaged (semi-infinite slab) weighting") {
+        // replace the GR emission-angle distribution by the semi-infinite slab flux weights (identical
+        // for all zones), which turns the angle-weighted intensity into the angle-averaged flux
+        // (as in calc_angle_averaged_xillver_flux())
+        xillParam xill_param_incl = *xill_param;
+        xill_param_incl.radzone = 0;
+        xillSpec *xill_spec = get_xillver_spectra(&xill_param_incl, &status);
         REQUIRE(status == EXIT_SUCCESS);
 
-        VecD xill_flux_returnrad(n_ener, 0.0);
-        _rebin_spectrum(ener, xill_flux_returnrad.data(), n_ener, xill_spec->ener, xill_flux_avg, xill_spec->n_ener);
-        delete[] xill_flux_avg;
+        VecD slab_weights = get_semi_infinite_slab_flux_weights(xill_spec);
+        VecD cosne(xill_spec->n_incl);
+        for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+            cosne[ii] = cos(xill_spec->incl[ii]);
+        }
         free_xill_spec(xill_spec);
 
-        double xillverReflectionNormFactor =
-            get_xillver_norm_on_coarse_grid(returnSpec->specRet[izone], ener, n_ener, &status);
-        for (int jj = 0; jj < n_ener; jj++) {
-            xill_flux_returnrad[jj] *= xillverReflectionNormFactor;
+        AngleDistProfile slab(cosne, returnSpec->nrad);
+        for (int izone = 0; izone < returnSpec->nrad; izone++) {
+            std::copy(slab_weights.begin(), slab_weights.end(), slab.dist[izone].begin()); // keep dist_rows valid
         }
 
-        double norm_reflect = get_xillver_norm_on_coarse_grid(xill_flux_returnrad.data(), ener, n_ener, &status);
+        VecD ratio = calc_ratio_reflected_to_returning_flux(*xill_param, &slab.profile, returnSpec, &status);
         REQUIRE(status == EXIT_SUCCESS);
 
-        double ratio_refl_return = norm_reflect / xillverReflectionNormFactor;
-        printf(" %5i  %12.4e  %12.4e  %12.4e\n", izone, xillverReflectionNormFactor, norm_reflect, ratio_refl_return);
+        // energy conservation: the reflected flux is below the returning (illuminating) flux
+        for (int izone = 0; izone < returnSpec->nrad; izone++) {
+            INFO("zone " << izone);
+            CHECK(ratio[izone] > 0.0);
+            CHECK(ratio[izone] < 1.0);
+        }
+    }
+
+    SECTION("GR emission-angle weighting") {
+        // the emission-angle distribution depends on the observer inclination
+        const double incl_deg = GENERATE(5.0, 60.0);
+        lmod.set_par(XPar::incl, incl_deg);
+        relParam *rel_param_incl = lmod.get_rel_params_struct();
+        printf("\n GR emission-angle weighting for incl=%.1f deg", incl_deg);
+        INFO("incl = " << incl_deg << " deg");
+
+        auto radialGrid = get_radial_grid_from_returntab(returnSpec);
+        RelSysPar *systemParameters = get_system_parameters(rel_param_incl, &status);
+        relline_spec_multizone *relProfile = relbase_profile(ener,
+                                                             n_ener,
+                                                             rel_param_incl,
+                                                             systemParameters,
+                                                             xill_tab,
+                                                             radialGrid,
+                                                             &status);
+        REQUIRE(status == EXIT_SUCCESS);
+        REQUIRE(relProfile->n_zones == returnSpec->nrad);
+
+        const RelCosne *rel_cosne = relProfile->rel_cosne;
+        REQUIRE(rel_cosne != nullptr);
+        REQUIRE(rel_cosne->n_cosne == xill_tab->n_incl);
+
+        // the emission-angle distribution is a probability distribution in each zone
+        for (int izone = 0; izone < rel_cosne->n_zones; izone++) {
+            double sum = 0.0;
+            for (int ii = 0; ii < rel_cosne->n_cosne; ii++) {
+                INFO("zone " << izone << ", cosne bin " << ii);
+                CHECK(rel_cosne->dist[izone][ii] >= 0.0);
+                sum += rel_cosne->dist[izone][ii];
+            }
+            INFO("zone " << izone);
+            CHECK(sum == Catch::Approx(1.0).epsilon(1e-8));
+        }
+
+        // the GR angle weighting returns the angle-mixed intrinsic intensity; convert it to flux by
+        // applying the semi-infinite slab factor F(i) = 0.5*cos(i)*I(i) to each emission angle
+        // (copy, as relProfile is cached)
+        AngleDistProfile gr_flux(VecD(rel_cosne->cosne, rel_cosne->cosne + rel_cosne->n_cosne), rel_cosne->n_zones);
+        for (int izone = 0; izone < rel_cosne->n_zones; izone++) {
+            for (int ii = 0; ii < rel_cosne->n_cosne; ii++) {
+                gr_flux.dist[izone][ii] = rel_cosne->dist[izone][ii] * norm_factor_semi_infinite_slab(xill_tab->incl[ii]);
+            }
+        }
+
+        VecD ratio = calc_ratio_reflected_to_returning_flux(*xill_param, &gr_flux.profile, returnSpec, &status);
+        REQUIRE(status == EXIT_SUCCESS);
 
         // energy conservation: the reflected flux is below the returning (illuminating) flux
-        INFO("zone " << izone);
-        CHECK(ratio_refl_return > 0.0);
-        CHECK(ratio_refl_return < 1.0);
+        for (int izone = 0; izone < returnSpec->nrad; izone++) {
+            INFO("zone " << izone);
+            CHECK(ratio[izone] > 0.0);
+            CHECK(ratio[izone] < 1.0);
+        }
+
+        delete_rel_params(rel_param_incl);
     }
 
     delete_returnSpec2D(&returnSpec);

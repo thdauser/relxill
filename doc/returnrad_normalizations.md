@@ -176,11 +176,26 @@ Applying the slab factor here as well would double-count it. The separate path
 \ref get_semi_infinite_slab_flux_weights exists only for the angle-averaging the
 non-relativistic case and must not be mixed into this one (see comment in Garcia+14, Eq. 19).
 
+Therefore, comparing the rest-frame xillver spectra with the rest-frame
+returning radiation spectrum is not possible. To get the average of what the observer sees, each emission-angle bin
+\f$i\f$ of `dist[izone]` needs to be weighted with \f$\frac{1}{2}\cos i\f$ (the inclinations of the xillver table) in
+the non-relativistic approximation. The angle-mixed intensity (without this factor) is the spectrum that is used for
+the relativistic convolution, also in standard relxill. Both models call \ref calc_xillver_angdep with
+`rel_profile->rel_cosne->dist[izone]`:
+
+- `relxillBB`: \ref calc_zone_direct_plus_xillver_reflected_flux (`src/Relreturn_BlackBody.cpp`), via
+  \ref get_angle_weighted_xill_spec
+- `relxill`: \ref relxill_kernel (`src/Relxill.cpp`, step 5, "calculate the xillver spectra depending on the
+  angular distribution")
+
+This is tested in `test/unit/tests-returnrad-bbody.cpp`, test case
+*"Test xillver_RTR spectra normalization: reflected vs. returning flux per zone"* (run with
+`bin/tests "[xillverRTR][norm]"`).
 ### boost
 
 `|boost|` scales the reflected component only. A **negative** boost selects
 return-radiation-only output by suppressing the direct term (identical to the
-convention used for reflection fraction / boost elsewhere in relxill).
+convention used for the reflection fraction / boost elsewhere in relxill).
 
 ## Why the split
 
