@@ -131,6 +131,16 @@ struct AngleDistProfile {
     AngleDistProfile &operator=(const AngleDistProfile &) = delete;
 };
 
+// Helper: semi-infinite slab flux weights 0.5*cos(incl_i)/n_incl of the table inclinations (xillSpec::incl is
+// given in deg), computed independently of get_semi_infinite_slab_flux_weights() to test it
+static VecD expected_slab_flux_weights(const xillSpec *xill_spec) {
+    VecD weights(xill_spec->n_incl);
+    for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+        weights[ii] = 0.5 * cos(xill_spec->incl[ii] * M_PI / 180.0) / xill_spec->n_incl;
+    }
+    return weights;
+}
+
 TEST_CASE (
 
 
@@ -535,10 +545,21 @@ TEST_CASE(
         xillSpec *xill_spec = get_xillver_spectra(&xill_param_incl, &status);
         REQUIRE(status == EXIT_SUCCESS);
 
-        VecD slab_weights = get_semi_infinite_slab_flux_weights(xill_spec);
+        // the slab flux weights are 0.5*cos(incl_i)/n_incl of the table inclinations (in deg); as these are the bin
+        // centres of a grid uniform in cos(incl), the weights sum to int_0^1 0.5*mu dmu = 0.25
+        const VecD slab_weights = expected_slab_flux_weights(xill_spec);
+        const VecD slab_weights_lib = get_semi_infinite_slab_flux_weights(xill_spec);
+        double sum_weights = 0.0;
+        for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+            INFO("table inclination " << xill_spec->incl[ii] << " deg");
+            CHECK(slab_weights_lib[ii] == Catch::Approx(slab_weights[ii]).epsilon(1e-10));
+            sum_weights += slab_weights[ii];
+        }
+        CHECK(sum_weights == Catch::Approx(0.25).epsilon(1e-3));
+
         VecD cosne(xill_spec->n_incl);
         for (int ii = 0; ii < xill_spec->n_incl; ii++) {
-            cosne[ii] = cos(xill_spec->incl[ii]);
+            cosne[ii] = cos(xill_spec->incl[ii] * M_PI / 180.0);
         }
         free_xill_spec(xill_spec);
 
@@ -600,6 +621,136 @@ TEST_CASE(
     delete_returnSpec2D(&returnSpec);
     delete_rel_params(rel_param);
     delete_xill_params(xill_param);
+}
+
+TEST_CASE(
+    " xillver_RTR angle weighting: angle-mixed intensity vs. angle-averaged flux per zone ",
+    "[xillverRTR][angleweight]"
+) {
+    // The reflected spectrum per zone (as in rframe-reflect.fits of the diagnose outfiles) is the angle-mixed
+    // intensity, weighted with the GR emission-angle distribution dist of the observer inclination. Only the
+    // angle-averaged flux of the semi-infinite slab can be compared with the returning flux (energy conservation).
+    // With r_i = N(I_i) the xillver normalization of the table spectrum at inclination i (as reflect =
+    // N_xill(ret) * F_xill, it is N(reflect)/N(return) = N(F_xill)), the following weightings are compared:
+    //   A_mix  = sum_i dist_i r_i                    angle-mixed intensity (what is convolved in the model)
+    //   B_slab = sum_i 0.5*cos(incl_i)/n_incl r_i    angle-averaged flux of the semi-infinite slab
+    //   C_obs  = 0.5*cos(incl_obs) * A_mix           slab factor of the observer inclination
+    //   D_GR   = sum_i dist_i 0.5*cos(incl_i) r_i    slab factor per emission angle
+    // The values per zone are written to the file below (sums are weighted with the returning flux N_ret).
+    const char *fname = "__relxill_unit_xillverRTR-angleweight.dat";
+    FILE *fp = fopen(fname, "w");
+    REQUIRE(fp != nullptr);
+    fprintf(fp, "# incl[deg] zone r_mid[Rg] N_ret mu_GR A_mix B_slab C_obs D_GR r_i(table incl, ascending)\n");
+
+    int status = EXIT_SUCCESS;
+    for (double incl_deg: {20.0, 40.0, 60.0, 80.0}) {
+        INFO("incl = " << incl_deg << " deg");
+        LocalModel lmod(ModelName::relxillBBxill);
+        lmod.set_par(XPar::incl, incl_deg);
+        relParam *rel_param = lmod.get_rel_params_struct();
+        xillParam *xill_param = lmod.get_xill_param_struct();
+
+        // same set-up as in relxillbb_kernel()
+        auto ener_grid = get_relxill_conv_energy_grid();
+        int n_ener = ener_grid->nbins;
+        double *ener = ener_grid->ener;
+
+        xillTable *xill_tab = nullptr;
+        get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
+        returnSpec2D *returnSpec = spec_returnrad_blackbody(ener,
+                                                            n_ener,
+                                                            xill_param->kTbb,
+                                                            rel_param->rin,
+                                                            rel_param->rout,
+                                                            rel_param->a,
+                                                            &status);
+        REQUIRE(status == EXIT_SUCCESS);
+
+        auto radialGrid = get_radial_grid_from_returntab(returnSpec);
+        RelSysPar *systemParameters = get_system_parameters(rel_param, &status);
+        relline_spec_multizone *relProfile = relbase_profile(ener,
+                                                             n_ener,
+                                                             rel_param,
+                                                             systemParameters,
+                                                             xill_tab,
+                                                             radialGrid,
+                                                             &status);
+        REQUIRE(status == EXIT_SUCCESS);
+        const RelCosne *rel_cosne = relProfile->rel_cosne;
+        REQUIRE(rel_cosne != nullptr);
+        REQUIRE(rel_cosne->n_cosne == xill_tab->n_incl);
+
+        double sum_ret = 0.0, sum_mix = 0.0, sum_slab = 0.0, sum_obs = 0.0, sum_gr = 0.0;
+        for (int izone = 0; izone < returnSpec->nrad; izone++) {
+            xillParam xill_param_zone = *xill_param;
+            xill_param_zone.radzone = static_cast<double>(izone);
+            xillSpec *xill_spec = get_xillver_spectra(&xill_param_zone, &status);
+            REQUIRE(status == EXIT_SUCCESS);
+
+            const VecD slab_weights = expected_slab_flux_weights(xill_spec);
+            VecD r(xill_spec->n_incl);
+            double A_mix = 0.0, B_slab = 0.0, D_GR = 0.0, mu_GR = 0.0;
+            for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+                r[ii] = get_xillver_norm_on_coarse_grid(xill_spec->flu[ii],
+                                                        xill_spec->ener,
+                                                        xill_spec->n_ener,
+                                                        &status);
+                const double mu = cos(xill_spec->incl[ii] * M_PI / 180.0);
+                const double dist = rel_cosne->dist[izone][ii];
+                A_mix += dist * r[ii];
+                B_slab += slab_weights[ii] * r[ii];
+                D_GR += dist * 0.5 * mu * r[ii];
+                mu_GR += dist * mu;
+            }
+            const double C_obs = 0.5 * cos(incl_deg * M_PI / 180.0) * A_mix;
+            const double N_ret = get_xillver_norm_on_coarse_grid(returnSpec->specRet[izone],
+                                                                 returnSpec->ener,
+                                                                 returnSpec->n_ener,
+                                                                 &status);
+            REQUIRE(status == EXIT_SUCCESS);
+
+            fprintf(fp,
+                    "%5.1f %3i %10.4e %10.4e %6.3f %7.4f %7.4f %7.4f %7.4f",
+                    incl_deg,
+                    izone,
+                    0.5 * (returnSpec->rlo[izone] + returnSpec->rhi[izone]),
+                    N_ret,
+                    mu_GR,
+                    A_mix,
+                    B_slab,
+                    C_obs,
+                    D_GR);
+            for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+                fprintf(fp, " %6.3f", r[ii]);
+            }
+            fprintf(fp, "\n");
+            free_xill_spec(xill_spec);
+
+            sum_ret += N_ret;
+            sum_mix += N_ret * A_mix;
+            sum_slab += N_ret * B_slab;
+            sum_obs += N_ret * C_obs;
+            sum_gr += N_ret * D_GR;
+
+            // energy conservation: the angle-averaged reflected flux is below the returning flux
+            INFO("zone " << izone << ": A_mix = " << A_mix << ", B_slab = " << B_slab
+                << ", C_obs = " << C_obs << ", D_GR = " << D_GR);
+            CHECK(B_slab > 0.0);
+            CHECK(B_slab < 1.0);
+        }
+        fprintf(fp,
+                "# incl = %.1f deg, all zones: A_mix = %.4f, B_slab = %.4f, C_obs = %.4f, D_GR = %.4f\n",
+                incl_deg,
+                sum_mix / sum_ret,
+                sum_slab / sum_ret,
+                sum_obs / sum_ret,
+                sum_gr / sum_ret);
+
+        delete_returnSpec2D(&returnSpec);
+        delete_rel_params(rel_param);
+        delete_xill_params(xill_param);
+    }
+    fclose(fp);
 }
 
 

@@ -35,7 +35,6 @@
 #endif
 
 
-
 /*********** ERROR HANDLING *********/
 #include "error.h"
 
@@ -78,7 +77,7 @@ break;\
 
 // make sure M_PI is defined, also with old/strange compiler options
 #ifndef M_PI
-    #define M_PI 3.14159265358979323846
+#define M_PI 3.14159265358979323846
 #endif
 
 
@@ -230,18 +229,18 @@ enum xillTableIds {
 
 /****** TYPE DEFINITIONS ******/
 
-typedef struct{
-  double* rgrid;
+typedef struct {
+  double *rgrid;
   int n_zones;
-  double* corrfac_flux;
-  double* corrfac_gshift;
+  double *corrfac_flux;
+  double *corrfac_gshift;
 } rradCorrFactors;
 
 typedef struct {
   int model_type;
   int emis_type;
   double a;
-  double incl;
+  double incl; // in rad (converted from the model parameter in deg), whereas xillParam::incl is in deg
   double emis1;
   double emis2;
   double rbr;
@@ -252,8 +251,8 @@ typedef struct {
   double height;
   double r_src; // source radius in ring model
   double theta; // source angle in ring model
-  double x;  // radius of slab in slab model
-  double x_in;  // inner radius of slab in slab model
+  double x; // radius of slab in slab model
+  double x_in; // inner radius of slab in slab model
   double htop;
   double gamma;
   double beta;
@@ -263,7 +262,7 @@ typedef struct {
   int num_zones;
   int return_rad;
   int ion_grad_type;
-  rradCorrFactors* rrad_corr_factors;
+  rradCorrFactors *rrad_corr_factors;
 } relParam;
 
 typedef struct {
@@ -271,7 +270,7 @@ typedef struct {
   double afe;
   double lxi;
   double ect;
-  double incl;
+  double incl; // in deg (copied from xillParam::incl), used directly for the table interpolation
   double dens;
   double frac_pl_bb;
   double kTbb;
@@ -285,7 +284,7 @@ typedef struct {
   double afe;
   double lxi;
   double ect;
-  double incl;
+  double incl; // in deg (as the model parameter), whereas relParam::incl is in rad
   double dens;
   double frac_pl_bb;
   double radzone; // for the relxillBB model this is the number of the radial zone (intrinsically an integer)
@@ -304,31 +303,28 @@ typedef struct {
 } xillParam;
 
 
-
 /** the XILLVER table structure */
 typedef struct {
-
   float *elo;
   float *ehi;
   int n_ener;
 
-  int num_param;        // number of parameters (basically the dimension of the table)
-  int *num_param_vals;   // number of values given for each parameter
+  int num_param; // number of parameters (basically the dimension of the table)
+  int *num_param_vals; // number of values given for each parameter
 
   // information on the inclination is stored separately (the last parameter in the table)
   int n_incl;
-  float *incl;
+  float *incl; // inclination grid of the table in degrees (points to the last row of param_vals)
 
   /* need to identify the meaning of each parameter here [index in the array]
    * (see routine "get_xilltab_paramvals" */
-  int *param_index;  // length is N_PARAM_MAX
+  int *param_index; // length is N_PARAM_MAX
   char **param_names; // name of each parameter
 
-  float **param_vals;    // array to store the parameter values (as given in the table)
+  float **param_vals; // array to store the parameter values (as given in the table)
 
-  float **data_storage;   // storage of a n-dim table (n_elements spectra with n_ener bins each)
+  float **data_storage; // storage of a n-dim table (n_elements spectra with n_ener bins each)
   int num_elements;
-
 } xillTable;
 
 typedef struct {
@@ -336,7 +332,7 @@ typedef struct {
   double f_bh;
   double f_ad;
   double f_inf;
-  double f_inf_rest;  // f_inf in the rest frame of the system (not taking beta of the LP into account)
+  double f_inf_rest; // f_inf in the rest frame of the system (not taking beta of the LP into account)
   double lensing; // for GR lensing from raytracing simulation
   double lensing_and_boost_factor; // lensing * g_{so}^Gamma
   // double lensing_factor; // add lensing_factor here, as in extended models it is taken from input table
@@ -344,17 +340,15 @@ typedef struct {
 
 /** the emissivity profile (del and del_inc are only of interest in the LP geometry) **/
 typedef struct {
-
-  double *re;  // radial grid (owned, allocated copy)
+  double *re; // radial grid (owned, allocated copy)
   int nr;
-  double *emis;       // intensity on the surface of the accretion disc
-  double *del_emit;   // angle under which the photon is emitted from the primary source
-  double *del_inc;    // angle the photon hits the accretion disk (in the rest frame of the disk)
+  double *emis; // intensity on the surface of the accretion disc
+  double *del_emit; // angle under which the photon is emitted from the primary source
+  double *del_inc; // angle the photon hits the accretion disk (in the rest frame of the disk)
 
   lpReflFrac *photon_fate_fractions;
   double
-      normFactorPrimSpec;  // determined from the f_inf_rest and g_inf, the factor to multiply the direct radiation with
-
+  normFactorPrimSpec; // determined from the f_inf_rest and g_inf, the factor to multiply the direct radiation with
 } emisProfile;
 
 typedef struct {
@@ -365,17 +359,16 @@ typedef struct {
   double *gmin;
   double *gmax;
   double *gstar;
-  double *d_gstar;  // bin width for each gstar value
+  double *d_gstar; // bin width for each gstar value
 
   double ***trff;
   double ***cosne;
 
   emisProfile *emis;
 
-  double del_ad_max;  // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
+  double del_ad_max; // delta of the photon where it would hit 1000rg (the outer edge of the disk in the relline table)
 
   int limb_law;
-
 } RelSysPar;
 
 /** angles (cosne) and their distribution over the radial zones **/
@@ -383,22 +376,25 @@ typedef struct {
   int n_cosne;
   int n_zones;
   double *cosne;
-  double **dist;      // [n_zones][n_cosne]
+  double **dist; // [n_zones][n_cosne]
 } RelCosne;
 
 typedef struct {
   int n_ener;
   int n_zones;
-  double *rgrid;      // length=n_zones + 1
-  double *ener;       // length=n_ener +1
-  double **flux;      // [n_zones][n_ener]
+  double *rgrid; // length=n_zones + 1
+  double *ener; // length=n_ener +1
+  double **flux; // [n_zones][n_ener]
   RelCosne *rel_cosne;
 } relline_spec_multizone;
 
 typedef struct {
-  double *ener;  // has n_ener+1 elements
-  double *incl;  // has n_incl elements
-  double **flu;  // [n_incl,n_ener+1]
+  double *ener; // has n_ener+1 elements
+  // has n_incl elements, in degrees (copied from the xillver table inclination grid, xillTable::incl);
+  // for a single spectrum (n_incl=1, xillver models) the spectrum is interpolated to the requested
+  // inclination, but incl[0] is the first table value and does not give the inclination of the spectrum
+  double *incl;
+  double **flu; // [n_incl][n_ener], bin-integrated on the grid ener
   int n_ener;
   int n_incl;
 } xillSpec;
@@ -410,18 +406,18 @@ typedef struct {
 } spectrum;
 
 typedef struct {
-  int nzones;   // number of zones actually stored there
-  int n_cache;  // number of array (nzones <= n_cache !!)
+  int nzones; // number of zones actually stored there
+  int n_cache; // number of array (nzones <= n_cache !!)
   int n_ener;
-  double* conversion_factor_energyflux; // conversion from photons/bin to keV/keV
-  double ***fft_xill;  // dimensions [n_cache,2,n_ener]
-  double ***fft_rel;   // dimensions [n_cache,2,n_ener]
+  double *conversion_factor_energyflux; // conversion from photons/bin to keV/keV
+  double ***fft_xill; // dimensions [n_cache,2,n_ener]
+  double ***fft_rel; // dimensions [n_cache,2,n_ener]
 
-  fftw_complex** fftw_xill;  // dimensions [n_cache,n_ener]
-  fftw_complex** fftw_rel;   // dimensions [n_cache,n_ener]
+  fftw_complex **fftw_xill; // dimensions [n_cache,n_ener]
+  fftw_complex **fftw_rel; // dimensions [n_cache,n_ener]
 
-  fftw_complex* fftw_backwards_input;  // [nener]
-  double* fftw_output;  // [nener]
+  fftw_complex *fftw_backwards_input; // [nener]
+  double *fftw_output; // [nener]
   fftw_plan plan_c2r;
 
 
@@ -430,18 +426,14 @@ typedef struct {
 } specCache;
 
 typedef struct {
-
   double *ener;
   int nbins;
-
 } EnerGrid;
 
 typedef struct {
-
   int nbins;
-  double *ener;  // has num_flux_bins+1
+  double *ener; // has num_flux_bins+1
   double *flux; // has length
-
 } TestSpectrum;
 
 
