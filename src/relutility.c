@@ -193,7 +193,7 @@ int is_relxill_model(int model_type) {
 }
 
 int is_returnrad_bb_model(int model_type) {
-  if (model_type == MOD_TYPE_RELXILLBBRET || model_type == MOD_TYPE_RELXILLBBRETXILL) {
+  if (model_type == MOD_TYPE_RELXILLBB_NS || model_type == MOD_TYPE_RELXILLBB) {
     return 1;
   }
   return 0;

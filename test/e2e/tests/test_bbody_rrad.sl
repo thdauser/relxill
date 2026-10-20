@@ -7,7 +7,7 @@ define runtest(ffs){
       
    variable status = EXIT_SUCCESS; 
    
-   variable fit_fun_rrad = "relxillBB";
+   variable fit_fun_rrad = "relxillBB_NS";
 
    if (0 == is_defined(fit_fun_rrad) )     {
       msg_log += sprintf( "skipping test as function %s does not exist",fit_fun_rrad);

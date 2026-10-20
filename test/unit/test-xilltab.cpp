@@ -30,6 +30,7 @@ extern "C" {
 TEST_CASE (
 
 
+
 " creating of new xillver table "
 ,
 "[xilltab]"
@@ -60,6 +61,7 @@ static void test_tab_num_param(const xillParam *param, int *status, const xillTa
 
 
 TEST_CASE (
+
 
 
 " initialize Xillver table "
@@ -134,6 +136,7 @@ static void test_get_spec(const std::string &specName, const xillParam *param) {
 TEST_CASE (
 
 
+
 " xillver spectra evaluation "
 ,
 "[xilltab]"
@@ -175,6 +178,7 @@ TEST_CASE (
 TEST_CASE (
 
 
+
 " automated loading of the xillver tables "
 ,
 "[xilltab]"
@@ -200,6 +204,7 @@ TEST_CASE (
 TEST_CASE (
 
 
+
 " loading table which does not exist "
 ,
 "[xilltab]"
@@ -218,6 +223,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 
 
 " check for existing table "
@@ -250,6 +256,7 @@ static void testNormfacBand(xillSpec **spec, double elo, double ehi, double prec
 TEST_CASE (
 
 
+
 " renorm xilltable with density and logxi "
 )
  {
@@ -279,6 +286,7 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 
 
 " normalization of the primary continuum"
@@ -330,6 +338,7 @@ TEST_CASE (
 TEST_CASE (
 
 
+
 " test normalization factor when shifting ecut/kTe"
 ,
 "[prim]"
@@ -369,18 +378,21 @@ TEST_CASE (
   free(xill_tab_param);
 
 }
-TEST_CASE(
+TEST_CASE (
 
 
-  " units of the inclinations: relParam in rad, xillParam, xillTableParam, xillTable and xillSpec in deg ",
-  "[xilltab][incl-units]"
-) {
+  
+" units of the inclinations: relParam in rad, xillParam, xillTableParam, xillTable and xillSpec in deg "
+,
+"[xilltab][incl-units]"
+)
+ {
   // the inclination units are documented in common.h; this test verifies this definition
   int status = EXIT_SUCCESS;
   const double incl_deg = 50.0; // differs from the default value of the models
 
-  // relxill: standard xillver table; relxillBBxill: xillverRTR table
-  const ModelName mod_name = GENERATE(ModelName::relxill, ModelName::relxillBBxill);
+  // relxill: standard xillver table; relxillBB: xillverRTR table
+  const ModelName mod_name = GENERATE(ModelName::relxill, ModelName::relxillBB);
   LocalModel lmod(mod_name);
   INFO("model " << lmod.get_model_string());
   lmod.set_par(XPar::incl, incl_deg);

@@ -5,7 +5,7 @@ require("scripts/subs_filenames.sl");
 
 %%%%%
 variable Tin = 1.0;
-variable _ff = "relxillBB";
+variable _ff = "relxillBB_NS";
 %%%%
 variable PL_W = 17;
 variable PL_H = 10;

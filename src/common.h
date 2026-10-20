@@ -153,8 +153,8 @@ break;\
 #define MOD_TYPE_XILLVERNS -101
 
 // unpublished models
-#define MOD_TYPE_RELXILLBBRET -300
-#define MOD_TYPE_RELXILLBBRETXILL -301
+#define MOD_TYPE_RELXILLBB_NS -300  // relxillBB_NS: xillverNS table (kept for development)
+#define MOD_TYPE_RELXILLBB -301     // relxillBB: xillverRTR table
 #define MOD_TYPE_RELXILLALPHA -2000
 #define MOD_TYPE_RELXILLLPALPHA -2001
 #define MOD_TYPE_RELXILL_JEDSAD -3000

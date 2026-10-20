@@ -706,8 +706,7 @@ void check_and_reset_value(double* ptr_val, double val_ref, const char* param_na
 
 void check_parameter_bounds_relxillbb(xillParam* xill_param,relParam* rel_param)
 {
-    if (rel_param->model_type == MOD_TYPE_RELXILLBBRETXILL)
-    {
+    if (rel_param->model_type == MOD_TYPE_RELXILLBB) {
         check_and_reset_value(&rel_param->a, 0.998, "a");
         check_and_reset_value(&rel_param->rin, kerr_rms(0.998), "Rin");
         check_and_reset_value(&rel_param->rout, 1000, "Rout");
@@ -850,7 +849,7 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
     check_parameter_bounds_relxillbb(xill_param, rel_param);
 
     CHECK_STATUS_VOID(*status);
-    assert(xill_param->model_type == MOD_TYPE_RELXILLBBRET || xill_param->model_type == MOD_TYPE_RELXILLBBRETXILL);
+    assert(xill_param->model_type == MOD_TYPE_RELXILLBB_NS || xill_param->model_type == MOD_TYPE_RELXILLBB);
 
     // get a standard grid for the convolution (is rebinned later to the input grid)
     auto ener_grid = get_relxill_conv_energy_grid();
@@ -904,7 +903,7 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
             calc_zone_direct_plus_mirrored_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
         } else {
             // very dangerous; need to check that it is within the table boundaries as well
-            // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBBRETXILL))
+            // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBB))
             xill_param_zone.radzone = static_cast<double>(izone);
             if (use_iongrad_relxillbb()) {
                 set_xill_param_from_iongrad(xill_param_zone, ion_gradient, izone);

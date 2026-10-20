@@ -48,8 +48,8 @@ enum class ModelName {
   xillverD,
   relxillD,
   relxilllpD,
+  relxillBB_NS,
   relxillBB,
-  relxillBBxill,
   relxill_jedsad
 };
 
@@ -85,46 +85,48 @@ enum class T_Model {
  *  - T_PrimSpec: spectral shape type of primary source
  */
 class ModelInfo {
-
- public:
-  ModelInfo(T_Model _type, T_Irrad _irrad, T_PrimSpec _prim)
+  public:
+    ModelInfo(T_Model _type, T_Irrad _irrad, T_PrimSpec _prim)
       : m_type{_type}, m_irradiation{_irrad}, m_primeSpec{_prim} {
-  }
+    }
 
-  ModelInfo(T_Model type, T_Irrad irrad)
+    ModelInfo(T_Model type, T_Irrad irrad)
       : ModelInfo(type, irrad, T_PrimSpec::None) {
-  }
+    }
 
-  ModelInfo(T_Model type, T_PrimSpec prim)
+    ModelInfo(T_Model type, T_PrimSpec prim)
       : ModelInfo(type, T_Irrad::None, prim) {
-  }
+    }
 
-  // Add default copy and move operations (compiler will generate them)
-  ModelInfo(const ModelInfo&) = default;
-  ModelInfo& operator=(const ModelInfo&) = default;
-  ModelInfo(ModelInfo&&) noexcept = default;
-  ModelInfo& operator=(ModelInfo&&) noexcept = default;
+    // Add default copy and move operations (compiler will generate them)
+    ModelInfo(const ModelInfo &) = default;
 
-  [[nodiscard]] T_Model type() const {
-    return m_type;
-  }
+    ModelInfo &operator=(const ModelInfo &) = default;
 
-  [[nodiscard]] T_Irrad irradiation() const {
-    return m_irradiation;
-  }
+    ModelInfo(ModelInfo &&) noexcept = default;
 
-  [[nodiscard]] T_PrimSpec primeSpec() const {
-    return m_primeSpec;
-  }
+    ModelInfo &operator=(ModelInfo &&) noexcept = default;
 
-  [[nodiscard]] bool is_model_type(T_Model const model_type) const {
-    return typeid(model_type) == typeid(m_type);
-  }
+    [[nodiscard]] T_Model type() const {
+      return m_type;
+    }
 
- private:
-  T_Model m_type;
-  T_Irrad m_irradiation;
-  T_PrimSpec m_primeSpec;
+    [[nodiscard]] T_Irrad irradiation() const {
+      return m_irradiation;
+    }
+
+    [[nodiscard]] T_PrimSpec primeSpec() const {
+      return m_primeSpec;
+    }
+
+    [[nodiscard]] bool is_model_type(T_Model const model_type) const {
+      return typeid(model_type) == typeid(m_type);
+    }
+
+  private:
+    T_Model m_type;
+    T_Irrad m_irradiation;
+    T_PrimSpec m_primeSpec;
 };
 
 #endif //RELXILL__CPPTYPES_H_

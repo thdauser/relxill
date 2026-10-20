@@ -25,7 +25,6 @@
 #include <chrono>
 
 void simple_relxill_cache_test(ModelName _model_name) {
-
   LocalModel lmod(_model_name);
 
   INFO("testing caching of " << lmod.get_model_string());
@@ -49,8 +48,8 @@ void simple_relxill_cache_test(ModelName _model_name) {
   auto tstart = std::chrono::steady_clock::now();
   lmod.set_par(XPar::incl, 54);
   lmod.eval_model(spec1);
-  auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>
-      (std::chrono::steady_clock::now() - tstart).count();
+  auto time_elapsed_msec = std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::steady_clock::now() - tstart).count();
 
   if (is_debug_run()) {
     printf("Time elapsed for model evaluation:      %.3fmsec\n", static_cast<double>(time_elapsed_msec));
@@ -62,8 +61,8 @@ void simple_relxill_cache_test(ModelName _model_name) {
   for (int ii = 0; ii < n_eval_cache; ii++) {
     lmod.eval_model(spec2);
   }
-  auto time_elapsed_msec_cache = std::chrono::duration_cast<std::chrono::milliseconds>
-      (std::chrono::steady_clock::now() - tstart).count();
+  auto time_elapsed_msec_cache = std::chrono::duration_cast<std::chrono::milliseconds>(
+    std::chrono::steady_clock::now() - tstart).count();
 
   if (is_debug_run()) {
     printf("Time elapsed for energy grid change (per eval):    %.3fmsec\n",
@@ -79,7 +78,11 @@ void simple_relxill_cache_test(ModelName _model_name) {
   REQUIRE(fabs(flu1 / flu2 - 1) > 1e-6);
 }
 
-TEST_CASE(" caching of model parameters", "[cache]")
+TEST_CASE (
+" caching of model parameters"
+,
+"[cache]"
+)
 {
 
   LocalModel lmod(ModelName::relxilllp);
@@ -95,7 +98,12 @@ TEST_CASE(" caching of model parameters", "[cache]")
   delete_rel_params(cpar);
 }
 
-TEST_CASE(" caching of energy grid", "[cache]") {
+TEST_CASE (
+" caching of energy grid"
+,
+"[cache]"
+)
+ {
 
   const int nmodel = 7;
   std::array<ModelName, nmodel> model_names =
@@ -105,7 +113,7 @@ TEST_CASE(" caching of energy grid", "[cache]") {
        ModelName::relxilllpAlpha,
        ModelName::relxillNS,
        ModelName::relxillCO,
-       // ModelName::relxillBBxill,  // TODO: not yet implemented
+       // ModelName::relxillBB,  // TODO: not yet implemented
        ModelName::relxill_ring
       };
 
@@ -113,4 +121,3 @@ TEST_CASE(" caching of energy grid", "[cache]") {
     simple_relxill_cache_test(elem);
   }
 }
-

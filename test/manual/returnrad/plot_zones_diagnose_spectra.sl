@@ -9,7 +9,7 @@ require("scripts/subs_filenames.sl");
 
 require("create_output_files.sl");
 
-variable ff_plots = "relxillBBxill";
+variable ff_plots = "relxillBB";
 variable prefix = ff_plots+"_";
 
 %% =1= set parameters (currently the only ones for RTR table v0.3)

@@ -32,19 +32,19 @@
  * exception if anything is wrong with the input parameters
  */
 class ModelNotFound : public std::exception {
- public:
-  ModelNotFound() = default;
+  public:
+    ModelNotFound() = default;
 
-  explicit ModelNotFound(const std::string &_msg) {
-    m_msg += _msg;
-  }
+    explicit ModelNotFound(const std::string &_msg) {
+      m_msg += _msg;
+    }
 
-  [[nodiscard]] const char *what() const noexcept override {
-    return m_msg.c_str();
-  }
+    [[nodiscard]] const char *what() const noexcept override {
+      return m_msg.c_str();
+    }
 
- private:
-  std::string m_msg{"*** model not found: "};
+  private:
+    std::string m_msg{"*** model not found: "};
 };
 
 /**
@@ -54,86 +54,83 @@ class ModelNotFound : public std::exception {
  *  - specify the type of the model, including it's relevant physical components
  */
 class ModelDatabase {
-
- public:
-  /**
+  public:
+    /**
    * use this instance to always and securely access the database, without
    * needing to initialize it anywhere else
    * @return ModelDatabase
    */
-  static ModelDatabase &instance() {
-    static auto *instance = new ModelDatabase();
-    return *instance;
-  }
+    static ModelDatabase &instance() {
+      static auto *instance = new ModelDatabase();
+      return *instance;
+    }
 
-  /**
+    /**
    * get model info (as defined in the database)
    * @param ModelName
    * @return ModelInfo
    */
-  ModelInfo model_info(ModelName name){
-    try {
-      return lmodel_info.at(name);
-    } catch (std::out_of_range &e) {
-      throw ModelNotFound(lmodel_database.name_string(name));
+    ModelInfo model_info(ModelName name) {
+      try {
+        return lmodel_info.at(name);
+      } catch (std::out_of_range &e) {
+        throw ModelNotFound(lmodel_database.name_string(name));
+      }
     }
-  }
 
-  /**
+    /**
    * @brief get list of Model Parameters (from lmodel.dat definition)
    * @param ModelName
    * @return ModelParamVector
    */
-  ParamList param_list(ModelName name){
-    try {
-      return lmodel_database.param_list(name);
-    } catch (std::out_of_range &e) {
-      throw ModelNotFound(lmodel_database.name_string(name));
-    }
-  }
-
-  std::string model_string(ModelName name){
-    return lmodel_database.name_string(name);
-  }
-
-  std::vector<double> get_default_values_array(ModelName name){
-    auto param_list = lmodel_database.param_list(name);
-    auto parnames = param_list.get_parnames();
-    const auto num_param = param_list.num_params();
-    std::vector<double> values;
-    for (size_t ii = 0; ii <  num_param; ++ii){
-      values.push_back(param_list[parnames[ii]]);
-    }
-    return values;
-  }
-
-  ModelName model_name(const std::string& model_string){
-
-    auto models = lmodel_database.all_models();
-
-    auto ptr_model =  std::find_if(std::begin(models), std::end(models),
-                                   [model_string](const auto& vt){
-                                     return vt.second.name()==model_string;
-                                   });
-
-    if (std::end(models) != ptr_model){
-      return ptr_model->first;
-    } else {
-      throw ModelNotFound("failed to find model corresponding to string \"" +  model_string + "\"");
+    ParamList param_list(ModelName name) {
+      try {
+        return lmodel_database.param_list(name);
+      } catch (std::out_of_range &e) {
+        throw ModelNotFound(lmodel_database.name_string(name));
+      }
     }
 
-  }
+    std::string model_string(ModelName name) {
+      return lmodel_database.name_string(name);
+    }
+
+    std::vector<double> get_default_values_array(ModelName name) {
+      auto param_list = lmodel_database.param_list(name);
+      auto parnames = param_list.get_parnames();
+      const auto num_param = param_list.num_params();
+      std::vector<double> values;
+      for (size_t ii = 0; ii < num_param; ++ii) {
+        values.push_back(param_list[parnames[ii]]);
+      }
+      return values;
+    }
+
+    ModelName model_name(const std::string &model_string) {
+      auto models = lmodel_database.all_models();
+
+      auto ptr_model = std::find_if(std::begin(models),
+                                    std::end(models),
+                                    [model_string](const auto &vt) {
+                                      return vt.second.name() == model_string;
+                                    });
+
+      if (std::end(models) != ptr_model) {
+        return ptr_model->first;
+      } else {
+        throw ModelNotFound("failed to find model corresponding to string \"" + model_string + "\"");
+      }
+    }
+
+  private:
+    ModelDatabase() = default; //hidden constructor and destructor to avoid initialization
+    ~ModelDatabase() = default;
 
 
- private:
-  ModelDatabase() = default;  //hidden constructor and destructor to avoid initialization
-  ~ModelDatabase() = default;
+    // stores all scanned information from the lmodel.dat file (automatically created Class)
+    XspecModelDatabase lmodel_database{}; //
 
-
-  // stores all scanned information from the lmodel.dat file (automatically created Class)
-  XspecModelDatabase lmodel_database{}; //
-
-  const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
+    const std::unordered_map<ModelName, ModelInfo> lmodel_info = {
       {ModelName::relline, ModelInfo(T_Model::Line, T_Irrad::BknPowerlaw)},
       {ModelName::relline_lp, ModelInfo(T_Model::Line, T_Irrad::LampPost)},
 
@@ -168,13 +165,13 @@ class ModelDatabase {
       {ModelName::xillverCO, ModelInfo(T_Model::Xill, T_PrimSpec::CutoffPl)},
       {ModelName::xillverNS, ModelInfo(T_Model::Xill, T_PrimSpec::Blackbody)},
 
-      {ModelName::relxillBB,     ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)},  // xillverNS table
-      {ModelName::relxillBBxill, ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)},  // xillverRTR table
+      {ModelName::relxillBB_NS, ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)},
+      // xillverNS table (kept for development)
+      {ModelName::relxillBB, ModelInfo(T_Model::Relxill, T_Irrad::Const, T_PrimSpec::Blackbody)}, // xillverRTR table
 
       {ModelName::relxill_jedsad, ModelInfo(T_Model::Relxill, T_Irrad::BknPowerlaw, T_PrimSpec::CutoffPl)},
-  };
+    };
 };
-
 
 
 #endif //RELXILL__CPPMODELDATABASE_H_

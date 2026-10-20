@@ -22,6 +22,7 @@
 #include "Relreturn_Corona.h"
 
 int get_iongrad_type(const ModelDefinition &params);
+
 int get_geometry_switch(const ModelDefinition &params);
 
 extern "C" {
@@ -42,7 +43,7 @@ int convertModelType(ModelName name) {
     case ModelName::relline_ring: return MOD_TYPE_RELLINERING;
     case ModelName::relline_slab: return MOD_TYPE_RELLINESLAB;
     case ModelName::relconv_lp: return MOD_TYPE_RELCONVLP;
-    case ModelName::relxill  : return MOD_TYPE_RELXILL;
+    case ModelName::relxill: return MOD_TYPE_RELXILL;
     case ModelName::relxillCp: return MOD_TYPE_RELXILL;
     case ModelName::relxillD: return MOD_TYPE_RELXILLDENS;
     case ModelName::relxilllp: return MOD_TYPE_RELXILLLP;
@@ -51,7 +52,7 @@ int convertModelType(ModelName name) {
     case ModelName::relxill_ring: return MOD_TYPE_RELXILLRING;
     case ModelName::relxill_slab: return MOD_TYPE_RELXILLSLAB;
     case ModelName::relxilllpD: return MOD_TYPE_RELXILLLPDENS;
-    case ModelName::relxilllpion  : return MOD_TYPE_RELXILLLPION;
+    case ModelName::relxilllpion: return MOD_TYPE_RELXILLLPION;
     case ModelName::relxilllpionCp: return MOD_TYPE_RELXILLLPION;
     case ModelName::xillver: return MOD_TYPE_XILLVER;
     case ModelName::xillverCp: return MOD_TYPE_XILLVER_NTHCOMP;
@@ -61,9 +62,9 @@ int convertModelType(ModelName name) {
     case ModelName::relxillNS: return MOD_TYPE_RELXILLNS;
     case ModelName::relxillCO: return MOD_TYPE_RELXILLCO;
     case ModelName::relxilllpAlpha: return MOD_TYPE_RELXILLLPALPHA;
-    case ModelName::relxillBB: return MOD_TYPE_RELXILLBBRET;
-  case ModelName::relxillBBxill: return MOD_TYPE_RELXILLBBRETXILL;
-  case ModelName::relxill_jedsad: return MOD_TYPE_RELXILL_JEDSAD;
+    case ModelName::relxillBB_NS: return MOD_TYPE_RELXILLBB_NS;
+    case ModelName::relxillBB: return MOD_TYPE_RELXILLBB;
+    case ModelName::relxill_jedsad: return MOD_TYPE_RELXILL_JEDSAD;
   }
   puts(" *** relxill-error: unknown ModelName, converting model name to integer failed ");
   exit(EXIT_FAILURE);
@@ -82,7 +83,7 @@ int convertIrradType(T_Irrad name) {
     case T_Irrad::SlabSource: return EMIS_TYPE_SLAB;
     case T_Irrad::BlackBody: return EMIS_TYPE_ALPHA;
     case T_Irrad::Const: return EMIS_TYPE_CONST;
-    case T_Irrad::None:puts(" *** relxill-error: not possible to construct a model with Irradiation-Type <None> ");
+    case T_Irrad::None: puts(" *** relxill-error: not possible to construct a model with Irradiation-Type <None> ");
       break;
   }
   exit(EXIT_FAILURE);
@@ -104,8 +105,6 @@ int convertPrimSpecType(T_PrimSpec name) {
 }
 
 
-
-
 /**
  * @brief Return Default Parameters Array for a given Model
  * It will be return as double array, the same as given as input from Xspec
@@ -113,14 +112,13 @@ int convertPrimSpecType(T_PrimSpec name) {
  * @return double param_array
  */
 const double *get_xspec_default_parameter_array(ModelName model_name) {
-
   auto const default_values = ModelDatabase::instance().get_default_values_array(model_name);
 
   auto output_param_array = new double[default_values.size()];
 
   // TODO: Need to change this to the actual input parameters
 
-  for (size_t ii = 0; ii < default_values.size(); ii++){
+  for (size_t ii = 0; ii < default_values.size(); ii++) {
     output_param_array[ii] = default_values[ii];
   }
 
@@ -131,8 +129,7 @@ const double *get_xspec_default_parameter_array(ModelName model_name) {
  * return 1 or 0 value of the env if the env is defined to be 1 or 0,
  * return default_switch value otherwise (if env is not defined or defined but with another value)
  */
-int is_env_set(const char* envname, int default_switch = 0) {
-
+int is_env_set(const char *envname, int default_switch = 0) {
   int value = default_switch;
 
   char *env = getenv(envname);
@@ -148,10 +145,12 @@ int is_env_set(const char* envname, int default_switch = 0) {
 }
 
 static int get_returnrad_switch(const ModelDefinition &model_params) {
-
   // (1) by default activated for Lamp Post and extended geometries, otherwise not
-  int default_switch = (model_params.irradiation()==T_Irrad::LampPost ||
-    model_params.irradiation()==T_Irrad::RingSource || model_params.irradiation()==T_Irrad::SlabSource) ? 1 : 0;
+  int default_switch = (model_params.irradiation() == T_Irrad::LampPost ||
+                        model_params.irradiation() == T_Irrad::RingSource || model_params.irradiation() ==
+                        T_Irrad::SlabSource)
+                         ? 1
+                         : 0;
 
   // (2) if env is set, we use the value given there, it takes precedence over default values
   int value_switch = is_env_set("RELXILL_RETURNRAD_SWITCH", default_switch);
@@ -159,7 +158,6 @@ static int get_returnrad_switch(const ModelDefinition &model_params) {
   // (3) model parameter values take precedence over env variable
   return static_cast<int>(lround(model_params.get_otherwise_default(XPar::switch_switch_returnrad, value_switch)));
 }
-
 
 
 static void setNegativeRadiiToRisco(double *r, const double a) {
@@ -210,7 +208,8 @@ void check_ring_bounds(relParam *param) {
     if (not warned_ring_angle) {
       printf(
         " *** Warning : ring source cannot have negative angle (theta = %.1f deg) \n"
-              "     Setting theta = 0.0 deg \n", param->theta);
+        "     Setting theta = 0.0 deg \n",
+        param->theta);
       warned_ring_angle = true;
     }
     param->theta = 0.0;
@@ -229,7 +228,6 @@ void check_ring_bounds(relParam *param) {
 }
 
 void check_slab_bounds(relParam *param) {
-
   const double r_event = kerr_rplus(param->a);
   const double r_fac = 1.2;
 
@@ -254,24 +252,34 @@ void check_slab_bounds(relParam *param) {
   }
 
   // check that slab is not inside BH, even partially
-  if (r_fac * r_event - param->height > 1e-4) { // this "if" just initiates checks
+  if (r_fac * r_event - param->height > 1e-4) {
+    // this "if" just initiates checks
     const double r_slab_in = calc_spherical_radius_ring_source(param->height, param->x_in, param->a);
     const double r_slab_out = calc_spherical_radius_ring_source(param->height, param->x, param->a);
 
-    if (r_fac * r_event - r_slab_in > 1e-4) { //inner slab radius is inside EH
+    if (r_fac * r_event - r_slab_in > 1e-4) {
+      //inner slab radius is inside EH
       if (not warned_slab_radius_low_h) {
         printf(" *** Warning : Inner radius of slab source is inside of (or very close to) the black hole \n"
-                     "     Parameters: h = %.1f rg, x_in = %.1f rg, x = %.1f rg, %.1f * r_event = %.1f rg \n",
-                       param->height, param->x_in, param->x, r_fac, r_fac * r_event);
+               "     Parameters: h = %.1f rg, x_in = %.1f rg, x = %.1f rg, %.1f * r_event = %.1f rg \n",
+               param->height,
+               param->x_in,
+               param->x,
+               r_fac,
+               r_fac * r_event);
       }
 
       // reset x_in while h = const
       param->x_in = calc_extent_from_sph_radius_primary_source(param->height, r_fac * r_event, param->a);
       if (not warned_slab_radius_low_h) {
         printf("      Setting x_in = %.3f rg outside of %.1f * r_event at "
-               "a given height h = %.1f rg \n", param->x_in, r_fac, param->height);
+               "a given height h = %.1f rg \n",
+               param->x_in,
+               r_fac,
+               param->height);
       }
-      if (r_fac * r_event - r_slab_out > 1e-4) { // outer radius is inside too
+      if (r_fac * r_event - r_slab_out > 1e-4) {
+        // outer radius is inside too
         // also reset x to the smallest possible value greater than x_in
         param->x = param->x_in + 0.1;
         if (not warned_slab_radius_low_h) {
@@ -288,20 +296,23 @@ void check_slab_bounds(relParam *param) {
   if (costheta_slab_out < cos_theta_lim) {
     const double x_max = calc_extent_from_sph_radius_costheta(param->height / cos_theta_lim, cos_theta_lim, param->a);
     if (not warned_slab_extrapolation) {
-      printf(" *** Warning : Outer radius of slab source is outside table limits (at a given h = %.4f rg, x_max = %.4f rg), "
-             "the actual slab outer radius  = %.4f rg \n", param->height, x_max, param->x);
+      printf(
+        " *** Warning : Outer radius of slab source is outside table limits (at a given h = %.4f rg, x_max = %.4f rg), "
+        "the actual slab outer radius  = %.4f rg \n",
+        param->height,
+        x_max,
+        param->x);
       printf("     Setting x to the maximal allowed value for a given height, h = %.4f rg, x = %.4f rg \n",
-        param->height, x_max);
+             param->height,
+             x_max);
       warned_slab_extrapolation = true;
     }
     // reset to the maximal allowed x for the given height and limiting angle
     param->x = x_max;
   }
-
 }
 
 void check_parameter_bounds(relParam *param, int *status) {
-
   // first set the Radii to positive value
   setNegativeRadiiToRisco(&(param->rin), param->a);
   setNegativeRadiiToRisco(&(param->rout), param->a);
@@ -343,7 +354,8 @@ void check_parameter_bounds(relParam *param, int *status) {
     return;
   }
 
-  if (param->rout <= param->rin) { // why twice? (line 187)
+  if (param->rout <= param->rin) {
+    // why twice? (line 187)
     printf(" *** Error : Rout <= Rin, model evaluation failed \n");
     *status = EXIT_FAILURE;
     return;
@@ -351,9 +363,9 @@ void check_parameter_bounds(relParam *param, int *status) {
 
   if (param->rout > rout_max) {
     printf(
-        " *** Error : Rout=%.2e > %.2e Rg, which is the maximal possible value. Make sure to set your limits properly. \n",
-        param->rout,
-        rout_max);
+      " *** Error : Rout=%.2e > %.2e Rg, which is the maximal possible value. Make sure to set your limits properly. \n",
+      param->rout,
+      rout_max);
     printf("             -> resetting Rout=%.2e\n", rout_max);
     param->rout = rout_max;
   }
@@ -370,7 +382,6 @@ void check_parameter_bounds(relParam *param, int *status) {
       printf(" *** warning : Rbr > Rout, resetting Rbr=Rout; please set your limits properly \n");
       param->rbr = param->rout;
     }
-
   }
 
 
@@ -388,7 +399,6 @@ void check_parameter_bounds(relParam *param, int *status) {
 
   /** check geometric values (only applies to LP and ext emissivities) **/
   if (is_any_primary_source(param->emis_type)) {
-
     setNegativeValToRplus(&param->height, param->a); // after this h is in rg in either case
     setNegativeValToRplus(&param->htop, param->a);
     setNegativeValToRplus(&param->r_src, param->a); // r_src is just generalized height,
@@ -401,7 +411,8 @@ void check_parameter_bounds(relParam *param, int *status) {
     if (is_slab_primary_source(param->emis_type)) {
       check_slab_bounds(param);
     }
-    if (is_lp_primary_source(param->emis_type)) { // Lamp post emissivity
+    if (is_lp_primary_source(param->emis_type)) {
+      // Lamp post emissivity
       check_lp_bounds(param);
     }
   }
@@ -411,7 +422,6 @@ void check_parameter_bounds(relParam *param, int *status) {
  * @brief get a new RELATIVISITC PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
 relParam *get_rel_params(const ModelDefinition &inp_param) {
-
   // if we have a xillver model, there are no "relativistic parameters"
   if (is_xill_model(convertModelType(inp_param.get_model_name()))) {
     return nullptr;
@@ -425,7 +435,7 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
   // these parameters have to be given for any relativistic parameter structure
   try {
     param->a = inp_param.get_par(XPar::a);
-    param->incl = inp_param.get_par(XPar::incl) * CONVERT_DEG2RAD;  // conversion to rad is heritage from the old code
+    param->incl = inp_param.get_par(XPar::incl) * CONVERT_DEG2RAD; // conversion to rad is heritage from the old code
     param->rin = inp_param.get_par(XPar::rin);
     param->rout = inp_param.get_par(XPar::rout);
   } catch (ParamInputException &e) {
@@ -465,48 +475,45 @@ relParam *get_rel_params(const ModelDefinition &inp_param) {
 
   param->ion_grad_type = get_iongrad_type(inp_param);
 
-  if ( param->ion_grad_type == ION_GRAD_TYPE_ALPHA &&
-    (is_ring_primary_source(param->emis_type) || is_slab_primary_source(param->emis_type)) ) {
+  if (param->ion_grad_type == ION_GRAD_TYPE_ALPHA &&
+      (is_ring_primary_source(param->emis_type) || is_slab_primary_source(param->emis_type))) {
     if (not warned_iongrad) {
       printf(" *** warning (relxill): iongrad_type=%d (alpha ionization)\n"
-                   "     is currently not implemented for the ring model. \n \n" // calculated using the default reflection angle of 45 deg, \n"
-                   "     Switching iongrad_type to 0 (constant ionization). \n"
-                   "     Powerlaw ionization (iongrad_type=1) is also possible. \n \n", param->ion_grad_type);
+             "     is currently not implemented for the ring model. \n \n"
+             // calculated using the default reflection angle of 45 deg, \n"
+             "     Switching iongrad_type to 0 (constant ionization). \n"
+             "     Powerlaw ionization (iongrad_type=1) is also possible. \n \n",
+             param->ion_grad_type);
       warned_iongrad = true;
     }
     param->ion_grad_type = ION_GRAD_TYPE_CONST; // reset to const for ring and slab
   }
 
   // set depending on model/emis type and ENV "RELXILL_NUM_RZONES"
-  param->num_zones = get_num_zones(param->model_type, param->emis_type, param->ion_grad_type); // why call this twice? get_iongrad_type(inp_param)
+  param->num_zones = get_num_zones(param->model_type, param->emis_type, param->ion_grad_type);
+  // why call this twice? get_iongrad_type(inp_param)
 
   return param;
 }
 
-void delete_rel_params(relParam* rel_param)
-{
-  if (rel_param != nullptr)
-  {
-    if (rel_param->rrad_corr_factors != nullptr)
-    {
+void delete_rel_params(relParam *rel_param) {
+  if (rel_param != nullptr) {
+    if (rel_param->rrad_corr_factors != nullptr) {
       free_rrad_corr_factors(&(rel_param->rrad_corr_factors));
     }
     delete rel_param;
   }
 }
 
-void delete_xill_params(xillParam* xill_param)
-{
-    delete xill_param;
+void delete_xill_params(xillParam *xill_param) {
+  delete xill_param;
 }
-
 
 
 /**
  * @brief get a new XILLVER PARAMETER STRUCTURE and initialize it with DEFAULT VALUES
  */
-xillParam* get_xill_params(const ModelDefinition& inp_param)
-{
+xillParam *get_xill_params(const ModelDefinition &inp_param) {
   auto *param = new xillParam;
 
   param->model_type = convertModelType(inp_param.get_model_name());
@@ -515,13 +522,10 @@ xillParam* get_xill_params(const ModelDefinition& inp_param)
   double default_afe = 1.0;
   double default_logxi = 0;
   double default_logn = 15.0;
-  if (is_returnrad_bb_model(param->model_type))
-  {
+  if (is_returnrad_bb_model(param->model_type)) {
     default_logxi = 2.0;
     default_logn = 18.0;
-  }
-  else if (is_co_model(param->model_type))
-  {
+  } else if (is_co_model(param->model_type)) {
     default_afe = inp_param.get_par(XPar::a_co);
     default_logn = 17.0;
   }
@@ -530,14 +534,13 @@ xillParam* get_xill_params(const ModelDefinition& inp_param)
   try {
     param->incl = inp_param.get_par(XPar::incl);
     param->z = inp_param.get_par(XPar::z);
-
   } catch (ParamInputException &e) {
     throw ParamInputException("get_xill_params: model evaluation failed due to missing xillver parameters");
   }
 
   // important default values
   param->afe = inp_param.get_otherwise_default(XPar::afe, default_afe);
-  param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp)   // can be either ecut or kte
+  param->ect = (inp_param.primeSpec() == T_PrimSpec::Nthcomp) // can be either ecut or kte
                  ? inp_param.get_otherwise_default(XPar::kte, 0)
                  : inp_param.get_otherwise_default(XPar::ecut, 300);
   param->lxi = inp_param.get_otherwise_default(XPar::logxi, default_logxi);

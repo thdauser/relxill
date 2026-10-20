@@ -70,7 +70,7 @@ define testEmissivityBbody(){
 
 
    load_relxill_model_dev();
-   fit_fun("relxillBBxill");
+   fit_fun("relxillBB");
    list_par;
    set_par("*.logxi",logxi);
    set_par("*.logN",logn);

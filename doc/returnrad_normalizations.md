@@ -157,11 +157,12 @@ the *xillver primary*. Physically, it is the returning spectrum `specRet[izone]`
 property of the table and is not calculated in the model, while `specRet[izone]` is calculated by the model for the
 given parameters:
 
-- `relxillBBxill` (`xillverRTR` table): the xillver primary of each radial zone (`radindex`) was taken from
+- `relxillBB` (`xillverRTR` table): the xillver primary of each radial zone (`radindex`) was taken from
   `specRet[izone]` when the table was calculated, so currently both are identical by design. As the table only
   depends on `radindex` and the inclination, this holds for the parameters the table was calculated for.
-- `relxillBB` (`xillverNS` table): the xillver primary is a blackbody of temperature \f$kT_\mathrm{bb}\f$, the same for
-  all zones. For computational reasons, it is only an approximation of the returning spectrum.
+- `relxillBB_NS` (`xillverNS` table, kept in the code for development): the xillver primary is a blackbody of
+  temperature \f$kT_\mathrm{bb}\f$, the same for all zones. For computational reasons, it is only an approximation of
+  the returning spectrum.
 
 The model does not assume that both spectra are identical, as this may change in the future (e.g., for a table
 calculated for a different or more general incident spectrum). Only the integrated energy flux of `specRet[izone]`

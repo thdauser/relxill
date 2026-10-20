@@ -31,7 +31,7 @@ define createOutputFiles(_ff, _par){
 %   vmessage("  Creating Output Files: fit-functions: %s ", _ff);
 
    load_std_model(_ff, _par);
-   if (_ff == "relxillBB"){
+   if (_ff == "relxillBB_NS"){
       set_par("*.shiftTmaxRRad",1.0);
       set_par("*.logN",_par.logn);
    }

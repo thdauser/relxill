@@ -329,9 +329,8 @@ TEST_CASE (
 "[rrad-bbody-norder]"
 )
  {
-
-    LocalModel lmod(ModelName::relxillBBxill);
-    DefaultSpec default_spec{};
+     LocalModel lmod(ModelName::relxillBB);
+     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
     setenv("RELXILL_BBRET_NOREFL","1",1);
@@ -360,9 +359,8 @@ TEST_CASE (
 "[rrad-bbody-tprofile]"
 )
  {
-
-    LocalModel lmod(ModelName::relxillBBxill);
-    DefaultSpec default_spec{};
+     LocalModel lmod(ModelName::relxillBB);
+     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
     setenv("RELXILL_BBRET_NOREFL","1",1);
@@ -400,7 +398,7 @@ TEST_CASE (
 )
 {
     int status = EXIT_SUCCESS;
-    LocalModel lmod(ModelName::relxillBBxill);
+    LocalModel lmod(ModelName::relxillBB);
     auto xill_param = lmod.xill_params();
 
     // by default, xill_param->radzone == -1 should fail to load the xillver spectrum
@@ -417,7 +415,7 @@ TEST_CASE (
 )
  {
     int status = EXIT_SUCCESS;
-    LocalModel lmod(ModelName::relxillBBxill);
+    LocalModel lmod(ModelName::relxillBB);
     auto xill_param = lmod.xill_params();
     auto rel_param = lmod.rel_params();
 
@@ -458,9 +456,8 @@ TEST_CASE (
 " Test Loading Xillver RTR Table "
 ,
 "[rrad-bbody]"
-)
-{
-    LocalModel lmod(ModelName::relxillBBxill);
+) {
+    LocalModel lmod(ModelName::relxillBB);
     auto xill_param = lmod.get_xill_param_struct();
 
     int status = EXIT_SUCCESS;
@@ -495,13 +492,10 @@ TEST_CASE (
 TEST_CASE (
 
 
-
-" Test relxillBB-xill Model "
-,
-"[relxillbbxill]"
-)
-{
-    LocalModel lmod(ModelName::relxillBBxill);
+    " Test relxillBB Model ",
+    "[relxillbb]"
+) {
+    LocalModel lmod(ModelName::relxillBB);
     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
     REQUIRE_NOTHROW(lmod.eval_model(spec));
@@ -522,8 +516,8 @@ TEST_CASE(
     // were converted to deg again.)
     int status = EXIT_SUCCESS;
 
-    // relxill: standard xillver table; relxillBBxill: xillverRTR table
-    const ModelName mod_name = GENERATE(ModelName::relxill, ModelName::relxillBBxill);
+    // relxill: standard xillver table; relxillBB: xillverRTR table
+    const ModelName mod_name = GENERATE(ModelName::relxill, ModelName::relxillBB);
     LocalModel lmod(mod_name);
     INFO("model " << lmod.get_model_string());
 
@@ -578,7 +572,7 @@ TEST_CASE(
     const double incl_deg = GENERATE(5.0, 60.0);
     INFO("incl = " << incl_deg << " deg");
 
-    LocalModel lmod(ModelName::relxillBBxill);
+    LocalModel lmod(ModelName::relxillBB);
     lmod.set_par(XPar::incl, incl_deg);
     relParam *rel_param = lmod.get_rel_params_struct();
     xillParam *xill_param = lmod.get_xill_param_struct();
@@ -645,7 +639,7 @@ TEST_CASE(
     // emission-angle distribution, the result is the angle-mixed intensity, which can not be compared with the
     // returning flux, see "[angleweight]".)
     int status = EXIT_SUCCESS;
-    LocalModel lmod(ModelName::relxillBBxill);
+    LocalModel lmod(ModelName::relxillBB);
     relParam *rel_param = lmod.get_rel_params_struct();
     xillParam *xill_param = lmod.get_xill_param_struct();
 
@@ -719,7 +713,7 @@ TEST_CASE(
     int status = EXIT_SUCCESS;
     for (double incl_deg: {20.0, 40.0, 60.0, 80.0}) {
         INFO("incl = " << incl_deg << " deg");
-        LocalModel lmod(ModelName::relxillBBxill);
+        LocalModel lmod(ModelName::relxillBB);
         lmod.set_par(XPar::incl, incl_deg);
         relParam *rel_param = lmod.get_rel_params_struct();
         xillParam *xill_param = lmod.get_xill_param_struct();
@@ -828,16 +822,13 @@ TEST_CASE(
 }
 
 
-TEST_CASE (
+TEST_CASE(
 
 
-
-" Test relxillBB Model "
-,
-"[relxillbb]"
-)
-{
-    LocalModel lmod(ModelName::relxillBB);
+    " Test relxillBB_NS Model ",
+    "[relxillbb_ns]"
+) {
+    LocalModel lmod(ModelName::relxillBB_NS);
     setenv("RELXILL_BBRET_NOREFL", "1", 1);
     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
@@ -924,7 +915,7 @@ TEST_CASE (
     REQUIRE(returnSpec != nullptr);
 
     const double input_logxi = 3.0;
-    LocalModel lmod(ModelName::relxillBB);
+    LocalModel lmod(ModelName::relxillBB_NS);
     lmod.set_par(XPar::logxi, input_logxi);
 
     auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, lmod.get_model_params(), &status);

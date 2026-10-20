@@ -237,6 +237,7 @@ void fitsAddKeyRadialZone(char *fname, const returnSpec2D *returnSpec, int izone
 
 // ========== //
 TEST_CASE (
+
 " Check Temperature Profile"
 ,
 "[bbret]"
@@ -265,6 +266,7 @@ TEST_CASE (
 
 // ========== //
 TEST_CASE (
+
 " DiskBB Spectrum "
 ,
 "[bbret]"
@@ -297,6 +299,7 @@ TEST_CASE (
 
 // ========== //
 TEST_CASE (
+
 " Return Radiation Black Body Spectrum"
 ,
 "[bbret]"
@@ -344,14 +347,15 @@ TEST_CASE (
 }
 
 TEST_CASE (
-" Check loading of relxillBB table"
+
+" Check loading of the xillverNS table for relxillBB_NS"
 ,
 "[bbret]"
 )
 {
   int status = EXIT_SUCCESS;
 
-  LocalModel lmod(ModelName::relxillBB);
+  LocalModel lmod(ModelName::relxillBB_NS);
   auto xill_params = lmod.xill_params();
   auto xill_table_params = get_xilltab_param(xill_params, &status);
   auto xill_spec = get_xillver_spectra_table(xill_table_params, &status);
@@ -369,13 +373,14 @@ TEST_CASE (
 
 
 TEST_CASE (
+
 "Check if Second Evaluation returns the identical results"
 ,
 "[bbret]"
 )
 {
 
-  LocalModel lmod(ModelName::relxillBB);
+  LocalModel lmod(ModelName::relxillBB_NS);
 
   DefaultSpec default_spec1{};
   XspecSpectrum spec1 = default_spec1.get_xspec_spectrum();
@@ -422,20 +427,22 @@ void test_boost_parameter(LocalModel &lmod) {
 
 
 TEST_CASE (
+
 " Evaluate RelxillBB (only black body)"
 ,
 "[relxillBB]"
-) {
+)
+ {
   int status = EXIT_SUCCESS;
   setenv("RELXILL_WRITE_OUTFILES","1",1);
 
-  LocalModel lmod(ModelName::relxillBB);
+  LocalModel lmod(ModelName::relxillBB_NS);
   setenv("RELXILL_BBRET_NOREFL","1",1);
   test_boost_parameter(lmod);
   setenv("RELXILL_BBRET_NOREFL", "0", 1);
   test_boost_parameter(lmod);
 
-  LocalModel lmod2(ModelName::relxillBBxill);
+  LocalModel lmod2(ModelName::relxillBB);
   test_boost_parameter(lmod2);
 
   unsetenv("RELXILL_WRITE_OUTFILES");
@@ -443,6 +450,7 @@ TEST_CASE (
 }
 
 TEST_CASE (
+
 "Test different spin values"
 ,
 "[bbret-speed]"
@@ -450,7 +458,7 @@ TEST_CASE (
 {
 
  std::vector<double> spinArray{0.35,0.71,0.801,0.99,0.998};
-  LocalModel lmod(ModelName::relxillBB);
+  LocalModel lmod(ModelName::relxillBB_NS);
 
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();

@@ -64,55 +64,55 @@ enum class XPar {
   switch_switch_reflfrac_boost,
   switch_switch_returnrad,
   switch_iongrad_type,
-  shifttmaxrrad,  // only for testing relxillBB
+  shifttmaxrrad, // only for testing relxillBB_NS
   switch_switch_source_geometry, // for extended corona geometries (ring, disk...)
   luminosity_source_1e38,
   distance,
   mass,
-  rj,        // parameter of jedsad
-  mdot,   // parameter of jedsad
-  omega,   // parameter of jedsad
-  mu,   // parameter of jedsad
-  ms,   // parameter of jedsad
-  b,   // parameter of jedsad
-  p   // parameter of jedsad
+  rj, // parameter of jedsad
+  mdot, // parameter of jedsad
+  omega, // parameter of jedsad
+  mu, // parameter of jedsad
+  ms, // parameter of jedsad
+  b, // parameter of jedsad
+  p // parameter of jedsad
 };
 
-enum class AuxPar{
+enum class AuxPar {
   num_radial_zones
-
 };
 
 /**
  * @brief exception if anything is wrong with the input parameters
  */
 class ParamInputException : public std::exception {
- public:
-  ParamInputException() = default;
+  public:
+    ParamInputException() = default;
 
-  explicit ParamInputException(const std::string &_msg) {
-    m_msg += _msg;
-  }
+    explicit ParamInputException(const std::string &_msg) {
+      m_msg += _msg;
+    }
 
- private:
-  [[nodiscard]] const char *what() const noexcept override {
-    return m_msg.c_str();
-  }
+  private:
+    [[nodiscard]] const char *what() const noexcept override {
+      return m_msg.c_str();
+    }
 
- private:
-  std::string m_msg{"*** input parameter error: "};
+  private:
+    std::string m_msg{"*** input parameter error: "};
 };
 
 
 // *** Function Definitions ***
 int convertModelType(ModelName name);
+
 int convertIrradType(T_Irrad name);
+
 int convertPrimSpecType(T_PrimSpec name);
 
 //relParam *getRelParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 //xillParam *getXillParamStruct(const ModelParams &params, ModelName model_name, ModelInfo model_info);
 const double *get_xspec_default_parameter_array(ModelName model_name);
-
 
 
 /**
@@ -124,146 +124,141 @@ const double *get_xspec_default_parameter_array(ModelName model_name);
  * class to store all input parameters of the model (explicit or hidden)
  */
 class ParamList {
-
- public:
-
-  explicit ParamList( std::vector<XPar> parnames, std::vector<double> parvalues) :
-      m_parnames_xspec{std::move(parnames)}
-  {
-
-    for (size_t ii = 0; ii < m_parnames_xspec.size(); ++ii) {
-      m_param.insert(std::make_pair(m_parnames_xspec[ii], parvalues[ii]));
+  public:
+    explicit ParamList(std::vector<XPar> parnames, std::vector<double> parvalues) : m_parnames_xspec{
+      std::move(parnames)
+    } {
+      for (size_t ii = 0; ii < m_parnames_xspec.size(); ++ii) {
+        m_param.insert(std::make_pair(m_parnames_xspec[ii], parvalues[ii]));
+      }
     }
-  }
 
-  void set_par(XPar name, double value){
-    try {
-      m_param.at(name) = value;
-    } catch (std::out_of_range &e){
-      throw ParamInputException("parameter not found");
+    void set_par(XPar name, double value) {
+      try {
+        m_param.at(name) = value;
+      } catch (std::out_of_range &e) {
+        throw ParamInputException("parameter not found");
+      }
     }
-  }
 
-  auto get_par(XPar name) const{
-    try {
-      return m_param.at(name);
-    } catch (std::out_of_range &e){
-      throw ParamInputException("parameter not found");
+    auto get_par(XPar name) const {
+      try {
+        return m_param.at(name);
+      } catch (std::out_of_range &e) {
+        throw ParamInputException("parameter not found");
+      }
     }
-  }
 
-  void insert_par(XPar name, double value) {
-    m_param.insert(std::make_pair(name, value));
-  }
-
-  auto &operator[](const XPar &name) const {
-    try {
-      return m_param.at(name);
-    } catch (std::exception &e){
-      throw ParamInputException("parameter not found");
+    void insert_par(XPar name, double value) {
+      m_param.insert(std::make_pair(name, value));
     }
-  }
 
-  auto num_params(){
-    return m_parnames_xspec.size();
-  }
-
-  bool does_parameter_exist(const XPar &name) const {
-    if (m_param.find(name) != m_param.end()){
-      return true;
-    } else {
-      return false;
+    auto &operator[](const XPar &name) const {
+      try {
+        return m_param.at(name);
+      } catch (std::exception &e) {
+        throw ParamInputException("parameter not found");
+      }
     }
-  }
 
-  auto get_parnames(){
-    return m_parnames_xspec;
-  }
+    auto num_params() {
+      return m_parnames_xspec.size();
+    }
 
+    bool does_parameter_exist(const XPar &name) const {
+      if (m_param.find(name) != m_param.end()) {
+        return true;
+      } else {
+        return false;
+      }
+    }
 
- private:
-  std::vector<XPar> m_parnames_xspec = {};  // need this as this needs to be in order given by Xspec TODO: could be fixed in xspec_wrapper
- protected:
-  std::unordered_map<XPar, double> m_param = {};
+    auto get_parnames() {
+      return m_parnames_xspec;
+    }
+
+  private:
+    std::vector<XPar> m_parnames_xspec = {};
+    // need this as this needs to be in order given by Xspec TODO: could be fixed in xspec_wrapper
+  protected:
+    std::unordered_map<XPar, double> m_param = {};
 };
 
 
 class ModelDefinition : public ParamList {
-
- public:
-  ModelDefinition(const ParamList &param_list, ModelName model_name, const ModelInfo &model_info) :
-      ParamList(param_list), m_model_name{model_name}, m_model_info{model_info}
-  {
-  }
-
-  // Move constructor
-  ModelDefinition(ModelDefinition&& other) noexcept
-    : ParamList(std::move(other)),
-      m_model_name(other.m_model_name),
-      m_model_info(other.m_model_info)
-  {
-  }
-
-  // Move assignment operator
-  ModelDefinition& operator=(ModelDefinition&& other) noexcept
-  {
-    if (this != &other)
-    {
-      ParamList::operator=(std::move(other));
-      m_model_name = other.m_model_name;
-      m_model_info = other.m_model_info;
+  public:
+    ModelDefinition(const ParamList &param_list,
+                    ModelName model_name,
+                    const ModelInfo &model_info) : ParamList(param_list), m_model_name{model_name},
+                                                   m_model_info{model_info} {
     }
-    return *this;
-  }
 
-  // Delete copy constructor and copy assignment (if not already deleted)
-  ModelDefinition(const ModelDefinition&) = default;
-  ModelDefinition& operator=(const ModelDefinition&) = default;
+    // Move constructor
+    ModelDefinition(ModelDefinition &&other) noexcept
+      : ParamList(std::move(other)),
+        m_model_name(other.m_model_name),
+        m_model_info(other.m_model_info) {
+    }
 
-  auto get_model_name() const{
-    return m_model_name;
-  }
+    // Move assignment operator
+    ModelDefinition &operator=(ModelDefinition &&other) noexcept {
+      if (this != &other) {
+        ParamList::operator=(std::move(other));
+        m_model_name = other.m_model_name;
+        m_model_info = other.m_model_info;
+      }
+      return *this;
+    }
 
-  auto irradiation() const{
-    return m_model_info.irradiation();
-  }
+    // Delete copy constructor and copy assignment (if not already deleted)
+    ModelDefinition(const ModelDefinition &) = default;
 
-  auto primeSpec() const{
-    return m_model_info.primeSpec();
-  }
+    ModelDefinition &operator=(const ModelDefinition &) = default;
 
-  auto model_type() const{
-    return m_model_info.type();
-  }
+    auto get_model_name() const {
+      return m_model_name;
+    }
 
-  /**
+    auto irradiation() const {
+      return m_model_info.irradiation();
+    }
+
+    auto primeSpec() const {
+      return m_model_info.primeSpec();
+    }
+
+    auto model_type() const {
+      return m_model_info.type();
+    }
+
+    /**
    * get the parameter value for "name", otherwise return the default
    * value "def_value"
    * @param name
    * @param def_value
    * @return
    */
-  double get_otherwise_default(const XPar &name, double def_value) const {
-    if (does_parameter_exist(name) ){
-      return m_param.at(name);
-    } else {
-      return def_value;
+    double get_otherwise_default(const XPar &name, double def_value) const {
+      if (does_parameter_exist(name)) {
+        return m_param.at(name);
+      } else {
+        return def_value;
+      }
     }
-  }
 
-
- private:
-  ModelName m_model_name;
-  ModelInfo m_model_info;
-
+  private:
+    ModelName m_model_name;
+    ModelInfo m_model_info;
 };
 
 relParam *get_rel_params(const ModelDefinition &inp_param);
-void delete_rel_params(relParam* rel_param);
+
+void delete_rel_params(relParam * rel_param);
 
 xillParam *get_xill_params(const ModelDefinition &inp_param);
-void delete_xill_params(xillParam* xill_param);
 
-int is_env_set(const char* envname, int default_switch);
+void delete_xill_params(xillParam * xill_param);
+
+int is_env_set(const char *envname, int default_switch);
 
 #endif //RELXILL_SRC_MODELDEFINITION_H_

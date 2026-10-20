@@ -94,7 +94,7 @@ void LocalModel::relxill_model(const XspecSpectrum &spectrum) {
   int status = EXIT_SUCCESS;
 
   if (m_model_params.get_model_name() == ModelName::relxillBB || m_model_params.get_model_name() ==
-      ModelName::relxillBBxill) {
+      ModelName::relxillBB_NS) {
     relxillbb_kernel(spectrum, m_model_params, &status);
   } else {
     if (m_model_params.get_model_name() == ModelName::relxill_jedsad) {

@@ -6,7 +6,7 @@ load_xspec_local_models("build/");
 
 putenv("RELXILL_RRAD_BBODY_MIRRORED=1");
 
-fit_fun("relxillBB");
+fit_fun("relxillBB_NS");
 variable spin = 0.0;
 variable Tin = 1.0;
 
