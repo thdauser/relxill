@@ -507,14 +507,79 @@ TEST_CASE (
     REQUIRE_NOTHROW(lmod.eval_model(spec));
 }
 
+// ------- //
+// Semi-infinite slab flux weights 0.5*cos(incl_i)/n_incl of the xillver table inclinations, which convert the
+// intrinsic xillver intensities into the angle-averaged flux: get_semi_infinite_slab_flux_weights() and
+// calc_angle_averaged_xillver_flux() (used for the returning radiation correction factors of the lamp post models)
+// ------- //
 TEST_CASE(
-
-
-    " Test xillver_RTR spectra normalization: reflected vs. returning flux per zone ",
-    "[xillverRTR][norm]"
+    " semi-infinite slab flux weights 0.5*cos(incl)/n_incl (incl in deg) and the angle-averaged xillver flux ",
+    "[xillverRTR][slabweights]"
 ) {
+    // Tests get_semi_infinite_slab_flux_weights() and calc_angle_averaged_xillver_flux() against independently
+    // computed values. As the table inclinations are the bin centres of a grid uniform in cos(incl), the weights sum
+    // to int_0^1 0.5*mu dmu = 0.25. (The weights were wrong before, as the table inclinations, already given in deg,
+    // were converted to deg again.)
     int status = EXIT_SUCCESS;
+
+    // relxill: standard xillver table; relxillBBxill: xillverRTR table
+    const ModelName mod_name = GENERATE(ModelName::relxill, ModelName::relxillBBxill);
+    LocalModel lmod(mod_name);
+    INFO("model " << lmod.get_model_string());
+
+    xillParam *xill_param = lmod.get_xill_param_struct();
+    xill_param->radzone = 0; // radial zone of the xillverRTR table (not used by the standard table)
+    xillSpec *xill_spec = get_xillver_spectra(xill_param, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    REQUIRE(xill_spec->n_incl > 1);
+
+    const VecD weights = get_semi_infinite_slab_flux_weights(xill_spec);
+    const VecD weights_expected = expected_slab_flux_weights(xill_spec);
+    REQUIRE(weights.size() == weights_expected.size());
+
+    double sum_weights = 0.0;
+    for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+        INFO("table inclination " << xill_spec->incl[ii] << " deg");
+        CHECK(weights[ii] == Catch::Approx(weights_expected[ii]).epsilon(1e-10));
+        sum_weights += weights[ii];
+    }
+    CHECK(sum_weights == Catch::Approx(0.25).epsilon(1e-3));
+
+    // the angle-averaged flux is the sum of the table spectra weighted with these weights
+    double *spec_avg = calc_angle_averaged_xillver_flux(xill_spec, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    for (int jj = 0; jj < xill_spec->n_ener; jj++) {
+        double spec_avg_expected = 0.0;
+        for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+            spec_avg_expected += weights_expected[ii] * xill_spec->flu[ii][jj];
+        }
+        INFO("energy bin " << jj);
+        CHECK(spec_avg[jj] == Catch::Approx(spec_avg_expected).epsilon(1e-10));
+    }
+
+    delete[] spec_avg;
+    free_xill_spec(xill_spec);
+    delete_xill_params(xill_param);
+}
+
+// ------- //
+// relxillBB angle weighting of the xillver_RTR spectra: normalization of the GR emission-angle distribution,
+// energy conservation of the reflected spectrum (angle-averaged flux vs. returning flux), and comparison of the
+// angle weightings (angle-mixed intensity vs. angle-averaged flux)
+// ------- //
+TEST_CASE(
+    " GR emission-angle distribution rel_cosne->dist of the relxillBB zones sums to 1 in each zone ",
+    "[xillverRTR][cosnedist]"
+) {
+    // The emission-angle distribution weights the xillver spectra of the table inclinations in each radial zone
+    // (calc_xillver_angdep()) and is a probability distribution (dist >= 0, sum = 1). Only the inclination grid of
+    // the xillver table and the radial zones of the returning radiation are needed, no xillver spectra.
+    int status = EXIT_SUCCESS;
+    const double incl_deg = GENERATE(5.0, 60.0);
+    INFO("incl = " << incl_deg << " deg");
+
     LocalModel lmod(ModelName::relxillBBxill);
+    lmod.set_par(XPar::incl, incl_deg);
     relParam *rel_param = lmod.get_rel_params_struct();
     xillParam *xill_param = lmod.get_xill_param_struct();
 
@@ -527,6 +592,68 @@ TEST_CASE(
     get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
     REQUIRE(status == EXIT_SUCCESS);
 
+    // the radial zones are the ones of the returning radiation
+    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener,
+                                                        n_ener,
+                                                        xill_param->kTbb,
+                                                        rel_param->rin,
+                                                        rel_param->rout,
+                                                        rel_param->a,
+                                                        &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    auto radialGrid = get_radial_grid_from_returntab(returnSpec);
+
+    RelSysPar *systemParameters = get_system_parameters(rel_param, &status);
+    relline_spec_multizone *relProfile = relbase_profile(ener,
+                                                         n_ener,
+                                                         rel_param,
+                                                         systemParameters,
+                                                         xill_tab,
+                                                         radialGrid,
+                                                         &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    REQUIRE(relProfile->n_zones == returnSpec->nrad);
+
+    const RelCosne *rel_cosne = relProfile->rel_cosne;
+    REQUIRE(rel_cosne != nullptr);
+    REQUIRE(rel_cosne->n_cosne == xill_tab->n_incl);
+
+    // the emission-angle distribution is a probability distribution in each zone
+    for (int izone = 0; izone < rel_cosne->n_zones; izone++) {
+        double sum = 0.0;
+        for (int ii = 0; ii < rel_cosne->n_cosne; ii++) {
+            INFO("zone " << izone << ", cosne bin " << ii);
+            CHECK(rel_cosne->dist[izone][ii] >= 0.0);
+            sum += rel_cosne->dist[izone][ii];
+        }
+        INFO("zone " << izone);
+        CHECK(sum == Catch::Approx(1.0).epsilon(1e-8));
+    }
+
+    delete_returnSpec2D(&returnSpec);
+    delete_rel_params(rel_param);
+    delete_xill_params(xill_param);
+}
+
+TEST_CASE(
+    " Test xillver_RTR spectra normalization: reflected vs. returning flux per zone ",
+    "[xillverRTR][norm]"
+) {
+    // Energy conservation: the GR emission-angle distribution is replaced by the semi-infinite slab flux weights
+    // (identical for all zones), which turns the angle-weighted intensity into the angle-averaged flux (as in
+    // calc_angle_averaged_xillver_flux()). This reflected flux must be below the returning flux. (With the GR
+    // emission-angle distribution, the result is the angle-mixed intensity, which can not be compared with the
+    // returning flux, see "[angleweight]".)
+    int status = EXIT_SUCCESS;
+    LocalModel lmod(ModelName::relxillBBxill);
+    relParam *rel_param = lmod.get_rel_params_struct();
+    xillParam *xill_param = lmod.get_xill_param_struct();
+
+    // same set-up as in relxillbb_kernel()
+    auto ener_grid = get_relxill_conv_energy_grid();
+    int n_ener = ener_grid->nbins;
+    double *ener = ener_grid->ener;
+
     returnSpec2D *returnSpec = spec_returnrad_blackbody(ener,
                                                         n_ener,
                                                         xill_param->kTbb,
@@ -536,86 +663,33 @@ TEST_CASE(
                                                         &status);
     REQUIRE(status == EXIT_SUCCESS);
 
-    SECTION("angle-averaged (semi-infinite slab) weighting") {
-        // replace the GR emission-angle distribution by the semi-infinite slab flux weights (identical
-        // for all zones), which turns the angle-weighted intensity into the angle-averaged flux
-        // (as in calc_angle_averaged_xillver_flux())
-        xillParam xill_param_incl = *xill_param;
-        xill_param_incl.radzone = 0;
-        xillSpec *xill_spec = get_xillver_spectra(&xill_param_incl, &status);
-        REQUIRE(status == EXIT_SUCCESS);
+    xillParam xill_param_incl = *xill_param;
+    xill_param_incl.radzone = 0;
+    xillSpec *xill_spec = get_xillver_spectra(&xill_param_incl, &status);
+    REQUIRE(status == EXIT_SUCCESS);
 
-        // the slab flux weights are 0.5*cos(incl_i)/n_incl of the table inclinations (in deg); as these are the bin
-        // centres of a grid uniform in cos(incl), the weights sum to int_0^1 0.5*mu dmu = 0.25
-        const VecD slab_weights = expected_slab_flux_weights(xill_spec);
-        const VecD slab_weights_lib = get_semi_infinite_slab_flux_weights(xill_spec);
-        double sum_weights = 0.0;
-        for (int ii = 0; ii < xill_spec->n_incl; ii++) {
-            INFO("table inclination " << xill_spec->incl[ii] << " deg");
-            CHECK(slab_weights_lib[ii] == Catch::Approx(slab_weights[ii]).epsilon(1e-10));
-            sum_weights += slab_weights[ii];
-        }
-        CHECK(sum_weights == Catch::Approx(0.25).epsilon(1e-3));
+    // slab flux weights 0.5*cos(incl_i)/n_incl (the weights themselves are tested in "[slabweights]")
+    const VecD slab_weights = get_semi_infinite_slab_flux_weights(xill_spec);
 
-        VecD cosne(xill_spec->n_incl);
-        for (int ii = 0; ii < xill_spec->n_incl; ii++) {
-            cosne[ii] = cos(xill_spec->incl[ii] * M_PI / 180.0);
-        }
-        free_xill_spec(xill_spec);
+    VecD cosne(xill_spec->n_incl);
+    for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+        cosne[ii] = cos(xill_spec->incl[ii] * M_PI / 180.0);
+    }
+    free_xill_spec(xill_spec);
 
-        AngleDistProfile slab(cosne, returnSpec->nrad);
-        for (int izone = 0; izone < returnSpec->nrad; izone++) {
-            std::copy(slab_weights.begin(), slab_weights.end(), slab.dist[izone].begin()); // keep dist_rows valid
-        }
-
-        VecD ratio = calc_ratio_reflected_to_returning_flux(*xill_param, &slab.profile, returnSpec, &status);
-        REQUIRE(status == EXIT_SUCCESS);
-
-        // energy conservation: the reflected flux is below the returning (illuminating) flux
-        for (int izone = 0; izone < returnSpec->nrad; izone++) {
-            INFO("zone " << izone);
-            CHECK(ratio[izone] > 0.0);
-            CHECK(ratio[izone] < 1.0);
-        }
+    AngleDistProfile slab(cosne, returnSpec->nrad);
+    for (int izone = 0; izone < returnSpec->nrad; izone++) {
+        std::copy(slab_weights.begin(), slab_weights.end(), slab.dist[izone].begin()); // keep dist_rows valid
     }
 
-    SECTION("GR emission-angle weighting") {
-        // test the normalization of the emission-angle distribution
-        // note: it does not make sense to test the total flux taking this distribution into account
-        const double incl_deg = GENERATE(5.0, 60.0);
-        lmod.set_par(XPar::incl, incl_deg);
-        relParam *rel_param_incl = lmod.get_rel_params_struct();
-        printf("\n GR emission-angle weighting for incl=%.1f deg", incl_deg);
-        INFO("incl = " << incl_deg << " deg");
+    VecD ratio = calc_ratio_reflected_to_returning_flux(*xill_param, &slab.profile, returnSpec, &status);
+    REQUIRE(status == EXIT_SUCCESS);
 
-        auto radialGrid = get_radial_grid_from_returntab(returnSpec);
-        RelSysPar *systemParameters = get_system_parameters(rel_param_incl, &status);
-        relline_spec_multizone *relProfile = relbase_profile(ener,
-                                                             n_ener,
-                                                             rel_param_incl,
-                                                             systemParameters,
-                                                             xill_tab,
-                                                             radialGrid,
-                                                             &status);
-        REQUIRE(status == EXIT_SUCCESS);
-        REQUIRE(relProfile->n_zones == returnSpec->nrad);
-
-        const RelCosne *rel_cosne = relProfile->rel_cosne;
-        REQUIRE(rel_cosne != nullptr);
-        REQUIRE(rel_cosne->n_cosne == xill_tab->n_incl);
-
-        // the emission-angle distribution is a probability distribution in each zone
-        for (int izone = 0; izone < rel_cosne->n_zones; izone++) {
-            double sum = 0.0;
-            for (int ii = 0; ii < rel_cosne->n_cosne; ii++) {
-                INFO("zone " << izone << ", cosne bin " << ii);
-                CHECK(rel_cosne->dist[izone][ii] >= 0.0);
-                sum += rel_cosne->dist[izone][ii];
-            }
-            INFO("zone " << izone);
-            CHECK(sum == Catch::Approx(1.0).epsilon(1e-8));
-        }
-        delete_rel_params(rel_param_incl);
+    // energy conservation: the reflected flux is below the returning (illuminating) flux
+    for (int izone = 0; izone < returnSpec->nrad; izone++) {
+        INFO("zone " << izone);
+        CHECK(ratio[izone] > 0.0);
+        CHECK(ratio[izone] < 1.0);
     }
 
     delete_returnSpec2D(&returnSpec);
@@ -751,85 +825,6 @@ TEST_CASE(
         delete_xill_params(xill_param);
     }
     fclose(fp);
-}
-
-
-TEST_CASE (
-
-
-
-" angle-averaged xillver flux equals angle-weighted intensity with slab flux weights "
-,
-"[xillverRTR][angledist]"
-)
- {
-    // Purpose: prove that calc_angle_averaged_xillver_flux() is exactly the special
-    // case of the angle-weighting machinery (calc_xillver_angdep /
-    // calculateAngleWeightedXillverSpectrum) when the weights are set to the
-    // semi-infinite-slab flux weights  w_i = 0.5*cos(incl_i) / n_incl, which carry
-    // the intrinsic-intensity -> observed-flux conversion.
-    //
-    // It also pins down the (intentional) fact that these slab flux weights do NOT
-    // sum to 1 -- unlike rel_cosne->dist, which is a normalized probability distribution.
-    int status = EXIT_SUCCESS;
-
-    // a relxill-type model => get_xillver_spectra returns spectra for ALL table inclinations
-    // use large inner radius to check for the convergence at large radii, in this case the transfer function
-    // should converge towards F=0.5*cos(incl) (see Speith Diploma Thesis, Relxill Internal Docu)
-    LocalModel lmod(ModelName::relxill);
-    lmod.set_par(XPar::rin, 200);
-    lmod.set_par(XPar::rout, 1000);
-    xillSpec *spec = get_xillver_spectra(lmod.xill_params(), &status);
-    REQUIRE(status == EXIT_SUCCESS);
-    REQUIRE(spec != nullptr);
-    REQUIRE(spec->n_incl > 1); // averaging is non-trivial only with several inclinations
-
-    // (1) reference: the dedicated angle-averaged-flux routine
-    double *spec_avg = calc_angle_averaged_xillver_flux(spec, &status);
-    REQUIRE(status == EXIT_SUCCESS);
-    REQUIRE(spec_avg != nullptr);
-
-    // build the slab flux weights that reproduce calc_angle_averaged_xillver_flux:
-    //   w_i = norm_factor_semi_infinite_slab(incl_i[deg]) / n_incl
-    VecD dist(spec->n_incl);
-    double dist_sum = 0.0;
-    for (int ii = 0; ii < spec->n_incl; ii++) {
-        dist[ii] = norm_factor_semi_infinite_slab(spec->incl[ii]) / spec->n_incl;
-        dist_sum += dist[ii];
-    }
-
-    // these slab weights are deliberately NOT a normalized probability distribution
-    REQUIRE(fabs(dist_sum - 1.0) > 0.1);
-
-    // (2a) core summation: calc_xillver_angdep with the slab flux weights must reproduce
-    //      calc_angle_averaged_xillver_flux bin-by-bin (identical operations => exact)
-    VecD spec_weighted(spec->n_ener, 0.0);
-    calc_xillver_angdep(spec_weighted.data(), spec, dist.data(), &status);
-    REQUIRE(status == EXIT_SUCCESS);
-
-    for (int jj = 0; jj < spec->n_ener; jj++) {
-        INFO("calc_xillver_angdep mismatch at bin " << jj);
-        REQUIRE(fabs(spec_weighted[jj] - spec_avg[jj]) <= 1e-12 * fabs(spec_avg[jj]));
-    }
-
-    // (2b) full public path: get_angle_weighted_xill_spec rebinned back onto
-    //      the native grid (identity rebin) must also reproduce the averaged spectrum
-    VecD spec_weighted_rebinned(spec->n_ener, 0.0);
-    get_angle_weighted_xill_spec(spec_weighted_rebinned,
-                                 spec->ener,
-                                 spec->n_ener,
-                                 lmod.xill_params(),
-                                 dist.data(),
-                                 &status);
-    REQUIRE(status == EXIT_SUCCESS);
-
-    for (int jj = 0; jj < spec->n_ener; jj++) {
-        INFO("get_angle_weighted_xill_spec mismatch at bin " << jj);
-        REQUIRE(fabs(spec_weighted_rebinned[jj] - spec_avg[jj]) <= 1e-9 * fabs(spec_avg[jj]));
-    }
-
-    delete[] spec_avg;
-    free_xill_spec(spec);
 }
 
 

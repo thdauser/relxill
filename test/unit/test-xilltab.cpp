@@ -369,17 +369,15 @@ TEST_CASE (
   free(xill_tab_param);
 
 }
-TEST_CASE (
+TEST_CASE(
 
 
-" units of the inclinations: relParam in rad, xillParam, xillTableParam, xillTable and xillSpec in deg "
-,
-"[xilltab][incl-units]"
-)
- {
+  " units of the inclinations: relParam in rad, xillParam, xillTableParam, xillTable and xillSpec in deg ",
+  "[xilltab][incl-units]"
+) {
   // the inclination units are documented in common.h; this test verifies this definition
   int status = EXIT_SUCCESS;
-  const double incl_deg = 50.0;  // differs from the default value of the models
+  const double incl_deg = 50.0; // differs from the default value of the models
 
   // relxill: standard xillver table; relxillBBxill: xillverRTR table
   const ModelName mod_name = GENERATE(ModelName::relxill, ModelName::relxillBBxill);
@@ -412,7 +410,7 @@ TEST_CASE (
   CHECK(xill_tab->incl[xill_tab->n_incl - 1] > M_PI / 2);
 
   // xillver spectra for all inclinations (relxill-type model): the inclinations are the table values in deg
-  xill_param->radzone = 0;  // radial zone of the xillverRTR table (not used by the standard table)
+  xill_param->radzone = 0; // radial zone of the xillverRTR table (not used by the standard table)
   xillSpec *xill_spec = get_xillver_spectra(xill_param, &status);
   REQUIRE(status == EXIT_SUCCESS);
   REQUIRE(xill_spec->n_incl == xill_tab->n_incl);

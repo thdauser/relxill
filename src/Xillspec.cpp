@@ -122,7 +122,7 @@ static void sum_xillver_spectra_over_incl(double *out, const xillSpec *xill_spec
 VecD get_semi_infinite_slab_flux_weights(const xillSpec *xill_spec) {
   VecD weights(xill_spec->n_incl);
   for (int ii = 0; ii < xill_spec->n_incl; ii++) {
-    weights[ii] = norm_factor_semi_infinite_slab(xill_spec->incl[ii]) / xill_spec->n_incl;  // incl is in deg
+    weights[ii] = norm_factor_semi_infinite_slab(xill_spec->incl[ii]) / xill_spec->n_incl; // incl is in deg
   }
   return weights;
 }

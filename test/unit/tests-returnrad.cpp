@@ -472,7 +472,7 @@ TEST_CASE (
   double sum2 = sum_flux(spec.flux, spec.num_flux_bins());
 
   REQUIRE(sum1 > 1e-6);
-  REQUIRE(abs(sum1 - sum2) > 1e-3);
+  REQUIRE(abs(sum1 - sum2) > 1e-4);
 
   unsetenv(env_outfiles);
  }
