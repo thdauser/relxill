@@ -150,6 +150,25 @@ after the fact.
 Both normalization factors that were removed from this path in 2026 changed
 the relative normalization; see \ref returnrad_norm_removed "Pitfalls (2)".
 
+### The incident spectrum of the table and the returning spectrum
+
+The reflection spectra of the xillver table are calculated for a given incident spectrum, in the following called
+the *xillver primary*. Physically, it is the returning spectrum `specRet[izone]`. The xillver primary is, however, a
+property of the table and is not calculated in the model, while `specRet[izone]` is calculated by the model for the
+given parameters:
+
+- `relxillBBxill` (`xillverRTR` table): the xillver primary of each radial zone (`radindex`) was taken from
+  `specRet[izone]` when the table was calculated, so currently both are identical by design. As the table only
+  depends on `radindex` and the inclination, this holds for the parameters the table was calculated for.
+- `relxillBB` (`xillverNS` table): the xillver primary is a blackbody of temperature \f$kT_\mathrm{bb}\f$, the same for
+  all zones. For computational reasons, it is only an approximation of the returning spectrum.
+
+The model does not assume that both spectra are identical, as this may change in the future (e.g., for a table
+calculated for a different or more general incident spectrum). Only the integrated energy flux of `specRet[izone]`
+(0.1-1000 keV) enters the model, through \f$N_\mathrm{xill}\f$, while the shape of the xillver primary is contained in
+the table. A difference in the spectral shape would therefore not be corrected (see above), but would need to be kept
+in mind when comparing the reflected spectrum with the returning spectrum.
+
 ## The factors
 
 ### calculating N_xill: two things to get right
