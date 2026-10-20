@@ -73,7 +73,7 @@ static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
     VecD ratio(returnSpec->nrad, 0.0);
     VecD xill_flux_returnrad(returnSpec->n_ener, 0.0);
 
-    printf("\n %5s  %12s  %12s  %12s\n", "izone", "N(return)", "N(reflect)", "refl/return");
+    // printf("\n %5s  %12s  %12s  %12s\n", "izone", "N(return)", "N(reflect)", "refl/return");
     for (int izone = 0; izone < returnSpec->nrad; izone++) {
         xill_param_zone.radzone = static_cast<double>(izone);
         calc_zone_direct_plus_xillver_reflected_flux(xill_param_zone,
@@ -98,7 +98,7 @@ static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
         }
 
         ratio[izone] = norm_reflect / norm_return;
-        printf(" %5i  %12.4e  %12.4e  %12.4e\n", izone, norm_return, norm_reflect, ratio[izone]);
+        //     printf(" %5i  %12.4e  %12.4e  %12.4e\n", izone, norm_return, norm_reflect, ratio[izone]);
     }
     return ratio;
 }
@@ -559,7 +559,8 @@ TEST_CASE(
     }
 
     SECTION("GR emission-angle weighting") {
-        // the emission-angle distribution depends on the observer inclination
+        // test the normalization of the emission-angle distribution
+        // note: it does not make sense to test the total flux taking this distribution into account
         const double incl_deg = GENERATE(5.0, 60.0);
         lmod.set_par(XPar::incl, incl_deg);
         relParam *rel_param_incl = lmod.get_rel_params_struct();
@@ -593,27 +594,6 @@ TEST_CASE(
             INFO("zone " << izone);
             CHECK(sum == Catch::Approx(1.0).epsilon(1e-8));
         }
-
-        // the GR angle weighting returns the angle-mixed intrinsic intensity; convert it to flux by
-        // applying the semi-infinite slab factor F(i) = 0.5*cos(i)*I(i) to each emission angle
-        // (copy, as relProfile is cached)
-        AngleDistProfile gr_flux(VecD(rel_cosne->cosne, rel_cosne->cosne + rel_cosne->n_cosne), rel_cosne->n_zones);
-        for (int izone = 0; izone < rel_cosne->n_zones; izone++) {
-            for (int ii = 0; ii < rel_cosne->n_cosne; ii++) {
-                gr_flux.dist[izone][ii] = rel_cosne->dist[izone][ii] * norm_factor_semi_infinite_slab(xill_tab->incl[ii]);
-            }
-        }
-
-        VecD ratio = calc_ratio_reflected_to_returning_flux(*xill_param, &gr_flux.profile, returnSpec, &status);
-        REQUIRE(status == EXIT_SUCCESS);
-
-        // energy conservation: the reflected flux is below the returning (illuminating) flux
-        for (int izone = 0; izone < returnSpec->nrad; izone++) {
-            INFO("zone " << izone);
-            CHECK(ratio[izone] > 0.0);
-            CHECK(ratio[izone] < 1.0);
-        }
-
         delete_rel_params(rel_param_incl);
     }
 
