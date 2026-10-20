@@ -19,7 +19,6 @@ variable logxi = 2.0;
 variable logn = 18.0;
 
 
-
 define eval_std_model(){
 %{{{
 
@@ -54,23 +53,6 @@ define getDiagnoseRframePlot(){
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle);
    
    pl.render(dir_plots+prefix+"diagnosePlotRframe.pdf");
-   
-   return EXIT_SUCCESS;
-}
-
-define getDiagnoseXillverPrimPlot(){
-   
-   variable plotTitle = sprintf("Plot of Real Primary  (solid) and Xillver Primary (dashed) used for the reflection -- spin=%.3f",
-				spin);
-
-
-   variable files = getFilenameStruct();
-   variable fnames  = [files.rframe.specRet,files.rframe.specPri];
-   variable iRframe = [1,1];
-   
-   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec);
-   
-   pl.render(dir_plots+prefix+"diagnosePlotXillverPrim.pdf");
    
    return EXIT_SUCCESS;
 }

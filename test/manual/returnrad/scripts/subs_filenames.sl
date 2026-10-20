@@ -11,7 +11,6 @@ define getFilenameStruct(){
    variable f_rframe = struct{
       specRet  = sprintf(fbase, "rframe-bbodyRet" ),      %% returning spectrum on the disk (rest-frame)
       specPri  = sprintf(fbase, "rframe-bbodyEmit" ),      %% primary BBody spectrum (rest-frame)
-      xillPrim = sprintf(fbase, "rframe-primary" ),  %% emitted spectrum for boost=0 (rest-frame, identical to specPri)
       xillRefl = sprintf(fbase, "rframe-reflect" ),  %% reflected xillver spectrum, boost=-1 (rest-frame)
       xillCombined = sprintf(fbase, "rframe-total" )  %% reflected+primary (bbodyEmit) spectrum, boost=1 (rest-frame)
    }

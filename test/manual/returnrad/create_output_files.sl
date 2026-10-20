@@ -37,7 +37,8 @@ define createOutputFiles(_ff, _par){
    }
    
    %% the model writes one set of files per evaluation, named by the boost value
-   %% (boost=1: total, boost=0: primary, boost=-1: reflect)
+   %% (boost=1: total, boost=0: primary, boost=-1: reflect); for boost=0 only the
+   %% observed file is written, as the rest-frame one is identical to rframe-bbodyEmit
    variable boost;
 
    %% 1 creating the "mirror" files

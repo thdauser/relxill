@@ -742,11 +742,16 @@ IonGradient calc_ion_gradient_from_returnrad(
 }
 
 
+// boost=0: only the direct (primary) emission, without reflection
+static bool is_boost_primary_only(double boost) {
+    return fabs(boost) < 1e-8;
+}
+
 // filename suffix of the diagnose outfiles, following the boost sign convention
 // (boost<0: reflected only, boost=0: primary only, boost>0: primary + reflected)
 static std::string get_bbret_diagnose_suffix(double boost) {
     std::string prefix = mirrored_reflection_instead_of_xillver() ? "mirror-" : "";
-    if (fabs(boost) < 1e-8) {
+    if (is_boost_primary_only(boost)) {
         return prefix + "primary";
     }
     if (boost < 0) {
@@ -776,6 +781,12 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                          returnSpec->nrad,
                          nullptr,
                          status);
+
+    // for boost=0, the rest-frame spectrum is the direct emission specPri, which is
+    // already written to rframe-bbodyEmit.fits by spec_returnrad_blackbody()
+    if (is_boost_primary_only(xill_param->boost)) {
+        return;
+    }
 
     fname = fbase_rrad_bbody + "rframe-" + suffix + ".fits";
     fits_rr_write_2Dspec(fname.c_str(),
