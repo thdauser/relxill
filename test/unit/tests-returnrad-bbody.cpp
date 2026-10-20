@@ -794,7 +794,7 @@ TEST_CASE (
     VecD dist(spec->n_incl);
     double dist_sum = 0.0;
     for (int ii = 0; ii < spec->n_incl; ii++) {
-        dist[ii] = norm_factor_semi_infinite_slab(spec->incl[ii] * 180.0 / M_PI) / spec->n_incl;
+        dist[ii] = norm_factor_semi_infinite_slab(spec->incl[ii]) / spec->n_incl;
         dist_sum += dist[ii];
     }
 

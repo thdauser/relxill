@@ -369,3 +369,59 @@ TEST_CASE (
   free(xill_tab_param);
 
 }
+TEST_CASE (
+
+
+" units of the inclinations: relParam in rad, xillParam, xillTableParam, xillTable and xillSpec in deg "
+,
+"[xilltab][incl-units]"
+)
+ {
+  // the inclination units are documented in common.h; this test verifies this definition
+  int status = EXIT_SUCCESS;
+  const double incl_deg = 50.0;  // differs from the default value of the models
+
+  // relxill: standard xillver table; relxillBBxill: xillverRTR table
+  const ModelName mod_name = GENERATE(ModelName::relxill, ModelName::relxillBBxill);
+  LocalModel lmod(mod_name);
+  INFO("model " << lmod.get_model_string());
+  lmod.set_par(XPar::incl, incl_deg);
+
+  // model parameters
+  relParam *rel_param = lmod.get_rel_params_struct();
+  xillParam *xill_param = lmod.get_xill_param_struct();
+  CHECK(rel_param->incl == Catch::Approx(incl_deg * M_PI / 180.0));
+  CHECK(xill_param->incl == Catch::Approx(incl_deg));
+
+  xillTableParam *xill_tab_param = get_xilltab_param(xill_param, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+  CHECK(xill_tab_param->incl == Catch::Approx(incl_deg));
+  free(xill_tab_param);
+
+  // inclination grid of the table: in deg, all values are in (0, 90) and the largest is above pi/2
+  // (in rad, all values would be below pi/2)
+  xillTable *xill_tab = nullptr;
+  get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+  REQUIRE(xill_tab->n_incl > 1);
+  for (int ii = 0; ii < xill_tab->n_incl; ii++) {
+    INFO("table inclination " << ii << ": " << xill_tab->incl[ii]);
+    CHECK(xill_tab->incl[ii] > 0.0);
+    CHECK(xill_tab->incl[ii] < 90.0);
+  }
+  CHECK(xill_tab->incl[xill_tab->n_incl - 1] > M_PI / 2);
+
+  // xillver spectra for all inclinations (relxill-type model): the inclinations are the table values in deg
+  xill_param->radzone = 0;  // radial zone of the xillverRTR table (not used by the standard table)
+  xillSpec *xill_spec = get_xillver_spectra(xill_param, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+  REQUIRE(xill_spec->n_incl == xill_tab->n_incl);
+  for (int ii = 0; ii < xill_spec->n_incl; ii++) {
+    INFO("spectrum inclination " << ii);
+    CHECK(xill_spec->incl[ii] == Catch::Approx(xill_tab->incl[ii]));
+  }
+
+  free_xill_spec(xill_spec);
+  delete_rel_params(rel_param);
+  delete_xill_params(xill_param);
+}
