@@ -36,46 +36,24 @@ define createOutputFiles(_ff, _par){
       set_par("*.logN",_par.logn);
    }
    
-   %% creating the "mirror" files
+   %% the model writes one set of files per evaluation, named by the boost value
+   %% (boost=1: total, boost=0: primary, boost=-1: reflect)
+   variable boost;
+
+   %% 1 creating the "mirror" files
    putenv("RELXILL_RRAD_BBODY_MIRRORED=1");
-
-   set_par("*.boost",1.0);
-   () = eval_fun(1,2);
-
-   set_par("*.boost",0);
-   () = eval_fun(1,2);
-
-   set_par("*.boost",-1.0,0,-10,10);
-   () = eval_fun(1,2);
-   
+   foreach boost ([1.0, 0.0, -1.0]){
+      set_par("*.boost",boost,0,-10,10);
+      () = eval_fun(1,2);
+   }
 
    if (not qualifier_exists("only_mirrored")){
-      
-      %%% 2 creating the "reflection" files
+      %% 2 creating the "reflection" files
       putenv("RELXILL_RRAD_BBODY_MIRRORED=0");
-      variable files = getFilenameStruct();
-      
-      %%% 2a combined
-      set_par("*.boost",1);
-      () = eval_fun(1,2);
-      
-      %%% 2b reflected   
-      set_par("*.boost",-1.0,0,-10,10);
-      () = eval_fun(1,2);
-      variable cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillRefl);
-      %   message(cmd);
-      () = system(cmd);
-      
-      %%% 2c primary   
-      set_par("*.boost",0.0,0,-10,10);
-      () = eval_fun(1,2);
-      cmd = sprintf("mv %s %s",files.rframe.xillCombined,files.rframe.xillPrim);
-      % message(cmd);
-      () = system(cmd);
-      
-      
-      set_par("*.boost",0.0,0,-10,10);
-      () = eval_fun(1,2);
+      foreach boost ([1.0, 0.0, -1.0]){
+         set_par("*.boost",boost,0,-10,10);
+         () = eval_fun(1,2);
+      }
    }
 
 

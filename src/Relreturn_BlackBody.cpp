@@ -742,6 +742,19 @@ IonGradient calc_ion_gradient_from_returnrad(
 }
 
 
+// filename suffix of the diagnose outfiles, following the boost sign convention
+// (boost<0: reflected only, boost=0: primary only, boost>0: primary + reflected)
+static std::string get_bbret_diagnose_suffix(double boost) {
+    std::string prefix = mirrored_reflection_instead_of_xillver() ? "mirror-" : "";
+    if (fabs(boost) < 1e-8) {
+        return prefix + "primary";
+    }
+    if (boost < 0) {
+        return prefix + "reflect";
+    }
+    return prefix + "total";
+}
+
 static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                                           const VecD_2D &specZonesConvOutput,
                                           const VecD_2D &specZonesEmittedCombined,
@@ -749,26 +762,10 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                                           int n_ener,
                                           const returnSpec2D *returnSpec,
                                           int *status) {
-    std::string fname;
+    const std::string suffix = get_bbret_diagnose_suffix(xill_param->boost);
 
-    if (mirrored_reflection_instead_of_xillver()) {
-        if (fabs(xill_param->boost) < 1e-8) {
-            fname = fbase_rrad_bbody + "obs-mirror-primary.fits";
-        } else if (xill_param->boost < 0) {
-            fname = fbase_rrad_bbody + "obs-mirror-refl.fits";
-        } else {
-            fname = fbase_rrad_bbody + "obs-mirror.fits";
-        }
-    } else {
-        if (fabs(xill_param->boost) < 1e-8) {
-            fname = fbase_rrad_bbody + "obs-primary.fits";
-        } else if (xill_param->boost < 1) {
-            fname = fbase_rrad_bbody + "obs-reflect.fits";
-        } else {
-            fname = fbase_rrad_bbody + "obs-total.fits";
-        }
-    }
-  //  std::cout << " writing BBret diagnose outfile: " << fname.c_str() << std::endl;
+    std::string fname = fbase_rrad_bbody + "obs-" + suffix + ".fits";
+    std::cout << " writing BBret diagnose outfile: " << fname.c_str() << std::endl;
 
     fits_rr_write_2Dspec(fname.c_str(),
                          specZonesConvOutput,
@@ -780,7 +777,7 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                          nullptr,
                          status);
 
-    fname = fbase_rrad_bbody + "rframe-total.fits";
+    fname = fbase_rrad_bbody + "rframe-" + suffix + ".fits";
     fits_rr_write_2Dspec(fname.c_str(),
                          specZonesEmittedCombined,
                          ener,

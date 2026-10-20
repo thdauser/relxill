@@ -113,7 +113,6 @@ define getDiagnoseRelxillBBPlot(){
 %}}}
 
 define getDiagnoseMirrorBbody(){
-%{{{
    
    variable plotTitle = sprintf("Observer, Mirror Refl: Combined (solid), Primary BBody (dashed), Reflected Mirror (dotted)  -- spin=%.3f",
 				spin);
@@ -129,35 +128,6 @@ define getDiagnoseMirrorBbody(){
    
    return EXIT_SUCCESS;
 }
-%}}}
-
-
-define getCompareXillverTables(){
-
-   variable params = get_param_struct(spin, Tin, logxi, logn);
-   
-   load_std_model("relxillBBxill",params);
-   variable rtr = eval_std_model();
-   
-   load_std_model("relxillBB",params);
-   variable xillns = eval_std_model();
-
-   variable pl = xfig_plot_new();
-   pl.world(0.1,40,1,900;loglog);
-
-   pl.plot(rtr.mn,rtr.refl;width=2,line=0,color="red");
-   pl.plot(rtr.mn,rtr.direct;width=2,line=1);
-   pl.plot(rtr.mn,rtr.full;width=2,line=1,color="red");
-
-   pl.plot(xillns.mn,xillns.refl;width=2,line=0,color="blue");
-   pl.plot(xillns.mn,xillns.direct;width=2,line=1);
-   pl.plot(xillns.mn,xillns.full;width=2,line=1,color="blue");
-
-   
-   pl.render(dir_plots+"diagnosePlotTables.pdf");
-
-   return EXIT_SUCCESS;
-}
 
 define testDiagnosePlots(){
 
@@ -168,7 +138,6 @@ define testDiagnosePlots(){
    if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
    if (getDiagnoseRelxillBBPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-   if (getCompareXillverTables() != EXIT_SUCCESS) return EXIT_FAILURE;
 
    return EXIT_SUCCESS;
 }
