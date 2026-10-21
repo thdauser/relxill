@@ -20,6 +20,8 @@
 #include "LocalModel.h"
 #include "XspecSpectrum.h"
 #include "Relreturn_BlackBody.h"
+#include "Xillspec.h"
+#include "Rebin.h"
 #include "tests-bbody-returnrad.h"
 
 extern "C" {
@@ -218,59 +220,77 @@ static std::string get_fname_refdata_diskbb(double Tin) {
   return fname;
 }
 
-// reads the diskbb model of Xspec (column "diskbb") from a reference file and checks that its energy grid
+// reference file with the ezdiskbb model of Xspec (column "ezdiskbb") for the given Tmax, on the energy grid of the
+// "ezdiskbb" tests below (created with test/unit/refdata/create_refvalues_diskbb.sl)
+static std::string get_fname_refdata_ezdiskbb(double Tmax) {
+  char fname[100];
+  snprintf(fname, sizeof(fname), "refvalues_ezdiskbb_Tmax%.1f.fits", Tmax);
+  return fname;
+}
+
+// reads a model spectrum of Xspec (column colname) from a reference file and checks that its energy grid
 // (column "elo") is identical to ener
-static VecD fits_read_refdata_xspec_diskbb(const std::string &fname_ref, const double *ener, int n_ener,
-                                           int *status) {
-  VecD diskbb(n_ener, 0.0);
+static VecD fits_read_refdata_xspec(const std::string &fname_ref,
+                                    const char *colname,
+                                    const double *ener,
+                                    int n_ener,
+                                    int *status) {
+  VecD spec_ref(n_ener, 0.0);
   VecD elo(n_ener, 0.0);
   const std::string fullname = std::string(RELXILL_SOURCE_DIR) + "/" + REFDATA_DIR + fname_ref;
 
   fitsfile *fptr = nullptr;
   if (fits_open_table(&fptr, fullname.c_str(), READONLY, status)) {
     relxill_check_fits_error(status);
-    return diskbb;
+    return spec_ref;
   }
 
   long nrows = 0;
   int colnum_elo = 0;
-  int colnum_diskbb = 0;
+  int colnum_spec = 0;
   char colname_elo[] = "elo";
-  char colname_diskbb[] = "diskbb";
+  std::string colname_spec(colname);
   fits_get_num_rows(fptr, &nrows, status);
   fits_get_colnum(fptr, CASEINSEN, colname_elo, &colnum_elo, status);
-  fits_get_colnum(fptr, CASEINSEN, colname_diskbb, &colnum_diskbb, status);
+  fits_get_colnum(fptr, CASEINSEN, colname_spec.data(), &colnum_spec, status);
   if (*status == EXIT_SUCCESS && nrows == n_ener) {
     int anynul = 0;
     double nullval = 0.0;
     fits_read_col(fptr, TDOUBLE, colnum_elo, 1, 1, nrows, &nullval, elo.data(), &anynul, status);
-    fits_read_col(fptr, TDOUBLE, colnum_diskbb, 1, 1, nrows, &nullval, diskbb.data(), &anynul, status);
+    fits_read_col(fptr, TDOUBLE, colnum_spec, 1, 1, nrows, &nullval, spec_ref.data(), &anynul, status);
   }
   relxill_check_fits_error(status);
   int status_close = EXIT_SUCCESS;
   fits_close_file(fptr, &status_close);
-  CHECK_STATUS_RET(*status, diskbb);
+  CHECK_STATUS_RET(*status, spec_ref);
 
   if (nrows != n_ener) {
     printf(" *** error : reference file %s has %li bins, but expected %i bins\n", fname_ref.c_str(), nrows, n_ener);
     *status = EXIT_FAILURE;
-    return diskbb;
+    return spec_ref;
   }
   for (int ii = 0; ii < n_ener; ii++) {
     if (fabs(elo[ii] / ener[ii] - 1) > 1e-6) {
       printf(" *** error : energy grid of reference file %s differs in bin %i (%e instead of %e keV)\n",
-             fname_ref.c_str(), ii, elo[ii], ener[ii]);
+             fname_ref.c_str(),
+             ii,
+             elo[ii],
+             ener[ii]);
       *status = EXIT_FAILURE;
-      return diskbb;
+      return spec_ref;
     }
   }
-  return diskbb;
+  return spec_ref;
 }
 
 // max. relative deviation of the shape of spec from spec_ref in the band [emin, emax], i.e., of the ratio
 // spec/spec_ref normalized to its mean in the band
-static double max_shape_deviation(const double *ener, const double *spec, const VecD &spec_ref, int n_ener,
-                                  double emin, double emax) {
+static double max_shape_deviation(const double *ener,
+                                  const double *spec,
+                                  const VecD &spec_ref,
+                                  int n_ener,
+                                  double emin,
+                                  double emax) {
   VecD ratio;
   for (int ii = 0; ii < n_ener; ii++) {
     if (ener[ii] >= emin && ener[ii + 1] <= emax) {
@@ -280,14 +300,55 @@ static double max_shape_deviation(const double *ener, const double *spec, const 
   REQUIRE(!ratio.empty());
 
   double mean = 0.0;
-  for (double val : ratio) {
+  for (double val: ratio) {
     mean += val / static_cast<double>(ratio.size());
   }
   double max_dev = 0.0;
-  for (double val : ratio) {
+  for (double val: ratio) {
     max_dev = fmax(max_dev, fabs(val / mean - 1));
   }
   return max_dev;
+}
+
+// multicolor disk spectrum (spec_diskbb or spec_ezdiskbb) on the grid ener: as in the model, it is calculated on the
+// fine energy grid of the convolution and then rebinned (evaluating the blackbody at the bin centres of the coarse
+// grid directly would add a deviation of ~3%)
+static VecD calc_disk_spectrum_rebinned(void (*spec_disk)(const double *, double *, int, double, double, int *),
+                                        double kT,
+                                        double spin,
+                                        const double *ener,
+                                        int n_ener,
+                                        int *status) {
+  const EnerGrid *conv_grid = get_relxill_conv_energy_grid();
+  VecD spec_conv(conv_grid->nbins);
+  spec_disk(conv_grid->ener, spec_conv.data(), conv_grid->nbins, kT, spin, status);
+  VecD spec(n_ener, 0.0);
+  _rebin_spectrum(ener, spec.data(), n_ener, conv_grid->ener, spec_conv.data(), conv_grid->nbins);
+  return spec;
+}
+
+// max. shape deviation (see max_shape_deviation) of the direct disk emission (boost=0) of the full relxillBB_NS model
+// from spec_ref in the band [emin, emax], for the temperature profile tprofile (value of RELXILL_RRAD_BBODY_TPROFILE)
+static double shape_deviation_relxillbb_ns_disk_emission(const char *tprofile,
+                                                         double kTbb,
+                                                         double rin,
+                                                         double incl,
+                                                         const double *ener,
+                                                         int n_ener,
+                                                         const VecD &spec_ref,
+                                                         double emin,
+                                                         double emax) {
+  setenv("RELXILL_RRAD_BBODY_TPROFILE", tprofile, 1);
+  LocalModel lmod(ModelName::relxillBB_NS);
+  lmod.set_par(XPar::ktbb, kTbb);
+  lmod.set_par(XPar::boost, 0); // direct emission only
+  lmod.set_par(XPar::rin, rin);
+  lmod.set_par(XPar::incl, incl);
+  VecD flux(n_ener, 0.0);
+  XspecSpectrum spec(ener, flux.data(), n_ener);
+  lmod.eval_model(spec);
+  unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+  return max_shape_deviation(ener, spec.flux, spec_ref, n_ener, emin, emax);
 }
 
 static int checkTemperatureProfile(double *temperature, int n) {
@@ -344,7 +405,6 @@ TEST_CASE (
 
     delete_returningFractions(&dat);
   }
-
 }
 
 // ========== //
@@ -366,42 +426,66 @@ TEST_CASE (
   double ener[n_ener + 1];
   get_log_grid(ener, n_ener + 1, 0.01, 20.0);
 
-  // call the relline model
-  double photar[n_ener];
-
   double spin = 0.998; // simply determines the radial grid here
 
-  spec_diskbb(ener, photar, n_ener, Tin, spin, &status);
-  REQUIRE( status == EXIT_SUCCESS );
+  auto photar = calc_disk_spectrum_rebinned(spec_diskbb, Tin, spin, ener, n_ener, &status);
+  REQUIRE(status == EXIT_SUCCESS);
 
-  // (1) regression test against the previous output of spec_diskbb (only available for Tin=1)
   if (fabs(Tin - 1.0) < 1e-6) {
-    fits_write_spec("!testrr-spec-diskbb.fits", ener, photar, n_ener, &status);
-    REQUIRE( compareWithRefdata("refvalues_diskbb.fits", ener, photar, n_ener, &status) == EXIT_SUCCESS );
+    fits_write_spec("!testrr-spec-diskbb.fits", ener, photar.data(), n_ener, &status);
   }
 
-  // (2) the shape agrees with the diskbb model of Xspec (deviation of ~4%, due to Rout=1000Rg and the radial zones)
-  const auto diskbb_xspec = fits_read_refdata_xspec_diskbb(get_fname_refdata_diskbb(Tin), ener, n_ener, &status);
-  REQUIRE( status == EXIT_SUCCESS );
-  const double dev = max_shape_deviation(ener, photar, diskbb_xspec, n_ener, 0.1 * Tin, 10 * Tin);
+  // the shape agrees with the diskbb model of Xspec; the deviation of ~1.6% is due to the 50 radial zones (mainly
+  // the coarse outer zones, which affect the lowest energies), see doc/returnrad_disk_emission.md
+  const auto diskbb_xspec = fits_read_refdata_xspec(get_fname_refdata_diskbb(Tin), "diskbb", ener, n_ener, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+  const double dev = max_shape_deviation(ener, photar.data(), diskbb_xspec, n_ener, 0.1 * Tin, 10 * Tin);
   INFO("Tin = " << Tin << ": max. shape deviation from Xspec diskbb = " << dev);
-  REQUIRE( dev < 0.05 );
+  REQUIRE(dev < 0.02);
 
   unsetenv("DEBUG_RELXILL");
 }
 
 // ========== //
+TEST_CASE(" ezdiskbb Spectrum ", "[bbret]") {
+  const double Tmax = GENERATE(0.5, 1.0, 2.0);
+  int status = EXIT_SUCCESS;
+
+  // grid of the reference files
+  constexpr int n_ener = 50;
+  double ener[n_ener + 1];
+  get_log_grid(ener, n_ener + 1, 0.01, 20.0);
+
+  const double spin = 0.998; // simply determines the radial grid here
+
+  const auto photar = calc_disk_spectrum_rebinned(spec_ezdiskbb, Tmax, spin, ener, n_ener, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  // the shape agrees with the ezdiskbb model of Xspec (zero-torque profile with Tmax=kTbb, the default profile of the
+  // relxillBB models); the deviation of ~4% is due to the 50 radial zones (mainly the coarse outer zones, which affect
+  // the lowest energies; a continuous disk agrees to 0.3%), see doc/returnrad_disk_emission.md
+  const auto ezdiskbb_xspec =
+      fits_read_refdata_xspec(get_fname_refdata_ezdiskbb(Tmax), "ezdiskbb", ener, n_ener, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+  const double dev = max_shape_deviation(ener, photar.data(), ezdiskbb_xspec, n_ener, 0.1 * Tmax, 10 * Tmax);
+  INFO("Tmax = " << Tmax << ": max. shape deviation from Xspec ezdiskbb = " << dev);
+  REQUIRE(dev < 0.05);
+}
+
+// ========== //
 // Direct disk emission (boost=0) of the full relxillBB_NS model (temperature profile, blackbody spectra of the
 // zones, relativistic convolution) compared to the diskbb model of Xspec:
-// - diskbb temperature profile (RELXILL_RRAD_BBODY_TPROFILE=2): the shape agrees to ~6%; the remaining difference
-//   is relativistic, and for Rin=10 r_isco and incl=40deg gravitational redshift and Doppler shift partly cancel
-//   (other values of Rin=-8...-12 and incl=35...45deg give deviations of 7-22%)
+// - diskbb temperature profile (RELXILL_RRAD_BBODY_TPROFILE=2): the shape agrees to ~8%; the remaining difference
+//   is relativistic, and for Rin=10 r_isco and incl=50deg gravitational redshift and Doppler shift partly cancel
+//   (other values of Rin=-8...-12 and incl=40...50deg give deviations of 7-20%), see doc/returnrad_disk_emission.md
 // - zero-torque temperature profile (default): the shape differs by ~30%, i.e., the test is sensitive to the
 //   temperature profile
 TEST_CASE(" relxillBB_NS direct disk emission vs. Xspec diskbb for the diskbb and zero-torque temperature profiles ",
           "[bbret][diskbb]") {
   const double Tin = GENERATE(0.5, 1.0, 2.0);
   constexpr double max_dev_allowed = 0.1;
+  constexpr double rin = -10;
+  constexpr double incl = 50;
 
   // grid of the reference files
   constexpr int n_ener = 50;
@@ -409,29 +493,55 @@ TEST_CASE(" relxillBB_NS direct disk emission vs. Xspec diskbb for the diskbb an
   get_log_grid(ener, n_ener + 1, 0.01, 20.0);
 
   int status = EXIT_SUCCESS;
-  const auto diskbb_xspec = fits_read_refdata_xspec_diskbb(get_fname_refdata_diskbb(Tin), ener, n_ener, &status);
+  const auto diskbb_xspec = fits_read_refdata_xspec(get_fname_refdata_diskbb(Tin), "diskbb", ener, n_ener, &status);
   REQUIRE(status == EXIT_SUCCESS);
 
-  auto shape_deviation = [&](const char *tprofile) {
-    setenv("RELXILL_RRAD_BBODY_TPROFILE", tprofile, 1);
-    LocalModel lmod(ModelName::relxillBB_NS);
-    lmod.set_par(XPar::ktbb, Tin);
-    lmod.set_par(XPar::boost, 0);   // direct emission only
-    lmod.set_par(XPar::rin, -10);
-    lmod.set_par(XPar::incl, 40);
-    double flux[n_ener];
-    XspecSpectrum spec(ener, flux, n_ener);
-    lmod.eval_model(spec);
-    unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
-    return max_shape_deviation(ener, spec.flux, diskbb_xspec, n_ener, 0.15 * Tin, 10 * Tin);
-  };
-
-  const double dev_diskbb = shape_deviation("2");
-  const double dev_zero_torque = shape_deviation("1");
+  const double emin = 0.15 * Tin;
+  const double emax = 10 * Tin;
+  const double dev_diskbb =
+      shape_deviation_relxillbb_ns_disk_emission("2", Tin, rin, incl, ener, n_ener, diskbb_xspec, emin, emax);
+  const double dev_zero_torque =
+      shape_deviation_relxillbb_ns_disk_emission("1", Tin, rin, incl, ener, n_ener, diskbb_xspec, emin, emax);
   INFO("Tin = " << Tin << ": max. shape deviation from Xspec diskbb: diskbb profile " << dev_diskbb
        << ", zero-torque profile " << dev_zero_torque << " (allowed: " << max_dev_allowed << ")");
   CHECK(dev_diskbb < max_dev_allowed);
   CHECK(dev_zero_torque > max_dev_allowed);
+}
+
+// ========== //
+// Direct disk emission (boost=0) of the full relxillBB_NS model compared to the ezdiskbb model of Xspec:
+// - zero-torque temperature profile (default): the shape agrees to ~7% in 0.3-10 Tmax for Rin=10 r_isco and
+//   incl=40deg. Lower energies are not compared: for this Rin, the disk only extends over a factor of 80 in radius
+//   (Rout=1000Rg), which truncates the emission of the outer disk (relatively hotter than for diskbb), see
+//   doc/returnrad_disk_emission.md
+// - diskbb temperature profile: the shape differs by ~30%, i.e., the test is sensitive to the temperature profile
+TEST_CASE(" relxillBB_NS direct disk emission vs. Xspec ezdiskbb for the zero-torque and diskbb temperature profiles ",
+          "[bbret][ezdiskbb]") {
+  const double Tmax = GENERATE(0.5, 1.0, 2.0);
+  constexpr double max_dev_allowed = 0.1;
+  constexpr double rin = -10;
+  constexpr double incl = 40;
+
+  // grid of the reference files
+  constexpr int n_ener = 50;
+  double ener[n_ener + 1];
+  get_log_grid(ener, n_ener + 1, 0.01, 20.0);
+
+  int status = EXIT_SUCCESS;
+  const auto ezdiskbb_xspec =
+      fits_read_refdata_xspec(get_fname_refdata_ezdiskbb(Tmax), "ezdiskbb", ener, n_ener, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  const double emin = 0.3 * Tmax;
+  const double emax = 10 * Tmax;
+  const double dev_zero_torque =
+      shape_deviation_relxillbb_ns_disk_emission("1", Tmax, rin, incl, ener, n_ener, ezdiskbb_xspec, emin, emax);
+  const double dev_diskbb =
+      shape_deviation_relxillbb_ns_disk_emission("2", Tmax, rin, incl, ener, n_ener, ezdiskbb_xspec, emin, emax);
+  INFO("Tmax = " << Tmax << ": max. shape deviation from Xspec ezdiskbb: zero-torque profile " << dev_zero_torque
+       << ", diskbb profile " << dev_diskbb << " (allowed: " << max_dev_allowed << ")");
+  CHECK(dev_zero_torque < max_dev_allowed);
+  CHECK(dev_diskbb > max_dev_allowed);
 }
 
 // ========== //
@@ -517,7 +627,7 @@ TEST_CASE (
 )
 {
 
-  LocalModel lmod(ModelName::relxillBB_NS);
+  LocalModel lmod(ModelName::relxillBB);
 
   DefaultSpec default_spec1{};
   XspecSpectrum spec1 = default_spec1.get_xspec_spectrum();
@@ -533,7 +643,7 @@ TEST_CASE (
     REQUIRE(fabs(sum0 - sum1) < PREC);
 }
 
-void test_boost_parameter(LocalModel &lmod) {
+static void test_boost_parameter(LocalModel &lmod) {
   DefaultSpec default_spec{};
   XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
@@ -553,60 +663,14 @@ void test_boost_parameter(LocalModel &lmod) {
   REQUIRE(sum_direct > 1e-8);
 
 
-  // check that boost parmameter works: refl+direct has to give total flux
-  printf(" total:%.3e direct:%.3e refl:%.3e (diff:%.3e) \n",
-         sum_total,
-         sum_direct,
-         sum_refl,
-         fabs(sum_total - sum_direct - sum_refl) / sum_total);
+  // check that boost parameter works: refl+direct has to give total flux
+  INFO(" total: " << sum_total << " direct: " << sum_direct << " refl: " << sum_refl
+       << " (diff: " << fabs(sum_total - sum_direct - sum_refl) / sum_total << ")");
   REQUIRE(fabs(sum_total - sum_direct - sum_refl) / sum_total < 1e-4);
 }
 
 
-TEST_CASE (
-
-" Evaluate RelxillBB (only black body)"
-,
-"[relxillBB]"
-)
- {
-  int status = EXIT_SUCCESS;
-  setenv("RELXILL_WRITE_OUTFILES","1",1);
-
-  LocalModel lmod(ModelName::relxillBB_NS);
-  setenv("RELXILL_BBRET_NOREFL","1",1);
+TEST_CASE(" relxillBB boost parameter: direct + reflected = total ", "[relxillBB]") {
+  LocalModel lmod(ModelName::relxillBB);
   test_boost_parameter(lmod);
-  setenv("RELXILL_BBRET_NOREFL", "0", 1);
-  test_boost_parameter(lmod);
-
-  LocalModel lmod2(ModelName::relxillBB);
-  test_boost_parameter(lmod2);
-
-  unsetenv("RELXILL_WRITE_OUTFILES");
-  unsetenv("RELXILL_BBRET_NOREFL");
-}
-
-TEST_CASE (
-
-"Test different spin values"
-,
-"[bbret-speed]"
-)
-{
-
- std::vector<double> spinArray{0.35,0.71,0.801,0.99,0.998};
-  LocalModel lmod(ModelName::relxillBB_NS);
-
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-  for ( double spin : spinArray) {
-    lmod.set_par(XPar::a, spin);
-    lmod.eval_model(spec);
-
-    // std::cout << "spin " << spin << " : " << calcSum(spec.flux(), spec.num_flux_bins()) << std::endl;
-
-    REQUIRE(calcSum(spec.flux, spec.num_flux_bins()) > 1e-8);
-  }
-
 }

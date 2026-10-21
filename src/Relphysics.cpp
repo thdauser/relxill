@@ -78,9 +78,9 @@ static double disk_temperature_alpha(double r, double Rin) {
   return pow((r / Rin), (-3. / 4)) * pow((1 - sqrt(Rin / r)), (1. / 4));
 }
 
-// temperature of a disk as used by diskbb (equal to alpha disk for large radii)
+// temperature of a disk as used by diskbb (same radial dependence as the alpha disk for large radii)
 static double disk_temperature_diskbb(double r, double Rin, double Tin) {
-  return Tin * pow(r / Rin, (-3. / 4)); // if we use Rin, we don't get T=Tin at the inner edge
+  return Tin * pow(r / Rin, (-3. / 4));
 }
 
 // temperature profile for the given radii; use Tmax at Rmax following Poutanan+2007
@@ -97,9 +97,10 @@ void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int
   }
 }
 
-// temperature profile for the given radii; use Tmax at Rmax following Poutanan+2007
+// temperature profile of diskbb for the given radii: T(r) = Tin (r/Rin)^(-3/4), with Tin at the inner edge of the
+// disk (as for diskbb); the temperature of each zone is evaluated at its mean radius
 void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, int n, double Tin) {
-  double Rin = 0.5 * (rlo[0] + rhi[0]); // needs to be rmean, such that we really get Tin at the inner zone
+  double Rin = rlo[0]; // inner edge of the disk
   for (int ii = 0; ii < n; ii++) {
     temp[ii] = disk_temperature_diskbb(0.5 * (rlo[ii] + rhi[ii]), Rin, Tin);
   }

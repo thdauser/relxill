@@ -495,12 +495,14 @@ void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec)
 }
 
 /**
- * diskbb spectrum in Xspec units [cts/bin]
+ * multicolor disk spectrum in Xspec units [cts/bin], for the given temperature profile (TPROFILE_DISKBB or
+ * TPROFILE_ALPHA) with the temperature kT
  *
- * tested to give identical results to the Xspec implementation of diskbb
- * (deviation at <0.1keV are expected due to our outer radius only being 1000Rg)
+ * calculated on the radial zones of the returning radiation (as the disk emission in the model), from r_isco(spin) to
+ * RMAX_RELRET, with each zone weighted with its (flat-space) ring area
  */
-void spec_diskbb(const double* ener, double* spec, int n, double Tin, double spin, int* status)
+static void spec_multicolor_disk(const double* ener, double* spec, int n, double kT, double spin, int tprofile,
+                                 const char* fname_debug, int* status)
 {
     CHECK_STATUS_VOID(*status);
 
@@ -508,11 +510,11 @@ void spec_diskbb(const double* ener, double* spec, int n, double Tin, double spi
     returningFractions* dat = get_rrad_fractions(spin, rin, RMAX_RELRET, status);
 
     VecD temperature =
-        get_tprofile(dat->rlo, dat->rhi, dat->nrad, 0.5 * (dat->rlo[0] + dat->rhi[0]), Tin, TPROFILE_DISKBB, status);
+        get_tprofile(dat->rlo, dat->rhi, dat->nrad, dat->rlo[0], kT, tprofile, status);
 
     VecD_2D spec_arr = get_bbody_specs_binned(ener, n, temperature, status);
 
-    // need to multiply by the normal ring area to mimick a diskbb spectrum
+    // need to multiply by the normal ring area to mimick a multicolor disk spectrum
     assert(dat->rhi[0] > dat->rlo[0]);
 for (int jj = 0; jj < n; jj++)
     {
@@ -526,8 +528,7 @@ for (int jj = 0; jj < n; jj++)
 
     if (is_debug_run())
     {
-        fits_rr_write_2Dspec("!debug-testrr-spec-diskbb.fits", spec_arr, ener, n, dat->rlo, dat->rhi, dat->nrad, dat,
-                             status);
+        fits_rr_write_2Dspec(fname_debug, spec_arr, ener, n, dat->rlo, dat->rhi, dat->nrad, dat, status);
     }
 
     // Convert to double** temporarily for sum_2Dspec
@@ -539,6 +540,31 @@ for (int jj = 0; jj < n; jj++)
     sum_2Dspec(spec, ptrs.data(), n, dat->nrad, status);
 
     delete_returningFractions(&dat);
+}
+
+/**
+ * diskbb spectrum in Xspec units [cts/bin] (diskbb temperature profile, Tin at the inner edge of the disk)
+ *
+ * calculated on the radial zones of the returning radiation (as the disk emission in the model); compared to the
+ * Xspec implementation of diskbb, the shape deviates by ~1.6% (0.1-10 Tin) due to the radial zones, if calculated
+ * on the fine energy grid of the model (see doc/returnrad_disk_emission.md and the unit test " DiskBB Spectrum ")
+ */
+void spec_diskbb(const double* ener, double* spec, int n, double Tin, double spin, int* status)
+{
+    spec_multicolor_disk(ener, spec, n, Tin, spin, TPROFILE_DISKBB, "!debug-testrr-spec-diskbb.fits", status);
+}
+
+/**
+ * ezdiskbb spectrum in Xspec units [cts/bin] (zero-torque temperature profile with the maximal temperature Tmax, as
+ * the default temperature profile of the relxillBB models)
+ *
+ * calculated on the radial zones of the returning radiation (as the disk emission in the model); compared to the
+ * Xspec implementation of ezdiskbb, the shape deviates by ~4% (0.1-10 Tmax) due to the radial zones, if calculated
+ * on the fine energy grid of the model (see doc/returnrad_disk_emission.md and the unit test " ezdiskbb Spectrum ")
+ */
+void spec_ezdiskbb(const double* ener, double* spec, int n, double Tmax, double spin, int* status)
+{
+    spec_multicolor_disk(ener, spec, n, Tmax, spin, TPROFILE_ALPHA, "!debug-testrr-spec-ezdiskbb.fits", status);
 }
 
 

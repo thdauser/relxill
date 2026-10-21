@@ -13,7 +13,7 @@ xillver and the fraction of returning flux (see Dauser et al. 2016).
 For each zone `izone` it combines two contributions in the **disk frame**:
 
 1. The **direct** primary thermal emission of the disk surface,
-   `returnSpec->specPri[izone]`.
+   `returnSpec->specPri[izone]` (see \ref returnrad_disk_emission).
 2. The **reflected** component (by the xillver table) for the given returning thermal
    radiation, whose illuminating spectrum is `returnSpec->specRet[izone]`.
 
