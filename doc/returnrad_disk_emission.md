@@ -100,6 +100,19 @@ at the ISCO (top), and the ratio of the Novikov-Thorne profile to the alpha disk
 With the Novikov-Thorne profile, the full model agrees with the relativistic Xspec model `kerrbb` without any free
 parameter, see (2b).
 
+**Runtime.** The Novikov-Thorne profile is more expensive than the alpha disk, mainly due to the numerical search for
+\f$R_\mathrm{max}\f$, but this is negligible for a model evaluation. Measured with the optimized Xspec build
+(`build/librelxill.so`, `-O2`, 2026-10):
+
+| calculation                                                                            | alpha disk     | Novikov-Thorne |
+|----------------------------------------------------------------------------------------|----------------|----------------|
+| temperature profile of the 50 radial zones (incl. the search for \f$R_\mathrm{max}\f$) | 3 µs           | 34 µs          |
+| full `relxillBB_NS` evaluation (1000 energy bins, 0.1-100 keV), two runs               | 179 ms, 197 ms | 187 ms, 200 ms |
+
+The temperature profile is calculated once per model evaluation (in \ref spec_returnrad_blackbody), so the
+Novikov-Thorne profile adds about 31 µs, i.e., 0.03% of a model evaluation of 100 ms. In the full evaluation, this is
+well below the scatter between runs (10%). Pre-calculating \f$R_\mathrm{max}\f$ is therefore not necessary.
+
 ## Tests and precision
 
 The disk emission is tested in three steps, which correspond to the unit tests listed below:
