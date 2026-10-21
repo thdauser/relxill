@@ -28,6 +28,7 @@
 
 extern "C" {
 #include "relutility.h"
+#include "xilltable_reading.h"
 }
 
 #if !defined(RELXILL_SOURCE_DIR)
@@ -425,21 +426,101 @@ TEST_CASE(" disk emission (2b, zones): radial ranges of the zones as in the rela
 }
 
 // ========== //
+// (2b, kernel) The observed direct disk emission of the model is a single convolution of a blackbody with a kernel:
+// the relativistic line profile of the whole disk, with the temperature of each radial point as its line energy
+// (calc_relline_profile_radial_line_energy, see get_disk_emission_kernel). With a line energy of 1 keV and the same
+// weight for all radial points, this profile is identical to the sum of the line profiles of the zones of the model,
+// and a constant line energy E0 shifts it by the factor E0 in energy (without changing the number of photons).
+TEST_CASE(" disk emission (2b, kernel): line profile with a line energy for each radial point ",
+          "[bbret][diskemission]") {
+  LocalModel lmod(ModelName::relxillBB_NS);
+  lmod.set_par(XPar::a, 0.998);
+  relParam *rel_param = get_rel_params(lmod.get_model_params());
+  xillParam *xill_param = get_xill_params(lmod.get_model_params());
+  EnerGrid *egrid = get_relxill_conv_energy_grid();
+  const int n_ener = egrid->nbins;
+
+  // line profiles of the zones of the model (as in relxillbb_kernel, also with the xillver table, as the profiles are
+  // cached for the model)
+  int status = EXIT_SUCCESS;
+  xillTable *xill_tab = nullptr;
+  get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
+  returningFractions *dat = get_rrad_fractions(rel_param->a, rel_param->rin, rel_param->rout, &status);
+  VecD zone_edges(dat->rlo);
+  zone_edges.push_back(dat->rhi.back());
+  RelSysPar *sys_par = get_system_parameters(rel_param, &status);
+  const relline_spec_multizone *profile_zones =
+      relbase_profile(egrid->ener, n_ener, rel_param, sys_par, xill_tab, zone_edges, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  const int nr = sys_par->nr;
+  const VecD weight(nr, 1.0);
+  const auto calc_profile = [&](double line_ener) {
+    const VecD line_ener_points(nr, line_ener);
+    VecD profile(n_ener);
+    calc_relline_profile_radial_line_energy(egrid->ener, n_ener, sys_par, line_ener_points.data(), weight.data(),
+                                            profile.data(), &status);
+    return profile;
+  };
+  const VecD profile_1keV = calc_profile(1.0);
+  constexpr double line_ener_shifted = 0.5;
+  const VecD profile_shifted = calc_profile(line_ener_shifted);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  // identical to the sum of the line profiles of the zones
+  double max_abs_dev = 0.0;
+  double max_profile = 0.0;
+  for (int jj = 0; jj < n_ener; jj++) {
+    double sum_zones = 0.0;
+    for (int izone = 0; izone < profile_zones->n_zones; izone++) {
+      sum_zones += profile_zones->flux[izone][jj];
+    }
+    max_abs_dev = fmax(max_abs_dev, fabs(profile_1keV[jj] - sum_zones));
+    max_profile = fmax(max_profile, sum_zones);
+  }
+  INFO("line energy 1 keV: max. deviation from the sum of the zone profiles (relative to the maximum): "
+    << max_abs_dev / max_profile);
+  CHECK(max_abs_dev < 1e-10 * max_profile);
+
+  // a line energy of E0 shifts the profile by the factor E0 (mean of log(E)) and keeps the number of photons
+  double sum_1keV = 0.0, sum_shifted = 0.0, mean_log_1keV = 0.0, mean_log_shifted = 0.0;
+  for (int jj = 0; jj < n_ener; jj++) {
+    const double log_emean = log(0.5 * (egrid->ener[jj] + egrid->ener[jj + 1]));
+    sum_1keV += profile_1keV[jj];
+    sum_shifted += profile_shifted[jj];
+    mean_log_1keV += profile_1keV[jj] * log_emean;
+    mean_log_shifted += profile_shifted[jj] * log_emean;
+  }
+  mean_log_1keV /= sum_1keV;
+  mean_log_shifted /= sum_shifted;
+  INFO("line energy " << line_ener_shifted << " keV: ratio of the number of photons " << sum_shifted / sum_1keV
+    << ", shift of the mean of log(E) " << mean_log_shifted - mean_log_1keV << " (expected "
+    << log(line_ener_shifted) << ")");
+  CHECK(sum_shifted / sum_1keV == Catch::Approx(1.0).epsilon(1e-3));
+  CHECK(mean_log_shifted - mean_log_1keV == Catch::Approx(log(line_ener_shifted)).epsilon(1e-3));
+
+  delete_returningFractions(&dat);
+  delete_rel_params(rel_param);
+  delete xill_param;
+}
+
+// ========== //
 // (2b) The direct disk emission (boost=0) of the full relxillBB_NS model with the Novikov-Thorne temperature profile
 // (RELXILL_RRAD_BBODY_TPROFILE=3) compared to the relativistic disk model kerrbb of Xspec (eta=0, hd=1, rflag=0,
 // lflag=0), with the maximal temperature of the kerrbb disk (1 keV) as kTbb, i.e., without any free parameter. This
-// tests the implementation of the disk emission in the model (temperature profile, radial zones, relativistic
-// effects). The spins are on the grid of the kerrbb table, to avoid its linear interpolation in spin. The shape
-// deviation is 0.2-0.8% in 0.5-10 kTbb. Lower energies are not compared, as the outer radius of the model (1000 Rg)
-// truncates the disk emission there (16% at 0.2 kTbb for a=0). The alpha-disk profile (default) deviates by 2.5% or
-// more, i.e., the test is sensitive to the temperature profile.
+// tests the implementation of the disk emission in the model (temperature profile, relativistic effects, and its
+// kernel, see (2b, kernel)). The spins are on the grid of the kerrbb table, to avoid its linear interpolation in spin.
+// The shape deviation is 0.2-1.4% in 0.5-10 kTbb, which is the precision of the kerrbb table (a converged calculation
+// on 400 radial zones deviates by the same amount). Lower energies are not compared, as the outer radius of the model
+// (1000 Rg) truncates the disk emission there (16% at 0.2 kTbb for a=0). The alpha-disk profile (default) deviates by
+// 2.5% or more, i.e., the test is sensitive to the temperature profile.
 TEST_CASE(" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb ",
           "[bbret][diskemission][kerrbb]") {
   const double spin = GENERATE(0.0, 0.904277, 0.997676); // on the spin grid of kerrbb (no interpolation in spin)
   const double incl = GENERATE(30.0, 60.0);
   constexpr double kTbb = 1.0; // maximal temperature of the disk of the kerrbb reference spectra
   constexpr double rin = -1; // ISCO
-  constexpr double max_dev_allowed = 0.015;
+  constexpr double max_dev_allowed = 0.02;
 
   // grid of the reference files
   constexpr int n_ener = 50;

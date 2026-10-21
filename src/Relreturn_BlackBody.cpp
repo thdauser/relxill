@@ -18,6 +18,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <numeric>
 #include "Relreturn_BlackBody.h"
 #include "ModelDefinition.h"
 #include "Rebin.h"
@@ -345,6 +346,142 @@ void get_zone_ranges_relline_profile(const VecD &rlo,
 
 
 /**
+ * @brief Relativistic kernel of the direct disk emission, for a maximal temperature of 1 keV (kTbb = 1).
+ *
+ * Per unit area, the bin-integrated blackbody photon spectrum of the temperature T is T^3 times the one of 1 keV,
+ * shifted in energy by the factor T. With the temperature profile T(r) = kTbb t(r), the direct emission of the disk is
+ * therefore the convolution of the blackbody of kTbb with a kernel, which is the relativistic line profile of each
+ * radial point at the line energy t(r), weighted with t(r)^3 (calc_relline_profile_radial_line_energy). The kernel is
+ * integrated over the same N_FRAD radial points as the line profiles of the zones, but with the temperature of each
+ * point instead of a single temperature per zone (see doc/returnrad_disk_emission.md).
+ *
+ * The kernel does not depend on kTbb. It is cached and only re-calculated if the relativistic parameters or the
+ * temperature profile change.
+ *
+ * @param ener Energy grid of the convolution [keV] (size n_ener+1).
+ * @param n_ener Number of energy bins.
+ * @param rel_param Relativistic parameters.
+ * @param sysPar System parameters of rel_param (radial points, transfer functions).
+ * @param tprofile Temperature profile (TPROFILE_ALPHA, TPROFILE_DISKBB, or TPROFILE_NOVIKOV_THORNE).
+ * @param status Status flag.
+ *
+ * @return Kernel [photons/bin] (size n_ener), to be convolved with the bin-integrated blackbody photon spectrum
+ *         (bbody_photon_flux_per_keV) per unit area.
+ */
+static const VecD &get_disk_emission_kernel(const double *ener,
+                                            int n_ener,
+                                            const relParam *rel_param,
+                                            RelSysPar *sysPar,
+                                            int tprofile,
+                                            int *status) {
+    static relParam *cached_rel_param = nullptr;
+    static int cached_tprofile = -1;
+    static VecD cached_kernel;
+
+    if (did_rel_param_change(cached_rel_param, rel_param) == 0 && tprofile == cached_tprofile
+        && cached_kernel.size() == static_cast<size_t>(n_ener)) {
+        return cached_kernel;
+    }
+    cached_tprofile = -1; // invalid until the new kernel is calculated
+
+    // temperature of each radial point for kTbb = 1, with the radii in ascending order (TPROFILE_DISKBB needs the inner
+    // edge as first radius); the innermost radial point is Rin up to rounding errors
+    const int nr = sysPar->nr;
+    VecD radius(nr);
+    for (int ii = 0; ii < nr; ii++) {
+        radius[ii] = fmax(sysPar->re[nr - 1 - ii], rel_param->rin);
+    }
+    const VecD temperature = get_tprofile(radius, radius, nr, rel_param->rin, 1.0, rel_param->a, tprofile, status);
+    CHECK_STATUS_RET(*status, cached_kernel);
+
+    VecD line_ener(nr);
+    VecD weight(nr);
+    for (int ii = 0; ii < nr; ii++) {
+        line_ener[ii] = temperature[nr - 1 - ii]; // same (descending) order as sysPar->re
+        weight[ii] = pow(line_ener[ii], 3);
+    }
+
+    cached_kernel.assign(n_ener, 0.0);
+    calc_relline_profile_radial_line_energy(ener,
+                                            n_ener,
+                                            sysPar,
+                                            line_ener.data(),
+                                            weight.data(),
+                                            cached_kernel.data(),
+                                            status);
+    CHECK_STATUS_RET(*status, cached_kernel);
+
+    set_cached_rel_param(rel_param, &cached_rel_param, status);
+    cached_tprofile = tprofile;
+    return cached_kernel;
+}
+
+
+/**
+ * @brief Observed direct disk emission of the relxillBB models [photons/bin], on the energy grid of the convolution.
+ *
+ * Convolution of the blackbody of the maximal temperature kTbb (bin-integrated photon spectrum per unit area) with the
+ * kernel of the disk emission (get_disk_emission_kernel). The FFT convolution is cyclic, and the kernel shifts the
+ * energies down by up to a factor ~100 (outer disk). The blackbody is therefore set to zero in the bins that the
+ * kernel can shift outside the energy grid, as they would re-appear at the other end of the grid. This only changes
+ * the spectrum observed below ~0.05 keV (~0.1 keV for the diskbb profile).
+ */
+static VecD calc_disk_emission_observed(double *ener,
+                                        int n_ener,
+                                        double kTbb,
+                                        const relParam *rel_param,
+                                        RelSysPar *sysPar,
+                                        specCache *spec_cache,
+                                        int *status) {
+    VecD spec_obs(n_ener, 0.0);
+    const VecD &kernel =
+            get_disk_emission_kernel(ener, n_ener, rel_param, sysPar, get_tprofile_type_from_env(), status);
+    CHECK_STATUS_RET(*status, spec_obs);
+
+    // maximal shift of the kernel to lower and higher energies (in bins, 1 keV is no shift as in fftw_conv_spectrum)
+    const auto is_positive = [](double val) { return val > 0; };
+    const int ibin_1keV = binary_search(ener, n_ener + 1, 1.0);
+    const int nbins_shift_down =
+            ibin_1keV - static_cast<int>(std::find_if(kernel.begin(), kernel.end(), is_positive) - kernel.begin());
+    const int nbins_shift_up =
+            static_cast<int>(kernel.rend() - std::find_if(kernel.rbegin(), kernel.rend(), is_positive)) - 1 - ibin_1keV;
+
+    VecD spec_bbody(n_ener);
+    bbody_photon_flux_per_keV(ener, n_ener, spec_bbody.data(), kTbb, 1.0);
+    for (int jj = 0; jj < n_ener; jj++) {
+        if (jj < nbins_shift_down || jj >= n_ener - nbins_shift_up) {
+            spec_bbody[jj] = 0.0;
+        } else {
+            spec_bbody[jj] *= ener[jj + 1] - ener[jj]; // bin-integrated
+        }
+    }
+
+    // the FFT arrays of zone 0 are only used as buffer (the FFTs are always re-calculated in relxillbb_kernel)
+    convolveSpectrumFFTNormalized(ener,
+                                  spec_bbody.data(),
+                                  kernel.data(),
+                                  spec_obs.data(),
+                                  n_ener,
+                                  1,
+                                  1,
+                                  0,
+                                  spec_cache,
+                                  status);
+
+    // convolveSpectrumFFTNormalized normalizes the number of photons in the band [EMIN_XILLVER, EMAX_XILLVER], but the
+    // cool outer disk is observed with up to ~1% of its photons below EMIN_XILLVER: normalize it on the whole energy
+    // grid instead, where the convolution conserves the number of photons (no bins are wrapped around)
+    const double sum_obs = std::accumulate(spec_obs.begin(), spec_obs.end(), 0.0);
+    const double norm_fac = std::accumulate(kernel.begin(), kernel.end(), 0.0)
+                            * std::accumulate(spec_bbody.begin(), spec_bbody.end(), 0.0) / sum_obs;
+    for (double &val: spec_obs) {
+        val *= norm_fac;
+    }
+    return spec_obs;
+}
+
+
+/**
  * @brief Calculates a 2D blackbody return radiation spectrum for relativistic disk models
  *
  * This function computes the returning radiation spectrum from a relativistic accretion disk
@@ -370,7 +507,8 @@ void get_zone_ranges_relline_profile(const VecD &rlo,
  * @note The primary (direct) disk emission of each zone (specPri) is calculated on a fine radial grid within the
  * radial range the zone covers in its relativistic line profile (see get_disk_emission_zones_binned and
  * get_zone_ranges_relline_profile), whereas the returning radiation (specRet) is calculated from a single blackbody
- * per zone
+ * per zone. The observed direct emission of the relxillBB models does not use specPri, but is calculated for the
+ * whole disk at once (calc_disk_emission_observed).
  * @note Memory for the returned structure must be freed by the caller
  * @note The spin parameter follows the convention where positive values indicate prograde rotation
  *
@@ -720,8 +858,8 @@ static double get_xillver_norm_factor_from_primary_spectrum(const double *spec_i
  * This function calculates the zone-specific reflected return flux in the disk frame
  * by calculating the xillver reflection spectrum, which is normalized by a normalization
  * factor derived from the primary (returning) spectrum.
- * The final flux is multiplied with the value of the of boost parameter (optionally add direct spectrum
- * if boost >=0).
+ * The final flux is multiplied with the absolute value of the boost parameter. The direct disk emission is not
+ * included, as it is calculated for the whole disk at once (see calc_disk_emission_observed).
  *
  * Assumptions:
  * - A single blackbody temperature (kTbb) is assumed for the reflection of all zones.
@@ -737,12 +875,12 @@ static double get_xillver_norm_factor_from_primary_spectrum(const double *spec_i
  * @param izone               Index of the zone for which the return flux is calculated.
  * @param status              Pointer to the status flag, used to report success or failure.
  */
-void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
-                                                  const relline_spec_multizone *rel_profile,
-                                                  const returnSpec2D *returnSpec,
-                                                  VecD &xill_flux_returnrad,
-                                                  int izone,
-                                                  int *status) {
+void calc_zone_xillver_reflected_flux(const xillParam &xill_param,
+                                      const relline_spec_multizone *rel_profile,
+                                      const returnSpec2D *returnSpec,
+                                      VecD &xill_flux_returnrad,
+                                      int izone,
+                                      int *status) {
     get_angle_weighted_xill_spec(xill_flux_returnrad,
                                  returnSpec->ener,
                                  returnSpec->n_ener, &xill_param,
@@ -750,44 +888,35 @@ void calc_zone_direct_plus_xillver_reflected_flux(const xillParam &xill_param,
                                  status);
 
     double xillverReflectionNormFactor
-        = get_xillver_norm_factor_from_primary_spectrum(returnSpec->specRet[izone], returnSpec->ener, returnSpec->n_ener,
-                                                  status);
+            = get_xillver_norm_factor_from_primary_spectrum(returnSpec->specRet[izone],
+                                                            returnSpec->ener,
+                                                            returnSpec->n_ener,
+                                                            status);
     CHECK_STATUS_VOID(*status);
 
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
         xill_flux_returnrad[jj] *= fabs(xill_param.boost);
         xill_flux_returnrad[jj] *= xillverReflectionNormFactor;
-
-        if (xill_param.boost >= 0) {
-            xill_flux_returnrad[jj] += returnSpec->specPri[izone][jj];
-        }
     }
 }
 
 /**
-   * @brief Compute the per-zone flux combining returning radiation and (optionally)
-   the direct primary.
+   * @brief Compute the per-zone flux of the returning radiation ("mirrored" instead of reflected).
    *
-   * When @c xill_param.boost is non-negative, the direct and
-   * primary spectrum is added on top; a negative boost selects a "return-only"
-   * output, matching the sign convention used elsewhere
-   * in the relxill models for reflection fractions.
+   * The returning radiation is multiplied with the absolute value of the boost parameter. The direct disk emission is
+   * not included, as it is calculated for the whole disk at once (see calc_disk_emission_observed).
    *
    * @param xill_param   Xillver parameters; only @c boost is read here.
    * @param returnSpec   Precomputed return-radiation spectra
    * @param returnFlux   Output flux for zone ii, sized in returnSpec.
    * @param ii           Radial zone index.
    */
-void calc_zone_direct_plus_mirrored_flux(const xillParam &xill_param,
-                                         const returnSpec2D *returnSpec,
-                                         VecD &returnFlux,
-                                         int ii) {
+void calc_zone_mirrored_flux(const xillParam &xill_param,
+                             const returnSpec2D *returnSpec,
+                             VecD &returnFlux,
+                             int ii) {
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
         returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param.boost);
-        if (xill_param.boost >= 0)
-        {
-            returnFlux[jj] += returnSpec->specPri[ii][jj];
-        }
     }
 }
 
@@ -909,8 +1038,9 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                          nullptr,
                          status);
 
-    // for boost=0, the rest-frame spectrum is the direct emission specPri, which is
-    // already written to rframe-bbodyEmit.fits by spec_returnrad_blackbody()
+    // the spectra of the zones only contain the reflected emission (the direct emission is calculated for the whole
+    // disk, see calc_disk_emission_observed), i.e., they are zero for boost=0; the direct emission of each zone in the
+    // rest frame (specPri) is written to rframe-bbodyEmit.fits by spec_returnrad_blackbody()
     if (is_boost_primary_only(xill_param->boost)) {
         return;
     }
@@ -949,10 +1079,12 @@ static void set_xill_param_from_iongrad(xillParam &xill_param_zone, const IonGra
  * 2. Generate a standard energy grid used for convolution.
  * 3. Load the XILLVER table data based on the model and primary source type.
  * 4. Calculate the ionization gradient from the return radiation emissivity profile.
- * 5. Compute the incident and reflected spectrum for each zone in the relativistic disk.
- * 6. Convolve the resulting spectrum using relativistic effects for each reflection zone.
- * 7. Rebin the convolved spectrum onto the input energy grid and combine contributions from all zones.
- * 8. Apply corrections to clean and format the output spectrum.
+ * 5. Compute the observed direct disk emission (boost >= 0) for the whole disk with a single convolution
+ *    (calc_disk_emission_observed).
+ * 6. Compute the reflected spectrum for each zone in the relativistic disk.
+ * 7. Convolve the resulting spectrum using relativistic effects for each reflection zone.
+ * 8. Rebin the convolved spectrum onto the input energy grid and combine contributions from all zones.
+ * 9. Apply corrections to clean and format the output spectrum.
  *
  * Memory allocation and deallocation are handled for intermediate spectra within the function, ensuring proper cleanup
  * of resources to prevent memory leaks.
@@ -1006,16 +1138,28 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
                                        status);
 
 
-
     // ========== //
     VecD specSingleZone(n_ener_inp);
     VecD_2D specZonesConvOutput(returnSpec->nrad);
     VecD_2D specZonesEmittedCombined(returnSpec->nrad);
     // ========== //
 
-    specCache* spec_cache = init_global_specCache(status);
+    specCache *spec_cache = init_global_specCache(status);
     CHECK_STATUS_VOID(*status);
     setArrayToZero(specOutput, n_ener_inp);
+
+    // direct disk emission (boost >= 0): a single convolution for the whole disk, with the temperature of each radial
+    // point (the zones below only contain the reflected emission)
+    if (xill_param->boost >= 0) {
+        VecD specDirectObs = calc_disk_emission_observed(ener,
+                                                         n_ener,
+                                                         xill_param->kTbb,
+                                                         rel_param,
+                                                         systemParameters,
+                                                         spec_cache,
+                                                         status);
+        _rebin_spectrum(ener_inp, specOutput, n_ener_inp, ener, specDirectObs.data(), n_ener);
+    }
 
     for (int izone = 0; izone < relProfile->n_zones; izone++)
     {
@@ -1025,10 +1169,17 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
         xillParam xill_param_zone = *xill_param;  // flat copy works, as no arrays contained
 
         specZonesEmittedCombined[izone] = VecD(n_ener, 0.0);
+        specZonesConvOutput[izone] = VecD(n_ener, 0.0);
+
+        // the zones only contain the reflected emission, i.e., nothing for boost=0 (the normalization of the FFT
+        // convolution is not defined for a spectrum without flux)
+        if (is_boost_primary_only(xill_param->boost)) {
+            continue;
+        }
 
         if (mirrored_reflection_instead_of_xillver()) {
             // TODO: remove this once everything is working; only for testing
-            calc_zone_direct_plus_mirrored_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
+            calc_zone_mirrored_flux(xill_param_zone, returnSpec, specZonesEmittedCombined[izone], izone);
         } else {
             // very dangerous; need to check that it is within the table boundaries as well
             // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBB))
@@ -1036,12 +1187,11 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
             if (use_iongrad_relxillbb()) {
                 set_xill_param_from_iongrad(xill_param_zone, ion_gradient, izone);
             }
-            calc_zone_direct_plus_xillver_reflected_flux(xill_param_zone, relProfile, returnSpec, specZonesEmittedCombined[izone],
-                                                         izone, status);
+            calc_zone_xillver_reflected_flux(xill_param_zone, relProfile, returnSpec, specZonesEmittedCombined[izone],
+                                             izone, status);
         }
 
 
-        specZonesConvOutput[izone] = VecD(n_ener, 0.0);
         convolveSpectrumFFTNormalized(ener,
                                       specZonesEmittedCombined[izone].data(),
                                       relProfile->flux[izone],

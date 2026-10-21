@@ -27,6 +27,16 @@ extern "C" {
 
 void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *status);
 
+/**  relativistic line profile of the whole disk with a line energy and weight for each radial point of sysPar,
+     see the documentation in Relprofile.cpp **/
+void calc_relline_profile_radial_line_energy(const double *ener,
+                                             int n_ener,
+                                             RelSysPar *sysPar,
+                                             const double *line_ener,
+                                             const double *weight,
+                                             double *profile,
+                                             int *status);
+
 RelSysPar *get_system_parameters(const relParam *param, int *status);
 
 void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, const int *status);
@@ -34,13 +44,16 @@ void renorm_relline_profile(relline_spec_multizone *spec, relParam *rel_param, c
 void init_relline_spec_multizone(relline_spec_multizone **spec,
                                  const relParam *param,
                                  const xillTable *xill_tab,
-                                 const VecD& radial_zones,
+                                 const VecD &radial_zones,
                                  double **pt_ener,
                                  int n_ener,
                                  int *status);
 
-void free_relSysPar(RelSysPar *sysPar);
+void free_relSysPar(RelSysPar * sysPar);
+
 void free_cached_relTable();
+
 void free_relprofile_cache();
+
 void free_cache_syspar();
 #endif

@@ -948,6 +948,77 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
 
 }
 
+/**
+ * @brief Relativistic line profile of the whole disk, with a line energy and a weight that depend on the radius.
+ *
+ * The integration over the radial points of sysPar is the same as in calc_relline_profile, followed by
+ * renorm_relline_profile without renormalizing the total flux (as for the relxillBB models), i.e., the profile is in
+ * photons per bin. The difference is that the line of each radial point ii is at the energy line_ener[ii] instead of
+ * 1 keV, and weighted with weight[ii]. Convolving this profile with a spectrum S(E) (convolveSpectrumFFTNormalized,
+ * for which 1 keV is no energy shift) is therefore the sum over the radial points of their line profile convolved with
+ * S(E / line_ener[ii]), weighted with weight[ii]. It is used for the direct disk emission of the relxillBB models, for
+ * which the spectra of all radii only differ in their temperature (see get_disk_emission_kernel).
+ *
+ * @param ener Energy grid [keV] (size n_ener+1).
+ * @param n_ener Number of energy bins.
+ * @param sysPar System parameters (radial points, transfer functions, emissivity).
+ * @param line_ener Line energy of each radial point [keV] (size sysPar->nr); points with line_ener <= 0 are skipped.
+ * @param weight Weight of each radial point (size sysPar->nr).
+ * @param profile Output: profile [photons/bin] (size n_ener).
+ * @param status Status flag.
+ */
+void calc_relline_profile_radial_line_energy(const double *ener,
+                                             int n_ener,
+                                             RelSysPar *sysPar,
+                                             const double *line_ener,
+                                             const double *weight,
+                                             double *profile,
+                                             int *status) {
+  CHECK_STATUS_VOID(*status);
+  setArrayToZero(profile, n_ener);
+
+  str_relb_func *lb_func = new_str_relb_func(sysPar, status);
+  CHECK_STATUS_VOID(*status);
+
+  for (int ii = 0; ii < sysPar->nr; ii++) {
+    if (line_ener[ii] <= 0) {
+      continue;
+    }
+    double egmin = sysPar->gmin[ii] * line_ener[ii];
+    double egmax = sysPar->gmax[ii] * line_ener[ii];
+
+    if ((egmax > ener[0]) && (egmin < ener[n_ener])) {
+      egmin = fmax(egmin, ener[0]);
+      egmax = fmin(egmax, ener[n_ener]);
+      const int ielo = binary_search(ener, n_ener + 1, egmin);
+      const int iehi = binary_search(ener, n_ener + 1, egmax);
+
+      set_str_relbf(lb_func,
+                    sysPar->re[ii],
+                    sysPar->gmin[ii],
+                    sysPar->gmax[ii],
+                    sysPar->trff[ii],
+                    sysPar->cosne[ii],
+                    sysPar->emis->emis[ii],
+                    sysPar->limb_law);
+
+      // area as in calc_relline_profile (weight=PI*r*dr/2)
+      const double weight_point = trapez_integ_single(sysPar->re, ii, sysPar->nr) / 2 * weight[ii];
+
+      // integ_relline_bin is in units of the line energy (energy flux): divide by g = E / line_ener to get photons
+      // per bin (as in renorm_relline_profile for a line at 1 keV)
+      for (int jj = ielo; jj <= iehi; jj++) {
+        const double gfac = 0.5 * (ener[jj] + ener[jj + 1]) / line_ener[ii];
+        profile[jj] += integ_relline_bin(lb_func, ener[jj] / line_ener[ii], ener[jj + 1] / line_ener[ii])
+            * weight_point / gfac;
+      }
+    }
+  }
+
+  free_str_relb_func(&lb_func);
+  CHECK_RELXILL_DEFAULT_ERROR(status);
+}
+
 void free_cached_relTable() {
   free_relTable(ptr_rellineTable);
 }

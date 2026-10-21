@@ -51,7 +51,7 @@ static VecD make_ener_grid(int nener, double emin, double emax) {
 }
 
 // Helper: xillver normalization of a spectrum, computed as for N_xill in
-// calc_zone_direct_plus_xillver_reflected_flux(): rebin onto the coarse xillver grid,
+// calc_zone_xillver_reflected_flux(): rebin onto the coarse xillver grid,
 // then calc_xillver_norm_from_primary_spectrum().
 static double get_xillver_norm_on_coarse_grid(const double *spec, const double *ener, int n_ener, int *status) {
     EnerGrid *egrid = get_coarse_xillver_energrid();
@@ -60,8 +60,8 @@ static double get_xillver_norm_on_coarse_grid(const double *spec, const double *
     return calc_xillver_norm_from_primary_spectrum(spec_coarse.data(), egrid->ener, egrid->nbins, status);
 }
 
-// Helper: per-zone ratio N(reflect)/N(return) of the output of calc_zone_direct_plus_xillver_reflected_flux().
-// boost=-1: |boost|=1 does not scale the reflection, and the direct spectrum is not added
+// Helper: per-zone ratio N(reflect)/N(return) of the output of calc_zone_xillver_reflected_flux().
+// boost=-1: |boost|=1 does not scale the reflection
 //  => xill_flux_returnrad = N_xill(specRet) * F_xill, with the angle weighting given by rel_profile->rel_cosne
 static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
                                                    const relline_spec_multizone *rel_profile,
@@ -76,12 +76,12 @@ static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
     // printf("\n %5s  %12s  %12s  %12s\n", "izone", "N(return)", "N(reflect)", "refl/return");
     for (int izone = 0; izone < returnSpec->nrad; izone++) {
         xill_param_zone.radzone = static_cast<double>(izone);
-        calc_zone_direct_plus_xillver_reflected_flux(xill_param_zone,
-                                                     rel_profile,
-                                                     returnSpec,
-                                                     xill_flux_returnrad,
-                                                     izone,
-                                                     status);
+        calc_zone_xillver_reflected_flux(xill_param_zone,
+                                         rel_profile,
+                                         returnSpec,
+                                         xill_flux_returnrad,
+                                         izone,
+                                         status);
 
         double norm_return =
                 get_xillver_norm_on_coarse_grid(returnSpec->specRet[izone],
@@ -104,7 +104,7 @@ static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
 }
 
 // Helper: relline_spec_multizone with only the emission-angle distribution rel_cosne set (the only part
-// used by calc_zone_direct_plus_xillver_reflected_flux()), owning the memory of dist [n_zones][n_cosne]
+// used by calc_zone_xillver_reflected_flux()), owning the memory of dist [n_zones][n_cosne]
 struct AngleDistProfile {
     VecD cosne;
     VecD_2D dist;
