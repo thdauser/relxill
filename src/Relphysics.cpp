@@ -80,7 +80,7 @@ static double disk_temperature_alpha(double r, double Rin) {
 
 // temperature of a disk as used by diskbb (equal to alpha disk for large radii)
 static double disk_temperature_diskbb(double r, double Rin, double Tin) {
-  return pow(Tin * (r / Rin), (-3. / 4)); // if we use Rin, we don't get T=Tin at the inner edge
+  return Tin * pow(r / Rin, (-3. / 4)); // if we use Rin, we don't get T=Tin at the inner edge
 }
 
 // temperature profile for the given radii; use Tmax at Rmax following Poutanan+2007
