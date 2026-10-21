@@ -74,6 +74,15 @@ static std::string get_fname_refdata_ezdiskbb(double Tmax) {
   return fname;
 }
 
+// reference file with the kerrbb model of Xspec (column "kerrbb") for the given spin and inclination, with a maximal
+// temperature of the disk of 1 keV, on the energy grid of the disk emission tests below (created with
+// test/unit/refdata/create_refvalues_kerrbb.sl)
+static std::string get_fname_refdata_kerrbb(double spin, double incl) {
+  char fname[100];
+  snprintf(fname, sizeof(fname), "refvalues_kerrbb_a%.3f_i%.0f.fits", spin, incl);
+  return fname;
+}
+
 // reads a model spectrum of Xspec (column colname) from a reference file and checks that its energy grid
 // (column "elo") is identical to ener
 static VecD fits_read_refdata_xspec(const std::string &fname_ref,
@@ -192,6 +201,7 @@ static VecD calc_disk_spectrum_rebinned(const VecD &rlo,
 // from spec_ref in the band [emin, emax], for the temperature profile tprofile (value of RELXILL_RRAD_BBODY_TPROFILE)
 static double shape_deviation_relxillbb_ns_disk_emission(const char *tprofile,
                                                          double kTbb,
+                                                         double spin,
                                                          double rin,
                                                          double incl,
                                                          const double *ener,
@@ -203,6 +213,7 @@ static double shape_deviation_relxillbb_ns_disk_emission(const char *tprofile,
   LocalModel lmod(ModelName::relxillBB_NS);
   lmod.set_par(XPar::ktbb, kTbb);
   lmod.set_par(XPar::boost, 0); // direct emission only
+  lmod.set_par(XPar::a, spin);
   lmod.set_par(XPar::rin, rin);
   lmod.set_par(XPar::incl, incl);
   VecD flux(n_ener, 0.0);
@@ -271,7 +282,7 @@ TEST_CASE (
 // ======= DISK EMISSION: temperature profiles and radial zones (see doc/returnrad_disk_emission.md) ======= //
 // (1)  temperature profile and normalization: multicolor disk on a fine radial grid vs. the Xspec models
 // (2a) radial zones of the model vs. a fine radial grid (code internal)
-// (2b) full relxillBB_NS model (with relativistic effects) vs. the Xspec models
+// (2b) full relxillBB_NS model with the Novikov-Thorne profile vs. the relativistic Xspec model kerrbb
 // run all of them with bin/tests "[diskemission]"
 
 // temperature profile of the disk emission, and the Xspec model with the same temperature profile
@@ -367,21 +378,20 @@ TEST_CASE(" disk emission (2a): radial zones of the model vs. a fine radial grid
 }
 
 // ========== //
-// (2b) the two tests below
-// ========== //
-// Direct disk emission (boost=0) of the full relxillBB_NS model (temperature profile, blackbody spectra of the
-// zones, relativistic convolution) compared to the diskbb model of Xspec:
-// - diskbb temperature profile (RELXILL_RRAD_BBODY_TPROFILE=2): the shape agrees to ~8%; the remaining difference
-//   is relativistic, and for Rin=10 r_isco and incl=50deg gravitational redshift and Doppler shift partly cancel
-//   (other values of Rin=-8...-12 and incl=40...50deg give deviations of 7-20%), see doc/returnrad_disk_emission.md
-// - zero-torque temperature profile (default): the shape differs by ~30%, i.e., the test is sensitive to the
-//   temperature profile
-TEST_CASE(" relxillBB_NS direct disk emission vs. Xspec diskbb for the diskbb and zero-torque temperature profiles ",
-          "[bbret][diskemission][diskbb]") {
-  const double Tin = GENERATE(0.5, 1.0, 2.0);
-  constexpr double max_dev_allowed = 0.1;
-  constexpr double rin = -10;
-  constexpr double incl = 50;
+// (2b) The direct disk emission (boost=0) of the full relxillBB_NS model with the Novikov-Thorne temperature profile
+// (RELXILL_RRAD_BBODY_TPROFILE=3) compared to the relativistic disk model kerrbb of Xspec (eta=0, hd=1, rflag=0,
+// lflag=0), with the maximal temperature of the kerrbb disk (1 keV) as kTbb, i.e., without any free parameter. This
+// tests the implementation of the disk emission in the model (temperature profile, radial zones, relativistic
+// effects). The shape deviation is 0.1-1% in 0.5-10 kTbb. Lower energies are not compared, as the outer radius of the
+// model (1000 Rg) truncates the disk emission there (15% at 0.2 kTbb for a=0). The alpha-disk profile (default)
+// deviates by more than 4%, i.e., the test is sensitive to the temperature profile.
+TEST_CASE(" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb ",
+          "[bbret][diskemission][kerrbb]") {
+  const double spin = GENERATE(0.0, 0.9, 0.998);
+  const double incl = GENERATE(30.0, 60.0);
+  constexpr double kTbb = 1.0; // maximal temperature of the disk of the kerrbb reference spectra
+  constexpr double rin = -1; // ISCO
+  constexpr double max_dev_allowed = 0.02;
 
   // grid of the reference files
   constexpr int n_ener = 50;
@@ -389,55 +399,23 @@ TEST_CASE(" relxillBB_NS direct disk emission vs. Xspec diskbb for the diskbb an
   get_log_grid(ener, n_ener + 1, 0.01, 20.0);
 
   int status = EXIT_SUCCESS;
-  const auto diskbb_xspec = fits_read_refdata_xspec(get_fname_refdata_diskbb(Tin), "diskbb", ener, n_ener, &status);
+  const auto kerrbb_xspec = fits_read_refdata_xspec(get_fname_refdata_kerrbb(spin, incl),
+                                                    "kerrbb",
+                                                    ener,
+                                                    n_ener,
+                                                    &status);
   REQUIRE(status == EXIT_SUCCESS);
 
-  const double emin = 0.15 * Tin;
-  const double emax = 10 * Tin;
-  const double dev_diskbb =
-      shape_deviation_relxillbb_ns_disk_emission("2", Tin, rin, incl, ener, n_ener, diskbb_xspec, emin, emax);
-  const double dev_zero_torque =
-      shape_deviation_relxillbb_ns_disk_emission("1", Tin, rin, incl, ener, n_ener, diskbb_xspec, emin, emax);
-  INFO("Tin = " << Tin << ": max. shape deviation from Xspec diskbb: diskbb profile " << dev_diskbb
-       << ", zero-torque profile " << dev_zero_torque << " (allowed: " << max_dev_allowed << ")");
-  CHECK(dev_diskbb < max_dev_allowed);
-  CHECK(dev_zero_torque > max_dev_allowed);
-}
-
-// ========== //
-// Direct disk emission (boost=0) of the full relxillBB_NS model compared to the ezdiskbb model of Xspec:
-// - zero-torque temperature profile (default): the shape agrees to ~7% in 0.3-10 Tmax for Rin=10 r_isco and
-//   incl=40deg. Lower energies are not compared: for this Rin, the disk only extends over a factor of 80 in radius
-//   (Rout=1000Rg), which truncates the emission of the outer disk (relatively hotter than for diskbb), see
-//   doc/returnrad_disk_emission.md
-// - diskbb temperature profile: the shape differs by ~30%, i.e., the test is sensitive to the temperature profile
-TEST_CASE(" relxillBB_NS direct disk emission vs. Xspec ezdiskbb for the zero-torque and diskbb temperature profiles ",
-          "[bbret][diskemission][ezdiskbb]") {
-  const double Tmax = GENERATE(0.5, 1.0, 2.0);
-  constexpr double max_dev_allowed = 0.1;
-  constexpr double rin = -10;
-  constexpr double incl = 40;
-
-  // grid of the reference files
-  constexpr int n_ener = 50;
-  double ener[n_ener + 1];
-  get_log_grid(ener, n_ener + 1, 0.01, 20.0);
-
-  int status = EXIT_SUCCESS;
-  const auto ezdiskbb_xspec =
-      fits_read_refdata_xspec(get_fname_refdata_ezdiskbb(Tmax), "ezdiskbb", ener, n_ener, &status);
-  REQUIRE(status == EXIT_SUCCESS);
-
-  const double emin = 0.3 * Tmax;
-  const double emax = 10 * Tmax;
-  const double dev_zero_torque =
-      shape_deviation_relxillbb_ns_disk_emission("1", Tmax, rin, incl, ener, n_ener, ezdiskbb_xspec, emin, emax);
-  const double dev_diskbb =
-      shape_deviation_relxillbb_ns_disk_emission("2", Tmax, rin, incl, ener, n_ener, ezdiskbb_xspec, emin, emax);
-  INFO("Tmax = " << Tmax << ": max. shape deviation from Xspec ezdiskbb: zero-torque profile " << dev_zero_torque
-    << ", diskbb profile " << dev_diskbb << " (allowed: " << max_dev_allowed << ")");
-  CHECK(dev_zero_torque < max_dev_allowed);
-  CHECK(dev_diskbb > max_dev_allowed);
+  const double emin = 0.5 * kTbb;
+  const double emax = 10 * kTbb;
+  const double dev_novikov_thorne =
+      shape_deviation_relxillbb_ns_disk_emission("3", kTbb, spin, rin, incl, ener, n_ener, kerrbb_xspec, emin, emax);
+  const double dev_alpha =
+      shape_deviation_relxillbb_ns_disk_emission("1", kTbb, spin, rin, incl, ener, n_ener, kerrbb_xspec, emin, emax);
+  INFO("a = " << spin << ", incl = " << incl << ": max. shape deviation from Xspec kerrbb: Novikov-Thorne profile "
+    << dev_novikov_thorne << ", alpha-disk profile " << dev_alpha << " (allowed: " << max_dev_allowed << ")");
+  CHECK(dev_novikov_thorne < max_dev_allowed);
+  CHECK(dev_alpha > max_dev_allowed);
 }
 
 // ========== //

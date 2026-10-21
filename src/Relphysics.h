@@ -28,6 +28,7 @@ extern "C" {
 
 #define TPROFILE_ALPHA 1
 #define TPROFILE_DISKBB 2
+#define TPROFILE_NOVIKOV_THORNE 3
 
 double ut_disk(double r, double a);
 
@@ -37,7 +38,23 @@ void disk_Tprofile_alpha(const double *rlo, const double *rhi, double *temp, int
 
 void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, int n, double Tin);
 
-VecD get_tprofile(const VecD &rlo, const VecD &rhi, int nrad, double Rin, double Tin, int type, int *status);
+void disk_Tprofile_novikov_thorne(const double *rlo,
+                                  const double *rhi,
+                                  double *temp,
+                                  int n,
+                                  double Rin,
+                                  double Tin,
+                                  double spin);
+
+// spin is only used for TPROFILE_NOVIKOV_THORNE
+VecD get_tprofile(const VecD &rlo,
+                  const VecD &rhi,
+                  int nrad,
+                  double Rin,
+                  double Tin,
+                  double spin,
+                  int type,
+                  int *status);
 
 void bbody_photon_flux_per_keV(const double *ener, int n, double *spec, double temperature, double gfac);
 

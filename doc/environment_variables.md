@@ -27,8 +27,8 @@ All variables are optional and fall back to their default values if unset.
 
 ## Blackbody Return Radiation
 
-| Variable | Default | Values | Description |
-|----------|---------|--------|-------------|
-| `RELXILL_RRAD_BBODY_ORDER` | 1 | 0–3 | Order of the blackbody return radiation calculation |
-| `RELXILL_RRAD_BBODY_TPROFILE` | 1 | 1–2 | Temperature profile for blackbody return radiation |
-| `RELXILL_BBRET_NOREFL` | 0 | 0, 1 | Skip xillver reflection calculation for blackbody return radiation |
+| Variable                      | Default | Values | Description                                                                                                                                                     |
+|-------------------------------|---------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `RELXILL_RRAD_BBODY_ORDER`    | 1       | 0–3    | Order of the blackbody return radiation calculation                                                                                                             |
+| `RELXILL_RRAD_BBODY_TPROFILE` | 1       | 1–3    | Temperature profile of the disk for blackbody return radiation: 1 = alpha disk (zero torque), 2 = diskbb, 3 = Novikov-Thorne (see \ref returnrad_disk_emission) |
+| `RELXILL_BBRET_NOREFL`        | 0       | 0, 1   | Skip xillver reflection calculation for blackbody return radiation                                                                                              |

@@ -63,6 +63,43 @@ T(r) \;=\; kT_\mathrm{bb} \left(\frac{r}{R_\mathrm{in}}\right)^{-3/4}
 with \f$kT_\mathrm{bb}\f$ the temperature at the inner edge \f$R_\mathrm{in}\f$ of the disk (the inner edge of the
 first zone), as the parameter `Tin` of `diskbb`.
 
+### Novikov-Thorne profile (`RELXILL_RRAD_BBODY_TPROFILE=3`)
+
+The temperature profile of a relativistic thin disk around a Kerr black hole with zero torque at the inner edge
+(Novikov & Thorne 1973; `disk_Tprofile_novikov_thorne()`, `TPROFILE_NOVIKOV_THORNE`), as used by the Xspec model
+`kerrbb` (with `eta=0`). The emitted flux is \f$F = \frac{\dot{M}}{4\pi r} f\f$, with the closed form of \f$f\f$ from
+Page & Thorne (1974, ApJ 191, 499, eq. 15n; see also Li et al. 2005, ApJS 157, 335, eqs. D11 and D13):
+
+\f[
+f \;=\; \frac{3}{2}\, \frac{1}{x^2 (x^3 - 3x + 2a)} \left[ x - x_0 - \frac{3}{2} a \ln\frac{x}{x_0}
+
+- \sum_{i=1}^{3} \frac{3 (x_i - a)^2}{x_i \prod_{j \neq i} (x_i - x_j)} \ln\frac{x - x_i}{x_0 - x_i} \right]
+  \f]
+
+with \f$x = \sqrt{r}\f$, \f$x_0 = \sqrt{R_\mathrm{in}}\f$ (radii in units of \f$r_g = GM/c^2\f$), the spin
+\f$a\f$, and the roots of \f$x^3 - 3x + 2a = 0\f$: \f$x_1 = 2\cos\left(\frac{1}{3}\arccos a - \frac{\pi}{3}\right)\f$,
+\f$x_2 = 2\cos\left(\frac{1}{3}\arccos a + \frac{\pi}{3}\right)\f$, \f$x_3 = -2\cos\left(\frac{1}{3}\arccos a\right)\f$.
+The temperature is \f$T(r) = kT_\mathrm{bb}\, \left(F(r) / F(R_\mathrm{max})\right)^{1/4}\f$:
+
+- As for the alpha disk, \f$kT_\mathrm{bb}\f$ is the maximal temperature of the disk. The radius of the maximum,
+  \f$R_\mathrm{max}\f$, is determined numerically (golden-section search between \f$R_\mathrm{in}\f$ and
+  \f$4 R_\mathrm{in}\f$). For \f$R_\mathrm{in} = r_\mathrm{isco}\f$, it is at 1.59, 1.48, and 1.28
+  \f$R_\mathrm{in}\f$ for \f$a\f$ = 0, 0.9, and 0.998 (1.36 \f$R_\mathrm{in}\f$ for the alpha disk).
+- The inner edge must be at or outside the ISCO (\f$R_\mathrm{in} \geq r_\mathrm{isco}\f$).
+- The closed form agrees with a numerical integration of \f$f\f$ (Li et al. 2005, eq. D13, with the circular orbits of
+  Bardeen et al. 1972) to \f$2.5 \times 10^{-6}\f$ for \f$a\f$ = -0.9 to 0.998.
+- Compared to the alpha disk with the same maximal temperature, the outer disk is hotter for low spin (by 22% for
+  \f$a = 0\f$ at large radii) and cooler for high spin (by 8-13% for \f$a = 0.998\f$).
+
+The figure compares the Novikov-Thorne profile with the alpha disk (created with
+`test/manual/disk_temperature_profile/plot_temperature_profiles.py`, which uses the same equations as the code):
+
+\image html disk_temperature_profiles.png "Temperature profiles normalized to the maximal temperature, for an inner edge
+at the ISCO (top), and the ratio of the Novikov-Thorne profile to the alpha disk (bottom)."
+
+With the Novikov-Thorne profile, the full model agrees with the relativistic Xspec model `kerrbb` without any free
+parameter, see (2b).
+
 ## Tests and precision
 
 The disk emission is tested in three steps, which correspond to the unit tests listed below:
@@ -74,9 +111,9 @@ The disk emission is tested in three steps, which correspond to the unit tests l
 - **(2a) Radial zones**: \ref spec_multicolor_disk on the 50 radial zones of the model compared to a fine radial grid
   over the same radii. This is a code-internal comparison (as (1) shows that the fine radial grid is correct) and
   gives the precision of the disk emission of the model due to its radial zones.
-- **(2b) Full model**: the direct disk emission of the full `relxillBB_NS` model (with relativistic effects) compared
-  to the Xspec models. This tests how the disk emission is implemented in the model, but is only approximate because
-  of the relativistic effects.
+- **(2b) Full model**: the direct disk emission of the full `relxillBB_NS` model with the Novikov-Thorne profile
+  compared to the relativistic disk model `kerrbb`. This tests how the disk emission is implemented in the model
+  (temperature profile, radial zones, relativistic effects), without any free parameter.
 
 The precision is given as the shape deviation: the maximal relative deviation of the ratio of two spectra in the
 given band, after normalizing the ratio to its mean in the band. All values are for an energy grid of 50 logarithmic
@@ -129,22 +166,29 @@ returning radiation and its reflection.
 
 ### (2b) Full model (with relativistic effects)
 
-The full model (`relxillBB_NS` with `boost=0`, i.e., only the direct emission of the disk) additionally contains the
-relativistic effects (energy shift, light bending), which the Xspec models do not. The comparison is therefore only
-approximate:
+The full model (`relxillBB_NS` with `boost=0`, i.e., only the direct emission of the disk, \f$R_\mathrm{in} =
+r_\mathrm{isco}\f$, \f$R_\mathrm{out}\f$ = 1000 Rg) with the Novikov-Thorne profile and \f$kT_\mathrm{bb}\f$ = 1 keV
+compared to the Xspec model `kerrbb` (`eta=0`, `hd=1`, `rflag=0`, `lflag=0`; \f$M\f$ = 10 \f$M_\odot\f$ and the
+accretion rate chosen such that the maximal temperature of the disk is 1 keV), i.e., without any free parameter.
+Shape deviation in 0.5-10 kTbb (50 energy bins):
 
-- **diskbb profile vs. `diskbb`** (0.15-10 kTbb): 4.9-7.9% for \f$R_\mathrm{in} = 10\,r_\mathrm{isco}\f$ and an
-  inclination of 50 deg, where the gravitational redshift and the Doppler shift partly cancel. For
-  \f$R_\mathrm{in}\f$ = 8-12 \f$r_\mathrm{isco}\f$ and an inclination of 40-50 deg, the deviation is 7-20%, and
-  27-41% for 30 deg. The alpha disk deviates by 33-40%, i.e., the comparison is sensitive to the temperature profile.
-- **alpha disk vs. `ezdiskbb`** (0.3-10 kTbb): 7.4-7.5% for \f$R_\mathrm{in} = 10\,r_\mathrm{isco}\f$ and an
-  inclination of 40 deg; the diskbb profile deviates by 30-31%. Lower energies are not compared: for
-  \f$R_\mathrm{in} = 10\,r_\mathrm{isco}\f$, the disk only extends over a factor of 80 in radius
-  (\f$R_\mathrm{out}\f$ = 1000 Rg), which truncates the emission of the relatively hot outer disk (even without
-  relativistic effects, the deviation would be 56% in 0.1-10 kTbb).
+| spin  | Novikov-Thorne, incl = 30 deg | incl = 60 deg | alpha disk, incl = 30 deg | incl = 60 deg |
+|-------|-------------------------------|---------------|---------------------------|---------------|
+| 0     | 0.35%                         | 0.52%         | 7.9%                      | 5.8%          |
+| 0.9   | 0.81%                         | 0.56%         | 16%                       | 3.1%          |
+| 0.998 | 0.36%                         | 0.10%         | 124%                      | 45%           |
 
-A comparison with a relativistic disk model (e.g., `kerrbb`) instead of the non-relativistic Xspec models is still to
-be investigated.
+- With the Novikov-Thorne profile, the implementation of the disk emission in the model (temperature profile,
+  radial zones, relativistic effects) agrees with `kerrbb` to better than 1%.
+- Lower energies are not compared: the outer radius of the model (1000 Rg, i.e., only \f$167\,r_\mathrm{isco}\f$ for
+  \f$a = 0\f$) truncates the disk emission there, which gives a deviation of 15% in 0.2-10 kTbb for \f$a = 0\f$
+  (2.3-2.5% for \f$a = 0.9\f$, 0.8% for \f$a = 0.998\f$).
+- The alpha disk deviates by 3-124% for the same maximal temperature (and still by 5-10% for the best-fitting
+  \f$kT_\mathrm{bb}\f$), due to the different temperature profile, see the figure above.
+
+Before, the full model was compared to the non-relativistic models `diskbb` and `ezdiskbb`. These comparisons were
+limited by the relativistic effects (5-8% for \f$R_\mathrm{in} = 10\,r_\mathrm{isco}\f$ and 40-50 deg, where the
+gravitational redshift and the Doppler shift partly cancel) and were replaced by the comparison with `kerrbb`.
 
 ## Unit tests
 
@@ -154,14 +198,14 @@ In `test/unit/tests-bbody-returnrad.cpp`; all disk emission tests run with `bin/
   deviation below 0.3% (alpha disk) and 0.05% (diskbb), and normalization independent of kTbb to 0.1%.
 - **(2a)** *" disk emission (2a): radial zones of the model vs. a fine radial grid "*: shape deviation below 4%
   (alpha disk) and 2% (diskbb).
-- **(2b)** *" relxillBB_NS direct disk emission vs. Xspec diskbb for the diskbb and zero-torque temperature profiles "*
-  (`[diskbb]`) and *" relxillBB_NS direct disk emission vs. Xspec ezdiskbb for the zero-torque and diskbb temperature
-  profiles "* (`[ezdiskbb]`): the matching profile deviates by less than 10%, the other profile by more than 10%.
+- **(2b)** *" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb "*
+  (`[kerrbb]`): for \f$a\f$ = 0, 0.9, 0.998 and an inclination of 30 and 60 deg, the shape deviation of the
+  Novikov-Thorne profile is below 2% in 0.5-10 kTbb, and the one of the alpha disk above 2%.
 
-The reference spectra of the Xspec models (norm = 1) are in `test/unit/refdata/`:
-`refvalues_diskbb_Tin{0.5,1.0,2.0}.fits`
+The reference spectra of the Xspec models are in `test/unit/refdata/`: `refvalues_diskbb_Tin{0.5,1.0,2.0}.fits`
 (column `diskbb`) and `refvalues_ezdiskbb_Tmax{0.5,1.0,2.0}.fits` (column `ezdiskbb`), created with
-`create_refvalues_diskbb.sl`.
+`create_refvalues_diskbb.sl`, and `refvalues_kerrbb_a{0.000,0.900,0.998}_i{30,60}.fits` (column `kerrbb`, with the
+parameters in the header), created with `create_refvalues_kerrbb.sl`.
 
 ## History
 
@@ -182,5 +226,6 @@ The reference spectra of the Xspec models (norm = 1) are in `test/unit/refdata/`
   radiation and its reflection, see (2a).
 - \f$R_\mathrm{max} = 1.5^{4/5} R_\mathrm{in}\f$ instead of \f$\frac{49}{36} R_\mathrm{in}\f$: the maximal temperature
   is 0.03% higher than \f$kT_\mathrm{bb}\f$ (0.2% in the spectrum at 10 kTbb, see (1)).
-- A test of the full model against a relativistic disk model (e.g., `kerrbb`), see (2b).
+- Which temperature profile should be the default: the alpha disk is Newtonian, whereas the relativistic effects are
+  calculated in the Kerr metric (see the Novikov-Thorne profile above).
 - The parameter `shiftTmaxRRad` of `relxillBB_NS` is read, but not used in the code.

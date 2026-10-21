@@ -105,8 +105,8 @@ int get_from_env_rrad_bbody_order(void) {
 int get_from_env_rrad_bbody_tprofile(void) {
   int def = 1;
   int val = (int) get_env_otherwise_default("RELXILL_RRAD_BBODY_TPROFILE", def);
-  if (val < 1 || val > 2) {
-    relxill_warning("only values between 1 and 2 are allowed for RELXILL_RRAD_BBODY_TPROFILE");
+  if (val < 1 || val > 3) {
+    relxill_warning("only values between 1 and 3 are allowed for RELXILL_RRAD_BBODY_TPROFILE");
     return def;
   }
   return val;

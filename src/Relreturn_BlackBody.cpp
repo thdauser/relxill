@@ -144,11 +144,12 @@ VecD get_temperature_profile_disk_zones(const returningFractions *dat, double Ri
     int t_profile = [&]() -> int {
         switch (get_from_env_rrad_bbody_tprofile()) {
             case 2: return TPROFILE_DISKBB;
+            case 3: return TPROFILE_NOVIKOV_THORNE;
             default: return TPROFILE_ALPHA;  // this is for a value of 1 as well
         }
     }();
 
-    return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, t_profile, status);
+    return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, dat->a, t_profile, status);
 }
 
 
@@ -517,8 +518,9 @@ void spec_multicolor_disk(const double *ener,
     CHECK_STATUS_VOID(*status);
     const int nrad = static_cast<int>(rlo.size());
     assert(nrad > 0 && rhi.size() == rlo.size());
+    assert(tprofile != TPROFILE_NOVIKOV_THORNE); // relativistic profile (needs the spin), not for this function
 
-    VecD temperature = get_tprofile(rlo, rhi, nrad, rlo[0], kT, tprofile, status);
+    VecD temperature = get_tprofile(rlo, rhi, nrad, rlo[0], kT, 0.0, tprofile, status);
     VecD_2D spec_arr = get_bbody_specs_binned(ener, n, temperature, status);
     CHECK_STATUS_VOID(*status);
 

@@ -106,7 +106,73 @@ void disk_Tprofile_diskbb(const double *rlo, const double *rhi, double *temp, in
   }
 }
 
-VecD get_tprofile(const VecD &rlo, const VecD &rhi, const int nrad, double Rin, double Tin, int type, int *status) {
+// radial dependence of the flux emitted by a relativistic thin disk around a Kerr black hole with zero torque at its
+// inner edge Rin (Novikov & Thorne 1973), with radii in units of r_g = GM/c^2 and Rin >= r_isco. The flux is
+// F = Mdot/(4 pi r) f, with the closed form of f from Page & Thorne (1974, ApJ 191, 499, eq. 15n), see also Li et al.
+// (2005, ApJS 157, 335, eqs. D11 and D13, the paper of the Xspec model kerrbb):
+//   f = 3/2 / (x^2 (x^3 - 3x + 2a)) * [x - x0 - 3/2 a ln(x/x0)
+//                                      - sum_i 3(x_i-a)^2/(x_i(x_i-x_j)(x_i-x_k)) ln((x-x_i)/(x0-x_i))]
+// with x = sqrt(r), x0 = sqrt(Rin), and x_i the roots of x^3 - 3x + 2a = 0. Only the radial dependence F ~ f/x^2 is
+// returned (without the constant factors), which approaches r^-3 for large radii.
+static double disk_flux_novikov_thorne(double r, double Rin, double spin) {
+  const double x = sqrt(r);
+  const double x0 = sqrt(Rin);
+  const double x1 = 2 * cos((acos(spin) - M_PI) / 3);
+  const double x2 = 2 * cos((acos(spin) + M_PI) / 3);
+  const double x3 = -2 * cos(acos(spin) / 3);
+
+  const double integ = x - x0 - 1.5 * spin * log(x / x0)
+                       - 3 * pow(x1 - spin, 2) / (x1 * (x1 - x2) * (x1 - x3)) * log((x - x1) / (x0 - x1))
+                       - 3 * pow(x2 - spin, 2) / (x2 * (x2 - x1) * (x2 - x3)) * log((x - x2) / (x0 - x2))
+                       - 3 * pow(x3 - spin, 2) / (x3 * (x3 - x1) * (x3 - x2)) * log((x - x3) / (x0 - x3));
+
+  // the integral vanishes at r = Rin (zero torque), a tiny negative value can only occur from rounding
+  return fmax(integ / (pow(x, 4) * (x * x * x - 3 * x + 2 * spin)), 0.0);
+}
+
+// radius of the maximal flux of the Novikov-Thorne profile (golden-section search between Rin and 4 Rin; the maximum
+// is at 1.3-1.6 Rin for an inner edge at the ISCO)
+static double radius_max_flux_novikov_thorne(double Rin, double spin) {
+  const double golden = (sqrt(5.) - 1) / 2;
+  double rlo = Rin;
+  double rhi = 4 * Rin;
+  for (int ii = 0; ii < 100; ii++) {
+    const double r1 = rhi - golden * (rhi - rlo);
+    const double r2 = rlo + golden * (rhi - rlo);
+    if (disk_flux_novikov_thorne(r1, Rin, spin) > disk_flux_novikov_thorne(r2, Rin, spin)) {
+      rhi = r2;
+    } else {
+      rlo = r1;
+    }
+  }
+  return 0.5 * (rlo + rhi);
+}
+
+// Novikov-Thorne temperature profile T ~ F^(1/4) for the given radii, with zero torque at the inner edge Rin and the
+// maximal temperature Tin (Tmax, as for the alpha disk); the temperature of each zone is evaluated at its mean radius
+void disk_Tprofile_novikov_thorne(const double *rlo,
+                                  const double *rhi,
+                                  double *temp,
+                                  int n,
+                                  double Rin,
+                                  double Tin,
+                                  double spin) {
+  assert(Rin >= kerr_rms(spin) * (1 - 1e-6));
+  const double flux_max = disk_flux_novikov_thorne(radius_max_flux_novikov_thorne(Rin, spin), Rin, spin);
+
+  for (int ii = 0; ii < n; ii++) {
+    temp[ii] = Tin * pow(disk_flux_novikov_thorne(0.5 * (rlo[ii] + rhi[ii]), Rin, spin) / flux_max, 0.25);
+  }
+}
+
+VecD get_tprofile(const VecD &rlo,
+                  const VecD &rhi,
+                  const int nrad,
+                  double Rin,
+                  double Tin,
+                  double spin,
+                  int type,
+                  int *status) {
   VecD tprofile(nrad);
 
   if (type == TPROFILE_ALPHA) {
@@ -115,6 +181,9 @@ VecD get_tprofile(const VecD &rlo, const VecD &rhi, const int nrad, double Rin, 
   } else if (type == TPROFILE_DISKBB) {
     disk_Tprofile_diskbb(rlo.data(), rhi.data(), tprofile.data(), nrad, Tin);
     if (is_debug_run()) { printf(" using temperature profile DISKBB\n"); }
+  } else if (type == TPROFILE_NOVIKOV_THORNE) {
+    disk_Tprofile_novikov_thorne(rlo.data(), rhi.data(), tprofile.data(), nrad, Rin, Tin, spin);
+    if (is_debug_run()) { printf(" using temperature profile NOVIKOV-THORNE\n"); }
   } else {
     RELXILL_ERROR(" failed getting the temperature profile ", status);
     printf("    reason: type=%i is unknown\n", type);
