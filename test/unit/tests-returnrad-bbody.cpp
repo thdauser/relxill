@@ -333,7 +333,6 @@ TEST_CASE (
      DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-    setenv("RELXILL_BBRET_NOREFL","1",1);
     setenv("RELXILL_RRAD_BBODY_ORDER","1",1);
 
     lmod.eval_model(spec);
@@ -345,7 +344,6 @@ TEST_CASE (
 
     REQUIRE((sum_2nd - sum_1st) > 1e-3);
 
-    unsetenv("RELXILL_BBRET_NOREFL");
     unsetenv("RELXILL_RRAD_BBODY_ORDER");
 }
 
@@ -363,8 +361,6 @@ TEST_CASE (
      DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
 
-    setenv("RELXILL_BBRET_NOREFL","1",1);
-
     lmod.eval_model(spec);
     double sum_default = calcSum(spec.flux, spec.num_flux_bins());
 
@@ -380,7 +376,6 @@ TEST_CASE (
     lmod.eval_model(spec);
     double sum_2 = calcSum(spec.flux, spec.num_flux_bins());
 
-    unsetenv("RELXILL_BBRET_NOREFL");
     unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
 
     // check that 1 and 2 are different
@@ -829,11 +824,9 @@ TEST_CASE(
     "[relxillbb_ns]"
 ) {
     LocalModel lmod(ModelName::relxillBB_NS);
-    setenv("RELXILL_BBRET_NOREFL", "1", 1);
     DefaultSpec default_spec{};
     XspecSpectrum spec = default_spec.get_xspec_spectrum();
     REQUIRE_NOTHROW(lmod.eval_model(spec));
-    unsetenv("RELXILL_BBRET_NOREFL");
 }
 
 TEST_CASE (
@@ -915,7 +908,7 @@ TEST_CASE (
     REQUIRE(returnSpec != nullptr);
 
     const double input_logxi = 3.0;
-    LocalModel lmod(ModelName::relxillBB_NS);
+    LocalModel lmod(ModelName::relxillBB);
     lmod.set_par(XPar::logxi, input_logxi);
 
     auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, lmod.get_model_params(), &status);

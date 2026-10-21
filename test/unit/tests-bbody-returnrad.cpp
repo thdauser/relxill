@@ -539,7 +539,7 @@ TEST_CASE(" relxillBB_NS direct disk emission vs. Xspec ezdiskbb for the zero-to
   const double dev_diskbb =
       shape_deviation_relxillbb_ns_disk_emission("2", Tmax, rin, incl, ener, n_ener, ezdiskbb_xspec, emin, emax);
   INFO("Tmax = " << Tmax << ": max. shape deviation from Xspec ezdiskbb: zero-torque profile " << dev_zero_torque
-       << ", diskbb profile " << dev_diskbb << " (allowed: " << max_dev_allowed << ")");
+    << ", diskbb profile " << dev_diskbb << " (allowed: " << max_dev_allowed << ")");
   CHECK(dev_zero_torque < max_dev_allowed);
   CHECK(dev_diskbb > max_dev_allowed);
 }
@@ -626,7 +626,6 @@ TEST_CASE (
 "[bbret]"
 )
 {
-
   LocalModel lmod(ModelName::relxillBB);
 
   DefaultSpec default_spec1{};
@@ -665,7 +664,7 @@ static void test_boost_parameter(LocalModel &lmod) {
 
   // check that boost parameter works: refl+direct has to give total flux
   INFO(" total: " << sum_total << " direct: " << sum_direct << " refl: " << sum_refl
-       << " (diff: " << fabs(sum_total - sum_direct - sum_refl) / sum_total << ")");
+    << " (diff: " << fabs(sum_total - sum_direct - sum_refl) / sum_total << ")");
   REQUIRE(fabs(sum_total - sum_direct - sum_refl) / sum_total < 1e-4);
 }
 

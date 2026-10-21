@@ -61,6 +61,9 @@ void fits_rr_write_2Dspec(const char *fname,
 /**  return the diskbb spectrum for the radial grid given by the table for this spin value **/
 void spec_diskbb(const double *ener, double *spec, int n, double Tin, double spin, int *status);
 
+/**  return the ezdiskbb spectrum (zero-torque profile) for the radial grid given by the table for this spin value **/
+void spec_ezdiskbb(const double *ener, double *spec, int n, double Tmax, double spin, int *status);
+
 
 // spec_prim can be NULL
 returnSpec2D *spec_returnrad_blackbody(double *ener,

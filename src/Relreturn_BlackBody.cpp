@@ -501,16 +501,21 @@ void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec)
  * calculated on the radial zones of the returning radiation (as the disk emission in the model), from r_isco(spin) to
  * RMAX_RELRET, with each zone weighted with its (flat-space) ring area
  */
-static void spec_multicolor_disk(const double* ener, double* spec, int n, double kT, double spin, int tprofile,
-                                 const char* fname_debug, int* status)
-{
+static void spec_multicolor_disk(const double *ener,
+                                 double *spec,
+                                 int n,
+                                 double kT,
+                                 double spin,
+                                 int tprofile,
+                                 const char *fname_debug,
+                                 int *status) {
     CHECK_STATUS_VOID(*status);
 
     const double rin = kerr_rms(spin);
     returningFractions* dat = get_rrad_fractions(spin, rin, RMAX_RELRET, status);
 
     VecD temperature =
-        get_tprofile(dat->rlo, dat->rhi, dat->nrad, dat->rlo[0], kT, tprofile, status);
+            get_tprofile(dat->rlo, dat->rhi, dat->nrad, dat->rlo[0], kT, tprofile, status);
 
     VecD_2D spec_arr = get_bbody_specs_binned(ener, n, temperature, status);
 
@@ -518,11 +523,9 @@ static void spec_multicolor_disk(const double* ener, double* spec, int n, double
     assert(dat->rhi[0] > dat->rlo[0]);
 for (int jj = 0; jj < n; jj++)
     {
-        for (int ii = 0; ii < dat->nrad; ii++)
-        {
-
+        for (int ii = 0; ii < dat->nrad; ii++) {
             spec_arr[ii][jj] *=
-                (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2)));
+                    (M_PI * (pow(dat->rhi[ii], 2) - pow(dat->rlo[ii], 2)));
         }
     }
 
@@ -533,8 +536,7 @@ for (int jj = 0; jj < n; jj++)
 
     // Convert to double** temporarily for sum_2Dspec
     std::vector<double*> ptrs(dat->nrad);
-    for (int ii = 0; ii < dat->nrad; ii++)
-    {
+    for (int ii = 0; ii < dat->nrad; ii++) {
         ptrs[ii] = spec_arr[ii].data();
     }
     sum_2Dspec(spec, ptrs.data(), n, dat->nrad, status);
@@ -549,8 +551,7 @@ for (int jj = 0; jj < n; jj++)
  * Xspec implementation of diskbb, the shape deviates by ~1.6% (0.1-10 Tin) due to the radial zones, if calculated
  * on the fine energy grid of the model (see doc/returnrad_disk_emission.md and the unit test " DiskBB Spectrum ")
  */
-void spec_diskbb(const double* ener, double* spec, int n, double Tin, double spin, int* status)
-{
+void spec_diskbb(const double *ener, double *spec, int n, double Tin, double spin, int *status) {
     spec_multicolor_disk(ener, spec, n, Tin, spin, TPROFILE_DISKBB, "!debug-testrr-spec-diskbb.fits", status);
 }
 
