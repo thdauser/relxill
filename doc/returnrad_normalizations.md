@@ -1,8 +1,8 @@
 # Thermal Returning Radiation: Flux Normalizations {#returnrad_normalizations}
 
 This page documents the normalization factors applied inside
-\ref calc_zone_direct_plus_xillver_reflected_flux in
-`src/Relreturn_BlackBody.cpp`, which builds the per-zone emitted and reflected spectrum for
+\ref calc_zone_xillver_reflected_flux in
+`src/Relreturn_BlackBody.cpp`, which builds the per-zone reflected spectrum for
 `relxillBB` before it is handed to the relativistic convolution. The important part is that the correct normalization is
 applied to the reflected spectrum, following the normalization criterion for the direct **returning** spectrum of
 xillver and the fraction of returning flux (see Dauser et al. 2016).
@@ -10,18 +10,19 @@ xillver and the fraction of returning flux (see Dauser et al. 2016).
 ## Context
 
 \ref relxillbb_kernel loops over the radial zones of the return-radiation grid.
-For each zone `izone` it combines two contributions in the **disk frame**:
-
-1. The **direct** primary thermal emission of the disk surface,
-   `returnSpec->specPri[izone]` (see \ref returnrad_disk_emission).
-2. The **reflected** component (by the xillver table) for the given returning thermal
-   radiation, whose illuminating spectrum is `returnSpec->specRet[izone]`.
+For each zone `izone` it calculates the **reflected** component (by the xillver table) in the **disk frame**, for the
+given returning thermal radiation, whose illuminating spectrum is `returnSpec->specRet[izone]`. The returning
+radiation is calculated from the primary thermal emission of the zones, `returnSpec->specPri[izone]`.
 
 The result is written into `xill_flux_returnrad` and only afterwards folded with
 the relativistic line profile of that zone
 (`convolveSpectrumFFTNormalized` with `relProfile->flux[izone]`) and rebinned
 onto the input grid. Nothing on this page applies the relativistic broadening. That is deliberately the convolution's
 job, and it matters for the intensity-to-flux question discussed below.
+
+The **direct** thermal emission of the disk is not part of the zones. It is calculated for the whole disk at once
+(`calc_disk_emission_observed()`), from the same radial points and temperatures as the primary of the zones, see
+\ref returnrad_disk_emission.
 
 ## Call tree
 
@@ -35,7 +36,7 @@ rankdir=LR;
 node [shape=box, fontname="Helvetica", fontsize=10, color="#5b6b7b", fontcolor="#1b1b1b", style="filled", fillcolor="#f2f5f8"];
 edge [fontname="Helvetica", fontsize=9, color="#5b6b7b", fontcolor="#1b1b1b"];
 
-entry  [label="calc_zone_direct_plus_xillver_reflected_flux", fillcolor="#dbe7f3"];
+entry  [label="calc_zone_xillver_reflected_flux", fillcolor="#dbe7f3"];
 
 angw   [label="get_angle_weighted_xill_spec\n(Xillspec.cpp)"];
 spec   [label="get_xillver_spectra\ntable lookup + cache"];
@@ -57,7 +58,7 @@ nfac -> rebin2;
 nfac -> cnorm  [label="  N_xill"];
 angw -> comb;
 nfac -> comb;
-comb -> comb   [label="  x |boost| ; + specPri if boost >= 0"];
+comb -> comb   [label="  x |boost|"];
 }
 \enddot
 
@@ -104,23 +105,24 @@ F_\mathrm{refl}(E) \;=\; N_\mathrm{xill}\bigl(F_\mathrm{ret}\bigr)\; F_\mathrm{x
 
 ### Combined spectrum
 
-The combined spectrum is the sum of the direct and reflected terms. As the direct term `specPri[izone]` is
-already an absolute flux from the same calculation, and the reflected term is scaled correctly by taking the
-absolute flux of `specRet[izone]` into account, it is simply given by
+The observed spectrum is the sum of the direct emission of the whole disk and of the reflected spectra of the zones,
+each convolved with the relativistic line profile \f$P_i\f$ of its zone \f$i\f$:
 
 \f[
-F_\mathrm{combined}(E) \;=\; \Theta(b)\, F_\mathrm{prim}(E) \;+\; |b|\; N_\mathrm{xill}\bigl(F_\mathrm{ret}\bigr)\; F_\mathrm{xill}(E)
+F_\mathrm{obs}(E) \;=\; \Theta(b)\, F_\mathrm{dir,obs}(E) \;+\; |b| \sum_i P_i \otimes \left[ N_\mathrm{xill}\bigl(F_{\mathrm{ret},i}\bigr)\; F_{\mathrm{xill},i} \right](E)
 \f]
 
-where \f$F_\mathrm{prim}(E) = \f$ `specPri[izone]` and \f$F_\mathrm{ret}(E) = \f$ `specRet[izone]`, where
-the latter only sets the correct absolute normalization of the reflected xillver spectrum \f$F_\mathrm{xill}(E)\f$.
-Furthermore, \f$b\f$ = `xill_param.boost`, and \f$\Theta\f$ is the Heaviside step function
-(\f$\Theta(b) = 1\f$ for \f$b \ge 0\f$, else 0), i.e. the direct term is only added for a non-negative boost,
-while the reflected term is always scaled by \f$|b|\f$.
+where \f$F_\mathrm{dir,obs}(E)\f$ is the observed direct emission of the disk (`calc_disk_emission_observed()`) and
+\f$F_{\mathrm{ret},i}(E) = \f$ `specRet[i]`, where the latter only sets the correct absolute normalization of the
+reflected xillver spectrum \f$F_{\mathrm{xill},i}(E)\f$. Furthermore, \f$b\f$ = `xill_param.boost`, and \f$\Theta\f$
+is the Heaviside step function (\f$\Theta(b) = 1\f$ for \f$b \ge 0\f$, else 0), i.e. the direct term is only added
+for a non-negative boost, while the reflected term is always scaled by \f$|b|\f$.
 
-**The direct term carries no normalization factor of its own.** It is added
-exactly as `spec_returnrad_blackbody()` produced it. There is no \f$N_\mathrm{dir}\f$;
-only the reflected term is scaled.
+**The direct term carries no normalization factor of its own.** It is an absolute flux, calculated from the same
+emitted primary as the returning radiation: `specPri[i]`, from which `specRet[i]` is calculated, is the emission of
+the same radial points with the same temperatures as the direct emission, binned into the zones. There is no
+\f$N_\mathrm{dir}\f$; only the reflected term is scaled. The consistency of the direct and the reflected term is tested
+by the unit tests (3) described in \ref returnrad_disk_emission.
 
 ### What follows from this
 
@@ -203,7 +205,7 @@ the non-relativistic approximation. The angle-mixed intensity (without this fact
 the relativistic convolution, also in standard relxill. Both models call \ref calc_xillver_angdep with
 `rel_profile->rel_cosne->dist[izone]`:
 
-- `relxillBB`: \ref calc_zone_direct_plus_xillver_reflected_flux (`src/Relreturn_BlackBody.cpp`), via
+- `relxillBB`: \ref calc_zone_xillver_reflected_flux (`src/Relreturn_BlackBody.cpp`), via
   \ref get_angle_weighted_xill_spec
 - `relxill`: \ref relxill_kernel (`src/Relxill.cpp`, step 5, "calculate the xillver spectra depending on the
   angular distribution")
@@ -215,7 +217,8 @@ This is tested in `test/unit/tests-returnrad-bbody.cpp`, test case
 
 `|boost|` scales the reflected component only. A **negative** boost selects
 return-radiation-only output by suppressing the direct term (identical to the
-convention used for the reflection fraction / boost elsewhere in relxill).
+convention used for the reflection fraction / boost elsewhere in relxill). For `boost=0`, only the direct term is
+calculated (the zones are skipped).
 
 ## Why the split
 
@@ -239,10 +242,10 @@ ionization gradient enters through \f$F_\mathrm{xill}\f$, not through
 
 ## Not part of the model calculation
 
-\ref calc_zone_direct_plus_mirrored_flux is not a physics path: it is
+\ref calc_zone_mirrored_flux is not a physics path: it is
 a test shortcut selected by \ref mirrored_reflection_instead_of_xillver that
-mirrors `specRet` instead of reflecting it, and it applies `|boost|` and the
-direct term but no `N_xill`.
+mirrors `specRet` instead of reflecting it, and it applies `|boost|` but no `N_xill` (the direct term is added for the
+whole disk, as for the reflection).
 
 ## Pitfalls
 

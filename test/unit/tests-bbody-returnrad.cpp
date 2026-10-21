@@ -29,6 +29,7 @@
 extern "C" {
 #include "relutility.h"
 #include "xilltable_reading.h"
+#include "envoptions.h"
 }
 
 #if !defined(RELXILL_SOURCE_DIR)
@@ -282,8 +283,9 @@ TEST_CASE (
 
 // ======= DISK EMISSION: temperature profiles and radial zones (see doc/returnrad_disk_emission.md) ======= //
 // (1)  temperature profile and normalization: multicolor disk on a fine radial grid vs. the Xspec models
-// (2a) radial zones of the model vs. a fine radial grid (code internal)
+// (2a) kernel of the direct disk emission vs. the line profiles of the zones (code internal)
 // (2b) full relxillBB_NS model with the Novikov-Thorne profile vs. the relativistic Xspec model kerrbb
+// (3)  direct and reflected radiation from the same emitted primary (code internal)
 // run all of them with bin/tests "[diskemission]"
 
 // temperature profile of the disk emission, and the Xspec model with the same temperature profile
@@ -293,16 +295,15 @@ struct DiskProfileCase {
   const char *xspec_model; // also the column name in the reference file
   std::string (*fname_refdata)(double kT); // reference file of the Xspec model
   double max_dev_xspec; // (1) allowed shape deviation of the fine radial grid from Xspec
-  double max_dev_zones; // (2a) allowed shape deviation of the model zones from the fine grid
 };
 
 static const DiskProfileCase disk_profile_alpha{
   TPROFILE_ALPHA, "alpha disk (zero torque)", "ezdiskbb",
-  get_fname_refdata_ezdiskbb, 0.003, 0.001
+  get_fname_refdata_ezdiskbb, 0.003
 };
 static const DiskProfileCase disk_profile_diskbb{
   TPROFILE_DISKBB, "diskbb", "diskbb",
-  get_fname_refdata_diskbb, 0.0005, 0.005
+  get_fname_refdata_diskbb, 0.0005
 };
 
 // ========== //
@@ -346,92 +347,12 @@ TEST_CASE(" disk emission (1): temperature profile on a fine radial grid vs. Xsp
 }
 
 // ========== //
-// (2a) The disk emission on the radial zones of the model (from the returning radiation table, 50 zones from r_isco to
-// 1000 Rg) compared to a fine radial grid over the same radii. This is a code internal comparison, as (1) shows that
-// the fine radial grid is correct. As in the model, the emission of each zone is calculated on sub-zones with
-// r_hi/r_lo <= RRAD_BBODY_MAX_RATIO_SUBZONES (get_disk_emission_zones_binned). The deviation (alpha disk 0.02%, diskbb
-// 0.2% in 0.1-10 kT; with a single temperature per zone, it would be 3.5% and 1.5%, mainly at the lowest energies from
-// the coarse outer zones) is the precision of the disk emission of the model without relativistic effects. It does
-// not depend on kT, as the shape of the spectrum only depends on E/kT.
-TEST_CASE(" disk emission (2a): radial zones of the model vs. a fine radial grid ", "[bbret][diskemission]") {
-  const auto profile = GENERATE(disk_profile_alpha, disk_profile_diskbb);
-  constexpr double kT = 1.0;
-  constexpr double spin = 0.998;
-
-  constexpr int n_ener = 50;
-  double ener[n_ener + 1];
-  get_log_grid(ener, n_ener + 1, 0.01, 20.0);
-
-  int status = EXIT_SUCCESS;
-  returningFractions *dat = get_rrad_fractions(spin, kerr_rms(spin), RMAX_RELRET, &status);
-  REQUIRE(status == EXIT_SUCCESS);
-  const auto spec_zones = calc_disk_spectrum_rebinned(dat->rlo, dat->rhi, kT, profile.tprofile, ener, n_ener, &status);
-
-  VecD rlo, rhi;
-  get_log_radial_grid(dat->rlo.front(), dat->rhi.back(), 500, rlo, rhi);
-  const auto spec_fine = calc_disk_spectrum_rebinned(rlo, rhi, kT, profile.tprofile, ener, n_ener, &status);
-  REQUIRE(status == EXIT_SUCCESS);
-
-  const double dev = max_shape_deviation(ener, spec_zones.data(), spec_fine, n_ener, 0.1 * kT, 10 * kT);
-  INFO(profile.name << ": " << dat->nrad << " radial zones of the model vs. a fine radial grid: max. shape deviation "
-    << dev << " (allowed: " << profile.max_dev_zones << ")");
-  CHECK(dev < profile.max_dev_zones);
-
-  delete_returningFractions(&dat);
-}
-
-// ========== //
-// (2b, zones) The direct disk emission of each zone of the model is calculated on the radial range the zone covers in
-// its relativistic line profile (get_zone_ranges_relline_profile): the union of the cells of the radial integration
-// points (N_FRAD, uniform in 1/sqrt(r)) that calc_relline_profile assigns to the zone. These ranges must cover the disk
-// from Rin to Rout without gaps or overlaps, and differ from the nominal zones by at most half a cell at each
-// boundary. For the outer zones of the returning-radiation table, this changes the area of a zone by more than 1%.
-TEST_CASE(" disk emission (2b, zones): radial ranges of the zones as in the relativistic line profiles ",
-          "[bbret][diskemission]") {
-  const double spin = GENERATE(0.0, 0.998);
-  const double rin = kerr_rms(spin);
-  const double rout = RMAX_RELRET;
-  int status = EXIT_SUCCESS;
-  returningFractions *dat = get_rrad_fractions(spin, rin, rout, &status);
-  REQUIRE(status == EXIT_SUCCESS);
-
-  VecD range_lo;
-  VecD range_hi;
-  get_zone_ranges_relline_profile(dat->rlo, dat->rhi, rin, rout, range_lo, range_hi);
-  REQUIRE(range_lo.size() == static_cast<size_t>(dat->nrad));
-
-  // cover the disk from rin to rout, without gaps or overlaps
-  CHECK(range_lo.front() == Catch::Approx(rin).epsilon(1e-12));
-  CHECK(range_hi.back() == Catch::Approx(rout).epsilon(1e-12));
-  for (int ii = 0; ii < dat->nrad - 1; ii++) {
-    CHECK(range_hi[ii] == Catch::Approx(range_lo[ii + 1]).epsilon(1e-12));
-  }
-
-  // at most half a cell (uniform in 1/sqrt(r)) from the nominal boundaries, and a relevant change of the area
-  const double du = (1 / sqrt(rin) - 1 / sqrt(rout)) / (N_FRAD - 1);
-  double max_area_change = 0.0;
-  for (int ii = 0; ii < dat->nrad; ii++) {
-    const double half_cell = pow(dat->rlo[ii], 1.5) * du * 1.01;
-    if (ii > 0) {
-      CHECK(fabs(range_lo[ii] - dat->rlo[ii]) <= half_cell);
-    }
-    const double area_change = (range_hi[ii] * range_hi[ii] - range_lo[ii] * range_lo[ii])
-                               / (dat->rhi[ii] * dat->rhi[ii] - dat->rlo[ii] * dat->rlo[ii]) - 1;
-    max_area_change = fmax(max_area_change, fabs(area_change));
-  }
-  INFO("a = " << spin << ": max. change of the area of a zone: " << max_area_change);
-  CHECK(max_area_change > 0.01);
-
-  delete_returningFractions(&dat);
-}
-
-// ========== //
-// (2b, kernel) The observed direct disk emission of the model is a single convolution of a blackbody with a kernel:
+// (2a) The observed direct disk emission of the model is a single convolution of a blackbody with a kernel:
 // the relativistic line profile of the whole disk, with the temperature of each radial point as its line energy
 // (calc_relline_profile_radial_line_energy, see get_disk_emission_kernel). With a line energy of 1 keV and the same
 // weight for all radial points, this profile is identical to the sum of the line profiles of the zones of the model,
 // and a constant line energy E0 shifts it by the factor E0 in energy (without changing the number of photons).
-TEST_CASE(" disk emission (2b, kernel): line profile with a line energy for each radial point ",
+TEST_CASE(" disk emission (2a): kernel, i.e., line profile with a line energy for each radial point ",
           "[bbret][diskemission]") {
   LocalModel lmod(ModelName::relxillBB_NS);
   lmod.set_par(XPar::a, 0.998);
@@ -458,8 +379,13 @@ TEST_CASE(" disk emission (2b, kernel): line profile with a line energy for each
   const auto calc_profile = [&](double line_ener) {
     const VecD line_ener_points(nr, line_ener);
     VecD profile(n_ener);
-    calc_relline_profile_radial_line_energy(egrid->ener, n_ener, sys_par, line_ener_points.data(), weight.data(),
-                                            profile.data(), &status);
+    calc_relline_profile_radial_line_energy(egrid->ener,
+                                            n_ener,
+                                            sys_par,
+                                            line_ener_points.data(),
+                                            weight.data(),
+                                            profile.data(),
+                                            &status);
     return profile;
   };
   const VecD profile_1keV = calc_profile(1.0);
@@ -509,7 +435,7 @@ TEST_CASE(" disk emission (2b, kernel): line profile with a line energy for each
 // (RELXILL_RRAD_BBODY_TPROFILE=3) compared to the relativistic disk model kerrbb of Xspec (eta=0, hd=1, rflag=0,
 // lflag=0), with the maximal temperature of the kerrbb disk (1 keV) as kTbb, i.e., without any free parameter. This
 // tests the implementation of the disk emission in the model (temperature profile, relativistic effects, and its
-// kernel, see (2b, kernel)). The spins are on the grid of the kerrbb table, to avoid its linear interpolation in spin.
+// kernel, see (2a)). The spins are on the grid of the kerrbb table, to avoid its linear interpolation in spin.
 // The shape deviation is 0.2-1.4% in 0.5-10 kTbb, which is the precision of the kerrbb table (a converged calculation
 // on 400 radial zones deviates by the same amount). Lower energies are not compared, as the outer radius of the model
 // (1000 Rg) truncates the disk emission there (16% at 0.2 kTbb for a=0). The alpha-disk profile (default) deviates by
@@ -545,6 +471,279 @@ TEST_CASE(" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne 
     << dev_novikov_thorne << ", alpha-disk profile " << dev_alpha << " (allowed: " << max_dev_allowed << ")");
   CHECK(dev_novikov_thorne < max_dev_allowed);
   CHECK(dev_alpha > max_dev_allowed);
+}
+
+// ======= (3) DIRECT AND REFLECTED RADIATION FROM THE SAME EMITTED PRIMARY ======= //
+// The reflection is driven by the returning radiation (specRet), which is calculated from the primary emitted by each
+// zone (specPri), while the direct emission is calculated with the kernel from the radial points of the line profiles
+// (see (2a)). Direct and reflected radiation are therefore only consistent if both are calculated from the same
+// emitted primary:
+// (3a) specPri of each zone is the emission of the radial points of the line profiles in the zone, and all zones
+//      together emit the same as the disk on a fine radial grid
+// (3b) specRet is the returning radiation of exactly this primary
+// (3c) the primary of the zones, observed with the line profiles of the zones, gives the same flux as the direct
+//      emission of the model
+
+// temperature profile (and the value of RELXILL_RRAD_BBODY_TPROFILE) and spin of the tests (3)
+struct PrimaryCase {
+  const char *env_tprofile;
+  int tprofile;
+  double spin;
+};
+#define GENERATE_PRIMARY_CASES GENERATE(PrimaryCase{"1", TPROFILE_ALPHA, 0.0},                \
+                                        PrimaryCase{"1", TPROFILE_ALPHA, 0.998},              \
+                                        PrimaryCase{"3", TPROFILE_NOVIKOV_THORNE, 0.0},       \
+                                        PrimaryCase{"3", TPROFILE_NOVIKOV_THORNE, 0.998})
+
+// emission of the N_FRAD radial points of the line profiles (get_fine_radial_grid, uniform in 1/sqrt(r)) binned into
+// the zones of dat, with the area of each point and the split of its cell at the zone boundaries as in
+// calc_relline_profile: photon flux per keV and unit area of each zone, zero outside [EMIN_XILLVER, EMAX_XILLVER]
+static VecD_2D calc_primary_zones_radial_points(const double *ener,
+                                                int n_ener,
+                                                const returningFractions *dat,
+                                                double rin,
+                                                double rout,
+                                                double kT,
+                                                int tprofile,
+                                                int *status) {
+  constexpr int nr = N_FRAD;
+  VecD re(nr);
+  get_fine_radial_grid(rin, rout, re.data(), nr); // descending
+  VecD radius(nr); // ascending, as TPROFILE_DISKBB needs the inner edge first
+  for (int ii = 0; ii < nr; ii++) {
+    radius[ii] = fmax(re[nr - 1 - ii], rin);
+  }
+  const VecD temperature = get_tprofile(radius, radius, nr, rin, kT, dat->a, tprofile, status);
+
+  VecD zone_edges(dat->rlo);
+  zone_edges.push_back(dat->rhi.back());
+  VecD_2D spec(dat->nrad, VecD(n_ener, 0.0));
+  VecD area(dat->nrad, 0.0);
+  VecD spec_point(n_ener);
+  for (int ii = 0; ii < nr; ii++) {
+    bbody_photon_flux_per_keV(ener, n_ener, spec_point.data(), temperature[nr - 1 - ii], 1.0);
+    // cell of the point, split at the zone boundaries in proportion to the area
+    const double r_cell_hi = (ii == 0) ? re[ii] : 0.5 * (re[ii - 1] + re[ii]);
+    const double r_cell_lo = (ii == nr - 1) ? re[ii] : 0.5 * (re[ii] + re[ii + 1]);
+    for (int izone = 0; izone < dat->nrad; izone++) {
+      const double r_part_lo = fmax(r_cell_lo, zone_edges[izone]);
+      const double r_part_hi = fmin(r_cell_hi, zone_edges[izone + 1]);
+      if (r_part_hi > r_part_lo) {
+        const double area_part = trapez_integ_single(re.data(), ii, nr) * (r_part_hi * r_part_hi - r_part_lo * r_part_lo)
+                                 / (r_cell_hi * r_cell_hi - r_cell_lo * r_cell_lo);
+        area[izone] += area_part;
+        for (int jj = 0; jj < n_ener; jj++) {
+          spec[izone][jj] += area_part * spec_point[jj];
+        }
+      }
+    }
+  }
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    for (int jj = 0; jj < n_ener; jj++) {
+      const bool outside = ener[jj] < EMIN_XILLVER || ener[jj + 1] > EMAX_XILLVER;
+      spec[ii][jj] = outside ? 0.0 : spec[ii][jj] / area[ii];
+    }
+  }
+  return spec;
+}
+
+// number of photons and energy of a bin-integrated spectrum in the band [emin, emax]
+static std::array<double, 2> photons_and_energy(const double *ener, const double *spec, int n_ener, double emin,
+                                                double emax) {
+  std::array<double, 2> sum{0.0, 0.0};
+  for (int jj = 0; jj < n_ener; jj++) {
+    if (ener[jj] >= emin && ener[jj + 1] <= emax) {
+      sum[0] += spec[jj];
+      sum[1] += spec[jj] * 0.5 * (ener[jj] + ener[jj + 1]);
+    }
+  }
+  return sum;
+}
+
+// ========== //
+// (3a) The primary of each zone (specPri) is the emission of the radial points of the line profiles in the zone
+// (identical calculation), and all zones together, weighted with their area, emit the same number of photons and the
+// same energy as the disk on a fine radial grid (5000 logarithmic zones).
+TEST_CASE(" disk emission (3a): primary of the zones is the emission of the radial points of the line profiles ",
+          "[bbret][diskemission]") {
+  const auto pcase = GENERATE_PRIMARY_CASES;
+  setenv("RELXILL_RRAD_BBODY_TPROFILE", pcase.env_tprofile, 1);
+  constexpr double kT = 1.0;
+  const double rin = kerr_rms(pcase.spin);
+  constexpr double rout = RMAX_RELRET;
+
+  // energy grid of the primary in the model
+  int status = EXIT_SUCCESS;
+  int n_ener;
+  double *ener;
+  get_std_bbody_energy_grid(&n_ener, &ener, &status);
+  returnSpec2D *return_spec = spec_returnrad_blackbody(ener, n_ener, kT, rin, rout, pcase.spin, &status);
+  returningFractions *dat = get_rrad_fractions(pcase.spin, rin, rout, &status);
+  const VecD_2D primary_points =
+      calc_primary_zones_radial_points(ener, n_ener, dat, rin, rout, kT, pcase.tprofile, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  // each zone: the emission of its radial points (bin-integrated)
+  double max_dev_zones = 0.0;
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    double max_spec = 0.0;
+    double max_diff = 0.0;
+    for (int jj = 0; jj < n_ener; jj++) {
+      const double spec_points = primary_points[ii][jj] * (ener[jj + 1] - ener[jj]);
+      max_spec = fmax(max_spec, spec_points);
+      max_diff = fmax(max_diff, fabs(return_spec->specPri[ii][jj] - spec_points));
+    }
+    max_dev_zones = fmax(max_dev_zones, max_diff / max_spec);
+  }
+
+  // all zones together vs. the disk on a fine radial grid
+  VecD rlo_fine;
+  VecD rhi_fine;
+  get_log_radial_grid(rin, rout, 5000, rlo_fine, rhi_fine);
+  const VecD temp_fine =
+      get_tprofile(rlo_fine, rhi_fine, static_cast<int>(rlo_fine.size()), rin, kT, pcase.spin, pcase.tprofile, &status);
+  VecD spec_fine(n_ener, 0.0);
+  VecD spec_zone(n_ener);
+  for (size_t kk = 0; kk < rlo_fine.size(); kk++) {
+    bbody_photon_flux_per_keV(ener, n_ener, spec_zone.data(), temp_fine[kk], 1.0);
+    for (int jj = 0; jj < n_ener; jj++) {
+      spec_fine[jj] += M_PI * (rhi_fine[kk] * rhi_fine[kk] - rlo_fine[kk] * rlo_fine[kk]) * spec_zone[jj]
+                       * (ener[jj + 1] - ener[jj]);
+    }
+  }
+  VecD spec_all_zones(n_ener, 0.0);
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    for (int jj = 0; jj < n_ener; jj++) {
+      spec_all_zones[jj] += M_PI * (dat->rhi[ii] * dat->rhi[ii] - dat->rlo[ii] * dat->rlo[ii])
+                            * return_spec->specPri[ii][jj];
+    }
+  }
+  const auto sum_zones = photons_and_energy(ener, spec_all_zones.data(), n_ener, EMIN_XILLVER, EMAX_XILLVER);
+  const auto sum_fine = photons_and_energy(ener, spec_fine.data(), n_ener, EMIN_XILLVER, EMAX_XILLVER);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  INFO("tprofile " << pcase.tprofile << ", a = " << pcase.spin << ": max. deviation of specPri of a zone from its "
+    << "radial points " << max_dev_zones << "; all zones vs. fine radial grid: photons "
+    << sum_zones[0] / sum_fine[0] - 1 << ", energy " << sum_zones[1] / sum_fine[1] - 1);
+  CHECK(max_dev_zones < 1e-10);
+  CHECK(fabs(sum_zones[0] / sum_fine[0] - 1) < 1e-3);
+  CHECK(fabs(sum_zones[1] / sum_fine[1] - 1) < 1e-3);
+
+  unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+  delete_returnSpec2D(&return_spec);
+  delete_returningFractions(&dat);
+}
+
+// ========== //
+// (3b) The returning radiation of each zone (specRet) is the returning radiation of exactly the primary of (3a).
+TEST_CASE(" disk emission (3b): returning radiation of the zones is calculated from this primary ",
+          "[bbret][diskemission]") {
+  const auto pcase = GENERATE_PRIMARY_CASES;
+  setenv("RELXILL_RRAD_BBODY_TPROFILE", pcase.env_tprofile, 1);
+  constexpr double kT = 1.0;
+  const double rin = kerr_rms(pcase.spin);
+  constexpr double rout = RMAX_RELRET;
+
+  int status = EXIT_SUCCESS;
+  int n_ener;
+  double *ener;
+  get_std_bbody_energy_grid(&n_ener, &ener, &status);
+  returnSpec2D *return_spec = spec_returnrad_blackbody(ener, n_ener, kT, rin, rout, pcase.spin, &status);
+  returningFractions *dat = get_rrad_fractions(pcase.spin, rin, rout, &status);
+  const int norder = get_from_env_rrad_bbody_order();
+  const VecD_2D primary_points =
+      calc_primary_zones_radial_points(ener, n_ener, dat, rin, rout, kT, pcase.tprofile, &status);
+  const VecD_2D returnrad_points = get_returnrad_specs(ener, n_ener, dat, primary_points, norder, &status);
+
+  REQUIRE(status == EXIT_SUCCESS);
+
+  REQUIRE(status == EXIT_SUCCESS);
+
+  double max_dev_points = 0.0;
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    const double energy_model = photons_and_energy(ener, return_spec->specRet[ii], n_ener, 0.0, 1e10)[1];
+    const double energy_points = photons_and_energy(ener, returnrad_points[ii].data(), n_ener, 0.0, 1e10)[1];
+    double max_spec = 0.0;
+    double max_diff = 0.0;
+    for (int jj = 0; jj < n_ener; jj++) {
+      max_spec = fmax(max_spec, returnrad_points[ii][jj]);
+      max_diff = fmax(max_diff, fabs(return_spec->specRet[ii][jj] - returnrad_points[ii][jj]));
+    }
+    max_dev_points = fmax(max_dev_points, fmax(max_diff / max_spec, fabs(energy_model / energy_points - 1)));
+  }
+  INFO("tprofile " << pcase.tprofile << ", a = " << pcase.spin << ": max. deviation of specRet from the returning "
+    << "radiation of the primary of the radial points " << max_dev_points);
+  CHECK(max_dev_points < 1e-10);
+
+  unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+  delete_returnSpec2D(&return_spec);
+  delete_returningFractions(&dat);
+}
+
+// ========== //
+// (3c) The direct disk emission of the full relxillBB_NS model (boost=0, i.e., the kernel of (2a)) and the primary of
+// the zones (specPri, from which the reflection is calculated, see (3a) and (3b)), observed with the line profiles of
+// the zones, have the same number of photons and the same energy flux (band 0.1-1000 keV, as for the normalization of
+// the reflection). They only differ by the variation of the temperature within a zone combined with the relativistic
+// effects, which is not taken into account for the zones (0.02-0.11% in photons and 0.05-0.17% in energy). This
+// requires that the line profiles of the zones cover exactly the area of the zones, as the returning radiation
+// (calc_relline_profile splits the cells of the radial points at the zone boundaries; assigning each cell completely
+// to one zone instead changes the area of a zone by up to 4%, which results in a deviation of 0.4-1.2% here).
+TEST_CASE(" disk emission (3c): direct emission of the model vs. the primary of the zones observed ",
+          "[bbret][diskemission]") {
+  const auto pcase = GENERATE_PRIMARY_CASES;
+  setenv("RELXILL_RRAD_BBODY_TPROFILE", pcase.env_tprofile, 1);
+  constexpr double kTbb = 1.0;
+
+  LocalModel lmod(ModelName::relxillBB_NS);
+  lmod.set_par(XPar::a, pcase.spin);
+  lmod.set_par(XPar::incl, 30.0);
+  lmod.set_par(XPar::rin, -1);
+  lmod.set_par(XPar::ktbb, kTbb);
+  lmod.set_par(XPar::boost, 0); // direct emission only
+
+  // direct emission of the model, on the energy grid of the convolution
+  EnerGrid *egrid = get_relxill_conv_energy_grid();
+  const int n_ener = egrid->nbins;
+  VecD flux_model(n_ener, 0.0);
+  XspecSpectrum spec_model(egrid->ener, flux_model.data(), n_ener);
+  lmod.eval_model(spec_model);
+
+  // primary of the zones convolved with the line profiles of the zones (as in relxillbb_kernel)
+  int status = EXIT_SUCCESS;
+  relParam *rel_param = get_rel_params(lmod.get_model_params());
+  xillParam *xill_param = get_xill_params(lmod.get_model_params());
+  xillTable *xill_tab = nullptr;
+  get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
+  returnSpec2D *return_spec =
+      spec_returnrad_blackbody(egrid->ener, n_ener, kTbb, rel_param->rin, rel_param->rout, rel_param->a, &status);
+  RelSysPar *sys_par = get_system_parameters(rel_param, &status);
+  const relline_spec_multizone *profiles = relbase_profile(egrid->ener, n_ener, rel_param, sys_par, xill_tab,
+                                                           get_radial_grid_from_returntab(return_spec), &status);
+  specCache *spec_cache = init_global_specCache(&status);
+  VecD flux_zones(n_ener, 0.0);
+  VecD flux_conv(n_ener);
+  for (int ii = 0; ii < return_spec->nrad; ii++) {
+    convolveSpectrumFFTNormalized(egrid->ener, return_spec->specPri[ii], profiles->flux[ii], flux_conv.data(), n_ener,
+                                  1, 1, ii, spec_cache, &status);
+    for (int jj = 0; jj < n_ener; jj++) {
+      flux_zones[jj] += flux_conv[jj];
+    }
+  }
+  REQUIRE(status == EXIT_SUCCESS);
+
+  const auto sum_model = photons_and_energy(egrid->ener, flux_model.data(), n_ener, 0.1, 1000.0);
+  const auto sum_zones = photons_and_energy(egrid->ener, flux_zones.data(), n_ener, 0.1, 1000.0);
+  INFO("tprofile " << pcase.tprofile << ", a = " << pcase.spin << ": primary of the zones observed relative to the "
+    << "direct emission of the model (0.1-1000 keV): photons " << sum_zones[0] / sum_model[0] - 1 << ", energy "
+    << sum_zones[1] / sum_model[1] - 1);
+  CHECK(fabs(sum_zones[0] / sum_model[0] - 1) < 3e-3);
+  CHECK(fabs(sum_zones[1] / sum_model[1] - 1) < 3e-3);
+
+  unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+  delete_returnSpec2D(&return_spec);
+  delete_rel_params(rel_param);
+  delete xill_param;
 }
 
 // ========== //

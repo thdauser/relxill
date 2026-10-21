@@ -12,10 +12,11 @@ top-level `README.md` and `NAME_AND_CITATION_POLICY.md` in the repository.
 
 - @subpage returnrad_normalizations — flux normalizations in the
   return-radiation reflection path
-  (`calc_zone_direct_plus_xillver_reflected_flux`).
+  (`calc_zone_xillver_reflected_flux`).
 - @subpage returnrad_disk_emission — direct thermal emission of the disk
-  in `relxillBB`: temperature profiles, their definition, and the precision
-  of the radial zones.
+  in `relxillBB`: temperature profiles, their definition, how the direct and
+  the reflected radiation are calculated from the same emitted primary, and
+  their precision.
 
 ## API Reference
 

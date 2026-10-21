@@ -881,8 +881,22 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
       int ielo = binary_search(spec->ener, spec->n_ener + 1, egmin);
       int iehi = binary_search(spec->ener, spec->n_ener + 1, egmax);
 
-      // in which ionization bin are we?
-      int izone = binary_search(spec->rgrid, spec->n_zones + 1, sysPar->re[ii]);
+      // zones of the point: its cell (between the midpoints to its neighbors) is split at the boundaries of the zones
+      // in proportion to the area, such that each zone covers exactly its radial range (radii outside of rgrid belong
+      // to the first or the last zone)
+      const double r_cell_hi = (ii == 0) ? sysPar->re[ii] : 0.5 * (sysPar->re[ii - 1] + sysPar->re[ii]);
+      const double r_cell_lo = (ii == sysPar->nr - 1) ? sysPar->re[ii] : 0.5 * (sysPar->re[ii] + sysPar->re[ii + 1]);
+      const int izone_lo = binary_search(spec->rgrid, spec->n_zones + 1, r_cell_lo);
+      const int izone_hi = binary_search(spec->rgrid, spec->n_zones + 1, r_cell_hi);
+      std::vector<double> frac_zone(izone_hi - izone_lo + 1, 0.0);
+      for (int izone = izone_lo; izone <= izone_hi; izone++) {
+        const double r_part_lo = (izone == 0) ? r_cell_lo : fmax(r_cell_lo, spec->rgrid[izone]);
+        const double r_part_hi = (izone == spec->n_zones - 1) ? r_cell_hi : fmin(r_cell_hi, spec->rgrid[izone + 1]);
+        if (r_part_hi > r_part_lo) {
+          frac_zone[izone - izone_lo] =
+              (r_part_hi * r_part_hi - r_part_lo * r_part_lo) / (r_cell_hi * r_cell_hi - r_cell_lo * r_cell_lo);
+        }
+      }
 
       // set the current parameters in a cached structure (and reset some values) [optimizes speed]
       set_str_relbf(cached_str_relb_func,
@@ -900,7 +914,9 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
       // lastly, loop over the energies
       for (jj = ielo; jj <= iehi; jj++) {
         double tmp_var = integ_relline_bin(cached_str_relb_func, spec->ener[jj], spec->ener[jj + 1]);
-        spec->flux[izone][jj] += tmp_var * weight;
+        for (int izone = izone_lo; izone <= izone_hi; izone++) {
+          spec->flux[izone][jj] += tmp_var * weight * frac_zone[izone - izone_lo];
+        }
       }
 
       if (write_outfile_radial_flux(spec->n_zones) && radialFlux != nullptr) {
@@ -926,7 +942,9 @@ void calc_relline_profile(relline_spec_multizone *spec, RelSysPar *sysPar, int *
               printf(" *** backtrace %e %e %e %e %e %e\n",da->re, g, da->gstar[jj], da->trff[jj][kk], weight, da->emis);
               *status = EXIT_FAILURE;
             }
-            spec->rel_cosne->dist[izone][imu] += tmp;
+            for (int izone = izone_lo; izone <= izone_hi; izone++) {
+              spec->rel_cosne->dist[izone][imu] += tmp * frac_zone[izone - izone_lo];
+            }
           }
         }
       } /** end calculating angular distribution **/

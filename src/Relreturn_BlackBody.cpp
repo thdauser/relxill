@@ -40,13 +40,6 @@ const std::string fbase_rrad_bbody_dat = "__relxillOutput-rrad-bbody-"; // filen
 
 
 // Function definitions
-static VecD_2D get_returnrad_specs(double* ener_inp,
-                                   int nener_inp,
-                                   const returningFractions *dat,
-                                   const VecD& temperature,
-                                   int* status,
-                                   int norder = 1);
-
 void bin_integrate_flux(int nener, const double* ener, VecD_2D& spec);
 
 // Program Code
@@ -150,53 +143,125 @@ static int get_tprofile_type_from_env() {
     }
 }
 
-// temperature of each radial zone (evaluated at its mean radius), as used for the returning radiation
+// temperature of each radial zone (evaluated at its mean radius), only used for the diagnostic output
 VecD get_temperature_profile_disk_zones(const returningFractions *dat, double Rin, double Tin, int *status) {
     return get_tprofile(dat->rlo, dat->rhi, dat->nrad, Rin, Tin, dat->a, get_tprofile_type_from_env(), status);
 }
 
+// temperature of the profile tprofile (see get_tprofile) at the radial points re, which are descending as for the
+// line profiles (get_fine_radial_grid); the innermost point is rin up to rounding errors
+static VecD get_temperature_radial_points(const double *re,
+                                          int nr,
+                                          double rin,
+                                          double kT,
+                                          double spin,
+                                          int tprofile,
+                                          int *status) {
+    assert(re[0] >= re[nr - 1]);
+    // ascending radii, as TPROFILE_DISKBB needs the inner edge as first radius
+    VecD radius(nr);
+    for (int ii = 0; ii < nr; ii++) {
+        radius[ii] = fmax(re[nr - 1 - ii], rin);
+    }
+    const VecD temperature = get_tprofile(radius, radius, nr, rin, kT, spin, tprofile, status);
+    return {temperature.rbegin(), temperature.rend()}; // same (descending) order as re
+}
+
 
 /**
- * Computes a 2D spectral array based on a given blackbody temperature profile
- * and energy bins, normalizing the flux for radial zones.
+ * @brief Emitted primary (direct) disk emission of each zone, from the radial points of the line profiles.
  *
- * @param ener Pointer to an array containing the energy grid in keV.
- * @param nener The number of energy grid points, including boundaries.
- * @param temperature Pointer to an array of temperatures (in keV) for each radial zone.
- * @param status Pointer to an integer representing the status, used to handle errors.
- *               If the status is non-zero, the computation is not performed.
+ * The disk is integrated over the same N_FRAD radial points as the relativistic line profiles (get_fine_radial_grid
+ * from rin to rout, uniform in 1/sqrt(r)), with the same area of each point and the same split of its cell at the zone
+ * boundaries as in calc_relline_profile, and with the same temperature of each point as the direct disk emission of
+ * the model (get_disk_emission_kernel). The primary of a zone is the mean of the blackbodies of its points, weighted
+ * with the area of their cells in the zone. As the returning radiation is calculated from this primary, the reflected
+ * and the direct emission of the model are based on the same emitted primary (see the unit tests "disk emission
+ * (3)").
  *
- * @return A 2D vector with dimensions [dat->nrad][nener],
- *         where each row corresponds to an energy spectrum for a radial zone.
- *         The spectra are normalized to photons/s/keV/cm^2 using the provided energy grid.
- *         Returns empty VecD_2D if an error is encountered (status becomes non-zero).
+ * @param ener Energy bin boundaries [keV] (size nener+1).
+ * @param nener Number of energy bins.
+ * @param rlo Inner radii of the zones [r_g].
+ * @param rhi Outer radii of the zones [r_g].
+ * @param rin Inner edge of the disk [r_g].
+ * @param rout Outer edge of the disk [r_g].
+ * @param kT Temperature of the profile [keV] (see get_tprofile).
+ * @param spin Spin (only used for TPROFILE_NOVIKOV_THORNE).
+ * @param tprofile Temperature profile (TPROFILE_ALPHA, TPROFILE_DISKBB, or TPROFILE_NOVIKOV_THORNE).
+ * @param status Status flag.
  *
- * @note For the bin-integrated version (as needed, e.g., by Xspec, see "get_bbody_spec_binned()")
- * @note The spectral values are set to zero outside the predefined energy band
- *       [EMIN_XILLVER, EMAX_XILLVER].
- * @note Memory for the 2D spectral array is allocated internally. The caller is
- *       responsible for releasing this memory using the appropriate deallocation function.
+ * @return Photon flux per keV and unit area of each zone [nzones][nener] (not bin-integrated), set to zero outside
+ *         [EMIN_XILLVER, EMAX_XILLVER].
  */
-static VecD_2D get_bbody_specs(const double *ener, int nener, const VecD &temperature, const int* status)
-{
+static VecD_2D get_disk_emission_zones(const double *ener,
+                                       int nener,
+                                       const VecD &rlo,
+                                       const VecD &rhi,
+                                       double rin,
+                                       double rout,
+                                       double kT,
+                                       double spin,
+                                       int tprofile,
+                                       int *status) {
+    CHECK_STATUS_RET(*status, VecD_2D());
+    const int nzones = static_cast<int>(rlo.size());
+    assert(nzones > 0 && rhi.size() == rlo.size());
+
+    VecD rgrid(rlo);
+    rgrid.push_back(rhi.back());
+
+    VecD re(N_FRAD);
+    get_fine_radial_grid(rin, rout, re.data(), N_FRAD); // descending, as for the line profiles
+    const VecD temperature = get_temperature_radial_points(re.data(), N_FRAD, rin, kT, spin, tprofile, status);
     CHECK_STATUS_RET(*status, VecD_2D());
 
-    const int nrad = static_cast<int>(temperature.size());
-    VecD_2D spec_array(nrad, VecD(nener));
+    // sum of the blackbodies of the points of each zone, weighted with their area; the blackbody is only calculated up
+    // to E = 60 kT (above, it is below exp(-60) of its maximum)
+    VecD_2D spec_zones(nzones, VecD(nener, 0.0));
+    VecD area_zones(nzones, 0.0);
+    VecD spec_point(nener);
+    for (int ii = 0; ii < N_FRAD; ii++) {
+        const int nener_bb = std::min(
+            nener,
+            static_cast<int>(std::upper_bound(ener, ener + nener, 60 * temperature[ii]) - ener));
+        if (temperature[ii] > 0) {
+            // zero at the inner edge for zero torque
+            bbody_photon_flux_per_keV(ener, nener_bb, spec_point.data(), temperature[ii], 1.0);
+        }
 
-    for (int ii = 0; ii < nrad; ii++)
-    {
-        bbody_photon_flux_per_keV(ener, nener, spec_array[ii].data(), temperature[ii], 1.0);
-        for (int jj = 0; jj < nener; jj++)
-        {
-            if (ener[jj] < EMIN_XILLVER || ener[jj + 1] > EMAX_XILLVER)
-            {
-                spec_array[ii][jj] = 0.0;
+        // as in calc_relline_profile, the cell of the point (between the midpoints to its neighbors) is split at the
+        // boundaries of the zones in proportion to the area (radii outside of rgrid belong to the first or last zone)
+        const double r_cell_hi = (ii == 0) ? re[ii] : 0.5 * (re[ii - 1] + re[ii]);
+        const double r_cell_lo = (ii == N_FRAD - 1) ? re[ii] : 0.5 * (re[ii] + re[ii + 1]);
+        const double area_cell = trapez_integ_single(re.data(), ii, N_FRAD);
+        const int izone_lo = binary_search(rgrid.data(), nzones + 1, r_cell_lo);
+        const int izone_hi = binary_search(rgrid.data(), nzones + 1, r_cell_hi);
+        for (int izone = izone_lo; izone <= izone_hi; izone++) {
+            const double r_part_lo = (izone == 0) ? r_cell_lo : fmax(r_cell_lo, rgrid[izone]);
+            const double r_part_hi = (izone == nzones - 1) ? r_cell_hi : fmin(r_cell_hi, rgrid[izone + 1]);
+            if (r_part_hi <= r_part_lo) {
+                continue;
+            }
+            const double area = area_cell * (r_part_hi * r_part_hi - r_part_lo * r_part_lo)
+                                / (r_cell_hi * r_cell_hi - r_cell_lo * r_cell_lo);
+            area_zones[izone] += area;
+            if (temperature[ii] > 0) {
+                for (int jj = 0; jj < nener_bb; jj++) {
+                    spec_zones[izone][jj] += area * spec_point[jj];
+                }
             }
         }
     }
 
-    return spec_array;
+    // average over the area of each zone, and zero outside [EMIN_XILLVER, EMAX_XILLVER]
+    for (int ii = 0; ii < nzones; ii++) {
+        assert(area_zones[ii] > 0); // the zones and the cells of the points both cover the disk from rin to rout
+        for (int jj = 0; jj < nener; jj++) {
+            const bool outside = ener[jj] < EMIN_XILLVER || ener[jj + 1] > EMAX_XILLVER;
+            spec_zones[ii][jj] = outside ? 0.0 : spec_zones[ii][jj] / area_zones[ii];
+        }
+    }
+    return spec_zones;
 }
 
 /**
@@ -285,67 +350,6 @@ VecD_2D get_disk_emission_zones_binned(const double *ener,
 
 
 /**
- * @brief Radial range of each zone as covered by the relativistic line profiles.
- *
- * The line profiles of the zones (calc_relline_profile) are integrated over N_FRAD radial points from rin to rout,
- * uniform in 1/sqrt(r) (get_fine_radial_grid). Each point represents the cell between the midpoints to its neighbors
- * and is assigned completely to the zone in which it is located. The area of a zone in its line profile is therefore
- * the union of the cells of its points, which differs from [rlo, rhi] by up to half a cell at each boundary (up to
- * 4% of the area for the outer zones of the returning-radiation table). Calculating the direct disk emission of each
- * zone on this range keeps its area consistent with the line profile, such that no area is assigned to the spectrum
- * of a neighboring zone (see doc/returnrad_disk_emission.md).
- *
- * @param rlo Inner radii of the zones [r_g].
- * @param rhi Outer radii of the zones [r_g].
- * @param rin Inner edge of the disk, as used for the line profiles [r_g].
- * @param rout Outer edge of the disk, as used for the line profiles [r_g].
- * @param range_lo Output: inner radius of the range of each zone [r_g].
- * @param range_hi Output: outer radius of the range of each zone [r_g].
- *
- * @note A zone without any radial point (not the case for the zones of the returning-radiation table) keeps its
- * nominal range.
- */
-void get_zone_ranges_relline_profile(const VecD &rlo,
-                                     const VecD &rhi,
-                                     double rin,
-                                     double rout,
-                                     VecD &range_lo,
-                                     VecD &range_hi) {
-    const int nzones = static_cast<int>(rlo.size());
-    assert(nzones > 0 && rhi.size() == rlo.size());
-
-    VecD rgrid(rlo);
-    rgrid.push_back(rhi.back());
-
-    VecD re(N_FRAD);
-    get_fine_radial_grid(rin, rout, re.data(), N_FRAD); // descending, as for the line profiles
-
-    range_lo.assign(nzones, 0.0);
-    range_hi.assign(nzones, 0.0);
-    std::vector<bool> has_points(nzones, false);
-    for (int ii = 0; ii < N_FRAD; ii++) {
-        const int izone = binary_search(rgrid.data(), nzones + 1, re[ii]); // as in calc_relline_profile
-        const double r_cell_hi = (ii == 0) ? re[ii] : 0.5 * (re[ii - 1] + re[ii]);
-        const double r_cell_lo = (ii == N_FRAD - 1) ? re[ii] : 0.5 * (re[ii] + re[ii + 1]);
-        if (!has_points[izone]) {
-            range_lo[izone] = r_cell_lo;
-            range_hi[izone] = r_cell_hi;
-            has_points[izone] = true;
-        } else {
-            range_lo[izone] = fmin(range_lo[izone], r_cell_lo);
-            range_hi[izone] = fmax(range_hi[izone], r_cell_hi);
-        }
-    }
-    for (int ii = 0; ii < nzones; ii++) {
-        if (!has_points[ii]) {
-            range_lo[ii] = rlo[ii];
-            range_hi[ii] = rhi[ii];
-        }
-    }
-}
-
-
-/**
  * @brief Relativistic kernel of the direct disk emission, for a maximal temperature of 1 keV (kTbb = 1).
  *
  * Per unit area, the bin-integrated blackbody photon spectrum of the temperature T is T^3 times the one of 1 keV,
@@ -384,20 +388,15 @@ static const VecD &get_disk_emission_kernel(const double *ener,
     }
     cached_tprofile = -1; // invalid until the new kernel is calculated
 
-    // temperature of each radial point for kTbb = 1, with the radii in ascending order (TPROFILE_DISKBB needs the inner
-    // edge as first radius); the innermost radial point is Rin up to rounding errors
+    // line energy: temperature of each radial point for kTbb = 1 (as for the primary of the zones,
+    // get_disk_emission_zones)
     const int nr = sysPar->nr;
-    VecD radius(nr);
-    for (int ii = 0; ii < nr; ii++) {
-        radius[ii] = fmax(sysPar->re[nr - 1 - ii], rel_param->rin);
-    }
-    const VecD temperature = get_tprofile(radius, radius, nr, rel_param->rin, 1.0, rel_param->a, tprofile, status);
+    const VecD line_ener =
+            get_temperature_radial_points(sysPar->re, nr, rel_param->rin, 1.0, rel_param->a, tprofile, status);
     CHECK_STATUS_RET(*status, cached_kernel);
 
-    VecD line_ener(nr);
     VecD weight(nr);
     for (int ii = 0; ii < nr; ii++) {
-        line_ener[ii] = temperature[nr - 1 - ii]; // same (descending) order as sysPar->re
         weight[ii] = pow(line_ener[ii], 3);
     }
 
@@ -504,11 +503,10 @@ static VecD calc_disk_emission_observed(double *ener,
  *
  * @note The temperature profile is selected with RELXILL_RRAD_BBODY_TPROFILE (default: alpha disk with zero torque
  * at the inner edge, see doc/returnrad_disk_emission.md)
- * @note The primary (direct) disk emission of each zone (specPri) is calculated on a fine radial grid within the
- * radial range the zone covers in its relativistic line profile (see get_disk_emission_zones_binned and
- * get_zone_ranges_relline_profile), whereas the returning radiation (specRet) is calculated from a single blackbody
- * per zone. The observed direct emission of the relxillBB models does not use specPri, but is calculated for the
- * whole disk at once (calc_disk_emission_observed).
+ * @note The primary (direct) disk emission of each zone (specPri) is calculated from the radial points of the line
+ * profiles, binned into the zones (get_disk_emission_zones), and the returning radiation (specRet) is calculated from
+ * exactly this primary. The observed direct emission of the relxillBB models is calculated from the same radial
+ * points and temperatures, but for the whole disk at once (calc_disk_emission_observed).
  * @note Memory for the returned structure must be freed by the caller
  * @note The spin parameter follows the convention where positive values indicate prograde rotation
  *
@@ -527,21 +525,39 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     returningFractions *dat = get_rrad_fractions(spin, Rin, Rout, status);
 
 
-    // 2 - temperature profile of the whole disk (temperature of each zone, used for the returning radiation)
+    // 2 - temperature of each zone at its mean radius (only for the diagnostic output)
     VecD temperature = get_temperature_profile_disk_zones(dat, Rin, Tin, status);
 
-    // 3 - get primary and returning 2D spectrum (bin integrated spectra): the primary (direct) disk emission of each
-    //     zone is calculated on a fine radial grid within the radial range the zone covers in its relativistic line
-    //     profile, the returning radiation from the zone temperatures
-    VecD range_lo;
-    VecD range_hi;
-    get_zone_ranges_relline_profile(dat->rlo, dat->rhi, Rin, Rout, range_lo, range_hi);
-    VecD_2D spec_prim_zones = get_disk_emission_zones_binned(ener, nener, range_lo, range_hi, Rin, Tin, dat->a,
-                                                             get_tprofile_type_from_env(), status);
+    // 3 - primary (direct) disk emission of each zone, from the radial points of the line profiles in the zone, on the
+    //     energy grid of the returning radiation
+    int nener_bbody;
+    double *ener_bbody;
+    get_std_bbody_energy_grid(&nener_bbody, &ener_bbody, status);
+    VecD_2D spec_prim_zones_bbody = get_disk_emission_zones(ener_bbody,
+                                                            nener_bbody,
+                                                            dat->rlo,
+                                                            dat->rhi,
+                                                            Rin,
+                                                            Rout,
+                                                            Tin,
+                                                            dat->a,
+                                                            get_tprofile_type_from_env(),
+                                                            status);
 
+    // 4 - returning radiation of exactly this primary, and both on the output grid (bin integrated spectra)
     int num_rrad_order = get_from_env_rrad_bbody_order();
-  //  VecD_2D spec_rr_zones_primary = get_returnrad_specs(ener, nener, dat, temperature, status, 1);
-    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, temperature, status, num_rrad_order);
+    VecD_2D spec_rr_zones = get_returnrad_specs(ener, nener, dat, spec_prim_zones_bbody, num_rrad_order, status);
+    if (*status != EXIT_SUCCESS) {
+        delete_returningFractions(&dat);
+        return nullptr;
+    }
+
+    VecD_2D spec_prim_zones(dat->nrad, VecD(nener));
+    for (int ii = 0; ii < dat->nrad; ii++) {
+        rebin_mean_flux(ener, spec_prim_zones[ii].data(), nener, ener_bbody, spec_prim_zones_bbody[ii].data(),
+                        nener_bbody, status);
+    }
+    bin_integrate_flux(nener, ener, spec_prim_zones);
 
     if (is_debug_run())
     {
@@ -694,25 +710,26 @@ static VecD_2D calc_returnrad_from_input_spectra(const returningFractions *dat,
 /**
  * @brief Compute bin-integrated returning radiation spectra for all radial zones.
  *
- * Builds blackbody primary spectra from the temperature profile on the internal
- * bbody energy grid, computes returning radiation via `calc_returnrad_from_input_spectra`,
- * then rebins onto the output grid and bin-integrates.
+ * Computes the returning radiation of the given primary spectra of the zones (on the internal bbody energy grid,
+ * get_std_bbody_energy_grid) via `calc_returnrad_from_input_spectra`, then rebins onto the output grid and
+ * bin-integrates.
  *
  * @param      ener_inp    Output energy grid boundaries (size nener_inp+1) [keV].
  * @param      nener_inp   Number of output energy bins.
  * @param      dat         Returning fractions data (g-factors, transfer fractions, f_ret).
- * @param      temperature Disk temperature profile per radial zone [keV].
+ * @param      spec_pri    Primary spectrum of each zone on the bbody energy grid (ph/s/keV/cm², not bin-integrated),
+ *                         see get_disk_emission_zones.
+ * @param      norder      Number of returning radiation calculations (combined orders are returned!)
  * @param      status      Error status flag.
- * @param      norder     Number of returning radiation calculations (combined orders are returned!)
  *
  * @return 2D spectrum [nrad][nener_inp] in cts/bin, or empty on error.
  */
-static VecD_2D get_returnrad_specs(double *ener_inp,
-                                   int nener_inp,
-                                   const returningFractions* dat,
-                                   const VecD& temperature,
-                                   int* status,
-                                   int norder)
+VecD_2D get_returnrad_specs(double *ener_inp,
+                            int nener_inp,
+                            const returningFractions *dat,
+                            const VecD_2D &spec_pri,
+                            int norder,
+                            int *status)
 {
     CHECK_STATUS_RET(*status, VecD_2D());
     assert(!dat->tf_r[0].empty());
@@ -720,7 +737,7 @@ static VecD_2D get_returnrad_specs(double *ener_inp,
     int nener;
     double* ener;
     get_std_bbody_energy_grid(&nener, &ener, status);
-    auto spec_pri = get_bbody_specs(ener, nener, temperature, status);
+    assert(spec_pri.size() == static_cast<size_t>(dat->nrad) && spec_pri[0].size() == static_cast<size_t>(nener));
 
     std::vector<VecD_2D> spec_out(norder);
     VecD_2D spec_sum_out(dat->nrad, VecD(nener));
@@ -773,15 +790,14 @@ void bin_integrate_flux(int nener, const double *ener, VecD_2D &spec) {
 /**
  * multicolor disk spectrum [photons/bin, arbitrary normalization] for the given radial zones [rlo, rhi]
  *
- * The spectrum of each zone is calculated as the direct disk emission in the model (get_disk_emission_zones_binned,
- * i.e., on a fine radial grid within each zone), and is weighted with its flat-space ring area (i.e., without
- * relativistic effects):
+ * The spectrum of each zone is calculated with get_disk_emission_zones_binned (i.e., on a fine radial grid within each
+ * zone), and is weighted with its flat-space ring area (i.e., without relativistic effects):
  * - TPROFILE_ALPHA: alpha disk with zero torque at the inner edge rlo[0], with the maximal temperature kT
  * - TPROFILE_DISKBB: diskbb profile, with the temperature kT at the inner edge rlo[0]
  *
  * It uses the same temperature profiles and blackbody spectra as the disk emission of the relxillBB models, and is
- * used in the unit tests to compare them with the Xspec models ezdiskbb and diskbb, and to estimate the precision of
- * the radial zones (see doc/returnrad_disk_emission.md).
+ * used in the unit tests to compare them with the Xspec models ezdiskbb and diskbb (see
+ * doc/returnrad_disk_emission.md).
  */
 void spec_multicolor_disk(const double *ener,
                           double *spec,

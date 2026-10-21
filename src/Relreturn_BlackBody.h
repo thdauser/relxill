@@ -75,14 +75,14 @@ VecD_2D get_disk_emission_zones_binned(const double *ener,
                                        int tprofile,
                                        int *status);
 
-/**  radial range of each zone [rlo, rhi] as covered by the relativistic line profiles (calc_relline_profile) for a disk
-     from rin to rout, see the documentation in Relreturn_BlackBody.cpp **/
-void get_zone_ranges_relline_profile(const VecD &rlo,
-                                     const VecD &rhi,
-                                     double rin,
-                                     double rout,
-                                     VecD &range_lo,
-                                     VecD &range_hi);
+/**  returning radiation [cts/bin on ener_inp] of the primary spectra spec_pri of the zones (on the bbody energy grid,
+     get_std_bbody_energy_grid), see the documentation in Relreturn_BlackBody.cpp **/
+VecD_2D get_returnrad_specs(double *ener_inp,
+                            int nener_inp,
+                            const returningFractions *dat,
+                            const VecD_2D &spec_pri,
+                            int norder,
+                            int *status);
 
 /**  multicolor disk spectrum (no relativistic effects) for the radial zones [rlo, rhi] and the temperature profile
      tprofile (TPROFILE_ALPHA or TPROFILE_DISKBB), see the documentation in Relreturn_BlackBody.cpp **/
