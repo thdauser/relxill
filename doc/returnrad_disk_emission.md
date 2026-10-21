@@ -120,6 +120,13 @@ logarithmic grid with 500 zones over the same radii (kTbb = 1 keV, the shape onl
 - The alpha disk is more affected than the diskbb profile, as its outer disk is relatively hotter (factor 2.05 at
   large radii, see above), so the outer zones emit at higher energies relative to kTbb.
 
+**Current state and possible improvement.** The same 50 zones are used for the direct disk emission and for the
+returning radiation (`specRet[izone]`) and its reflection, as they are the zones of the returning-radiation table.
+Optimizing them (a different distribution or more zones) would therefore require changing the table, and has to take
+the returning radiation into account as well. A better approach for later is to calculate the direct disk emission on
+a fine radial grid, which is not limited by the table, and to use the coarse zones of the table only for the
+returning radiation and its reflection.
+
 ### (2b) Full model (with relativistic effects)
 
 The full model (`relxillBB_NS` with `boost=0`, i.e., only the direct emission of the disk) additionally contains the
@@ -169,9 +176,10 @@ The reference spectra of the Xspec models (norm = 1) are in `test/unit/refdata/`
 
 ## Open issues
 
-- Precision of the 50 radial zones, in particular the coarse zones at large radii: a better distribution of the
-  zones, or as few additional zones as possible. The zones are those of the returning-radiation table, so changing
-  them also affects how the returning fractions are tabulated or interpolated.
+- Precision of the 50 radial zones, in particular the coarse zones at large radii. The zones are those of the
+  returning-radiation table, so changing them also changes the returning radiation. The preferred solution is to
+  calculate the direct disk emission on a fine radial grid and to use the zones of the table only for the returning
+  radiation and its reflection, see (2a).
 - \f$R_\mathrm{max} = 1.5^{4/5} R_\mathrm{in}\f$ instead of \f$\frac{49}{36} R_\mathrm{in}\f$: the maximal temperature
   is 0.03% higher than \f$kT_\mathrm{bb}\f$ (0.2% in the spectrum at 10 kTbb, see (1)).
 - A test of the full model against a relativistic disk model (e.g., `kerrbb`), see (2b).

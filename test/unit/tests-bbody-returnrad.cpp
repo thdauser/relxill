@@ -278,15 +278,20 @@ TEST_CASE (
 struct DiskProfileCase {
   int tprofile;
   const char *name;
-  const char *xspec_model;                   // also the column name in the reference file
-  std::string (*fname_refdata)(double kT);   // reference file of the Xspec model
-  double max_dev_xspec;                      // (1) allowed shape deviation of the fine radial grid from Xspec
-  double max_dev_zones;                      // (2a) allowed shape deviation of the model zones from the fine grid
+  const char *xspec_model; // also the column name in the reference file
+  std::string (*fname_refdata)(double kT); // reference file of the Xspec model
+  double max_dev_xspec; // (1) allowed shape deviation of the fine radial grid from Xspec
+  double max_dev_zones; // (2a) allowed shape deviation of the model zones from the fine grid
 };
-static const DiskProfileCase disk_profile_alpha{TPROFILE_ALPHA, "alpha disk (zero torque)", "ezdiskbb",
-                                               get_fname_refdata_ezdiskbb, 0.003, 0.04};
-static const DiskProfileCase disk_profile_diskbb{TPROFILE_DISKBB, "diskbb", "diskbb",
-                                                get_fname_refdata_diskbb, 0.0005, 0.02};
+
+static const DiskProfileCase disk_profile_alpha{
+  TPROFILE_ALPHA, "alpha disk (zero torque)", "ezdiskbb",
+  get_fname_refdata_ezdiskbb, 0.003, 0.04
+};
+static const DiskProfileCase disk_profile_diskbb{
+  TPROFILE_DISKBB, "diskbb", "diskbb",
+  get_fname_refdata_diskbb, 0.0005, 0.02
+};
 
 // ========== //
 // (1) The multicolor disk (spec_multicolor_disk, i.e., the temperature profile and the blackbody spectra of the model,
@@ -317,13 +322,13 @@ TEST_CASE(" disk emission (1): temperature profile on a fine radial grid vs. Xsp
     REQUIRE(status == EXIT_SUCCESS);
     const double dev = max_shape_deviation(ener, spec.data(), spec_xspec, n_ener, 0.1 * kT, 10 * kT, &norm[ii]);
     INFO(profile.name << " vs. Xspec " << profile.xspec_model << ", kT = " << kT << ": max. shape deviation "
-                      << dev << " (allowed: " << profile.max_dev_xspec << ")");
+      << dev << " (allowed: " << profile.max_dev_xspec << ")");
     CHECK(dev < profile.max_dev_xspec);
   }
 
   // the normalization relative to the Xspec model does not depend on kT
   INFO(profile.name << ": normalization relative to Xspec " << profile.xspec_model << " for kT = 0.5, 2 keV "
-                    << "(relative to kT = 1 keV): " << norm[0] / norm[1] << ", " << norm[2] / norm[1]);
+    << "(relative to kT = 1 keV): " << norm[0] / norm[1] << ", " << norm[2] / norm[1]);
   CHECK(norm[0] / norm[1] == Catch::Approx(1.0).epsilon(1e-3));
   CHECK(norm[2] / norm[1] == Catch::Approx(1.0).epsilon(1e-3));
 }
@@ -355,7 +360,7 @@ TEST_CASE(" disk emission (2a): radial zones of the model vs. a fine radial grid
 
   const double dev = max_shape_deviation(ener, spec_zones.data(), spec_fine, n_ener, 0.1 * kT, 10 * kT);
   INFO(profile.name << ": " << dat->nrad << " radial zones of the model vs. a fine radial grid: max. shape deviation "
-                    << dev << " (allowed: " << profile.max_dev_zones << ")");
+    << dev << " (allowed: " << profile.max_dev_zones << ")");
   CHECK(dev < profile.max_dev_zones);
 
   delete_returningFractions(&dat);
