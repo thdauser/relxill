@@ -380,6 +380,51 @@ TEST_CASE(" disk emission (2a): radial zones of the model vs. a fine radial grid
 }
 
 // ========== //
+// (2b, zones) The direct disk emission of each zone of the model is calculated on the radial range the zone covers in
+// its relativistic line profile (get_zone_ranges_relline_profile): the union of the cells of the radial integration
+// points (N_FRAD, uniform in 1/sqrt(r)) that calc_relline_profile assigns to the zone. These ranges must cover the disk
+// from Rin to Rout without gaps or overlaps, and differ from the nominal zones by at most half a cell at each
+// boundary. For the outer zones of the returning-radiation table, this changes the area of a zone by more than 1%.
+TEST_CASE(" disk emission (2b, zones): radial ranges of the zones as in the relativistic line profiles ",
+          "[bbret][diskemission]") {
+  const double spin = GENERATE(0.0, 0.998);
+  const double rin = kerr_rms(spin);
+  const double rout = RMAX_RELRET;
+  int status = EXIT_SUCCESS;
+  returningFractions *dat = get_rrad_fractions(spin, rin, rout, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  VecD range_lo;
+  VecD range_hi;
+  get_zone_ranges_relline_profile(dat->rlo, dat->rhi, rin, rout, range_lo, range_hi);
+  REQUIRE(range_lo.size() == static_cast<size_t>(dat->nrad));
+
+  // cover the disk from rin to rout, without gaps or overlaps
+  CHECK(range_lo.front() == Catch::Approx(rin).epsilon(1e-12));
+  CHECK(range_hi.back() == Catch::Approx(rout).epsilon(1e-12));
+  for (int ii = 0; ii < dat->nrad - 1; ii++) {
+    CHECK(range_hi[ii] == Catch::Approx(range_lo[ii + 1]).epsilon(1e-12));
+  }
+
+  // at most half a cell (uniform in 1/sqrt(r)) from the nominal boundaries, and a relevant change of the area
+  const double du = (1 / sqrt(rin) - 1 / sqrt(rout)) / (N_FRAD - 1);
+  double max_area_change = 0.0;
+  for (int ii = 0; ii < dat->nrad; ii++) {
+    const double half_cell = pow(dat->rlo[ii], 1.5) * du * 1.01;
+    if (ii > 0) {
+      CHECK(fabs(range_lo[ii] - dat->rlo[ii]) <= half_cell);
+    }
+    const double area_change = (range_hi[ii] * range_hi[ii] - range_lo[ii] * range_lo[ii])
+        / (dat->rhi[ii] * dat->rhi[ii] - dat->rlo[ii] * dat->rlo[ii]) - 1;
+    max_area_change = fmax(max_area_change, fabs(area_change));
+  }
+  INFO("a = " << spin << ": max. change of the area of a zone: " << max_area_change);
+  CHECK(max_area_change > 0.01);
+
+  delete_returningFractions(&dat);
+}
+
+// ========== //
 // (2b) The direct disk emission (boost=0) of the full relxillBB_NS model with the Novikov-Thorne temperature profile
 // (RELXILL_RRAD_BBODY_TPROFILE=3) compared to the relativistic disk model kerrbb of Xspec (eta=0, hd=1, rflag=0,
 // lflag=0), with the maximal temperature of the kerrbb disk (1 keV) as kTbb, i.e., without any free parameter. This

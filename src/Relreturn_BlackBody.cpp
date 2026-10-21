@@ -284,6 +284,67 @@ VecD_2D get_disk_emission_zones_binned(const double *ener,
 
 
 /**
+ * @brief Radial range of each zone as covered by the relativistic line profiles.
+ *
+ * The line profiles of the zones (calc_relline_profile) are integrated over N_FRAD radial points from rin to rout,
+ * uniform in 1/sqrt(r) (get_fine_radial_grid). Each point represents the cell between the midpoints to its neighbors
+ * and is assigned completely to the zone in which it is located. The area of a zone in its line profile is therefore
+ * the union of the cells of its points, which differs from [rlo, rhi] by up to half a cell at each boundary (up to
+ * 4% of the area for the outer zones of the returning-radiation table). Calculating the direct disk emission of each
+ * zone on this range keeps its area consistent with the line profile, such that no area is assigned to the spectrum
+ * of a neighboring zone (see doc/returnrad_disk_emission.md).
+ *
+ * @param rlo Inner radii of the zones [r_g].
+ * @param rhi Outer radii of the zones [r_g].
+ * @param rin Inner edge of the disk, as used for the line profiles [r_g].
+ * @param rout Outer edge of the disk, as used for the line profiles [r_g].
+ * @param range_lo Output: inner radius of the range of each zone [r_g].
+ * @param range_hi Output: outer radius of the range of each zone [r_g].
+ *
+ * @note A zone without any radial point (not the case for the zones of the returning-radiation table) keeps its
+ * nominal range.
+ */
+void get_zone_ranges_relline_profile(const VecD &rlo,
+                                     const VecD &rhi,
+                                     double rin,
+                                     double rout,
+                                     VecD &range_lo,
+                                     VecD &range_hi) {
+    const int nzones = static_cast<int>(rlo.size());
+    assert(nzones > 0 && rhi.size() == rlo.size());
+
+    VecD rgrid(rlo);
+    rgrid.push_back(rhi.back());
+
+    VecD re(N_FRAD);
+    get_fine_radial_grid(rin, rout, re.data(), N_FRAD); // descending, as for the line profiles
+
+    range_lo.assign(nzones, 0.0);
+    range_hi.assign(nzones, 0.0);
+    std::vector<bool> has_points(nzones, false);
+    for (int ii = 0; ii < N_FRAD; ii++) {
+        const int izone = binary_search(rgrid.data(), nzones + 1, re[ii]); // as in calc_relline_profile
+        const double r_cell_hi = (ii == 0) ? re[ii] : 0.5 * (re[ii - 1] + re[ii]);
+        const double r_cell_lo = (ii == N_FRAD - 1) ? re[ii] : 0.5 * (re[ii] + re[ii + 1]);
+        if (!has_points[izone]) {
+            range_lo[izone] = r_cell_lo;
+            range_hi[izone] = r_cell_hi;
+            has_points[izone] = true;
+        } else {
+            range_lo[izone] = fmin(range_lo[izone], r_cell_lo);
+            range_hi[izone] = fmax(range_hi[izone], r_cell_hi);
+        }
+    }
+    for (int ii = 0; ii < nzones; ii++) {
+        if (!has_points[ii]) {
+            range_lo[ii] = rlo[ii];
+            range_hi[ii] = rhi[ii];
+        }
+    }
+}
+
+
+/**
  * @brief Calculates a 2D blackbody return radiation spectrum for relativistic disk models
  *
  * This function computes the returning radiation spectrum from a relativistic accretion disk
@@ -307,8 +368,9 @@ VecD_2D get_disk_emission_zones_binned(const double *ener,
  * @note The temperature profile is selected with RELXILL_RRAD_BBODY_TPROFILE (default: alpha disk with zero torque
  * at the inner edge, see doc/returnrad_disk_emission.md)
  * @note The primary (direct) disk emission of each zone (specPri) is calculated on a fine radial grid within the
- * zone (see get_disk_emission_zones_binned), whereas the returning radiation (specRet) is calculated from a single
- * blackbody per zone
+ * radial range the zone covers in its relativistic line profile (see get_disk_emission_zones_binned and
+ * get_zone_ranges_relline_profile), whereas the returning radiation (specRet) is calculated from a single blackbody
+ * per zone
  * @note Memory for the returned structure must be freed by the caller
  * @note The spin parameter follows the convention where positive values indicate prograde rotation
  *
@@ -331,8 +393,12 @@ returnSpec2D* spec_returnrad_blackbody(double* ener, int nener,
     VecD temperature = get_temperature_profile_disk_zones(dat, Rin, Tin, status);
 
     // 3 - get primary and returning 2D spectrum (bin integrated spectra): the primary (direct) disk emission of each
-    //     zone is calculated on a fine radial grid within the zone, the returning radiation from the zone temperatures
-    VecD_2D spec_prim_zones = get_disk_emission_zones_binned(ener, nener, dat->rlo, dat->rhi, Rin, Tin, dat->a,
+    //     zone is calculated on a fine radial grid within the radial range the zone covers in its relativistic line
+    //     profile, the returning radiation from the zone temperatures
+    VecD range_lo;
+    VecD range_hi;
+    get_zone_ranges_relline_profile(dat->rlo, dat->rhi, Rin, Rout, range_lo, range_hi);
+    VecD_2D spec_prim_zones = get_disk_emission_zones_binned(ener, nener, range_lo, range_hi, Rin, Tin, dat->a,
                                                              get_tprofile_type_from_env(), status);
 
     int num_rrad_order = get_from_env_rrad_bbody_order();
