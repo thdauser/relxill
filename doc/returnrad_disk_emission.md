@@ -12,24 +12,31 @@ the disk:
 
 1. `get_rrad_fractions(spin, Rin, Rout)` sets up the radial zones of the returning-radiation table: 50 zones,
    starting at the inner disk radius `Rin` and ending at `Rout` (at most 1000 Rg).
-2. `get_temperature_profile_disk_zones()` calls `get_tprofile()` (`src/Relphysics.cpp`) for the temperature of each
-   zone. The profile is selected with the environment variable `RELXILL_RRAD_BBODY_TPROFILE` (see below).
-3. `get_bbody_specs_binned()` calculates the blackbody photon spectrum of each zone, integrated over the energy bins,
-   on the energy grid of the convolution (`N_ENER_CONV` = 4096 bins from 0.00035 to 2000 keV, i.e., bins of 0.4%).
+2. \ref get_disk_emission_zones_binned calculates the direct (primary) disk emission of each zone on a fine radial
+   grid: each zone is divided into logarithmic sub-zones with \f$r_\mathrm{hi}/r_\mathrm{lo} \leq 1.1\f$
+   (`RRAD_BBODY_MAX_RATIO_SUBZONES`), each sub-zone emits a blackbody with the temperature at its mean radius
+   (`get_tprofile()` in `src/Relphysics.cpp`), and the spectrum of the zone is the average of these blackbodies,
+   weighted with the area of the sub-zones. The spectra are integrated over the energy bins of the convolution grid
+   (`N_ENER_CONV` = 4096 bins from 0.00035 to 2000 keV, i.e., bins of 0.4%). The temperature profile is selected with
+   the environment variable `RELXILL_RRAD_BBODY_TPROFILE` (see below).
+3. `get_temperature_profile_disk_zones()` calculates a single temperature for each zone (at its mean radius), from
+   which the returning spectrum `specRet[izone]` is calculated.
 
-The result is `specPri[izone]` (per unit area of the zone). In \ref relxillbb_kernel it is folded with the relativistic
-line profile of each zone and rebinned to the energy grid of the model. It is also the input for the returning
-spectrum `specRet[izone]`.
+The direct emission is `specPri[izone]` (per unit area of the zone). In \ref relxillbb_kernel it is folded with the
+relativistic line profile of each zone and rebinned to the energy grid of the model. The returning radiation and its
+reflection are therefore calculated on the 50 zones of the table, whereas the direct emission is calculated on a fine
+radial grid from \f$R_\mathrm{in}\f$ to \f$R_\mathrm{out}\f$ (see (2a) for its precision).
 
-\ref spec_multicolor_disk calculates the same disk emission without relativistic effects, for any given radial zones:
-it uses the same temperature profiles and blackbody spectra, and weights each zone with its flat-space ring area
+\ref spec_multicolor_disk calculates the same direct disk emission (with \ref get_disk_emission_zones_binned) without
+relativistic effects, for any given radial zones, and weights each zone with its flat-space ring area
 \f$\pi (r_\mathrm{hi}^2 - r_\mathrm{lo}^2)\f$. It is only used in the unit tests, for the comparison with the Xspec
 models and for the precision of the radial zones.
 
 ## Temperature profiles
 
-For both profiles, the temperature of each zone is evaluated at its mean radius \f$\frac{1}{2}(r_\mathrm{lo} +
-r_\mathrm{hi})\f$, and each zone emits a single blackbody of this temperature.
+For all profiles, the temperature is evaluated at the mean radius \f$\frac{1}{2}(r_\mathrm{lo} + r_\mathrm{hi})\f$
+of each sub-zone (direct emission) or zone (returning radiation), which then emits a single blackbody of this
+temperature.
 
 ### Alpha-disk profile (zero torque at the inner edge; default, `RELXILL_RRAD_BBODY_TPROFILE=1`)
 
@@ -71,10 +78,9 @@ The temperature profile of a relativistic thin disk around a Kerr black hole wit
 Page & Thorne (1974, ApJ 191, 499, eq. 15n; see also Li et al. 2005, ApJS 157, 335, eqs. D11 and D13):
 
 \f[
-f \;=\; \frac{3}{2}\, \frac{1}{x^2 (x^3 - 3x + 2a)} \left[ x - x_0 - \frac{3}{2} a \ln\frac{x}{x_0}
-
-- \sum_{i=1}^{3} \frac{3 (x_i - a)^2}{x_i \prod_{j \neq i} (x_i - x_j)} \ln\frac{x - x_i}{x_0 - x_i} \right]
-  \f]
+f \;=\; \frac{3}{2}\, \frac{1}{x^2 (x^3 - 3x + 2a)} \left[ x - x_0 - \frac{3}{2} a \ln\frac{x}{x_0} -
+\sum_{i=1}^{3} \frac{3 (x_i - a)^2}{x_i \prod_{j \neq i} (x_i - x_j)} \ln\frac{x - x_i}{x_0 - x_i} \right]
+\f]
 
 with \f$x = \sqrt{r}\f$, \f$x_0 = \sqrt{R_\mathrm{in}}\f$ (radii in units of \f$r_g = GM/c^2\f$), the spin
 \f$a\f$, and the roots of \f$x^3 - 3x + 2a = 0\f$: \f$x_1 = 2\cos\left(\frac{1}{3}\arccos a - \frac{\pi}{3}\right)\f$,
@@ -107,11 +113,13 @@ parameter, see (2b).
 | calculation                                                                            | alpha disk     | Novikov-Thorne |
 |----------------------------------------------------------------------------------------|----------------|----------------|
 | temperature profile of the 50 radial zones (incl. the search for \f$R_\mathrm{max}\f$) | 3 µs           | 34 µs          |
-| full `relxillBB_NS` evaluation (1000 energy bins, 0.1-100 keV), two runs               | 179 ms, 197 ms | 187 ms, 200 ms |
+| direct disk emission of the 50 zones on the sub-zones (4096 energy bins)               | 2.1 ms         | 1.7 ms         |
+| full `relxillBB_NS` evaluation (1000 energy bins, 0.1-100 keV), two runs               | 106 ms, 108 ms | 108 ms, 109 ms |
 
-The temperature profile is calculated once per model evaluation (in \ref spec_returnrad_blackbody), so the
-Novikov-Thorne profile adds about 31 µs, i.e., 0.03% of a model evaluation of 100 ms. In the full evaluation, this is
-well below the scatter between runs (10%). Pre-calculating \f$R_\mathrm{max}\f$ is therefore not necessary.
+The temperature profile is calculated twice per model evaluation (for the sub-zones of the direct emission and for
+the zones of the returning radiation), so the Novikov-Thorne profile adds well below 0.1 ms, i.e., less than 0.1% of a
+model evaluation of 100 ms. This is well below the scatter between runs (up to 10%). Pre-calculating
+\f$R_\mathrm{max}\f$ is therefore not necessary.
 
 ## Tests and precision
 
@@ -154,28 +162,36 @@ for the outer edge not to affect the band 0.1-10 kTbb):
 
 ### (2a) Radial zones of the model
 
-The 50 radial zones of the model (\f$R_\mathrm{in} = r_\mathrm{isco}(a=0.998)\f$ to 1000 Rg) compared to a fine
-logarithmic grid with 500 zones over the same radii (kTbb = 1 keV, the shape only depends on \f$E/kT_\mathrm{bb}\f$):
+The direct disk emission on the 50 radial zones of the model (\f$R_\mathrm{in} = r_\mathrm{isco}(a=0.998)\f$ to 1000
+Rg), compared to a fine logarithmic grid with 500 zones over the same radii (kTbb = 1 keV, the shape only depends on
+\f$E/kT_\mathrm{bb}\f$):
 
-| temperature profile | shape deviation (0.1-10 kTbb) |
-|---------------------|-------------------------------|
-| alpha disk          | 3.5%                          |
-| diskbb              | 1.5-1.7%                      |
+| temperature profile | single temperature per zone (before 2026-10) | sub-zones with \f$r_\mathrm{hi}/r_\mathrm{lo} \leq 1.1\f$ (current) |
+|---------------------|----------------------------------------------|---------------------------------------------------------------------|
+| alpha disk          | 3.5%                                         | 0.024%                                                              |
+| Novikov-Thorne      | 3.3%                                         | 0.021%                                                              |
+| diskbb              | 1.5-1.7%                                     | 0.20%                                                               |
+
+(shape deviation in 0.1-10 kTbb)
 
 - The zones of the returning-radiation table are fine close to the inner edge (\f$r_\mathrm{hi}/r_\mathrm{lo}\f$ =
   1.04), but coarse at large radii: the last zones are 227-417 Rg and 417-1000 Rg (\f$r_\mathrm{hi}/r_\mathrm{lo}\f$
-  up to 2.4).
-- The coarse outer zones mainly affect the lowest energies. For the alpha disk, the deviation is 3.5% at 0.12 kTbb,
-  1.8% at 0.19 kTbb, and within 1% above 0.3 kTbb.
-- The alpha disk is more affected than the diskbb profile, as its outer disk is relatively hotter (factor 2.05 at
-  large radii, see above), so the outer zones emit at higher energies relative to kTbb.
+  up to 2.4). With a single temperature per zone, the coarse outer zones mainly affected the lowest energies (for the
+  alpha disk, 3.5% at 0.12 kTbb, 1.8% at 0.19 kTbb, and within 1% above 0.3 kTbb). The alpha disk is more affected
+  than the diskbb profile, as its outer disk is relatively hotter (factor 2.05 at large radii, see above), so the
+  outer zones emit at higher energies relative to kTbb.
+- With sub-zones of \f$r_\mathrm{hi}/r_\mathrm{lo} \leq 1.1\f$ (93 instead of 50 blackbody spectra for
+  \f$a = 0.998\f$), the direct emission agrees with the fine radial grid to 0.02% for the alpha disk and the
+  Novikov-Thorne profile. For the diskbb profile (only for testing), the remaining 0.2% are due to the inner zones,
+  which are not divided (\f$r_\mathrm{hi}/r_\mathrm{lo}\f$ = 1.04), but where its temperature changes most. With
+  \f$r_\mathrm{hi}/r_\mathrm{lo} \leq 1.02\f$, all profiles would agree to 0.03%, at about three times the runtime.
+- The blackbody of each sub-zone is only calculated up to \f$E = 60\,kT\f$ (above, it is below \f$e^{-60}\f$ of
+  its maximum). Therefore, the direct emission on the sub-zones (1.7-2.1 ms) takes about as long as before with a
+  single temperature per zone (about 1.5 ms), see the runtime table above.
 
-**Current state and possible improvement.** The same 50 zones are used for the direct disk emission and for the
-returning radiation (`specRet[izone]`) and its reflection, as they are the zones of the returning-radiation table.
-Optimizing them (a different distribution or more zones) would therefore require changing the table, and has to take
-the returning radiation into account as well. A better approach for later is to calculate the direct disk emission on
-a fine radial grid, which is not limited by the table, and to use the coarse zones of the table only for the
-returning radiation and its reflection.
+**Returning radiation.** The returning radiation (`specRet[izone]`), and therefore its reflection, is still
+calculated from a single blackbody per zone of the returning-radiation table. Calculating it on a finer grid would
+require changing the table (more zones or a different distribution).
 
 ### (2b) Full model (with relativistic effects)
 
@@ -187,15 +203,19 @@ Shape deviation in 0.5-10 kTbb (50 energy bins):
 
 | spin  | Novikov-Thorne, incl = 30 deg | incl = 60 deg | alpha disk, incl = 30 deg | incl = 60 deg |
 |-------|-------------------------------|---------------|---------------------------|---------------|
-| 0     | 0.35%                         | 0.52%         | 7.9%                      | 5.8%          |
-| 0.9   | 0.81%                         | 0.56%         | 16%                       | 3.1%          |
-| 0.998 | 0.36%                         | 0.10%         | 124%                      | 45%           |
+| 0     | 0.22%                         | 0.30%         | 8.0%                      | 5.6%          |
+| 0.9   | 1.06%                         | 0.56%         | 16%                       | 3.3%          |
+| 0.998 | 0.59%                         | 0.43%         | 124%                      | 45%           |
 
 - With the Novikov-Thorne profile, the implementation of the disk emission in the model (temperature profile,
-  radial zones, relativistic effects) agrees with `kerrbb` to better than 1%.
+  radial zones, relativistic effects) agrees with `kerrbb` to about 1% (0.2-1.1%).
 - Lower energies are not compared: the outer radius of the model (1000 Rg, i.e., only \f$167\,r_\mathrm{isco}\f$ for
   \f$a = 0\f$) truncates the disk emission there, which gives a deviation of 15% in 0.2-10 kTbb for \f$a = 0\f$
-  (2.3-2.5% for \f$a = 0.9\f$, 0.8% for \f$a = 0.998\f$).
+  (0.7-1.3% for \f$a = 0.9\f$, 1.0% for \f$a = 0.998\f$, with 200 energy bins).
+- Calculating the direct emission on the sub-zones (see (2a)) increased the flux at 0.2 kTbb by 1.8% relative to
+  higher energies. This improved the agreement in 0.2-10 kTbb for \f$a = 0.9\f$ (from 2.3-2.5%), but not for
+  \f$a = 0.998\f$ (from 0.8%), where the deficit at low energies of the coarse zones had partly compensated a
+  difference of the opposite sign.
 - The alpha disk deviates by 3-124% for the same maximal temperature (and still by 5-10% for the best-fitting
   \f$kT_\mathrm{bb}\f$), due to the different temperature profile, see the figure above.
 
@@ -209,8 +229,8 @@ In `test/unit/tests-bbody-returnrad.cpp`; all disk emission tests run with `bin/
 
 - **(1)** *" disk emission (1): temperature profile on a fine radial grid vs. Xspec diskbb and ezdiskbb "*: shape
   deviation below 0.3% (alpha disk) and 0.05% (diskbb), and normalization independent of kTbb to 0.1%.
-- **(2a)** *" disk emission (2a): radial zones of the model vs. a fine radial grid "*: shape deviation below 4%
-  (alpha disk) and 2% (diskbb).
+- **(2a)** *" disk emission (2a): radial zones of the model vs. a fine radial grid "*: shape deviation of the direct
+  emission (with sub-zones, as in the model) below 0.1% (alpha disk) and 0.5% (diskbb).
 - **(2b)** *" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb "*
   (`[kerrbb]`): for \f$a\f$ = 0, 0.9, 0.998 and an inclination of 30 and 60 deg, the shape deviation of the
   Novikov-Thorne profile is below 2% in 0.5-10 kTbb, and the one of the alpha disk above 2%.
@@ -230,13 +250,16 @@ parameters in the header), created with `create_refvalues_kerrbb.sl`.
   of the unit test, this was partly compensated by the evaluation at the bin centres (3.7% in total).
 - Both only affected `RELXILL_RRAD_BBODY_TPROFILE=2` and the test function `spec_diskbb()` (now
   \ref spec_multicolor_disk), not the default alpha-disk profile.
+- 2026-10: the direct disk emission of each zone is calculated on sub-zones with
+  \f$r_\mathrm{hi}/r_\mathrm{lo} \leq 1.1\f$ instead of a single blackbody per zone of the returning-radiation
+  table (deviation from a fine radial grid 0.02% instead of 3.5% for the alpha disk, mainly below 0.3 kTbb). The
+  returning radiation is still calculated with a single blackbody per zone.
 
 ## Open issues
 
-- Precision of the 50 radial zones, in particular the coarse zones at large radii. The zones are those of the
-  returning-radiation table, so changing them also changes the returning radiation. The preferred solution is to
-  calculate the direct disk emission on a fine radial grid and to use the zones of the table only for the returning
-  radiation and its reflection, see (2a).
+- The returning radiation and its reflection are calculated with a single blackbody per zone of the
+  returning-radiation table, whose outer zones are coarse (for the direct emission, this gave a deviation of 3.5% for
+  the alpha disk, see (2a)). Improving it requires changing the table.
 - \f$R_\mathrm{max} = 1.5^{4/5} R_\mathrm{in}\f$ instead of \f$\frac{49}{36} R_\mathrm{in}\f$: the maximal temperature
   is 0.03% higher than \f$kT_\mathrm{bb}\f$ (0.2% in the spectrum at 10 kTbb, see (1)).
 - Which temperature profile should be the default: the alpha disk is Newtonian, whereas the relativistic effects are

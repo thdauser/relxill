@@ -297,11 +297,11 @@ struct DiskProfileCase {
 
 static const DiskProfileCase disk_profile_alpha{
   TPROFILE_ALPHA, "alpha disk (zero torque)", "ezdiskbb",
-  get_fname_refdata_ezdiskbb, 0.003, 0.04
+  get_fname_refdata_ezdiskbb, 0.003, 0.001
 };
 static const DiskProfileCase disk_profile_diskbb{
   TPROFILE_DISKBB, "diskbb", "diskbb",
-  get_fname_refdata_diskbb, 0.0005, 0.02
+  get_fname_refdata_diskbb, 0.0005, 0.005
 };
 
 // ========== //
@@ -347,9 +347,11 @@ TEST_CASE(" disk emission (1): temperature profile on a fine radial grid vs. Xsp
 // ========== //
 // (2a) The disk emission on the radial zones of the model (from the returning radiation table, 50 zones from r_isco to
 // 1000 Rg) compared to a fine radial grid over the same radii. This is a code internal comparison, as (1) shows that
-// the fine radial grid is correct. The deviation (alpha disk ~3.5%, diskbb ~1.6% in 0.1-10 kT, mainly at the lowest
-// energies from the coarse outer zones) is the precision of the disk emission of the model without relativistic
-// effects. It does not depend on kT, as the shape of the spectrum only depends on E/kT.
+// the fine radial grid is correct. As in the model, the emission of each zone is calculated on sub-zones with
+// r_hi/r_lo <= RRAD_BBODY_MAX_RATIO_SUBZONES (get_disk_emission_zones_binned). The deviation (alpha disk 0.02%, diskbb
+// 0.2% in 0.1-10 kT; with a single temperature per zone, it would be 3.5% and 1.5%, mainly at the lowest energies from
+// the coarse outer zones) is the precision of the disk emission of the model without relativistic effects. It does
+// not depend on kT, as the shape of the spectrum only depends on E/kT.
 TEST_CASE(" disk emission (2a): radial zones of the model vs. a fine radial grid ", "[bbret][diskemission]") {
   const auto profile = GENERATE(disk_profile_alpha, disk_profile_diskbb);
   constexpr double kT = 1.0;
@@ -382,7 +384,7 @@ TEST_CASE(" disk emission (2a): radial zones of the model vs. a fine radial grid
 // (RELXILL_RRAD_BBODY_TPROFILE=3) compared to the relativistic disk model kerrbb of Xspec (eta=0, hd=1, rflag=0,
 // lflag=0), with the maximal temperature of the kerrbb disk (1 keV) as kTbb, i.e., without any free parameter. This
 // tests the implementation of the disk emission in the model (temperature profile, radial zones, relativistic
-// effects). The shape deviation is 0.1-1% in 0.5-10 kTbb. Lower energies are not compared, as the outer radius of the
+// effects). The shape deviation is 0.2-1.1% in 0.5-10 kTbb. Lower energies are not compared, as the outer radius of the
 // model (1000 Rg) truncates the disk emission there (15% at 0.2 kTbb for a=0). The alpha-disk profile (default)
 // deviates by more than 4%, i.e., the test is sensitive to the temperature profile.
 TEST_CASE(" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb ",

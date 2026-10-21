@@ -34,6 +34,11 @@ extern "C" {
 
 #include <vector>
 
+// maximal ratio r_hi/r_lo of the sub-zones on which the direct disk emission of each radial zone is calculated (see
+// get_disk_emission_zones_binned): the deviation from a fine radial grid is 0.02-0.03% for the alpha-disk and the
+// Novikov-Thorne profile (0.2% for the diskbb profile), see doc/returnrad_disk_emission.md
+#define RRAD_BBODY_MAX_RATIO_SUBZONES 1.1
+
 typedef struct {
   double *ener; // n+1 elements
   int n;
@@ -57,6 +62,18 @@ void fits_rr_write_2Dspec(const char *fname,
                           int nrad,
                           returningFractions *dat,
                           int *status);
+
+/**  direct disk emission of the radial zones [rlo, rhi], calculated on a fine radial grid (sub-zones) within each
+     zone, see the documentation in Relreturn_BlackBody.cpp **/
+VecD_2D get_disk_emission_zones_binned(const double *ener,
+                                       int nener,
+                                       const VecD &rlo,
+                                       const VecD &rhi,
+                                       double Rin,
+                                       double kT,
+                                       double spin,
+                                       int tprofile,
+                                       int *status);
 
 /**  multicolor disk spectrum (no relativistic effects) for the radial zones [rlo, rhi] and the temperature profile
      tprofile (TPROFILE_ALPHA or TPROFILE_DISKBB), see the documentation in Relreturn_BlackBody.cpp **/
