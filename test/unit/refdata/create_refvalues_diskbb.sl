@@ -1,5 +1,5 @@
 % creates reference files with the diskbb and ezdiskbb models of Xspec for the unit tests in tests-bbody-returnrad.cpp
-% (energy grid as in the unit tests: 50 log bins from 0.01 to 20 keV; diskbb for Tin=1 is in refvalues_diskbb.fits)
+% (energy grid as in the unit tests: 50 log bins from 0.01 to 20 keV)
 require("isisscripts");
 require("xspec");
 variable lo, hi;
@@ -8,7 +8,7 @@ variable T;
 
 fit_fun("diskbb");
 set_par("diskbb(1).norm", 1);
-foreach T ([0.5, 2.0]) {
+foreach T ([0.5, 1.0, 2.0]) {
    set_par("diskbb(1).Tin", T);
    fits_write_binary_table(sprintf("refvalues_diskbb_Tin%.1f.fits", T), "REFSPEC",
                            struct{elo=lo, ehi=hi, diskbb=eval_fun_keV(lo, hi)});

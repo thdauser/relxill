@@ -58,11 +58,16 @@ void fits_rr_write_2Dspec(const char *fname,
                           returningFractions *dat,
                           int *status);
 
-/**  return the diskbb spectrum for the radial grid given by the table for this spin value **/
-void spec_diskbb(const double *ener, double *spec, int n, double Tin, double spin, int *status);
-
-/**  return the ezdiskbb spectrum (zero-torque profile) for the radial grid given by the table for this spin value **/
-void spec_ezdiskbb(const double *ener, double *spec, int n, double Tmax, double spin, int *status);
+/**  multicolor disk spectrum (no relativistic effects) for the radial zones [rlo, rhi] and the temperature profile
+     tprofile (TPROFILE_ALPHA or TPROFILE_DISKBB), see the documentation in Relreturn_BlackBody.cpp **/
+void spec_multicolor_disk(const double *ener,
+                          double *spec,
+                          int n,
+                          const VecD &rlo,
+                          const VecD &rhi,
+                          double kT,
+                          int tprofile,
+                          int *status);
 
 
 // spec_prim can be NULL
