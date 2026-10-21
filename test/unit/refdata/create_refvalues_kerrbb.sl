@@ -40,7 +40,8 @@ variable lo, hi;
 (lo, hi) = log_grid(0.01, 20, 50);
 fit_fun("kerrbb");
 variable a, incl, mdd;
-foreach a ([0.0, 0.9, 0.998]) {
+% spins on the grid of the kerrbb table, to avoid its linear interpolation in spin
+foreach a ([0.0, 0.904277, 0.997676]) {
    mdd = (Tmax / tmax_keV(a, 1.0))^4;
    foreach incl ([30.0, 60.0]) {
       set_par("kerrbb(1).eta", 0);
@@ -53,8 +54,8 @@ foreach a ([0.0, 0.9, 0.998]) {
       set_par("kerrbb(1).rflag", 0);
       set_par("kerrbb(1).lflag", 0);
       set_par("kerrbb(1).norm", 1);
-      vmessage(" kerrbb: a=%.3f, incl=%.0f, Mbh=%.1f, Mdd=%.4f -> Tmax=%.6f keV", a, incl, Mbh, mdd, tmax_keV(a, mdd));
-      fits_write_binary_table(sprintf("refvalues_kerrbb_a%.3f_i%.0f.fits", a, incl), "REFSPEC",
+      vmessage(" kerrbb: a=%.6f, incl=%.0f, Mbh=%.1f, Mdd=%.4f -> Tmax=%.6f keV", a, incl, Mbh, mdd, tmax_keV(a, mdd));
+      fits_write_binary_table(sprintf("refvalues_kerrbb_a%.6f_i%.0f.fits", a, incl), "REFSPEC",
                               struct{elo=lo, ehi=hi, kerrbb=eval_fun_keV(lo, hi)},
                               struct{SPIN=a, INCL=incl, MBH=Mbh, MDD=mdd, DBH=Dbh, TMAX=Tmax});
    }

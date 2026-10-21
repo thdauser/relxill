@@ -79,7 +79,7 @@ static std::string get_fname_refdata_ezdiskbb(double Tmax) {
 // test/unit/refdata/create_refvalues_kerrbb.sl)
 static std::string get_fname_refdata_kerrbb(double spin, double incl) {
   char fname[100];
-  snprintf(fname, sizeof(fname), "refvalues_kerrbb_a%.3f_i%.0f.fits", spin, incl);
+  snprintf(fname, sizeof(fname), "refvalues_kerrbb_a%.6f_i%.0f.fits", spin, incl);
   return fname;
 }
 
@@ -429,16 +429,17 @@ TEST_CASE(" disk emission (2b, zones): radial ranges of the zones as in the rela
 // (RELXILL_RRAD_BBODY_TPROFILE=3) compared to the relativistic disk model kerrbb of Xspec (eta=0, hd=1, rflag=0,
 // lflag=0), with the maximal temperature of the kerrbb disk (1 keV) as kTbb, i.e., without any free parameter. This
 // tests the implementation of the disk emission in the model (temperature profile, radial zones, relativistic
-// effects). The shape deviation is 0.2-1.1% in 0.5-10 kTbb. Lower energies are not compared, as the outer radius of the
-// model (1000 Rg) truncates the disk emission there (15% at 0.2 kTbb for a=0). The alpha-disk profile (default)
-// deviates by more than 4%, i.e., the test is sensitive to the temperature profile.
+// effects). The spins are on the grid of the kerrbb table, to avoid its linear interpolation in spin. The shape
+// deviation is 0.2-0.8% in 0.5-10 kTbb. Lower energies are not compared, as the outer radius of the model (1000 Rg)
+// truncates the disk emission there (16% at 0.2 kTbb for a=0). The alpha-disk profile (default) deviates by 2.5% or
+// more, i.e., the test is sensitive to the temperature profile.
 TEST_CASE(" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb ",
           "[bbret][diskemission][kerrbb]") {
-  const double spin = GENERATE(0.0, 0.9, 0.998);
+  const double spin = GENERATE(0.0, 0.904277, 0.997676); // on the spin grid of kerrbb (no interpolation in spin)
   const double incl = GENERATE(30.0, 60.0);
   constexpr double kTbb = 1.0; // maximal temperature of the disk of the kerrbb reference spectra
   constexpr double rin = -1; // ISCO
-  constexpr double max_dev_allowed = 0.02;
+  constexpr double max_dev_allowed = 0.015;
 
   // grid of the reference files
   constexpr int n_ener = 50;

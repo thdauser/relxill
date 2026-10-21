@@ -199,17 +199,18 @@ require changing the table (more zones or a different distribution).
 The full model (`relxillBB_NS` with `boost=0`, i.e., only the direct emission of the disk, \f$R_\mathrm{in} =
 r_\mathrm{isco}\f$, \f$R_\mathrm{out}\f$ = 1000 Rg) with the Novikov-Thorne profile and \f$kT_\mathrm{bb}\f$ = 1 keV
 compared to the Xspec model `kerrbb` (`eta=0`, `hd=1`, `rflag=0`, `lflag=0`; \f$M\f$ = 10 \f$M_\odot\f$ and the
-accretion rate chosen such that the maximal temperature of the disk is 1 keV), i.e., without any free parameter.
-Shape deviation in 0.5-10 kTbb (50 energy bins, as in the unit test):
+accretion rate chosen such that the maximal temperature of the disk is 1 keV), i.e., without any free parameter. The
+spins are on the grid of the `kerrbb` table, to avoid its interpolation in spin (see below). Shape deviation in 0.5-10
+kTbb (50 energy bins, as in the unit test):
 
-| spin  | Novikov-Thorne, incl = 30 deg | incl = 60 deg | alpha disk, incl = 30 deg | incl = 60 deg |
-|-------|-------------------------------|---------------|---------------------------|---------------|
-| 0     | 0.43%                         | 0.57%         | 7.7%                      | 5.9%          |
-| 0.9   | 1.04%                         | 0.54%         | 16%                       | 3.3%          |
-| 0.998 | 0.23%                         | 0.11%         | 124%                      | 45%           |
+| spin     | Novikov-Thorne, incl = 30 deg | incl = 60 deg | alpha disk, incl = 30 deg | incl = 60 deg |
+|----------|-------------------------------|---------------|---------------------------|---------------|
+| 0        | 0.43%                         | 0.57%         | 7.7%                      | 5.9%          |
+| 0.904277 | 0.18%                         | 0.36%         | 15%                       | 2.5%          |
+| 0.997676 | 0.77%                         | 0.31%         | 112%                      | 40%           |
 
 - With the Novikov-Thorne profile, the implementation of the disk emission in the model (temperature profile,
-  radial zones, relativistic effects) agrees with `kerrbb` to about 1% (0.1-1.0%).
+  radial zones, relativistic effects) agrees with `kerrbb` to better than 1% (0.2-0.8%).
 - Lower energies are not compared: the outer radius of the model (1000 Rg, i.e., only \f$167\,r_\mathrm{isco}\f$ for
   \f$a = 0\f$, whereas `kerrbb` assumes \f$r_\mathrm{out} = 10^6\,M\f$) truncates the disk emission there, which
   gives a deviation of 16% at 0.2 kTbb for \f$a = 0\f$. For \f$a \geq 0.9\f$, the outer disk is not relevant above
@@ -242,13 +243,15 @@ removes this error without changing `calc_relline_profile()`:
   0.4-0.6%), for \f$a\f$ = 0, 0.9, 0.998 and an inclination of 60 deg, and for \f$a\f$ = 0 and 0.9 at 30 deg.
 - The remaining deviation of 1.1% for \f$a = 0.998\f$ and 30 deg (mainly at 5-10 kTbb) is due to the inner zones close
   to the ISCO: the temperature and the relativistic effects change strongly within a zone, and the zone is convolved
-  with its line profile as a whole. This would require finer zones close to \f$R_\mathrm{in}\f$ for the direct
-  emission (about 100 zones uniform in \f$1/\sqrt{r}\f$).
+  with its line profile as a whole. Reducing it would require finer zones close to \f$R_\mathrm{in}\f$ for the direct
+  emission (about 100 zones uniform in \f$1/\sqrt{r}\f$), i.e., twice as many convolutions, which would strongly
+  increase the runtime of the model. This is therefore accepted.
 - Before the sub-zones were introduced (see (2a)), the deficit at low energies of a single temperature per zone had
   partly compensated the excess at low energies from the too large areas of the outer zones.
 
-**Precision of `kerrbb`.** `kerrbb` interpolates tabulated spectra linearly in the spin (46 values, \f$a\f$ = 0.9 and
-0.998 are not on the grid) and the inclination (in steps of 5 deg), and integrates the energy bins with the trapezoidal
+**Precision of `kerrbb`.** `kerrbb` interpolates tabulated spectra linearly in the spin (46 values, e.g., 0.904277 and
+0.997676, but not 0.9 or 0.998) and the inclination (in steps of 5 deg), and integrates the energy bins with the
+trapezoidal
 rule on 601 tabulated energies (spaced by 2.3%, which overestimates the flux by about 0.3% at 8 kTbb). Compared
 directly with the tabulated spectra at spins of the grid (0, 0.904277, 0.997676), the converged reference of the model
 (see above) deviates by 0.4-1.4% in 0.5-10 kTbb, mostly at 5-10 kTbb for high spin and low inclination. This
@@ -272,12 +275,14 @@ In `test/unit/tests-bbody-returnrad.cpp`; all disk emission tests run with `bin/
   \f$R_\mathrm{out}\f$ without gaps or overlaps, differ from the nominal zones by at most half a cell, and change the
   area of the outer zones by more than 1%.
 - **(2b)** *" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb "*
-  (`[kerrbb]`): for \f$a\f$ = 0, 0.9, 0.998 and an inclination of 30 and 60 deg, the shape deviation of the
-  Novikov-Thorne profile is below 2% in 0.5-10 kTbb, and the one of the alpha disk above 2%.
+  (`[kerrbb]`): for \f$a\f$ = 0, 0.904277, 0.997676 (on the spin grid of `kerrbb`) and an inclination of 30 and 60
+  deg, the shape deviation of the Novikov-Thorne profile is below 1.5% in 0.5-10 kTbb, and the one of the alpha disk
+  above 1.5%.
 
 The reference spectra of the Xspec models are in `test/unit/refdata/`: `refvalues_diskbb_Tin{0.5,1.0,2.0}.fits`
 (column `diskbb`) and `refvalues_ezdiskbb_Tmax{0.5,1.0,2.0}.fits` (column `ezdiskbb`), created with
-`create_refvalues_diskbb.sl`, and `refvalues_kerrbb_a{0.000,0.900,0.998}_i{30,60}.fits` (column `kerrbb`, with the
+`create_refvalues_diskbb.sl`, and `refvalues_kerrbb_a{0.000000,0.904277,0.997676}_i{30,60}.fits` (column `kerrbb`, with
+the
 parameters in the header), created with `create_refvalues_kerrbb.sl`.
 
 ## History
@@ -304,10 +309,6 @@ parameters in the header), created with `create_refvalues_kerrbb.sl`.
   returning-radiation table, whose outer zones are coarse (for the direct emission, this gave a deviation of 3.5% for
   the alpha disk, see (2a)), and their line profiles have the area differences of the zones described in (2b).
   Improving it requires changing the table.
-- Close to the ISCO, the direct emission would need finer zones for high spin and low inclination (1.1% at 5-10 kTbb
-  for \f$a = 0.998\f$ and 30 deg, see (2b)).
-- The unit test against `kerrbb` uses \f$a\f$ = 0.9 and 0.998, which are not on the spin grid of `kerrbb`; using
-  0.904277 and 0.997676 would avoid its interpolation in spin.
 - \f$R_\mathrm{max} = 1.5^{4/5} R_\mathrm{in}\f$ instead of \f$\frac{49}{36} R_\mathrm{in}\f$: the maximal temperature
   is 0.03% higher than \f$kT_\mathrm{bb}\f$ (0.2% in the spectrum at 10 kTbb, see (1)).
 - Which temperature profile should be the default: the alpha disk is Newtonian, whereas the relativistic effects are
