@@ -1,3 +1,5 @@
 *.pdf
 plots/*
 __*
+# reference data of the tests are tracked (not the backups of older reference data in subfolders)
+!refdata/__*.fits

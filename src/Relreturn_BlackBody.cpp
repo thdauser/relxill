@@ -1054,9 +1054,8 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                          nullptr,
                          status);
 
-    // the spectra of the zones only contain the reflected emission (the direct emission is calculated for the whole
-    // disk, see calc_disk_emission_observed), i.e., they are zero for boost=0; the direct emission of each zone in the
-    // rest frame (specPri) is written to rframe-bbodyEmit.fits by spec_returnrad_blackbody()
+    // for boost=0, the rest-frame spectrum is the direct emission specPri, which is
+    // already written to rframe-bbodyEmit.fits by spec_returnrad_blackbody()
     if (is_boost_primary_only(xill_param->boost)) {
         return;
     }
@@ -1071,6 +1070,42 @@ static void write_bbret_diagnose_outfiles(const xillParam *xill_param,
                          returnSpec->nrad,
                          nullptr,
                          status);
+}
+
+/**
+ * @brief Diagnostic output only: adds the direct emission of each zone to the spectra of the zones (boost >= 0).
+ *
+ * In the model, the zones only contain the reflected emission, as the direct emission is calculated for the whole disk
+ * at once (calc_disk_emission_observed). For the diagnostic output, the direct emission of each zone is its primary
+ * (specPri, from which the returning radiation is calculated), added in the rest frame, and convolved with the line
+ * profile of the zone in the observed frame. The sum of the observed direct emission of all zones agrees with the
+ * direct emission of the model to about 0.1% (see the unit test "disk emission (3c)").
+ */
+static void add_direct_emission_zones_diagnose(double *ener,
+                                               int n_ener,
+                                               const returnSpec2D *returnSpec,
+                                               const relline_spec_multizone *rel_profile,
+                                               specCache *spec_cache,
+                                               VecD_2D &specZonesConvOutput,
+                                               VecD_2D &specZonesEmittedCombined,
+                                               int *status) {
+    VecD spec_conv(n_ener);
+    for (int izone = 0; izone < returnSpec->nrad; izone++) {
+        convolveSpectrumFFTNormalized(ener,
+                                      returnSpec->specPri[izone],
+                                      rel_profile->flux[izone],
+                                      spec_conv.data(),
+                                      n_ener,
+                                      1,
+                                      1,
+                                      izone,
+                                      spec_cache,
+                                      status);
+        for (int jj = 0; jj < n_ener; jj++) {
+            specZonesConvOutput[izone][jj] += spec_conv[jj];
+            specZonesEmittedCombined[izone][jj] += returnSpec->specPri[izone][jj];
+        }
+    }
 }
 
 static void set_xill_param_from_iongrad(xillParam &xill_param_zone, const IonGradient &ion_gradient, int izone) {
@@ -1233,6 +1268,10 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
     set_values_outside_to_zero(specOutput, ener_inp, n_ener_inp);
 
     if (shouldOutfilesBeWritten()) {
+        if (xill_param->boost >= 0) {
+            add_direct_emission_zones_diagnose(ener, n_ener, returnSpec, relProfile, spec_cache, specZonesConvOutput,
+                                               specZonesEmittedCombined, status);
+        }
         write_bbret_diagnose_outfiles(xill_param, specZonesConvOutput, specZonesEmittedCombined,
                                       ener, n_ener, returnSpec, status);
     }

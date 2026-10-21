@@ -490,6 +490,7 @@ struct PrimaryCase {
   int tprofile;
   double spin;
 };
+
 #define GENERATE_PRIMARY_CASES GENERATE(PrimaryCase{"1", TPROFILE_ALPHA, 0.0},                \
                                         PrimaryCase{"1", TPROFILE_ALPHA, 0.998},              \
                                         PrimaryCase{"3", TPROFILE_NOVIKOV_THORNE, 0.0},       \
@@ -529,7 +530,8 @@ static VecD_2D calc_primary_zones_radial_points(const double *ener,
       const double r_part_lo = fmax(r_cell_lo, zone_edges[izone]);
       const double r_part_hi = fmin(r_cell_hi, zone_edges[izone + 1]);
       if (r_part_hi > r_part_lo) {
-        const double area_part = trapez_integ_single(re.data(), ii, nr) * (r_part_hi * r_part_hi - r_part_lo * r_part_lo)
+        const double area_part = trapez_integ_single(re.data(), ii, nr) * (
+                                   r_part_hi * r_part_hi - r_part_lo * r_part_lo)
                                  / (r_cell_hi * r_cell_hi - r_cell_lo * r_cell_lo);
         area[izone] += area_part;
         for (int jj = 0; jj < n_ener; jj++) {
@@ -548,7 +550,10 @@ static VecD_2D calc_primary_zones_radial_points(const double *ener,
 }
 
 // number of photons and energy of a bin-integrated spectrum in the band [emin, emax]
-static std::array<double, 2> photons_and_energy(const double *ener, const double *spec, int n_ener, double emin,
+static std::array<double, 2> photons_and_energy(const double *ener,
+                                                const double *spec,
+                                                int n_ener,
+                                                double emin,
                                                 double emax) {
   std::array<double, 2> sum{0.0, 0.0};
   for (int jj = 0; jj < n_ener; jj++) {
@@ -608,14 +613,14 @@ TEST_CASE(" disk emission (3a): primary of the zones is the emission of the radi
     bbody_photon_flux_per_keV(ener, n_ener, spec_zone.data(), temp_fine[kk], 1.0);
     for (int jj = 0; jj < n_ener; jj++) {
       spec_fine[jj] += M_PI * (rhi_fine[kk] * rhi_fine[kk] - rlo_fine[kk] * rlo_fine[kk]) * spec_zone[jj]
-                       * (ener[jj + 1] - ener[jj]);
+          * (ener[jj + 1] - ener[jj]);
     }
   }
   VecD spec_all_zones(n_ener, 0.0);
   for (int ii = 0; ii < dat->nrad; ii++) {
     for (int jj = 0; jj < n_ener; jj++) {
       spec_all_zones[jj] += M_PI * (dat->rhi[ii] * dat->rhi[ii] - dat->rlo[ii] * dat->rlo[ii])
-                            * return_spec->specPri[ii][jj];
+          * return_spec->specPri[ii][jj];
     }
   }
   const auto sum_zones = photons_and_energy(ener, spec_all_zones.data(), n_ener, EMIN_XILLVER, EMAX_XILLVER);
@@ -718,14 +723,27 @@ TEST_CASE(" disk emission (3c): direct emission of the model vs. the primary of 
   returnSpec2D *return_spec =
       spec_returnrad_blackbody(egrid->ener, n_ener, kTbb, rel_param->rin, rel_param->rout, rel_param->a, &status);
   RelSysPar *sys_par = get_system_parameters(rel_param, &status);
-  const relline_spec_multizone *profiles = relbase_profile(egrid->ener, n_ener, rel_param, sys_par, xill_tab,
-                                                           get_radial_grid_from_returntab(return_spec), &status);
+  const relline_spec_multizone *profiles = relbase_profile(egrid->ener,
+                                                           n_ener,
+                                                           rel_param,
+                                                           sys_par,
+                                                           xill_tab,
+                                                           get_radial_grid_from_returntab(return_spec),
+                                                           &status);
   specCache *spec_cache = init_global_specCache(&status);
   VecD flux_zones(n_ener, 0.0);
   VecD flux_conv(n_ener);
   for (int ii = 0; ii < return_spec->nrad; ii++) {
-    convolveSpectrumFFTNormalized(egrid->ener, return_spec->specPri[ii], profiles->flux[ii], flux_conv.data(), n_ener,
-                                  1, 1, ii, spec_cache, &status);
+    convolveSpectrumFFTNormalized(egrid->ener,
+                                  return_spec->specPri[ii],
+                                  profiles->flux[ii],
+                                  flux_conv.data(),
+                                  n_ener,
+                                  1,
+                                  1,
+                                  ii,
+                                  spec_cache,
+                                  &status);
     for (int jj = 0; jj < n_ener; jj++) {
       flux_zones[jj] += flux_conv[jj];
     }

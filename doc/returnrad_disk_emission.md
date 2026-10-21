@@ -49,6 +49,14 @@ zone. `calc_relline_profile()` splits the cells of the radial points at the zone
 each zone covers exactly its radial range \f$[r_\mathrm{lo}, r_\mathrm{hi}]\f$, as for the returning-radiation table
 (see (3)). For `boost=0`, i.e., only the direct emission, the zones are not calculated.
 
+**Diagnostic output.** With `RELXILL_WRITE_FILES=1`, the spectra of the zones are written to
+`__relxillOutput-rrad-bbody-*.fits` (used by the scripts in `test/manual/returnrad/`). For these files, the direct
+emission of each zone is added for `boost` \f$\geq\f$ 0: its primary `specPri[izone]` in the rest frame
+(`rframe-*.fits`), and the primary convolved with the line profile of the zone in the observed frame (`obs-*.fits`).
+The sum of the observed direct emission of all zones agrees with the direct emission of the model to about 0.1% in the
+number of photons and the energy (see (3c)); in the Wien tail, it deviates by up to a few percent per energy bin (2.6%
+at 10 kTbb for \f$a = 0.998\f$ and an inclination of 40 deg).
+
 \ref spec_multicolor_disk calculates the disk emission (with \ref get_disk_emission_zones_binned) without relativistic
 effects, for any given radial zones, and weights each zone with its flat-space ring area
 \f$\pi (r_\mathrm{hi}^2 - r_\mathrm{lo}^2)\f$. It is only used in the unit tests, for the comparison with the Xspec
@@ -344,8 +352,6 @@ the parameters in the header), created with `create_refvalues_kerrbb.sl`.
   therefore not taken into account for the reflection (0.05-0.17% in the energy flux of the primary, see (3c)).
 - The kernel of the direct emission takes about as long as the line profiles of the zones (up to 30 ms for high
   inclinations), see Runtime. If needed, it could be calculated on fewer radial points at large radii.
-- The diagnostic output per zone (`RELXILL_WRITE_FILES`, `obs-*.fits` and `rframe-*.fits`) only contains the reflected
-  emission, not the direct emission (used by the scripts in `test/manual/returnrad/`).
 - \f$R_\mathrm{max} = 1.5^{4/5} R_\mathrm{in}\f$ instead of \f$\frac{49}{36} R_\mathrm{in}\f$: the maximal temperature
   is 0.03% higher than \f$kT_\mathrm{bb}\f$ (0.2% in the spectrum at 10 kTbb, see (1)).
 - Which temperature profile should be the default: the alpha disk is Newtonian, whereas the relativistic effects are

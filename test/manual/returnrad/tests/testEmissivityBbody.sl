@@ -8,7 +8,7 @@ require("scripts/subs_filenames.sl");
 variable spin = 0.998;  %% currently only done for this value
 variable Tin = 2.0;
 variable logxi = 2.;
-variable logn = 17.;
+variable logn = 18.;  %% the only value allowed for relxillBB
 
 define test_primary_emissivity_with_theory(){
 
@@ -33,12 +33,18 @@ define test_primary_emissivity_with_theory(){
       
    }
    
+   % canonical emissivity (alpha disk with zero torque at rin, F ~ T^4 ~ r^-3 (1 - sqrt(rin/r))), averaged over the
+   % area of each zone, as the primary of a zone is the mean over its area (int F r dr = -1/r + 2/3 sqrt(rin) r^-1.5)
+   variable rin = kerr_rms(spin);
    variable r = 0.5*(dat.rlo+dat.rhi);
-   variable emis_canonical = r^(-3)*(1-1./sqrt(r/kerr_rms(spin)));
-   emis_canonical *= ener_flu[-5]/emis_canonical[-5];
+   variable integ_lo = -1./dat.rlo + 2./3*sqrt(rin)*dat.rlo^(-1.5);
+   variable integ_hi = -1./dat.rhi + 2./3*sqrt(rin)*dat.rhi^(-1.5);
+   variable emis_canonical = (integ_hi - integ_lo) / (0.5*(dat.rhi^2 - dat.rlo^2));
+   emis_canonical *= sum(ener_flu)/sum(emis_canonical);
 
    variable ratio = ener_flu/emis_canonical;
-
+   variable max_dev = max(abs(ratio/mean(ratio)-1));
+   vmessage("   max. deviation of the energy flux of the zones from SS73: %.2e", max_dev);
 
    if (qualifier_exists("plot")){
       xlog;ylog;
@@ -47,7 +53,7 @@ define test_primary_emissivity_with_theory(){
       %plot(r, ener_flu/emis_canonical);
    }
 
-   if (abs(mean(ratio)-1) > 1e-4){
+   if (max_dev > 1e-3){
       vmessage(" *** error: testEmissivityBbody() emissivity profile of the inital BBody component does not follow SS73");
       return EXIT_FAILURE;
    }
@@ -59,7 +65,7 @@ define test_primary_emissivity_with_theory(){
 
 define test_return_emissivity(){
 
-   variable fname = getFilenameStruct().emis.rrad;
+   variable fname = getFilenameStruct().disk.rrad;
 
    message(" return emissivity not yet implemented");
    

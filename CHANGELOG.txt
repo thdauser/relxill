@@ -1,5 +1,8 @@
 Version numbers (x.y.z): a change of the middle digit (y) means that a new model was added, or the output of the model changed (e.g., due to a bug fix), so updating is strongly recommended and previous fits may need to be re-done. A change of the last digit (z) denotes improvements that do not change the output of the model.
 
+[next version]
+ - multi-zone models (e.g., relxilllp, relxilllpCp, and the models with an ionization gradient): the radial integration points of the relativistic line profiles are now assigned to the radial zones in proportion to their area, such that each zone covers exactly its radial range (before, each point was assigned completely to one zone, which changed the area of a zone by up to 8%). This changes the model output by less than 2e-4 (for relxilllpCp by less than 1e-5).
+
 [2.10]
  - fixes a bug in the returning radiation of the lamp post and ring-like corona models (relxilllp, relxilllpCp, relxill_ring, relxill_ring_ecut) for switch_returnrad=1, which is the default. Due to a wrong angle weighting of the reflected xillver spectra, the flux of the returning radiation was overestimated by a factor of about 1.5. The effect is largest for a low height of the primary source and a high spin: the spectral shape changes by up to 6% (rms over all energy bins) for h=1.1 r_H and a=0.998, by 2-5% for h=2, and by less than 1% for h>=6. We recommend re-fitting results obtained for low source heights with this version. Models without returning radiation (switch_returnrad=0), as well as relline_lp and relconv_lp, are not affected.
  - if an environment variable of the model is set to a value different from its default, this value is now printed once (and again if it changes).
