@@ -92,7 +92,7 @@ The temperature is \f$T(r) = kT_\mathrm{bb}\, \left(F(r) / F(R_\mathrm{max})\rig
   \f$a = 0\f$ at large radii) and cooler for high spin (by 8-13% for \f$a = 0.998\f$).
 
 The figure compares the Novikov-Thorne profile with the alpha disk (created with
-`test/manual/disk_temperature_profile/plot_temperature_profiles.py`, which uses the same equations as the code):
+`test/manual/disk_temperature_profile/plot_temperature_profiles.sl`, which uses the same equations as the code):
 
 \image html disk_temperature_profiles.png "Temperature profiles normalized to the maximal temperature, for an inner edge
 at the ISCO (top), and the ratio of the Novikov-Thorne profile to the alpha disk (bottom)."
