@@ -36,25 +36,20 @@ define createOutputFiles(_ff, _par){
       set_par("*.logN",_par.logn);
    }
    
-   %% the model writes one set of files per evaluation, named by the boost value
-   %% (boost=1: total, boost=0: primary, boost=-1: reflect); for boost=0 only the
-   %% observed file is written, as the rest-frame one is identical to rframe-bbodyEmit
-   variable boost;
+   %% each evaluation writes the primary (rframe-bbodyEmit, obs-bbodyEmit) and returning (rframe-bbodyRet) spectra
+   %% of the zones, and for boost!=0 their reflected spectra, scaled with |boost| (rframe-reflect, obs-reflect, or
+   %% rframe-mirror-reflect, obs-mirror-reflect for the mirrored returning spectrum); the total spectrum of a zone is
+   %% the sum of its primary and reflected spectrum
+   set_par("*.boost",-1,0,-10,10);
 
    %% 1 creating the "mirror" files
    putenv("RELXILL_RRAD_BBODY_MIRRORED=1");
-   foreach boost ([1.0, 0.0, -1.0]){
-      set_par("*.boost",boost,0,-10,10);
-      () = eval_fun(1,2);
-   }
+   () = eval_fun(1,2);
 
    if (not qualifier_exists("only_mirrored")){
       %% 2 creating the "reflection" files
       putenv("RELXILL_RRAD_BBODY_MIRRORED=0");
-      foreach boost ([1.0, 0.0, -1.0]){
-         set_par("*.boost",boost,0,-10,10);
-         () = eval_fun(1,2);
-      }
+      () = eval_fun(1,2);
    }
 
 

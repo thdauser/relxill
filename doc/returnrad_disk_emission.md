@@ -50,12 +50,19 @@ each zone covers exactly its radial range \f$[r_\mathrm{lo}, r_\mathrm{hi}]\f$, 
 (see (3)). For `boost=0`, i.e., only the direct emission, the zones are not calculated.
 
 **Diagnostic output.** With `RELXILL_WRITE_FILES=1`, the spectra of the zones are written to
-`__relxillOutput-rrad-bbody-*.fits` (used by the scripts in `test/manual/returnrad/`). For these files, the direct
-emission of each zone is added for `boost` \f$\geq\f$ 0: its primary `specPri[izone]` in the rest frame
-(`rframe-*.fits`), and the primary convolved with the line profile of the zone in the observed frame (`obs-*.fits`).
-The sum of the observed direct emission of all zones agrees with the direct emission of the model to about 0.1% in the
-number of photons and the energy (see (3c)); in the Wien tail, it deviates by up to a few percent per energy bin (2.6%
-at 10 kTbb for \f$a = 0.998\f$ and an inclination of 40 deg).
+`__relxillOutput-rrad-bbody-*.fits` (used by the scripts in `test/manual/returnrad/`):
+
+- `rframe-bbodyEmit.fits`: the primary of each zone `specPri[izone]` (rest frame).
+- `obs-bbodyEmit.fits`: the primary of each zone, convolved with the line profile of the zone (observed). The sum
+  over all zones agrees with the direct emission of the model to about 0.1% in the number of photons and the energy
+  (see (3c)); in the Wien tail, it deviates by up to a few percent per energy bin (2.6% at 10 kTbb for
+  \f$a = 0.998\f$ and an inclination of 40 deg).
+- `rframe-bbodyRet.fits`: the returning radiation of each zone `specRet[izone]` (rest frame).
+- `rframe-reflect.fits` and `obs-reflect.fits` (only for `boost` \f$\neq\f$ 0): the reflected spectrum of each zone,
+  scaled with \f$|b|\f$, in the rest frame and observed (`rframe-mirror-reflect.fits` and `obs-mirror-reflect.fits`
+  for `RELXILL_RRAD_BBODY_MIRRORED=1`).
+
+The total spectrum of a zone is the sum of its primary and its reflected spectrum.
 
 \ref spec_multicolor_disk calculates the disk emission (with \ref get_disk_emission_zones_binned) without relativistic
 effects, for any given radial zones, and weights each zone with its flat-space ring area

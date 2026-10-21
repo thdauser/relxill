@@ -96,13 +96,14 @@ define getDiagnoseRelxillBBPlot(){
 
 define getDiagnoseMirrorBbody(){
    
-   variable plotTitle = sprintf("Observer, Mirror Refl: Combined (solid), Primary BBody (dashed), Reflected Mirror (dotted)  -- spin=%.3f",
+   variable plotTitle = sprintf("Observer, Mirror Refl: Reflected Mirror (solid), Primary BBody (dashed)  -- spin=%.3f",
 				spin);
 
 
    variable files = getFilenameStruct();
-   variable fnames  = [files.fobs.mirror,files.fobs.mirrorPrim,files.fobs.mirrorRefl];
-   variable iRframe = [0,0,0];
+   %% (the order is needed for plot_kerrbb, which is normalized to the second file, the primary spectrum)
+   variable fnames  = [files.fobs.mirrorRefl,files.fobs.primary];
+   variable iRframe = [0,0];
    
    variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec, plot_kerrbb);
    

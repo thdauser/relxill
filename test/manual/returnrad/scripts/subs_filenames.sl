@@ -11,18 +11,15 @@ define getFilenameStruct(){
    variable f_rframe = struct{
       specRet  = sprintf(fbase, "rframe-bbodyRet" ),      %% returning spectrum on the disk (rest-frame)
       specPri  = sprintf(fbase, "rframe-bbodyEmit" ),      %% primary BBody spectrum (rest-frame)
-      xillRefl = sprintf(fbase, "rframe-reflect" ),  %% reflected xillver spectrum, boost=-1 (rest-frame)
-      xillCombined = sprintf(fbase, "rframe-total" )  %% reflected+primary (bbodyEmit) spectrum, boost=1 (rest-frame)
+      xillRefl = sprintf(fbase, "rframe-reflect" )  %% reflected xillver spectrum, scaled with |boost| (rest-frame)
    }
    ;
    
+   %% observed spectra of the zones (convolved with the line profile of each zone)
    variable f_obs = struct{    
-      reflect = sprintf(fbase, "obs-reflect" ),
-      primary = sprintf(fbase, "obs-primary" ),
-      total = sprintf(fbase, "obs-total" ),
-      mirror  = sprintf(fbase, "obs-mirror-total" ),
-      mirrorPrim  = sprintf(fbase, "obs-mirror-primary" ),
-      mirrorRefl  = sprintf(fbase, "obs-mirror-reflect" )
+      reflect = sprintf(fbase, "obs-reflect" ),          %% reflected xillver spectrum, scaled with |boost|
+      primary = sprintf(fbase, "obs-bbodyEmit" ),        %% primary BBody spectrum (written for any boost)
+      mirrorRefl  = sprintf(fbase, "obs-mirror-reflect" )  %% mirrored returning spectrum, scaled with |boost|
    }
    ;
    
