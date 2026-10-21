@@ -415,7 +415,7 @@ TEST_CASE(" disk emission (2b, zones): radial ranges of the zones as in the rela
       CHECK(fabs(range_lo[ii] - dat->rlo[ii]) <= half_cell);
     }
     const double area_change = (range_hi[ii] * range_hi[ii] - range_lo[ii] * range_lo[ii])
-        / (dat->rhi[ii] * dat->rhi[ii] - dat->rlo[ii] * dat->rlo[ii]) - 1;
+                               / (dat->rhi[ii] * dat->rhi[ii] - dat->rlo[ii] * dat->rlo[ii]) - 1;
     max_area_change = fmax(max_area_change, fabs(area_change));
   }
   INFO("a = " << spin << ": max. change of the area of a zone: " << max_area_change);
