@@ -42,7 +42,7 @@ define eval_std_model(){
 %}}}
 
 define getDiagnoseRframePlot(){
-   variable plotTitle = sprintf("Restframe Plot of Return (solid) and Primary (dashed) -- spin=%.3f",
+   variable plotTitle = sprintf("Rest frame, per zone normalized to $N_\mathrm{xill}$ of the return: Return (solid), Primary (dashed) -- spin=%.3f"R,
 				spin);
 
 
@@ -50,7 +50,8 @@ define getDiagnoseRframePlot(){
    variable fnames  = [files.rframe.specRet,files.rframe.specPri];
    variable iRframe = [1,1];
    
-   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle);
+   %% the primary is about 1/(returning fraction) ~ 25 times above the returning spectrum
+   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec, ymax=1e5);
    
    pl.render(dir_plots+prefix+"diagnosePlotRframe.pdf");
    
@@ -59,7 +60,7 @@ define getDiagnoseRframePlot(){
 
 define getDiagnoseXillverPlot(){
    
-   variable plotTitle = sprintf("Rest-frame: Xillver (solid), and Xillver Prim (dashed) -- spin=%.3f",
+   variable plotTitle = sprintf("Rest frame, per zone normalized to $N_\mathrm{xill}$ of the return: Xillver (solid), Return (dashed) -- spin=%.3f"R,
 				spin);
 
    message("\n"+plotTitle);

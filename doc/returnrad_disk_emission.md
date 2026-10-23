@@ -98,6 +98,30 @@ the rest-frame version of `obs-reflect`.
 - Files written before 2026-10-23 are not comparable: `rframe-reflect` was the angle-mixed intensity for the observer
   inclination, `obs-mirror-reflect` and `obs-bbodyEmit` were a factor 4 lower.
 
+**Comparing the rest-frame spectra.** The rest-frame files are fluxes per unit area of each zone. The scripts in
+`test/manual/returnrad/` (`get_2d_data()` in `scripts/subs_returnrad.sl`) divide all rest-frame spectra of a zone by the
+same factor, the xillver normalization \f$N_\mathrm{xill}\f$ of the returning spectrum of this zone
+(`rframe-bbodyRet`, energy flux in 0.1-1000 keV relative to the reference illumination of the table, as defined in
+\ref returnrad_normalizations). This is the factor that scales the xillver table in the model, so the returning
+spectrum of every zone is at \f$N_\mathrm{xill} = 1\f$, i.e., at the reference illumination of the table: all zones
+are equally visible, the reflected spectrum shows the reflection of the table relative to its illumination, and the
+relative normalization of the primary, the returning, and the reflected (or mirrored) spectrum of a zone is kept. For
+the default parameters (40 deg, \f$b = -1\f$, energy flux in 0.1-1000 keV relative to the returning spectrum):
+
+- reflected: 0.36-0.46 per zone (\f$B_\mathrm{slab}\f$, see \ref xillver_angular_dependence), mirrored: 1;
+- primary: 1 / (returning fraction), i.e., 12-27 for most zones, 4.6 at \f$r = 1.5\f$, and 0.14 for the innermost
+  zone (\f$r = 1.3\f$): there, the temperature goes to zero at \f$R_\mathrm{in}\f$, so the zone emits little but is
+  illuminated by the hot neighbouring zones.
+
+As each zone has its own factor, the sum over the zones is not meaningful; the importance of each zone for the observed
+spectrum (including the relativistic effects) is shown by the observed files.
+
+Before 2026-10-23, the scripts weighted each zone with its area to sum up the zones, using a Kerr proper area (whose
+formula deviated from the equatorial Kerr metric by up to 18% at the ISCO) times a factor 1/4. This factor is the
+intensity-to-flux conversion of \ref xillver_angular_dependence (\f$\frac{1}{2}\cos i\f$ of the line profile, averaged
+over the observer inclination): it made the area-weighted rest-frame fluxes match the observed spectra, as long as a
+flux instead of an intensity was convolved. Both the area weighting and the factor were removed.
+
 \ref spec_multicolor_disk calculates the disk emission (with \ref get_disk_emission_zones_binned) without relativistic
 effects, for any given radial zones, and weights each zone with its flat-space ring area
 \f$\pi (r_\mathrm{hi}^2 - r_\mathrm{lo}^2)\f$. It is only used in the unit tests, for the comparison with the Xspec

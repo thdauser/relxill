@@ -1,51 +1,53 @@
 % -*- mode: slang; mode: fold -*-
 require("isisscripts");
-require("scripts/subs_basic_equations.sl");
+require("scripts/subs_filenames.sl");
 
 
-define get_2d_data(fname, spin){
-   vmessage(" Loading %s (assuming spin=%.3f)", fname, spin);
-      
-   variable fd = fits_read_table(fname);
-   
-   variable ii;
-   variable n = length(fd.rlo);
-   variable nener = length(fd.spec[0,*]);
-   
-   variable elo = fd.ener[0,*];
-   variable ehi = make_hi_grid(elo);
+%% xillver normalization N_xill of a spectrum (photons/bin), as defined for the xillver tables (Dauser+2016) and
+%% calculated in the model (calc_xillver_norm_from_primary_spectrum): energy flux in 0.1-1000 keV relative to the
+%% reference illumination of the table, 1e15/(4 pi)
+variable global_norm_xillver = 1e15 / 4.0 / PI;
 
-   variable emn = 0.5*(elo+ehi);
-
-   variable area_ring = calc_proper_area_ring_relxill(fd.rlo,fd.rhi,spin);
-
-   variable sumspec = elo*0;
-   _for ii(0,n-1){
-
-      if (qualifier("diskarea",0)==1){
-	 fd.spec[ii,*] *= area_ring[ii];
-      }
-      sumspec += fd.spec[ii,*];
-      
-   }   
-   
-   return struct{elo=elo, ehi=ehi, sumspec=sumspec, area_ring=area_ring, dat=fd};
+define get_xillver_norm(elo, ehi, spec){
+   variable keV2erg = 1.602177e-09;
+   variable ind = where(elo >= 0.1 and ehi <= 1000);
+   return sum(spec[ind] * 0.5*(elo[ind]+ehi[ind])) * 1e20 * keV2erg / global_norm_xillver;
 }
 
-variable global_norm_xillver = 1e15 / 4.0 / PI;  %% xillver norm, see Dauser+2016
 
-define get_xillver_norm(en,flux){
+%% loads the spectra of the zones (photons/bin; rest frame: per unit area of the zone)
+%% qualifier normfile: rest-frame returning spectra of the zones (rframe-bbodyRet); the spectrum of each zone is divided
+%%    by N_xill of the returning spectrum of this zone (as in the model, where N_xill(specRet) scales the xillver table),
+%%    i.e., all rest-frame spectra of a zone are normalized by the same factor,
+%%    such that their relative normalization is kept and all zones are equally visible (see "Diagnostic output files"
+%%    in doc/returnrad_disk_emission.md)
+define get_2d_data(fname){
+   vmessage(" Loading %s", fname);
 
-   variable ind = where(0.1 < en < 1000);
-   
-   variable norm_xill = 1e15 / 4.0 / PI;
-   variable keV2erg = 1.602177e-09;
-      
-   variable reflux = en * 1e20 * keV2erg * flux;
-   
-   variable norm_flux = sum(reflux[ind]);
-   
-   return norm_flux;
+   variable fd = fits_read_table(fname);
+   variable elo = fd.ener[0,*];
+   variable ehi = make_hi_grid(elo);
+   variable ii, n = length(fd.rlo);
+
+   variable normfile = qualifier("normfile", NULL);
+   if (normfile != NULL){
+      variable fnorm = fits_read_table(normfile);
+      if (length(fnorm.rlo) != n){
+         vmessage(" *** error: %s and %s have a different number of zones", fname, normfile);
+         exit(1);
+      }
+      _for ii(0,n-1){
+         fd.spec[ii,*] /= get_xillver_norm(elo, ehi, fnorm.spec[ii,*]);
+      }
+   }
+
+   %% sum of the zones (only meaningful for the observed spectra)
+   variable sumspec = elo*0;
+   _for ii(0,n-1){
+      sumspec += fd.spec[ii,*];
+   }
+
+   return struct{elo=elo, ehi=ehi, sumspec=sumspec, dat=fd};
 }
 
 
@@ -92,8 +94,8 @@ define get_2d_plot_data(dat,rframe,spin){
    variable pl = xfig_plot_new(13,10);
 
    pl.xlabel("Energy [keV]");
-   pl.ylabel("Energy Flux $\nu\;F_\nu$"R);
-   pl.world(0.1,250,1e-4,7000;loglog);
+   pl.ylabel(qualifier("ylabel", "Energy Flux $\nu\;F_\nu$"R));
+   pl.world(0.1,250,1e-4,qualifier("ymax",7000);loglog);
    
    variable ii, jj;
    variable m = length(dat);
@@ -135,8 +137,10 @@ define get_2d_plot_data(dat,rframe,spin){
 	    }            	    
 	 }
       }
-      vmessage(" summed energy flux: %.4e (frac: %.3f)", sum(dat[jj].sumspec*elo), 
-	      sum(dat[jj].sumspec*elo)/sum(dat[0].sumspec*elo));
+      if (not qualifier_exists("noSumSpec")){
+	 vmessage(" summed energy flux: %.4e (frac: %.3f)", sum(dat[jj].sumspec*elo),
+		  sum(dat[jj].sumspec*elo)/sum(dat[0].sumspec*elo));
+      }
    }
 
    if (not qualifier_exists("noSumSpec")){
@@ -163,18 +167,30 @@ define get_2d_plot_data(dat,rframe,spin){
    return pl;
 }
 
+%% rframe[jj]=1: rest-frame file, normalized per zone by N_xill of the rest-frame returning spectrum of the zone (sums over
+%% the zones are not meaningful then, use the qualifier noSumSpec)
 define get_2d_plot(fdat,rframe,spin){
 
    fdat = [fdat];
    variable m = length(fdat);
    
    variable dat = Struct_Type[m];
+   variable normfile = getFilenameStruct().rframe.specRet;
 
-   variable ii, jj;
+   variable jj;
    _for jj(0,m-1){
-      dat[jj] = get_2d_data(fdat[jj],spin;diskarea=rframe[jj]);
+      if (rframe[jj]==1){
+	 dat[jj] = get_2d_data(fdat[jj]; normfile=normfile);
+      } else {
+	 dat[jj] = get_2d_data(fdat[jj]);
+      }
    }
 
-   return get_2d_plot_data(dat, rframe, spin;;__qualifiers());
+   variable qual = __qualifiers();
+   if (any(rframe==1) && not qualifier_exists("ylabel")){
+      qual = struct_combine(qual, struct{ylabel="$\nu\;F_\nu$ / $N_\mathrm{xill}$(returning spectrum of the zone)"R});
+   }
+
+   return get_2d_plot_data(dat, rframe, spin;; qual);
 }
 

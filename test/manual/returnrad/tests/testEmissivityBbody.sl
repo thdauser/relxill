@@ -13,7 +13,7 @@ variable logn = 18.;  %% the only value allowed for relxillBB
 define test_primary_emissivity_with_theory(){
 
    variable fname = getFilenameStruct().rframe.specPri;
-   variable all_dat = get_2d_data(fname, spin);
+   variable all_dat = get_2d_data(fname);
    variable dat = all_dat.dat;
    
    variable jj, m = length(dat.rlo);

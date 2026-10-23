@@ -27,60 +27,51 @@ define get_fnames(){
 }
 
 
+%% rest-frame spectra of every 8th zone (solid) and of the reference data (dashed), normalized per zone by N_xill of
+%% the reference returning spectrum
 define plot_single_ref_data(dp, dp_ref){
 %%%%%
    variable pl = xfig_plot_new(17,10);
    
-   pl.world(0.01,250,1e-2,400;loglog);
+   pl.world(0.01,250,1e-4,7000;loglog);
    
    pl.xlabel("Energy [keV]");
-   pl.ylabel("Energy Flux $F_\nu$"R);
+   pl.ylabel("$\nu\;F_\nu$ / $N_\mathrm{xill}$(reference returning spectrum of the zone)"R);
 
-
-   % make life easier
-   variable de = dp.ehi-dp.elo;
    variable emn = 0.5*(dp.elo+dp.ehi);
+   variable efac = emn^2/(dp.ehi-dp.elo);
    variable emn_ref = 0.5*(dp_ref.elo+dp_ref.ehi);
-
-   variable efac = emn/(dp.ehi-dp.elo);
-   variable efac_ref = emn_ref/(dp_ref.ehi-dp_ref.elo);
-
-   variable pcol = "blue";
-   variable rcol = "red";
-   pl.plot(emn_ref,dp_ref.sumspec*efac_ref; color="black",width=3,line=1);
-   pl.plot(emn,dp.sumspec*efac_ref; color="red",width=3);
-
-   % xlog;ylog;
-   % yrange(0.1,400);
-   % plot(emn,dp.sumspec*efac);
-   % sleep(10);
-   
-%   pl.plot(emn,dr.sumspec; color=rcol,width=3,sym="point");   
-%   pl.plot(emn,dr.sumspec+dp.sumspec; color="black",width=3);
+   variable efac_ref = emn_ref^2/(dp_ref.ehi-dp_ref.elo);
 
    variable ii, n = length(dp.dat.spec[*,0]);
    variable mod_fac=8;
-   variable flu;
    ccount = 0;
    _for ii(0,n-1){
-      
-      if (pl!=NULL){
-	 if (ii mod mod_fac == 0) {
-	    pl.plot(emn,dp_ref.dat.spec[ii,*]*efac_ref;color="black",line=1);
-	    pl.plot(emn,dp.dat.spec[ii,*]*efac;color=get_col(),line=0);
-%	    flu = sum(dp.dat.spec[ii,*]*emn);
-%	    pl.add_object(xfig_new_text(sprintf("$r = %.2f\,r_\mathrm{g} - F=%.2e$"R,
-%						0.5*(dp.dat.rlo[ii]+dp.dat.rhi[ii]),flu);
-%					color=get_col(;same)),
-	    pl.add_object(xfig_new_text(sprintf("$r = %.2f\,r_\mathrm{g}$"R,
-						0.5*(dp.dat.rlo[ii]+dp.dat.rhi[ii]));
-					color=get_col(;same)),
-			  .78,0.95,-0.5,-0.5+1.1*ccount;world0);
-	 }            	    
+      if (ii mod mod_fac == 0) {
+	 pl.plot(emn_ref,dp_ref.dat.spec[ii,*]*efac_ref;color="black",line=1);
+	 pl.plot(emn,dp.dat.spec[ii,*]*efac;color=get_col(),line=0);
+	 pl.add_object(xfig_new_text(sprintf("$r = %.2f\,r_\mathrm{g}$"R,
+					     0.5*(dp.dat.rlo[ii]+dp.dat.rhi[ii]));
+				     color=get_col(;same)),
+		       .78,0.95,-0.5,-0.5+1.1*ccount;world0);
       }
    }
 
    return pl;
+}
+
+
+%% every zone agrees with the reference data
+define is_approx_equal_zones(d, d_ref, prec){
+   variable ii, n = length(d_ref.dat.rlo);
+   if (length(d.dat.rlo) != n) return 0;
+   _for ii(0,n-1){
+      if (is_approx_equal(d.dat.spec[ii,*], d_ref.dat.spec[ii,*], prec) == 0){
+	 vmessage("   zone %d (r = %.2f-%.2f) deviates from the reference data", ii, d.dat.rlo[ii], d.dat.rhi[ii]);
+	 return 0;
+      }
+   }
+   return 1;
 }
 
 
@@ -90,18 +81,19 @@ define testRframeReturnradRefdata(){
 
    variable fnames = get_fnames();
 
-   variable dp = get_2d_data(fnames.prim,spin;diskarea=1);
-   variable dr = get_2d_data(fnames.refl,spin;diskarea=1);
-
+   %% the rest-frame spectra of the zones, all normalized per zone by N_xill of the reference returning spectrum of the zone (the
+   %% same factor for the test and the reference data, so any change of the normalization is detected)
    variable dir_ref = "refdata/";
-   variable dp_ref = get_2d_data(dir_ref+fnames.prim,spin;diskarea=1);
-   variable dr_ref = get_2d_data(dir_ref+fnames.refl,spin;diskarea=1);
+   variable normfile = dir_ref+fnames.refl;
+   variable dp = get_2d_data(fnames.prim; normfile=normfile);
+   variable dr = get_2d_data(fnames.refl; normfile=normfile);
 
+   variable dp_ref = get_2d_data(dir_ref+fnames.prim; normfile=normfile);
+   variable dr_ref = get_2d_data(dir_ref+fnames.refl; normfile=normfile);
 
-   
    variable prec = 1e-3;
-   variable isPrimaryApproxEq = is_approx_equal(dp.sumspec, dp_ref.sumspec, prec );
-   variable isReturnApproxEq = is_approx_equal(dr.sumspec, dr_ref.sumspec, prec );
+   variable isPrimaryApproxEq = is_approx_equal_zones(dp, dp_ref, prec);
+   variable isReturnApproxEq = is_approx_equal_zones(dr, dr_ref, prec);
 
    variable status = EXIT_SUCCESS;
    if (isPrimaryApproxEq==0 || isReturnApproxEq==0) {

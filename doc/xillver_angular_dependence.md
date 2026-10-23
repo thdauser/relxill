@@ -45,6 +45,19 @@ of the table (the illumination is normalized to \f$n\xi/4\pi\f$). Only ratios wi
 observer, i.e., it carries the conversion from intensity to observed flux. Applying the slab factor before the
 convolution would count it twice (see the comment in Garcia et al. 2014, Eq. 19).
 
+This can be seen directly in the normalization of the line profiles of `relxillBB` (not renormalized, see below):
+at large radii, where the relativistic effects are small, the number of photons of the line profile of a zone,
+\f$\sum_E P_i\f$, is \f$\frac{1}{2}\cos i\f$ times the (flat) area of the zone, i.e., exactly the slab factor of the
+observer inclination \f$i\f$ (`relxillBB`, outermost zone at \f$r \approx 700\f$):
+
+| inclination [deg]                  | 5     | 20    | 40    | 60    | 80    |
+|------------------------------------|-------|-------|-------|-------|-------|
+| \f$\frac{1}{2}\cos i\f$            | 0.498 | 0.470 | 0.383 | 0.250 | 0.087 |
+| \f$\sum_E P_i\f$ / area of the zone | 0.497 | 0.468 | 0.382 | 0.250 | 0.088 |
+
+Averaged over the observer inclination (uniform in \f$\cos i\f$), this is 0.25 again. Closer to the black hole, the
+relativistic effects reduce the number of observed photons (e.g., to 0.10 at \f$r \approx 3.4\f$ for 40 deg).
+
 For the relativistic models whose line profile is renormalized to 1 (`relxill` with a broken power-law emissivity,
 `renorm_relline_profile()`), the renormalization removes the absolute conversion of the profile. It is therefore
 re-applied explicitly with the slab factor \f$\frac{1}{2}\cos i_\mathrm{obs}\f$ of the observer inclination. The

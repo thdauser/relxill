@@ -24,7 +24,6 @@ model-dev:
 	make model-build-target DEV=dev
 
 model-build-target:
-	make clean
 	make install-source-files
 
 	$(eval MODEL_VERSION := `$(BIN_DIR)/test_sta version`)
@@ -45,7 +44,8 @@ model-tarball:
 
 model-compile:
 	mkdir -p $(MODEL_BUILD_DIR)
-	rm -f $(MODEL_BUILD_DIR)/*
+	# only remove the files of the previous model build, not the sub-directories (e.g., build/doc of "make doc")
+	find $(MODEL_BUILD_DIR) -maxdepth 1 -type f -delete
 
 	cp $(TARFILE) $(MODEL_BUILD_DIR)/
 	cd $(MODEL_BUILD_DIR) && tar xfvz $(TARFILE)

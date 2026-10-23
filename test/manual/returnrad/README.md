@@ -10,6 +10,10 @@ This readme describes the manual tests and plots for returning thermal radiation
 - The main **diagnose plots** are called in `plot_zones_diagnose_spectra.sl`
 - Further smaller plot scripts are ther other `plot_*.sl` scripts, which rely on calling the model; some may be broken by changes to the output files in relxillBB
 - all plots are stored in `plots/`
+- the rest-frame plots show the spectra of the zones normalized per zone by N_xill of the returning spectrum of the zone,
+  as for the xillver table in the model (all zones equally visible, relative normalization of primary, returning, and
+  reflected spectrum kept); the importance of the
+  zones is shown by the observed plots (see "Diagnostic output files" in `doc/returnrad_disk_emission.md`)
 
 # Output files
 
