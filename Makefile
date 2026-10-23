@@ -109,8 +109,11 @@ clean-test:
 	rm -f __*dat test*dat
 
 .PHONY: doc doc-clean
+# doxygen >= 1.10 is needed to render markup (`code`, *em*) in section titles
+DOXYGEN ?= doxygen
+
 doc:
-	doxygen doxy.config
+	$(DOXYGEN) doxy.config
 	@echo "\n  --> Doxygen HTML written to build/doc/html/index.html\n"
 
 doc-clean:

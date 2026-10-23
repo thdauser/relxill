@@ -74,7 +74,7 @@ models.
 For all profiles, the temperature is evaluated at each radial point. A single temperature per zone (at its mean radius,
 `get_temperature_profile_disk_zones()`) is only written to the diagnostic output.
 
-### Alpha-disk profile (zero torque at the inner edge; default, `RELXILL_RRAD_BBODY_TPROFILE=1`)
+### Alpha-disk profile (zero torque at the inner edge; default, RELXILL_RRAD_BBODY_TPROFILE=1)
 
 The temperature profile of a standard alpha disk with zero torque at the inner edge (`disk_Tprofile_alpha()`):
 
@@ -95,7 +95,7 @@ T(r) \;=\; K \left(\frac{r}{R_\mathrm{in}}\right)^{-3/4} \left(1 - \sqrt{\frac{R
 In the code, this profile is called `TPROFILE_ALPHA`. The Xspec model `ezdiskbb` is only used as the reference in the
 unit tests (and in the names of their reference files).
 
-### diskbb profile (for testing, `RELXILL_RRAD_BBODY_TPROFILE=2`)
+### diskbb profile (for testing, RELXILL_RRAD_BBODY_TPROFILE=2)
 
 The temperature profile of the Xspec model `diskbb` (`disk_Tprofile_diskbb()`, `TPROFILE_DISKBB`):
 
@@ -106,7 +106,7 @@ T(r) \;=\; kT_\mathrm{bb} \left(\frac{r}{R_\mathrm{in}}\right)^{-3/4}
 with \f$kT_\mathrm{bb}\f$ the temperature at the inner edge \f$R_\mathrm{in}\f$ of the disk, as the parameter `Tin`
 of `diskbb`.
 
-### Novikov-Thorne profile (`RELXILL_RRAD_BBODY_TPROFILE=3`)
+### Novikov-Thorne profile (RELXILL_RRAD_BBODY_TPROFILE=3)
 
 The temperature profile of a relativistic thin disk around a Kerr black hole with zero torque at the inner edge
 (Novikov & Thorne 1973; `disk_Tprofile_novikov_thorne()`, `TPROFILE_NOVIKOV_THORNE`), as used by the Xspec model
@@ -136,8 +136,7 @@ The temperature is \f$T(r) = kT_\mathrm{bb}\, \left(F(r) / F(R_\mathrm{max})\rig
 The figure compares the Novikov-Thorne profile with the alpha disk (created with
 `test/manual/disk_temperature_profile/plot_temperature_profiles.sl`, which uses the same equations as the code):
 
-\image html disk_temperature_profiles.png "Temperature profiles normalized to the maximal temperature, for an inner edge
-at the ISCO (top), and the ratio of the Novikov-Thorne profile to the alpha disk (bottom)."
+\image html disk_temperature_profiles.png "Temperature profiles normalized to the maximal temperature, for an inner edge at the ISCO (top), and the ratio of the Novikov-Thorne profile to the alpha disk (bottom)."
 
 With the Novikov-Thorne profile, the full model agrees with the relativistic Xspec model `kerrbb` without any free
 parameter, see (2b).

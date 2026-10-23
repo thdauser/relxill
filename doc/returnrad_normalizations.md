@@ -67,7 +67,7 @@ comb -> comb   [label="  x |boost|"];
 Two separate things set the reflected flux, and keeping them apart is what
 makes the scheme correct.
 
-### The table fixes the *relative* normalization between the primary and the reflected spectrum
+### The table fixes the relative normalization between the primary and the reflected spectrum
 
 The xillver tables are computed and normalized according to the integral over
 the primary (illuminating) spectrum defined in the Appendix of
@@ -80,7 +80,7 @@ over the xillver normalization band (`EMIN_XILLVER_NORMALIZATION` = 0.1 keV to `
 = 10^{-20}\, \frac{n \xi}{4 \pi} = 10^{-20}\, \frac{10^{15}}{4 \pi} \f$. The last part follows as internally in
 relxill the xillver spectra are re-normalized to a density of \f$n=10^{15}\f$ and ionization \f$\xi=1\f$.
 
-### The returning radiation sets the *absolute* normalization of the reflected spectrum
+### The returning radiation sets the absolute normalization of the reflected spectrum
 
 To calculate the absolute flux of the reflected spectrum, the xillver spectra (from the table)
 must be scaled by the returning radiation flux (`returnSpec->specRet[izone]`).
@@ -185,7 +185,7 @@ When calling \ref calc_xillver_norm_from_primary_spectrum two details are easy t
 - The argument is the returning spectrum `specRet[izone]` (what *hits* the disk), never the primary emitted spectrum
   `specPri`  (what *leaves* it).
 
-### The angle weighting is *not* a flux normalization
+### The angle weighting is not a flux normalization
 
 \ref calc_xillver_angdep weights the table inclinations with
 `rel_profile->rel_cosne->dist[izone]` (normalized to sum = 1) and returns the
