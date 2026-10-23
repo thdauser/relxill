@@ -116,7 +116,7 @@ In `test/manual/returnrad` (ISIS, `make test` and `make plot`):
 - **`testEmissivityBbody`:** checks item 4 against an analytic result. The energy flux of each zone agrees with SS73
   averaged over the area of the zone to 5.8e-4.
 - **`testRframeReturnradRefdata`:** regression test of the summed `specPri` and `specRet` against the newly generated
-  reference data (now tracked in git; the March data are kept locally in `refdata/backup_2026-03-18/`).
+  reference data (now tracked in git)
 - **Diagnose plots:** visual check of item 6. Checked by hand, the 50 zone primaries (`obs-bbodyEmit.fits`) add up to
   the direct spectrum of the model to 0.06% in photons and 0.13% in energy.
 
