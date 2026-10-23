@@ -7,9 +7,11 @@ set(UNIT_TEST_FILES_CPP
         tests-returnrad.cpp test-stdfunctions.cpp test-xilltab.cpp
         test-rellp.cpp test-relxill.cpp tests-iongrad.cpp
         tests-extended-source.cpp
-        tests-bbody-returnrad.cpp tests-alpha-model.cpp tests-caching.cpp
+        tests-alpha-model.cpp tests-caching.cpp
         test-jedsad.cpp
-        tests-returnrad-bbody.cpp
+        tests-rebin.cpp
+        tests-returnrad-bbody-spectra.cpp tests-returnrad-bbody-diskemission.cpp
+        tests-returnrad-bbody-xillver.cpp tests-returnrad-bbody-model.cpp
 )
 
 set(EXEC_FILES_CPP tests)

@@ -16,6 +16,11 @@
     Copyright 2022 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+// Unit tests of the direct disk emission of relxillBB / relxillBB_NS (temperature profiles, radial zones, kernel of
+// the direct emission, and the consistency of direct and reflected radiation), partly compared to the Xspec models
+// diskbb, ezdiskbb and kerrbb (reference files in test/unit/refdata/). See doc/returnrad_disk_emission.md.
+// Run with bin/tests "[diskemission]".
+
 #include "catch2/catch_amalgamated.hpp"
 #include "LocalModel.h"
 #include "XspecSpectrum.h"
@@ -36,28 +41,7 @@ extern "C" {
 #warning: RELXILL_SOURCE_DIR is not defined
 #endif
 
-#define PREC 1e-6
 #define REFDATA_DIR "test/unit/refdata/"  // relativ to RELXILL_SOURCE_DIR (set when compiling)
-
-
-// Function definitions
-static double *integSpecArea(double **spec, int n_ener, double spin, const returnSpec2D *returnSpec, int *status);
-
-static double *integSpecArea(double **spec, int n_ener, double spin, const returnSpec2D *returnSpec, int *status) {
-  auto *areaIntegSpec = (double *) malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(areaIntegSpec, status, areaIntegSpec)
-
-  for (int jj = 0; jj < n_ener; jj++) {
-    areaIntegSpec[jj] = 0.0;
-  }
-  for (int ii = 0; ii < returnSpec->nrad; ii++) {
-    double prop_area = calc_proper_area_ring(returnSpec->rlo[ii], returnSpec->rhi[ii], spin);
-    for (int jj = 0; jj < n_ener; jj++) {
-      areaIntegSpec[jj] += spec[ii][jj] * prop_area;
-    }
-  }
-  return areaIntegSpec;
-}
 
 
 // reference file with the diskbb model of Xspec (column "diskbb") for the given Tin, on the energy grid of the
@@ -225,62 +209,6 @@ static double shape_deviation_relxillbb_ns_disk_emission(const char *tprofile,
   return max_shape_deviation(ener, spec.flux, spec_ref, n_ener, emin, emax);
 }
 
-static int checkTemperatureProfile(double *temperature, int n) {
-  if (temperature[0] < 0.0) {
-    printf("\n *** error: lowest bin of temperature profile is %f  and NOT >=0 as expected \n",
-           temperature[0]);
-    return EXIT_FAILURE;
-  }
-  return EXIT_SUCCESS;
-}
-
-void fitsAddKeyRadialZone(char *fname, const returnSpec2D *returnSpec, int izone, int *status) {
-  fitsfile *fptr = nullptr;
-  fits_open_table(&fptr, fname, READWRITE, status);
-
-  double rlo = returnSpec->rlo[izone];
-  double rhi = returnSpec->rhi[izone];
-  fits_update_key(fptr, TDOUBLE, "rlo", &(rlo), "radial zone grid", status);
-  fits_update_key(fptr, TDOUBLE, "rhi", &(rhi), "radial zone grid", status);
-  fits_update_key(fptr, TINT, "izone", &izone, "radial zone grid", status);
-
-  fits_close_file(fptr, status);
-
-
-  //relxill_check_fits_error(status);
-}
-
-
-//  ======= TEST FUNCTIONS ========   //
-
-// ========== //
-TEST_CASE (
-
-" Check Temperature Profile"
-,
-"[bbret]"
-)
-{
-
-  int status = EXIT_SUCCESS;
-
-  std::vector<double> spinArray = { 0.85,0.851,0.86,0.87,0.89,0.9 };
-
-  double Rout = 1000;
-
-  returningFractions* dat = nullptr;
-  for (double spin : spinArray){
-    double Rin = kerr_rms(spin);
-    dat = get_rrad_fractions(spin, Rin, Rout, &status);
-
-   VecD temperature = get_temperature_profile_disk_zones(dat, Rin, 1.0, &status);
-
-    REQUIRE( checkTemperatureProfile(temperature.data(), dat->nrad) == EXIT_SUCCESS);
-
-    delete_returningFractions(&dat);
-  }
-}
-
 // ======= DISK EMISSION: temperature profiles and radial zones (see doc/returnrad_disk_emission.md) ======= //
 // (1)  temperature profile and normalization: multicolor disk on a fine radial grid vs. the Xspec models
 // (2a) kernel of the direct disk emission vs. the line profiles of the zones (code internal)
@@ -312,8 +240,12 @@ static const DiskProfileCase disk_profile_diskbb{
 // its normalization changes with kT as for the Xspec model. The outer radius (1e4 Rin) is large enough not to affect
 // the band 0.1-10 kT. For the alpha disk, the remaining deviation of ~0.2% (at 10 kT) is due to the radius of the
 // maximal temperature, 1.5^(4/5) Rin instead of 49/36 Rin (for which the deviation would be 0.01%).
-TEST_CASE(" disk emission (1): temperature profile on a fine radial grid vs. Xspec diskbb and ezdiskbb ",
-          "[bbret][diskemission]") {
+TEST_CASE (
+"disk emission (1): temperature profile on a fine radial grid vs. Xspec diskbb and ezdiskbb"
+,
+"[rrad-bbody][diskemission]"
+)
+ {
   const auto profile = GENERATE(disk_profile_alpha, disk_profile_diskbb);
 
   // grid of the reference files
@@ -352,8 +284,12 @@ TEST_CASE(" disk emission (1): temperature profile on a fine radial grid vs. Xsp
 // (calc_relline_profile_radial_line_energy, see get_disk_emission_kernel). With a line energy of 1 keV and the same
 // weight for all radial points, this profile is identical to the sum of the line profiles of the zones of the model,
 // and a constant line energy E0 shifts it by the factor E0 in energy (without changing the number of photons).
-TEST_CASE(" disk emission (2a): kernel, i.e., line profile with a line energy for each radial point ",
-          "[bbret][diskemission]") {
+TEST_CASE (
+"disk emission (2a): kernel, i.e., line profile with a line energy for each radial point"
+,
+"[rrad-bbody][diskemission]"
+)
+ {
   LocalModel lmod(ModelName::relxillBB_NS);
   lmod.set_par(XPar::a, 0.998);
   relParam *rel_param = get_rel_params(lmod.get_model_params());
@@ -440,8 +376,12 @@ TEST_CASE(" disk emission (2a): kernel, i.e., line profile with a line energy fo
 // on 400 radial zones deviates by the same amount). Lower energies are not compared, as the outer radius of the model
 // (1000 Rg) truncates the disk emission there (16% at 0.2 kTbb for a=0). The alpha-disk profile (default) deviates by
 // 2.5% or more, i.e., the test is sensitive to the temperature profile.
-TEST_CASE(" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb ",
-          "[bbret][diskemission][kerrbb]") {
+TEST_CASE (
+"disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb"
+,
+"[rrad-bbody][diskemission][kerrbb]"
+)
+ {
   const double spin = GENERATE(0.0, 0.904277, 0.997676); // on the spin grid of kerrbb (no interpolation in spin)
   const double incl = GENERATE(30.0, 60.0);
   constexpr double kTbb = 1.0; // maximal temperature of the disk of the kerrbb reference spectra
@@ -569,8 +509,12 @@ static std::array<double, 2> photons_and_energy(const double *ener,
 // (3a) The primary of each zone (specPri) is the emission of the radial points of the line profiles in the zone
 // (identical calculation), and all zones together, weighted with their area, emit the same number of photons and the
 // same energy as the disk on a fine radial grid (5000 logarithmic zones).
-TEST_CASE(" disk emission (3a): primary of the zones is the emission of the radial points of the line profiles ",
-          "[bbret][diskemission]") {
+TEST_CASE (
+"disk emission (3a): primary of the zones is the emission of the radial points of the line profiles"
+,
+"[rrad-bbody][diskemission]"
+)
+ {
   const auto pcase = GENERATE_PRIMARY_CASES;
   setenv("RELXILL_RRAD_BBODY_TPROFILE", pcase.env_tprofile, 1);
   constexpr double kT = 1.0;
@@ -641,8 +585,12 @@ TEST_CASE(" disk emission (3a): primary of the zones is the emission of the radi
 
 // ========== //
 // (3b) The returning radiation of each zone (specRet) is the returning radiation of exactly the primary of (3a).
-TEST_CASE(" disk emission (3b): returning radiation of the zones is calculated from this primary ",
-          "[bbret][diskemission]") {
+TEST_CASE (
+"disk emission (3b): returning radiation of the zones is calculated from this primary"
+,
+"[rrad-bbody][diskemission]"
+)
+ {
   const auto pcase = GENERATE_PRIMARY_CASES;
   setenv("RELXILL_RRAD_BBODY_TPROFILE", pcase.env_tprofile, 1);
   constexpr double kT = 1.0;
@@ -659,8 +607,6 @@ TEST_CASE(" disk emission (3b): returning radiation of the zones is calculated f
   const VecD_2D primary_points =
       calc_primary_zones_radial_points(ener, n_ener, dat, rin, rout, kT, pcase.tprofile, &status);
   const VecD_2D returnrad_points = get_returnrad_specs(ener, n_ener, dat, primary_points, norder, &status);
-
-  REQUIRE(status == EXIT_SUCCESS);
 
   REQUIRE(status == EXIT_SUCCESS);
 
@@ -694,8 +640,12 @@ TEST_CASE(" disk emission (3b): returning radiation of the zones is calculated f
 // requires that the line profiles of the zones cover exactly the area of the zones, as the returning radiation
 // (calc_relline_profile splits the cells of the radial points at the zone boundaries; assigning each cell completely
 // to one zone instead changes the area of a zone by up to 4%, which results in a deviation of 0.4-1.2% here).
-TEST_CASE(" disk emission (3c): direct emission of the model vs. the primary of the zones observed ",
-          "[bbret][diskemission]") {
+TEST_CASE (
+"disk emission (3c): direct emission of the model vs. the primary of the zones observed"
+,
+"[rrad-bbody][diskemission]"
+)
+ {
   const auto pcase = GENERATE_PRIMARY_CASES;
   setenv("RELXILL_RRAD_BBODY_TPROFILE", pcase.env_tprofile, 1);
   constexpr double kTbb = 1.0;
@@ -762,130 +712,4 @@ TEST_CASE(" disk emission (3c): direct emission of the model vs. the primary of 
   delete_returnSpec2D(&return_spec);
   delete_rel_params(rel_param);
   delete xill_param;
-}
-
-// ========== //
-TEST_CASE (
-
-" Return Radiation Black Body Spectrum"
-,
-"[bbret]"
-)
-{
-
-  int status = EXIT_SUCCESS;
-
-  /* create an energy grid */
-  int n_ener = 200;
-  double ener[n_ener + 1];
-  get_log_grid(ener, n_ener + 1, 0.01, 50.0);
-
-  /* call the relline model */
-  double photar[n_ener];
-  double photar0[n_ener];
-
-  double Tin = 1.0;
-  double spin = 0.998; // simply determines the radial grid here
-
-  double Rin = kerr_rms(spin);
-  double Rout = RMAX_RELRET;
-
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, Tin, Rin, Rout, spin, &status);
-
-  assert(returnSpec != nullptr);
-
-  double* photar_areaInteg = integSpecArea(returnSpec->specRet, n_ener, spin, returnSpec, &status);
-  double* photar0_areaInteg = integSpecArea(returnSpec->specPri, n_ener, spin, returnSpec, &status);
-
-  fits_rr_write_2Dspec("!testrr-rframe-rr-bbody.fits", returnSpec->specRet, ener, n_ener,
-                       returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, &status);
-  fits_rr_write_2Dspec("!testrr-rframe-prim-bbody.fits", returnSpec->specPri, ener, n_ener,
-                       returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, &status);
-
-  free(photar_areaInteg);
-  free(photar0_areaInteg);
-
-  delete_returnSpec2D(&returnSpec);
-
-}
-
-TEST_CASE (
-
-" Check loading of the xillverNS table for relxillBB_NS"
-,
-"[bbret]"
-)
-{
-  int status = EXIT_SUCCESS;
-
-  LocalModel lmod(ModelName::relxillBB_NS);
-  auto xill_params = lmod.xill_params();
-  auto xill_table_params = get_xilltab_param(xill_params, &status);
-  auto xill_spec = get_xillver_spectra_table(xill_table_params, &status);
-
-  for (size_t ii = 0; ii < xill_spec->n_incl; ii++)
-  {
-    REQUIRE(calcSum(xill_spec->flu[ii], xill_spec->n_ener) > 1e-8);
-  }
-
-  free_xill_spec(xill_spec);
-  free(xill_table_params);
-}
-
-
-
-
-TEST_CASE (
-
-"Check if Second Evaluation returns the identical results"
-,
-"[bbret]"
-)
-{
-  LocalModel lmod(ModelName::relxillBB);
-
-  DefaultSpec default_spec1{};
-  XspecSpectrum spec1 = default_spec1.get_xspec_spectrum();
-  lmod.eval_model(spec1);
-
-  DefaultSpec default_spec0{};
-  XspecSpectrum spec0 = default_spec0.get_xspec_spectrum();
-  lmod.eval_model(spec0);
-
-  auto sum0 = calcSum(spec0.flux,spec0.num_flux_bins());
-  REQUIRE( std::isnormal (sum0));
-  auto sum1 = calcSum(spec1.flux,spec0.num_flux_bins());
-    REQUIRE(fabs(sum0 - sum1) < PREC);
-}
-
-static void test_boost_parameter(LocalModel &lmod) {
-  DefaultSpec default_spec{};
-  XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-  lmod.set_par(XPar::boost, 1);
-  lmod.eval_model(spec);
-  double sum_total = calcSum(spec.flux, spec.num_flux_bins());
-  REQUIRE(sum_total > 1e-8);
-
-  lmod.set_par(XPar::boost, -1);
-  lmod.eval_model(spec);
-  double sum_refl = calcSum(spec.flux, spec.num_flux_bins());
-  REQUIRE(sum_refl > 1e-8);
-
-  lmod.set_par(XPar::boost, 0);
-  lmod.eval_model(spec);
-  double sum_direct = calcSum(spec.flux, spec.num_flux_bins());
-  REQUIRE(sum_direct > 1e-8);
-
-
-  // check that boost parameter works: refl+direct has to give total flux
-  INFO(" total: " << sum_total << " direct: " << sum_direct << " refl: " << sum_refl
-    << " (diff: " << fabs(sum_total - sum_direct - sum_refl) / sum_total << ")");
-  REQUIRE(fabs(sum_total - sum_direct - sum_refl) / sum_total < 1e-4);
-}
-
-
-TEST_CASE(" relxillBB boost parameter: direct + reflected = total ", "[relxillBB]") {
-  LocalModel lmod(ModelName::relxillBB);
-  test_boost_parameter(lmod);
 }

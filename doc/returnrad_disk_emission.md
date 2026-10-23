@@ -295,23 +295,23 @@ similar: it changes them by at most \f$2 \times 10^{-4}\f$ (`relxilllpCp` with 1
 
 ## Unit tests
 
-In `test/unit/tests-bbody-returnrad.cpp`; all disk emission tests run with `bin/tests "[diskemission]"`:
+In `test/unit/tests-returnrad-bbody-diskemission.cpp`; all disk emission tests run with `bin/tests "[diskemission]"`:
 
-- **(1)** *" disk emission (1): temperature profile on a fine radial grid vs. Xspec diskbb and ezdiskbb "*: shape
+- **(1)** *"disk emission (1): temperature profile on a fine radial grid vs. Xspec diskbb and ezdiskbb"*: shape
   deviation below 0.3% (alpha disk) and 0.05% (diskbb), and normalization independent of kTbb to 0.1%.
-- **(2a)** *" disk emission (2a): kernel, i.e., line profile with a line energy for each radial point "*: identical to
+- **(2a)** *"disk emission (2a): kernel, i.e., line profile with a line energy for each radial point"*: identical to
   the sum of the line profiles of the zones (to \f$10^{-10}\f$), and shifted by a constant line energy of 0.5 keV
   (number of photons and mean of \f$\ln E\f$ to \f$10^{-3}\f$).
-- **(2b)** *" disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb "*
+- **(2b)** *"disk emission (2b): full relxillBB_NS model with the Novikov-Thorne profile vs. Xspec kerrbb"*
   (`[kerrbb]`): for \f$a\f$ = 0, 0.904277, 0.997676 (on the spin grid of `kerrbb`) and an inclination of 30 and 60
   deg, the shape deviation of the Novikov-Thorne profile is below 2% in 0.5-10 kTbb, and the one of the alpha disk
   above 2%.
-- **(3a)** *" disk emission (3a): primary of the zones is the emission of the radial points of the line profiles "*:
+- **(3a)** *"disk emission (3a): primary of the zones is the emission of the radial points of the line profiles"*:
   `specPri` of each zone identical to the emission of the radial points binned into the zone (to \f$10^{-10}\f$), and
   all zones together vs. the disk on a fine radial grid to 0.1% (photons and energy).
-- **(3b)** *" disk emission (3b): returning radiation of the zones is calculated from this primary "*: `specRet`
+- **(3b)** *"disk emission (3b): returning radiation of the zones is calculated from this primary"*: `specRet`
   identical to the returning radiation of this primary (to \f$10^{-10}\f$).
-- **(3c)** *" disk emission (3c): direct emission of the model vs. the primary of the zones observed "*: number of
+- **(3c)** *"disk emission (3c): direct emission of the model vs. the primary of the zones observed"*: number of
   photons and energy flux in 0.1-1000 keV to 0.3%.
 
 The tests (3) run for the alpha disk and the Novikov-Thorne profile, for \f$a\f$ = 0 and 0.998.

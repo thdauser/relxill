@@ -1,4 +1,4 @@
-% creates reference files with the diskbb and ezdiskbb models of Xspec for the unit tests in tests-bbody-returnrad.cpp
+% creates reference files with the diskbb and ezdiskbb models of Xspec for the unit tests in tests-returnrad-bbody-diskemission.cpp
 % (energy grid as in the unit tests: 50 log bins from 0.01 to 20 keV)
 require("isisscripts");
 require("xspec");

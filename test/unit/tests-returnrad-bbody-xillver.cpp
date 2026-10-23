@@ -16,21 +16,20 @@ This file is part of the RELXILL model code.
     Copyright 2025 Thomas Dauser, Remeis Observatory & ECAP
 */
 
+
+// Unit tests of the reflection of the returning thermal radiation (relxillBB, relxillBB_NS): loading of the
+// xillverRTR (radial zones) and xillverNS tables, and the angle weighting and normalization of the xillver spectra of
+// the zones (see doc/returnrad_normalizations.md). Run with bin/tests "[rrad-bbody][xillver]".
+
 #include "catch2/catch_amalgamated.hpp"
 #include "LocalModel.h"
-#include "XspecSpectrum.h"
-#include "common-functions.h"
 #include "Xillspec.h"
-#include "Relphysics.h"
-#include "Relreturn_Datastruct.h"
-#include "Relreturn_Table.h"
-#include "Rebin.h"
+#include "Xilltable_handling.h"
 #include "Relreturn_BlackBody.h"
-#include "Rellp.h"
 #include "Relbase.h"
 #include "Relprofile.h"
-#include "Relxill_errorhandling.h"
-
+#include "Rebin.h"
+#include "common-functions.h"
 #include "writeOutfiles.h"
 
 extern "C" {
@@ -38,19 +37,7 @@ extern "C" {
 #include "xilltable_reading.h"
 }
 
-
-#define PREC 1e-6
-
-
-// Helper: uniform energy grid with nener bins over [emin, emax]
-static VecD make_ener_grid(int nener, double emin, double emax) {
-  VecD ener(nener + 1);
-  const double de = (emax - emin) / nener;
-  for (int i = 0; i <= nener; i++) { ener[i] = emin + i * de; }
-  return ener;
-}
-
-// Helper: xillver normalization of a spectrum, computed as for N_xill in
+// xillver normalization of a spectrum, computed as for N_xill in
 // calc_zone_xillver_reflected_flux(): rebin onto the coarse xillver grid,
 // then calc_xillver_norm_from_primary_spectrum().
 static double get_xillver_norm_on_coarse_grid(const double *spec, const double *ener, int n_ener, int *status) {
@@ -60,7 +47,7 @@ static double get_xillver_norm_on_coarse_grid(const double *spec, const double *
     return calc_xillver_norm_from_primary_spectrum(spec_coarse.data(), egrid->ener, egrid->nbins, status);
 }
 
-// Helper: per-zone ratio N(reflect)/N(return) of the output of calc_zone_xillver_reflected_flux().
+// per-zone ratio N(reflect)/N(return) of the output of calc_zone_xillver_reflected_flux().
 // boost=-1: |boost|=1 does not scale the reflection
 //  => xill_flux_returnrad = N_xill(specRet) * F_xill, with the angle weighting given by rel_profile->rel_cosne
 static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
@@ -103,7 +90,7 @@ static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
     return ratio;
 }
 
-// Helper: relline_spec_multizone with only the emission-angle distribution rel_cosne set (the only part
+// relline_spec_multizone with only the emission-angle distribution rel_cosne set (the only part
 // used by calc_zone_xillver_reflected_flux()), owning the memory of dist [n_zones][n_cosne]
 struct AngleDistProfile {
     VecD cosne;
@@ -131,7 +118,7 @@ struct AngleDistProfile {
     AngleDistProfile &operator=(const AngleDistProfile &) = delete;
 };
 
-// Helper: semi-infinite slab flux weights 0.5*cos(incl_i)/n_incl of the table inclinations (xillSpec::incl is
+// semi-infinite slab flux weights 0.5*cos(incl_i)/n_incl of the table inclinations (xillSpec::incl is
 // given in deg), computed independently of get_semi_infinite_slab_flux_weights() to test it
 static VecD expected_slab_flux_weights(const xillSpec *xill_spec) {
     VecD weights(xill_spec->n_incl);
@@ -142,256 +129,11 @@ static VecD expected_slab_flux_weights(const xillSpec *xill_spec) {
 }
 
 TEST_CASE (
-
-
-
-" rebin_flux_mean_shifted: flat input stays flat for shift=1 "
+"xillverRTR table: loading spectra without a radial zone (radzone=-1) fails"
 ,
-"[rrad-bbody]"
-)
-{
-    const int nener = 50;
-    VecD ener = make_ener_grid(nener, 1.0, 6.0);
-
-    const double C = 3.14;
-    VecD flux0(nener, C);
-    VecD flux_out(nener, 0.0);
-
-    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 1.0);
-
-    // bin 0 is 0: known edge effect of the midpoint interpolation scheme
-    // (output midpoint coincides exactly with the lower boundary of the input midpoint bracket)
-    REQUIRE(fabs(flux_out[0]) < PREC);
-    for (int in = 1; in < nener; in++) {
-        INFO("Failing index: " << in);
-        REQUIRE(fabs(flux_out[in] - C) < PREC);
-    }
-}
-
-TEST_CASE (
-
-
-
-" rebin_flux_mean_shifted: identity mapping for shift=1 "
-,
-"[rrad-bbody]"
-)
-{
-    const int nener = 50;
-    VecD ener = make_ener_grid(nener, 1.0, 6.0);
-
-    VecD flux0(nener);
-    for (int i = 0; i < nener; i++) { flux0[i] = (i + 1) * 0.1; }
-
-    VecD flux_out(nener, 0.0);
-    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 1.0);
-
-    for (int in = 1; in < nener; in++) {
-        INFO("Failing index: " << in);
-        REQUIRE(fabs(flux_out[in] - flux0[in]) < PREC);
-    }
-}
-
-TEST_CASE (
-
-
-
-" rebin_flux_mean_shifted: large shift zeroes all output bins "
-,
-"[rrad-bbody]"
-)
-{
-    const int nener = 50;
-    VecD ener = make_ener_grid(nener, 1.0, 6.0);
-
-    VecD flux0(nener, 1.0);
-    VecD flux_out(nener, 0.0);
-
-    // shift >> 1: the output grid ener*shift lies entirely above the input grid
-    // -> exercises the early-return path; all output bins must be zero
-    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 100.0);
-
-    for (int in = 0; in < nener; in++) {
-        INFO("Failing index: " << in);
-        REQUIRE(fabs(flux_out[in]) < PREC);
-    }
-}
-
-TEST_CASE (
-
-
-
-" rebin_flux_mean_shifted: moderate shift zeros high-energy output bins "
-,
-"[rrad-bbody]"
-)
-{
-    const int nener = 50;
-    VecD ener = make_ener_grid(nener, 1.0, 6.0);
-
-    VecD flux0(nener, 1.0);
-    VecD flux_out(nener, 0.0);
-
-    // shift=1.5: low-index output bins fall within the input grid (non-zero),
-    // high-index bins exceed it (zero via early return)
-    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, 1.5);
-
-    REQUIRE(fabs(flux_out[0] - 1.0) < PREC);         // in range, flat flux preserved
-    REQUIRE(fabs(flux_out[nener - 1]) < PREC);        // out of range
-}
-
-
-TEST_CASE (
-
-
-
-" rebin_flux_mean_shifted: matches rebin_mean_flux with explicit shifted grid "
-,
-"[rrad-bbody]"
-)
-{
-    const int nener = 50;
-    VecD ener = make_ener_grid(nener, 1.0, 6.0);
-
-    // arbitrary non-trivial flux values
-    VecD flux0(nener);
-    for (int i = 0; i < nener; i++) { flux0[i] = 1.0 + 0.1 * i + 0.002 * i * i; }
-
-    const double shift = 0.8;
-
-    // manually build the shifted output grid
-    VecD ener_shifted(nener + 1);
-    for (int i = 0; i <= nener; i++) { ener_shifted[i] = ener[i] * shift; }
-
-    // reference: rebin_mean_flux with the explicitly shifted grid as output
-    VecD flux_ref(nener, 0.0);
-    int status = EXIT_SUCCESS;
-    rebin_mean_flux(ener_shifted.data(), flux_ref.data(), nener,
-                    ener.data(), flux0.data(), nener, &status);
-    REQUIRE(status == EXIT_SUCCESS);
-
-    // function under test
-    VecD flux_out(nener, 0.0);
-    rebin_mean_flux_shifted(ener.data(), nener, flux_out, flux0, shift);
-
-    for (int in = 0; in < nener; in++) {
-        INFO("Failing index: " << in);
-        REQUIRE(fabs(flux_out[in] - flux_ref[in]) < PREC);
-    }
-}
-
-static double integ_flux(const double *ener, int nener, const double *flux) {
-  double sum = 0.0;
-  for (int ii = 0; ii < nener; ii++) {
-    sum += flux[ii] * (ener[ii + 1] - ener[ii]);
-  }
-  return sum;
-}
-
-TEST_CASE (
-
-
-
-" check of manually shfting the bbody spectrum gives the same result as if shifting the energy grid "
-,
-"[rrad-bbody]"
+"[rrad-bbody][xillver][xillverRTR]"
 )
  {
-    const int nener = 5000;
-
-    double ener[nener + 1];
-    get_log_grid(ener, nener, 0.01, 150.0);
-
-    double gfac = 1.5;
-    double temperature = 1.0;
-    VecD spec(nener);
-    bbody_photon_flux_per_keV(ener,  nener, spec.data(), temperature, gfac);
-
-    VecD spec0(nener);
-    bbody_photon_flux_per_keV(ener,  nener, spec0.data(), temperature, 1.0);
-    VecD spec0_shift(nener);
-    // as we shift the energy grid and not the spectrum, we need to shift it backwards with 1/gfac
-    rebin_mean_flux_shifted(ener, nener, spec0_shift, spec0, 1./gfac);
-
-    auto pho_flux = integ_flux(ener, nener, spec.data());
-    auto pho_flux0 = integ_flux(ener, nener, spec0_shift.data());
-
-    REQUIRE(fabs(pho_flux-pho_flux0) < 1e-3);
-
-}
-
-TEST_CASE (
-
-
-
-" Check that 1st and 2nd order returning radiation (mirrored) spectra are different "
-,
-"[rrad-bbody-norder]"
-)
- {
-     LocalModel lmod(ModelName::relxillBB);
-     DefaultSpec default_spec{};
-    XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-    setenv("RELXILL_RRAD_BBODY_ORDER","1",1);
-
-    lmod.eval_model(spec);
-    double sum_1st = calcSum(spec.flux, spec.num_flux_bins());
-
-    setenv("RELXILL_RRAD_BBODY_ORDER","2",1);
-    lmod.eval_model(spec);
-    double sum_2nd = calcSum(spec.flux, spec.num_flux_bins());
-
-    REQUIRE((sum_2nd - sum_1st) > 1e-3);
-
-    unsetenv("RELXILL_RRAD_BBODY_ORDER");
-}
-
-
-TEST_CASE (
-
-
-
-" Check if changing the Temperature Profile give different results"
-,
-"[rrad-bbody-tprofile]"
-)
- {
-     LocalModel lmod(ModelName::relxillBB);
-     DefaultSpec default_spec{};
-    XspecSpectrum spec = default_spec.get_xspec_spectrum();
-
-    lmod.eval_model(spec);
-    double sum_default = calcSum(spec.flux, spec.num_flux_bins());
-
-    setenv("RELXILL_RRAD_BBODY_TPROFILE","1",1);
-    lmod.eval_model(spec);
-    double sum_1 = calcSum(spec.flux, spec.num_flux_bins());
-
-    // check of setting it to 1 is the default
-    REQUIRE(fabs(sum_default - sum_1) < 1e-6);
-
-
-    setenv("RELXILL_RRAD_BBODY_TPROFILE","2",1);
-    lmod.eval_model(spec);
-    double sum_2 = calcSum(spec.flux, spec.num_flux_bins());
-
-    unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
-
-    // check that 1 and 2 are different
-    REQUIRE(fabs(sum_2 - sum_1) > 1e-6);
-}
-
-
-TEST_CASE (
-
-
-
-" Test Loading Single Xillver from RTR Table should fail "
-,
-"[rrad-bbody]"
-)
-{
     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBB);
     auto xill_param = lmod.xill_params();
@@ -401,12 +143,9 @@ TEST_CASE (
 }
 
 TEST_CASE (
-
-
-
-" Verify that the number of radial zones from the xillver RTR table matches the radial grid in relxill "
+"xillverRTR table: number of radial zones equals the radial grid of the returning radiation"
 ,
-"[rrad-bbody]"
+"[rrad-bbody][xillver][xillverRTR]"
 )
  {
     int status = EXIT_SUCCESS;
@@ -442,16 +181,12 @@ TEST_CASE (
     delete_returnSpec2D(&returnSpec);
 }
 
-
-// ------- //
 TEST_CASE (
-
-
-
-" Test Loading Xillver RTR Table "
+"xillverRTR table: spectra of a radial zone are loaded and non-zero"
 ,
-"[rrad-bbody]"
-) {
+"[rrad-bbody][xillver][xillverRTR]"
+)
+ {
     LocalModel lmod(ModelName::relxillBB);
     auto xill_param = lmod.get_xill_param_struct();
 
@@ -483,17 +218,26 @@ TEST_CASE (
     //  free_all_cached_xillTables();
 }
 
-
 TEST_CASE (
+"xillverNS table: spectra for relxillBB_NS are loaded and non-zero"
+,
+"[rrad-bbody][xillver]"
+)
+ {
+  int status = EXIT_SUCCESS;
 
+  LocalModel lmod(ModelName::relxillBB_NS);
+  auto xill_params = lmod.xill_params();
+  auto xill_table_params = get_xilltab_param(xill_params, &status);
+  auto xill_spec = get_xillver_spectra_table(xill_table_params, &status);
 
-    " Test relxillBB Model ",
-    "[relxillbb]"
-) {
-    LocalModel lmod(ModelName::relxillBB);
-    DefaultSpec default_spec{};
-    XspecSpectrum spec = default_spec.get_xspec_spectrum();
-    REQUIRE_NOTHROW(lmod.eval_model(spec));
+  for (size_t ii = 0; ii < xill_spec->n_incl; ii++)
+  {
+    REQUIRE(calcSum(xill_spec->flu[ii], xill_spec->n_ener) > 1e-8);
+  }
+
+  free_xill_spec(xill_spec);
+  free(xill_table_params);
 }
 
 // ------- //
@@ -501,10 +245,12 @@ TEST_CASE (
 // intrinsic xillver intensities into the angle-averaged flux: get_semi_infinite_slab_flux_weights() and
 // calc_angle_averaged_xillver_flux() (used for the returning radiation correction factors of the lamp post models)
 // ------- //
-TEST_CASE(
-    " semi-infinite slab flux weights 0.5*cos(incl)/n_incl (incl in deg) and the angle-averaged xillver flux ",
-    "[xillverRTR][slabweights]"
-) {
+TEST_CASE (
+"xillver angle weighting: semi-infinite slab flux weights 0.5*cos(incl)/n_incl and the angle-averaged flux"
+,
+"[rrad-bbody][xillver][xillverRTR][slabweights]"
+)
+ {
     // Tests get_semi_infinite_slab_flux_weights() and calc_angle_averaged_xillver_flux() against independently
     // computed values. As the table inclinations are the bin centres of a grid uniform in cos(incl), the weights sum
     // to int_0^1 0.5*mu dmu = 0.25. (The weights were wrong before, as the table inclinations, already given in deg,
@@ -556,10 +302,12 @@ TEST_CASE(
 // energy conservation of the reflected spectrum (angle-averaged flux vs. returning flux), and comparison of the
 // angle weightings (angle-mixed intensity vs. angle-averaged flux)
 // ------- //
-TEST_CASE(
-    " GR emission-angle distribution rel_cosne->dist of the relxillBB zones sums to 1 in each zone ",
-    "[xillverRTR][cosnedist]"
-) {
+TEST_CASE (
+"xillverRTR angle weighting: GR emission-angle distribution of each zone sums to 1"
+,
+"[rrad-bbody][xillver][xillverRTR][cosnedist]"
+)
+ {
     // The emission-angle distribution weights the xillver spectra of the table inclinations in each radial zone
     // (calc_xillver_angdep()) and is a probability distribution (dist >= 0, sum = 1). Only the inclination grid of
     // the xillver table and the radial zones of the returning radiation are needed, no xillver spectra.
@@ -624,10 +372,12 @@ TEST_CASE(
     delete_xill_params(xill_param);
 }
 
-TEST_CASE(
-    " Test xillver_RTR spectra normalization: reflected vs. returning flux per zone ",
-    "[xillverRTR][norm]"
-) {
+TEST_CASE (
+"xillverRTR normalization: reflected flux is below the returning flux in each zone"
+,
+"[rrad-bbody][xillver][xillverRTR][norm]"
+)
+ {
     // Energy conservation: the GR emission-angle distribution is replaced by the semi-infinite slab flux weights
     // (identical for all zones), which turns the angle-weighted intensity into the angle-averaged flux (as in
     // calc_angle_averaged_xillver_flux()). This reflected flux must be below the returning flux. (With the GR
@@ -686,10 +436,12 @@ TEST_CASE(
     delete_xill_params(xill_param);
 }
 
-TEST_CASE(
-    " xillver_RTR angle weighting: angle-mixed intensity vs. angle-averaged flux per zone ",
-    "[xillverRTR][angleweight]"
-) {
+TEST_CASE (
+"xillverRTR angle weighting: angle-mixed intensity vs. angle-averaged flux per zone (written to file)"
+,
+"[rrad-bbody][xillver][xillverRTR][angleweight]"
+)
+ {
     // The reflected spectrum per zone (as in rframe-reflect.fits of the diagnose outfiles) is the angle-mixed
     // intensity, weighted with the GR emission-angle distribution dist of the observer inclination. Only the
     // angle-averaged flux of the semi-infinite slab can be compared with the returning flux (energy conservation).
@@ -814,114 +566,4 @@ TEST_CASE(
         delete_xill_params(xill_param);
     }
     fclose(fp);
-}
-
-
-TEST_CASE(
-
-
-    " Test relxillBB_NS Model ",
-    "[relxillbb_ns]"
-) {
-    LocalModel lmod(ModelName::relxillBB_NS);
-    DefaultSpec default_spec{};
-    XspecSpectrum spec = default_spec.get_xspec_spectrum();
-    REQUIRE_NOTHROW(lmod.eval_model(spec));
-}
-
-TEST_CASE (
-
-
-
-" Emissivity profile from return radiation spectra "
-,
-"[rrad-bbody-emisprofile]"
-)
- {
-    int status = EXIT_SUCCESS;
-
-    double spin = 0.998;
-    double Rin = kerr_rms(spin);
-    double Rout = RMAX_RELRET;
-    double Tin = 2.0;
-
-    int n_ener = 500;
-    double ener[n_ener + 1];
-    get_log_grid(ener, n_ener + 1, 0.01, 50.0);
-
-    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, Tin, Rin, Rout, spin, &status);
-    REQUIRE(status == EXIT_SUCCESS);
-    REQUIRE(returnSpec != nullptr);
-
-    emisProfile *emis_profile =
-            calculate_emis_profile_from_spectra(returnSpec->specRet,
-                                                returnSpec->rlo,
-                                                returnSpec->rhi,
-                                                returnSpec->nrad,
-                                                returnSpec->ener,
-                                                returnSpec->n_ener,
-                                                &status);
-    REQUIRE(status == EXIT_SUCCESS);
-    REQUIRE(emis_profile != nullptr);
-    REQUIRE(emis_profile->nr == returnSpec->nrad);
-
-    // profile should be in ascending radial order
-    REQUIRE(emis_profile->re[0] < emis_profile->re[1]);
-
-    // emissivity should be
-    // (1) positive and non-zero for all radial zones
-    // (2) decreasing as due to returning radiation
-    for (int ii = 0; ii < emis_profile->nr; ii++) {
-        REQUIRE(emis_profile->emis[ii] > 0.0);
-        if (ii > 0) {
-            REQUIRE(emis_profile->emis[ii] <= emis_profile->emis[ii-1]);
-        }
-    }
-
-    free_emisProfile(emis_profile);
-    delete_returnSpec2D(&returnSpec);
- }
-
-
-TEST_CASE (
-
-
-
-" Ionization gradient from return radiation has max equal to input logxi "
-,
-"[rrad-bbody-iongradient]"
-)
- {
-    int status = EXIT_SUCCESS;
-
-    double spin = 0.998;
-    double Rin = kerr_rms(spin);
-    double Rout = RMAX_RELRET;
-    double Tin = 2.0;
-
-    int n_ener = 500;
-    double ener[n_ener + 1];
-    get_log_grid(ener, n_ener + 1, 0.01, 50.0);
-
-    returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, Tin, Rin, Rout, spin, &status);
-    REQUIRE(status == EXIT_SUCCESS);
-    REQUIRE(returnSpec != nullptr);
-
-    const double input_logxi = 3.0;
-    LocalModel lmod(ModelName::relxillBB);
-    lmod.set_par(XPar::logxi, input_logxi);
-
-    auto ion_gradient = calc_ion_gradient_from_returnrad(returnSpec, lmod.get_model_params(), &status);
-    REQUIRE(status == EXIT_SUCCESS);
-
-    double lxi_max = ion_gradient.lxi[0];
-    for (int ii = 1; ii < ion_gradient.nzones(); ii++) {
-        if (ion_gradient.lxi[ii] > lxi_max) {
-            lxi_max = ion_gradient.lxi[ii];
-        }
-    }
-
-    REQUIRE(lxi_max == Catch::Approx(input_logxi).epsilon(1e-2));
-
-    delete_returnSpec2D(&returnSpec);
 }

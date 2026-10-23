@@ -1,5 +1,5 @@
-% creates reference files with the Xspec model kerrbb for the unit test " disk emission (2b) " in
-% tests-bbody-returnrad.cpp: relativistic thin disk (Novikov-Thorne temperature profile) with zero torque at the inner
+% creates reference files with the Xspec model kerrbb for the unit test "disk emission (2b)" in
+% tests-returnrad-bbody-diskemission.cpp: relativistic thin disk (Novikov-Thorne temperature profile) with zero torque at the inner
 % edge (eta=0), without spectral hardening (hd=1), self-irradiation (rflag=0), and limb darkening (lflag=0). For each
 % spin, the accretion rate is chosen such that the maximal temperature of the disk is 1 keV (Mbh = 10 Msun).
 % (energy grid as in the unit tests: 50 log bins from 0.01 to 20 keV)

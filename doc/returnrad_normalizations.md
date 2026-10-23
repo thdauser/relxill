@@ -210,8 +210,8 @@ the relativistic convolution, also in standard relxill. Both models call \ref ca
 - `relxill`: \ref relxill_kernel (`src/Relxill.cpp`, step 5, "calculate the xillver spectra depending on the
   angular distribution")
 
-This is tested in `test/unit/tests-returnrad-bbody.cpp`, test case
-*"Test xillver_RTR spectra normalization: reflected vs. returning flux per zone"* (run with
+This is tested in `test/unit/tests-returnrad-bbody-xillver.cpp`, test case *"xillverRTR normalization: reflected flux is
+below the returning flux in each zone"* (run with
 `bin/tests "[xillverRTR][norm]"`).
 ### boost
 
