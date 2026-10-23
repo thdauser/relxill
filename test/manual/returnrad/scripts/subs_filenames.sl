@@ -8,18 +8,21 @@ define getFilenameStruct(){
    variable fbase = outdir + "__relxillOutput-rrad-bbody-%s.fits";
    variable fbase_dat = outdir + "__relxillOutput-rrad-bbody-%s.dat";
 
+   %% all files are fluxes; rest frame: angle-averaged flux per unit area of the zone (see the table in
+   %% doc/returnrad_disk_emission.md, "Diagnostic output files")
    variable f_rframe = struct{
-      specRet  = sprintf(fbase, "rframe-bbodyRet" ),      %% returning spectrum on the disk (rest-frame)
-      specPri  = sprintf(fbase, "rframe-bbodyEmit" ),      %% primary BBody spectrum (rest-frame)
-      xillRefl = sprintf(fbase, "rframe-reflect" )  %% reflected xillver spectrum, scaled with |boost| (rest-frame)
+      specRet  = sprintf(fbase, "rframe-bbodyRet" ),      %% returning flux incident on the disk (rest-frame)
+      specPri  = sprintf(fbase, "rframe-bbodyEmit" ),      %% primary BBody flux (rest-frame)
+      xillRefl = sprintf(fbase, "rframe-reflect" ),  %% reflected xillver flux (angle-averaged), scaled with |boost| (rest-frame)
+      mirrorRefl = sprintf(fbase, "rframe-mirror-reflect" )  %% mirrored returning flux, |boost| * specRet (rest-frame)
    }
    ;
    
    %% observed spectra of the zones (convolved with the line profile of each zone)
    variable f_obs = struct{    
-      reflect = sprintf(fbase, "obs-reflect" ),          %% reflected xillver spectrum, scaled with |boost|
-      primary = sprintf(fbase, "obs-bbodyEmit" ),        %% primary BBody spectrum (written for any boost)
-      mirrorRefl  = sprintf(fbase, "obs-mirror-reflect" )  %% mirrored returning spectrum, scaled with |boost|
+      reflect = sprintf(fbase, "obs-reflect" ),          %% reflected xillver flux, scaled with |boost|
+      primary = sprintf(fbase, "obs-bbodyEmit" ),        %% primary BBody flux (written for any boost)
+      mirrorRefl  = sprintf(fbase, "obs-mirror-reflect" )  %% mirrored returning flux, scaled with |boost|
    }
    ;
    

@@ -869,38 +869,23 @@ static double get_xillver_norm_factor_from_primary_spectrum(const double *spec_i
 
 
 /**
- * Computes the reflected return flux for a specific zone of a multi-zone accretion disk model.
+ * @brief Xillver reflection of the returning radiation of a zone in the disk frame, weighted over the inclinations of the
+ * table with the weights @p dist, and normalized to the returning flux: N_xill(specRet) * sum_i dist_i I_i * |boost|.
  *
- * This function calculates the zone-specific reflected return flux in the disk frame
- * by calculating the xillver reflection spectrum, which is normalized by a normalization
- * factor derived from the primary (returning) spectrum.
- * The final flux is multiplied with the absolute value of the boost parameter. The direct disk emission is not
- * included, as it is calculated for the whole disk at once (see calc_disk_emission_observed).
- *
- * Assumptions:
- * - A single blackbody temperature (kTbb) is assumed for the reflection of all zones.
- *
- * @see @ref returnrad_normalizations for a derivation of the normalization
- *      factors applied below and the rationale for splitting them this way.
- *
- * Parameters:
- * @param xill_param          Pointer to the structure containing xillver model parameters (e.g., spectral parameters and disk settings).
- * @param rel_profile         Pointer to the multi-zone diskline profile, including relativistic correction data for all zones.
- * @param returnSpec          Pointer to the 2D return spectrum structure containing zone-specific primary and reflected flux data.
- * @param xill_flux_returnrad Array where the calculated reflected return flux for the specified zone is stored (length `returnSpec->n_ener`).
- * @param izone               Index of the zone for which the return flux is calculated.
- * @param status              Pointer to the status flag, used to report success or failure.
+ * The weights decide whether the result is an intensity (GR emission-angle distribution, sum = 1) or a flux (slab flux
+ * weights), see calc_zone_xillver_reflected_intensity() and calc_zone_xillver_angle_averaged_reflected_flux().
  */
-void calc_zone_xillver_reflected_flux(const xillParam &xill_param,
-                                      const relline_spec_multizone *rel_profile,
-                                      const returnSpec2D *returnSpec,
-                                      VecD &xill_flux_returnrad,
-                                      int izone,
-                                      int *status) {
-    get_angle_weighted_xill_spec(xill_flux_returnrad,
+static void calc_zone_xillver_reflected_weighted(const xillParam &xill_param,
+                                                 double *dist,
+                                                 const returnSpec2D *returnSpec,
+                                                 VecD &xill_spec_returnrad,
+                                                 int izone,
+                                                 int *status) {
+    get_angle_weighted_xill_spec(xill_spec_returnrad,
                                  returnSpec->ener,
-                                 returnSpec->n_ener, &xill_param,
-                                 rel_profile->rel_cosne->dist[izone],
+                                 returnSpec->n_ener,
+                                 &xill_param,
+                                 dist,
                                  status);
 
     double xillverReflectionNormFactor
@@ -911,28 +896,100 @@ void calc_zone_xillver_reflected_flux(const xillParam &xill_param,
     CHECK_STATUS_VOID(*status);
 
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
-        xill_flux_returnrad[jj] *= fabs(xill_param.boost);
-        xill_flux_returnrad[jj] *= xillverReflectionNormFactor;
+        xill_spec_returnrad[jj] *= fabs(xill_param.boost);
+        xill_spec_returnrad[jj] *= xillverReflectionNormFactor;
     }
 }
 
 /**
-   * @brief Compute the per-zone flux of the returning radiation ("mirrored" instead of reflected).
+ * Computes the reflected intensity of the returning radiation for a specific zone of a multi-zone accretion disk model.
+ *
+ * This function calculates the zone-specific reflected intensity in the disk frame, which is handed to the
+ * relativistic convolution: the xillver table intensities, weighted with the GR emission-angle distribution of the
+ * zone (rel_profile->rel_cosne->dist[izone], sum = 1, i.e., the angle-mixed intensity, which depends on the observer
+ * inclination), and normalized by a normalization factor derived from the returning spectrum.
+ * The final spectrum is multiplied with the absolute value of the boost parameter. The direct disk emission is not
+ * included, as it is calculated for the whole disk at once (see calc_disk_emission_observed).
+ *
+ * Assumptions:
+ * - A single blackbody temperature (kTbb) is assumed for the reflection of all zones.
+ *
+ * @see @ref returnrad_normalizations for a derivation of the normalization
+ *      factors applied below and the rationale for splitting them this way, and
+ *      @ref xillver_angular_dependence for intensity vs. flux.
+ *
+ * Parameters:
+ * @param xill_param          Pointer to the structure containing xillver model parameters (e.g., spectral parameters and disk settings).
+ * @param rel_profile         Pointer to the multi-zone diskline profile, including relativistic correction data for all zones.
+ * @param returnSpec          Pointer to the 2D return spectrum structure containing zone-specific primary and reflected flux data.
+ * @param xill_intensity      Array where the calculated reflected intensity for the specified zone is stored (length `returnSpec->n_ener`).
+ * @param izone               Index of the zone for which the return flux is calculated.
+ * @param status              Pointer to the status flag, used to report success or failure.
+ */
+void calc_zone_xillver_reflected_intensity(const xillParam &xill_param,
+                                           const relline_spec_multizone *rel_profile,
+                                           const returnSpec2D *returnSpec,
+                                           VecD &xill_intensity,
+                                           int izone,
+                                           int *status) {
+    calc_zone_xillver_reflected_weighted(xill_param,
+                                         rel_profile->rel_cosne->dist[izone],
+                                         returnSpec,
+                                         xill_intensity,
+                                         izone,
+                                         status);
+}
+
+/**
+ * @brief Angle-averaged reflected flux of the returning radiation of a zone in the disk frame (diagnostic output).
+ *
+ * As calc_zone_xillver_reflected_intensity(), but the xillver table intensities are weighted with the semi-infinite
+ * slab flux weights 0.5*cos(incl)/n_incl (get_semi_infinite_slab_flux_weights()) instead of the GR emission-angle
+ * distribution. The result is the flux the slab emits, independent of the observer, and can be compared directly with
+ * the returning flux specRet (energy conservation) and with the mirrored flux. It is not used for the model spectrum.
+ */
+void calc_zone_xillver_angle_averaged_reflected_flux(const xillParam &xill_param,
+                                                     const returnSpec2D *returnSpec,
+                                                     VecD &xill_flux,
+                                                     int izone,
+                                                     int *status) {
+    xillSpec *xill_spec = get_xillver_spectra(&xill_param, status);
+    CHECK_STATUS_VOID(*status);
+    VecD slab_weights = get_semi_infinite_slab_flux_weights(xill_spec);
+    free_xill_spec(xill_spec);
+
+    calc_zone_xillver_reflected_weighted(xill_param, slab_weights.data(), returnSpec, xill_flux, izone, status);
+}
+
+/**
+   * @brief Compute the per-zone intensity of the returning radiation ("mirrored" instead of reflected).
    *
-   * The returning radiation is multiplied with the absolute value of the boost parameter. The direct disk emission is
-   * not included, as it is calculated for the whole disk at once (see calc_disk_emission_observed).
+   * The returning flux F_ret (`specRet`) already contains the angles of incidence (each returning ray is weighted
+   * with the cosine of its angle of incidence on the disk). "Mirrored" means that the emitted spectrum has the same
+   * shape and flux as the incident one, assuming a reprocessing in the slab such that it is re-emitted with an
+   * isotropic intensity (i.e., with the same cos(theta) dependence of the flux on the emission angle as in the
+   * xillver definition). As for the xillver reflection (calc_zone_xillver_reflected_intensity), the spectrum
+   * handed to the relativistic convolution must be an intensity in xillver table units, as the convolution converts
+   * the intensity into the observed flux. The flux of an isotropic intensity I is 0.25*I
+   * (SEMI_INFINITE_SLAB_FLUX_ISOTROPIC), so the mirrored intensity is I = F_ret / 0.25.
+   *
+   * The result is multiplied with the absolute value of the boost parameter. The direct disk emission is not
+   * included, as it is calculated for the whole disk at once (see calc_disk_emission_observed).
+   *
+   * @see @ref xillver_angular_dependence for the conversion between intensity and flux.
    *
    * @param xill_param   Xillver parameters; only @c boost is read here.
    * @param returnSpec   Precomputed return-radiation spectra
-   * @param returnFlux   Output flux for zone ii, sized in returnSpec.
+   * @param mirrored_intensity  Output (intensity of the mirrored returning radiation) for zone ii, sized in returnSpec.
    * @param ii           Radial zone index.
    */
-void calc_zone_mirrored_flux(const xillParam &xill_param,
-                             const returnSpec2D *returnSpec,
-                             VecD &returnFlux,
-                             int ii) {
+void calc_zone_mirrored_intensity(const xillParam &xill_param,
+                                  const returnSpec2D *returnSpec,
+                                  VecD &mirrored_intensity,
+                                  int ii) {
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
-        returnFlux[jj] = returnSpec->specRet[ii][jj] * fabs(xill_param.boost);
+        mirrored_intensity[jj] = returnSpec->specRet[ii][jj] / SEMI_INFINITE_SLAB_FLUX_ISOTROPIC * fabs(
+                                     xill_param.boost);
     }
 }
 
@@ -1024,9 +1081,13 @@ static bool is_boost_primary_only(double boost) {
  * (rframe-reflect.fits) and observed, i.e., convolved with the line profile of each zone (obs-reflect.fits). If the
  * returning radiation is mirrored instead of reflected (mirrored_reflection_instead_of_xillver), the files are called
  * rframe-mirror-reflect.fits and obs-mirror-reflect.fits.
+ *
+ * All files are fluxes: in the rest frame the flux emitted by the zone (angle-averaged, independent of the observer),
+ * observed the flux seen by the observer. The rest-frame spectra are therefore not the intensities that are convolved
+ * (see @ref xillver_angular_dependence).
  */
 static void write_bbret_diagnose_outfiles(const VecD_2D &specZonesConvOutput,
-                                          const VecD_2D &specZonesReflected,
+                                          const VecD_2D &specZonesReflectedFlux,
                                           const double *ener,
                                           int n_ener,
                                           const returnSpec2D *returnSpec,
@@ -1047,7 +1108,7 @@ static void write_bbret_diagnose_outfiles(const VecD_2D &specZonesConvOutput,
 
     fname = fbase_rrad_bbody + "rframe-" + name + ".fits";
     fits_rr_write_2Dspec(fname.c_str(),
-                         specZonesReflected,
+                         specZonesReflectedFlux,
                          ener,
                          n_ener,
                          returnSpec->rlo,
@@ -1063,8 +1124,12 @@ static void write_bbret_diagnose_outfiles(const VecD_2D &specZonesConvOutput,
  * In the model, the zones only contain the reflected emission, as the direct emission is calculated for the whole disk
  * at once (calc_disk_emission_observed). For the diagnostic output, the observed direct emission of each zone is its
  * primary (specPri, from which the returning radiation is calculated and which is written to rframe-bbodyEmit.fits)
- * convolved with the line profile of the zone. The sum over all zones agrees with the direct emission of the model to
- * about 0.1% (see the unit test "disk emission (3c)").
+ * convolved with the line profile of the zone.
+ *
+ * As for the reflected spectra, the convolution takes an intensity: specPri is the emitted flux of an isotropically
+ * emitting blackbody surface, so its intensity specPri / 0.25 (SEMI_INFINITE_SLAB_FLUX_ISOTROPIC) is convolved, see
+ * @ref xillver_angular_dependence. (The direct emission of the model, calc_disk_emission_observed, does not yet apply
+ * this conversion and is therefore a factor 4 lower than the sum of this file over all zones.)
  */
 static void write_primary_observed_diagnose_outfile(double *ener,
                                                     int n_ener,
@@ -1073,9 +1138,13 @@ static void write_primary_observed_diagnose_outfile(double *ener,
                                                     specCache *spec_cache,
                                                     int *status) {
     VecD_2D spec_zones(returnSpec->nrad, VecD(n_ener));
+    VecD intensity_pri(n_ener);
     for (int izone = 0; izone < returnSpec->nrad; izone++) {
+        for (int jj = 0; jj < n_ener; jj++) {
+            intensity_pri[jj] = returnSpec->specPri[izone][jj] / SEMI_INFINITE_SLAB_FLUX_ISOTROPIC;
+        }
         convolveSpectrumFFTNormalized(ener,
-                                      returnSpec->specPri[izone],
+                                      intensity_pri.data(),
                                       rel_profile->flux[izone],
                                       spec_zones[izone].data(),
                                       n_ener,
@@ -1183,7 +1252,8 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
     // ========== //
     VecD specSingleZone(n_ener_inp);
     VecD_2D specZonesConvOutput(returnSpec->nrad);
-    VecD_2D specZonesReflected(returnSpec->nrad);
+    VecD_2D specZonesReflected(returnSpec->nrad); // intensity, handed to the convolution
+    VecD_2D specZonesReflectedFlux(returnSpec->nrad); // emitted flux in the rest frame (only for the diagnostic output)
     // ========== //
 
     specCache *spec_cache = init_global_specCache(status);
@@ -1211,6 +1281,7 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
         xillParam xill_param_zone = *xill_param;  // flat copy works, as no arrays contained
 
         specZonesReflected[izone] = VecD(n_ener, 0.0);
+        specZonesReflectedFlux[izone] = VecD(n_ener, 0.0);
         specZonesConvOutput[izone] = VecD(n_ener, 0.0);
 
         // the zones only contain the reflected emission, i.e., nothing for boost=0 (the normalization of the FFT
@@ -1221,7 +1292,13 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
 
         if (mirrored_reflection_instead_of_xillver()) {
             // TODO: remove this once everything is working; only for testing
-            calc_zone_mirrored_flux(xill_param_zone, returnSpec, specZonesReflected[izone], izone);
+            calc_zone_mirrored_intensity(xill_param_zone, returnSpec, specZonesReflected[izone], izone);
+            if (shouldOutfilesBeWritten()) {
+                for (int jj = 0; jj < n_ener; jj++) {
+                    specZonesReflectedFlux[izone][jj] =
+                            specZonesReflected[izone][jj] * SEMI_INFINITE_SLAB_FLUX_ISOTROPIC;
+                }
+            }
         } else {
             // very dangerous; need to check that it is within the table boundaries as well
             // (will only be used for the model with the xillverRTR table (MOD_TYPE_RELXILLBB))
@@ -1229,12 +1306,19 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
             if (use_iongrad_relxillbb()) {
                 set_xill_param_from_iongrad(xill_param_zone, ion_gradient, izone);
             }
-            calc_zone_xillver_reflected_flux(xill_param_zone,
-                                             relProfile,
-                                             returnSpec,
-                                             specZonesReflected[izone],
-                                             izone,
-                                             status);
+            calc_zone_xillver_reflected_intensity(xill_param_zone,
+                                                  relProfile,
+                                                  returnSpec,
+                                                  specZonesReflected[izone],
+                                                  izone,
+                                                  status);
+            if (shouldOutfilesBeWritten()) {
+                calc_zone_xillver_angle_averaged_reflected_flux(xill_param_zone,
+                                                                returnSpec,
+                                                                specZonesReflectedFlux[izone],
+                                                                izone,
+                                                                status);
+            }
         }
 
 
@@ -1265,7 +1349,12 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
     if (shouldOutfilesBeWritten()) {
         write_primary_observed_diagnose_outfile(ener, n_ener, returnSpec, relProfile, spec_cache, status);
         if (!is_boost_primary_only(xill_param->boost)) {
-            write_bbret_diagnose_outfiles(specZonesConvOutput, specZonesReflected, ener, n_ener, returnSpec, status);
+            write_bbret_diagnose_outfiles(specZonesConvOutput,
+                                          specZonesReflectedFlux,
+                                          ener,
+                                          n_ener,
+                                          returnSpec,
+                                          status);
         }
     }
 

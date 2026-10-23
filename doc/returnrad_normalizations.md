@@ -1,7 +1,7 @@
 # Thermal Returning Radiation: Flux Normalizations {#returnrad_normalizations}
 
 This page documents the normalization factors applied inside
-\ref calc_zone_xillver_reflected_flux in
+\ref calc_zone_xillver_reflected_intensity in
 `src/Relreturn_BlackBody.cpp`, which builds the per-zone reflected spectrum for
 `relxillBB` before it is handed to the relativistic convolution. The important part is that the correct normalization is
 applied to the reflected spectrum, following the normalization criterion for the direct **returning** spectrum of
@@ -14,7 +14,8 @@ For each zone `izone` it calculates the **reflected** component (by the xillver 
 given returning thermal radiation, whose illuminating spectrum is `returnSpec->specRet[izone]`. The returning
 radiation is calculated from the primary thermal emission of the zones, `returnSpec->specPri[izone]`.
 
-The result is written into `xill_flux_returnrad` and only afterwards folded with
+The result (an intensity, see \ref xillver_angular_dependence) is written into `xill_intensity` and only afterwards
+folded with
 the relativistic line profile of that zone
 (`convolveSpectrumFFTNormalized` with `relProfile->flux[izone]`) and rebinned
 onto the input grid. Nothing on this page applies the relativistic broadening. That is deliberately the convolution's
@@ -36,7 +37,7 @@ rankdir=LR;
 node [shape=box, fontname="Helvetica", fontsize=10, color="#5b6b7b", fontcolor="#1b1b1b", style="filled", fillcolor="#f2f5f8"];
 edge [fontname="Helvetica", fontsize=9, color="#5b6b7b", fontcolor="#1b1b1b"];
 
-entry  [label="calc_zone_xillver_reflected_flux", fillcolor="#dbe7f3"];
+entry  [label="calc_zone_xillver_reflected_intensity", fillcolor="#dbe7f3"];
 
 angw   [label="get_angle_weighted_xill_spec\n(Xillspec.cpp)"];
 spec   [label="get_xillver_spectra\ntable lookup + cache"];
@@ -122,7 +123,9 @@ for a non-negative boost, while the reflected term is always scaled by \f$|b|\f$
 emitted primary as the returning radiation: `specPri[i]`, from which `specRet[i]` is calculated, is the emission of
 the same radial points with the same temperatures as the direct emission, binned into the zones. There is no
 \f$N_\mathrm{dir}\f$; only the reflected term is scaled. The consistency of the direct and the reflected term is tested
-by the unit tests (3) described in \ref returnrad_disk_emission.
+by the unit tests (3) described in \ref returnrad_disk_emission. Note, however, that the direct emission is handed to
+the convolution as a flux, whereas the reflected spectra are intensities, which makes the direct term a factor 4 too
+weak relative to the reflected term (open issue, see \ref xillver_angular_dependence).
 
 ### What follows from this
 
@@ -188,31 +191,18 @@ When calling \ref calc_xillver_norm_from_primary_spectrum two details are easy t
 ### The angle weighting is not a flux normalization
 
 \ref calc_xillver_angdep weights the table inclinations with
-`rel_profile->rel_cosne->dist[izone]` (normalized to sum = 1) and returns the
-**angle-mixed intrinsic intensity**. It deliberately does *not* apply the
-semi-infinite-slab conversion \f$F(i) = \frac{1}{2}\cos i \; I(i)\f$
-(`norm_factor_semi_infinite_slab()`), because for relxill-type models the
-intensity-to-flux conversion is carried by the GR convolution in the kernel.
+`rel_profile->rel_cosne->dist[izone]` (normalized to sum = 1) and returns the **angle-mixed intrinsic intensity**
+\f$F_\mathrm{xill}\f$ (despite its name, an intensity). It deliberately does *not*
+apply the semi-infinite-slab conversion \f$\frac{1}{2}\cos i\f$ from intensity to flux, because the relativistic
+convolution with the line profile carries this conversion. The same is done in standard relxill (\ref relxill_kernel,
+step 5).
 
-Applying the slab factor here as well would double-count it. The separate path
-\ref get_semi_infinite_slab_flux_weights exists only for the angle-averaging the
-non-relativistic case and must not be mixed into this one (see comment in Garcia+14, Eq. 19).
+The conversion between intensity and flux, where it is applied, and the rule that every spectrum handed to the
+relativistic convolution must be an intensity (which also sets the normalization of the mirrored returning radiation)
+are described in \ref xillver_angular_dependence. In particular, the reflected spectrum of a zone can therefore not be
+compared directly with the returning flux \f$F_\mathrm{ret}\f$; only its angle-averaged flux with the slab weights can
+(test `[xillverRTR][norm]`).
 
-Therefore, comparing the rest-frame xillver spectra with the rest-frame
-returning radiation spectrum is not possible. To get the average of what the observer sees, each emission-angle bin
-\f$i\f$ of `dist[izone]` needs to be weighted with \f$\frac{1}{2}\cos i\f$ (the inclinations of the xillver table) in
-the non-relativistic approximation. The angle-mixed intensity (without this factor) is the spectrum that is used for
-the relativistic convolution, also in standard relxill. Both models call \ref calc_xillver_angdep with
-`rel_profile->rel_cosne->dist[izone]`:
-
-- `relxillBB`: \ref calc_zone_xillver_reflected_flux (`src/Relreturn_BlackBody.cpp`), via
-  \ref get_angle_weighted_xill_spec
-- `relxill`: \ref relxill_kernel (`src/Relxill.cpp`, step 5, "calculate the xillver spectra depending on the
-  angular distribution")
-
-This is tested in `test/unit/tests-returnrad-bbody-xillver.cpp`, test case *"xillverRTR normalization: reflected flux is
-below the returning flux in each zone"* (run with
-`bin/tests "[xillverRTR][norm]"`).
 ### boost
 
 `|boost|` scales the reflected component only. A **negative** boost selects
@@ -242,10 +232,14 @@ ionization gradient enters through \f$F_\mathrm{xill}\f$, not through
 
 ## Not part of the model calculation
 
-\ref calc_zone_mirrored_flux is not a physics path: it is
+\ref calc_zone_mirrored_intensity is not a physics path: it is
 a test shortcut selected by \ref mirrored_reflection_instead_of_xillver that
-mirrors `specRet` instead of reflecting it, and it applies `|boost|` but no `N_xill` (the direct term is added for the
-whole disk, as for the reflection).
+mirrors `specRet` instead of reflecting it (the direct term is added for the whole disk, as for the reflection). It
+applies `|boost|` but no `N_xill`, as the returning flux is used directly. Following the same rule as the xillver
+reflection, the mirror keeps the spectral shape and flux of the returning radiation (which already contains the
+angles of incidence), re-emits it with an isotropic intensity, and is handed to the convolution as the intensity
+\f$I_\mathrm{mirror} = F_\mathrm{ret} / 0.25\f$, see \ref xillver_angular_dependence (until 2026-10-23, the flux
+\f$F_\mathrm{ret}\f$ itself, i.e., a factor 4 too weak compared to the xillver reflection).
 
 ## Pitfalls
 

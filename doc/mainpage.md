@@ -11,8 +11,11 @@ top-level `README.md` and `NAME_AND_CITATION_POLICY.md` in the repository.
 ## Topic Pages
 
 - @subpage returnrad_normalizations — flux normalizations in the
-  return-radiation reflection path
-  (`calc_zone_xillver_reflected_flux`).
+  return-radiation reflection path (`calc_zone_xillver_reflected_intensity`).
+- @subpage xillver_angular_dependence — angular dependence of the xillver
+  spectra: intensity vs. flux, where the conversion is applied, and why every
+  spectrum handed to the relativistic convolution must be an intensity (xillver reflection, mirrored returning
+  radiation, direct disk emission).
 - @subpage returnrad_disk_emission — direct thermal emission of the disk
   in `relxillBB`: temperature profiles, their definition, how the direct and
   the reflected radiation are calculated from the same emitted primary, and

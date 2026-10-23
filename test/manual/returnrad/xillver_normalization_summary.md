@@ -65,10 +65,10 @@ suspected bug.
 Both default to `0` and are read via `envoptions.c`; `print_env_options()`
 reports their state.
 
-| Variable                      | Effect                                                                                                                                                                                                                                 |
-|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `RELXILL_RRAD_BBODY_MIRRORED` | Replaces the xillver reflection with a plain mirror of `specRet` (`calc_zone_mirrored_flux`). Test path only — applies `\|boost\|`, but **no** `N_xill` (the direct emission is calculated for the whole disk, as for the reflection). |
-| `RELXILL_RRAD_BBODY_IONGRAD`  | Enables the per-zone ionization gradient (`set_xill_param_from_iongrad` overwrites `dens`, `lxi`, `radzone` from `ion_gradient`).                                                                                                      |
+| Variable                      | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `RELXILL_RRAD_BBODY_MIRRORED` | Replaces the xillver reflection with a plain mirror of `specRet` (`calc_zone_mirrored_intensity`). Test path only — applies `\|boost\|`, but **no** `N_xill`; the returning flux (which already contains the angles of incidence) is re-emitted with the same spectral shape and an isotropic intensity, `specRet / 0.25` (since 2026-10-23, see `doc/xillver_angular_dependence.md`). The direct emission is calculated for the whole disk, as for the reflection. |
+| `RELXILL_RRAD_BBODY_IONGRAD`  | Enables the per-zone ionization gradient (`set_xill_param_from_iongrad` overwrites `dens`, `lxi`, `radzone` from `ion_gradient`).                                                                                                                                                                                                                                                                                                                                   |
 
 Diagnostic `__*.dat` / `__*.fits` output is gated separately by
 `shouldOutfilesBeWritten()`. Note the output **filenames differ** between the
@@ -77,7 +77,8 @@ mirrored and normal paths for the reflected spectra of the zones
 so a plot script hard-coding one set will silently find nothing when the other
 toggle is active. The primary of the zones (`rframe-bbodyEmit.fits`,
 `obs-bbodyEmit.fits`) is the same in both paths. The list of all diagnostic files
-is in `doc/returnrad_disk_emission.md` ("Diagnostic output").
+is in `doc/returnrad_disk_emission.md` ("Diagnostic output files", with the content and the flux conversion of each
+file).
 
 ---
 
@@ -150,12 +151,29 @@ without warning.
 
 ## 5. Suggested cross-check
 
-For a reflection-only run (`boost < 0`), the xillver path and the mirrored path
-(`RELXILL_RRAD_BBODY_MIRRORED=1`) should give **comparable total reflected
-flux**: the mirrored path scales `specRet` by `|boost|` with no xillver
-renormalization, so agreement in the integral is a direct test that `N_xill`
-correctly reproduces the incident flux level. Large disagreement points at
-`N_xill` rather than at the table.
+For a reflection-only run (`boost < 0`), the xillver path and the mirrored path (`RELXILL_RRAD_BBODY_MIRRORED=1`) can be
+compared, as both hand an **intensity**
+to the relativistic convolution (see `doc/xillver_angular_dependence.md`): the
+xillver path the angle-mixed table intensity scaled by `N_xill`, the mirrored
+path the isotropic intensity `specRet / 0.25` (no xillver renormalization).
+
+- In the rest frame (`rframe-*`), all files are fluxes (since 2026-10-23,
+  see "Diagnostic output" in `doc/xillver_angular_dependence.md`). The mirror
+  re-emits exactly the returning flux: `rframe-mirror-reflect = |boost| ×
+  rframe-bbodyRet`. The xillver reflection (`rframe-reflect`, angle-averaged
+  with the slab weights) has 0.36-0.46 of the returning energy flux per zone,
+  0.43 for the whole disk (`B_slab` of `[xillverRTR][angleweight]`).
+- Observed (`obs-*`), both are converted to a flux by the same convolution, so
+  the ratio of the integrals of `obs-reflect` and `obs-mirror-reflect` is a
+  test that `N_xill` reproduces the incident flux level. The ratio is not
+  0.43 (`B_slab`), but the angle-mixed `A_mix/4`, and depends on the
+  inclination and the energy band: 0.32-0.47 for 20-80 deg in 0.1-1000 keV (see the table in
+  `doc/xillver_angular_dependence.md`, and the unit test
+  `[mirror]`, which checks that it is below 1).
+
+Diagnostic files and plots made before 2026-10-23 are not comparable:
+`obs-mirror-reflect` and `obs-bbodyEmit` were a factor 4 lower,
+`rframe-reflect` was the angle-mixed intensity for the observer inclination.
 
 Note this compares *integrals*, not shapes — the mirrored path has no
 reflection physics at all.
@@ -163,3 +181,9 @@ reflection physics at all.
 If the two disagree, the conclusion is that `N_xill`, the illuminating spectrum
 fed to it, or the table's relative normalization is wrong. It is **not** grounds for introducing a
 correction factor (§4.2).
+
+The direct term of the model is still handed to the convolution as a flux,
+i.e., it is a factor 4 too weak relative to both reflected paths (open issue
+in `doc/xillver_angular_dependence.md`). The diagnostic file `obs-bbodyEmit`
+already convolves the intensity `specPri / 0.25`, so its sum over the zones
+is currently 4× the direct term of the model.

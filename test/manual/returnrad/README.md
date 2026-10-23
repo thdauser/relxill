@@ -11,6 +11,13 @@ This readme describes the manual tests and plots for returning thermal radiation
 - Further smaller plot scripts are ther other `plot_*.sl` scripts, which rely on calling the model; some may be broken by changes to the output files in relxillBB
 - all plots are stored in `plots/`
 
+# Output files
+
+- the model writes the spectra of the zones to `__relxillOutput-rrad-bbody-*.fits` (with `RELXILL_WRITE_FILES=1`, see
+  `create_output_files.sl`); all of them are fluxes (rest frame: angle-averaged). The table of all files, their content
+  and flux conversion is in `doc/returnrad_disk_emission.md` ("Diagnostic output files")
+- the `*-total` and `*-primary` files in this folder are from before 2026-10-21 and are no longer written
+
 
 
 

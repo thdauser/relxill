@@ -49,20 +49,54 @@ zone. `calc_relline_profile()` splits the cells of the radial points at the zone
 each zone covers exactly its radial range \f$[r_\mathrm{lo}, r_\mathrm{hi}]\f$, as for the returning-radiation table
 (see (3)). For `boost=0`, i.e., only the direct emission, the zones are not calculated.
 
-**Diagnostic output.** With `RELXILL_WRITE_FILES=1`, the spectra of the zones are written to
-`__relxillOutput-rrad-bbody-*.fits` (used by the scripts in `test/manual/returnrad/`):
+### Diagnostic output files {#returnrad_disk_emission_files}
 
-- `rframe-bbodyEmit.fits`: the primary of each zone `specPri[izone]` (rest frame).
-- `obs-bbodyEmit.fits`: the primary of each zone, convolved with the line profile of the zone (observed). The sum
-  over all zones agrees with the direct emission of the model to about 0.1% in the number of photons and the energy
-  (see (3c)); in the Wien tail, it deviates by up to a few percent per energy bin (2.6% at 10 kTbb for
-  \f$a = 0.998\f$ and an inclination of 40 deg).
-- `rframe-bbodyRet.fits`: the returning radiation of each zone `specRet[izone]` (rest frame).
-- `rframe-reflect.fits` and `obs-reflect.fits` (only for `boost` \f$\neq\f$ 0): the reflected spectrum of each zone,
-  scaled with \f$|b|\f$, in the rest frame and observed (`rframe-mirror-reflect.fits` and `obs-mirror-reflect.fits`
-  for `RELXILL_RRAD_BBODY_MIRRORED=1`).
+With `RELXILL_WRITE_FILES=1`, \ref relxillbb_kernel writes the spectra of the zones to
+`__relxillOutput-rrad-bbody-<name>.fits` in the working directory (columns `rlo`, `rhi`, `ener`, `spec`, one row per
+zone, photons per bin on the energy grid of the convolution). They are read by the scripts in `test/manual/returnrad/`
+(`scripts/subs_filenames.sl`); `create_output_files.sl` runs the model once with the xillver reflection and once with
+the mirror (`RELXILL_RRAD_BBODY_MIRRORED=1`).
 
-The total spectrum of a zone is the sum of its primary and its reflected spectrum.
+**All spectra are fluxes**, such that the files of one frame can be compared and added directly. The intensities that
+are handed to the convolution are not written (see \ref xillver_angular_dependence):
+
+- **Rest frame** (`rframe-*`): the flux per unit area emitted by (or incident on) the zone, **angle-averaged** over
+  the emission angles, i.e., independent of the observer.
+- **Observed** (`obs-*`): the flux seen by the observer, i.e., the intensity convolved with the line profile of the
+  zone, as in the model.
+
+**The angle averaging only matters for the xillver reflection.** The primary and the mirror emit an isotropic
+intensity, so their flux is 0.25 times the intensity, whatever the emission angle. The xillver intensity depends on the
+emission angle: `rframe-reflect` is its average over all emission angles (slab flux weights), whereas the model
+convolves the angle-mixed intensity of the emission angles under which the observer sees the zone (GR emission-angle
+distribution). Therefore, `rframe-reflect` can be compared with `rframe-bbodyRet` (energy conservation), but it is not
+the rest-frame version of `obs-reflect`.
+
+| file                    | written                 | content                                                                    | conversion to flux                                                                              |
+|-------------------------|-------------------------|----------------------------------------------------------------------------|-------------------------------------------------------------------------------------------------|
+| `rframe-bbodyEmit`      | always                  | emitted primary \f$F_\mathrm{pri}\f$ (`specPri`)                           | calculated as a flux; isotropic, the angle averaging has no effect                              |
+| `rframe-bbodyRet`       | always                  | returning flux \f$F_\mathrm{ret}\f$ (`specRet`) incident on the zone       | calculated as a flux (each returning ray is weighted with the cosine of its angle of incidence) |
+| `rframe-reflect`        | \f$b \neq 0\f$, xillver | xillver reflection, \f$\times\,                                            | b                                                                                               |\f$                                      | **angle-averaged** with the slab flux weights \f$\mu_i / (2 n_\mathrm{incl})\f$ (\ref calc_zone_xillver_angle_averaged_reflected_flux), not the convolved intensity |
+| `rframe-mirror-reflect` | \f$b \neq 0\f$, mirror  | mirrored returning radiation, \f$                                          | b                                                                                               |\, F_\mathrm{ret}\f$                   | intensity \f$\times\, 0.25\f$; isotropic, the angle averaging has no effect                                                                                     |
+| `obs-bbodyEmit`         | always                  | \f$P_i \otimes (F_\mathrm{pri} / 0.25)\f$                                  | convolution of the intensity                                                                    |
+| `obs-reflect`           | \f$b \neq 0\f$, xillver | \f$P_i \otimes\f$ angle-mixed xillver intensity, \f$\times\,               | b                                                                                               |\f$         | convolution of the intensity, as in the model                                                                                                                    |
+| `obs-mirror-reflect`    | \f$b \neq 0\f$, mirror  | \f$P_i \otimes (                                                           | b                                                                                               |\, F_\mathrm{ret} / 0.25)\f$                            | convolution of the intensity, as in the model                                                                                                                    |
+| `rframe-bbodyTemp.dat`  | always                  | temperature of each zone at its mean radius                                | --                                                                                              |
+| `emis_profile.dat`      | always                  | emissivity of the returning radiation and ionization gradient of the zones | --                                                                                              |
+
+\f$P_i\f$ is the line profile of zone \f$i\f$, \f$b\f$ the boost parameter. Notes:
+
+- **The total spectrum of a zone** is the sum of `bbodyEmit` and `reflect` (or `mirror-reflect`) in the same frame.
+  It is not written: the files `rframe-total`, `obs-total` (and their `mirror-` versions) and the primary per mode
+  (`obs-primary`, `obs-mirror-primary`) were removed on 2026-10-21 (`b212378`); `obs-bbodyEmit` replaces the latter
+  and is the same in both modes. The returning radiation is not written observed, as it does not reach the observer.
+- **`obs-bbodyEmit` and the direct emission of the model:** the sum over all zones is currently a factor 4 larger than
+  the direct emission of the model, as the model does not yet convert \f$F_\mathrm{pri}\f$ into an intensity (open
+  issue, see \ref xillver_angular_dependence). Apart from this factor, they agree to about 0.1% in the number of
+  photons and the energy (see (3c)); in the Wien tail, they deviate by up to a few percent per energy bin (2.6% at 10
+  kTbb for \f$a = 0.998\f$ and an inclination of 40 deg).
+- Files written before 2026-10-23 are not comparable: `rframe-reflect` was the angle-mixed intensity for the observer
+  inclination, `obs-mirror-reflect` and `obs-bbodyEmit` were a factor 4 lower.
 
 \ref spec_multicolor_disk calculates the disk emission (with \ref get_disk_emission_zones_binned) without relativistic
 effects, for any given radial zones, and weights each zone with its flat-space ring area

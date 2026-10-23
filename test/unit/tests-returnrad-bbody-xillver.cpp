@@ -19,7 +19,8 @@ This file is part of the RELXILL model code.
 
 // Unit tests of the reflection of the returning thermal radiation (relxillBB, relxillBB_NS): loading of the
 // xillverRTR (radial zones) and xillverNS tables, and the angle weighting and normalization of the xillver spectra of
-// the zones (see doc/returnrad_normalizations.md). Run with bin/tests "[rrad-bbody][xillver]".
+// the zones, and the mirrored returning radiation (see doc/returnrad_normalizations.md and
+// doc/xillver_angular_dependence.md). Run with bin/tests "[rrad-bbody][xillver]".
 
 #include "catch2/catch_amalgamated.hpp"
 #include "LocalModel.h"
@@ -31,6 +32,7 @@ This file is part of the RELXILL model code.
 #include "Rebin.h"
 #include "common-functions.h"
 #include "writeOutfiles.h"
+#include "XspecSpectrum.h"
 
 extern "C" {
 #include "relutility.h"
@@ -38,7 +40,7 @@ extern "C" {
 }
 
 // xillver normalization of a spectrum, computed as for N_xill in
-// calc_zone_xillver_reflected_flux(): rebin onto the coarse xillver grid,
+// calc_zone_xillver_reflected_intensity(): rebin onto the coarse xillver grid,
 // then calc_xillver_norm_from_primary_spectrum().
 static double get_xillver_norm_on_coarse_grid(const double *spec, const double *ener, int n_ener, int *status) {
     EnerGrid *egrid = get_coarse_xillver_energrid();
@@ -46,77 +48,6 @@ static double get_xillver_norm_on_coarse_grid(const double *spec, const double *
     _rebin_spectrum(egrid->ener, spec_coarse.data(), egrid->nbins, ener, spec, n_ener);
     return calc_xillver_norm_from_primary_spectrum(spec_coarse.data(), egrid->ener, egrid->nbins, status);
 }
-
-// per-zone ratio N(reflect)/N(return) of the output of calc_zone_xillver_reflected_flux().
-// boost=-1: |boost|=1 does not scale the reflection
-//  => xill_flux_returnrad = N_xill(specRet) * F_xill, with the angle weighting given by rel_profile->rel_cosne
-static VecD calc_ratio_reflected_to_returning_flux(const xillParam &xill_param,
-                                                   const relline_spec_multizone *rel_profile,
-                                                   const returnSpec2D *returnSpec,
-                                                   int *status) {
-    xillParam xill_param_zone = xill_param;
-    xill_param_zone.boost = -1.0;
-
-    VecD ratio(returnSpec->nrad, 0.0);
-    VecD xill_flux_returnrad(returnSpec->n_ener, 0.0);
-
-    // printf("\n %5s  %12s  %12s  %12s\n", "izone", "N(return)", "N(reflect)", "refl/return");
-    for (int izone = 0; izone < returnSpec->nrad; izone++) {
-        xill_param_zone.radzone = static_cast<double>(izone);
-        calc_zone_xillver_reflected_flux(xill_param_zone,
-                                         rel_profile,
-                                         returnSpec,
-                                         xill_flux_returnrad,
-                                         izone,
-                                         status);
-
-        double norm_return =
-                get_xillver_norm_on_coarse_grid(returnSpec->specRet[izone],
-                                                returnSpec->ener,
-                                                returnSpec->n_ener,
-                                                status);
-        double norm_reflect =
-                get_xillver_norm_on_coarse_grid(xill_flux_returnrad.data(),
-                                                returnSpec->ener,
-                                                returnSpec->n_ener,
-                                                status);
-        if (*status != EXIT_SUCCESS) {
-            break;
-        }
-
-        ratio[izone] = norm_reflect / norm_return;
-        //     printf(" %5i  %12.4e  %12.4e  %12.4e\n", izone, norm_return, norm_reflect, ratio[izone]);
-    }
-    return ratio;
-}
-
-// relline_spec_multizone with only the emission-angle distribution rel_cosne set (the only part
-// used by calc_zone_xillver_reflected_flux()), owning the memory of dist [n_zones][n_cosne]
-struct AngleDistProfile {
-    VecD cosne;
-    VecD_2D dist;
-    std::vector<double *> dist_rows;
-    RelCosne rel_cosne{};
-    relline_spec_multizone profile{};
-
-    AngleDistProfile(const VecD &cosne_in, int n_zones)
-        : cosne(cosne_in), dist(n_zones, VecD(cosne_in.size(), 0.0)), dist_rows(n_zones) {
-        for (int ii = 0; ii < n_zones; ii++) {
-            dist_rows[ii] = dist[ii].data();
-        }
-        rel_cosne.n_cosne = static_cast<int>(cosne.size());
-        rel_cosne.n_zones = n_zones;
-        rel_cosne.cosne = cosne.data();
-        rel_cosne.dist = dist_rows.data();
-        profile.n_zones = n_zones;
-        profile.rel_cosne = &rel_cosne;
-    }
-
-    // holds pointers to its own members
-    AngleDistProfile(const AngleDistProfile &) = delete;
-
-    AngleDistProfile &operator=(const AngleDistProfile &) = delete;
-};
 
 // semi-infinite slab flux weights 0.5*cos(incl_i)/n_incl of the table inclinations (xillSpec::incl is
 // given in deg), computed independently of get_semi_infinite_slab_flux_weights() to test it
@@ -278,7 +209,10 @@ TEST_CASE (
         CHECK(weights[ii] == Catch::Approx(weights_expected[ii]).epsilon(1e-10));
         sum_weights += weights[ii];
     }
-    CHECK(sum_weights == Catch::Approx(0.25).epsilon(1e-3));
+    // the sum is the flux of an isotropic intensity, F = 0.25*I, which is used as constant for the mirrored returning
+    // radiation (calc_zone_mirrored_intensity()). It is 0.25 to 1e-7, as the midpoint rule in cos(incl) is exact for the
+    // integrand 0.5*mu (only the rounding of the table inclinations remains).
+    CHECK(sum_weights == Catch::Approx(SEMI_INFINITE_SLAB_FLUX_ISOTROPIC).epsilon(1e-6));
 
     // the angle-averaged flux is the sum of the table spectra weighted with these weights
     double *spec_avg = calc_angle_averaged_xillver_flux(xill_spec, &status);
@@ -378,12 +312,11 @@ TEST_CASE (
 "[rrad-bbody][xillver][xillverRTR][norm]"
 )
  {
-    // Energy conservation: the GR emission-angle distribution is replaced by the semi-infinite slab flux weights
-    // (identical for all zones), which turns the angle-weighted intensity into the angle-averaged flux (as in
-    // calc_angle_averaged_xillver_flux()). This reflected flux must be below the returning flux. (With the GR
-    // emission-angle distribution, the result is the angle-mixed intensity, which can not be compared with the
-    // returning flux, see "[angleweight]".)
-    int status = EXIT_SUCCESS;
+     // Energy conservation: the angle-averaged reflected flux of each zone (semi-infinite slab flux weights instead of
+     // the GR emission-angle distribution, calc_zone_xillver_angle_averaged_reflected_flux(), as written to
+     // rframe-reflect.fits) must be below the returning flux. (The angle-mixed intensity handed to the convolution can
+     // not be compared with the returning flux, see "[angleweight]".)
+     int status = EXIT_SUCCESS;
     LocalModel lmod(ModelName::relxillBB);
     relParam *rel_param = lmod.get_rel_params_struct();
     xillParam *xill_param = lmod.get_xill_param_struct();
@@ -402,34 +335,26 @@ TEST_CASE (
                                                         &status);
     REQUIRE(status == EXIT_SUCCESS);
 
-    xillParam xill_param_incl = *xill_param;
-    xill_param_incl.radzone = 0;
-    xillSpec *xill_spec = get_xillver_spectra(&xill_param_incl, &status);
-    REQUIRE(status == EXIT_SUCCESS);
+     // boost=-1: |boost|=1 does not scale the reflection
+     xillParam xill_param_zone = *xill_param;
+     xill_param_zone.boost = -1.0;
+     VecD xill_flux(returnSpec->n_ener, 0.0);
+     for (int izone = 0; izone < returnSpec->nrad; izone++) {
+         xill_param_zone.radzone = static_cast<double>(izone);
+         calc_zone_xillver_angle_averaged_reflected_flux(xill_param_zone, returnSpec, xill_flux, izone, &status);
+         const double norm_reflect =
+                 get_xillver_norm_on_coarse_grid(xill_flux.data(), returnSpec->ener, returnSpec->n_ener, &status);
+         const double norm_return = get_xillver_norm_on_coarse_grid(returnSpec->specRet[izone],
+                                                                    returnSpec->ener,
+                                                                    returnSpec->n_ener,
+                                                                    &status);
+         REQUIRE(status == EXIT_SUCCESS);
 
-    // slab flux weights 0.5*cos(incl_i)/n_incl (the weights themselves are tested in "[slabweights]")
-    const VecD slab_weights = get_semi_infinite_slab_flux_weights(xill_spec);
-
-    VecD cosne(xill_spec->n_incl);
-    for (int ii = 0; ii < xill_spec->n_incl; ii++) {
-        cosne[ii] = cos(xill_spec->incl[ii] * M_PI / 180.0);
-    }
-    free_xill_spec(xill_spec);
-
-    AngleDistProfile slab(cosne, returnSpec->nrad);
-    for (int izone = 0; izone < returnSpec->nrad; izone++) {
-        std::copy(slab_weights.begin(), slab_weights.end(), slab.dist[izone].begin()); // keep dist_rows valid
-    }
-
-    VecD ratio = calc_ratio_reflected_to_returning_flux(*xill_param, &slab.profile, returnSpec, &status);
-    REQUIRE(status == EXIT_SUCCESS);
-
-    // energy conservation: the reflected flux is below the returning (illuminating) flux
-    for (int izone = 0; izone < returnSpec->nrad; izone++) {
-        INFO("zone " << izone);
-        CHECK(ratio[izone] > 0.0);
-        CHECK(ratio[izone] < 1.0);
-    }
+         // energy conservation: the reflected flux is below the returning (illuminating) flux
+         INFO("zone " << izone << ": reflected / returning energy flux = " << norm_reflect / norm_return);
+         CHECK(norm_reflect / norm_return > 0.0);
+         CHECK(norm_reflect / norm_return < 1.0);
+     }
 
     delete_returnSpec2D(&returnSpec);
     delete_rel_params(rel_param);
@@ -437,7 +362,41 @@ TEST_CASE (
 }
 
 TEST_CASE (
-"xillverRTR angle weighting: angle-mixed intensity vs. angle-averaged flux per zone (written to file)"
+"mirrored returning radiation: full model, the xillver reflection is weaker than the mirror",
+"[rrad-bbody][xillver][mirror]"
+) {
+    // The mirror (RELXILL_RRAD_BBODY_MIRRORED=1) re-emits all of the returning flux with an isotropic intensity, the
+    // xillver reflection only a part of it (about 0.43 of the energy flux, angle-averaged, see "[angleweight]"). Both
+    // are handed to the relativistic convolution as intensities and are observed with the same line profiles, so the
+    // observed xillver/mirror ratio must be below 1 (reflection only, boost=-1). The ratio is not a fixed number: per
+    // zone it is A_mix/4 of "[angleweight]", i.e., it depends on the emission-angle distribution (inclination), and,
+    // as the spectral shapes differ, on the energy band (0.32-0.47 for 20-80 deg in 0.1-1000 keV). A factor 4 error
+    // in either path (e.g., the mirror handed to the convolution as the flux specRet, as before 2026-10-23) gives a
+    // ratio of 1.3-1.9 and fails.
+    const double incl_deg = GENERATE(20.0, 80.0);
+    INFO("incl = " << incl_deg << " deg");
+
+    double energy_flux[2]; // [0]: xillver, [1]: mirror
+    for (int mirror: {0, 1}) {
+        setenv("RELXILL_RRAD_BBODY_MIRRORED", mirror ? "1" : "0", 1);
+        LocalModel lmod(ModelName::relxillBB);
+        lmod.set_par(XPar::incl, incl_deg);
+        lmod.set_par(XPar::boost, -1.0);
+        DefaultSpec default_spec{};
+        XspecSpectrum spec = default_spec.get_xspec_spectrum();
+        lmod.eval_model(spec);
+        energy_flux[mirror] = spec.get_energy_flux();
+    }
+    unsetenv("RELXILL_RRAD_BBODY_MIRRORED");
+
+    const double ratio = energy_flux[0] / energy_flux[1];
+    INFO("energy flux xillver / mirror = " << ratio);
+    CHECK(ratio > 0.0);
+    CHECK(ratio < 1.0);
+}
+
+TEST_CASE(
+    "xillverRTR angle weighting: angle-mixed intensity vs. angle-averaged flux per zone (written to file)"
 ,
 "[rrad-bbody][xillver][xillverRTR][angleweight]"
 )

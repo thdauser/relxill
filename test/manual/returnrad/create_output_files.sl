@@ -37,6 +37,7 @@ define createOutputFiles(_ff, _par){
    }
    
    %% each evaluation writes the primary (rframe-bbodyEmit, obs-bbodyEmit) and returning (rframe-bbodyRet) spectra
+   %% (all files are fluxes, see doc/xillver_angular_dependence.md)
    %% of the zones, and for boost!=0 their reflected spectra, scaled with |boost| (rframe-reflect, obs-reflect, or
    %% rframe-mirror-reflect, obs-mirror-reflect for the mirrored returning spectrum); the total spectrum of a zone is
    %% the sum of its primary and reflected spectrum

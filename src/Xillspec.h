@@ -49,6 +49,12 @@ EnerGrid *get_relxill_conv_energy_grid();
 
 double norm_factor_semi_infinite_slab(double incl_deg);
 
+/** angle-averaged flux of a semi-infinite slab with an isotropic intensity I, in units of I:
+ *  int_0^1 0.5*mu dmu = 0.25 (the angle average of norm_factor_semi_infinite_slab(); the slab flux weights of the
+ *  xillver table inclinations, get_semi_infinite_slab_flux_weights(), sum to the same value). The intensity of an
+ *  isotropic emitter with flux F is therefore I = F / 0.25, see doc/xillver_angular_dependence.md */
+constexpr double SEMI_INFINITE_SLAB_FLUX_ISOTROPIC = 0.25;
+
 void norm_xillver_spec(xillSpec *spec, double incl);
 
 

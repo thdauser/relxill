@@ -112,17 +112,23 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
 
 std::vector<double> get_radial_grid_from_returntab(const returnSpec2D *spec);
 
-void calc_zone_xillver_reflected_flux(const xillParam &xill_param,
-                                      const relline_spec_multizone *rel_profile,
-                                      const returnSpec2D *returnSpec,
-                                      VecD &xill_flux_returnrad,
-                                      int izone,
-                                      int *status);
+void calc_zone_xillver_reflected_intensity(const xillParam &xill_param,
+                                           const relline_spec_multizone *rel_profile,
+                                           const returnSpec2D *returnSpec,
+                                           VecD &xill_intensity,
+                                           int izone,
+                                           int *status);
 
-void calc_zone_mirrored_flux(const xillParam &xill_param,
-                             const returnSpec2D *returnSpec,
-                             VecD &returnFlux,
-                             int ii);
+void calc_zone_xillver_angle_averaged_reflected_flux(const xillParam &xill_param,
+                                                     const returnSpec2D *returnSpec,
+                                                     VecD &xill_flux,
+                                                     int izone,
+                                                     int *status);
+
+void calc_zone_mirrored_intensity(const xillParam &xill_param,
+                                  const returnSpec2D *returnSpec,
+                                  VecD &mirrored_intensity,
+                                  int ii);
 
 VecD get_temperature_profile_disk_zones(const returningFractions *dat, double Rin, double Tin, int *status);
 
