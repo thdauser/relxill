@@ -3,8 +3,8 @@
 %% diagnose plots of the spectra of the zones of relxillBB (first order of the returning radiation, reflection only):
 %%  - rest frame: direct, returning, and reflected spectrum of the zones, normalized per zone by N_xill of the returning
 %%    spectrum (plots/relxillBB_perzone_rframe.pdf)
-%%  - observed: direct, reflected, and mirrored spectrum of the zones and their sums over the zones, and the sum of
-%%    the direct and the reflected spectrum, i.e., the model (plots/relxillBB_perzone_observed.pdf)
+%%  - observed: direct, mirrored, and reflected spectrum of the zones, and these spectra integrated over the zones
+%%    (plots/relxillBB_perzone_observed.pdf)
 %% see "Diagnostic output files" in doc/returnrad_disk_emission.md
 
 _traceback=1;
@@ -32,18 +32,18 @@ define plot_diagnose_rframe(){
 		   + "reflected (solid), return (dashed), direct (dotted)";
 
    %% the direct emission is about 1/(returning fraction) ~ 25 times above the returning spectrum
-   variable pl = get_2d_plot([files.rframe.specPri, files.rframe.specRet, files.rframe.xillRefl], spin;
-			     rframe, title=title, ymax=1e5, lines=[2,1,0]);
+   variable pl = get_2d_plot({files.rframe.specPri, files.rframe.specRet, files.rframe.xillRefl}, spin;
+			     rframe, title=title, ymax=1e5, lines=[2,1,0], nzones=6);
    pl.render(dir_plots+prefix+"perzone_rframe.pdf");
 }
 
 define plot_diagnose_observed(){
    variable files = getFilenameStruct();
-   variable title = "Observed: reflected (solid), mirrored (dashed), direct (dotted); "
-		   + "sum of the zones (black), direct + reflected (red)";
+   variable title = "Observed: direct (dotted), mirrored (dashed), reflected (solid); "
+		   + "zones (colors) and integrated over the zones (black)";
 
-   variable pl = get_2d_plot([files.fobs.primary, files.fobs.reflect, files.fobs.mirrorRefl], spin;
-			     title=title, total=[0,1], lines=[2,0,1]);
+   variable pl = get_2d_plot({files.fobs.primary, files.fobs.mirrorRefl, files.fobs.reflect}, spin;
+			     title=title, lines=[2,1,0], nzones=6);
    pl.render(dir_plots+prefix+"perzone_observed.pdf");
 }
 

@@ -1,10 +1,10 @@
 #!/usr/bin/env isis-script
 
 %% observed spectra of the zones of relxillBB_NS with the mirrored returning radiation (RELXILL_RRAD_BBODY_MIRRORED=1,
-%% reflection only): direct emission, mirrored 1st order, and mirrored 2nd order of the returning radiation
-%% (plots/relxillBB_NS_perzone_mirror_orders.pdf)
-%% The model returns the sum of all orders up to RELXILL_RRAD_BBODY_ORDER, so the 2nd order alone is the difference of
-%% the runs with order 2 and order 1. See "Diagnostic output files" in doc/returnrad_disk_emission.md.
+%% reflection only), for each zone and integrated over the zones: direct emission, mirrored 1st order, and mirrored
+%% 1st + 2nd order of the returning radiation (plots/relxillBB_NS_perzone_mirror_orders.pdf)
+%% The model returns the sum of all orders up to RELXILL_RRAD_BBODY_ORDER, i.e., the run with order 2 contains the 1st
+%% and the 2nd order. See "Diagnostic output files" in doc/returnrad_disk_emission.md.
 
 _traceback=1;
 
@@ -50,20 +50,13 @@ define plot_perzone_mirror_orders(){
    create_mirror_files(1);
    create_mirror_files(2);
 
-   %% the direct emission does not depend on the order (written by both runs)
-   variable d_direct = get_2d_data(getFilenameStruct().fobs.primary);
-   variable d_order1 = get_2d_data(get_fname_mirror_order(1));
-   variable d_order12 = get_2d_data(get_fname_mirror_order(2));
-
-   %% 2nd order alone
-   variable dat_order2 = @d_order12.dat;
-   dat_order2.spec = d_order12.dat.spec - d_order1.dat.spec;
-   variable d_order2 = struct{elo=d_order12.elo, ehi=d_order12.ehi, sumspec=d_order12.sumspec - d_order1.sumspec,
-			      dat=dat_order2};
-
-   variable title = "Observed, mirror: 1st order (solid), 2nd order (dashed), direct (dotted); "
-		   + "sum of the zones (black), direct + 1st + 2nd order (red)";
-   variable pl = get_2d_plot_data([d_direct, d_order1, d_order2], spin; title=title, total=[0,1,2], lines=[2,0,1]);
+   %% the direct emission does not depend on the order (written by both runs); the run with order 2 contains the
+   %% 1st and the 2nd order
+   variable fdirect = getFilenameStruct().fobs.primary;
+   variable title = "Observed, mirror: direct (dotted), 1st order (dashed), 1st + 2nd order (solid); "
+		   + "zones (colors) and integrated over the zones (black)";
+   variable pl = get_2d_plot({fdirect, get_fname_mirror_order(1), get_fname_mirror_order(2)}, spin;
+			     title=title, lines=[2,1,0]);
    pl.render(dir_plots+ff_plots+"_perzone_mirror_orders.pdf");
 }
 

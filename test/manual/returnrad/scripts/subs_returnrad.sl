@@ -65,12 +65,14 @@ define get_col(){
    return col;
 }
 
-%% plots the spectra of every 9th zone of the data dat (one line style per file)
+%% plots the spectra of the zones of the data dat (one line style per data set)
 %% qualifiers:
+%%   nzones     : number of zones shown, evenly spaced in the zone index from the innermost zone to the zone with the
+%%                mean radius closest to rmax (default 4)
+%%   rmax       : radius of the outermost zone shown (default 100 Rg; the outer zones are cool and emit at very low
+%%                energies)
 %%   lines      : line style of each file (0: solid, 1: dashed, 2: dotted; default: the index of the file)
-%%   noSumSpec  : do not plot the sum over the zones of each file (black, same line style)
-%%   total      : indices of the files whose sums over the zones are added up and plotted in red (e.g., direct +
-%%                reflected = model)
+%%   noSum      : do not plot the sum over the zones of each data set (black, in its line style)
 %%   ylabel, ymax, title
 define get_2d_plot_data(dat,spin){
 
@@ -96,37 +98,31 @@ define get_2d_plot_data(dat,spin){
       emn = 0.5*(elo+ehi);
       efac = emn^2/(ehi-elo);
 
-      if (not qualifier_exists("noSumSpec")){
+      if (not qualifier_exists("noSum")){
 	 pl.plot(emn,dat[jj].sumspec*efac; color="black",width=3,line=lines[jj]);
-	 vmessage(" summed energy flux of file %d: %.4e (relative to file 0: %.4f)", jj, sum(dat[jj].sumspec*emn),
-		  sum(dat[jj].sumspec*emn)/sum(dat[0].sumspec*emn));
+	 vmessage(" energy flux integrated over the zones of data set %d: %.4e (relative to data set 0: %.4f)", jj,
+		  sum(dat[jj].sumspec*emn), sum(dat[jj].sumspec*emn)/sum(dat[0].sumspec*emn));
       }
 
       variable n = length(dat[jj].dat.spec[*,0]);
-      variable mod_fac=9;
-      _for ii(0,n-1){
-	 if (ii mod mod_fac == 0) {
-	    pl.plot(emn,dat[jj].dat.spec[ii,*]*efac;color=get_col(), line=lines[jj]);
+      variable nzones = qualifier("nzones", 4);
+      variable rmid = 0.5*(dat[jj].dat.rlo+dat[jj].dat.rhi);
+      variable dist_rmax = abs(rmid - qualifier("rmax", 100.0));
+      variable imax = where(dist_rmax == min(dist_rmax))[0];
+      variable izones = nint([0:nzones-1] * imax / (nzones-1.0));
+      foreach ii (izones){
+	 pl.plot(emn,dat[jj].dat.spec[ii,*]*efac;color=get_col(), line=lines[jj]);
 
-	    if(jj==0){
-	       pl.add_object(xfig_new_text(sprintf("$r = %.1f\,r_\mathrm{g}$"R,
-						   0.5*(dat[jj].dat.rlo[ii]+dat[jj].dat.rhi[ii]));
-					   color=get_col(;same),
-					   size="\footnotesize"R),
-			     .78,0.99,-0.5,-0.3+0.9*(ccount-1);world0);
-	    }
+	 if(jj==0){
+	    pl.add_object(xfig_new_text(sprintf("$r = %.1f\,r_\mathrm{g}$"R,
+						0.5*(dat[jj].dat.rlo[ii]+dat[jj].dat.rhi[ii]));
+					color=get_col(;same),
+					size="\footnotesize"R),
+			  .78,0.99,-0.5,-0.3+0.9*(ccount-1);world0);
 	 }
       }
    }
 
-   variable itot = qualifier("total", NULL);
-   if (itot != NULL){
-      variable sum_total = dat[itot[0]].sumspec*0;
-      foreach jj (itot){
-	 sum_total += dat[jj].sumspec;
-      }
-      pl.plot(emn, sum_total*efac; color="red",width=3,depth=-10);
-   }
 
    if (qualifier_exists("title")){
       pl.title(qualifier("title","description missing");size="\footnotesize"R);
@@ -135,30 +131,38 @@ define get_2d_plot_data(dat,spin){
    return pl;
 }
 
-%% plot of the spectra of the zones of the files fdat (see get_2d_plot_data for the qualifiers)
+%% sum of the spectra of the zones of several files (same zones and energy grid)
+define add_2d_data(d_a, d_b){
+   variable fd = @d_a.dat;
+   fd.spec = d_a.dat.spec + d_b.dat.spec;
+   return struct{elo=d_a.elo, ehi=d_a.ehi, sumspec=d_a.sumspec + d_b.sumspec, dat=fd};
+}
+
+%% plot of the spectra of the zones (see get_2d_plot_data for the qualifiers); each element of fdat is one data set,
+%% given by a file name or by an array of file names whose spectra are added up (e.g., {fdirect, [fdirect, frefl]})
 %% qualifier rframe: rest-frame files, normalized per zone by N_xill of the rest-frame returning spectrum of the zone
 %%    (the sums over the zones are not meaningful then and not plotted)
 define get_2d_plot(fdat,spin){
 
-   fdat = [fdat];
    variable m = length(fdat);
    variable dat = Struct_Type[m];
    variable qual = __qualifiers();
 
-   variable jj;
+   variable jj, fname;
    _for jj(0,m-1){
-      if (qualifier_exists("rframe")){
-	 dat[jj] = get_2d_data(fdat[jj]; normfile=getFilenameStruct().rframe.specRet);
-      } else {
-	 dat[jj] = get_2d_data(fdat[jj]);
+      dat[jj] = NULL;
+      foreach fname ([fdat[jj]]){
+	 variable d = qualifier_exists("rframe") ?
+	    get_2d_data(fname; normfile=getFilenameStruct().rframe.specRet) : get_2d_data(fname);
+	 dat[jj] = (dat[jj] == NULL) ? d : add_2d_data(dat[jj], d);
       }
    }
 
    if (qualifier_exists("rframe")){
-      qual = struct_combine(qual, struct{noSumSpec});
-      if (not qualifier_exists("ylabel")){
-	 qual = struct_combine(qual, struct{ylabel="$\nu\;F_\nu$ / $N_\mathrm{xill}$(returning spectrum of the zone)"R});
-      }
+      qual = struct_combine(qual, struct{noSum});
+   }
+   if (qualifier_exists("rframe") && not qualifier_exists("ylabel")){
+      qual = struct_combine(qual, struct{ylabel="$\nu\;F_\nu$ / $N_\mathrm{xill}$(returning spectrum of the zone)"R});
    }
 
    return get_2d_plot_data(dat, spin;; qual);
