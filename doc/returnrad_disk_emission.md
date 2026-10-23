@@ -22,6 +22,9 @@ of the whole disk with a single convolution:
   \f$kT_\mathrm{bb}\f$ convolved with a kernel, which is the relativistic line profile of each radial point at the line
   energy \f$t(r)\f$, weighted with \f$t(r)^3\f$ (`get_disk_emission_kernel()`, using
   \ref calc_relline_profile_radial_line_energy).
+- As for the reflection, the convolution takes an intensity: the blackbody flux is divided by 0.25, as the disk surface
+  emits isotropically (see \ref xillver_angular_dependence). This sets the normalization of the direct emission
+  relative to the reflection (test (3d)).
 - The kernel does not depend on \f$kT_\mathrm{bb}\f$. It is cached and only re-calculated if a relativistic parameter
   or the temperature profile changes.
 - The convolution is done with an FFT on the energy grid of the convolution (`N_ENER_CONV` = 4096 bins from 0.00035
@@ -90,11 +93,9 @@ the rest-frame version of `obs-reflect`.
   It is not written: the files `rframe-total`, `obs-total` (and their `mirror-` versions) and the primary per mode
   (`obs-primary`, `obs-mirror-primary`) were removed on 2026-10-21 (`b212378`); `obs-bbodyEmit` replaces the latter
   and is the same in both modes. The returning radiation is not written observed, as it does not reach the observer.
-- **`obs-bbodyEmit` and the direct emission of the model:** the sum over all zones is currently a factor 4 larger than
-  the direct emission of the model, as the model does not yet convert \f$F_\mathrm{pri}\f$ into an intensity (open
-  issue, see \ref xillver_angular_dependence). Apart from this factor, they agree to about 0.1% in the number of
-  photons and the energy (see (3c)); in the Wien tail, they deviate by up to a few percent per energy bin (2.6% at 10
-  kTbb for \f$a = 0.998\f$ and an inclination of 40 deg).
+- **`obs-bbodyEmit` and the direct emission of the model:** the sum over all zones agrees with the direct emission of
+  the model to about 0.1% in the number of photons and the energy (see (3c)); in the Wien tail, it deviates by up to a
+  few percent per energy bin (2.6% at 10 kTbb for \f$a = 0.998\f$ and an inclination of 40 deg).
 - Files written before 2026-10-23 are not comparable: `rframe-reflect` was the angle-mixed intensity for the observer
   inclination, `obs-mirror-reflect` and `obs-bbodyEmit` were a factor 4 lower.
 
@@ -328,6 +329,14 @@ profile. The tests are done for the alpha disk and the Novikov-Thorne profile, f
   of photons (to 0.02-0.11%) and the same energy flux (to 0.05-0.17%) in 0.1-1000 keV as the direct emission of the
   model. The remaining difference is due to the variation of the temperature within a zone combined with the
   relativistic effects, which is not taken into account for the zones (largest for \f$a = 0.998\f$).
+- **(3d)** Direct emission and reflection in the same convention: the full model with the mirrored returning radiation
+  (`RELXILL_RRAD_BBODY_MIRRORED=1`, \f$b = -1\f$) and with the direct emission only (\f$b = 0\f$). Both are
+  isotropic emitters observed with the same line profiles, so the ratio of their observed photons is
+  \f$\sum_i W_i\, n_{\mathrm{ret},i} / \sum_i W_i\, n_{\mathrm{pri},i}\f$, with \f$W_i\f$ the photons of the line
+  profile of zone \f$i\f$ and \f$n\f$ the photons of `specRet` and `specPri`. The expected value does not depend on
+  the conversion of the flux into the intensity handed to the convolution (\ref xillver_angular_dependence). The model
+  agrees to \f$2 \times 10^{-4}\f$ to \f$7 \times 10^{-4}\f$ (\f$a\f$ = 0 and 0.998, 30 and 70 deg); with the
+  direct emission handed to the convolution as a flux (before 2026-10-23), it deviated by a factor of 4.0.
 
 **Area of the zones.** The returning-radiation table assumes that each zone covers exactly its radial range
 \f$[r_\mathrm{lo}, r_\mathrm{hi}]\f$. Each radial point represents the cell between the midpoints to its neighbors.
@@ -371,8 +380,11 @@ In `test/unit/tests-returnrad-bbody-diskemission.cpp`; all disk emission tests r
   identical to the returning radiation of this primary (to \f$10^{-10}\f$).
 - **(3c)** *"disk emission (3c): direct emission of the model vs. the primary of the zones observed"*: number of
   photons and energy flux in 0.1-1000 keV to 0.3%.
+- **(3d)** *"disk emission (3d): direct emission and mirrored returning radiation are observed in the same
+  convention"*: ratio of the observed photons to 0.3% (\f$a\f$ = 0 and 0.998 at 30 deg, \f$a\f$ = 0.998 at 70 deg,
+  `relxillBB_NS` with the default temperature profile).
 
-The tests (3) run for the alpha disk and the Novikov-Thorne profile, for \f$a\f$ = 0 and 0.998.
+The tests (3a)-(3c) run for the alpha disk and the Novikov-Thorne profile, for \f$a\f$ = 0 and 0.998.
 
 The reference spectra of the Xspec models are in `test/unit/refdata/`: `refvalues_diskbb_Tin{0.5,1.0,2.0}.fits`
 (column `diskbb`) and `refvalues_ezdiskbb_Tmax{0.5,1.0,2.0}.fits` (column `ezdiskbb`), created with
@@ -381,6 +393,9 @@ the parameters in the header), created with `create_refvalues_kerrbb.sl`.
 
 ## History
 
+- 2026-10-23: the direct emission is handed to the convolution as the intensity \f$F_\mathrm{pri} / 0.25\f$ instead of
+  the flux \f$F_\mathrm{pri}\f$ (factor 4 larger relative to the reflection, see \ref xillver_angular_dependence), and
+  the primary of the zones in the test (3c) and in `obs-bbodyEmit` accordingly. New test (3d).
 - 2026-10: `disk_temperature_diskbb()` calculated \f$(kT_\mathrm{bb}\, r/R_\mathrm{in})^{-3/4}\f$ instead of
   \f$kT_\mathrm{bb} (r/R_\mathrm{in})^{-3/4}\f$, i.e., an inner temperature of \f$kT_\mathrm{bb}^{-3/4}\f$. This had
   no effect for kTbb = 1 keV, the only value that was tested.

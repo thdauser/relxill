@@ -123,9 +123,9 @@ for a non-negative boost, while the reflected term is always scaled by \f$|b|\f$
 emitted primary as the returning radiation: `specPri[i]`, from which `specRet[i]` is calculated, is the emission of
 the same radial points with the same temperatures as the direct emission, binned into the zones. There is no
 \f$N_\mathrm{dir}\f$; only the reflected term is scaled. The consistency of the direct and the reflected term is tested
-by the unit tests (3) described in \ref returnrad_disk_emission. Note, however, that the direct emission is handed to
-the convolution as a flux, whereas the reflected spectra are intensities, which makes the direct term a factor 4 too
-weak relative to the reflected term (open issue, see \ref xillver_angular_dependence).
+by the unit tests (3) described in \ref returnrad_disk_emission. As the reflected spectra, the direct emission is
+handed to the convolution as an intensity (\f$F_\mathrm{pri} / 0.25\f$ of the isotropically emitting disk surface),
+see \ref xillver_angular_dependence; this relative normalization is tested by (3d).
 
 ### What follows from this
 

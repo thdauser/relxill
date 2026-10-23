@@ -420,7 +420,11 @@ static const VecD &get_disk_emission_kernel(const double *ener,
  * @brief Observed direct disk emission of the relxillBB models [photons/bin], on the energy grid of the convolution.
  *
  * Convolution of the blackbody of the maximal temperature kTbb (bin-integrated photon spectrum per unit area) with the
- * kernel of the disk emission (get_disk_emission_kernel). The FFT convolution is cyclic, and the kernel shifts the
+ * kernel of the disk emission (get_disk_emission_kernel).
+ *
+ * As for the reflection, the convolution takes an intensity (in xillver table units): the blackbody surface of the disk
+ * emits isotropically, so the intensity is its flux / 0.25 (SEMI_INFINITE_SLAB_FLUX_ISOTROPIC), see
+ * @ref xillver_angular_dependence. This sets the normalization of the direct emission relative to the reflection. The FFT convolution is cyclic, and the kernel shifts the
  * energies down by up to a factor ~100 (outer disk). The blackbody is therefore set to zero in the bins that the
  * kernel can shift outside the energy grid, as they would re-appear at the other end of the grid. This only changes
  * the spectrum observed below ~0.05 keV (~0.1 keV for the diskbb profile).
@@ -451,7 +455,8 @@ static VecD calc_disk_emission_observed(double *ener,
         if (jj < nbins_shift_down || jj >= n_ener - nbins_shift_up) {
             spec_bbody[jj] = 0.0;
         } else {
-            spec_bbody[jj] *= ener[jj + 1] - ener[jj]; // bin-integrated
+            // bin-integrated, and converted from the flux into the intensity of the isotropic emission
+            spec_bbody[jj] = isotropic_intensity_from_flux(spec_bbody[jj] * (ener[jj + 1] - ener[jj]));
         }
     }
 
@@ -988,8 +993,7 @@ void calc_zone_mirrored_intensity(const xillParam &xill_param,
                                   VecD &mirrored_intensity,
                                   int ii) {
     for (int jj = 0; jj < returnSpec->n_ener; jj++) {
-        mirrored_intensity[jj] = returnSpec->specRet[ii][jj] / SEMI_INFINITE_SLAB_FLUX_ISOTROPIC * fabs(
-                                     xill_param.boost);
+        mirrored_intensity[jj] = isotropic_intensity_from_flux(returnSpec->specRet[ii][jj]) * fabs(xill_param.boost);
     }
 }
 
@@ -1128,8 +1132,8 @@ static void write_bbret_diagnose_outfiles(const VecD_2D &specZonesConvOutput,
  *
  * As for the reflected spectra, the convolution takes an intensity: specPri is the emitted flux of an isotropically
  * emitting blackbody surface, so its intensity specPri / 0.25 (SEMI_INFINITE_SLAB_FLUX_ISOTROPIC) is convolved, see
- * @ref xillver_angular_dependence. (The direct emission of the model, calc_disk_emission_observed, does not yet apply
- * this conversion and is therefore a factor 4 lower than the sum of this file over all zones.)
+ * @ref xillver_angular_dependence, as for the direct emission of the model (calc_disk_emission_observed). The sum over
+ * all zones agrees with the direct emission of the model to about 0.1% (see the unit test "disk emission (3c)").
  */
 static void write_primary_observed_diagnose_outfile(double *ener,
                                                     int n_ener,
@@ -1141,7 +1145,7 @@ static void write_primary_observed_diagnose_outfile(double *ener,
     VecD intensity_pri(n_ener);
     for (int izone = 0; izone < returnSpec->nrad; izone++) {
         for (int jj = 0; jj < n_ener; jj++) {
-            intensity_pri[jj] = returnSpec->specPri[izone][jj] / SEMI_INFINITE_SLAB_FLUX_ISOTROPIC;
+            intensity_pri[jj] = isotropic_intensity_from_flux(returnSpec->specPri[izone][jj]);
         }
         convolveSpectrumFFTNormalized(ener,
                                       intensity_pri.data(),
@@ -1295,8 +1299,7 @@ void relxillbb_kernel(const XspecSpectrum &spectrum,
             calc_zone_mirrored_intensity(xill_param_zone, returnSpec, specZonesReflected[izone], izone);
             if (shouldOutfilesBeWritten()) {
                 for (int jj = 0; jj < n_ener; jj++) {
-                    specZonesReflectedFlux[izone][jj] =
-                            specZonesReflected[izone][jj] * SEMI_INFINITE_SLAB_FLUX_ISOTROPIC;
+                    specZonesReflectedFlux[izone][jj] = isotropic_flux_from_intensity(specZonesReflected[izone][jj]);
                 }
             }
         } else {

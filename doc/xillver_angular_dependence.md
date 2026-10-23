@@ -75,7 +75,8 @@ convolution. The spectra convolved in \ref relxillbb_kernel are
 - **Mirrored returning radiation** (\ref calc_zone_mirrored_intensity, test path selected with
   `RELXILL_RRAD_BBODY_MIRRORED=1`): \f$I_\mathrm{mirror} = F_\mathrm{ret} / 0.25\f$, see below. A mirror conserves
   the energy exactly: the angle-averaged flux of this intensity is \f$F_\mathrm{ret}\f$.
-- **Direct disk emission** (`calc_disk_emission_observed()`): not yet following the rule, see the open issue below.
+- **Direct disk emission** (`calc_disk_emission_observed()`): \f$I_\mathrm{pri} = F_\mathrm{pri} / 0.25\f$, as the
+  blackbody surface of the disk emits isotropically, see "Direct disk emission" below.
 
 ### What "mirrored" means
 
@@ -148,26 +149,44 @@ In `test/unit/tests-returnrad-bbody-xillver.cpp`, run with `bin/tests "[rrad-bbo
 - `[mirror]` *"mirrored returning radiation: full model, the xillver reflection is weaker than the mirror"*: the
   energy flux ratio xillver / mirror of the full model (\f$b = -1\f$, 20 and 80 deg) is below 1, see the table above.
   It fails for a factor 4 error in either path.
+- (3d) in `test/unit/tests-returnrad-bbody-diskemission.cpp` (`bin/tests "[diskemission]"`): direct emission vs.
+  mirror, see "Direct disk emission" below.
 - `[angleweight]` *"xillverRTR angle weighting: angle-mixed intensity vs. angle-averaged flux per zone"*: writes the
   different angle weightings per zone to `__relxill_unit_xillverRTR-angleweight.dat`.
 
-## Open issue: direct disk emission
+## Direct disk emission
 
-The direct emission of the disk (`calc_disk_emission_observed()`) convolves the emitted blackbody flux per unit area
-with the kernel of the line profiles. This is the same as convolving the primary of the zones `specPri` (a flux, from
-which `specRet` is calculated) with the line profiles of the zones (test (3c) in \ref returnrad_disk_emission).
-Following
-the rule above, the blackbody surface of the disk emits isotropically, so its intensity is \f$F_\mathrm{pri} /
-0.25\f$.
+The direct emission of the disk (`calc_disk_emission_observed()`) convolves the blackbody emitted per unit area with
+the kernel of the line profiles, which is the same as convolving the primary of the zones `specPri` with the line
+profiles of the zones (test (3c) in \ref returnrad_disk_emission). The blackbody surface of the disk emits
+isotropically, so, following the rule above, its intensity \f$F_\mathrm{pri} / 0.25\f$ is convolved, as for the
+mirror. This sets the normalization of the direct emission relative to the reflection.
 
-Currently, the direct emission is therefore a factor 4 too weak relative to the reflected emission (xillver and
-mirror), i.e., the reflected-to-direct ratio at \f$b = 1\f$ is a factor 4 too large. The shape of the direct emission
-(e.g., the comparison with `kerrbb`) is not affected. Before 2026-10-23, the mirror was handed to the convolution as a
-flux as well, i.e., it was consistent with the direct emission but a factor 4 too weak compared to the xillver
-reflection.
+The direct emission and the mirror are converted by the same function, `isotropic_intensity_from_flux()`
+(`src/Xillspec.h`, \f$I = F / 0.25\f$), so both isotropic emitters are treated identically in the code.
 
-The diagnostic file `obs-bbodyEmit` already follows the rule (see above), so its sum over all zones is currently a
-factor 4 larger than the direct emission of the model.
+**Units of the blackbody.** `bbody_photon_flux_per_keV()` only calculates the shape of the blackbody,
+\f$E^2 / (e^{E/kT} - 1)\f$, without any constant; whether it is read as an intensity or as a flux only changes the
+absolute normalization of all spectra by a constant factor. This does not matter for the model: the returning
+radiation `specRet` is `specPri` times dimensionless photon fractions, i.e., in the same units, and the direct
+emission (\f$\propto\f$ `specPri`), the mirror (\f$\propto\f$ `specRet`), and the xillver reflection
+(\f$\propto N_\mathrm{xill}(\f$`specRet`\f$)\f$) all scale with the same factor. Only their ratios are determined by
+the model (the absolute flux is set by the normalization parameter), and these only require that `specPri` and
+`specRet` are treated as fluxes in the same way, which the test (3d) checks.
+
+The decisive test is (3d) (see \ref returnrad_disk_emission). The direct emission and the mirror are both isotropic
+emitters observed with the same line profiles, so the ratio of their observed photons in the full model must be
+\f$\sum_i W_i\, n_{\mathrm{ret},i} / \sum_i W_i\, n_{\mathrm{pri},i}\f$ (\f$W_i\f$ the photons of the line profile of
+zone \f$i\f$, \f$n\f$ the photons of `specRet` and `specPri`). This expected value does not contain the conversion
+factor, so the test does not repeat the implementation; if only one of the two paths converted the flux into an
+intensity, it would be off by a factor 4. The chain of the tests `[slabweights]` (conversion factor = xillver flux
+definition), `[mirror]` (xillver vs. mirror), and (3d) (mirror vs. direct emission) fixes the normalization of the
+direct emission relative to the xillver reflection.
+
+Until 2026-10-23, the direct emission was handed to the convolution as the flux \f$F_\mathrm{pri}\f$, i.e., a factor 4
+too weak relative to the xillver reflection: the reflected-to-direct ratio at \f$b = 1\f$ was a factor 4 too large
+(energy flux 0.1-100 keV, default parameters: now 0.013, 0.014, 0.018, 0.028 for 20, 40, 60, 80 deg). The shape of
+the direct emission (e.g., the comparison with `kerrbb`) is not affected.
 
 ## History
 
@@ -178,3 +197,6 @@ factor 4 larger than the direct emission of the model.
   `calc_zone_xillver_reflected_flux()` and `calc_zone_mirrored_flux()`).
 - 2026-10-23: all diagnostic files are fluxes (see "Diagnostic output"): `rframe-reflect` is the angle-averaged flux,
   `rframe-mirror-reflect` the returning flux, and `obs-bbodyEmit` the convolution of the intensity of the primary.
+- 2026-10-23: the direct emission of the disk is handed to the convolution as the intensity \f$F_\mathrm{pri} /
+  0.25\f$ instead of the flux \f$F_\mathrm{pri}\f$, i.e., it is a factor 4 larger relative to the reflection
+  (new unit test (3d)).

@@ -30,6 +30,7 @@
 #include "Relphysics.h"
 
 #include <array>
+#include <numeric>
 
 extern "C" {
 #include "relutility.h"
@@ -664,7 +665,8 @@ TEST_CASE (
   XspecSpectrum spec_model(egrid->ener, flux_model.data(), n_ener);
   lmod.eval_model(spec_model);
 
-  // primary of the zones convolved with the line profiles of the zones (as in relxillbb_kernel)
+  // primary of the zones convolved with the line profiles of the zones, as an intensity (specPri / 0.25, as the
+  // reflection in relxillbb_kernel and the direct emission of the model, see doc/xillver_angular_dependence.md)
   int status = EXIT_SUCCESS;
   relParam *rel_param = get_rel_params(lmod.get_model_params());
   xillParam *xill_param = get_xill_params(lmod.get_model_params());
@@ -683,9 +685,13 @@ TEST_CASE (
   specCache *spec_cache = init_global_specCache(&status);
   VecD flux_zones(n_ener, 0.0);
   VecD flux_conv(n_ener);
+  VecD intensity_pri(n_ener);
   for (int ii = 0; ii < return_spec->nrad; ii++) {
+    for (int jj = 0; jj < n_ener; jj++) {
+      intensity_pri[jj] = isotropic_intensity_from_flux(return_spec->specPri[ii][jj]);
+    }
     convolveSpectrumFFTNormalized(egrid->ener,
-                                  return_spec->specPri[ii],
+                                  intensity_pri.data(),
                                   profiles->flux[ii],
                                   flux_conv.data(),
                                   n_ener,
@@ -709,6 +715,85 @@ TEST_CASE (
   CHECK(fabs(sum_zones[1] / sum_model[1] - 1) < 3e-3);
 
   unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+  delete_returnSpec2D(&return_spec);
+  delete_rel_params(rel_param);
+  delete xill_param;
+}
+
+// ========== //
+// (3d) Direct emission and reflection in the same convention: the direct emission of the disk (flux F_pri, specPri)
+// and the mirrored returning radiation (RELXILL_RRAD_BBODY_MIRRORED=1, flux F_ret, specRet) are both isotropic
+// emitters observed with the same line profiles P_i of the zones. Whatever the conversion of the flux into the
+// intensity handed to the convolution (doc/xillver_angular_dependence.md), it is the same for both, so the number of
+// observed photons of the full model is
+//    mirror (boost=-1) / direct (boost=0) = sum_i W_i n_ret,i / sum_i W_i n_pri,i ,
+// with W_i the number of photons of P_i and n the number of photons of specRet and specPri of zone i. The expected value
+// does not depend on the conversion factor; if only one of the two converts the flux into an intensity, the ratio is
+// off by a factor 4. Together with "[slabweights]" (conversion factor = xillver flux definition) and "[mirror]" (xillver
+// vs. mirror), this fixes the normalization of the direct emission relative to the xillver reflection. The remaining
+// deviation (below 1e-3) is due to the variation of the temperature within a zone combined with the relativistic
+// effects (see (3c)) and to the photons of the cool outer disk observed below EMIN_XILLVER.
+TEST_CASE (
+"disk emission (3d): direct emission and mirrored returning radiation are observed in the same convention"
+,
+"[rrad-bbody][diskemission]"
+)
+ {
+  const auto [spin, incl] = GENERATE(std::array<double, 2>{0.0, 30.0},
+                                     std::array<double, 2>{0.998, 30.0},
+                                     std::array<double, 2>{0.998, 70.0});
+  INFO("a = " << spin << ", incl = " << incl << " deg");
+
+  LocalModel lmod(ModelName::relxillBB_NS);
+  lmod.set_par(XPar::a, spin);
+  lmod.set_par(XPar::incl, incl);
+  lmod.set_par(XPar::rin, -1);
+
+  // full model on the energy grid of the convolution: direct emission (boost=0) and mirror (boost=-1, |boost|=1)
+  EnerGrid *egrid = get_relxill_conv_energy_grid();
+  const int n_ener = egrid->nbins;
+  std::array<double, 2> photons_model{};  // [0]: direct, [1]: mirror
+  for (int mirror: {0, 1}) {
+    setenv("RELXILL_RRAD_BBODY_MIRRORED", mirror ? "1" : "0", 1);
+    lmod.set_par(XPar::boost, mirror ? -1.0 : 0.0);
+    VecD flux(n_ener, 0.0);
+    XspecSpectrum spec(egrid->ener, flux.data(), n_ener);
+    lmod.eval_model(spec);
+    photons_model[mirror] = std::accumulate(flux.begin(), flux.end(), 0.0);
+  }
+  unsetenv("RELXILL_RRAD_BBODY_MIRRORED");
+
+  // photons of the line profiles, and of the primary and the returning radiation of the zones
+  int status = EXIT_SUCCESS;
+  relParam *rel_param = get_rel_params(lmod.get_model_params());
+  xillParam *xill_param = get_xill_params(lmod.get_model_params());
+  xillTable *xill_tab = nullptr;
+  get_init_xillver_table(&xill_tab, xill_param->model_type, xill_param->prim_type, &status);
+  returnSpec2D *return_spec = spec_returnrad_blackbody(egrid->ener, n_ener, xill_param->kTbb, rel_param->rin,
+                                                       rel_param->rout, rel_param->a, &status);
+  RelSysPar *sys_par = get_system_parameters(rel_param, &status);
+  const relline_spec_multizone *profiles = relbase_profile(egrid->ener,
+                                                           n_ener,
+                                                           rel_param,
+                                                           sys_par,
+                                                           xill_tab,
+                                                           get_radial_grid_from_returntab(return_spec),
+                                                           &status);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  double sum_ret = 0.0;
+  double sum_pri = 0.0;
+  for (int ii = 0; ii < return_spec->nrad; ii++) {
+    const double photons_profile = std::accumulate(profiles->flux[ii], profiles->flux[ii] + n_ener, 0.0);
+    sum_ret += photons_profile * std::accumulate(return_spec->specRet[ii], return_spec->specRet[ii] + n_ener, 0.0);
+    sum_pri += photons_profile * std::accumulate(return_spec->specPri[ii], return_spec->specPri[ii] + n_ener, 0.0);
+  }
+
+  const double ratio_model = photons_model[1] / photons_model[0];
+  const double ratio_expected = sum_ret / sum_pri;
+  INFO("observed photons mirror / direct: model " << ratio_model << ", expected " << ratio_expected);
+  CHECK(fabs(ratio_model / ratio_expected - 1) < 3e-3);
+
   delete_returnSpec2D(&return_spec);
   delete_rel_params(rel_param);
   delete xill_param;

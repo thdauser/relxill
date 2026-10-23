@@ -182,8 +182,8 @@ If the two disagree, the conclusion is that `N_xill`, the illuminating spectrum
 fed to it, or the table's relative normalization is wrong. It is **not** grounds for introducing a
 correction factor (§4.2).
 
-The direct term of the model is still handed to the convolution as a flux,
-i.e., it is a factor 4 too weak relative to both reflected paths (open issue
-in `doc/xillver_angular_dependence.md`). The diagnostic file `obs-bbodyEmit`
-already convolves the intensity `specPri / 0.25`, so its sum over the zones
-is currently 4× the direct term of the model.
+The direct term of the model is handed to the convolution as the intensity
+`specPri / 0.25`, as the reflected paths (since 2026-10-23, before as the flux,
+i.e., a factor 4 too weak). It agrees with the sum of `obs-bbodyEmit` over the
+zones, and its normalization relative to the mirror is tested by the unit test
+(3d) in `tests-returnrad-bbody-diskemission.cpp`.

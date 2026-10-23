@@ -55,6 +55,18 @@ double norm_factor_semi_infinite_slab(double incl_deg);
  *  isotropic emitter with flux F is therefore I = F / 0.25, see doc/xillver_angular_dependence.md */
 constexpr double SEMI_INFINITE_SLAB_FLUX_ISOTROPIC = 0.25;
 
+/** intensity (in xillver table units) of an isotropic emitter with the flux F, I = F / 0.25, as handed to the
+ *  relativistic convolution. Used for all isotropic emitters (direct disk emission and mirrored returning radiation),
+ *  such that they are treated identically. */
+inline double isotropic_intensity_from_flux(double flux) {
+  return flux / SEMI_INFINITE_SLAB_FLUX_ISOTROPIC;
+}
+
+/** flux of an isotropic emitter with the intensity I (inverse of isotropic_intensity_from_flux) */
+inline double isotropic_flux_from_intensity(double intensity) {
+  return intensity * SEMI_INFINITE_SLAB_FLUX_ISOTROPIC;
+}
+
 void norm_xillver_spec(xillSpec *spec, double incl);
 
 
