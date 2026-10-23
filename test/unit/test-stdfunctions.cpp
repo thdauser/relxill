@@ -128,61 +128,6 @@ TEST_CASE( "Lamp Post Table Values read from FITS", "[basic]") {
 }
 
 
-TEST_CASE("rebin spectrum", "[basic]") {
-
-  int n0 = 6;
-  const size_t n = 5;
-  double ener0[] = {1, 3, 4, 5, 6, 7, 9};
-  double val0[] = {1, 1, 1, 2, 1, 1};
-
-  double ener[] = {0.5, 2, 4, 5.5, 7.5, 8};
-  double val[n];
-
-  _rebin_spectrum(ener, val, n, ener0, val0, n0);
-
-  double val_ref[5];
-  val_ref[0] = 0.5;
-  val_ref[1] = 0.5 + 1;
-  val_ref[2] = 1.0 + 1.0;
-  val_ref[3] = 1.0 + 1.0 + 0.25;
-  val_ref[4] = 0.25;
-
-  size_t ii;
-  for (ii = 0; ii < n; ii++) {
-    REQUIRE(fabs(val[ii] - val_ref[ii]) < LIMIT_PREC);
-  }
-}
-
-TEST_CASE(" rebin mean flux ", "[basic]") {
-
-  int status = EXIT_SUCCESS;
-
-  int n0 = 7;
-  int n = 4;
-  double ener0[] = {1, 2, 4, 5, 6, 7, 9, 10};
-  double val0[] = {1, 4, 3, 2, 4, 1, 2};
-
-  double ener[] = {1, 3, 4, 8.5, 10};
-  double val[] = {0, 0, 0, 0};
-
-  rebin_mean_flux(ener, val, n, ener0, val0, n0, &status);
-
-  double val_ref[4];
-  val_ref[0] = 2.0;
-  val_ref[1] = 3.6666666666666666666666;
-  val_ref[2] = 3.5;
-  val_ref[3] = 1.83333333333333333333;
-
-  int ii;
-  for (ii = 0; ii < n; ii++) {
-    if (fabs(val[ii] - val_ref[ii]) > LIMIT_PREC){
-      printf(" expecting %e but cacluated %e \n", val_ref[ii], val[ii]);
-    }
-    REQUIRE (fabs(val[ii] - val_ref[ii]) <= LIMIT_PREC);
-  }
-}
-
-
 TEST_CASE(" 1d Interpolation Routines", "[basic]") {
 
   double ifac = 0.2;

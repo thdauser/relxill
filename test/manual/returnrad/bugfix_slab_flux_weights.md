@@ -59,7 +59,7 @@ distribution, not the slab weights).
 Measured by linking a test program once against the unchanged library and once with only line 125 fixed
 (`relxilllp`, default parameters unless stated otherwise).
 
-Flux correction factors (as in `test/unit/tests-returnrad.cpp`):
+Flux correction factors (as in `test/unit/tests-returnrad-corona-corrfactors.cpp`):
 
 |                               | bug   | fixed | bug / fixed |
 |-------------------------------|-------|-------|-------------|
@@ -86,7 +86,8 @@ heights and high spin (see the reference data comparison below: up to 6% rms per
 While checking the normalization of the reflected spectrum of the `relxillBB` returning radiation (energy
 conservation: the angle-averaged reflected flux must be below the returning flux), the angle-averaged slab weighting
 gave a reflected/returning energy-flux ratio of 0.65 instead of the correct 0.43. The unit test
-`[xillverRTR][norm]` (`test/unit/tests-returnrad-bbody.cpp`) used `get_semi_infinite_slab_flux_weights()` and only
+`[xillverRTR][norm]` (`test/unit/tests-returnrad-bbody-xillver.cpp`) used `get_semi_infinite_slab_flux_weights()` and
+only
 checked the ratio to be < 1, so it passed with the wrong weights. The test
 `" angle-averaged xillver flux equals angle-weighted intensity with slab flux weights "` (`[xillverRTR][angledist]`)
 re-implemented the same `* 180.0 / M_PI` conversion and therefore confirmed the buggy routine.
@@ -94,12 +95,12 @@ re-implemented the same `* 180.0 / M_PI` conversion and therefore confirmed the 
 ## Fix
 
 - `src/Xillspec.cpp:125`: `norm_factor_semi_infinite_slab(xill_spec->incl[ii])` (inclination is already in degrees).
-- `test/unit/tests-returnrad-bbody.cpp`, new test `[xillverRTR][slabweights]`: checks
+- `test/unit/tests-returnrad-bbody-xillver.cpp`, new test `[xillverRTR][slabweights]`: checks
   `get_semi_infinite_slab_flux_weights()` against independently computed weights 0.5 cos(incl_deg) / n_incl and
   their sum of 0.25, and `calc_angle_averaged_xillver_flux()` bin by bin against the sum of the table spectra
   weighted with these weights, for the standard xillver and the xillverRTR table. `[xillverRTR][norm]` uses these
   weights for the energy-conservation check of the `relxillBB` reflection.
-- `test/unit/tests-returnrad-bbody.cpp`, `[xillverRTR][angledist]`: removed. It compared
+- `test/unit/tests-returnrad-bbody-xillver.cpp`, `[xillverRTR][angledist]`: removed. It compared
   `calc_angle_averaged_xillver_flux()` with `calc_xillver_angdep()` / `get_angle_weighted_xill_spec()` using weights
   re-implemented with the library formula; as all of them use the same summation, it could only detect a deviation
   of the weights from that formula, not an error of the formula itself, and is superseded by `[slabweights]`.
@@ -113,8 +114,9 @@ re-implemented the same `* 180.0 / M_PI` conversion and therefore confirmed the 
 - `bin/tests "[xillverRTR]"`: `[slabweights]` passes (it fails with the buggy weights); the angle-averaged
   reflected/returning energy-flux ratio of `relxillBB` is 0.43 per zone sum (was 0.65 with the buggy weights).
 - `bin/tests "[incl-units]"`: passes for both tables.
-- Full unit test suite: all tests pass after lowering the threshold of `" Changing Rin should result in a change in
-  line shape "` (`test/unit/tests-returnrad.cpp:475`) from 1e-3 to 1e-4, see below.
+- Full unit test suite: all tests pass after lowering the threshold of `"relxilllp: changing Rin slightly near the ISCO
+  changes the spectrum with returning radiation"` (`test/unit/tests-returnrad-corona-model.cpp:121`) from 1e-3 to 1e-4,
+  see below.
 - Reference data (`cd test/refdata && make test`): 62 / 77 pass after the fix, all 77 pass with the code before the
   fix (same commit, built in a separate worktree). The 15 failing comparisons are all lamp-post and ring-source
   models with returning radiation:
@@ -140,7 +142,7 @@ re-implemented the same `* 180.0 / M_PI` conversion and therefore confirmed the 
 The deviation is the test metric sqrt(sum((model/ref - 1)^2)) / N with N = 2000 bins and a limit of 1e-5; the rms
 change per bin is deviation * sqrt(N). The reference data need to be regenerated for these models.
 
-### Side effect on `tests-returnrad.cpp:475`
+### Side effect on `tests-returnrad-corona-model.cpp:121`
 
 The test (introduced in `cce7908` for the interpolation of the returning radiation table when Rin changes) evaluates
 `relxilllp` (a = 0.995, returning radiation on) for Rin = r_isco(a=0.990) and r_isco(a=0.99025) and requires the

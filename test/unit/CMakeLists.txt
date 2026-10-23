@@ -4,12 +4,15 @@ set(CATCH2_FILES catch2/catch_amalgamated.cpp catch2/catch_amalgamated.cpp)
 set(UNIT_TEST_FILES_CPP
         test-cppspectrum.cpp tests-execmodel.cpp
         common-functions.cpp common-functions.h
-        tests-returnrad.cpp test-stdfunctions.cpp test-xilltab.cpp
+        test-stdfunctions.cpp test-xilltab.cpp
         test-rellp.cpp test-relxill.cpp tests-iongrad.cpp
         tests-extended-source.cpp
         tests-alpha-model.cpp tests-caching.cpp
         test-jedsad.cpp
         tests-rebin.cpp
+        tests-returnrad-table.cpp
+        tests-returnrad-corona-emis.cpp tests-returnrad-corona-corrfactors.cpp
+        tests-returnrad-corona-model.cpp
         tests-returnrad-bbody-spectra.cpp tests-returnrad-bbody-diskemission.cpp
         tests-returnrad-bbody-xillver.cpp tests-returnrad-bbody-model.cpp
 )

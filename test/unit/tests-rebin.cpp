@@ -16,8 +16,9 @@ This file is part of the RELXILL model code.
     Copyright 2025 Thomas Dauser, Remeis Observatory & ECAP
 */
 
-// Unit tests of the rebinning with a shifted energy grid (rebin_mean_flux_shifted, Rebin.cpp), which is used to
-// apply the energy shift of the returning thermal radiation. Run with bin/tests "[rebin]".
+// Unit tests of the rebinning of spectra (Rebin.cpp): _rebin_spectrum, rebin_mean_flux, and the rebinning with a
+// shifted energy grid (rebin_mean_flux_shifted), which is used to apply the energy shift of the returning thermal
+// radiation. Run with bin/tests "[rebin]".
 
 #include "catch2/catch_amalgamated.hpp"
 #include "Rebin.h"
@@ -44,6 +45,72 @@ static double integ_flux(const double *ener, int nener, const double *flux) {
     sum += flux[ii] * (ener[ii + 1] - ener[ii]);
   }
   return sum;
+}
+
+TEST_CASE (
+
+"_rebin_spectrum: bin-integrated spectrum rebinned onto a different grid"
+,
+"[rebin]"
+)
+ {
+
+  int n0 = 6;
+  const size_t n = 5;
+  double ener0[] = {1, 3, 4, 5, 6, 7, 9};
+  double val0[] = {1, 1, 1, 2, 1, 1};
+
+  double ener[] = {0.5, 2, 4, 5.5, 7.5, 8};
+  double val[n];
+
+  _rebin_spectrum(ener, val, n, ener0, val0, n0);
+
+  double val_ref[5];
+  val_ref[0] = 0.5;
+  val_ref[1] = 0.5 + 1;
+  val_ref[2] = 1.0 + 1.0;
+  val_ref[3] = 1.0 + 1.0 + 0.25;
+  val_ref[4] = 0.25;
+
+  size_t ii;
+  for (ii = 0; ii < n; ii++) {
+    REQUIRE(fabs(val[ii] - val_ref[ii]) < PREC);
+  }
+}
+
+TEST_CASE (
+
+"rebin_mean_flux: mean flux density rebinned onto a coarser grid"
+,
+"[rebin]"
+)
+ {
+
+  int status = EXIT_SUCCESS;
+
+  int n0 = 7;
+  int n = 4;
+  double ener0[] = {1, 2, 4, 5, 6, 7, 9, 10};
+  double val0[] = {1, 4, 3, 2, 4, 1, 2};
+
+  double ener[] = {1, 3, 4, 8.5, 10};
+  double val[] = {0, 0, 0, 0};
+
+  rebin_mean_flux(ener, val, n, ener0, val0, n0, &status);
+
+  double val_ref[4];
+  val_ref[0] = 2.0;
+  val_ref[1] = 3.6666666666666666666666;
+  val_ref[2] = 3.5;
+  val_ref[3] = 1.83333333333333333333;
+
+  int ii;
+  for (ii = 0; ii < n; ii++) {
+    if (fabs(val[ii] - val_ref[ii]) > PREC){
+      printf(" expecting %e but cacluated %e \n", val_ref[ii], val[ii]);
+    }
+    REQUIRE (fabs(val[ii] - val_ref[ii]) <= PREC);
+  }
 }
 
 TEST_CASE (
