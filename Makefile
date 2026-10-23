@@ -119,11 +119,12 @@ doc-clean:
 clean:
 	rm -f *~ gmon.out test*.dat *.log
 	rm -f debug-*fits testrr-*.fits
-	rm -rf build/*
+	rm -f __*
 
 
 dist-clean:
 	make clean
+	rm -rf build/*
 	rm -f relxill_model_v*.tgz
 	rm -rf cmake-*
 	rm -rf $(MODEL_DIR)
