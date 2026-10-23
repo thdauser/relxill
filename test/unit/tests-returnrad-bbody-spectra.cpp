@@ -29,6 +29,8 @@
 #include "Relreturn_Datastruct.h"
 
 #include <algorithm>
+#include <iomanip>
+#include <sstream>
 #include <string>
 
 extern "C" {
@@ -48,10 +50,11 @@ static constexpr int N_ENER_REFDATA_RRAD = 300;
 static constexpr double KT_REFDATA_RRAD = 2.0; // default of relxillBB
 
 static std::string get_fname_refdata_rrad(double spin) {
-  char fname[100];
-  snprintf(fname, sizeof(fname), "%s/test/unit/refdata/refvalues_rrad_bbody_specRet_a%.3f.fits", RELXILL_SOURCE_DIR,
-           spin);
-  return fname;
+  // no fixed-size buffer, as RELXILL_SOURCE_DIR can be long (e.g., on the CI runner)
+  std::ostringstream fname;
+  fname << RELXILL_SOURCE_DIR << "/test/unit/refdata/refvalues_rrad_bbody_specRet_a" << std::fixed
+      << std::setprecision(3) << spin << ".fits";
+  return fname.str();
 }
 
 static void get_energy_grid_refdata_rrad(double *ener) {
