@@ -21,6 +21,10 @@ The tests are unit tests (`bin/tests "[rrad-bbody]"`). The former manual tests o
   - `plots/relxillBB_perzone_observed.pdf`: observed, reflected (solid), mirrored (dashed), and direct (dotted) spectrum
     of the zones, their
     sums over the zones, and direct + reflected (the model)
+- `make plot` also creates `plots/relxillBB_NS_perzone_mirror_orders.pdf` (`plot_perzone_mirror_orders.sl`): observed
+  spectra of the zones of `relxillBB_NS` with the mirrored returning radiation, 1st order (solid), 2nd order (dashed),
+  and direct (dotted); the 2nd order alone is the difference of the runs with `RELXILL_RRAD_BBODY_ORDER=2` and 1, as
+  the model returns the sum of all orders
 - further plot scripts: `plot_higher_order_rrad.sl` (higher orders of the mirrored returning radiation) and
   `plot_iongradient_return.sl` (ionization gradient), run with `isis-script <script>`
 - all plots are stored in `plots/`
