@@ -19,7 +19,7 @@ require("create_output_files.sl");
 variable ff_plots = "relxillBB";
 variable prefix = ff_plots+"_";
 
-%% parameters (the only ones of the xillverRTR table v0.3)
+%% parameters (the only ones of the current mock xillverRTR table v0.3)
 variable spin = 0.998;
 variable Tin = 2.0;
 variable logxi = 2.0;

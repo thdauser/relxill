@@ -163,8 +163,11 @@ property of the table and is not calculated in the model, while `specRet[izone]`
 given parameters:
 
 - `relxillBB` (`xillverRTR` table): the xillver primary of each radial zone (`radindex`) was taken from
-  `specRet[izone]` when the table was calculated, so currently both are identical by design. As the table only
-  depends on `radindex` and the inclination, this holds for the parameters the table was calculated for.
+  `specRet[izone]` when the table was calculated, so both are identical by design. The current table
+  (`xillverRTR_v0.3.fits`) is a mock version for a single parameter set (a = 0.998, \f$kT_\mathrm{bb}\f$ = 2 keV,
+  logxi = 2, logN = 18), which the model fixes until the final table is available. The final table will in addition
+  depend on \f$kT_\mathrm{bb}\f$, logxi, logN, and the spin, with the xillver primary of each zone calculated for
+  each combination of \f$kT_\mathrm{bb}\f$ and spin, such that both spectra stay identical.
 - `relxillBB_NS` (`xillverNS` table, kept in the code for development): the xillver primary is a blackbody of
   temperature \f$kT_\mathrm{bb}\f$, the same for all zones. For computational reasons, it is only an approximation of
   the returning spectrum.

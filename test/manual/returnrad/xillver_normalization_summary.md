@@ -1,84 +1,70 @@
 # Xillver Normalization — Working Notes (RTR / `relxillBB`)
 
-Note: may be partially outdate from the large changes done in 21.10.2026
+State of 2026-10-23 (checked against the code).
 
-**The derivation of the normalization lives in the Doxygen page
-`doc/returnrad_normalizations.md` (`\ref returnrad_normalizations`), which is
-the authoritative description.** This file holds only what that page does not:
-operational details needed to run the manual tests in this directory, read the
-`__*.dat` / `__*.fits` diagnostic output, and interpret older plots.
+**The authoritative descriptions are the Doxygen pages** `doc/returnrad_normalizations.md` (normalization of the
+reflection, `N_xill`), `doc/xillver_angular_dependence.md` (intensity vs. flux, angle weighting, direct emission), and
+`doc/returnrad_disk_emission.md` (disk emission, diagnostic output files, tests). This file only holds what these pages
+do not: the history of the normalization, units and grids for reading the diagnostic output, and open issues.
 
 ---
 
-## 1. What changed (read this before trusting `plots/` or `old/`)
+## 1. History (read this before trusting old plots or notes)
 
-The normalization was simplified substantially in mid-2026. Plots and notes
-produced before then used a scheme that no longer exists:
+| Change                                                                                                                                                                                  | Commit / date          |
+|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
+| removed `calc_angle_weighted_xillver_spec`, and with it the `xill_norm_avg / xill_norm` factor that re-anchored the angle-weighted spectrum to the angle-*averaged* table normalization | `df34569` (2026-06-29) |
+| removed `normfacMatchAtHighEnergies`, which rescaled the reflected continuum to match the returning blackbody above `4·kTbb`                                                            | `6f07241` (2026-07-01) |
+| direct emission of the whole disk with one convolution, primary of the zones from the same radial points, cells split at the zone boundaries (`changes_2026-10-21_disk_emission.md`)    | 2026-10-21             |
+| mirror and direct emission handed to the convolution as intensities (`F / 0.25`), as the xillver reflection; all diagnostic files are fluxes (`doc/xillver_angular_dependence.md`)      | 2026-10-23             |
 
-| Removed                                                                                                                                                                         | Commit                 |
-|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|------------------------|
-| `normfacMatchAtHighEnergies` — rescaled the reflected continuum to match the returning blackbody above `4·kTbb`; found to be wrong                                              | `6f07241` (2026-07-01) |
-| `calc_angle_weighted_xillver_spec`, and with it the `xill_norm_avg / xill_norm` factor that re-anchored the angle-weighted spectrum to the angle-*averaged* table normalization | `df34569` (2026-06-29) |
+Both removals of mid-2026 have the same root cause: each set the reflected level by a criterion *other than* the
+table's own Dauser+2016 calibration, i.e., both altered the **relative** (reflection-to-primary) normalization. The
+reflected term now carries exactly two factors, `|boost|` and `N_xill`. Symbols that appear in older notes and are
+**gone**: `getAnglecorrXillSpec`, `calcXillverNormFromPrimarySpectrum`, `get_avg_xillver_spec_normalization`,
+`calc_angle_averaged_xill_spec`, `calculateAngleWeightedXillverSpectrum`, `xill_norm_avg`, `normfacMatchAtHighEnergies`,
+`calc_zone_xillver_reflected_flux` and `calc_zone_mirrored_flux` (now `..._intensity`).
 
-Symbols that appear in older notes and are **gone**: `getAnglecorrXillSpec`,
-`calcXillverNormFromPrimarySpectrum`, `get_avg_xillver_spec_normalization`,
-`calc_angle_averaged_xill_spec`, `calculateAngleWeightedXillverSpectrum`,
-`xill_norm_avg`, `normfacMatchAtHighEnergies`.
-
-Both removals have the same root cause: each set the reflected level by a
-criterion *other than* the table's own Dauser+2016 calibration, i.e. both
-altered the **relative** (reflection-to-primary) normalization. Neither was
-about the absolute scale — that was already correctly set by `N_xill` from the
-returning radiation.
-
-The reflected term now carries exactly two factors, `|boost|` and
-`N_xill` — see the Doxygen page. **Any plot in `plots/` or `old/` predating
-2026-07-01 shows a different normalization and is not comparable to current
-output.**
+**Since 2026-10-23, the reflected-to-direct ratio is a factor 4 smaller than before** (the direct emission was a factor
+4 too weak). Diagnostic files and plots made before are not comparable.
 
 ---
 
 ## 2. Units and grids (needed to read the diagnostic files)
 
-`returnSpec->specRet` / `specPri` are **bin-integrated photons/bin** (Xspec
-standard), documented at `Relreturn_Datastruct.h:33`. Not photons/cm²/s/keV —
-dividing by bin width is a common mistake when plotting these directly.
+`returnSpec->specRet` / `specPri` are **bin-integrated photons/bin** (Xspec standard, documented in
+`Relreturn_Datastruct.h`), per unit area of the zone. Not photons/cm²/s/keV: dividing by the bin width is a common
+mistake when plotting them directly.
 
-Three different energy grids are in play, which is why the diagnostic FITS
-files do not all share an x-axis:
+| Grid                                                                                     | Bins                                   | Range                | Where                            |
+|------------------------------------------------------------------------------------------|----------------------------------------|----------------------|----------------------------------|
+| Convolution grid — `returnSpec->ener` in the model, and the grid of the `__*.fits` files | `N_ENER_CONV = 4096` (power of 2, FFT) | `0.00035 – 2000` keV | `get_relxill_conv_energy_grid()` |
+| Coarse xillver normalization grid (`N_xill`)                                             | `N_ENER_COARSE = 500`                  | `0.1 – 1000` keV     | `get_coarse_xillver_energrid()`  |
+| Internal grid of the blackbody of the zones                                              | 500                                    | `0.001 – 500` keV    | `get_std_bbody_energy_grid()`    |
+| Xspec input grid                                                                         | model-dependent                        | model-dependent      | caller                           |
 
-| Grid                                                                                   | Bins                                   | Range                | Where                            |
-|----------------------------------------------------------------------------------------|----------------------------------------|----------------------|----------------------------------|
-| Convolution grid — `returnSpec->ener`, and what `__*.fits` zone spectra are written on | `N_ENER_CONV = 4096` (power of 2, FFT) | `0.00035 – 2000` keV | `get_relxill_conv_energy_grid()` |
-| Coarse xillver normalization grid                                                      | `N_ENER_COARSE = 500`                  | `0.1 – 1000` keV     | `get_coarse_xillver_energrid()`  |
-| Xspec input grid                                                                       | model-dependent                        | model-dependent      | caller                           |
-
-The convolution grid fully covers the `0.1–1000` keV normalization band, so the
-coverage guard inside `calc_xillver_norm_from_primary_spectrum` always passes
-for spectra on `returnSpec->ener`. Noted here so it is not re-investigated as a
-suspected bug.
+The convolution grid fully covers the `0.1–1000` keV normalization band, so the coverage guard inside
+`calc_xillver_norm_from_primary_spectrum` always passes for spectra on `returnSpec->ener`. Noted here so it is not
+re-investigated as a suspected bug.
 
 ---
 
 ## 3. Environment toggles
 
-Both default to `0` and are read via `envoptions.c`; `print_env_options()`
-reports their state.
+All environment variables are listed in `doc/environment_variables.md`. The ones specific to the diagnostics:
 
-| Variable                      | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
-|-------------------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
-| `RELXILL_RRAD_BBODY_MIRRORED` | Replaces the xillver reflection with a plain mirror of `specRet` (`calc_zone_mirrored_intensity`). Test path only — applies `\|boost\|`, but **no** `N_xill`; the returning flux (which already contains the angles of incidence) is re-emitted with the same spectral shape and an isotropic intensity, `specRet / 0.25` (since 2026-10-23, see `doc/xillver_angular_dependence.md`). The direct emission is calculated for the whole disk, as for the reflection. |
-| `RELXILL_RRAD_BBODY_IONGRAD`  | Enables the per-zone ionization gradient (`set_xill_param_from_iongrad` overwrites `dens`, `lxi`, `radzone` from `ion_gradient`).                                                                                                                                                                                                                                                                                                                                   |
+| Variable                      | Effect                                                                                                                                                                                                                                                                                                               |
+|-------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `RELXILL_RRAD_BBODY_MIRRORED` | Replaces the xillver reflection with a mirror of `specRet` (`calc_zone_mirrored_intensity`). Test path only — applies `\|boost\|`, but **no** `N_xill`; the returning flux (which already contains the angles of incidence) is re-emitted with the same spectral shape and an isotropic intensity, `specRet / 0.25`. |
+| `RELXILL_RRAD_BBODY_ORDER`    | Number of orders of the returning radiation; the model returns the **sum** of all orders up to this value.                                                                                                                                                                                                           |
+| `RELXILL_RRAD_BBODY_IONGRAD`  | Enables the per-zone ionization gradient (`set_xill_param_from_iongrad` overwrites `dens`, `lxi`, `radzone` from `ion_gradient`).                                                                                                                                                                                    |
+| `RELXILL_WRITE_FILES`         | Writes the diagnostic `__*.dat` / `__*.fits` files (`shouldOutfilesBeWritten()`).                                                                                                                                                                                                                                    |
 
-Diagnostic `__*.dat` / `__*.fits` output is gated separately by
-`shouldOutfilesBeWritten()`. Note the output **filenames differ** between the
-mirrored and normal paths for the reflected spectra of the zones
-(`obs-mirror-reflect.fits` vs `obs-reflect.fits`, `write_bbret_diagnose_outfiles`),
-so a plot script hard-coding one set will silently find nothing when the other
-toggle is active. The primary of the zones (`rframe-bbodyEmit.fits`,
-`obs-bbodyEmit.fits`) is the same in both paths. The list of all diagnostic files
-is in `doc/returnrad_disk_emission.md` ("Diagnostic output files", with the content and the flux conversion of each
-file).
+The output **filenames differ** between the mirrored and the xillver path for the reflected spectra of the zones
+(`obs-mirror-reflect.fits` vs `obs-reflect.fits`, `write_bbret_diagnose_outfiles`). The primary of the zones
+(`rframe-bbodyEmit.fits`, `obs-bbodyEmit.fits`) and the returning radiation (`rframe-bbodyRet.fits`) are the same in
+both paths. The list of all files, their content and flux conversion is in `doc/returnrad_disk_emission.md`
+("Diagnostic output files").
 
 ---
 
@@ -86,104 +72,76 @@ file).
 
 ### 4.1 `radzone` is silently clamped to the table boundary
 
-`relxillbb_kernel` sets `xill_param_zone.radzone = izone` with the in-code
-warning *"very dangerous; need to check that it is within the table boundaries
-as well"* (`Relreturn_BlackBody.cpp:992-994`). The concern is real and still open.
+`relxillbb_kernel` sets `xill_param_zone.radzone = izone` for each zone of the returning radiation, with the in-code
+warning *"very dangerous; need to check that it is within the table boundaries as well"*. The path is `radzone` →
+`radindex` (`get_xilltab_param()`, `xilltable_reading.c`) → `global_param_vals[PARAM_RID]` → the generic interpolation
+in `Xilltable_handling.cpp`, which calls `resetInpvalsToBoundaries()`. An out-of-range zone index does **not** crash
+or error: it is **clamped to the last tabulated radial zone**, and the warning is only printed in a debug run.
 
-The path is `radzone` → `radindex` (`xilltable_reading.c:667`) →
-`global_param_vals[PARAM_RID]` → the generic interpolation loop in
-`Xilltable_handling.cpp:640`, which calls `resetInpvalsToBoundaries()`. So an
-out-of-range zone index does **not** crash or error — it is **clamped to the
-last tabulated radial zone**, and the warning only prints under
-`is_debug_run()`.
+The zones of `relxillBB` are the 50 zones of the returning-radiation table (`get_rrad_fractions()`; not affected by
+`RELXILL_NUM_RZONES`, which only sets the zones of the lamp-post and ionization-gradient models). Their number
+decreases if `Rin` is increased, and the radii of the zones depend on the spin. For the current mock table (a = 0.998,
+`Rin` at the ISCO, see §4.2), the unit test *"xillverRTR table: number of radial zones equals the radial grid of the
+returning radiation"* checks that the table (`radindex`: 50 values) matches. A table with a different zone grid would be
+clamped or mismatched without an error: the model should check the zone grid of the table explicitly. This becomes
+essential for the final table with a spin dimension, where `radindex` refers to the zone grid of each spin (see
+`doc/xillver_RTR.md`).
 
-The loop bound is `relProfile->n_zones`, derived from the return-radiation
-radial grid, which has no enforced relationship to the `radzone` dimension of
-the xillverRTR table. If the number of zones exceeds the table's, every zone
-past the end collapses onto the same tabulated reflection and the model stays
-silent about it. **Worth an explicit check, and worth testing with
-`RELXILL_NUM_RZONES` set high.**
+### 4.2 Incident spectrum of the table — and why a mismatch must *not* be fixed by rescaling
 
-### 4.2 Incident-shape mismatch — and why it must *not* be fixed by rescaling
+Two things set the reflected flux, and they must not be mixed up (see `doc/returnrad_normalizations.md`):
 
-Two things set the reflected flux, and they must not be mixed up (see
-"Relative and absolute normalization" in the Doxygen page):
+- **Relative** — the reflection-to-primary ratio, calibrated into the table via the Dauser+2016 primary-spectrum
+  integral. This is a property of the table and must not be changed by any other means.
+- **Absolute** — set by the returning radiation that actually irradiates the zone. `N_xill(specRet)` is that returning
+  flux expressed in table units, which is how the absolute scale legitimately enters.
 
-- **Relative** — the reflection-to-primary ratio, calibrated into the table via
-  the Dauser+2016 primary-spectrum integral. This is a property of the table
-  and must not be changed by any other means.
-- **Absolute** — set by the returning radiation that actually irradiates the
-  zone. `N_xill` is that returning primary expressed in table units, which is
-  how the absolute scale legitimately enters.
+The two models sit differently with respect to the incident *shape* (`get_xilltable_id()`, `xilltable_reading.c`):
 
-The shape question below concerns the **relative** side: whether the table's
-reflection-to-primary ratio is the right one for the illumination at hand. It
-is never a reason to adjust the absolute scaling.
+| Model                                          | Table                  | Incident spectrum of the table                                                   |
+|------------------------------------------------|------------------------|----------------------------------------------------------------------------------|
+| `relxillBB` (`MOD_TYPE_RELXILLBB`, -301)       | `xillverRTR_v0.3.fits` | `specRet` of each radial zone, selected by the `radindex` dimension (50 zones)   |
+| `relxillBB_NS` (`MOD_TYPE_RELXILLBB_NS`, -300) | `xillverNS-2.fits`     | a **single** blackbody at `kTbb`, the same for every zone (kept for development) |
 
-This matters here because the two RTR models sit differently with respect to
-the incident *shape*:
+- `relxillBB`: the current table `xillverRTR_v0.3.fits` is a **mock version**, calculated for a single parameter set
+  (a = 0.998, kTbb = 2 keV, logxi = 2, logN = 18; dimensions only `radindex` and the inclination). Until the final
+  table is available, the model fixes these parameters (and Rin = ISCO, Rout = 1000; `check_parameter_bounds_relxillbb`
+  and the parameter limits in `lmodel_relxill_devel.dat`), so only the inclination, z, boost, and the normalization
+  are free. For these parameters, the incident spectrum of the table and `specRet` are identical by design. **The final
+  table will in addition depend on kTbb, logxi, logN, and the spin**, with the incident spectrum of each zone
+  calculated by the model for each combination of kTbb and spin.
+- `relxillBB_NS`: the returning radiation is a superposition of blue- and red-shifted blackbodies from across the
+  disk, with an effective temperature that varies between the zones. A single blackbody at `kTbb` can not represent
+  that; this is a limitation of the model.
 
-| Model                                         | Table                  | Incident spectrum assumed                                   |
-|-----------------------------------------------|------------------------|-------------------------------------------------------------|
-| `MOD_TYPE_RELXILLBBRET` (`relxillBB`)         | `xillverNS-2.fits`     | a **single** blackbody at `kTbb`, same for every zone       |
-| `MOD_TYPE_RELXILLBBRETXILL` (`relxillBBxill`) | `xillverRTR_v0.3.fits` | per-radial-zone, selected by the `radindex` table dimension |
+**The remedy for a shape mismatch is a table calculated for the correct incident spectrum, never a correction factor.**
+The `radindex` dimension of `xillverRTR` is exactly that remedy. The removed `normfacMatchAtHighEnergies` (`6f07241`)
+was an attempt to patch the same mismatch by rescaling, and that is why it was wrong. The final table therefore covers
+kTbb and the spin with incident spectra calculated for each value, instead of rescaling the spectra of the mock
+table.
 
-(`get_xilltable_id`, `xilltable_reading.c:640-647`.)
-
-The actual returning radiation is a superposition of blue- and red-shifted
-blackbodies from across the disk, with an effective temperature that varies by
-zone. For `relxillBB` the table cannot represent that, so the single-`kTbb`
-assumption stated in the function header is a genuine limitation of that model.
-
-**The remedy is a table computed for the correct incident spectrum, never a
-correction factor.** `xillverRTR`'s `radindex` dimension is precisely that
-remedy, applied properly. The removed `normfacMatchAtHighEnergies` (`6f07241`)
-was an attempt to patch the same mismatch by rescaling, and that is exactly why
-it was wrong.
-
-So: quantifying how far the effective temperature of `specRet[izone]` drifts
-from `kTbb` across the disk is a **useful diagnostic** — it bounds the error of
-the `relxillBB` approximation and indicates when `relxillBBxill` is required.
-It is *not* an input to any correction factor, and no such factor should be
-added on the basis of it. See also §4.1: with `xillverRTR`, silent clamping of
-`radindex` would defeat the per-zone tabulation and reintroduce the mismatch
-without warning.
+---
 
 ## 5. Suggested cross-check
 
 For a reflection-only run (`boost < 0`), the xillver path and the mirrored path (`RELXILL_RRAD_BBODY_MIRRORED=1`) can be
-compared, as both hand an **intensity**
-to the relativistic convolution (see `doc/xillver_angular_dependence.md`): the
-xillver path the angle-mixed table intensity scaled by `N_xill`, the mirrored
-path the isotropic intensity `specRet / 0.25` (no xillver renormalization).
+compared, as both hand an **intensity** to the relativistic convolution (see `doc/xillver_angular_dependence.md`): the
+xillver path the angle-mixed table intensity scaled by `N_xill`, the mirrored path the isotropic intensity
+`specRet / 0.25` (no xillver renormalization).
 
-- In the rest frame (`rframe-*`), all files are fluxes (since 2026-10-23,
-  see "Diagnostic output" in `doc/xillver_angular_dependence.md`). The mirror
-  re-emits exactly the returning flux: `rframe-mirror-reflect = |boost| ×
-  rframe-bbodyRet`. The xillver reflection (`rframe-reflect`, angle-averaged
-  with the slab weights) has 0.36-0.46 of the returning energy flux per zone,
-  0.43 for the whole disk (`B_slab` of `[xillverRTR][angleweight]`).
-- Observed (`obs-*`), both are converted to a flux by the same convolution, so
-  the ratio of the integrals of `obs-reflect` and `obs-mirror-reflect` is a
-  test that `N_xill` reproduces the incident flux level. The ratio is not
-  0.43 (`B_slab`), but the angle-mixed `A_mix/4`, and depends on the
-  inclination and the energy band: 0.32-0.47 for 20-80 deg in 0.1-1000 keV (see the table in
-  `doc/xillver_angular_dependence.md`, and the unit test
-  `[mirror]`, which checks that it is below 1).
+- In the rest frame (`rframe-*`), all files are fluxes. The mirror re-emits exactly the returning flux:
+  `rframe-mirror-reflect = |boost| × rframe-bbodyRet`. The xillver reflection (`rframe-reflect`, angle-averaged with
+  the slab weights) has 0.36-0.46 of the returning energy flux per zone, 0.43 for the whole disk (`B_slab` of
+  `[xillverRTR][angleweight]`).
+- Observed (`obs-*`), both are converted to a flux by the same convolution. The ratio of the integrals of
+  `obs-reflect` and `obs-mirror-reflect` is not 0.43 (`B_slab`), but the angle-mixed `A_mix/4`, and depends on the
+  inclination and the energy band: 0.32-0.47 for 20-80 deg in 0.1-1000 keV (see `doc/xillver_angular_dependence.md`,
+  and the unit test `[mirror]`, which checks that it is below 1).
 
-Diagnostic files and plots made before 2026-10-23 are not comparable:
-`obs-mirror-reflect` and `obs-bbodyEmit` were a factor 4 lower,
-`rframe-reflect` was the angle-mixed intensity for the observer inclination.
+This compares *integrals*, not shapes — the mirrored path has no reflection physics at all. If the two disagree, the
+conclusion is that `N_xill`, the illuminating spectrum fed to it, or the table's relative normalization is wrong. It is
+**not** grounds for introducing a correction factor (§4.2).
 
-Note this compares *integrals*, not shapes — the mirrored path has no
-reflection physics at all.
-
-If the two disagree, the conclusion is that `N_xill`, the illuminating spectrum
-fed to it, or the table's relative normalization is wrong. It is **not** grounds for introducing a
-correction factor (§4.2).
-
-The direct term of the model is handed to the convolution as the intensity
-`specPri / 0.25`, as the reflected paths (since 2026-10-23, before as the flux,
-i.e., a factor 4 too weak). It agrees with the sum of `obs-bbodyEmit` over the
-zones, and its normalization relative to the mirror is tested by the unit test
-(3d) in `tests-returnrad-bbody-diskemission.cpp`.
+The direct emission is handed to the convolution as the intensity `specPri / 0.25`, as the reflected paths. Its
+normalization relative to the mirror is tested by the unit test (3d) in `tests-returnrad-bbody-diskemission.cpp`
+(see `doc/returnrad_disk_emission.md`).
