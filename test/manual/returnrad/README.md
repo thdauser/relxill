@@ -13,7 +13,14 @@ The tests are unit tests (`bin/tests "[rrad-bbody]"`). The former manual tests o
   `bin/tests "[.create-refdata]"`)
 
 # Plots
-- `make plot`: the main **diagnose plots** (`plot_zones_diagnose_spectra.sl`)
+
+- `make plot`: the main **diagnose plots** of `relxillBB` (`plot_zones_diagnose_spectra.sl`, first order of the
+  returning radiation, reflection only):
+  - `plots/relxillBB_perzone_rframe.pdf`: rest frame, reflected (solid), returning (dashed), and direct (dotted)
+    spectrum of the zones
+  - `plots/relxillBB_perzone_observed.pdf`: observed, reflected (solid), mirrored (dashed), and direct (dotted) spectrum
+    of the zones, their
+    sums over the zones, and direct + reflected (the model)
 - further plot scripts: `plot_higher_order_rrad.sl` (higher orders of the mirrored returning radiation) and
   `plot_iongradient_return.sl` (ionization gradient), run with `isis-script <script>`
 - all plots are stored in `plots/`

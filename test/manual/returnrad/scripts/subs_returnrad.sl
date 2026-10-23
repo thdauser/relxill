@@ -65,132 +65,102 @@ define get_col(){
    return col;
 }
 
-define eval_kerrbb_model(lo,hi,spin){
-%{{{
-   fit_fun("kerrbb");
-   set_par("kerrbb(1).rflag",qualifier("refl_frac",0));
-   set_par(10,0);
-   set_par(4,60);
-   
-   set_par(5,5);
-   set_par(6,0.46);
-   
-   __set_hard_limits("kerrbb(1).hd",0.5,10);
-   set_par(8,1./1.26,0,0.5,10);  %% T_eff = 1.26*fcol*m^-1/4*mdot^1/4
+%% plots the spectra of every 9th zone of the data dat (one line style per file)
+%% qualifiers:
+%%   lines      : line style of each file (0: solid, 1: dashed, 2: dotted; default: the index of the file)
+%%   noSumSpec  : do not plot the sum over the zones of each file (black, same line style)
+%%   total      : indices of the files whose sums over the zones are added up and plotted in red (e.g., direct +
+%%                reflected = model)
+%%   ylabel, ymax, title
+define get_2d_plot_data(dat,spin){
 
-   set_par("kerrbb(1).a",spin);
-   
-   return eval_fun_keV(lo,hi)/(hi-lo) * 0.5*(lo+hi);
-}
-%}}}
-
-define get_2d_plot_data(dat,rframe,spin){
-
-   if (length(rframe)!=length(dat)){
-      vmessage(" *** error : rframe array needs to be the same length as the number of files ");
-      exit;
-   }
-   
    variable pl = xfig_plot_new(13,10);
 
    pl.xlabel("Energy [keV]");
    pl.ylabel(qualifier("ylabel", "Energy Flux $\nu\;F_\nu$"R));
    pl.world(0.1,250,1e-4,qualifier("ymax",7000);loglog);
-   
+
+   pl.add_object(xfig_new_text(sprintf("\fbox{$a = %.3f$}"R,spin); size="\footnotesize"R),
+		 .03,0.99,-0.5,0.7;world0);
+
    variable ii, jj;
    variable m = length(dat);
+   variable lines = qualifier("lines", [0:m-1]);
+   variable emn, efac;
    _for jj(0,m-1){
 
       ccount=1; %% reset colour
-      
-      
-      % make life easier
+
       variable elo = dat[jj].elo;
       variable ehi = dat[jj].ehi;
-      variable emn = 0.5*(elo+ehi);
-      variable efac = emn^2/(ehi-elo);
-      
+      emn = 0.5*(elo+ehi);
+      efac = emn^2/(ehi-elo);
 
       if (not qualifier_exists("noSumSpec")){
-	 pl.plot(emn,dat[jj].sumspec*efac; color="black",width=3,line=jj);
+	 pl.plot(emn,dat[jj].sumspec*efac; color="black",width=3,line=lines[jj]);
+	 vmessage(" summed energy flux of file %d: %.4e (relative to file 0: %.4f)", jj, sum(dat[jj].sumspec*emn),
+		  sum(dat[jj].sumspec*emn)/sum(dat[0].sumspec*emn));
       }
 
-      pl.add_object(xfig_new_text(sprintf("\fbox{$a = %.3f$}"R,spin);
-					     size="\footnotesize"R),
-				.03,0.99,-0.5,0.7;world0);
-      
       variable n = length(dat[jj].dat.spec[*,0]);
       variable mod_fac=9;
       _for ii(0,n-1){
-	 
-	 if (pl!=NULL){
-	    if (ii mod mod_fac == 0) {
-	       pl.plot(emn,dat[jj].dat.spec[ii,*]*efac;color=get_col(), line=jj);
-	       
-	       if(jj==0){
-		  pl.add_object(xfig_new_text(sprintf("$r = %.1f\,r_\mathrm{g}$"R,
-						      0.5*(dat[jj].dat.rlo[ii]+dat[jj].dat.rhi[ii]));
-					      color=get_col(;same),
-					     size="\footnotesize"R),
-				.78,0.99,-0.5,-0.3+0.9*(ccount-1);world0);
-	       }
-	    }            	    
+	 if (ii mod mod_fac == 0) {
+	    pl.plot(emn,dat[jj].dat.spec[ii,*]*efac;color=get_col(), line=lines[jj]);
+
+	    if(jj==0){
+	       pl.add_object(xfig_new_text(sprintf("$r = %.1f\,r_\mathrm{g}$"R,
+						   0.5*(dat[jj].dat.rlo[ii]+dat[jj].dat.rhi[ii]));
+					   color=get_col(;same),
+					   size="\footnotesize"R),
+			     .78,0.99,-0.5,-0.3+0.9*(ccount-1);world0);
+	    }
 	 }
-      }
-      if (not qualifier_exists("noSumSpec")){
-	 vmessage(" summed energy flux: %.4e (frac: %.3f)", sum(dat[jj].sumspec*elo),
-		  sum(dat[jj].sumspec*elo)/sum(dat[0].sumspec*elo));
       }
    }
 
-   if (not qualifier_exists("noSumSpec")){
-      pl.plot(emn,(dat[0].sumspec+dat[1].sumspec)*efac; color="red",width=3,depth=-10);
+   variable itot = qualifier("total", NULL);
+   if (itot != NULL){
+      variable sum_total = dat[itot[0]].sumspec*0;
+      foreach jj (itot){
+	 sum_total += dat[jj].sumspec;
+      }
+      pl.plot(emn, sum_total*efac; color="red",width=3,depth=-10);
    }
-  
+
    if (qualifier_exists("title")){
       pl.title(qualifier("title","description missing");size="\footnotesize"R);
    }
 
-   if (qualifier_exists("plot_kerrbb")){
-      variable val_kerrbb = eval_kerrbb_model(elo,ehi,spin);
-      variable ind = where (elo>0.1);
-      variable kerrbb_fac = sum(dat[1].sumspec[ind]*efac[ind]) / sum(val_kerrbb[ind]);
-      val_kerrbb *= kerrbb_fac;
-      pl.plot(emn,val_kerrbb;width=3, color="blue");
-      
-      variable val_kerrbb_return = eval_kerrbb_model(elo,ehi, spin;refl_frac=1);
-      list_par;
-      val_kerrbb_return *= kerrbb_fac;
-      pl.plot(emn,val_kerrbb;width=3, color="blue", line=1);
-   }
-      
    return pl;
 }
 
-%% rframe[jj]=1: rest-frame file, normalized per zone by N_xill of the rest-frame returning spectrum of the zone (sums over
-%% the zones are not meaningful then, use the qualifier noSumSpec)
-define get_2d_plot(fdat,rframe,spin){
+%% plot of the spectra of the zones of the files fdat (see get_2d_plot_data for the qualifiers)
+%% qualifier rframe: rest-frame files, normalized per zone by N_xill of the rest-frame returning spectrum of the zone
+%%    (the sums over the zones are not meaningful then and not plotted)
+define get_2d_plot(fdat,spin){
 
    fdat = [fdat];
    variable m = length(fdat);
-   
    variable dat = Struct_Type[m];
-   variable normfile = getFilenameStruct().rframe.specRet;
+   variable qual = __qualifiers();
 
    variable jj;
    _for jj(0,m-1){
-      if (rframe[jj]==1){
-	 dat[jj] = get_2d_data(fdat[jj]; normfile=normfile);
+      if (qualifier_exists("rframe")){
+	 dat[jj] = get_2d_data(fdat[jj]; normfile=getFilenameStruct().rframe.specRet);
       } else {
 	 dat[jj] = get_2d_data(fdat[jj]);
       }
    }
 
-   variable qual = __qualifiers();
-   if (any(rframe==1) && not qualifier_exists("ylabel")){
-      qual = struct_combine(qual, struct{ylabel="$\nu\;F_\nu$ / $N_\mathrm{xill}$(returning spectrum of the zone)"R});
+   if (qualifier_exists("rframe")){
+      qual = struct_combine(qual, struct{noSumSpec});
+      if (not qualifier_exists("ylabel")){
+	 qual = struct_combine(qual, struct{ylabel="$\nu\;F_\nu$ / $N_\mathrm{xill}$(returning spectrum of the zone)"R});
+      }
    }
 
-   return get_2d_plot_data(dat, rframe, spin;; qual);
+   return get_2d_plot_data(dat, spin;; qual);
 }
 

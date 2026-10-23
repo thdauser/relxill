@@ -1,5 +1,12 @@
 #!/usr/bin/env isis-script
 
+%% diagnose plots of the spectra of the zones of relxillBB (first order of the returning radiation, reflection only):
+%%  - rest frame: direct, returning, and reflected spectrum of the zones, normalized per zone by N_xill of the returning
+%%    spectrum (plots/relxillBB_perzone_rframe.pdf)
+%%  - observed: direct, reflected, and mirrored spectrum of the zones and their sums over the zones, and the sum of
+%%    the direct and the reflected spectrum, i.e., the model (plots/relxillBB_perzone_observed.pdf)
+%% see "Diagnostic output files" in doc/returnrad_disk_emission.md
+
 _traceback=1;
 
 require("isisscripts");
@@ -12,121 +19,35 @@ require("create_output_files.sl");
 variable ff_plots = "relxillBB";
 variable prefix = ff_plots+"_";
 
-%% =1= set parameters (currently the only ones for RTR table v0.3)
-variable spin = 0.998; 
+%% parameters (the only ones of the xillverRTR table v0.3)
+variable spin = 0.998;
 variable Tin = 2.0;
 variable logxi = 2.0;
 variable logn = 18.0;
 
 
-define eval_std_model(){
-%{{{
-
-   variable lo,hi;
-   (lo, hi) = log_grid(0.1,40,3000);
-
-   variable mn = 0.5*(lo+hi);
-
-   set_par("*.boost",-1,0,-1,10);
-   variable refl = eval_fun_keV(lo,hi)/(hi-lo)*mn^2;
-
-   set_par("*.boost",0);
-   variable direct = eval_fun_keV(lo,hi)/(hi-lo)*mn^2;
-
-   set_par("*.boost",1);
-   variable full = eval_fun_keV(lo,hi)/(hi-lo)*mn^2;
-
-
-   return struct{lo=lo,mn=mn,hi=hi, refl=refl, direct=direct, full=full};
-}
-%}}}
-
-define getDiagnoseRframePlot(){
-   variable plotTitle = sprintf("Rest frame, per zone normalized to $N_\mathrm{xill}$ of the return: Return (solid), Primary (dashed) -- spin=%.3f"R,
-				spin);
-
-
+define plot_diagnose_rframe(){
    variable files = getFilenameStruct();
-   variable fnames  = [files.rframe.specRet,files.rframe.specPri];
-   variable iRframe = [1,1];
-   
-   %% the primary is about 1/(returning fraction) ~ 25 times above the returning spectrum
-   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec, ymax=1e5);
-   
-   pl.render(dir_plots+prefix+"diagnosePlotRframe.pdf");
-   
-   return EXIT_SUCCESS;
+   variable title = "Rest frame, per zone normalized to $N_\mathrm{xill}$ of the return: "R
+		   + "reflected (solid), return (dashed), direct (dotted)";
+
+   %% the direct emission is about 1/(returning fraction) ~ 25 times above the returning spectrum
+   variable pl = get_2d_plot([files.rframe.specPri, files.rframe.specRet, files.rframe.xillRefl], spin;
+			     rframe, title=title, ymax=1e5, lines=[2,1,0]);
+   pl.render(dir_plots+prefix+"perzone_rframe.pdf");
 }
 
-define getDiagnoseXillverPlot(){
-   
-   variable plotTitle = sprintf("Rest Frame (per zone noramlized to return): Xillver (solid), Return (dashed) -- spin=%.3f"R,
-				spin);
-
-   message("\n"+plotTitle);
-
+define plot_diagnose_observed(){
    variable files = getFilenameStruct();
-   variable fnames  = [files.rframe.xillRefl,files.rframe.specRet];
-   variable iRframe = [1,1];
-   
-   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec);
-   
-   pl.render(dir_plots+prefix+"diagnosePlotXillver.pdf");
-   
-   return EXIT_SUCCESS;
-}
+   variable title = "Observed: reflected (solid), mirrored (dashed), direct (dotted); "
+		   + "sum of the zones (black), direct + reflected (red)";
 
-define getDiagnoseRelxillBBPlot(){
-%{{{
-   
-   variable plotTitle = sprintf("Relat Refl (solid), Primary BBody (dashed), Mirrord BBody (dotted)",
-				spin);
-
-
-   variable files = getFilenameStruct();
-   variable fnames  = [files.fobs.reflect,files.fobs.primary, files.fobs.mirrorRefl];
-   variable iRframe = [0,0,0];
-   
-   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle);
-   
-   pl.render(dir_plots+prefix+"diagnosePlotRelxillBB.pdf");
-   
-   return EXIT_SUCCESS;
-}
-%}}}
-
-define getDiagnoseMirrorBbody(){
-   
-   variable plotTitle = sprintf("Observer, Mirror Refl: Reflected Mirror (solid), Primary BBody (dashed)  -- spin=%.3f",
-				spin);
-
-
-   variable files = getFilenameStruct();
-   %% (the order is needed for plot_kerrbb, which is normalized to the second file, the primary spectrum)
-   variable fnames  = [files.fobs.mirrorRefl,files.fobs.primary];
-   variable iRframe = [0,0];
-   
-   variable pl = get_2d_plot(fnames, iRframe, spin; title=plotTitle, noSumSpec, plot_kerrbb);
-   
-   pl.render(dir_plots+prefix+"diagnosePlotMirrorBbody.pdf");
-   
-   return EXIT_SUCCESS;
-}
-
-define testDiagnosePlots(){
-
-   variable params = get_param_struct(spin, Tin, logxi, logn);
-   createOutputFiles(ff_plots,params);
-
-   if (getDiagnoseMirrorBbody() != EXIT_SUCCESS) return EXIT_FAILURE;
-   if (getDiagnoseRframePlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-   if (getDiagnoseXillverPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-   if (getDiagnoseRelxillBBPlot() != EXIT_SUCCESS) return EXIT_FAILURE;
-
-   return EXIT_SUCCESS;
+   variable pl = get_2d_plot([files.fobs.primary, files.fobs.reflect, files.fobs.mirrorRefl], spin;
+			     title=title, total=[0,1], lines=[2,0,1]);
+   pl.render(dir_plots+prefix+"perzone_observed.pdf");
 }
 
 
-if (length(__argv)>0){
-   testDiagnosePlots();
-}
+createOutputFiles(ff_plots, get_param_struct(spin, Tin, logxi, logn));
+plot_diagnose_rframe();
+plot_diagnose_observed();
