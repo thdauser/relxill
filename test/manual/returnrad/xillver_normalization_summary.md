@@ -108,7 +108,8 @@ The two models sit differently with respect to the incident *shape* (`get_xillta
   table is available, the model fixes these parameters (and Rin = ISCO, Rout = 1000; `check_parameter_bounds_relxillbb`
   and the parameter limits in `lmodel_relxill_devel.dat`), so only the inclination, z, boost, and the normalization
   are free. For these parameters, the incident spectrum of the table and `specRet` are identical by design. **The final
-  table will in addition depend on kTbb, logxi, logN, and the spin**, with the incident spectrum of each zone
+  table will in addition depend on kTbb, logxi, logN, and the spin (later also A_Fe)**, with the incident spectrum of
+  each zone
   calculated by the model for each combination of kTbb and spin.
 - `relxillBB_NS`: the returning radiation is a superposition of blue- and red-shifted blackbodies from across the
   disk, with an effective temperature that varies between the zones. A single blackbody at `kTbb` can not represent

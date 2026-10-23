@@ -1039,7 +1039,7 @@ void check_and_reset_value(double* ptr_val, double val_ref, const char* param_na
 }
 
 // The current xillverRTR table (v0.3) is a mock version, calculated for a single parameter set. Until the final table
-// (with kTbb, logxi, logN, and the spin as parameters) is available, these values are enforced for relxillBB (kTbb is
+// (with kTbb, logxi, logN, the spin, and later A_Fe as parameters) is available, these values are enforced for relxillBB (kTbb is
 // fixed by the parameter limits in lmodel_relxill_devel.dat).
 void check_parameter_bounds_relxillbb(xillParam* xill_param,relParam* rel_param)
 {

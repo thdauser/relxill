@@ -16,6 +16,9 @@ top-level `README.md` and `NAME_AND_CITATION_POLICY.md` in the repository.
   spectra: intensity vs. flux, where the conversion is applied, and why every
   spectrum handed to the relativistic convolution must be an intensity (xillver reflection, mirrored returning
   radiation, direct disk emission).
+- @subpage xillver_RTR — the xillverRTR table of `relxillBB`: how the model
+  uses it, the radial zones, how its incident spectra are produced (`relxill-table`), and the changes needed for the
+  final table.
 - @subpage returnrad_disk_emission — direct thermal emission of the disk
   in `relxillBB`: temperature profiles, their definition, how the direct and
   the reflected radiation are calculated from the same emitted primary, and
