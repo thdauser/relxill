@@ -279,6 +279,79 @@ TEST_CASE (
   CHECK(norm[2] / norm[1] == Catch::Approx(1.0).epsilon(1e-3));
 }
 
+// number of photons and energy of a bin-integrated spectrum in the band [emin, emax]
+static std::array<double, 2> photons_and_energy(const double *ener,
+                                                const double *spec,
+                                                int n_ener,
+                                                double emin,
+                                                double emax) {
+  std::array<double, 2> sum{0.0, 0.0};
+  for (int jj = 0; jj < n_ener; jj++) {
+    if (ener[jj] >= emin && ener[jj + 1] <= emax) {
+      sum[0] += spec[jj];
+      sum[1] += spec[jj] * 0.5 * (ener[jj] + ener[jj + 1]);
+    }
+  }
+  return sum;
+}
+
+// ========== //
+// (1b) The primary of each zone (specPri) follows the alpha-disk (SS73) profile with its absolute normalization: the
+// energy flux of a blackbody of temperature T (bbody_photon_flux_per_keV, i.e., E^2/(exp(E/T)-1) per keV) is
+// pi^4/15 T^4, and T^4 = K^4 (rin/r)^3 (1 - sqrt(rin/r)) with K = kT / t(1.5^(4/5)), t(x) = x^(-3/4) (1-x^(-1/2))^(1/4)
+// (kT is the maximal temperature, see disk_Tprofile_alpha). The primary of a zone is the mean over its (flat) area, so
+// the expected energy flux is pi^4/15 K^4 rin^3 [-1/r + 2/3 sqrt(rin) r^(-3/2)]_rlo^rhi / ((rhi^2 - rlo^2)/2). In
+// contrast to (1), which tests the spectrum of the whole disk, this tests the profile zone by zone. kT = 5 keV, such
+// that the coolest zone (0.09 keV) is not cut off below EMIN_XILLVER. The deviation is +2.5e-4 to +3.4e-4 in all zones
+// (blackbody evaluated on the internal energy grid with 500 bins, see get_std_bbody_energy_grid) and increases to
+// +1.4e-3 for the coarse outermost zones (integration over the radial points of the model, for the steep r^-3
+// profile).
+TEST_CASE (
+"disk emission (1b): energy flux of the primary of each zone follows the alpha-disk (SS73) profile"
+,
+"[rrad-bbody][diskemission]"
+)
+ {
+  const double spin = GENERATE(0.0, 0.998);
+  setenv("RELXILL_RRAD_BBODY_TPROFILE", "1", 1);
+  constexpr double kT = 5.0;
+  const double rin = kerr_rms(spin);
+  constexpr double rout = RMAX_RELRET;
+
+  constexpr int n_ener = 3000;
+  double ener[n_ener + 1];
+  get_log_grid(ener, n_ener + 1, EMIN_XILLVER, EMAX_XILLVER);
+
+  int status = EXIT_SUCCESS;
+  returnSpec2D *return_spec = spec_returnrad_blackbody(ener, n_ener, kT, rin, rout, spin, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+
+  const double x_max = pow(1.5, 0.8);
+  const double K = kT / (pow(x_max, -0.75) * pow(1 - 1 / sqrt(x_max), 0.25));
+  const auto integ = [rin](double r) { return -1. / r + 2. / 3 * sqrt(rin) * pow(r, -1.5); };
+
+  double max_dev = 0.0;
+  int izone_max = 0;
+  for (int ii = 0; ii < return_spec->nrad; ii++) {
+    const double rlo = return_spec->rlo[ii];
+    const double rhi = return_spec->rhi[ii];
+    const double expected = pow(M_PI, 4) / 15 * pow(K, 4) * pow(rin, 3) * (integ(rhi) - integ(rlo))
+                            / (0.5 * (rhi * rhi - rlo * rlo));
+    const double energy_flux =
+        photons_and_energy(ener, return_spec->specPri[ii], n_ener, EMIN_XILLVER, EMAX_XILLVER)[1];
+    if (fabs(energy_flux / expected - 1) > max_dev) {
+      max_dev = fabs(energy_flux / expected - 1);
+      izone_max = ii;
+    }
+  }
+  INFO("a = " << spin << ": max. deviation of the energy flux of a zone from SS73: " << max_dev << " (zone "
+    << izone_max << ", r = " << return_spec->rlo[izone_max] << "-" << return_spec->rhi[izone_max] << ")");
+  CHECK(max_dev < 2e-3);
+
+  unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+  delete_returnSpec2D(&return_spec);
+}
+
 // ========== //
 // (2a) The observed direct disk emission of the model is a single convolution of a blackbody with a kernel:
 // the relativistic line profile of the whole disk, with the temperature of each radial point as its line energy
@@ -490,21 +563,6 @@ static VecD_2D calc_primary_zones_radial_points(const double *ener,
   return spec;
 }
 
-// number of photons and energy of a bin-integrated spectrum in the band [emin, emax]
-static std::array<double, 2> photons_and_energy(const double *ener,
-                                                const double *spec,
-                                                int n_ener,
-                                                double emin,
-                                                double emax) {
-  std::array<double, 2> sum{0.0, 0.0};
-  for (int jj = 0; jj < n_ener; jj++) {
-    if (ener[jj] >= emin && ener[jj + 1] <= emax) {
-      sum[0] += spec[jj];
-      sum[1] += spec[jj] * 0.5 * (ener[jj] + ener[jj + 1]);
-    }
-  }
-  return sum;
-}
 
 // ========== //
 // (3a) The primary of each zone (specPri) is the emission of the radial points of the line profiles in the zone

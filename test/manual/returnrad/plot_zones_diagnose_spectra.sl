@@ -60,7 +60,7 @@ define getDiagnoseRframePlot(){
 
 define getDiagnoseXillverPlot(){
    
-   variable plotTitle = sprintf("Rest frame, per zone normalized to $N_\mathrm{xill}$ of the return: Xillver (solid), Return (dashed) -- spin=%.3f"R,
+   variable plotTitle = sprintf("Rest Frame (per zone noramlized to return): Xillver (solid), Return (dashed) -- spin=%.3f"R,
 				spin);
 
    message("\n"+plotTitle);

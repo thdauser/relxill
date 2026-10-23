@@ -111,7 +111,9 @@ In `test/unit/tests-returnrad-bbody-diskemission.cpp`, run with `bin/tests "[dis
 
 ### Manual tests
 
-In `test/manual/returnrad` (ISIS, `make test` and `make plot`):
+In `test/manual/returnrad` (ISIS, `make test` and `make plot`). On 2026-10-23, the two tests were moved to the unit
+tests ("disk emission (1b)" and the reference-data test of the returning spectra, see `test/manual/returnrad/README.md`),
+and `make test` was removed:
 
 - **`testEmissivityBbody`:** checks item 4 against an analytic result. The energy flux of each zone agrees with SS73
   averaged over the area of the zone to 5.8e-4.

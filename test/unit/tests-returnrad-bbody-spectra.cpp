@@ -26,26 +26,95 @@
 #include "Relreturn_Table.h"
 #include "Relphysics.h"
 #include "Rellp.h"
+#include "Relreturn_Datastruct.h"
+
+#include <algorithm>
+#include <string>
 
 extern "C" {
 #include "relutility.h"
 }
 
-// spectra of the zones integrated over the (proper) area of the zones
-static double *integSpecArea(double **spec, int n_ener, double spin, const returnSpec2D *returnSpec, int *status) {
-  auto *areaIntegSpec = (double *) malloc(sizeof(double) * n_ener);
-  CHECK_MALLOC_RET_STATUS(areaIntegSpec, status, areaIntegSpec)
+#if !defined(RELXILL_SOURCE_DIR)
+#warning: RELXILL_SOURCE_DIR is not defined
+#endif
 
-  for (int jj = 0; jj < n_ener; jj++) {
-    areaIntegSpec[jj] = 0.0;
+// ---- reference data of the returning radiation of the zones ---- //
+// The returning radiation of the zones (specRet) for kT = 2 keV, the alpha-disk profile, the first order of the
+// returning radiation, and a disk from the ISCO to RMAX_RELRET, on a logarithmic grid of 300 bins from 0.01 to 100
+// keV. The reference files are written by the hidden test case "[.create-refdata]" (bin/tests "[.create-refdata]"),
+// in the format of fits_rr_write_2Dspec (one row per zone; columns rlo, rhi, ener (lower bin edges), spec).
+static constexpr int N_ENER_REFDATA_RRAD = 300;
+static constexpr double KT_REFDATA_RRAD = 2.0; // default of relxillBB
+
+static std::string get_fname_refdata_rrad(double spin) {
+  char fname[100];
+  snprintf(fname, sizeof(fname), "%s/test/unit/refdata/refvalues_rrad_bbody_specRet_a%.3f.fits", RELXILL_SOURCE_DIR,
+           spin);
+  return fname;
+}
+
+static void get_energy_grid_refdata_rrad(double *ener) {
+  get_log_grid(ener, N_ENER_REFDATA_RRAD + 1, 0.01, 100.0);
+}
+
+// returning radiation of the zones for the parameters of the reference data
+static returnSpec2D *calc_returnrad_refdata_params(double spin, double *ener, int *status) {
+  setenv("RELXILL_RRAD_BBODY_TPROFILE", "1", 1);
+  setenv("RELXILL_RRAD_BBODY_ORDER", "1", 1);
+  returnSpec2D *return_spec =
+      spec_returnrad_blackbody(ener, N_ENER_REFDATA_RRAD, KT_REFDATA_RRAD, kerr_rms(spin), RMAX_RELRET, spin, status);
+  unsetenv("RELXILL_RRAD_BBODY_TPROFILE");
+  unsetenv("RELXILL_RRAD_BBODY_ORDER");
+  return return_spec;
+}
+
+// reads the spectra of the zones of a reference file and checks that its zones and its energy grid are the ones of
+// the model (return_spec, on the grid ener)
+static VecD_2D fits_read_refdata_rrad(const std::string &fname, const returnSpec2D *return_spec, const double *ener,
+                                      int *status) {
+  const int nrad = return_spec->nrad;
+  VecD_2D spec(nrad, VecD(N_ENER_REFDATA_RRAD, 0.0));
+  fitsfile *fptr = nullptr;
+  if (fits_open_table(&fptr, fname.c_str(), READONLY, status)) {
+    relxill_check_fits_error(status);
+    return spec;
   }
-  for (int ii = 0; ii < returnSpec->nrad; ii++) {
-    double prop_area = calc_proper_area_ring(returnSpec->rlo[ii], returnSpec->rhi[ii], spin);
-    for (int jj = 0; jj < n_ener; jj++) {
-      areaIntegSpec[jj] += spec[ii][jj] * prop_area;
+  long nrows = 0;
+  fits_get_num_rows(fptr, &nrows, status);
+  if (*status == EXIT_SUCCESS && nrows != nrad) {
+    printf(" *** error : reference file %s has %li zones instead of %i\n", fname.c_str(), nrows, nrad);
+    *status = EXIT_FAILURE;
+  }
+  int anynul = 0;
+  double nullval = 0.0;
+  VecD rlo(nrad, 0.0);
+  VecD ener_lo(N_ENER_REFDATA_RRAD, 0.0);
+  if (*status == EXIT_SUCCESS) {
+    fits_read_col(fptr, TDOUBLE, 1, 1, 1, nrad, &nullval, rlo.data(), &anynul, status);
+    fits_read_col(fptr, TDOUBLE, 3, 1, 1, N_ENER_REFDATA_RRAD, &nullval, ener_lo.data(), &anynul, status);
+    for (int ii = 0; ii < nrad; ii++) {
+      fits_read_col(fptr, TDOUBLE, 4, ii + 1, 1, N_ENER_REFDATA_RRAD, &nullval, spec[ii].data(), &anynul, status);
     }
   }
-  return areaIntegSpec;
+  relxill_check_fits_error(status);
+  int status_close = EXIT_SUCCESS;
+  fits_close_file(fptr, &status_close);
+  CHECK_STATUS_RET(*status, spec);
+
+  for (int ii = 0; ii < nrad; ii++) {
+    if (fabs(rlo[ii] / return_spec->rlo[ii] - 1) > 1e-10) {
+      printf(" *** error : zone %i of %s starts at %e instead of %e\n", ii, fname.c_str(), rlo[ii], return_spec->rlo[ii]);
+      *status = EXIT_FAILURE;
+    }
+  }
+  for (int jj = 0; jj < N_ENER_REFDATA_RRAD; jj++) {
+    if (fabs(ener_lo[jj] / ener[jj] - 1) > 1e-10) {
+      printf(" *** error : energy grid of %s differs in bin %i\n", fname.c_str(), jj);
+      *status = EXIT_FAILURE;
+    }
+  }
+  return spec;
 }
 
 static int checkTemperatureProfile(double *temperature, int n) {
@@ -82,40 +151,66 @@ TEST_CASE (
   }
 }
 
+// Regression test of the returning radiation of the zones (specRet) against the reference data (see above), for
+// a = 0.998 (relxillBB) and a = 0.5 (interpolation of the returning-radiation table in spin). The primary of the zones
+// is tested independently in "disk emission (1b)" and "(3a)", and (3b) tests that specRet is calculated from this
+// primary; this test detects any change of the returning radiation itself (returning fractions, interpolation of the
+// table, energy shifts). In each zone, the spectrum must agree with the reference to 1e-6 of its maximum.
 TEST_CASE (
-"returning radiation: primary and returning spectra of the zones (written to testrr-rframe-*.fits)"
+"returning radiation: returning spectra of the zones agree with the reference data"
 ,
-"[rrad-bbody][spectra]"
+"[rrad-bbody][spectra][refdata]"
 )
  {
+  const double spin = GENERATE(0.998, 0.5);
+  INFO("a = " << spin << ", reference file " << get_fname_refdata_rrad(spin));
+
   int status = EXIT_SUCCESS;
+  double ener[N_ENER_REFDATA_RRAD + 1];
+  get_energy_grid_refdata_rrad(ener);
+  returnSpec2D *return_spec = calc_returnrad_refdata_params(spin, ener, &status);
+  REQUIRE(status == EXIT_SUCCESS);
+  const VecD_2D spec_ref = fits_read_refdata_rrad(get_fname_refdata_rrad(spin), return_spec, ener, &status);
+  REQUIRE(status == EXIT_SUCCESS);
 
-  /* create an energy grid */
-  int n_ener = 200;
-  double ener[n_ener + 1];
-  get_log_grid(ener, n_ener + 1, 0.01, 50.0);
+  double max_dev = 0.0;
+  int izone_max = 0;
+  for (int ii = 0; ii < return_spec->nrad; ii++) {
+    const double max_ref = *std::max_element(spec_ref[ii].begin(), spec_ref[ii].end());
+    REQUIRE(max_ref > 0);
+    for (int jj = 0; jj < N_ENER_REFDATA_RRAD; jj++) {
+      const double dev = fabs(return_spec->specRet[ii][jj] - spec_ref[ii][jj]) / max_ref;
+      if (dev > max_dev) {
+        max_dev = dev;
+        izone_max = ii;
+      }
+    }
+  }
+  INFO("max. deviation from the reference data: " << max_dev << " (zone " << izone_max << ")");
+  CHECK(max_dev < 1e-6);
 
-  double Tin = 1.0;
-  double spin = 0.998; // simply determines the radial grid here
+  delete_returnSpec2D(&return_spec);
+}
 
-  double Rin = kerr_rms(spin);
-  double Rout = RMAX_RELRET;
-
-  returnSpec2D *returnSpec = spec_returnrad_blackbody(ener, n_ener, Tin, Rin, Rout, spin, &status);
-  REQUIRE(returnSpec != nullptr);
-
-  double *photar_areaInteg = integSpecArea(returnSpec->specRet, n_ener, spin, returnSpec, &status);
-  double *photar0_areaInteg = integSpecArea(returnSpec->specPri, n_ener, spin, returnSpec, &status);
-
-  fits_rr_write_2Dspec("!testrr-rframe-rr-bbody.fits", returnSpec->specRet, ener, n_ener,
-                       returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, &status);
-  fits_rr_write_2Dspec("!testrr-rframe-prim-bbody.fits", returnSpec->specPri, ener, n_ener,
-                       returnSpec->rlo, returnSpec->rhi, returnSpec->nrad, nullptr, &status);
-
-  free(photar_areaInteg);
-  free(photar0_areaInteg);
-
-  delete_returnSpec2D(&returnSpec);
+// writes the reference data of the test above (only run if called explicitly: bin/tests "[.create-refdata]")
+TEST_CASE (
+"returning radiation: create the reference data of the returning spectra of the zones"
+,
+"[.create-refdata]"
+)
+ {
+  for (double spin: {0.998, 0.5}) {
+    int status = EXIT_SUCCESS;
+    double ener[N_ENER_REFDATA_RRAD + 1];
+    get_energy_grid_refdata_rrad(ener);
+    returnSpec2D *return_spec = calc_returnrad_refdata_params(spin, ener, &status);
+    const std::string fname = "!" + get_fname_refdata_rrad(spin);
+    fits_rr_write_2Dspec(fname.c_str(), return_spec->specRet, ener, N_ENER_REFDATA_RRAD, return_spec->rlo,
+                         return_spec->rhi, return_spec->nrad, nullptr, &status);
+    REQUIRE(status == EXIT_SUCCESS);
+    printf(" written reference data: %s\n", fname.c_str() + 1);
+    delete_returnSpec2D(&return_spec);
+  }
 }
 
 TEST_CASE (

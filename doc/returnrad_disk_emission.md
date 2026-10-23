@@ -261,6 +261,11 @@ for the outer edge not to affect the band 0.1-10 kTbb), for \f$kT_\mathrm{bb}\f$
   `ezdiskbb` agree to 0.01%.
 - The outer radius of the model (1000 Rg) only affects the lowest energies: for the alpha disk with
   \f$R_\mathrm{in} = r_\mathrm{isco}(a=0.998)\f$, the deviation is 1% at 0.1 kTbb and below 0.03% above 0.2 kTbb.
+- **(1b)** Zone by zone, the energy flux of the primary of the model (`specPri`) agrees with the analytic alpha-disk
+  (SS73) profile including its absolute normalization (\f$\pi^4/15\, T^4\f$ averaged over the area of the zone,
+  \f$kT_\mathrm{bb}\f$ = 5 keV, \f$a\f$ = 0 and 0.998): by +0.025% to +0.034% in all zones (blackbody evaluated on
+  the internal energy grid with 500 bins), increasing to +0.14% for the coarse outermost zones (integration over the
+  radial points of the model, for the steep \f$r^{-3}\f$ profile).
 
 ### (2a) Kernel of the direct emission
 
@@ -366,6 +371,8 @@ In `test/unit/tests-returnrad-bbody-diskemission.cpp`; all disk emission tests r
 
 - **(1)** *"disk emission (1): temperature profile on a fine radial grid vs. Xspec diskbb and ezdiskbb"*: shape
   deviation below 0.3% (alpha disk) and 0.05% (diskbb), and normalization independent of kTbb to 0.1%.
+- **(1b)** *"disk emission (1b): energy flux of the primary of each zone follows the alpha-disk (SS73) profile"*: to
+  0.2% in each zone.
 - **(2a)** *"disk emission (2a): kernel, i.e., line profile with a line energy for each radial point"*: identical to
   the sum of the line profiles of the zones (to \f$10^{-10}\f$), and shifted by a constant line energy of 0.5 keV
   (number of photons and mean of \f$\ln E\f$ to \f$10^{-3}\f$).
@@ -385,6 +392,14 @@ In `test/unit/tests-returnrad-bbody-diskemission.cpp`; all disk emission tests r
   `relxillBB_NS` with the default temperature profile).
 
 The tests (3a)-(3c) run for the alpha disk and the Novikov-Thorne profile, for \f$a\f$ = 0 and 0.998.
+
+The returning radiation itself (returning fractions, interpolation of the table, energy shifts) is tested against
+reference data in `test/unit/tests-returnrad-bbody-spectra.cpp`, *"returning radiation: returning spectra of the zones
+agree with the reference data"* (`bin/tests "[refdata]"`): `specRet` of each zone for \f$kT_\mathrm{bb}\f$ = 2 keV and
+\f$a\f$ = 0.998 and 0.5 to \f$10^{-6}\f$ of its maximum. The reference files
+`test/unit/refdata/refvalues_rrad_bbody_specRet_a*.fits` are written with `bin/tests "[.create-refdata]"` (they agree
+with the reference data of the former manual test of 2026-10-21 to \f$4 \times 10^{-4}\f$, the precision of rebinning
+them to the coarser energy grid).
 
 The reference spectra of the Xspec models are in `test/unit/refdata/`: `refvalues_diskbb_Tin{0.5,1.0,2.0}.fits`
 (column `diskbb`) and `refvalues_ezdiskbb_Tmax{0.5,1.0,2.0}.fits` (column `ezdiskbb`), created with
