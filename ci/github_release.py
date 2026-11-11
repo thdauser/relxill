@@ -1,17 +1,26 @@
 #!/usr/bin/env python3
-"""Publish a relxill release on GitHub (https://github.com/thdauser/relxill).
+"""Publish relxill on GitHub (https://github.com/thdauser/relxill), run by the GitLab CI (see .gitlab-ci.yml).
 
-Run by the GitLab CI job "github" for every tag vx.y.z (see .gitlab-ci.yml), after build and tests passed.
-It can also be run by hand from the top-level directory, e.g., for a tag made before this job existed:
+Two modes, both run only after build and tests passed:
 
-    GITHUB_TOKEN=... ci/github_release.py v2.10.0 --tarball path/to/relxill_model_v2.10.0.tgz
-    ci/github_release.py v2.10.0 --tarball ... --dry-run      # no token needed, changes nothing
+  ci/github_release.py --push-master
+      CI job "github-master", for every push to master: pushes the commit to GitHub master, if that is a
+      fast-forward. GitHub master follows the development, and the documentation on GitHub Pages
+      (.github/workflows/docs.yml) is rebuilt.
 
-Steps (all of them can be repeated safely, e.g., when re-running the CI job):
-  1. push the tag to GitHub, and move GitHub master to the tagged commit if that is a fast-forward
-     (GitHub master always shows the latest release; for a tag on an older branch only the tag is pushed)
-  2. create (or update) the GitHub release "version x.y.z", with the CHANGELOG.txt entry as text
-  3. attach the model tarball relxill_model_vx.y.z.tgz (replacing an existing one of the same name)
+  ci/github_release.py vx.y.z
+      CI job "github", for every tag vx.y.z:
+        1. pushes the tag to GitHub
+        2. creates (or updates) the GitHub release "version x.y.z", with the CHANGELOG.txt entry as text;
+           it is marked as latest release unless a higher version was already released
+        3. attaches the model tarball relxill_model_vx.y.z.tgz (replacing an existing one of the same name)
+
+Both can be repeated safely (e.g., re-running a CI job) and run by hand from the top-level directory, e.g.,
+for a tag made before the CI job existed:
+
+    ci/github_release.py v2.10.0 --tarball path/to/relxill_model_v2.10.0.tgz --dry-run   # no token needed
+    read -rs GITHUB_TOKEN && export GITHUB_TOKEN
+    ci/github_release.py v2.10.0 --tarball path/to/relxill_model_v2.10.0.tgz
 
 GITHUB_TOKEN: fine-grained token for the repository with the permissions "Contents" and "Workflows"
 (read and write); the latter is needed to push changes of .github/workflows/.
@@ -41,6 +50,12 @@ def fail(msg):
 
 def git(*args, check=True):
     return subprocess.run(["git", *args], check=check, capture_output=True, text=True)
+
+
+def version_key(version):
+    """(2, 10, 0) for "v2.10.0"; "v2.4" gives (2, 4, 0)."""
+    parts = [int(p) for p in version.lstrip("v").split(".")]
+    return tuple(parts + [0] * (3 - len(parts)))
 
 
 # ---------------------------------------------------------------- release text
@@ -108,38 +123,55 @@ class GitHub:
             fail(f"GitHub API {method} {url}: {err.code} {err.reason}\n{err.read().decode(errors='replace')}")
         return json.loads(body) if body else {}
 
+    def highest_released_version(self, exclude_tag):
+        releases = self.request("GET", "/releases?per_page=100") or []
+        versions = [version_key(r["tag_name"]) for r in releases
+                    if r["tag_name"] != exclude_tag and not r["draft"] and not r["prerelease"]
+                    and re.fullmatch(r"v\d+(\.\d+){1,2}", r["tag_name"])]
+        return max(versions, default=None)
 
-def push_to_github(repo, token, tag, sha, dry_run):
-    """Push the tag; move GitHub master to the tag if it is a fast-forward. Return True if master moved."""
-    public_url = f"https://github.com/{repo}.git"
-    remote = git("ls-remote", public_url, "refs/heads/master").stdout.split()
+
+# ---------------------------------------------------------------- git push
+
+def git_push(repo, token, refspecs, dry_run):
+    print(f"push to https://github.com/{repo}.git: {' '.join(refspecs)}")
+    if dry_run:
+        return
+    auth_url = f"https://x-access-token:{token}@github.com/{repo}.git"
+    result = git("push", auth_url, *refspecs, check=False)
+    if result.returncode != 0:
+        fail("git push to GitHub failed:\n" + (result.stdout + result.stderr).replace(token, "***"))
+
+
+def push_master(repo, token, sha, dry_run):
+    """Move GitHub master to `sha` if that is a fast-forward."""
+    remote = git("ls-remote", f"https://github.com/{repo}.git", "refs/heads/master").stdout.split()
     gh_master = remote[0] if remote else None
 
+    def is_ancestor(a, b):
+        return git("merge-base", "--is-ancestor", a, b, check=False).returncode == 0
+
     if gh_master == sha:
-        update_master = False
         print(f"GitHub master is already at {sha[:9]}")
-    elif gh_master is None:
-        update_master = True
-    elif git("cat-file", "-e", f"{gh_master}^{{commit}}", check=False).returncode != 0:
-        update_master = False
-        print(f"WARNING: GitHub master ({gh_master[:9]}) is not in this repository (something was committed "
-              f"directly on GitHub?). Only pushing the tag; bring the GitHub changes into GitLab first.")
-    else:
-        update_master = git("merge-base", "--is-ancestor", gh_master, sha, check=False).returncode == 0
-        if not update_master:
-            print(f"{tag} is not newer than GitHub master ({gh_master[:9]}), only pushing the tag")
-
-    refspecs = [f"refs/tags/{tag}"] + ([f"{sha}:refs/heads/master"] if update_master else [])
-    print(f"push to {public_url}: {' '.join(refspecs)}")
-    if not dry_run:
-        auth_url = f"https://x-access-token:{token}@github.com/{repo}.git"
-        result = git("push", auth_url, *refspecs, check=False)
-        if result.returncode != 0:
-            fail("git push to GitHub failed:\n" + (result.stdout + result.stderr).replace(token, "***"))
-    return update_master or gh_master == sha
+        return
+    if gh_master is not None:
+        if git("cat-file", "-e", f"{gh_master}^{{commit}}", check=False).returncode != 0:
+            fail(f"GitHub master ({gh_master[:9]}) is not in this repository: something was committed directly "
+                 f"on GitHub. Bring these changes into the GitLab repository first (see RELEASE.md).")
+        if is_ancestor(sha, gh_master):
+            print(f"GitHub master ({gh_master[:9]}) is already newer than {sha[:9]}, nothing to do")
+            return
+        if not is_ancestor(gh_master, sha):
+            fail(f"GitHub master ({gh_master[:9]}) and {sha[:9]} have diverged (history rewritten?), "
+                 f"not pushing. Check and fix GitHub master by hand.")
+    git_push(repo, token, [f"{sha}:refs/heads/master"], dry_run)
 
 
-def publish_release(gh, tag, version, body, latest, tarball, dry_run):
+# ---------------------------------------------------------------- release
+
+def publish_release(gh, tag, version, body, tarball, dry_run):
+    highest = gh.highest_released_version(exclude_tag=tag)
+    latest = highest is None or version_key(version) >= highest
     fields = {"tag_name": tag, "name": f"version {version}",
               "draft": False, "prerelease": False, "make_latest": "true" if latest else "false"}
     release = gh.request("GET", f"/releases/tags/{urllib.parse.quote(tag)}")
@@ -169,8 +201,6 @@ def publish_release(gh, tag, version, body, latest, tarball, dry_run):
     return release["html_url"]
 
 
-# ---------------------------------------------------------------- main
-
 def check_tarball(path, version):
     if not path.is_file():
         fail(f"tarball not found: {path}")
@@ -184,35 +214,46 @@ def check_tarball(path, version):
         fail(f"{path} is version {m.group(1) if m else '?'}, not {version}")
 
 
+# ---------------------------------------------------------------- main
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("tag", nargs="?", default=os.environ.get("CI_COMMIT_TAG"),
-                        help="tag vx.y.z (default: $CI_COMMIT_TAG)")
+                        help="release tag vx.y.z (default: $CI_COMMIT_TAG)")
+    parser.add_argument("--push-master", action="store_true",
+                        help="push the current commit ($CI_COMMIT_SHA or HEAD) to GitHub master instead")
     parser.add_argument("--tarball", type=Path, help="model tarball (default: relxill_model_vx.y.z.tgz)")
     parser.add_argument("--changelog", type=Path, default=Path("CHANGELOG.txt"))
     parser.add_argument("--repo", default=DEFAULT_REPO, help="GitHub repository (default: %(default)s)")
     parser.add_argument("--dry-run", action="store_true", help="only show what would be done")
     args = parser.parse_args()
 
-    if not args.tag or not re.fullmatch(r"v\d+\.\d+\.\d+", args.tag):
-        fail(f"need a tag of the form vx.y.z, got '{args.tag}'")
-    tag, version = args.tag, args.tag[1:]
-
     token = os.environ.get("GITHUB_TOKEN", "")
     if not token and not args.dry_run:
-        fail("GITHUB_TOKEN is not set (in GitLab: Settings > CI/CD > Variables, masked and protected, "
-             "and the tag v* must be protected for the variable to be available)")
+        fail("GITHUB_TOKEN is not set.\n"
+             "  by hand: run 'read -rs GITHUB_TOKEN && export GITHUB_TOKEN' in the same shell and paste the token\n"
+             "  in GitLab CI: Settings > CI/CD > Variables (masked, protected); the branch master and the tags v*\n"
+             "  must be protected for the variable to be available")
 
-    sha = git("rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}", check=False).stdout.strip()
-    if not sha:
+    if args.push_master:
+        sha = os.environ.get("CI_COMMIT_SHA") or git("rev-parse", "HEAD").stdout.strip()
+        push_master(args.repo, token, sha, args.dry_run)
+        print("\n*** dry run, nothing was changed ***" if args.dry_run else "\ndone")
+        return
+
+    if not args.tag or not re.fullmatch(r"v\d+\.\d+\.\d+", args.tag):
+        fail(f"need a tag of the form vx.y.z (or --push-master), got '{args.tag}'")
+    tag, version = args.tag, args.tag[1:]
+
+    if not git("rev-parse", "--verify", f"refs/tags/{tag}^{{commit}}", check=False).stdout.strip():
         fail(f"tag {tag} not found in this repository")
 
     tarball = args.tarball or Path(f"relxill_model_v{version}.tgz")
     check_tarball(tarball, version)
     body = release_body(changelog_entry(args.changelog, version), version)
 
-    latest = push_to_github(args.repo, token, tag, sha, args.dry_run)
-    url = publish_release(GitHub(args.repo, token), tag, version, body, latest, tarball, args.dry_run)
+    git_push(args.repo, token, [f"refs/tags/{tag}"], args.dry_run)
+    url = publish_release(GitHub(args.repo, token), tag, version, body, tarball, args.dry_run)
 
     print("\n*** dry run, nothing was changed ***" if args.dry_run else f"\nreleased: {url}")
 

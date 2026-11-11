@@ -34,9 +34,20 @@ provide:
   only:
     - tags
 
-# For a release tag vx.y.z: push the tag (and master, if it is a fast-forward) to
-# https://github.com/thdauser/relxill and create the GitHub release with the tarball.
-# Needs the CI variable GITHUB_TOKEN (masked, protected) and protected tags "v*" (see RELEASE.md).
+# Publishing on https://github.com/thdauser/relxill (see RELEASE.md). Both jobs need the CI variable
+# GITHUB_TOKEN (masked, protected), and master and the tags "v*" must be protected.
+
+# every push to master: GitHub master follows (fast-forward only), which also rebuilds the docs there
+github-master:
+  stage: deploy
+  variables:
+    GIT_DEPTH: 0   # full history, a shallow clone cannot be pushed to GitHub
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master" && $CI_PIPELINE_SOURCE == "push"'
+  script:
+    - python3 ci/github_release.py --push-master
+
+# release tag vx.y.z: push the tag and create the GitHub release with the tarball
 github:
   stage: deploy
   variables:

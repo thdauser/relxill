@@ -4,7 +4,7 @@ Checklist for maintainers. A release touches three places:
 
 * `relxill-code` (this repository, on the internal GitLab): version number, change log, tag, model tarball
 * https://github.com/thdauser/relxill: the public copy with the releases and the documentation,
-  updated automatically by the GitLab CI
+  updated automatically by the GitLab CI (GitHub `master` follows GitLab `master`, see section 2)
 * `relxill-webpage` (`git@serpens.sternwarte.uni-erlangen.de:relxill/relxill-webpage.git`):
   the webpage https://www.sternwarte.uni-erlangen.de/research/relxill/ with the downloads
 
@@ -41,25 +41,31 @@ On a tag, the GitLab CI (`.gitlab-ci.yml`) builds and tests the model. If the te
 
 * `provide` copies `relxill_model_vx.y.z.tgz` (and the `dev` tarball) to `/home/dauser/work/relxill/relxillArchive/`,
   where the webpage script takes it from.
-* `github` (only for tags of the form `vx.y.z`) runs `ci/github_release.py`, which
-  * pushes the tag to https://github.com/thdauser/relxill and moves GitHub `master` to the tagged commit, so GitHub
-    always shows the latest release (development after the tag stays on the GitLab server). Pushing `master`
-    also rebuilds the Doxygen documentation on GitHub Pages (`.github/workflows/docs.yml`).
-  * creates the GitHub release "version x.y.z" with the `CHANGELOG.txt` entry as text and the tarball attached.
+* `github` (only for tags of the form `vx.y.z`) runs `ci/github_release.py vx.y.z`, which pushes the tag to
+  https://github.com/thdauser/relxill and creates the GitHub release "version x.y.z" with the `CHANGELOG.txt` entry
+  as text and the tarball attached. It is marked as the latest release unless a higher version exists.
 
 Check that both jobs succeeded. Always release the tarball built by the CI from the tag, not one built locally
 from a later commit. Both jobs can be re-run from the GitLab pipeline page if something went wrong.
-
-Pull requests on GitHub are not merged there: bring them into the GitLab repository (e.g., add the fork as remote
-and merge or cherry-pick the branch). If GitHub `master` contains a commit unknown to GitLab, the `github` job only
-pushes the tag and prints a warning.
 
 To publish a release by hand (e.g., for a tag made before the `github` job existed):
 
 ```bash
 ci/github_release.py vx.y.z --tarball /home/dauser/work/relxill/relxillArchive/relxill_model_vx.y.z.tgz --dry-run
-GITHUB_TOKEN=... ci/github_release.py vx.y.z --tarball /home/dauser/work/relxill/relxillArchive/relxill_model_vx.y.z.tgz
+read -rs GITHUB_TOKEN && export GITHUB_TOKEN     # paste the token, it is not shown
+ci/github_release.py vx.y.z --tarball /home/dauser/work/relxill/relxillArchive/relxill_model_vx.y.z.tgz
 ```
+
+### GitHub master and the documentation
+
+Independent of releases, the CI job `github-master` pushes every commit on GitLab `master` to GitHub `master`
+(`ci/github_release.py --push-master`) once its tests passed. GitHub `master` therefore follows the development,
+and each push rebuilds the Doxygen documentation on GitHub Pages (`.github/workflows/docs.yml`). Users who want a
+stable version take a release (tag or tarball).
+
+Only fast-forwards are pushed. Pull requests on GitHub are therefore not merged there: bring them into the GitLab
+repository (e.g., add the fork as remote and merge or cherry-pick the branch). If GitHub `master` contains a commit
+unknown to GitLab, the `github-master` job fails until that is resolved.
 
 
 ## 3. Update the webpage (relxill-webpage)
@@ -98,7 +104,7 @@ More details are in the `README.md` of the webpage repository.
 
 ## One-time setup
 
-For the `github` CI job:
+For the CI jobs `github-master` and `github`:
 
 1. On GitHub, create a fine-grained personal access token (Settings > Developer settings > Personal access tokens >
    Fine-grained tokens) for the repository `thdauser/relxill` only, with the permissions "Contents: Read and write"
@@ -106,7 +112,8 @@ For the `github` CI job:
    Note its expiry date: the job fails once it expired.
 2. In GitLab (relxill-code > Settings > CI/CD > Variables), add it as `GITHUB_TOKEN`, with "Masked" and "Protected".
 3. In GitLab (Settings > Repository > Protected tags), protect the tags `v*`. Protected variables are only passed to
-   pipelines of protected branches and tags.
+   pipelines of protected branches and tags. Also check that `master` is listed under Protected branches (the
+   default branch usually is).
 4. On GitHub (thdauser/relxill > Settings > Pages), set the source to "GitHub Actions" for the documentation.
 
 The CI runner needs `python3` and HTTPS access to github.com.

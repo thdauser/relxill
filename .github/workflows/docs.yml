@@ -26,7 +26,9 @@ jobs:
           sudo apt-get install -y doxygen graphviz
 
       - name: Build documentation
-        run: doxygen doxy.config
+        run: |
+          mkdir -p build/doc   # doxygen only creates the last level of OUTPUT_DIRECTORY
+          doxygen doxy.config
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
