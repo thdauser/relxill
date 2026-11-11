@@ -280,3 +280,42 @@ TEST_CASE (
   unsetenv(env_density);
   unsetenv("RELXILL_NUM_RZONES");
 }
+
+/*
+ * The power-law ionization gradient (iongrad_type=1) is defined as xi ~ r^(-iongrad_index), normalized
+ * such that logxi is the value of the innermost zone. In log10 this means
+ *    log10(xi(r)) = logxi - iongrad_index * log10(r / r_0)
+ * i.e., log(xi) has to drop by exactly iongrad_index per decade in radius.
+ */
+TEST_CASE(" Power-law ionization gradient follows xi ~ r^(-iongrad_index)", "[iongrad][iongrad-pl]") {
+
+  setenv("RELXILL_NUM_RZONES", "50", 1);
+
+  LocalModel lmod{ModelName::relxilllpCp};
+
+  const double lxi_param = 3.0;
+  const double iongrad_index = 1.0;  // small enough that the gradient stays within the xillver bounds [0, 4.7]
+  lmod.set_par(XPar::logxi, lxi_param);
+  lmod.set_par(XPar::switch_iongrad_type, ION_GRAD_TYPE_PL);
+  lmod.set_par(XPar::iongrad_index, iongrad_index);
+
+  auto ion_grad = get_ion_gradient(lmod);
+  unsetenv("RELXILL_NUM_RZONES");
+
+  const auto &radius = ion_grad.radial_grid.radius;
+  const double rmean0 = 0.5 * (radius[0] + radius[1]);
+
+  // the test only makes sense if the gradient spans a significant range in radius
+  REQUIRE(radius.back() / radius[0] > 100.0);
+
+  REQUIRE(fabs(ion_grad.lxi[0] - lxi_param) < PREC);
+
+  for (int ii = 0; ii < ion_grad.nzones(); ii++) {
+    const double rmean = 0.5 * (radius[ii] + radius[ii + 1]);
+    const double lxi_expected = lxi_param - iongrad_index * log10(rmean / rmean0);
+    REQUIRE(lxi_expected > 0.0);  // make sure we do not test values clipped to the xillver bounds
+
+    INFO("zone " << ii << " at r=" << rmean << ": log(xi)=" << ion_grad.lxi[ii] << ", expected " << lxi_expected);
+    REQUIRE(fabs(ion_grad.lxi[ii] - lxi_expected) < PREC);
+  }
+}

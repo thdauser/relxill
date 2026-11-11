@@ -222,9 +222,8 @@ void IonGradient::calc_ion_grad_alpha(const emisProfile &emis_profile, double pa
 
 void IonGradient::calc_ion_grad_pl(double xlxi0, double xindex, double inputval_dens) {
   for (int ii = 0; ii < m_nzones; ii++) {
-    lxi[ii] = (exp(xlxi0))
-        * pow((m_rmean[ii] / m_rmean[0]), -1.0 * xindex);
-    lxi[ii] = log(lxi[ii]);
+    // xi ~ r^(-xindex), normalized to log10(xi) = xlxi0 in the innermost zone
+    lxi[ii] = xlxi0 - xindex * log10(m_rmean[ii] / m_rmean[0]);
 
     dens[ii] = inputval_dens;
   }
