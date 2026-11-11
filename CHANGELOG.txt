@@ -1,6 +1,7 @@
 Version numbers (x.y.z): a change of the middle digit (y) means that a new model was added, or the output of the model changed (e.g., due to a bug fix), so updating is strongly recommended and previous fits may need to be re-done. A change of the last digit (z) denotes improvements that do not change the output of the model.
 
 [next version]
+ - fixes a bug in the power-law ionization gradient (iongrad_type=1) of relxilllpCp and relxill_ring: the gradient was calculated with the natural logarithm instead of log10, such that it was steeper than defined, following xi ~ r^(-2.303*iongrad_index) instead of xi ~ r^(-iongrad_index). The spectral shape of previous fits is not affected, only the value of the index: an index p obtained with an earlier version corresponds to an index of ln(10)*p = 2.303*p with this version. The alpha-disk ionization gradient (iongrad_type=2) is not affected.
  - multi-zone models (e.g., relxilllp, relxilllpCp, and the models with an ionization gradient): the radial integration points of the relativistic line profiles are now assigned to the radial zones in proportion to their area, such that each zone covers exactly its radial range (before, each point was assigned completely to one zone, which changed the area of a zone by up to 8%). This changes the model output by less than 2e-4 (for relxilllpCp by less than 1e-5).
 
 [2.10.0] - 2026-10-20
