@@ -33,3 +33,15 @@ provide:
     - rsync -vhu relxill_model_v*.tgz /home/dauser/work/relxill/relxillArchive/
   only:
     - tags
+
+# For a release tag vx.y.z: push the tag (and master, if it is a fast-forward) to
+# https://github.com/thdauser/relxill and create the GitHub release with the tarball.
+# Needs the CI variable GITHUB_TOKEN (masked, protected) and protected tags "v*" (see RELEASE.md).
+github:
+  stage: deploy
+  variables:
+    GIT_DEPTH: 0   # full history, a shallow clone cannot be pushed to GitHub
+  rules:
+    - if: '$CI_COMMIT_TAG =~ /^v\d+\.\d+\.\d+$/'
+  script:
+    - python3 ci/github_release.py "$CI_COMMIT_TAG"

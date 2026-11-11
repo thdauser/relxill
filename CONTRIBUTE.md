@@ -12,6 +12,7 @@ If you are looking for a quick start guide, have a look at the README.md.
 * the build process
 * adding a new model
 * test setup 
+* releasing a new version (see RELEASE.md)
 
 #### Requirements:
 * heasoft (for building the model)
@@ -109,3 +110,8 @@ Only models for which reference data exists are tested. The script `create_refer
 
 * `make test-functionality` calls a large isis-script, testing all functions defined in the function
 `get_implemented_fitfunctions()`. Note that the models are distinguished in stable and development.
+
+
+## Releasing a New Version
+How to release a new version (change log, version number, tag, model tarball, and the update of the
+webpage, which lives in the separate repository `relxill-webpage`) is described in RELEASE.md.

@@ -91,3 +91,10 @@ Performance is critical (called per fitting iteration). `Relcache.cpp` detects w
 4. Add `MOD_TYPE_*` constant to `common.h`; wire it in `convertModelType()` (ModelDefinition.cpp)
 5. Register model in `ModelDatabase` (ModelDatabase.h)
 6. Add new parameter cache checks in `Relcache.cpp`
+
+## Releases
+
+A release is described step by step in `RELEASE.md`: `CHANGELOG.txt` entry (header format `[x.y.z] - YYYY-MM-DD`,
+parsed by the webpage script), version in `CMakeLists.txt`, tag `vx.y.z` (GitLab CI copies the tarball to the
+release archive and publishes the release on GitHub via `ci/github_release.py`), and the update of the webpage, which is a separate repository (`../relxill-webpage`, updated with
+its `release_version.py`).
