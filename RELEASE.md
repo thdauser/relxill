@@ -92,12 +92,16 @@ Then edit by hand:
 * the "What's new" list (only for releases worth highlighting),
 * the wording of the new change log entry, if needed (e.g., make the main statement bold).
 
-Check the page in a browser, commit, push, and merge. To deploy, run as user `dauser` on the remeis cluster:
+Run `./check_webpage.py` (local checks), check the page in a browser, commit, push, and merge. To deploy, run as user
+`dauser` on the remeis cluster:
 
 ```bash
 ./update_webpage.sh          # dry run
-./update_webpage.sh --copy   # copy to the web server directory
+./update_webpage.sh --copy   # copy to the web server directory, then check the live page
 ```
+
+After copying, the live page is checked automatically (`./check_webpage.py --live`, can also be run by hand from
+anywhere): it must be identical to the local `index.html`, and all its downloads must work.
 
 More details are in the `README.md` of the webpage repository.
 
