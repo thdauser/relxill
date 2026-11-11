@@ -13,7 +13,17 @@ The version scheme (x.y.z) is explained at the top of `CHANGELOG.txt`.
 
 ## 1. Change log and version number (relxill-code)
 
-1. In `CHANGELOG.txt`, rename the `[next version]` section to the new version and the release date:
+`master` is protected on GitLab: direct pushes are rejected, so the version update goes in through a merge request
+like any other change.
+
+1. Start a branch from an up-to-date `master`:
+
+   ```bash
+   git switch master && git pull
+   git switch -c release-x.y.z
+   ```
+
+2. In `CHANGELOG.txt`, rename the `[next version]` section to the new version and the release date:
 
    ```
    [2.10.0] - 2026-10-20
@@ -26,15 +36,27 @@ The version scheme (x.y.z) is explained at the top of `CHANGELOG.txt`.
    the webpage script and the GitHub release (`ci/github_release.py`) read the entry from here and turn each
    item into one bullet point.
    Start a new empty `[next version]` section above it for the changes after the release.
-2. Set the version in `project(relxill VERSION x.y.z)` in the top-level `CMakeLists.txt`.
-3. Commit with the message `[x.y.z] version update`.
+3. Set the version in `project(relxill VERSION x.y.z)` in the top-level `CMakeLists.txt`.
+4. Commit with the message `[x.y.z] version update`, push the branch, and merge it into `master` with a merge
+   request:
+
+   ```bash
+   git push -u origin release-x.y.z
+   ```
 
 
 ## 2. Tag: tarball and GitHub release (relxill-code)
 
+Tag only after the merge request is merged, and tag the commit on `master`. GitLab may create new commits when
+merging (a merge commit, or a rebase), so a tag set on the release branch before can end up on a commit that is not
+on `master`. For the same reason, never push the tag together with a branch: if the branch is rejected, the tag is
+still pushed and starts the release (a push is only all-or-nothing with `--atomic`).
+
 ```bash
+git switch master && git pull
+git log -1 --oneline                  # must be "[x.y.z] version update" or the merge of it
 git tag -a vx.y.z -m "version x.y.z"
-git push origin master vx.y.z
+git push origin vx.y.z
 ```
 
 On a tag, the GitLab CI (`.gitlab-ci.yml`) builds and tests the model. If the tests pass, two jobs run:
@@ -117,7 +139,7 @@ For the CI jobs `github-master` and `github`:
 2. In GitLab (relxill-code > Settings > CI/CD > Variables), add it as `GITHUB_TOKEN`, with "Masked" and "Protected".
 3. In GitLab (Settings > Repository > Protected tags), protect the tags `v*`. Protected variables are only passed to
    pipelines of protected branches and tags. Also check that `master` is listed under Protected branches (the
-   default branch usually is).
+   default branch usually is; with "Allowed to push" set to "No one", changes only go in through merge requests).
 4. On GitHub (thdauser/relxill > Settings > Pages), set the source to "GitHub Actions" for the documentation.
 
 The CI runner needs `python3` and HTTPS access to github.com.
