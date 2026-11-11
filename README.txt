@@ -34,6 +34,10 @@ software ISIS and XSPEC.
 
 (4)  For questions and bug reports, please contact thomas.dauser@fau.de
 
+(5)  To be informed about new versions of the model, please sign up for
+     the relxill mailing list (announcements only, a few emails per year):
+     https://lists.fau.de/cgi-bin/listinfo/astro-relxill
+
 #########################################
 #########################################
 

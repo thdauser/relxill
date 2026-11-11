@@ -7,6 +7,10 @@
 The model description and download of the offical version can be found on the homepage at 
 http://www.sternwarte.uni-erlangen.de/research/relxill/.
 
+To be informed about new versions of the model, please
+[sign up for the relxill mailing list](https://lists.fau.de/cgi-bin/listinfo/astro-relxill)
+(announcements only, a few emails per year).
+
 ## 2. Scientific Citation 
 
 If you use RELXILL, please cite the relevant papers. 
